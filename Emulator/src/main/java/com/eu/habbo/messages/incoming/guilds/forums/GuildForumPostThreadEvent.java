@@ -48,7 +48,7 @@ public class GuildForumPostThreadEvent extends MessageHandler {
 
         if (threadId == 0) {
             if (!((guild.canPostThreads().state == 0)
-                    || (guild.canPostThreads().state == 1 && member != null)
+                    || (guild.canPostThreads().state == 1 && member != null && member.getRank().type <= GuildRank.MEMBER.type)
                     || (guild.canPostThreads().state == 2 && member != null && (member.getRank().type < GuildRank.MEMBER.type))
                     || (guild.canPostThreads().state == 3 && guild.getOwnerId() == this.client.getHabbo().getHabboInfo().getId())
                     || isStaff)) {
@@ -87,7 +87,7 @@ public class GuildForumPostThreadEvent extends MessageHandler {
         }
 
         if (!((guild.canPostMessages().state == 0)
-                || (guild.canPostMessages().state == 1 && member != null)
+                || (guild.canPostMessages().state == 1 && member != null && member.getRank().type <= GuildRank.MEMBER.type)
                 || (guild.canPostMessages().state == 2 && member != null && (member.getRank().type < GuildRank.MEMBER.type))
                 || (guild.canPostMessages().state == 3 && guild.getOwnerId() == this.client.getHabbo().getHabboInfo().getId())
                 || isStaff)) {

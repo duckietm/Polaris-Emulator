@@ -12,6 +12,11 @@ import com.eu.habbo.plugin.events.guilds.GuildGivenAdminEvent;
 
 public class GuildSetAdminEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
+    @Override
     public void handle() throws Exception {
         int guildId = this.packet.readInt();
         int userId = this.packet.readInt();

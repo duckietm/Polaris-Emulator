@@ -2,11 +2,13 @@ package com.eu.habbo.habbohotel.guilds;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.guilds.forums.ForumThread;
 import com.eu.habbo.habbohotel.guilds.forums.ForumView;
 import com.eu.habbo.habbohotel.items.interactions.InteractionGuildFurni;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.guilds.GuildJoinErrorComposer;
+import com.eu.habbo.messages.outgoing.guilds.forums.GuildForumDataComposer;
 import gnu.trove.TCollections;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntObjectMap;
@@ -142,8 +144,32 @@ public class GuildManager {
                 deleteFavourite.execute();
             }
 
+            try (PreparedStatement statement = connection.prepareStatement("DELETE FROM guild_forum_views WHERE guild_id = ?")) {
+                statement.setInt(1, guild.getId());
+                statement.execute();
+            }
+
+            try (PreparedStatement statement = connection.prepareStatement("DELETE c FROM guilds_forums_comments c INNER JOIN guilds_forums_threads t ON c.thread_id = t.id WHERE t.guild_id = ?")) {
+                statement.setInt(1, guild.getId());
+                statement.execute();
+            }
+
+            try (PreparedStatement statement = connection.prepareStatement("DELETE FROM guilds_forums_threads WHERE guild_id = ?")) {
+                statement.setInt(1, guild.getId());
+                statement.execute();
+            }
 
             try (PreparedStatement statement = connection.prepareStatement("DELETE FROM guilds_members WHERE guild_id = ?")) {
+                statement.setInt(1, guild.getId());
+                statement.execute();
+            }
+
+            try (PreparedStatement statement = connection.prepareStatement("UPDATE rooms SET guild_id = 0 WHERE guild_id = ?")) {
+                statement.setInt(1, guild.getId());
+                statement.execute();
+            }
+
+            try (PreparedStatement statement = connection.prepareStatement("UPDATE items SET guild_id = 0 WHERE guild_id = ?")) {
                 statement.setInt(1, guild.getId());
                 statement.execute();
             }
@@ -161,6 +187,10 @@ public class GuildManager {
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
         }
+
+        this.guilds.remove(guild.getId());
+        ForumThread.clearCacheForGuild(guild.getId());
+        GuildForumDataComposer.invalidateUnreadCache(guild.getId());
     }
 
 

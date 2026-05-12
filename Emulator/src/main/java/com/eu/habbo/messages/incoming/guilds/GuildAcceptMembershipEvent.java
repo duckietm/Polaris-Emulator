@@ -29,7 +29,9 @@ public class GuildAcceptMembershipEvent extends MessageHandler {
 
         if (guild != null) {
             GuildMember groupMember = Emulator.getGameEnvironment().getGuildManager().getGuildMember(guild, this.client.getHabbo());
-            if (userId == this.client.getHabbo().getHabboInfo().getId() || guild.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() || groupMember.getRank().equals(GuildRank.ADMIN) || groupMember.getRank().equals(GuildRank.OWNER) || this.client.getHabbo().hasPermission(Permission.ACC_GUILD_ADMIN)) {
+            if (guild.getOwnerId() == this.client.getHabbo().getHabboInfo().getId()
+                || this.client.getHabbo().hasPermission(Permission.ACC_GUILD_ADMIN)
+                || (groupMember != null && (groupMember.getRank().equals(GuildRank.ADMIN) || groupMember.getRank().equals(GuildRank.OWNER)))) {
                 if (habbo != null) {
                     if (habbo.getHabboStats().hasGuild(guild.getId())) {
                         this.client.sendResponse(new GuildAcceptMemberErrorComposer(guild.getId(), GuildAcceptMemberErrorComposer.ALREADY_ACCEPTED));

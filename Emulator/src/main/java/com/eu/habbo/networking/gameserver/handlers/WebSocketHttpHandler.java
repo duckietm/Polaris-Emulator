@@ -8,10 +8,13 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.*;
 import io.netty.util.ReferenceCountUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 
 public class WebSocketHttpHandler extends ChannelInboundHandlerAdapter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketHttpHandler.class);
     private static final String ORIGIN_HEADER = "Origin";
 
     @Override
@@ -27,6 +30,12 @@ public class WebSocketHttpHandler extends ChannelInboundHandlerAdapter {
     }
 
     private boolean handleHttpRequest(ChannelHandlerContext ctx, HttpMessage req) {
+        captureForwardedIp(ctx, req);
+
+        if (!isWebSocketUpgrade(req)) {
+            return true;
+        }
+
         String origin = "error";
 
         try {
@@ -38,27 +47,47 @@ public class WebSocketHttpHandler extends ChannelInboundHandlerAdapter {
 
         String whitelist = Emulator.getConfig().getValue("ws.whitelist", "localhost");
         if (!isWhitelisted(origin, whitelist.split(","))) {
+            LOGGER.warn("WebSocket upgrade rejected — origin '{}' not in ws.whitelist='{}'",
+                    req.headers().get(ORIGIN_HEADER), whitelist);
+
             FullHttpResponse response = new DefaultFullHttpResponse(
                     HttpVersion.HTTP_1_1,
                     HttpResponseStatus.FORBIDDEN,
                     Unpooled.wrappedBuffer("Origin forbidden".getBytes())
             );
+            response.headers().set("Vary", "Origin");
             ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
             return false;
-        }
-
-        String ipHeader = Emulator.getConfig().getValue("ws.ip.header", "");
-        if (!ipHeader.isEmpty() && req.headers().contains(ipHeader)) {
-            String ip = req.headers().get(ipHeader);
-            ctx.channel().attr(GameServerAttributes.WS_IP).set(ip);
         }
 
         return true;
     }
 
+    private static void captureForwardedIp(ChannelHandlerContext ctx, HttpMessage req) {
+        String ipHeader = Emulator.getConfig().getValue("ws.ip.header", "");
+        if (!ipHeader.isEmpty() && req.headers().contains(ipHeader)) {
+            String ip = req.headers().get(ipHeader);
+            ctx.channel().attr(GameServerAttributes.WS_IP).set(ip);
+        }
+    }
+
+    private static boolean isWebSocketUpgrade(HttpMessage req) {
+        String upgrade = req.headers().get(HttpHeaderNames.UPGRADE);
+        if (upgrade == null || !"websocket".equalsIgnoreCase(upgrade)) return false;
+
+        String connection = req.headers().get(HttpHeaderNames.CONNECTION);
+        if (connection == null) return false;
+
+        for (String token : connection.split(",")) {
+            if ("upgrade".equalsIgnoreCase(token.trim())) return true;
+        }
+        return false;
+    }
+
     private static String getDomainNameFromUrl(String url) throws Exception {
         URI uri = new URI(url);
         String domain = uri.getHost();
+        if (domain == null) return "error";
         return domain.startsWith("www.") ? domain.substring(4) : domain;
     }
 

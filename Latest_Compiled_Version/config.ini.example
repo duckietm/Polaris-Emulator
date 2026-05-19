@@ -27,16 +27,6 @@ rcon.host=127.0.0.1
 rcon.port=3001
 rcon.allowed=127.0.0.1;127.0.0.2
 
-#WebSocket Configuration (for Nitro)
-#Set ws.enabled to true to enable WebSocket connections.
-ws.enabled=false
-ws.host=0.0.0.0
-ws.port=2096
-#Comma-separated whitelist of allowed origins. Supports wildcards: *.example.com, * (allow all)
-ws.whitelist=localhost
-#Header name for real client IP when behind a proxy (e.g., X-Forwarded-For, CF-Connecting-IP). Leave empty if not using a proxy.
-ws.ip.header=
-
 # Databse configuration
 db.pool.connection_timeout_ms = 10000
 db.pool.idle_timeout_ms       = 600000
@@ -69,3 +59,12 @@ login.remember.jwt.secret=
 
 # Login news API.
 login.news.limit=5
+
+
+#WebSocket Configuration (for Nitro)
+#Please adjust this setting in the Database !!!!
+### ws.enabled=false
+### ws.host=0.0.0.0
+### ws.port=2096
+### ws.whitelist=localhost #Comma-separated whitelist of allowed origins. Supports wildcards: *.example.com, * (allow all)
+### ws.ip.header=X-Forwarded-For #Header name for real client IP when behind a proxy (e.g., X-Forwarded-For, CF-Connecting-IP). Leave empty if not using a proxy.

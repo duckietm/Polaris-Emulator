@@ -33,6 +33,7 @@ public class RoomUserDataComposer extends MessageComposer {
         this.response.appendString(customizationData.prefixEffect);
         this.response.appendString(customizationData.prefixFont);
         this.response.appendString(customizationData.displayOrder);
+        this.response.appendInt(this.habbo.getHabboInfo().getInfostandBorder());
         return this.response;
     }
 

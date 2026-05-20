@@ -39,5 +39,8 @@ DEALLOCATE PREPARE stmt;
 UPDATE emulator_settings SET `key`='ws.whitelist' WHERE  `key`='websockets.whitelist';
 UPDATE emulator_settings SET `key`='ws.host' WHERE  `key`='ws.nitro.host';
 UPDATE emulator_settings SET `key`='ws.port' WHERE  `key`='ws.nitro.port';
-INSERT emulator_settings (`key`, `value`) VALUES ('ws.ip.header', 'X-Forwarded-For');
-INSERT emulator_settings (`key`, `value`) VALUES ('ws.enabled', 'true');
+INSERT IGNORE INTO emulator_settings (`key`, `value`)
+VALUES ('ws.ip.header', 'X-Forwarded-For');
+
+INSERT IGNORE INTO emulator_settings (`key`, `value`)
+VALUES ('ws.enabled', 'true');

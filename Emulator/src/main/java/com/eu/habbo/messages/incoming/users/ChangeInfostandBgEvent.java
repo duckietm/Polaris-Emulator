@@ -37,6 +37,7 @@ public class ChangeInfostandBgEvent extends MessageHandler {
         int requestedStand = sanitize(this.packet.readInt());
         int requestedOverlay = sanitize(this.packet.readInt());
         int requestedCard = this.packet.bytesAvailable() >= 4 ? sanitize(this.packet.readInt()) : 0;
+        int requestedBorder = this.packet.bytesAvailable() >= 4 ? sanitize(this.packet.readInt()) : 0;
 
         InfostandBackgroundManager manager = Emulator.getGameEnvironment() != null ? Emulator.getGameEnvironment().getInfostandBackgroundManager() : null;
 
@@ -44,11 +45,13 @@ public class ChangeInfostandBgEvent extends MessageHandler {
         int backgroundStand = resolve(manager, habbo, Category.STAND, requestedStand, info.getInfostandStand());
         int backgroundOverlay = resolve(manager, habbo, Category.OVERLAY, requestedOverlay, info.getInfostandOverlay());
         int backgroundCard = resolve(manager, habbo, Category.CARD, requestedCard, info.getInfostandCardBg());
+        int backgroundBorder = resolve(manager, habbo, Category.BORDER, requestedBorder, info.getInfostandBorder());
 
         if (info.getInfostandBg() == backgroundImage
                 && info.getInfostandStand() == backgroundStand
                 && info.getInfostandOverlay() == backgroundOverlay
-                && info.getInfostandCardBg() == backgroundCard) {
+                && info.getInfostandCardBg() == backgroundCard
+                && info.getInfostandBorder() == backgroundBorder) {
             return;
         }
 
@@ -56,6 +59,7 @@ public class ChangeInfostandBgEvent extends MessageHandler {
         info.setInfostandStand(backgroundStand);
         info.setInfostandOverlay(backgroundOverlay);
         info.setInfostandCardBg(backgroundCard);
+        info.setInfostandBorder(backgroundBorder);
         info.run();
 
         if (info.getCurrentRoom() != null) {

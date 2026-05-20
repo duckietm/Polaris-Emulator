@@ -24,7 +24,8 @@ public class InfostandBackgroundManager {
         BACKGROUND("background"),
         STAND("stand"),
         OVERLAY("overlay"),
-        CARD("card");
+        CARD("card"),
+        BORDER("border");
 
         public final String dbValue;
 
@@ -89,11 +90,12 @@ public class InfostandBackgroundManager {
         this.enforce = loaded > 0;
 
         if (this.enforce) {
-            LOGGER.info("InfostandBackgroundManager -> Loaded {} backgrounds, {} stands, {} overlays, {} cards from infostand_backgrounds.",
+            LOGGER.info("InfostandBackgroundManager -> Loaded {} backgrounds, {} stands, {} overlays, {} cards, {} borders from infostand_backgrounds.",
                     this.entries.get(Category.BACKGROUND).size(),
                     this.entries.get(Category.STAND).size(),
                     this.entries.get(Category.OVERLAY).size(),
-                    this.entries.get(Category.CARD).size());
+                    this.entries.get(Category.CARD).size(),
+                    this.entries.get(Category.BORDER).size());
         } else {
             LOGGER.info("InfostandBackgroundManager -> infostand_backgrounds is empty, server-side validation disabled (only range clamp will apply).");
         }

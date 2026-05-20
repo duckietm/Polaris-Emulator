@@ -5,6 +5,7 @@ import com.eu.habbo.messages.PacketManager;
 import com.eu.habbo.networking.gameserver.auth.AuthHttpHandler;
 import com.eu.habbo.networking.gameserver.auth.NitroSecureApiHandler;
 import com.eu.habbo.networking.gameserver.auth.NitroSecureAssetHandler;
+import com.eu.habbo.networking.gameserver.badges.BadgeLeaderboardHttpHandler;
 import com.eu.habbo.networking.gameserver.badges.BadgeHttpHandler;
 import com.eu.habbo.networking.gameserver.codec.WebSocketCodec;
 import com.eu.habbo.networking.gameserver.crypto.WsHandshakeHandler;
@@ -60,6 +61,7 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
         ch.pipeline().addLast("nitroSecureApiHandler", new NitroSecureApiHandler());
         ch.pipeline().addLast("authHttpHandler", new AuthHttpHandler());
         ch.pipeline().addLast("badgeHttpHandler", new BadgeHttpHandler());
+        ch.pipeline().addLast("badgeLeaderboardHttpHandler", new BadgeLeaderboardHttpHandler());
         ch.pipeline().addLast("wsProtocolHandler", new WebSocketServerProtocolHandler(this.wsConfig));
         ch.pipeline().addLast("wsFrameAggregator", new WebSocketFrameAggregator(MAX_FRAME_SIZE));
         ch.pipeline().addLast("wsCodec", new WebSocketCodec());

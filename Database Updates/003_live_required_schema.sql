@@ -23,6 +23,10 @@ SET NAMES utf8mb4;
 ALTER TABLE `emulator_settings`
     ADD COLUMN IF NOT EXISTS `comment` TEXT NULL DEFAULT '' AFTER `value`;
 
+ALTER TABLE catalog_pages
+	ADD COLUMN IF NOT EXISTS `catalog_mode1` ENUM('NORMAL', 'BUILDER', 'BOTH') NOT NULL DEFAULT 'NORMAL' AFTER `includes`;
+
+
 CREATE TABLE IF NOT EXISTS `wired_emulator_settings` (
     `key` VARCHAR(255) NOT NULL,
     `value` TEXT NOT NULL,

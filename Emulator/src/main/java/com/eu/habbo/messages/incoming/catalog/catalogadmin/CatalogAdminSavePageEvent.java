@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.catalog.CatalogPage;
+import com.eu.habbo.habbohotel.catalog.CatalogPageLayouts;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -11,6 +12,14 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 
 public class CatalogAdminSavePageEvent extends MessageHandler {
+
+    private static final int MAX_CAPTION_LENGTH = 128;
+    private static final int MAX_CAPTION_SAVE_LENGTH = 25;
+    private static final int MAX_HEADLINE_LENGTH = 1024;
+    private static final int MAX_TEASER_LENGTH = 64;
+    private static final int MAX_TEXT_LENGTH = 8192;
+    private static final int MAX_PARENT_WALK = 64;
+    private static final int ROOT_PARENT_ID = -1;
 
     @Override
     public void handle() throws Exception {
@@ -34,13 +43,47 @@ public class CatalogAdminSavePageEvent extends MessageHandler {
         String textDetails = this.packet.readString();
         CatalogPageType pageType = CatalogPageType.fromString(this.packet.readString());
         CatalogPageType catalogMode = CatalogPageType.fromString(this.packet.readString());
-
         CatalogPage page = Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(pageId, pageType);
 
         if (page == null) {
             this.client.sendResponse(new CatalogAdminResultComposer(false, "Page not found: " + pageId));
             return;
         }
+
+        try {
+            CatalogPageLayouts.valueOf(layout);
+        } catch (IllegalArgumentException | NullPointerException e) {
+            this.client.sendResponse(new CatalogAdminResultComposer(false, "Invalid layout: " + layout));
+            return;
+        }
+
+        if (parentId != ROOT_PARENT_ID) {
+            if (parentId == pageId) {
+                this.client.sendResponse(new CatalogAdminResultComposer(false, "A page cannot be its own parent"));
+                return;
+            }
+
+            CatalogPage parent = Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(parentId);
+            if (parent == null) {
+                this.client.sendResponse(new CatalogAdminResultComposer(false, "Parent page not found: " + parentId));
+                return;
+            }
+
+            if (this.wouldCreateCycle(pageId, parentId)) {
+                this.client.sendResponse(new CatalogAdminResultComposer(false, "Refusing to re-parent: that would create a cycle"));
+                return;
+            }
+        }
+
+        if (iconType < 0) iconType = 0;
+        if (minRank < 1) minRank = 1;
+        if (orderNum < 0) orderNum = 0;
+
+        caption = this.clampLength(caption, MAX_CAPTION_LENGTH);
+        caption2 = this.clampLength(caption2, MAX_CAPTION_SAVE_LENGTH);
+        headline = this.clampLength(headline, MAX_HEADLINE_LENGTH);
+        teaser = this.clampLength(teaser, MAX_TEASER_LENGTH);
+        textDetails = this.clampLength(textDetails, MAX_TEXT_LENGTH);
 
         String query = (pageType == CatalogPageType.BUILDER)
                 ? "UPDATE catalog_pages_bc SET caption = ?, page_layout = ?, icon_image = ?, visible = ?, enabled = ?, order_num = ?, parent_id = ?, page_headline = ?, page_teaser = ?, page_text_details = ? WHERE id = ?"
@@ -81,5 +124,23 @@ public class CatalogAdminSavePageEvent extends MessageHandler {
         }
 
         this.client.sendResponse(new CatalogAdminResultComposer(true, "Page saved"));
+    }
+
+    private boolean wouldCreateCycle(int pageId, int parentId) {
+        int current = parentId;
+        for (int hops = 0; hops < MAX_PARENT_WALK; hops++) {
+            if (current == ROOT_PARENT_ID) return false;
+            if (current == pageId) return true;
+            CatalogPage parent = Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(current);
+            if (parent == null) return false;
+            current = parent.getParentId();
+        }
+        return true;
+    }
+
+    private String clampLength(String value, int max) {
+        if (value == null) return "";
+        if (value.length() <= max) return value;
+        return value.substring(0, max);
     }
 }

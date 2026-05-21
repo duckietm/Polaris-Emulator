@@ -41,6 +41,7 @@ public class CatalogPagesListComposer extends MessageComposer {
             this.response.appendBoolean(true);
             this.response.appendInt(0);
             this.response.appendInt(-1);
+            this.response.appendInt(-1);
             this.response.appendString("root");
             this.response.appendString("");
             this.response.appendInt(0);
@@ -68,7 +69,8 @@ public class CatalogPagesListComposer extends MessageComposer {
 
         this.response.appendBoolean(category.isVisible());
         this.response.appendInt(category.getIconImage());
-        this.response.appendInt(category.isEnabled() ? category.getId() : -1);
+        this.response.appendInt(category.isEnabled() || this.hasPermission ? category.getId() : -1);
+        this.response.appendInt(category.getParentId());
         this.response.appendString(category.getPageName());
         this.response.appendString(category.getCaption() + (this.hasPermission ? " (" + category.getId() + ")" : ""));
 

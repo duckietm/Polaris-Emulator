@@ -36,8 +36,21 @@ public class CatalogAdminCreatePageEvent extends MessageHandler {
             pageLayout = CatalogPageLayouts.default_3x3;
         }
 
+        if (parentId != -1 && Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(parentId) == null) {
+            this.client.sendResponse(new CatalogAdminResultComposer(false, "Parent page not found: " + parentId));
+            return;
+        }
+
+        if (iconType < 0) iconType = 0;
+        if (minRank < 1) minRank = 1;
+        if (orderNum < 0) orderNum = 0;
+        if (caption == null) caption = "";
+        if (caption2 == null) caption2 = "";
+        if (caption.length() > 128) caption = caption.substring(0, 128);
+        if (caption2.length() > 25) caption2 = caption2.substring(0, 25);
+
         CatalogPage page = Emulator.getGameEnvironment().getCatalogManager().createCatalogPage(
-            caption, caption2, 0, iconType, pageLayout, minRank, parentId, pageType, catalogMode
+                caption, caption2, 0, iconType, pageLayout, minRank, parentId, pageType, catalogMode
         );
 
         if (page == null) {

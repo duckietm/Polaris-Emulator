@@ -14,28 +14,30 @@ public class GameUpCounter implements Runnable {
 
     @Override
     public void run() {
+        timer.setThreadActive(false);
+
         if (timer.getRoomId() == 0) {
             timer.setRunning(false);
-            timer.setThreadActive(false);
             return;
         }
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(timer.getRoomId());
 
         if (room == null || !timer.isRunning() || timer.isPaused()) {
-            timer.setThreadActive(false);
             return;
         }
 
         int tickDelayMs = (int) timer.getNextTickDelayMs();
         timer.advanceCounterInMs(tickDelayMs);
-        WiredManager.triggerClockCounter(room, timer);
+        if (timer.getCurrentTimeInMs() % 1000 == 0) {
+            WiredManager.triggerClockCounter(room, timer);
+        }
 
         if (timer.getCurrentTimeInMs() < timer.getMaximumTimeInMs()) {
-            timer.setThreadActive(true);
-            Emulator.getThreading().run(this, timer.getNextTickDelayMs());
+            if (timer.tryActivateTimerThread()) {
+                Emulator.getThreading().run(this, timer.getNextTickDelayMs());
+            }
         } else {
-            timer.setThreadActive(false);
             timer.setCurrentTimeInMs(timer.getMaximumTimeInMs());
             timer.endGame(room);
             WiredManager.triggerGameEnds(room);

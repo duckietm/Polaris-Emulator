@@ -22,6 +22,9 @@ public class BotFollowHabbo implements Runnable {
 
     @Override
     public void run() {
+        if (this.bot == null || this.bot.getRoom() == null || this.bot.getRoom() != this.room) {
+            return;
+        }
         if (this.bot != null) {
             if (this.habbo != null && this.bot.getFollowingHabboId() == this.habbo.getHabboInfo().getId()) {
                 if (this.habbo.getHabboInfo().getCurrentRoom() != null && this.habbo.getHabboInfo().getCurrentRoom() == this.room) {

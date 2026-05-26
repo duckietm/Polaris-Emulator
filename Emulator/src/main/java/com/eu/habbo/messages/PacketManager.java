@@ -2,6 +2,7 @@ package com.eu.habbo.messages;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.monitoring.EmulatorNetworkStats;
 import com.eu.habbo.messages.incoming.Incoming;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.incoming.achievements.RequestAchievementConfigurationEvent;
@@ -180,6 +181,8 @@ public class PacketManager {
             return;
 
         try {
+            EmulatorNetworkStats.recordIncoming(packet.bytesAvailable() + 6);
+
             if (this.isRegistered(packet.getMessageId())) {
                 Class<? extends MessageHandler> handlerClass = this.incoming.get(packet.getMessageId());
 

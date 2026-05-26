@@ -196,6 +196,7 @@ public class CommandHandler {
         addCommand(new EmptyInventoryCommand());
         addCommand(new EmptyBotsInventoryCommand());
         addCommand(new EmptyPetsInventoryCommand());
+        addCommand(new EmuStatsCommand());
         addCommand(new EnableCommand());
         addCommand(new EventCommand());
         addCommand(new FacelessCommand());

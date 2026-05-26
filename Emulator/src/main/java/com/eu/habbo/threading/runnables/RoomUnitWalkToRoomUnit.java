@@ -38,6 +38,10 @@ public class RoomUnitWalkToRoomUnit implements Runnable {
 
     @Override
     public void run() {
+        if (this.room == null || !this.room.isLoaded() || this.walker == null || this.target == null) {
+            return;
+        }
+
         if (this.goalTile == null) {
             this.findNewLocation();
             Emulator.getThreading().run(this, 500);
@@ -48,9 +52,8 @@ public class RoomUnitWalkToRoomUnit implements Runnable {
             if (this.walker.getCurrentLocation().distance(this.goalTile) <= this.minDistance) {
                 for (Runnable r : this.targetReached) {
                     Emulator.getThreading().run(r);
-
-                    WiredManager.triggerBotReachedHabbo(this.room, this.walker, this.target);
                 }
+                WiredManager.triggerBotReachedHabbo(this.room, this.walker, this.target);
             } else {
                 Emulator.getThreading().run(this, 500);
             }

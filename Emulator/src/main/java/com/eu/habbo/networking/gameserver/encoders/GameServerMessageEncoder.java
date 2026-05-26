@@ -1,5 +1,6 @@
 package com.eu.habbo.networking.gameserver.encoders;
 
+import com.eu.habbo.monitoring.EmulatorNetworkStats;
 import com.eu.habbo.messages.ServerMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -16,6 +17,7 @@ public class GameServerMessageEncoder extends MessageToByteEncoder<ServerMessage
             ByteBuf buf = message.get();
 
             try {
+                EmulatorNetworkStats.recordOutgoing(buf.readableBytes());
                 out.writeBytes(buf);
             } finally {
                 // Release copied buffer.

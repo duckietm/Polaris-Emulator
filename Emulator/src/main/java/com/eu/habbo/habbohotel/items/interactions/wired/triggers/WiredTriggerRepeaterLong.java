@@ -123,7 +123,11 @@ public class WiredTriggerRepeaterLong extends InteractionWiredTrigger implements
     @Override
     public boolean saveData(WiredSettings settings) {
         if (settings.getIntParams().length < 1) return false;
-        this.repeatTime = settings.getIntParams()[0] * 5000;
+        int interval = settings.getIntParams()[0];
+        if (interval < 1) {
+            interval = 1;
+        }
+        this.repeatTime = interval * 5000;
         // No accumulated time reset needed - using global tick count
         return true;
     }

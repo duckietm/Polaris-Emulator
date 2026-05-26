@@ -71,27 +71,12 @@ public final class RoomWiredStackIndex implements WiredStackIndex {
             return Collections.emptyList();
         }
 
-        // Check cache first
         if (useCache) {
-            Map<WiredEvent.Type, List<WiredStack>> roomCache = cache.get(room.getId());
-            if (roomCache != null) {
-                List<WiredStack> cached = roomCache.get(type);
-                if (cached != null) {
-                    return cached;
-                }
-            }
+            return cache.computeIfAbsent(room.getId(), k -> new ConcurrentHashMap<>())
+                    .computeIfAbsent(type, t -> buildStacks(room, t));
+        } else {
+            return buildStacks(room, type);
         }
-
-        // Build stacks for this event type
-        List<WiredStack> stacks = buildStacks(room, type);
-
-        // Cache the result
-        if (useCache) {
-            cache.computeIfAbsent(room.getId(), k -> new ConcurrentHashMap<>())
-                    .put(type, stacks);
-        }
-
-        return stacks;
     }
 
     @Override
@@ -206,16 +191,27 @@ public final class RoomWiredStackIndex implements WiredStackIndex {
         THashSet<InteractionWiredExtra> extras = specialTypes.getExtras(x, y);
         int conditionEvaluationMode = WiredExtraOrEval.MODE_ALL;
         int conditionEvaluationValue = 1;
-        boolean useRandom = specialTypes.hasExtraType(x, y, WiredExtraRandom.class);
-        boolean useUnseen = specialTypes.hasExtraType(x, y, WiredExtraUnseen.class);
-        boolean executeInOrder = specialTypes.hasExtraType(x, y, WiredExtraExecuteInOrder.class);
+        boolean useRandom = false;
+        boolean useUnseen = false;
+        boolean executeInOrder = false;
 
         if (extras != null) {
             for (InteractionWiredExtra extra : extras) {
+                if (!useRandom && extra instanceof WiredExtraRandom) {
+                    useRandom = true;
+                }
+
+                if (!useUnseen && extra instanceof WiredExtraUnseen) {
+                    useUnseen = true;
+                }
+
+                if (!executeInOrder && extra instanceof WiredExtraExecuteInOrder) {
+                    executeInOrder = true;
+                }
+
                 if (extra instanceof WiredExtraOrEval) {
                     conditionEvaluationMode = ((WiredExtraOrEval) extra).getEvaluationMode();
                     conditionEvaluationValue = ((WiredExtraOrEval) extra).getCompareValue();
-                    break;
                 }
             }
         }

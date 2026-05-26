@@ -71,6 +71,24 @@ public class RoomUnitManager {
      */
     public void clear() {
         synchronized (this.room.roomUnitLock) {
+            for (Habbo habbo : this.currentHabbos.values()) {
+                if (habbo.getRoomUnit() != null) {
+                    WiredMoveCarryHelper.cleanupRoomUnit(habbo.getRoomUnit());
+                    WiredUserMovementHelper.cleanupRoomUnit(habbo.getRoomUnit());
+                }
+            }
+            for (Bot bot : this.currentBots.valueCollection()) {
+                if (bot.getRoomUnit() != null) {
+                    WiredMoveCarryHelper.cleanupRoomUnit(bot.getRoomUnit());
+                    WiredUserMovementHelper.cleanupRoomUnit(bot.getRoomUnit());
+                }
+            }
+            for (Pet pet : this.currentPets.valueCollection()) {
+                if (pet.getRoomUnit() != null) {
+                    WiredMoveCarryHelper.cleanupRoomUnit(pet.getRoomUnit());
+                    WiredUserMovementHelper.cleanupRoomUnit(pet.getRoomUnit());
+                }
+            }
             this.unitCounter = 0;
             this.currentHabbos.clear();
             this.currentPets.clear();
@@ -222,6 +240,8 @@ public class RoomUnitManager {
         }
 
         if (habbo.getRoomUnit() != null) {
+            WiredMoveCarryHelper.cleanupRoomUnit(habbo.getRoomUnit());
+            WiredUserMovementHelper.cleanupRoomUnit(habbo.getRoomUnit());
             WiredManager.triggerUserLeavesRoom(this.room, habbo.getRoomUnit());
             if (WiredFreezeUtil.isFrozen(habbo.getRoomUnit())) {
                 WiredFreezeUtil.unfreeze(this.room, habbo.getRoomUnit());
@@ -646,14 +666,22 @@ public class RoomUnitManager {
     public boolean removeBot(Bot bot) {
         synchronized (this.currentBots) {
             if (this.currentBots.containsKey(bot.getId())) {
-                if (bot.getRoomUnit() != null && bot.getRoomUnit().getCurrentLocation() != null) {
-                    bot.getRoomUnit().getCurrentLocation().removeUnit(bot.getRoomUnit());
+                if (bot.getRoomUnit() != null) {
+                    WiredMoveCarryHelper.cleanupRoomUnit(bot.getRoomUnit());
+                    WiredUserMovementHelper.cleanupRoomUnit(bot.getRoomUnit());
+                    if (bot.getRoomUnit().getCurrentLocation() != null) {
+                        bot.getRoomUnit().getCurrentLocation().removeUnit(bot.getRoomUnit());
+                    }
                 }
 
                 this.currentBots.remove(bot.getId());
-                bot.getRoomUnit().setInRoom(false);
+                if (bot.getRoomUnit() != null) {
+                    bot.getRoomUnit().setInRoom(false);
+                }
                 bot.setRoom(null);
-                this.room.sendComposer(new RoomUserRemoveComposer(bot.getRoomUnit()).compose());
+                if (bot.getRoomUnit() != null) {
+                    this.room.sendComposer(new RoomUserRemoveComposer(bot.getRoomUnit()).compose());
+                }
                 bot.setRoomUnit(null);
                 return true;
             }
@@ -876,7 +904,12 @@ public class RoomUnitManager {
      * Removes a Pet from the room.
      */
     public Pet removePet(int petId) {
-        return this.currentPets.remove(petId);
+        Pet pet = this.currentPets.remove(petId);
+        if (pet != null && pet.getRoomUnit() != null) {
+            WiredMoveCarryHelper.cleanupRoomUnit(pet.getRoomUnit());
+            WiredUserMovementHelper.cleanupRoomUnit(pet.getRoomUnit());
+        }
+        return pet;
     }
 
     /**
@@ -1454,6 +1487,24 @@ public class RoomUnitManager {
     }
 
     public void dispose() {
+        for (Habbo habbo : this.currentHabbos.values()) {
+            if (habbo.getRoomUnit() != null) {
+                WiredMoveCarryHelper.cleanupRoomUnit(habbo.getRoomUnit());
+                WiredUserMovementHelper.cleanupRoomUnit(habbo.getRoomUnit());
+            }
+        }
+        for (Bot bot : this.currentBots.valueCollection()) {
+            if (bot.getRoomUnit() != null) {
+                WiredMoveCarryHelper.cleanupRoomUnit(bot.getRoomUnit());
+                WiredUserMovementHelper.cleanupRoomUnit(bot.getRoomUnit());
+            }
+        }
+        for (Pet pet : this.currentPets.valueCollection()) {
+            if (pet.getRoomUnit() != null) {
+                WiredMoveCarryHelper.cleanupRoomUnit(pet.getRoomUnit());
+                WiredUserMovementHelper.cleanupRoomUnit(pet.getRoomUnit());
+            }
+        }
         this.currentHabbos.clear();
         this.currentBots.clear();
         this.currentPets.clear();

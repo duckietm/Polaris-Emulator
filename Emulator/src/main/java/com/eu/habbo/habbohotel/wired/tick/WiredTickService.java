@@ -60,11 +60,15 @@ public final class WiredTickService {
     /** Whether a shard worker loop is currently scheduled/running. */
     private AtomicBoolean[] shardScheduled;
 
-    private final ConcurrentHashMap<Integer, Set<WiredTickable>> roomTickables;
+    private final ConcurrentHashMap<Integer, Set<WiredTickable>>[] shardRoomTickables;
     private final AtomicBoolean running;
 
+    @SuppressWarnings("unchecked")
     private WiredTickService() {
-        this.roomTickables = new ConcurrentHashMap<>();
+        this.shardRoomTickables = new ConcurrentHashMap[MAX_WORKER_COUNT];
+        for (int i = 0; i < MAX_WORKER_COUNT; i++) {
+            this.shardRoomTickables[i] = new ConcurrentHashMap<>();
+        }
         this.running = new AtomicBoolean(false);
     }
 
@@ -232,7 +236,9 @@ public final class WiredTickService {
         shardProcessedTicks = null;
         shardScheduled = null;
 
-        roomTickables.clear();
+        for (int i = 0; i < MAX_WORKER_COUNT; i++) {
+            shardRoomTickables[i].clear();
+        }
         LOGGER.info("WiredTickService stopped");
     }
 
@@ -246,7 +252,8 @@ public final class WiredTickService {
         }
 
         int roomId = room.getId();
-        Set<WiredTickable> tickables = roomTickables.computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet());
+        int shardIndex = getShardIndex(roomId);
+        Set<WiredTickable> tickables = shardRoomTickables[shardIndex].computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet());
 
         if (tickables.add(tickable)) {
             tickable.onRegistered(room, System.currentTimeMillis());
@@ -259,7 +266,8 @@ public final class WiredTickService {
         }
 
         int roomId = room.getId();
-        Set<WiredTickable> tickables = roomTickables.get(roomId);
+        int shardIndex = getShardIndex(roomId);
+        Set<WiredTickable> tickables = shardRoomTickables[shardIndex].get(roomId);
 
         if (tickables != null) {
             if (tickables.remove(tickable)) {
@@ -267,13 +275,14 @@ public final class WiredTickService {
             }
 
             if (tickables.isEmpty()) {
-                roomTickables.remove(roomId);
+                shardRoomTickables[shardIndex].remove(roomId);
             }
         }
     }
 
     public void unregister(int roomId, int tickableId) {
-        Set<WiredTickable> tickables = roomTickables.get(roomId);
+        int shardIndex = getShardIndex(roomId);
+        Set<WiredTickable> tickables = shardRoomTickables[shardIndex].get(roomId);
 
         if (tickables != null) {
             tickables.removeIf(t -> {
@@ -288,7 +297,7 @@ public final class WiredTickService {
             });
 
             if (tickables.isEmpty()) {
-                roomTickables.remove(roomId);
+                shardRoomTickables[shardIndex].remove(roomId);
             }
         }
     }
@@ -298,11 +307,12 @@ public final class WiredTickService {
             return;
         }
 
-        Set<WiredTickable> tickables = roomTickables.remove(room.getId());
+        int roomId = room.getId();
+        int shardIndex = getShardIndex(roomId);
+        Set<WiredTickable> tickables = shardRoomTickables[shardIndex].remove(roomId);
 
         if (tickables != null) {
-            WiredTickable[] snapshot = tickables.toArray(new WiredTickable[0]);
-            for (WiredTickable tickable : snapshot) {
+            for (WiredTickable tickable : tickables) {
                 try {
                     if (tickable != null) {
                         tickable.onUnregistered(room);
@@ -316,7 +326,7 @@ public final class WiredTickService {
                     );
                 }
             }
-            LOGGER.debug("Unregistered {} tickables from room {}", snapshot.length, room.getId());
+            LOGGER.debug("Unregistered {} tickables from room {}", tickables.size(), room.getId());
         }
     }
 
@@ -325,11 +335,12 @@ public final class WiredTickService {
             return;
         }
 
-        Set<WiredTickable> tickables = roomTickables.get(room.getId());
+        int roomId = room.getId();
+        int shardIndex = getShardIndex(roomId);
+        Set<WiredTickable> tickables = shardRoomTickables[shardIndex].get(roomId);
 
         if (tickables != null) {
-            WiredTickable[] snapshot = tickables.toArray(new WiredTickable[0]);
-            for (WiredTickable tickable : snapshot) {
+            for (WiredTickable tickable : tickables) {
                 try {
                     if (tickable != null) {
                         tickable.resetTimer();
@@ -347,16 +358,25 @@ public final class WiredTickService {
     }
 
     public int getTickableCount(int roomId) {
-        Set<WiredTickable> tickables = roomTickables.get(roomId);
+        int shardIndex = getShardIndex(roomId);
+        Set<WiredTickable> tickables = shardRoomTickables[shardIndex].get(roomId);
         return tickables != null ? tickables.size() : 0;
     }
 
     public int getTotalTickableCount() {
-        return roomTickables.values().stream().mapToInt(Set::size).sum();
+        int count = 0;
+        for (int i = 0; i < MAX_WORKER_COUNT; i++) {
+            count += shardRoomTickables[i].values().stream().mapToInt(Set::size).sum();
+        }
+        return count;
     }
 
     public int getActiveRoomCount() {
-        return roomTickables.size();
+        int count = 0;
+        for (int i = 0; i < MAX_WORKER_COUNT; i++) {
+            count += shardRoomTickables[i].size();
+        }
+        return count;
     }
 
     public long getTickCount() {
@@ -396,6 +416,12 @@ public final class WiredTickService {
                     break;
                 }
 
+                // If lagging by more than 5 ticks (250ms), skip intermediate ticks to avoid CPU starvation
+                if (requestedTick - nextTick > 5) {
+                    nextTick = requestedTick - 5;
+                    shardProcessedTicks[shardIndex].set(nextTick);
+                }
+
                 processShardTick(shardIndex, nextTick);
                 shardProcessedTicks[shardIndex].set(nextTick);
             }
@@ -414,12 +440,8 @@ public final class WiredTickService {
         int processedTickables = 0;
         int processedRooms = 0;
 
-        for (Map.Entry<Integer, Set<WiredTickable>> entry : roomTickables.entrySet()) {
+        for (Map.Entry<Integer, Set<WiredTickable>> entry : shardRoomTickables[shardIndex].entrySet()) {
             int roomId = entry.getKey();
-            if (getShardIndex(roomId) != shardIndex) {
-                continue;
-            }
-
             Set<WiredTickable> tickables = entry.getValue();
             if (tickables == null || tickables.isEmpty()) {
                 continue;
@@ -435,14 +457,9 @@ public final class WiredTickService {
             }
 
             long roomStart = System.currentTimeMillis();
-            WiredTickable[] snapshot = tickables.toArray(new WiredTickable[0]);
-            if (snapshot.length == 0) {
-                continue;
-            }
-
             processedRooms++;
 
-            for (WiredTickable tickable : snapshot) {
+            for (WiredTickable tickable : tickables) {
                 long tickableStart = System.currentTimeMillis();
 
                 if (tickable == null) {
@@ -489,7 +506,7 @@ public final class WiredTickService {
                         shardIndex,
                         roomId,
                         currentTick,
-                        snapshot.length,
+                        tickables.size(),
                         roomDuration
                 );
             }

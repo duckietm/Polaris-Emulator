@@ -38,6 +38,7 @@ public class HabboManager {
 
     private final ConcurrentHashMap<Integer, Habbo> onlineHabbos;
     private final ConcurrentHashMap<String, Habbo> onlineHabbosByName;
+    private final ConcurrentHashMap<Integer, String> usernameCache = new ConcurrentHashMap<>();
 
     public HabboManager() {
         long millis = System.currentTimeMillis();
@@ -156,6 +157,26 @@ public class HabboManager {
             return getOfflineHabboInfo(id);
         }
         return this.getHabbo(id).getHabboInfo();
+    }
+
+    public String getCachedUsername(int id) {
+        String cached = this.usernameCache.get(id);
+        if (cached != null) return cached;
+
+        Habbo online = this.getHabbo(id);
+        if (online != null) {
+            String name = online.getHabboInfo().getUsername();
+            this.usernameCache.put(id, name);
+            return name;
+        }
+
+        HabboInfo offline = getOfflineHabboInfo(id);
+        if (offline != null) {
+            String name = offline.getUsername();
+            this.usernameCache.put(id, name);
+            return name;
+        }
+        return "Unknown";
     }
 
     public int getOnlineCount() {

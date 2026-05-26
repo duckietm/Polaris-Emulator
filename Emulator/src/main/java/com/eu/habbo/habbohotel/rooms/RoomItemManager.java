@@ -148,55 +148,8 @@ public class RoomItemManager {
             item = this.roomItems.get(id);
         }
 
-        // Check special types if not found in main storage
-        RoomSpecialTypes specialTypes = this.room.getRoomSpecialTypes();
-
         if (item == null) {
-            item = specialTypes.getBanzaiTeleporter(id);
-        }
-
-        if (item == null) {
-            item = specialTypes.getTrigger(id);
-        }
-
-        if (item == null) {
-            item = specialTypes.getEffect(id);
-        }
-
-        if (item == null) {
-            item = specialTypes.getCondition(id);
-        }
-
-        if (item == null) {
-            item = specialTypes.getGameGate(id);
-        }
-
-        if (item == null) {
-            item = specialTypes.getGameScorebord(id);
-        }
-
-        if (item == null) {
-            item = specialTypes.getGameTimer(id);
-        }
-
-        if (item == null) {
-            item = specialTypes.getFreezeExitTiles().get(id);
-        }
-
-        if (item == null) {
-            item = specialTypes.getRoller(id);
-        }
-
-        if (item == null) {
-            item = specialTypes.getNest(id);
-        }
-
-        if (item == null) {
-            item = specialTypes.getPetDrink(id);
-        }
-
-        if (item == null) {
-            item = specialTypes.getPetFood(id);
+            item = this.room.getRoomSpecialTypes().getSpecialItem(id);
         }
 
         return item;
@@ -726,7 +679,7 @@ public class RoomItemManager {
                     item instanceof WiredBlob ||
                     item instanceof InteractionTent ||
                     item instanceof InteractionSnowboardSlope ||
-                    item instanceof InteractionFireworks) {
+                    item instanceof InteractionFireworks || item instanceof InteractionVoteCounter) {
                 specialTypes.addUndefined(item);
             }
         }
@@ -899,7 +852,7 @@ public class RoomItemManager {
                 item instanceof InteractionStickyPole ||
                 item instanceof WiredBlob ||
                 item instanceof InteractionTent ||
-                item instanceof InteractionSnowboardSlope) {
+                item instanceof InteractionSnowboardSlope || item instanceof InteractionVoteCounter) {
             specialTypes.removeUndefined(item);
         }
 

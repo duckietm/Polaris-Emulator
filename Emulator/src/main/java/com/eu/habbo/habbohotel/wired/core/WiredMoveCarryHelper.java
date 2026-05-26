@@ -1105,4 +1105,11 @@ public final class WiredMoveCarryHelper {
             this.expiresAt = System.currentTimeMillis() + USER_FOLLOWER_TTL_MS;
         }
     }
+
+    public static void cleanupRoomUnit(RoomUnit roomUnit) {
+        if (roomUnit != null) {
+            SUPPRESSED_STATUS_COMPOSER_UNTIL.remove(roomUnit.getId());
+            ACTIVE_USER_FOLLOWERS.remove(roomUnit.getId());
+        }
+    }
 }

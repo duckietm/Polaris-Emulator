@@ -43,6 +43,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -89,11 +90,11 @@ public class WiredHandler {
         long millis = System.currentTimeMillis();
         List<LegacyExecutionPlan> executionPlans = new ArrayList<>();
 
-        List<RoomTile> triggeredTiles = new ArrayList<>();
+        LinkedHashSet<Long> triggeredTiles = new LinkedHashSet<>();
         for (InteractionWiredTrigger trigger : triggers) {
-            RoomTile tile = room.getLayout().getTile(trigger.getX(), trigger.getY());
+            long coordinateKey = toTileCoordinateKey(trigger.getX(), trigger.getY());
 
-            if (triggeredTiles.contains(tile))
+            if (!triggeredTiles.add(coordinateKey))
                 continue;
 
             LegacyExecutionPlan executionPlan = new LegacyExecutionPlan();
@@ -103,8 +104,6 @@ public class WiredHandler {
 
                 if (triggerType.equals(WiredTriggerType.SAY_SOMETHING))
                     talked = true;
-
-                triggeredTiles.add(tile);
             }
         }
 
@@ -139,20 +138,19 @@ public class WiredHandler {
         long millis = System.currentTimeMillis();
         List<LegacyExecutionPlan> executionPlans = new ArrayList<>();
 
-        List<RoomTile> triggeredTiles = new ArrayList<>();
+        LinkedHashSet<Long> triggeredTiles = new LinkedHashSet<>();
         for (InteractionWiredTrigger trigger : triggers) {
             if (trigger.getClass() != triggerType) continue;
 
-            RoomTile tile = room.getLayout().getTile(trigger.getX(), trigger.getY());
+            long coordinateKey = toTileCoordinateKey(trigger.getX(), trigger.getY());
 
-            if (triggeredTiles.contains(tile))
+            if (!triggeredTiles.add(coordinateKey))
                 continue;
 
             LegacyExecutionPlan executionPlan = new LegacyExecutionPlan();
 
             if (handle(trigger, roomUnit, room, stuff, executionPlan)) {
                 executionPlans.add(executionPlan);
-                triggeredTiles.add(tile);
             }
         }
 
@@ -187,6 +185,11 @@ public class WiredHandler {
             WiredExtraExecutionLimit executionLimitExtra = null;
             WiredExtraRandom randomExtra = null;
 
+            int conditionEvaluationMode = WiredExtraOrEval.MODE_ALL;
+            int conditionEvaluationValue = 1;
+            boolean hasExtraUnseen = false;
+            boolean hasExtraExecuteInOrder = false;
+
             for (InteractionWiredExtra extra : extras) {
                 if (executionLimitExtra == null && extra instanceof WiredExtraExecutionLimit) {
                     executionLimitExtra = (WiredExtraExecutionLimit) extra;
@@ -195,18 +198,22 @@ public class WiredHandler {
                 if (randomExtra == null && extra instanceof WiredExtraRandom) {
                     randomExtra = (WiredExtraRandom) extra;
                 }
+
+                if (!hasExtraUnseen && extra instanceof WiredExtraUnseen) {
+                    hasExtraUnseen = true;
+                }
+
+                if (!hasExtraExecuteInOrder && extra instanceof WiredExtraExecuteInOrder) {
+                    hasExtraExecuteInOrder = true;
+                }
+
+                if (extra instanceof WiredExtraOrEval) {
+                    conditionEvaluationMode = ((WiredExtraOrEval) extra).getEvaluationMode();
+                    conditionEvaluationValue = ((WiredExtraOrEval) extra).getCompareValue();
+                }
             }
 
             if (!conditions.isEmpty()) {
-                int conditionEvaluationMode = WiredExtraOrEval.MODE_ALL;
-                int conditionEvaluationValue = 1;
-                for (InteractionWiredExtra extra : extras) {
-                    if (extra instanceof WiredExtraOrEval) {
-                        conditionEvaluationMode = ((WiredExtraOrEval) extra).getEvaluationMode();
-                        conditionEvaluationValue = ((WiredExtraOrEval) extra).getCompareValue();
-                        break;
-                    }
-                }
 
                 if (!evaluateConditions(conditions, roomUnit, room, stuff, conditionEvaluationMode, conditionEvaluationValue)) {
                     for (InteractionWiredCondition condition : conditions) {
@@ -230,9 +237,6 @@ public class WiredHandler {
 
             trigger.setCooldown(millis);
 
-            boolean hasExtraUnseen = room.getRoomSpecialTypes().hasExtraType(trigger.getX(), trigger.getY(), WiredExtraUnseen.class);
-            boolean hasExtraExecuteInOrder = room.getRoomSpecialTypes().hasExtraType(trigger.getX(), trigger.getY(), WiredExtraExecuteInOrder.class);
-
             for (InteractionWiredExtra extra : extras) {
                 extra.activateBox(room, roomUnit, millis);
             }
@@ -244,7 +248,7 @@ public class WiredHandler {
             executionPlan.executeInOrder = hasExtraExecuteInOrder;
 
             if (hasExtraUnseen) {
-                for (InteractionWiredExtra extra : room.getRoomSpecialTypes().getExtras(trigger.getX(), trigger.getY())) {
+                for (InteractionWiredExtra extra : extras) {
                     if (extra instanceof WiredExtraUnseen) {
                         extra.setExtradata(extra.getExtradata().equals("1") ? "0" : "1");
                         InteractionWiredEffect effect = ((WiredExtraUnseen) extra).getUnseenEffect(effectList);
@@ -357,20 +361,14 @@ public class WiredHandler {
             }
         }
 
-        LinkedHashSet<Integer> delays = new LinkedHashSet<>();
+        Map<Integer, List<InteractionWiredEffect>> delayBatches = new LinkedHashMap<>();
         for (InteractionWiredEffect effect : queueableEffects) {
-            delays.add(effect.getDelay());
+            delayBatches.computeIfAbsent(effect.getDelay(), ignored -> new ArrayList<>()).add(effect);
         }
 
-        for (Integer delay : delays) {
-            List<InteractionWiredEffect> delayBatch = new ArrayList<>();
-
-            for (InteractionWiredEffect effect : queueableEffects) {
-                if (effect.getDelay() == delay) {
-                    delayBatch.add(effect);
-                }
-            }
-
+        for (Map.Entry<Integer, List<InteractionWiredEffect>> entry : delayBatches.entrySet()) {
+            Integer delay = entry.getKey();
+            List<InteractionWiredEffect> delayBatch = entry.getValue();
             if (delayBatch.isEmpty()) {
                 continue;
             }
@@ -424,9 +422,17 @@ public class WiredHandler {
 
     public static GsonBuilder getGsonBuilder() {
         if(gsonBuilder == null) {
-            gsonBuilder = new GsonBuilder();
+            synchronized (WiredHandler.class) {
+                if (gsonBuilder == null) {
+                    gsonBuilder = new GsonBuilder();
+                }
+            }
         }
         return gsonBuilder;
+    }
+
+    private static long toTileCoordinateKey(int x, int y) {
+        return (((long) x) << 32) | (y & 0xffffffffL);
     }
 
     public static boolean executeEffectsAtTiles(THashSet<RoomTile> tiles, final RoomUnit roomUnit, final Room room, final Object[] stuff) {
@@ -470,7 +476,7 @@ public class WiredHandler {
 
     private static void completeReward(Habbo habbo, WiredEffectGiveReward wiredBox, WiredGiveRewardItem reward, int successCode) {
         if (wiredBox.limit > 0)
-            wiredBox.given++;
+            wiredBox.incrementGiven();
 
         persistReward(wiredBox.getId(), habbo.getHabboInfo().getId(), reward.id, Emulator.getIntUnixTimestamp());
         habbo.getClient().sendResponse(new WiredRewardAlertComposer(successCode));
@@ -569,93 +575,124 @@ public class WiredHandler {
 
     public static boolean getReward(Habbo habbo, WiredEffectGiveReward wiredBox) {
         if (wiredBox.limit > 0) {
-            if (wiredBox.limit - wiredBox.given == 0) {
+            if (wiredBox.limit - wiredBox.getGiven() == 0) {
                 habbo.getClient().sendResponse(new WiredRewardAlertComposer(WiredRewardAlertComposer.LIMITED_NO_MORE_AVAILABLE));
                 return false;
             }
         }
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) as row_count, wired_rewards_given.* FROM wired_rewards_given WHERE user_id = ? AND wired_item = ? ORDER BY timestamp DESC LIMIT ?", ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
+        WiredGiveRewardItem rewardToGive = null;
+        int failureCode = -1;
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM wired_rewards_given WHERE user_id = ? AND wired_item = ? ORDER BY timestamp DESC LIMIT ?", ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
             statement.setInt(1, habbo.getHabboInfo().getId());
             statement.setInt(2, wiredBox.getId());
             statement.setInt(3, wiredBox.rewardItems.size());
 
             try (ResultSet set = statement.executeQuery()) {
                 if (set.first()) {
-                    if (set.getInt("row_count") >= 1) {
+                    set.last();
+                    int rowCount = set.getRow();
+                    set.first();
+
+                    if (rowCount >= 1) {
                         if (wiredBox.rewardTime == WiredEffectGiveReward.LIMIT_ONCE) {
-                            habbo.getClient().sendResponse(new WiredRewardAlertComposer(WiredRewardAlertComposer.REWARD_ALREADY_RECEIVED));
-                            return false;
+                            failureCode = WiredRewardAlertComposer.REWARD_ALREADY_RECEIVED;
                         }
                     }
 
-                    set.beforeFirst();
-                    if (set.next()) {
+                    if (failureCode == -1) {
                         if (wiredBox.rewardTime == WiredEffectGiveReward.LIMIT_N_MINUTES) {
                             if (Emulator.getIntUnixTimestamp() - set.getInt("timestamp") <= 60) {
-                                habbo.getClient().sendResponse(new WiredRewardAlertComposer(WiredRewardAlertComposer.REWARD_ALREADY_RECEIVED_THIS_MINUTE));
-                                return false;
+                                failureCode = WiredRewardAlertComposer.REWARD_ALREADY_RECEIVED_THIS_MINUTE;
                             }
                         }
 
-                        if (wiredBox.uniqueRewards) {
-                            if (set.getInt("row_count") == wiredBox.rewardItems.size()) {
-                                habbo.getClient().sendResponse(new WiredRewardAlertComposer(WiredRewardAlertComposer.REWARD_ALL_COLLECTED));
-                                return false;
+                        if (failureCode == -1 && wiredBox.uniqueRewards) {
+                            if (rowCount == wiredBox.rewardItems.size()) {
+                                failureCode = WiredRewardAlertComposer.REWARD_ALL_COLLECTED;
                             }
                         }
 
-                        if (wiredBox.rewardTime == WiredEffectGiveReward.LIMIT_N_HOURS) {
+                        if (failureCode == -1 && wiredBox.rewardTime == WiredEffectGiveReward.LIMIT_N_HOURS) {
                             if (!(Emulator.getIntUnixTimestamp() - set.getInt("timestamp") >= (3600 * wiredBox.limitationInterval))) {
-                                habbo.getClient().sendResponse(new WiredRewardAlertComposer(WiredRewardAlertComposer.REWARD_ALREADY_RECEIVED_THIS_HOUR));
-                                return false;
+                                failureCode = WiredRewardAlertComposer.REWARD_ALREADY_RECEIVED_THIS_HOUR;
                             }
                         }
 
-                        if (wiredBox.rewardTime == WiredEffectGiveReward.LIMIT_N_DAY) {
+                        if (failureCode == -1 && wiredBox.rewardTime == WiredEffectGiveReward.LIMIT_N_DAY) {
                             if (!(Emulator.getIntUnixTimestamp() - set.getInt("timestamp") >= (86400 * wiredBox.limitationInterval))) {
-                                habbo.getClient().sendResponse(new WiredRewardAlertComposer(WiredRewardAlertComposer.REWARD_ALREADY_RECEIVED_THIS_TODAY));
-                                return false;
+                                failureCode = WiredRewardAlertComposer.REWARD_ALREADY_RECEIVED_THIS_TODAY;
                             }
                         }
                     }
 
-                    if (wiredBox.uniqueRewards) {
-                        for (WiredGiveRewardItem item : wiredBox.rewardItems) {
-                            set.beforeFirst();
-                            boolean found = false;
+                    if (failureCode == -1) {
+                        if (wiredBox.uniqueRewards) {
+                            for (WiredGiveRewardItem item : wiredBox.rewardItems) {
+                                set.beforeFirst();
+                                boolean found = false;
 
-                            while (set.next()) {
-                                if (set.getInt("reward_id") == item.id)
-                                    found = true;
+                                while (set.next()) {
+                                    if (set.getInt("reward_id") == item.id)
+                                        found = true;
+                                }
+
+                                if (!found) {
+                                    rewardToGive = item;
+                                    break;
+                                }
                             }
 
-                            if (!found) {
-                                return giveReward(habbo, wiredBox, item);
+                            if (rewardToGive == null) {
+                                failureCode = WiredRewardAlertComposer.REWARD_ALL_COLLECTED;
                             }
                         }
-
-                        habbo.getClient().sendResponse(new WiredRewardAlertComposer(WiredRewardAlertComposer.REWARD_ALL_COLLECTED));
-                        return false;
-                    } else {
-                        int randomNumber = Emulator.getRandom().nextInt(101);
-
-                        int count = 0;
-                        for (WiredGiveRewardItem item : wiredBox.rewardItems) {
-                            if (randomNumber >= count && randomNumber <= (count + item.probability)) {
-                                return giveReward(habbo, wiredBox, item);
-                            }
-
-                            count += item.probability;
-                        }
-
-                        habbo.getClient().sendResponse(new WiredRewardAlertComposer(WiredRewardAlertComposer.UNLUCKY_NO_REWARD));
-                        return false;
                     }
                 }
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+            return false;
+        }
+
+        if (failureCode != -1) {
+            habbo.getClient().sendResponse(new WiredRewardAlertComposer(failureCode));
+            return false;
+        }
+
+        // If no unique reward was determined and there are no failures, pick a random reward or the first unique one
+        if (rewardToGive == null) {
+            if (wiredBox.uniqueRewards) {
+                if (!wiredBox.rewardItems.isEmpty()) {
+                    rewardToGive = wiredBox.rewardItems.get(0);
+                } else {
+                    failureCode = WiredRewardAlertComposer.REWARD_ALL_COLLECTED;
+                }
+            } else {
+                int randomNumber = Emulator.getRandom().nextInt(101);
+                int count = 0;
+                for (WiredGiveRewardItem item : wiredBox.rewardItems) {
+                    if (randomNumber >= count && randomNumber <= (count + item.probability)) {
+                        rewardToGive = item;
+                        break;
+                    }
+                    count += item.probability;
+                }
+
+                if (rewardToGive == null) {
+                    failureCode = WiredRewardAlertComposer.UNLUCKY_NO_REWARD;
+                }
+            }
+        }
+
+        if (failureCode != -1) {
+            habbo.getClient().sendResponse(new WiredRewardAlertComposer(failureCode));
+            return false;
+        }
+
+        if (rewardToGive != null) {
+            return giveReward(habbo, wiredBox, rewardToGive);
         }
 
         return false;

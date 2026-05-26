@@ -208,10 +208,10 @@ public abstract class Game implements Runnable {
         this.state = GameState.IDLE;
 
         boolean gamesActive = false;
-        for (HabboItem timer : room.getFloorItems()) {
-            if (timer instanceof InteractionGameTimer) {
-                if (((InteractionGameTimer) timer).isRunning())
-                    gamesActive = true;
+        for (InteractionGameTimer timer : room.getRoomSpecialTypes().getGameTimers().values()) {
+            if (timer.isRunning()) {
+                gamesActive = true;
+                break;
             }
         }
 

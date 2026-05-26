@@ -71,6 +71,7 @@ public class RoomSpecialTypes {
     private final THashMap<Integer, InteractionFreezeExitTile> freezeExitTile;
     private final THashMap<Integer, HabboItem> undefined;
     private final Set<ICycleable> cycleTasks;
+    private final ConcurrentHashMap<Integer, HabboItem> specialItemsById = new ConcurrentHashMap<>();
 
     public RoomSpecialTypes() {
         this.banzaiTeleporters = new THashMap<>(0);
@@ -115,11 +116,11 @@ public class RoomSpecialTypes {
     }
 
     public void addBanzaiTeleporter(InteractionBattleBanzaiTeleporter item) {
-        this.banzaiTeleporters.put(item.getId(), item);
+        this.banzaiTeleporters.put(item.getId(), item); this.specialItemsById.put(item.getId(), item);
     }
 
     public void removeBanzaiTeleporter(InteractionBattleBanzaiTeleporter item) {
-        this.banzaiTeleporters.remove(item.getId());
+        this.banzaiTeleporters.remove(item.getId()); this.specialItemsById.remove(item.getId());
     }
 
     public THashSet<InteractionBattleBanzaiTeleporter> getBanzaiTeleporters() {
@@ -155,11 +156,11 @@ public class RoomSpecialTypes {
     }
 
     public void addNest(InteractionNest item) {
-        this.nests.put(item.getId(), item);
+        this.nests.put(item.getId(), item); this.specialItemsById.put(item.getId(), item);
     }
 
     public void removeNest(InteractionNest item) {
-        this.nests.remove(item.getId());
+        this.nests.remove(item.getId()); this.specialItemsById.remove(item.getId());
     }
 
     public THashSet<InteractionNest> getNests() {
@@ -177,11 +178,11 @@ public class RoomSpecialTypes {
     }
 
     public void addPetDrink(InteractionPetDrink item) {
-        this.petDrinks.put(item.getId(), item);
+        this.petDrinks.put(item.getId(), item); this.specialItemsById.put(item.getId(), item);
     }
 
     public void removePetDrink(InteractionPetDrink item) {
-        this.petDrinks.remove(item.getId());
+        this.petDrinks.remove(item.getId()); this.specialItemsById.remove(item.getId());
     }
 
     public THashSet<InteractionPetDrink> getPetDrinks() {
@@ -199,11 +200,11 @@ public class RoomSpecialTypes {
     }
 
     public void addPetFood(InteractionPetFood item) {
-        this.petFoods.put(item.getId(), item);
+        this.petFoods.put(item.getId(), item); this.specialItemsById.put(item.getId(), item);
     }
 
     public void removePetFood(InteractionPetFood petFood) {
-        this.petFoods.remove(petFood.getId());
+        this.petFoods.remove(petFood.getId()); this.specialItemsById.remove(petFood.getId());
     }
 
     public THashSet<InteractionPetFood> getPetFoods() {
@@ -221,11 +222,11 @@ public class RoomSpecialTypes {
     }
 
     public void addPetToy(InteractionPetToy item) {
-        this.petToys.put(item.getId(), item);
+        this.petToys.put(item.getId(), item); this.specialItemsById.put(item.getId(), item);
     }
 
     public void removePetToy(InteractionPetToy petToy) {
-        this.petToys.remove(petToy.getId());
+        this.petToys.remove(petToy.getId()); this.specialItemsById.remove(petToy.getId());
     }
 
     public THashSet<InteractionPetToy> getPetToys() {
@@ -243,11 +244,11 @@ public class RoomSpecialTypes {
     }
 
     public void addPetTree(InteractionPetTree item) {
-        this.petTrees.put(item.getId(), item);
+        this.petTrees.put(item.getId(), item); this.specialItemsById.put(item.getId(), item);
     }
 
     public void removePetTree(InteractionPetTree petTree) {
-        this.petTrees.remove(petTree.getId());
+        this.petTrees.remove(petTree.getId()); this.specialItemsById.remove(petTree.getId());
     }
 
     public THashSet<InteractionPetTree> getPetTrees() {
@@ -270,12 +271,14 @@ public class RoomSpecialTypes {
         synchronized (this.rollers) {
             this.rollers.put(item.getId(), item);
         }
+        this.specialItemsById.put(item.getId(), item);
     }
 
     public void removeRoller(InteractionRoller roller) {
         synchronized (this.rollers) {
             this.rollers.remove(roller.getId());
         }
+        this.specialItemsById.remove(roller.getId());
     }
 
     public THashMap<Integer, InteractionRoller> getRollers() {
@@ -469,11 +472,11 @@ public class RoomSpecialTypes {
         // Add to type-based index
         this.wiredTriggers.computeIfAbsent(trigger.getType(), k -> ConcurrentHashMap.newKeySet())
                 .add(trigger);
-
         // Add to spatial index
         long key = coordinateKey(trigger.getX(), trigger.getY());
         this.wiredTriggersByLocation.computeIfAbsent(key, k -> ConcurrentHashMap.newKeySet())
                 .add(trigger);
+        this.specialItemsById.put(trigger.getId(), trigger);
     }
 
     /**
@@ -489,7 +492,6 @@ public class RoomSpecialTypes {
                 this.wiredTriggers.remove(trigger.getType());
             }
         }
-        
         // Remove from spatial index
         long key = coordinateKey(trigger.getX(), trigger.getY());
         Set<InteractionWiredTrigger> locationTriggers = this.wiredTriggersByLocation.get(key);
@@ -499,6 +501,7 @@ public class RoomSpecialTypes {
                 this.wiredTriggersByLocation.remove(key);
             }
         }
+        this.specialItemsById.remove(trigger.getId());
     }
     
     /**
@@ -589,11 +592,11 @@ public class RoomSpecialTypes {
         // Add to type-based index
         this.wiredEffects.computeIfAbsent(effect.getType(), k -> ConcurrentHashMap.newKeySet())
                 .add(effect);
-
         // Add to spatial index
         long key = coordinateKey(effect.getX(), effect.getY());
         this.wiredEffectsByLocation.computeIfAbsent(key, k -> ConcurrentHashMap.newKeySet())
                 .add(effect);
+        this.specialItemsById.put(effect.getId(), effect);
     }
 
     /**
@@ -609,7 +612,6 @@ public class RoomSpecialTypes {
                 this.wiredEffects.remove(effect.getType());
             }
         }
-        
         // Remove from spatial index
         long key = coordinateKey(effect.getX(), effect.getY());
         Set<InteractionWiredEffect> locationEffects = this.wiredEffectsByLocation.get(key);
@@ -619,6 +621,7 @@ public class RoomSpecialTypes {
                 this.wiredEffectsByLocation.remove(key);
             }
         }
+        this.specialItemsById.remove(effect.getId());
     }
     
     /**
@@ -709,11 +712,11 @@ public class RoomSpecialTypes {
         // Add to type-based index
         this.wiredConditions.computeIfAbsent(condition.getType(), k -> ConcurrentHashMap.newKeySet())
                 .add(condition);
-        
         // Add to spatial index
         long key = coordinateKey(condition.getX(), condition.getY());
         this.wiredConditionsByLocation.computeIfAbsent(key, k -> ConcurrentHashMap.newKeySet())
                 .add(condition);
+        this.specialItemsById.put(condition.getId(), condition);
     }
 
     /**
@@ -729,7 +732,6 @@ public class RoomSpecialTypes {
                 this.wiredConditions.remove(condition.getType());
             }
         }
-        
         // Remove from spatial index
         long key = coordinateKey(condition.getX(), condition.getY());
         Set<InteractionWiredCondition> locationConditions = this.wiredConditionsByLocation.get(key);
@@ -739,6 +741,7 @@ public class RoomSpecialTypes {
                 this.wiredConditionsByLocation.remove(key);
             }
         }
+        this.specialItemsById.remove(condition.getId());
     }
     
     /**
@@ -805,11 +808,11 @@ public class RoomSpecialTypes {
      */
     public void addExtra(InteractionWiredExtra extra) {
         this.wiredExtras.put(extra.getId(), extra);
-        
         // Add to spatial index
         long key = coordinateKey(extra.getX(), extra.getY());
         this.wiredExtrasByLocation.computeIfAbsent(key, k -> ConcurrentHashMap.newKeySet())
                 .add(extra);
+        this.specialItemsById.put(extra.getId(), extra);
     }
 
     /**
@@ -818,7 +821,6 @@ public class RoomSpecialTypes {
      */
     public void removeExtra(InteractionWiredExtra extra) {
         this.wiredExtras.remove(extra.getId());
-        
         // Remove from spatial index
         long key = coordinateKey(extra.getX(), extra.getY());
         Set<InteractionWiredExtra> locationExtras = this.wiredExtrasByLocation.get(key);
@@ -828,6 +830,7 @@ public class RoomSpecialTypes {
                 this.wiredExtrasByLocation.remove(key);
             }
         }
+        this.specialItemsById.remove(extra.getId());
     }
     
     /**
@@ -880,11 +883,11 @@ public class RoomSpecialTypes {
     }
 
     public void addGameScoreboard(InteractionGameScoreboard scoreboard) {
-        this.gameScoreboards.put(scoreboard.getId(), scoreboard);
+        this.gameScoreboards.put(scoreboard.getId(), scoreboard); this.specialItemsById.put(scoreboard.getId(), scoreboard);
     }
 
     public void removeScoreboard(InteractionGameScoreboard scoreboard) {
-        this.gameScoreboards.remove(scoreboard.getId());
+        this.gameScoreboards.remove(scoreboard.getId()); this.specialItemsById.remove(scoreboard.getId());
     }
 
     public THashMap<Integer, InteractionFreezeScoreboard> getFreezeScoreboards() {
@@ -980,11 +983,11 @@ public class RoomSpecialTypes {
     }
 
     public void addGameGate(InteractionGameGate gameGate) {
-        this.gameGates.put(gameGate.getId(), gameGate);
+        this.gameGates.put(gameGate.getId(), gameGate); this.specialItemsById.put(gameGate.getId(), gameGate);
     }
 
     public void removeGameGate(InteractionGameGate gameGate) {
-        this.gameGates.remove(gameGate.getId());
+        this.gameGates.remove(gameGate.getId()); this.specialItemsById.remove(gameGate.getId());
     }
 
     public THashMap<Integer, InteractionFreezeGate> getFreezeGates() {
@@ -1021,11 +1024,11 @@ public class RoomSpecialTypes {
     }
 
     public void addGameTimer(InteractionGameTimer gameTimer) {
-        this.gameTimers.put(gameTimer.getId(), gameTimer);
+        this.gameTimers.put(gameTimer.getId(), gameTimer); this.specialItemsById.put(gameTimer.getId(), gameTimer);
     }
 
     public void removeGameTimer(InteractionGameTimer gameTimer) {
-        this.gameTimers.remove(gameTimer.getId());
+        this.gameTimers.remove(gameTimer.getId()); this.specialItemsById.remove(gameTimer.getId());
     }
 
     public THashMap<Integer, InteractionGameTimer> getGameTimers() {
@@ -1043,7 +1046,7 @@ public class RoomSpecialTypes {
     }
 
     public void addFreezeExitTile(InteractionFreezeExitTile freezeExitTile) {
-        this.freezeExitTile.put(freezeExitTile.getId(), freezeExitTile);
+        this.freezeExitTile.put(freezeExitTile.getId(), freezeExitTile); this.specialItemsById.put(freezeExitTile.getId(), freezeExitTile);
     }
 
     public THashMap<Integer, InteractionFreezeExitTile> getFreezeExitTiles() {
@@ -1051,7 +1054,7 @@ public class RoomSpecialTypes {
     }
 
     public void removeFreezeExitTile(InteractionFreezeExitTile freezeExitTile) {
-        this.freezeExitTile.remove(freezeExitTile.getId());
+        this.freezeExitTile.remove(freezeExitTile.getId()); this.specialItemsById.remove(freezeExitTile.getId());
     }
 
     public boolean hasFreezeExitTile() {
@@ -1062,12 +1065,14 @@ public class RoomSpecialTypes {
         synchronized (this.undefined) {
             this.undefined.put(item.getId(), item);
         }
+        this.specialItemsById.put(item.getId(), item);
     }
 
     public void removeUndefined(HabboItem item) {
         synchronized (this.undefined) {
             this.undefined.remove(item.getId());
         }
+        this.specialItemsById.remove(item.getId());
     }
 
     public THashSet<HabboItem> getItemsOfType(Class<? extends HabboItem> type) {
@@ -1130,6 +1135,10 @@ public class RoomSpecialTypes {
         this.cycleTasks.remove(task);
     }
 
+    public HabboItem getSpecialItem(int itemId) {
+        return this.specialItemsById.get(itemId);
+    }
+
     public synchronized void dispose() {
         this.banzaiTeleporters.clear();
         this.nests.clear();
@@ -1142,6 +1151,7 @@ public class RoomSpecialTypes {
         this.wiredTriggers.clear();
         this.wiredEffects.clear();
         this.wiredConditions.clear();
+        this.wiredExtras.clear();
 
         this.gameScoreboards.clear();
         this.gameGates.clear();
@@ -1150,6 +1160,7 @@ public class RoomSpecialTypes {
         this.freezeExitTile.clear();
         this.undefined.clear();
         this.cycleTasks.clear();
+        this.specialItemsById.clear();
     }
 
     public Rectangle tentAt(RoomTile location) {

@@ -115,19 +115,21 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   }
 
   public final Object roomUnitLock = new Object();
-  public final ConcurrentHashMap<RoomTile, THashSet<HabboItem>> tileCache = new ConcurrentHashMap<>();
   public final List<Integer> userVotes;
   private final TIntArrayList rights;
   private final TIntIntHashMap mutedHabbos;
   private final TIntObjectHashMap<RoomBan> bannedHabbos;
   private final Set<Game> games;
   private final TIntObjectMap<RoomMoodlightData> moodlightData;
+  public volatile double lastCycleCpuMs = 0.0;
+  public volatile String lastCycleThread = "N/A";
+
   private final Object loadLock = new Object();
   //Use appropriately. Could potentially cause memory leaks when used incorrectly.
   public volatile boolean preventUnloading = false;
   public volatile boolean preventUncaching = false;
   public Set<ServerMessage> scheduledComposers = ConcurrentHashMap.newKeySet();
-  public Set<Runnable> scheduledTasks = ConcurrentHashMap.newKeySet();
+  public final java.util.concurrent.ConcurrentLinkedQueue<Runnable> scheduledTasks = new java.util.concurrent.ConcurrentLinkedQueue<>();
   public String wordQuiz = "";
   public int noVotes = 0;
   public int yesVotes = 0;
@@ -981,8 +983,6 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
           this.scheduledTasks.clear();
           this.scheduledComposers.clear();
 
-          this.tileCache.clear();
-
           synchronized (this.mutedHabbos) {
             this.mutedHabbos.clear();
           }
@@ -1160,10 +1160,13 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     synchronized (this.loadLock) {
       if (this.loaded) {
         try {
+          long startTime = System.nanoTime();
+          this.lastCycleThread = Thread.currentThread().getName();
           // Run cycle directly instead of scheduling on thread pool
           // This ensures all cycle tasks in the same tick execute synchronously
           // preventing wired desync issues
           this.cycle();
+          this.lastCycleCpuMs = (System.nanoTime() - startTime) / 1000000.0;
         } catch (Exception e) {
           LOGGER.error("Caught exception", e);
         }
@@ -2320,27 +2323,37 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     sanitizedInspectMask |= sanitizedModifyMask;
 
     synchronized (this.wiredSettingsLock) {
-      int previousInspectMask = this.wiredInspectMask;
-      int previousModifyMask = this.wiredModifyMask;
+      final int finalInspectMask = sanitizedInspectMask;
+      final int finalModifyMask = sanitizedModifyMask;
+      final int finalId = this.id;
+      final int previousInspectMask = this.wiredInspectMask;
+      final int previousModifyMask = this.wiredModifyMask;
+
       this.wiredInspectMask = sanitizedInspectMask;
       this.wiredModifyMask = sanitizedModifyMask;
       this.wiredSettingsLoaded = true;
 
-      try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-           PreparedStatement statement = connection.prepareStatement(
-               "INSERT INTO room_wired_settings (room_id, inspect_mask, modify_mask) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE inspect_mask = VALUES(inspect_mask), modify_mask = VALUES(modify_mask)")) {
-        statement.setInt(1, this.id);
-        statement.setInt(2, sanitizedInspectMask);
-        statement.setInt(3, sanitizedModifyMask);
-        statement.executeUpdate();
-        this.pushWiredSettingsToCurrentHabbos();
-        return true;
-      } catch (SQLException e) {
-        this.wiredInspectMask = previousInspectMask;
-        this.wiredModifyMask = previousModifyMask;
-        LOGGER.error("Caught SQL exception while saving wired room settings", e);
-        return false;
-      }
+      Emulator.getThreading().run(() -> {
+          try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+               PreparedStatement statement = connection.prepareStatement(
+                   "INSERT INTO room_wired_settings (room_id, inspect_mask, modify_mask) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE inspect_mask = VALUES(inspect_mask), modify_mask = VALUES(modify_mask)")) {
+            statement.setInt(1, finalId);
+            statement.setInt(2, finalInspectMask);
+            statement.setInt(3, finalModifyMask);
+            statement.executeUpdate();
+          } catch (SQLException e) {
+            synchronized (this.wiredSettingsLock) {
+                if (this.wiredInspectMask == finalInspectMask && this.wiredModifyMask == finalModifyMask) {
+                    this.wiredInspectMask = previousInspectMask;
+                    this.wiredModifyMask = previousModifyMask;
+                }
+            }
+            LOGGER.error("Caught SQL exception while saving wired room settings", e);
+          }
+      });
+      
+      this.pushWiredSettingsToCurrentHabbos();
+      return true;
     }
   }
 
@@ -2877,5 +2890,21 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
   public Collection<RoomUnit> getRoomUnitsAt(RoomTile tile) {
     return this.unitManager.getRoomUnitsAt(tile);
+  }
+
+  public long getEstimatedMemoryUsage() {
+    long bytes = 1024 * 10; // Base footprint
+    if (this.itemManager != null) {
+      bytes += this.itemManager.itemCount() * 512L;
+    }
+    bytes += this.getUserCount() * 2048L;
+    if (this.layout != null) {
+      bytes += this.layout.getMapSize() * 128L;
+    }
+    com.eu.habbo.habbohotel.wired.tick.WiredTickService wired = com.eu.habbo.habbohotel.wired.tick.WiredTickService.getInstance();
+    if (wired != null) {
+      bytes += wired.getTickableCount(this.getId()) * 256L;
+    }
+    return bytes;
   }
 }

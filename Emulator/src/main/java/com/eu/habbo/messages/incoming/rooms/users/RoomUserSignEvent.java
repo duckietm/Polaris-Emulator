@@ -27,9 +27,8 @@ public class RoomUserSignEvent extends MessageHandler {
             WiredManager.triggerUserPerformsAction(room, this.client.getHabbo().getRoomUnit(), WiredUserActionType.SIGN, event.sign);
 
             if(signId <= 10) {
-
                 int userId = this.client.getHabbo().getHabboInfo().getId();
-                for (HabboItem item : room.getFloorItems()) {
+                for (HabboItem item : room.getRoomSpecialTypes().getItemsOfType(InteractionVoteCounter.class)) {
                     if (item instanceof InteractionVoteCounter) {
                         ((InteractionVoteCounter)item).vote(room, userId, signId);
                     }

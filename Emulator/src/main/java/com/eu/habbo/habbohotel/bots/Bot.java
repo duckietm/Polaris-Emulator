@@ -138,18 +138,20 @@ public class Bot implements Runnable {
     @Override
     public void run() {
         if (this.needsUpdate) {
+            Room localRoom = this.room;
+            RoomUnit localRoomUnit = this.roomUnit;
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE bots SET name = ?, motto = ?, figure = ?, gender = ?, user_id = ?, room_id = ?, x = ?, y = ?, z = ?, rot = ?, dance = ?, freeroam = ?, chat_lines = ?, chat_auto = ?, chat_random = ?, chat_delay = ?, effect = ?, bubble_id = ? WHERE id = ?")) {
                 statement.setString(1, this.name);
                 statement.setString(2, this.motto);
                 statement.setString(3, this.figure);
                 statement.setString(4, this.gender.toString());
                 statement.setInt(5, this.ownerId);
-                statement.setInt(6, this.room == null ? 0 : this.room.getId());
-                statement.setInt(7, this.roomUnit == null ? 0 : this.roomUnit.getX());
-                statement.setInt(8, this.roomUnit == null ? 0 : this.roomUnit.getY());
-                statement.setDouble(9, this.roomUnit == null ? 0 : this.roomUnit.getZ());
-                statement.setInt(10, this.roomUnit == null ? 0 : this.roomUnit.getBodyRotation().getValue());
-                statement.setInt(11, this.roomUnit == null ? 0 : this.roomUnit.getDanceType().getType());
+                statement.setInt(6, localRoom == null ? 0 : localRoom.getId());
+                statement.setInt(7, localRoomUnit == null ? 0 : localRoomUnit.getX());
+                statement.setInt(8, localRoomUnit == null ? 0 : localRoomUnit.getY());
+                statement.setDouble(9, localRoomUnit == null ? 0 : localRoomUnit.getZ());
+                statement.setInt(10, localRoomUnit == null ? 0 : localRoomUnit.getBodyRotation().getValue());
+                statement.setInt(11, localRoomUnit == null ? 0 : localRoomUnit.getDanceType().getType());
                 statement.setString(12, this.canWalk ? "1" : "0");
                 StringBuilder text = new StringBuilder();
                 for (String s : this.chatLines) {
@@ -282,7 +284,7 @@ public class Bot implements Runnable {
     }
 
     public void onPickUp(Habbo habbo, Room room) {
-
+        this.stopFollowingHabbo();
     }
 
     public void onUserSay(final RoomChatMessage message) {

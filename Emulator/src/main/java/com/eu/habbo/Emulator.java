@@ -6,6 +6,7 @@ import ch.qos.logback.core.ConsoleAppender;
 import com.eu.habbo.core.*;
 import com.eu.habbo.core.consolecommands.ConsoleCommand;
 import com.eu.habbo.database.Database;
+import com.eu.habbo.gui.EmulatorDashboard;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.gameclients.SessionResumeManager;
 import com.eu.habbo.networking.gameserver.GameServer;
@@ -185,6 +186,10 @@ public final class Emulator {
             Emulator.getPluginManager().fireEvent(new EmulatorLoadedEvent());
             Emulator.isReady = true;
             Emulator.timeStarted = getIntUnixTimestamp();
+
+            if (Emulator.getConfig().getBoolean("gui.enabled", true)) {
+                EmulatorDashboard.launch();
+            }
 
             if (Emulator.getConfig().getInt("runtime.threads") < (Runtime.getRuntime().availableProcessors() * 2)) {
                 LOGGER.warn("Emulator settings runtime.threads ({}) can be increased to ({}) to possibly increase performance.",

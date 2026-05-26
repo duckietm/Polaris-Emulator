@@ -20,12 +20,13 @@ import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import com.eu.habbo.messages.outgoing.generic.alerts.UpdateFailedComposer;
 import gnu.trove.procedure.TObjectProcedure;
-import gnu.trove.set.hash.THashSet;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class WiredEffectGiveReward extends InteractionWiredEffect {
     public static final int LIMIT_ONCE = 0;
@@ -37,10 +38,10 @@ public class WiredEffectGiveReward extends InteractionWiredEffect {
     
     public int limit;
     public int limitationInterval;
-    public int given;
+    public AtomicInteger given = new AtomicInteger(0);
     public int rewardTime;
     public boolean uniqueRewards;
-    public THashSet<WiredGiveRewardItem> rewardItems = new THashSet<>();
+    public List<WiredGiveRewardItem> rewardItems = new CopyOnWriteArrayList<>();
     public int userSource = WiredSourceUtil.SOURCE_TRIGGER;
 
     public WiredEffectGiveReward(ResultSet set, Item baseItem) throws SQLException {
@@ -71,9 +72,8 @@ public class WiredEffectGiveReward extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-
         ArrayList<WiredGiveRewardItem> rewards = new ArrayList<>(this.rewardItems);
-        return WiredManager.getGson().toJson(new JsonData(this.limit, this.given, this.rewardTime, this.uniqueRewards, this.limitationInterval, rewards, this.getDelay(), this.userSource));
+        return WiredManager.getGson().toJson(new JsonData(this.limit, this.given.get(), this.rewardTime, this.uniqueRewards, this.limitationInterval, rewards, this.getDelay(), this.userSource));
     }
 
     @Override
@@ -84,7 +84,7 @@ public class WiredEffectGiveReward extends InteractionWiredEffect {
             JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
             this.setDelay(data.delay);
             this.limit = data.limit;
-            this.given = data.given;
+            this.given.set(data.given);
             this.rewardTime = data.reward_time;
             this.uniqueRewards = data.unique_rewards;
             this.limitationInterval = data.limit_interval;
@@ -96,7 +96,7 @@ public class WiredEffectGiveReward extends InteractionWiredEffect {
             String[] data = wiredData.split(":");
             if (data.length > 0) {
                 this.limit = Integer.parseInt(data[0]);
-                this.given = Integer.parseInt(data[1]);
+                this.given.set(Integer.parseInt(data[1]));
                 this.rewardTime = Integer.parseInt(data[2]);
                 this.uniqueRewards = data[3].equals("1");
                 this.limitationInterval = Integer.parseInt(data[4]);
@@ -127,7 +127,7 @@ public class WiredEffectGiveReward extends InteractionWiredEffect {
     public void onPickUp() {
         this.limit = 0;
         this.limitationInterval = 0;
-        this.given = 0;
+        this.given.set(0);
         this.rewardTime = 0;
         this.uniqueRewards = false;
         this.rewardItems.clear();
@@ -192,7 +192,7 @@ public class WiredEffectGiveReward extends InteractionWiredEffect {
             this.limit = settings.getIntParams()[2];
             this.limitationInterval = settings.getIntParams()[3];
             this.userSource = settings.getIntParams()[4];
-            this.given = 0;
+            this.given.set(0);
 
             String data = settings.getStringParam();
 
@@ -276,15 +276,15 @@ public class WiredEffectGiveReward extends InteractionWiredEffect {
     }
     
     public int getGiven() {
-        return this.given;
+        return this.given.get();
     }
     
     public void setGiven(int given) {
-        this.given = given;
+        this.given.set(given);
     }
     
     public void incrementGiven() {
-        this.given++;
+        this.given.incrementAndGet();
     }
     
     public int getRewardTime() {
@@ -303,11 +303,11 @@ public class WiredEffectGiveReward extends InteractionWiredEffect {
         this.uniqueRewards = uniqueRewards;
     }
     
-    public THashSet<WiredGiveRewardItem> getRewardItems() {
+    public List<WiredGiveRewardItem> getRewardItems() {
         return this.rewardItems;
     }
     
-    public void setRewardItems(THashSet<WiredGiveRewardItem> rewardItems) {
+    public void setRewardItems(List<WiredGiveRewardItem> rewardItems) {
         this.rewardItems = rewardItems;
     }
 }

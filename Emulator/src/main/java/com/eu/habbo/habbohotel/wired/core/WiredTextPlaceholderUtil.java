@@ -33,6 +33,8 @@ import java.util.Locale;
 
 public final class WiredTextPlaceholderUtil {
     private static final char PRESERVED_SPACE = '\u00A0';
+    private static final int MAX_PLACEHOLDER_EXPANSION_LENGTH = 16384;
+    private static final int MAX_PLACEHOLDER_REPLACEMENTS = 512;
 
     private WiredTextPlaceholderUtil() {
     }
@@ -56,13 +58,20 @@ public final class WiredTextPlaceholderUtil {
 
         String resolvedText = text;
 
+        int replacementCount = 0;
+
         for (InteractionWiredExtra extra : WiredExecutionOrderUtil.sort(extras)) {
             if (extra instanceof WiredExtraTextOutputUsername) {
                 WiredExtraTextOutputUsername usernameExtra = (WiredExtraTextOutputUsername) extra;
                 String placeholderToken = usernameExtra.getPlaceholderToken();
 
                 if (!placeholderToken.isEmpty() && resolvedText.contains(placeholderToken)) {
-                    resolvedText = resolvedText.replace(placeholderToken, buildUsernameReplacement(ctx, usernameExtra));
+                    resolvedText = replaceWithBudget(resolvedText, placeholderToken, buildUsernameReplacement(ctx, usernameExtra));
+                    replacementCount++;
+                }
+
+                if (shouldStopPlaceholderExpansion(resolvedText, replacementCount)) {
+                    break;
                 }
 
                 continue;
@@ -73,7 +82,12 @@ public final class WiredTextPlaceholderUtil {
                 String placeholderToken = furniExtra.getPlaceholderToken();
 
                 if (!placeholderToken.isEmpty() && resolvedText.contains(placeholderToken)) {
-                    resolvedText = resolvedText.replace(placeholderToken, buildFurniNameReplacement(ctx, furniExtra));
+                    resolvedText = replaceWithBudget(resolvedText, placeholderToken, buildFurniNameReplacement(ctx, furniExtra));
+                    replacementCount++;
+                }
+
+                if (shouldStopPlaceholderExpansion(resolvedText, replacementCount)) {
+                    break;
                 }
 
                 continue;
@@ -84,12 +98,72 @@ public final class WiredTextPlaceholderUtil {
                 String placeholderToken = variableExtra.getPlaceholderToken();
 
                 if (!placeholderToken.isEmpty() && resolvedText.contains(placeholderToken)) {
-                    resolvedText = resolvedText.replace(placeholderToken, buildVariableReplacement(ctx, variableExtra));
+                    resolvedText = replaceWithBudget(resolvedText, placeholderToken, buildVariableReplacement(ctx, variableExtra));
+                    replacementCount++;
+                }
+
+                if (shouldStopPlaceholderExpansion(resolvedText, replacementCount)) {
+                    break;
                 }
             }
         }
 
         return preserveRepeatedSpaces(resolvedText);
+    }
+
+    private static boolean shouldStopPlaceholderExpansion(String resolvedText, int replacementCount) {
+        return replacementCount >= MAX_PLACEHOLDER_REPLACEMENTS
+                || (resolvedText != null && resolvedText.length() >= MAX_PLACEHOLDER_EXPANSION_LENGTH);
+    }
+
+    private static String replaceWithBudget(String input, String placeholderToken, String replacement) {
+        if (input == null || input.isEmpty() || placeholderToken == null || placeholderToken.isEmpty()) {
+            return input;
+        }
+
+        if (replacement == null) {
+            replacement = "";
+        }
+
+        int matchIndex = input.indexOf(placeholderToken);
+        if (matchIndex < 0) {
+            return input;
+        }
+
+        StringBuilder builder = new StringBuilder(Math.min(MAX_PLACEHOLDER_EXPANSION_LENGTH, input.length()));
+        int searchIndex = 0;
+
+        while (matchIndex >= 0) {
+            builder.append(input, searchIndex, matchIndex);
+
+            int remainingCapacity = MAX_PLACEHOLDER_EXPANSION_LENGTH - builder.length();
+            if (remainingCapacity <= 0) {
+                return builder.substring(0, MAX_PLACEHOLDER_EXPANSION_LENGTH);
+            }
+
+            if (replacement.length() <= remainingCapacity) {
+                builder.append(replacement);
+            } else {
+                builder.append(replacement, 0, remainingCapacity);
+                return builder.toString();
+            }
+
+            searchIndex = matchIndex + placeholderToken.length();
+            if (builder.length() >= MAX_PLACEHOLDER_EXPANSION_LENGTH) {
+                return builder.substring(0, MAX_PLACEHOLDER_EXPANSION_LENGTH);
+            }
+
+            matchIndex = input.indexOf(placeholderToken, searchIndex);
+        }
+
+        int remainingCapacity = MAX_PLACEHOLDER_EXPANSION_LENGTH - builder.length();
+        if (remainingCapacity <= 0) {
+            return builder.substring(0, MAX_PLACEHOLDER_EXPANSION_LENGTH);
+        }
+
+        int tailLength = Math.min(input.length() - searchIndex, remainingCapacity);
+        builder.append(input, searchIndex, searchIndex + tailLength);
+        return builder.toString();
     }
 
     private static String preserveRepeatedSpaces(String text) {

@@ -266,19 +266,19 @@ public final class WiredRoomDiagnostics {
     private final ArrayDeque<HistoryEntry> history;
     private final int maxHistoryEntries;
 
-    private long windowStartedAt;
-    private int usageCurrentWindow;
-    private int delayedEventsPending;
-    private long totalExecutionMsCurrentWindow;
-    private int executionSamplesCurrentWindow;
-    private int averageExecutionMs;
-    private int peakExecutionMs;
-    private int consecutiveHeavyWindows;
-    private int consecutiveOverloadWindows;
-    private boolean heavy;
-    private String peakExecutionSourceLabel;
-    private int peakExecutionSourceId;
-    private String peakExecutionReason;
+    private final java.util.concurrent.atomic.AtomicLong windowStartedAt = new java.util.concurrent.atomic.AtomicLong();
+    private final java.util.concurrent.atomic.AtomicInteger usageCurrentWindow = new java.util.concurrent.atomic.AtomicInteger();
+    private final java.util.concurrent.atomic.AtomicInteger delayedEventsPending = new java.util.concurrent.atomic.AtomicInteger();
+    private final java.util.concurrent.atomic.AtomicLong totalExecutionMsCurrentWindow = new java.util.concurrent.atomic.AtomicLong();
+    private final java.util.concurrent.atomic.AtomicInteger executionSamplesCurrentWindow = new java.util.concurrent.atomic.AtomicInteger();
+    private volatile int averageExecutionMs;
+    private volatile int peakExecutionMs;
+    private volatile int consecutiveHeavyWindows;
+    private volatile int consecutiveOverloadWindows;
+    private volatile boolean heavy;
+    private volatile String peakExecutionSourceLabel;
+    private volatile int peakExecutionSourceId;
+    private volatile String peakExecutionReason;
 
     public WiredRoomDiagnostics(int usageWindowMs, int usageLimitPerWindow, int delayedEventsLimit,
                                 int overloadAverageThresholdMs, int overloadPeakThresholdMs,
@@ -310,67 +310,69 @@ public final class WiredRoomDiagnostics {
         }
     }
 
-    public synchronized boolean tryConsumeExecutionBudget(int estimatedCost, long now, String sourceLabel, int sourceId, String reason) {
-        rollWindow(now);
+    public boolean tryConsumeExecutionBudget(int estimatedCost, long now, String sourceLabel, int sourceId, String reason) {
+        rollWindowIfNeeded(now);
 
         int normalizedCost = Math.max(0, estimatedCost);
-        if ((this.usageCurrentWindow + normalizedCost) > this.usageLimitPerWindow) {
+        int currentUsage = this.usageCurrentWindow.addAndGet(normalizedCost);
+        if (currentUsage > this.usageLimitPerWindow) {
             record(Type.EXECUTION_CAP, now,
-                    buildExecutionCapReason(normalizedCost, reason),
+                    buildExecutionCapReason(normalizedCost, reason, currentUsage),
                     sourceLabel,
                     sourceId);
             return false;
         }
 
-        this.usageCurrentWindow += normalizedCost;
         return true;
     }
 
-    public synchronized boolean tryScheduleDelayedEvent(long now, String sourceLabel, int sourceId, String reason) {
-        rollWindow(now);
+    public boolean tryScheduleDelayedEvent(long now, String sourceLabel, int sourceId, String reason) {
+        rollWindowIfNeeded(now);
 
-        if ((this.delayedEventsPending + 1) > this.delayedEventsLimit) {
+        int currentPending = this.delayedEventsPending.incrementAndGet();
+        if (currentPending > this.delayedEventsLimit) {
             record(Type.DELAYED_EVENTS_CAP, now,
-                    buildDelayedCapReason(reason),
+                    buildDelayedCapReason(reason, currentPending),
                     sourceLabel,
                     sourceId);
             return false;
         }
 
-        this.delayedEventsPending++;
         return true;
     }
 
-    public synchronized void completeDelayedEvent() {
-        if (this.delayedEventsPending > 0) {
-            this.delayedEventsPending--;
-        }
+    public void completeDelayedEvent() {
+        this.delayedEventsPending.updateAndGet(v -> v > 0 ? v - 1 : 0);
     }
 
-    public synchronized void recordExecution(long elapsedMs, long now, String sourceLabel, int sourceId, String reason) {
-        rollWindow(now);
+    public void recordExecution(long elapsedMs, long now, String sourceLabel, int sourceId, String reason) {
+        rollWindowIfNeeded(now);
 
         int normalizedElapsed = (int) Math.max(0L, elapsedMs);
 
-        this.totalExecutionMsCurrentWindow += normalizedElapsed;
-        this.executionSamplesCurrentWindow++;
-        this.averageExecutionMs = (int) Math.round(this.totalExecutionMsCurrentWindow / (double) this.executionSamplesCurrentWindow);
+        long total = this.totalExecutionMsCurrentWindow.addAndGet(normalizedElapsed);
+        int samples = this.executionSamplesCurrentWindow.incrementAndGet();
+        this.averageExecutionMs = (int) Math.round(total / (double) samples);
 
         if (normalizedElapsed >= this.peakExecutionMs) {
-            this.peakExecutionMs = normalizedElapsed;
-            this.peakExecutionSourceLabel = sanitizeSourceLabel(sourceLabel);
-            this.peakExecutionSourceId = Math.max(0, sourceId);
-            this.peakExecutionReason = sanitizeReason(reason);
+            synchronized (this) {
+                if (normalizedElapsed >= this.peakExecutionMs) {
+                    this.peakExecutionMs = normalizedElapsed;
+                    this.peakExecutionSourceLabel = sanitizeSourceLabel(sourceLabel);
+                    this.peakExecutionSourceId = Math.max(0, sourceId);
+                    this.peakExecutionReason = sanitizeReason(reason);
+                }
+            }
         }
     }
 
-    public synchronized void recordKilled(long now, String reason, String sourceLabel, int sourceId) {
-        rollWindow(now);
+    public void recordKilled(long now, String reason, String sourceLabel, int sourceId) {
+        rollWindowIfNeeded(now);
         record(Type.KILLED, now, reason, sourceLabel, sourceId);
     }
 
-    public synchronized void recordRecursionTimeout(long now, String reason, String sourceLabel, int sourceId) {
-        rollWindow(now);
+    public void recordRecursionTimeout(long now, String reason, String sourceLabel, int sourceId) {
+        rollWindowIfNeeded(now);
         record(Type.RECURSION_TIMEOUT, now, reason, sourceLabel, sourceId);
     }
 
@@ -394,7 +396,7 @@ public final class WiredRoomDiagnostics {
     }
 
     public synchronized Snapshot snapshot(int recursionDepthCurrent, int recursionDepthLimit, long killedUntilMs, long now) {
-        rollWindow(now);
+        rollWindowIfNeeded(now);
 
         List<LogEntry> logEntries = new ArrayList<>(Type.values().length);
         List<HistoryEntry> historyEntries = new ArrayList<>(this.history.size());
@@ -422,10 +424,10 @@ public final class WiredRoomDiagnostics {
         }
 
         return new Snapshot(
-                this.usageCurrentWindow,
+                this.usageCurrentWindow.get(),
                 this.usageLimitPerWindow,
                 this.heavy,
-                this.delayedEventsPending,
+                this.delayedEventsPending.get(),
                 this.delayedEventsLimit,
                 this.averageExecutionMs,
                 this.peakExecutionMs,
@@ -444,30 +446,40 @@ public final class WiredRoomDiagnostics {
         );
     }
 
-    private void rollWindow(long now) {
-        if (this.windowStartedAt <= 0L) {
-            this.windowStartedAt = now;
+    private void rollWindowIfNeeded(long now) {
+        long startedAt = this.windowStartedAt.get();
+        if (startedAt <= 0L) {
+            this.windowStartedAt.compareAndSet(startedAt, now);
             return;
         }
 
-        while ((now - this.windowStartedAt) >= this.usageWindowMs) {
-            evaluateWindow(this.windowStartedAt + this.usageWindowMs);
-            this.windowStartedAt += this.usageWindowMs;
-            this.usageCurrentWindow = 0;
-            this.totalExecutionMsCurrentWindow = 0L;
-            this.executionSamplesCurrentWindow = 0;
-            this.averageExecutionMs = 0;
-            this.peakExecutionMs = 0;
-            this.peakExecutionSourceLabel = null;
-            this.peakExecutionSourceId = 0;
-            this.peakExecutionReason = null;
+        if ((now - startedAt) >= this.usageWindowMs) {
+            synchronized (this) {
+                startedAt = this.windowStartedAt.get();
+                if ((now - startedAt) >= this.usageWindowMs) {
+                    while ((now - startedAt) >= this.usageWindowMs) {
+                        evaluateWindow(startedAt + this.usageWindowMs);
+                        startedAt += this.usageWindowMs;
+                        
+                        this.usageCurrentWindow.set(0);
+                        this.totalExecutionMsCurrentWindow.set(0L);
+                        this.executionSamplesCurrentWindow.set(0);
+                        this.averageExecutionMs = 0;
+                        this.peakExecutionMs = 0;
+                        this.peakExecutionSourceLabel = null;
+                        this.peakExecutionSourceId = 0;
+                        this.peakExecutionReason = null;
+                    }
+                    this.windowStartedAt.set(startedAt);
+                }
+            }
         }
     }
 
     private void evaluateWindow(long now) {
-        int usagePercent = (int) Math.round((this.usageCurrentWindow * 100D) / this.usageLimitPerWindow);
-        int delayedPercent = (int) Math.round((this.delayedEventsPending * 100D) / this.delayedEventsLimit);
-        boolean overloadWindow = (this.executionSamplesCurrentWindow > 0)
+        int usagePercent = (int) Math.round((this.usageCurrentWindow.get() * 100D) / this.usageLimitPerWindow);
+        int delayedPercent = (int) Math.round((this.delayedEventsPending.get() * 100D) / this.delayedEventsLimit);
+        boolean overloadWindow = (this.executionSamplesCurrentWindow.get() > 0)
                 && ((this.averageExecutionMs >= this.overloadAverageThresholdMs) || (this.peakExecutionMs >= this.overloadPeakThresholdMs));
         boolean heavyWindow = (usagePercent >= this.heavyUsageThresholdPercent)
                 || (delayedPercent >= this.heavyDelayedThresholdPercent)
@@ -516,22 +528,22 @@ public final class WiredRoomDiagnostics {
         }
     }
 
-    private String buildExecutionCapReason(int normalizedCost, String reason) {
+    private String buildExecutionCapReason(int normalizedCost, String reason, int currentUsage) {
         return joinReason(
                 reason,
                 String.format("Estimated stack cost %d would exceed usage budget %d/%d in %dms window",
                         normalizedCost,
-                        this.usageCurrentWindow,
+                        currentUsage,
                         this.usageLimitPerWindow,
                         this.usageWindowMs)
         );
     }
 
-    private String buildDelayedCapReason(String reason) {
+    private String buildDelayedCapReason(String reason, int currentPending) {
         return joinReason(
                 reason,
                 String.format("Pending delayed events would exceed queue %d/%d",
-                        this.delayedEventsPending,
+                        currentPending,
                         this.delayedEventsLimit)
         );
     }
@@ -544,7 +556,7 @@ public final class WiredRoomDiagnostics {
                         this.overloadAverageThresholdMs,
                         this.peakExecutionMs,
                         this.overloadPeakThresholdMs,
-                        this.executionSamplesCurrentWindow,
+                        this.executionSamplesCurrentWindow.get(),
                         this.usageWindowMs)
         );
     }

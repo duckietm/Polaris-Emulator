@@ -75,7 +75,6 @@ public class RoomCycleManager {
         final boolean[] foundRightHolder = {false};
 
         boolean loaded = this.room.isLoaded();
-        this.room.tileCache.clear();
 
         if (loaded) {
             processScheduledTasks();
@@ -164,13 +163,9 @@ public class RoomCycleManager {
      * Processes scheduled tasks.
      */
     private void processScheduledTasks() {
-        if (!this.room.scheduledTasks.isEmpty()) {
-            Set<Runnable> tasks = this.room.scheduledTasks;
-            this.room.scheduledTasks = ConcurrentHashMap.newKeySet();
-
-            for (Runnable runnable : tasks) {
-                Emulator.getThreading().run(runnable);
-            }
+        Runnable task;
+        while ((task = this.room.scheduledTasks.poll()) != null) {
+            Emulator.getThreading().run(task);
         }
     }
 
@@ -486,7 +481,7 @@ public class RoomCycleManager {
                 if (!unit.hasStatus(RoomUnitStatus.LAY)) {
                     BedProfile bedProfile = new BedProfile(topItem);
                     double layHeight = Item.getCurrentHeight(topItem) * 1.0D + bedProfile.getLayZOffset();
-                    LOGGER.info("[BedProfile] item={} stackHeight={} isFlat={} isDouble={} X={} Y={} Z={}",
+                    LOGGER.debug("[BedProfile] item={} stackHeight={} isFlat={} isDouble={} X={} Y={} Z={}",
                             topItem.getBaseItem().getName(), topItem.getBaseItem().getHeight(),
                             bedProfile.isFlat(), bedProfile.isDouble(),
                             bedProfile.getLayXOffset(), bedProfile.getLayYOffset(), bedProfile.getLayZOffset());

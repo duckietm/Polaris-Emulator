@@ -86,10 +86,10 @@ public final class WiredEngine {
     public static int MONITOR_USAGE_WINDOW_MS = 1000;
 
     /** Monitor execution cap per room window */
-    public static int MONITOR_USAGE_LIMIT = 1000;
+    public static int MONITOR_USAGE_LIMIT = 50000;
 
     /** Maximum delayed events allowed per room at the same time */
-    public static int MONITOR_DELAYED_EVENTS_LIMIT = 100;
+    public static int MONITOR_DELAYED_EVENTS_LIMIT = 50000;
 
     /** Average execution threshold that marks overload */
     public static int MONITOR_OVERLOAD_AVERAGE_MS = 50;
@@ -180,14 +180,19 @@ public final class WiredEngine {
 
         int roomId = room.getId();
 
+        if (this.isRoomBanned(roomId)) {
+            return false;
+        }
+
         // Soft rate limiting to prevent rapid-fire event spam without banning whole rooms
         if (isRateLimited(roomId, room, event.getType())) {
             return false;
         }
 
         // Check and increment recursion depth to prevent infinite loops
-        int currentDepth = roomRecursionDepth.getOrDefault(roomId, 0);
-        if (currentDepth >= MAX_RECURSION_DEPTH) {
+        int currentDepth = roomRecursionDepth.merge(roomId, 1, Integer::sum);
+        if (currentDepth > MAX_RECURSION_DEPTH) {
+            roomRecursionDepth.merge(roomId, -1, Integer::sum);
             getDiagnostics(roomId).recordRecursionTimeout(
                     System.currentTimeMillis(),
                     String.format("Recursion depth %d/%d while handling %s", currentDepth, MAX_RECURSION_DEPTH, event.getType().name()),
@@ -199,18 +204,12 @@ public final class WiredEngine {
             debug(room, "RECURSION LIMIT REACHED - aborting to prevent crash");
             return false;
         }
-        roomRecursionDepth.put(roomId, currentDepth + 1);
 
         try {
             return handleEventInternal(event, room, negateConditions);
         } finally {
             // Decrement recursion depth
-            int newDepth = roomRecursionDepth.getOrDefault(roomId, 1) - 1;
-            if (newDepth <= 0) {
-                roomRecursionDepth.remove(roomId);
-            } else {
-                roomRecursionDepth.put(roomId, newDepth);
-            }
+            roomRecursionDepth.compute(roomId, (k, v) -> (v == null || v <= 1) ? null : v - 1);
         }
     }
 
@@ -234,28 +233,27 @@ public final class WiredEngine {
 
         int roomId = room.getId();
 
+        if (this.isRoomBanned(roomId)) {
+            return false;
+        }
+
         if (isRateLimited(roomId, room, event.getType())) {
             return false;
         }
 
-        int currentDepth = roomRecursionDepth.getOrDefault(roomId, 0);
-        if (currentDepth >= MAX_RECURSION_DEPTH) {
+        int currentDepth = roomRecursionDepth.merge(roomId, 1, Integer::sum);
+        if (currentDepth > MAX_RECURSION_DEPTH) {
+            roomRecursionDepth.merge(roomId, -1, Integer::sum);
             LOGGER.warn("Wired recursion limit reached in room {} (depth: {}). " +
                     "Possible infinite loop detected (source item execution). Aborting.", roomId, currentDepth);
             debug(room, "RECURSION LIMIT REACHED - aborting source-item execution");
             return false;
         }
-        roomRecursionDepth.put(roomId, currentDepth + 1);
 
         try {
             return handleEventForSourceItemInternal(event, room, sourceItemId);
         } finally {
-            int newDepth = roomRecursionDepth.getOrDefault(roomId, 1) - 1;
-            if (newDepth <= 0) {
-                roomRecursionDepth.remove(roomId);
-            } else {
-                roomRecursionDepth.put(roomId, newDepth);
-            }
+            roomRecursionDepth.compute(roomId, (k, v) -> (v == null || v <= 1) ? null : v - 1);
         }
     }
 
@@ -1094,7 +1092,13 @@ public final class WiredEngine {
     }
 
     private void animateFilteredSelectorBox(Room room, InteractionWiredEffect wiredEffect) {
-        if (room == null || wiredEffect == null || room.isHideWired()) {
+        if (room == null || wiredEffect == null) {
+            return;
+        }
+
+        // If wired is hidden, skip animation but ensure any stale token is cleaned up
+        if (room.isHideWired()) {
+            this.filteredSelectorAnimationTokens.remove(wiredEffect.getId());
             return;
         }
 
@@ -1364,11 +1368,10 @@ public final class WiredEngine {
                 ? String.valueOf(stack.triggerItem().getId())
                 : "default";
 
-        int current = unseenIndices.getOrDefault(key, -1);
-        int next = (current + 1) % effectCount;
-        unseenIndices.put(key, next);
-
-        return next;
+        return unseenIndices.compute(key, (k, current) -> {
+            if (current == null) current = -1;
+            return (current + 1) % effectCount;
+        });
     }
 
     /**
@@ -1622,6 +1625,8 @@ public final class WiredEngine {
         clearRoomRecursionDepth(roomId);
         clearRoomRateLimiters(roomId);
         clearRoomSourceStackCache(roomId);
+        clearRoomDiagnostics(roomId);
+        clearRoomBan(roomId);
     }
 
     /**
@@ -1684,38 +1689,46 @@ public final class WiredEngine {
      * @param room the room object
      */
     private void banRoom(int roomId, Room room, WiredEvent.Type eventType, int eventCount) {
-        long banExpiry = System.currentTimeMillis() + WIRED_BAN_DURATION_MS;
-        bannedRooms.put(roomId, banExpiry);
         getDiagnostics(roomId).recordKilled(
                 System.currentTimeMillis(),
                 String.format("Rate limit exceeded for %s with %d event(s) in %dms", eventType.name(), eventCount, RATE_LIMIT_WINDOW_MS),
                 eventType.name(),
                 0
         );
-        
-        long banMinutes = WIRED_BAN_DURATION_MS / 60000;
-        
-        // Send alert to all users in the room
-        String roomAlertMessage = Emulator.getTexts().getValue("wired.abuse.room.alert")
-                .replace("%minutes%", String.valueOf(banMinutes));
-        room.sendComposer(new GenericAlertComposer(roomAlertMessage).compose());
-        
-        // Send scripter bubble alert to staff with room link
-        THashMap<String, String> keys = new THashMap<>();
-        keys.put("title", Emulator.getTexts().getValue("wired.abuse.staff.title"));
-        keys.put("message", Emulator.getTexts().getValue("wired.abuse.staff.message")
-                .replace("%roomname%", room.getName())
-                .replace("%owner%", room.getOwnerName())
-                .replace("%minutes%", String.valueOf(banMinutes)));
-        keys.put("linkUrl", "event:navigator/goto/" + roomId);
-        keys.put("linkTitle", Emulator.getTexts().getValue("wired.abuse.staff.link"));
-        Emulator.getGameEnvironment().getHabboManager().sendPacketToHabbosWithPermission(
-                new BubbleAlertComposer("admin.staffalert", keys).compose(), 
-                "acc_modtool_room_info"
-        );
-        
-        LOGGER.warn("Wired abuse detected in room {} ({}). Owner: {}. Wired banned for {} minutes.",
-                roomId, room.getName(), room.getOwnerName(), banMinutes);
+
+        // Only actually ban the room if ban duration is configured (> 0)
+        if (WIRED_BAN_DURATION_MS > 0) {
+            long banExpiry = System.currentTimeMillis() + WIRED_BAN_DURATION_MS;
+            bannedRooms.put(roomId, banExpiry);
+
+            long banMinutes = WIRED_BAN_DURATION_MS / 60000;
+
+            // Send alert to all users in the room
+            String roomAlertMessage = Emulator.getTexts().getValue("wired.abuse.room.alert")
+                    .replace("%minutes%", String.valueOf(banMinutes));
+            room.sendComposer(new GenericAlertComposer(roomAlertMessage).compose());
+
+            // Send scripter bubble alert to staff with room link
+            THashMap<String, String> keys = new THashMap<>();
+            keys.put("title", Emulator.getTexts().getValue("wired.abuse.staff.title"));
+            keys.put("message", Emulator.getTexts().getValue("wired.abuse.staff.message")
+                    .replace("%roomname%", room.getName())
+                    .replace("%owner%", room.getOwnerName())
+                    .replace("%minutes%", String.valueOf(banMinutes)));
+            keys.put("linkUrl", "event:navigator/goto/" + roomId);
+            keys.put("linkTitle", Emulator.getTexts().getValue("wired.abuse.staff.link"));
+            Emulator.getGameEnvironment().getHabboManager().sendPacketToHabbosWithPermission(
+                    new BubbleAlertComposer("admin.staffalert", keys).compose(),
+                    "acc_modtool_room_info"
+            );
+
+            LOGGER.warn("Wired abuse detected in room {} ({}). Owner: {}. Wired banned for {} minutes.",
+                    roomId, room.getName(), room.getOwnerName(), banMinutes);
+        } else {
+            // Ban duration is 0 - only log, do not spam alerts or put a ban entry
+            LOGGER.warn("Wired rate limit exceeded in room {} ({}) for event {} ({} events). Ban disabled (wired.abuse.ban.duration.ms=0).",
+                    roomId, room.getName(), eventType.name(), eventCount);
+        }
     }
 
     /**

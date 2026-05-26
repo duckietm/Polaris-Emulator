@@ -16,6 +16,7 @@ import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
 import java.time.temporal.WeekFields;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -23,7 +24,7 @@ import java.util.stream.Stream;
 public class WiredHighscoreManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredHighscoreManager.class);
 
-    private final HashMap<Integer, List<WiredHighscoreDataEntry>> data = new HashMap<>();
+    private final ConcurrentHashMap<Integer, List<WiredHighscoreDataEntry>> data = new ConcurrentHashMap<>();
     
     private final static String locale = (System.getProperty("user.language") != null ? System.getProperty("user.language") : "en");
     private final static String country = (System.getProperty("user.country") != null ? System.getProperty("user.country") : "US");
@@ -60,15 +61,12 @@ public class WiredHighscoreManager {
 
     private void loadHighscoreData() {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM items_highscore_data")) {
+            statement.setFetchSize(1000);
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
                     WiredHighscoreDataEntry entry = new WiredHighscoreDataEntry(set);
 
-                    if (!this.data.containsKey(entry.getItemId())) {
-                        this.data.put(entry.getItemId(), new ArrayList<>());
-                    }
-
-                    this.data.get(entry.getItemId()).add(entry);
+                    this.data.computeIfAbsent(entry.getItemId(), k -> Collections.synchronizedList(new ArrayList<>())).add(entry);
                 }
             }
         } catch (SQLException e) {
@@ -77,33 +75,39 @@ public class WiredHighscoreManager {
     }
 
     public void addHighscoreData(WiredHighscoreDataEntry entry) {
-        if (!this.data.containsKey(entry.getItemId())) {
-            this.data.put(entry.getItemId(), new ArrayList<>());
-        }
+        this.data.computeIfAbsent(entry.getItemId(), k -> Collections.synchronizedList(new ArrayList<>())).add(entry);
 
-        this.data.get(entry.getItemId()).add(entry);
+        Emulator.getThreading().run(() -> {
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO `items_highscore_data` (`item_id`, `user_ids`, `score`, `is_win`, `timestamp`) VALUES (?, ?, ?, ?, ?)")) {
+                statement.setInt(1, entry.getItemId());
+                statement.setString(2, String.join(",", entry.getUserIds().stream().map(Object::toString).collect(Collectors.toList())));
+                statement.setInt(3, entry.getScore());
+                statement.setInt(4, entry.isWin() ? 1 : 0);
+                statement.setInt(5, entry.getTimestamp());
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO `items_highscore_data` (`item_id`, `user_ids`, `score`, `is_win`, `timestamp`) VALUES (?, ?, ?, ?, ?)")) {
-            statement.setInt(1, entry.getItemId());
-            statement.setString(2, String.join(",", entry.getUserIds().stream().map(Object::toString).collect(Collectors.toList())));
-            statement.setInt(3, entry.getScore());
-            statement.setInt(4, entry.isWin() ? 1 : 0);
-            statement.setInt(5, entry.getTimestamp());
-
-            statement.execute();
-        } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
-        }
+                statement.execute();
+            } catch (SQLException e) {
+                LOGGER.error("Caught SQL exception", e);
+            }
+        });
     }
 
     public List<WiredHighscoreRow> getHighscoreRowsForItem(int itemId, WiredHighscoreClearType clearType, WiredHighscoreScoreType scoreType) {
         if (!this.data.containsKey(itemId)) return null;
 
-        Stream<WiredHighscoreRow> highscores = new ArrayList<>(this.data.get(itemId)).stream()
+        List<WiredHighscoreDataEntry> list = this.data.get(itemId);
+        if (list == null) return null;
+
+        List<WiredHighscoreDataEntry> copy;
+        synchronized (list) {
+            copy = new ArrayList<>(list);
+        }
+
+        Stream<WiredHighscoreRow> highscores = copy.stream()
                 .filter(entry -> this.timeMatchesEntry(entry, clearType) && (scoreType != WiredHighscoreScoreType.MOSTWIN || entry.isWin()))
                 .map(entry -> new WiredHighscoreRow(
                         entry.getUserIds().stream()
-                                .map(id -> Emulator.getGameEnvironment().getHabboManager().getHabboInfo(id).getUsername())
+                                .map(id -> Emulator.getGameEnvironment().getHabboManager().getCachedUsername(id))
                                 .collect(Collectors.toList()),
                         entry.getScore()
                 ));
@@ -167,7 +171,7 @@ public class WiredHighscoreManager {
         return false;
     }
 
-    public HashMap<Integer, List<WiredHighscoreDataEntry>> getData() {
+    public Map<Integer, List<WiredHighscoreDataEntry>> getData() {
         return this.data;
     }
 
@@ -176,7 +180,7 @@ public class WiredHighscoreManager {
     }
 
     public void setEntriesForItemId(int itemId, List<WiredHighscoreDataEntry> entries) {
-        this.data.put(itemId, entries);
+        this.data.put(itemId, Collections.synchronizedList(entries));
     }
 
     private long getTodayStartTimestamp() {

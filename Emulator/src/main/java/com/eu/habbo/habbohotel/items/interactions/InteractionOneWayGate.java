@@ -89,7 +89,9 @@ public class InteractionOneWayGate extends HabboItem {
                         Emulator.getThreading().run(new RoomUnitWalkToLocation(unit, tile, room, onFail, onFail));
 
                         Emulator.getThreading().run(() -> {
-                            WiredManager.triggerUserWalksOn(room, unit, this);
+                            if (room.isLoaded()) {
+                                WiredManager.triggerUserWalksOn(room, unit, this);
+                            }
                         }, 500);
                     });
 

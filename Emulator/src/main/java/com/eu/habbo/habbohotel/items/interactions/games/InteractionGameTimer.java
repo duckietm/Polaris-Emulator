@@ -154,6 +154,7 @@ public class InteractionGameTimer extends HabboItem {
     @Override
     public void onPickUp(Room room) {
         this.endGame(room);
+        this.threadActive = false;
 
         this.timeNow = this.getInitialTimeValue();
         this.setExtradata(this.timeNow + "\t" + this.baseTime);
@@ -220,8 +221,7 @@ public class InteractionGameTimer extends HabboItem {
             room.updateItem(this);
             WiredManager.triggerGameStarts(room);
 
-            if (!this.threadActive) {
-                this.threadActive = true;
+            if (this.tryActivateTimerThread()) {
                 this.scheduleTimerRunnable(this.getTimerStartDelayMs());
             }
         } else if (client != null) {
@@ -243,8 +243,7 @@ public class InteractionGameTimer extends HabboItem {
                         } else {
                             this.unpause(room);
 
-                            if (!this.threadActive) {
-                                this.threadActive = true;
+                            if (this.tryActivateTimerThread()) {
                                 this.scheduleTimerRunnable(this.getTimerResumeDelayMs());
                             }
                         }
@@ -257,8 +256,7 @@ public class InteractionGameTimer extends HabboItem {
                         this.createNewGame(room);
                         WiredManager.triggerGameStarts(room);
 
-                        if (!this.threadActive) {
-                            this.threadActive = true;
+                        if (this.tryActivateTimerThread()) {
                             this.scheduleTimerRunnable(this.getTimerStartDelayMs());
                         }
                     }
@@ -297,8 +295,7 @@ public class InteractionGameTimer extends HabboItem {
             }
             this.createNewGame(room);
             WiredManager.triggerGameStarts(room);
-            if (!threadActive) {
-                threadActive = true;
+            if (this.tryActivateTimerThread()) {
                 this.scheduleTimerRunnable(this.getTimerStartDelayMs());
             }
         }
@@ -321,8 +318,7 @@ public class InteractionGameTimer extends HabboItem {
             this.isPaused = false;
             this.unpause(room);
 
-            if (!this.threadActive) {
-                this.threadActive = true;
+            if (this.tryActivateTimerThread()) {
                 this.scheduleTimerRunnable(this.getTimerResumeDelayMs());
             }
         }
@@ -406,7 +402,9 @@ public class InteractionGameTimer extends HabboItem {
     }
 
     public void setThreadActive(boolean threadActive) {
-        this.threadActive = threadActive;
+        synchronized (this) {
+            this.threadActive = threadActive;
+        }
     }
 
     public boolean isPaused() {
@@ -427,5 +425,16 @@ public class InteractionGameTimer extends HabboItem {
 
     public int getBaseTime() {
         return this.baseTime;
+    }
+
+    public boolean tryActivateTimerThread() {
+        synchronized (this) {
+            if (this.threadActive) {
+                return false;
+            }
+
+            this.threadActive = true;
+            return true;
+        }
     }
 }

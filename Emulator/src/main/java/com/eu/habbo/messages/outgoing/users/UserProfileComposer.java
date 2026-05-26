@@ -125,8 +125,26 @@ public class UserProfileComposer extends MessageComposer {
         this.response.appendString(customizationData.prefixEffect);
         this.response.appendString(customizationData.prefixFont);
         this.response.appendString(customizationData.displayOrder);
+        this.response.appendInt(this.getTotalBadges());
 
         return this.response;
+    }
+
+    private int getTotalBadges() {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+             PreparedStatement statement = connection.prepareStatement("SELECT COUNT(DISTINCT badge_code) AS total_badges FROM users_badges WHERE user_id = ?")) {
+            statement.setInt(1, this.habboInfo.getId());
+
+            try (ResultSet set = statement.executeQuery()) {
+                if (set.next()) {
+                    return set.getInt("total_badges");
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception while loading total badges for extended profile", e);
+        }
+
+        return 0;
     }
 
     public HabboInfo getHabboInfo() {

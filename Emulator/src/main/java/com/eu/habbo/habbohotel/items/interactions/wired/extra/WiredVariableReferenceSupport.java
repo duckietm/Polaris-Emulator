@@ -384,61 +384,69 @@ public final class WiredVariableReferenceSupport {
     }
 
     private static void upsertSharedUserAssignment(int sourceRoomId, int sourceVariableItemId, int userId, SharedUserAssignment assignment) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("INSERT INTO room_user_wired_variables (room_id, user_id, variable_item_id, value, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = VALUES(updated_at)")) {
-            statement.setInt(1, sourceRoomId);
-            statement.setInt(2, userId);
-            statement.setInt(3, sourceVariableItemId);
+        Emulator.getThreading().run(() -> {
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                 PreparedStatement statement = connection.prepareStatement("INSERT INTO room_user_wired_variables (room_id, user_id, variable_item_id, value, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = VALUES(updated_at)")) {
+                statement.setInt(1, sourceRoomId);
+                statement.setInt(2, userId);
+                statement.setInt(3, sourceVariableItemId);
 
-            if (assignment.getValue() == null) {
-                statement.setNull(4, java.sql.Types.INTEGER);
-            } else {
-                statement.setInt(4, assignment.getValue());
+                if (assignment.getValue() == null) {
+                    statement.setNull(4, java.sql.Types.INTEGER);
+                } else {
+                    statement.setInt(4, assignment.getValue());
+                }
+
+                statement.setInt(5, assignment.getCreatedAt());
+                statement.setInt(6, assignment.getUpdatedAt());
+                statement.executeUpdate();
+            } catch (SQLException e) {
+                LOGGER.error("Failed to store shared wired user variable {} for room {} user {}", sourceVariableItemId, sourceRoomId, userId, e);
             }
-
-            statement.setInt(5, assignment.getCreatedAt());
-            statement.setInt(6, assignment.getUpdatedAt());
-            statement.executeUpdate();
-        } catch (SQLException e) {
-            LOGGER.error("Failed to store shared wired user variable {} for room {} user {}", sourceVariableItemId, sourceRoomId, userId, e);
-        }
+        });
     }
 
     private static void deleteSharedUserAssignment(int sourceRoomId, int sourceVariableItemId, int userId) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("DELETE FROM room_user_wired_variables WHERE room_id = ? AND user_id = ? AND variable_item_id = ?")) {
-            statement.setInt(1, sourceRoomId);
-            statement.setInt(2, userId);
-            statement.setInt(3, sourceVariableItemId);
-            statement.executeUpdate();
-        } catch (SQLException e) {
-            LOGGER.error("Failed to delete shared wired user variable {} for room {} user {}", sourceVariableItemId, sourceRoomId, userId, e);
-        }
+        Emulator.getThreading().run(() -> {
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                 PreparedStatement statement = connection.prepareStatement("DELETE FROM room_user_wired_variables WHERE room_id = ? AND user_id = ? AND variable_item_id = ?")) {
+                statement.setInt(1, sourceRoomId);
+                statement.setInt(2, userId);
+                statement.setInt(3, sourceVariableItemId);
+                statement.executeUpdate();
+            } catch (SQLException e) {
+                LOGGER.error("Failed to delete shared wired user variable {} for room {} user {}", sourceVariableItemId, sourceRoomId, userId, e);
+            }
+        });
     }
 
     private static void upsertSharedRoomAssignment(int sourceRoomId, int sourceVariableItemId, SharedRoomAssignment assignment) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("INSERT INTO room_wired_variables (room_id, variable_item_id, value, created_at, updated_at) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = VALUES(updated_at)")) {
-            statement.setInt(1, sourceRoomId);
-            statement.setInt(2, sourceVariableItemId);
-            statement.setInt(3, assignment.getValue());
-            statement.setInt(4, 0);
-            statement.setInt(5, assignment.getUpdatedAt());
-            statement.executeUpdate();
-        } catch (SQLException e) {
-            LOGGER.error("Failed to store shared wired room variable {} for room {}", sourceVariableItemId, sourceRoomId, e);
-        }
+        Emulator.getThreading().run(() -> {
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                 PreparedStatement statement = connection.prepareStatement("INSERT INTO room_wired_variables (room_id, variable_item_id, value, created_at, updated_at) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = VALUES(updated_at)")) {
+                statement.setInt(1, sourceRoomId);
+                statement.setInt(2, sourceVariableItemId);
+                statement.setInt(3, assignment.getValue());
+                statement.setInt(4, 0);
+                statement.setInt(5, assignment.getUpdatedAt());
+                statement.executeUpdate();
+            } catch (SQLException e) {
+                LOGGER.error("Failed to store shared wired room variable {} for room {}", sourceVariableItemId, sourceRoomId, e);
+            }
+        });
     }
 
     private static void deleteSharedRoomAssignment(int sourceRoomId, int sourceVariableItemId) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("DELETE FROM room_wired_variables WHERE room_id = ? AND variable_item_id = ?")) {
-            statement.setInt(1, sourceRoomId);
-            statement.setInt(2, sourceVariableItemId);
-            statement.executeUpdate();
-        } catch (SQLException e) {
-            LOGGER.error("Failed to delete shared wired room variable {} for room {}", sourceVariableItemId, sourceRoomId, e);
-        }
+        Emulator.getThreading().run(() -> {
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                 PreparedStatement statement = connection.prepareStatement("DELETE FROM room_wired_variables WHERE room_id = ? AND variable_item_id = ?")) {
+                statement.setInt(1, sourceRoomId);
+                statement.setInt(2, sourceVariableItemId);
+                statement.executeUpdate();
+            } catch (SQLException e) {
+                LOGGER.error("Failed to delete shared wired room variable {} for room {}", sourceVariableItemId, sourceRoomId, e);
+            }
+        });
     }
 
     private static String createDefinitionPrefix(int sourceRoomId, int sourceVariableItemId) {

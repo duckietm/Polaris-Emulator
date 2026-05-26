@@ -15,6 +15,8 @@ public class GameTimer implements Runnable {
 
     @Override
     public void run() {
+        timer.setThreadActive(false);
+
         if (timer.getRoomId() == 0) {
             timer.setRunning(false);
             return;
@@ -23,7 +25,6 @@ public class GameTimer implements Runnable {
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(timer.getRoomId());
 
         if (room == null || !timer.isRunning() || timer.isPaused()) {
-            timer.setThreadActive(false);
             return;
         }
 
@@ -31,10 +32,10 @@ public class GameTimer implements Runnable {
         if (timer.getTimeNow() < 0) timer.setTimeNow(0);
 
         if (timer.getTimeNow() > 0) {
-            timer.setThreadActive(true);
-            Emulator.getThreading().run(this, 1000);
+            if (timer.tryActivateTimerThread()) {
+                Emulator.getThreading().run(this, 1000);
+            }
         } else {
-            timer.setThreadActive(false);
             timer.setTimeNow(0);
             timer.endGame(room);
             WiredManager.triggerGameEnds(room);

@@ -93,23 +93,24 @@ public abstract class InteractionWired extends InteractionDefault {
     @Override
     public void run() {
         if (this.needsUpdate()) {
-            String wiredData = this.getWiredData();
+            String wiredDataRaw = this.getWiredData();
+            final String wiredData = (wiredDataRaw == null) ? "" : wiredDataRaw;
+            final int currentRoomId = this.getRoomId();
+            final int currentId = this.getId();
 
-            if (wiredData == null) {
-                wiredData = "";
-            }
-
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE items SET wired_data = ? WHERE id = ?")) {
-                if (this.getRoomId() != 0) {
-                    statement.setString(1, wiredData);
-                } else {
-                    statement.setString(1, "");
+            Emulator.getThreading().run(() -> {
+                try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE items SET wired_data = ? WHERE id = ?")) {
+                    if (currentRoomId != 0) {
+                        statement.setString(1, wiredData);
+                    } else {
+                        statement.setString(1, "");
+                    }
+                    statement.setInt(2, currentId);
+                    statement.execute();
+                } catch (SQLException e) {
+                    LOGGER.error("Caught SQL exception", e);
                 }
-                statement.setInt(2, this.getId());
-                statement.execute();
-            } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
-            }
+            });
         }
         super.run();
     }
@@ -216,6 +217,9 @@ public abstract class InteractionWired extends InteractionDefault {
     public static WiredSettings readSettings(ClientMessage packet, boolean isEffect)
     {
         int intParamCount = packet.readInt();
+        if (intParamCount < 0 || intParamCount > 100) {
+            throw new IllegalArgumentException("Invalid intParamCount: " + intParamCount);
+        }
         int[] intParams = new int[intParamCount];
 
         for(int i = 0; i < intParamCount; i++)
@@ -226,6 +230,10 @@ public abstract class InteractionWired extends InteractionDefault {
         String stringParam = packet.readString();
 
         int itemCount = packet.readInt();
+        int selectionLimit = Emulator.getConfig() != null ? Emulator.getConfig().getInt("hotel.wired.furni.selection.count", 5) : 5;
+        if (itemCount < 0 || itemCount > selectionLimit * 20) {
+            throw new IllegalArgumentException("Invalid itemCount: " + itemCount + " exceeds maximum allowed limit");
+        }
         int[] itemIds = new int[itemCount];
 
         for(int i = 0; i < itemCount; i++)

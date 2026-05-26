@@ -587,4 +587,10 @@ public final class WiredUserMovementHelper {
             }
         }
     }
+
+    public static void cleanupRoomUnit(RoomUnit roomUnit) {
+        if (roomUnit != null) {
+            SUPPRESSED_STATUS_COMPOSER_UNTIL.remove(roomUnit.getId());
+        }
+    }
 }

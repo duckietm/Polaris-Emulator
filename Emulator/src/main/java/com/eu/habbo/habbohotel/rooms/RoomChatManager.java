@@ -313,27 +313,6 @@ public class RoomChatManager {
             }
         }
 
-        String wiredSayMessage = roomChatMessage.getMessage();
-
-        // Handle commands and wired
-        boolean suppressSaysOutput = false;
-        if (chatType != RoomChatType.WHISPER) {
-            if (CommandHandler.handleCommand(habbo.getClient(), roomChatMessage.getUnfilteredMessage())) {
-                WiredManager.triggerUserSays(habbo.getHabboInfo().getCurrentRoom(), habbo.getRoomUnit(), wiredSayMessage);
-                roomChatMessage.isCommand = true;
-                return;
-            }
-
-            if (!ignoreWired) {
-                suppressSaysOutput = WiredManager.shouldSuppressUserSaysOutput(
-                    habbo.getHabboInfo().getCurrentRoom(),
-                    habbo.getRoomUnit(),
-                    wiredSayMessage,
-                    chatType.ordinal(),
-                    roomChatMessage.getBubble() != null ? roomChatMessage.getBubble().getType() : -1);
-            }
-        }
-
         // Flood protection
         if (!habbo.hasPermission(Permission.ACC_CHAT_NO_FLOOD)) {
             final int chatCounter = habbo.getHabboStats().chatCounter.addAndGet(1);
@@ -354,6 +333,27 @@ public class RoomChatManager {
                         return;
                     }
                 }
+            }
+        }
+
+        String wiredSayMessage = roomChatMessage.getMessage();
+
+        // Handle commands and wired
+        boolean suppressSaysOutput = false;
+        if (chatType != RoomChatType.WHISPER) {
+            if (CommandHandler.handleCommand(habbo.getClient(), roomChatMessage.getUnfilteredMessage())) {
+                WiredManager.triggerUserSays(habbo.getHabboInfo().getCurrentRoom(), habbo.getRoomUnit(), wiredSayMessage);
+                roomChatMessage.isCommand = true;
+                return;
+            }
+
+            if (!ignoreWired) {
+                suppressSaysOutput = WiredManager.shouldSuppressUserSaysOutput(
+                    habbo.getHabboInfo().getCurrentRoom(),
+                    habbo.getRoomUnit(),
+                    wiredSayMessage,
+                    chatType.ordinal(),
+                    roomChatMessage.getBubble() != null ? roomChatMessage.getBubble().getType() : -1);
             }
         }
 
@@ -615,6 +615,9 @@ public class RoomChatManager {
                 InteractionTalkingFurniture.class);
 
             for (HabboItem item : items) {
+                if (item.getExtradata().equals("1")) {
+                    continue;
+                }
                 if (this.room.getLayout().getTile(item.getX(), item.getY())
                     .distance(habbo.getRoomUnit().getCurrentLocation()) <= Emulator.getConfig()
                     .getInt("furniture.talking.range")) {

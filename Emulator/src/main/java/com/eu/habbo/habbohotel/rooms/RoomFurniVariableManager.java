@@ -35,6 +35,7 @@ public class RoomFurniVariableManager {
     private final Room room;
     private final ConcurrentHashMap<Integer, ConcurrentHashMap<Integer, VariableAssignment>> activeAssignmentsByFurniId;
     private volatile boolean permanentAssignmentsLoaded;
+    private final java.util.concurrent.atomic.AtomicBoolean broadcastRequested = new java.util.concurrent.atomic.AtomicBoolean(false);
 
     public RoomFurniVariableManager(Room room) {
         this.room = room;
@@ -591,7 +592,22 @@ public class RoomFurniVariableManager {
         habbo.getClient().sendResponse(new WiredUserVariablesDataComposer(this.room.getUserVariableManager().createSnapshot(), this.createSnapshot(), this.room.getRoomVariableManager().createSnapshot()));
     }
 
+    public void requestBroadcast() {
+        if (this.broadcastRequested.compareAndSet(false, true)) {
+            Emulator.getThreading().run(() -> {
+                this.broadcastRequested.set(false);
+                if (this.room.isLoaded()) {
+                    this.broadcastSnapshotRaw();
+                }
+            }, 50);
+        }
+    }
+
     public void broadcastSnapshot() {
+        this.requestBroadcast();
+    }
+
+    public void broadcastSnapshotRaw() {
         RoomUserVariableManager.Snapshot userSnapshot = this.room.getUserVariableManager().createSnapshot();
         Snapshot furniSnapshot = this.createSnapshot();
         RoomVariableManager.Snapshot roomSnapshot = this.room.getRoomVariableManager().createSnapshot();

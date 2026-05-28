@@ -34,6 +34,9 @@ public class BotSaveSettingsEvent extends MessageHandler {
             if (bot == null)
                 return;
 
+            if (bot.getOwnerActionIds().length == 0)
+                return;
+
             int settingId = this.packet.readInt();
 
             switch (settingId) {

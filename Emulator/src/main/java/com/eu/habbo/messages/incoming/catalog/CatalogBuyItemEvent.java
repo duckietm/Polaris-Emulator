@@ -14,7 +14,11 @@ import com.eu.habbo.habbohotel.users.HabboBadge;
 import com.eu.habbo.habbohotel.users.HabboInventory;
 import com.eu.habbo.habbohotel.users.subscriptions.Subscription;
 import com.eu.habbo.messages.incoming.MessageHandler;
-import com.eu.habbo.messages.outgoing.catalog.*;
+import com.eu.habbo.messages.outgoing.catalog.AlertPurchaseFailedComposer;
+import com.eu.habbo.messages.outgoing.catalog.AlertPurchaseUnavailableComposer;
+import com.eu.habbo.messages.outgoing.catalog.BuildersClubFurniCountComposer;
+import com.eu.habbo.messages.outgoing.catalog.BuildersClubSubscriptionStatusComposer;
+import com.eu.habbo.messages.outgoing.catalog.PurchaseOKComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import com.eu.habbo.messages.outgoing.generic.alerts.HotelWillCloseInMinutesComposer;
@@ -199,6 +203,12 @@ public class CatalogBuyItemEvent extends MessageHandler {
             else
                 item = page.getCatalogItem(itemId);
 
+            // Search-results buy sends the catalog offer_id as itemId
+            // (FurnitureOffer.offerId is derived from furnidata's
+            // purchaseOfferId, which matches `catalog_items.offer_id`),
+            // not the `catalog_items.id` primary key that getCatalogItem
+            // expects. Fall back to scanning the page for the matching
+            // offer_id so the search → buy flow works.
             if (item == null && !(page instanceof RecentPurchasesLayout)) {
                 for (CatalogItem candidate : page.getCatalogItems().valueCollection()) {
                     if (candidate != null && candidate.getOfferId() == itemId) {
@@ -207,7 +217,13 @@ public class CatalogBuyItemEvent extends MessageHandler {
                     }
                 }
             }
-			
+            // Inventory cap check based on the actual base items the
+            // purchase will create, not the page layout - bots/pets
+            // can legitimately live on bundle pages, search results,
+            // recent-purchases, etc., and the layout-instanceof check
+            // missed all those paths. Mirrors the bot/pet branches
+            // inside CatalogManager.purchaseItem (Item.isBot / isPet
+            // and the same prefix check) so detection stays in sync.
             boolean itemHasBot = false;
             boolean itemHasPet = false;
 

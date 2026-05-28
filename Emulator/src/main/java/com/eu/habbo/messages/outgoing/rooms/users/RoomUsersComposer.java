@@ -86,7 +86,7 @@ public class RoomUsersComposer extends MessageComposer {
                     this.response.appendInt(habbo.getHabboInfo().getId());
                     this.response.appendString(habbo.getHabboInfo().getUsername());
                     this.response.appendString(habbo.getHabboInfo().getMotto());
-					this.response.appendInt(habbo.getHabboInfo().getInfostandBg());
+                    this.response.appendInt(habbo.getHabboInfo().getInfostandBg());
                     this.response.appendInt(habbo.getHabboInfo().getInfostandStand());
                     this.response.appendInt(habbo.getHabboInfo().getInfostandOverlay());
                     this.response.appendInt(habbo.getHabboInfo().getInfostandCardBg());
@@ -129,7 +129,7 @@ public class RoomUsersComposer extends MessageComposer {
             this.response.appendInt(0 - this.bot.getId());
             this.response.appendString(this.bot.getName());
             this.response.appendString(this.bot.getMotto());
-			this.response.appendInt(0);
+            this.response.appendInt(0);
             this.response.appendInt(0);
             this.response.appendInt(0);
             this.response.appendInt(0);
@@ -143,17 +143,11 @@ public class RoomUsersComposer extends MessageComposer {
             this.response.appendString(this.bot.getGender().name().toUpperCase());
             this.response.appendInt(this.bot.getOwnerId());
             this.response.appendString(this.bot.getOwnerName());
-            this.response.appendInt(10);
-            this.response.appendShort(0);
-            this.response.appendShort(1);
-            this.response.appendShort(2);
-            this.response.appendShort(3);
-            this.response.appendShort(4);
-            this.response.appendShort(5);
-            this.response.appendShort(6);
-            this.response.appendShort(7);
-            this.response.appendShort(8);
-            this.response.appendShort(9);
+            short[] singleActions = this.bot.getOwnerActionIds();
+            this.response.appendInt(singleActions.length);
+            for (short action : singleActions) {
+                this.response.appendShort(action);
+            }
             this.response.appendString("unknown");
             this.response.appendInt(0);
             this.response.appendInt(0);
@@ -163,10 +157,10 @@ public class RoomUsersComposer extends MessageComposer {
                 this.response.appendInt(0 - bot.getId());
                 this.response.appendString(bot.getName());
                 this.response.appendString(bot.getMotto());
-				this.response.appendInt(0);
-				this.response.appendInt(0);
-				this.response.appendInt(0);
-				this.response.appendInt(0);
+                this.response.appendInt(0);
+                this.response.appendInt(0);
+                this.response.appendInt(0);
+                this.response.appendInt(0);
                 this.response.appendString(bot.getFigure());
                 this.response.appendInt(bot.getRoomUnit().getId());
                 this.response.appendInt(bot.getRoomUnit().getX());
@@ -177,17 +171,11 @@ public class RoomUsersComposer extends MessageComposer {
                 this.response.appendString(bot.getGender().name().toUpperCase());
                 this.response.appendInt(bot.getOwnerId());
                 this.response.appendString(bot.getOwnerName());
-                this.response.appendInt(10);
-                this.response.appendShort(0);
-                this.response.appendShort(1);
-                this.response.appendShort(2);
-                this.response.appendShort(3);
-                this.response.appendShort(4);
-                this.response.appendShort(5);
-                this.response.appendShort(6);
-                this.response.appendShort(7);
-                this.response.appendShort(8);
-                this.response.appendShort(9);
+                short[] listActions = bot.getOwnerActionIds();
+                this.response.appendInt(listActions.length);
+                for (short action : listActions) {
+                    this.response.appendShort(action);
+                }
                 this.response.appendString("unknown");
                 this.response.appendInt(0);
                 this.response.appendInt(0);

@@ -1046,9 +1046,21 @@ public class CatalogManager {
                     for (Item baseItem : item.getBaseItems()) {
                         for (int k = 0; k < item.getItemAmount(baseItem.getId()); k++) {
                             if (baseItem.getName().startsWith("rentable_bot_") || baseItem.getName().startsWith("bot_")) {
+                                String baseName = baseItem.getName();
                                 String type = item.getName().replace("rentable_bot_", "");
                                 type = type.replace("bot_", "");
                                 type = type.replace("visitor_logger", "visitor_log");
+
+                                // Permission gate keyed on the canonical base-item name
+                                // (admin-controlled but stable), not the catalog page name
+                                // which can be renamed and bypass the check.
+                                if (("bot_" + com.eu.habbo.habbohotel.bots.FrankBot.BOT_TYPE).equals(baseName)
+                                        || ("rentable_bot_" + com.eu.habbo.habbohotel.bots.FrankBot.BOT_TYPE).equals(baseName)) {
+                                    if (!habbo.getClient().getHabbo().hasPermission(com.eu.habbo.habbohotel.bots.FrankBot.PERMISSION_USE)) {
+                                        habbo.getClient().sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
+                                        return;
+                                    }
+                                }
 
                                 THashMap<String, String> data = new THashMap<>();
 

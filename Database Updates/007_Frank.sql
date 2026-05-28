@@ -49,15 +49,15 @@ INSERT INTO `bot_chat_responses` (`bot_type`, `keys`, `responses`) VALUES
 ('frank', 'pills;drugs',   'Drugs are bad, mmkay?');
 
 INSERT IGNORE INTO `bot_serves` (`keys`, `item`) VALUES
-('sunflower',                                          21),
-('cola;habbo cola',                                    32),
+('sunflower',                                          1002),
+('cola;habbo cola',                                    19),
 ('rose',                                               1000),
-('book',                                               20),
-('tea',                                                6),
-('coffee',                                             1),
-('migraine;headache;pills',                            34),
-('radioactive liquid;radioactive',                     36),
-('turkey;can of turkey',                               38);
+('book',                                               1003),
+('tea',                                                27),
+('coffee',                                             8),
+('migraine;headache;pills',                            1015),
+('radioactive liquid;radioactive',                     30),
+('turkey;can of turkey',                               70);
 
 -- VERY IMPORTANT !!!!
 -- First check if the items_base ID and catalog_items ID is not in use !

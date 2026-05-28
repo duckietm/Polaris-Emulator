@@ -175,6 +175,10 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
 
                     CatalogItem item = page.getCatalogItem(itemId);
 
+                    // Search-results gift sends the catalog offer_id as
+                    // itemId, not catalog_items.id - see the same fix in
+                    // CatalogBuyItemEvent. Fall back to scanning the
+                    // page for the matching offer_id.
                     if (item == null) {
                         for (CatalogItem candidate : page.getCatalogItems().valueCollection()) {
                             if (candidate != null && candidate.getOfferId() == itemId) {

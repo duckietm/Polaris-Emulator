@@ -594,4 +594,13 @@ public class Outgoing {
     public static final int HousekeepingDashboardComposer = 9204;
     public static final int HousekeepingActionLogComposer = 9205;
 
+    // Custom features — IDs 9400+ reserved
+    public static final int RareValuesComposer = 9400;
+    public static final int WheelDataComposer = 9401;
+    public static final int WheelResultComposer = 9402;
+    public static final int WheelRecentWinsComposer = 9403;
+    public static final int WheelAdminPrizesComposer = 9404;
+    public static final int SoundboardSettingsComposer = 9405;
+    public static final int SoundboardPlayComposer = 9406;
+
 }

@@ -1020,6 +1020,10 @@ public class RoomManager {
                     room.getYoutubeWatchers()).compose());
         }
 
+        habbo.getClient().sendResponse(new com.eu.habbo.messages.outgoing.soundboard.SoundboardSettingsComposer(
+                room.isSoundboardEnabled(),
+                Emulator.getGameEnvironment().getSoundboardManager().getSounds()).compose());
+
         WiredManager.triggerUserEntersRoom(room, habbo.getRoomUnit());
         room.habboEntered(habbo);
 

@@ -189,11 +189,7 @@ public class Bot implements Runnable {
                         int timeOut = Emulator.getRandom().nextInt(20) * 2;
                         this.roomUnit.setWalkTimeOut((timeOut < 10 ? 5 : timeOut) + Emulator.getIntUnixTimestamp());
                     }
-                }/* else {
-                    for (RoomTile t : this.room.getLayout().getTilesAround(this.room.getLayout().getTile(this.getRoomUnit().getX(), this.getRoomUnit().getY()))) {
-                        WiredManager.handle(WiredTriggerType.BOT_REACHED_STF, this.roomUnit, this.room, this.room.getItemsAt(t).toArray());
-                    }
-                }*/
+                }
             }
 
             if (!this.chatLines.isEmpty() && this.chatTimeOut <= Emulator.getIntUnixTimestamp() && this.chatAuto) {
@@ -218,7 +214,7 @@ public class Bot implements Runnable {
                     } else {
                         this.lastChatIndex++;
                         if (this.lastChatIndex >= this.chatLines.size()) {
-                            this.lastChatIndex = 0; // start from scratch :-3
+                            this.lastChatIndex = 0;
                         }
                     }
 
@@ -310,9 +306,6 @@ public class Bot implements Runnable {
     public void setName(String name) {
         this.name = name;
         this.needsUpdate = true;
-
-        //if(this.room != null)
-        //this.room.sendComposer(new ChangeNameUpdatedComposer(this.getRoomUnit(), this.getName()).compose());
     }
 
     public String getMotto() {
@@ -539,9 +532,28 @@ public class Bot implements Runnable {
         }
     }
 
-    private static final short[] DEFAULT_OWNER_ACTION_IDS = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    private static final short[] DEFAULT_OWNER_ACTION_IDS = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11};
+
+    public static final int ACTION_ROTATE = 11;
+
+    private static final long MIN_OWNER_ACTION_INTERVAL_MS = 200L;
+
+    private volatile long lastOwnerActionAt;
 
     public short[] getOwnerActionIds() {
         return DEFAULT_OWNER_ACTION_IDS;
+    }
+
+    public synchronized boolean tryAcquireOwnerActionSlot() {
+        long now = System.currentTimeMillis();
+        if (now - this.lastOwnerActionAt < MIN_OWNER_ACTION_INTERVAL_MS) {
+            return false;
+        }
+        this.lastOwnerActionAt = now;
+        return true;
+    }
+
+    public void onPostOwnerAction(int actionId) {
+        // no-op default
     }
 }

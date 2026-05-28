@@ -202,6 +202,8 @@ public class CatalogManager {
     public final Item ecotronItem;
     public final THashMap<Integer, CatalogLimitedConfiguration> limitedNumbers;
     private final List<Voucher> vouchers;
+    // spriteId -> [credits, points, pointsType], derived from catalog_items (see loadFurnitureValues)
+    public final TIntObjectMap<int[]> furnitureValues;
 
     public CatalogManager() {
         long millis = System.currentTimeMillis();
@@ -219,6 +221,7 @@ public class CatalogManager {
         this.buildersClubOfferDefs = new TIntIntHashMap();
         this.vouchers = new ArrayList<>();
         this.limitedNumbers = new THashMap<>();
+        this.furnitureValues = new TIntObjectHashMap<>();
 
         this.initialize();
 
@@ -243,6 +246,56 @@ public class CatalogManager {
         this.loadClothing();
         this.loadRecycler();
         this.loadGiftWrappers();
+        this.loadFurnitureValues();
+    }
+
+    // Builds spriteId -> [credits, points, pointsType] from catalog_items so the
+    // client can show a furni's "value" (toolbar price guide + infostand line).
+    // Only single-item, single-amount FLOOR/WALL sales are considered, so bundles
+    // and multi-packs don't pollute the per-rare price. First clean entry wins.
+    private synchronized void loadFurnitureValues() {
+        this.furnitureValues.clear();
+        final int diamondType = Emulator.getConfig().getInt("seasonal.currency.diamond", 5);
+
+        for (CatalogPage page : this.catalogPages.valueCollection()) {
+            for (CatalogItem catalogItem : page.getCatalogItems().valueCollection()) {
+                if (catalogItem.getAmount() != 1)
+                    continue;
+
+                int credits = catalogItem.getCredits();
+                int points = catalogItem.getPoints();
+                int pointsType = catalogItem.getPointsType();
+
+                // Only diamond-priced items — both the "Valore Rari" panel and the
+                // infostand value line show diamonds only.
+                if (points <= 0 || pointsType != diamondType)
+                    continue;
+
+                THashSet<Item> baseItems = catalogItem.getBaseItems();
+
+                if (baseItems.size() != 1)
+                    continue;
+
+                for (Item item : baseItems) {
+                    FurnitureType type = item.getType();
+
+                    if (type != FurnitureType.FLOOR && type != FurnitureType.WALL)
+                        continue;
+
+                    int spriteId = item.getSpriteId();
+
+                    if (spriteId > 0 && !this.furnitureValues.containsKey(spriteId)) {
+                        this.furnitureValues.put(spriteId, new int[]{credits, points, pointsType});
+                    }
+                }
+            }
+        }
+
+        LOGGER.info("Furniture Values -> Loaded! ({} entries)", this.furnitureValues.size());
+    }
+
+    public TIntObjectMap<int[]> getFurnitureValues() {
+        return this.furnitureValues;
     }
 
     private synchronized void loadLimitedNumbers() {

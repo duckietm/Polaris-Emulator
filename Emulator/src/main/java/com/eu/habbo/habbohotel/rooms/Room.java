@@ -197,6 +197,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   private int wiredInspectMask = WIRED_ACCESS_DEFAULT_INSPECT_MASK;
   private int wiredModifyMask = WIRED_ACCESS_DEFAULT_MODIFY_MASK;
   private boolean youtubeEnabled = false;
+  private boolean soundboardEnabled = false;
   private String youtubeCurrentVideo = "";
   private String youtubeSenderName = "";
   private final java.util.List<String> youtubePlaylist = new java.util.concurrent.CopyOnWriteArrayList<>();
@@ -204,6 +205,8 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
   public boolean isYoutubeEnabled() { return this.youtubeEnabled; }
   public void setYoutubeEnabled(boolean enabled) { this.youtubeEnabled = enabled; }
+  public boolean isSoundboardEnabled() { return this.soundboardEnabled; }
+  public void setSoundboardEnabled(boolean enabled) { this.soundboardEnabled = enabled; }
   public String getYoutubeCurrentVideo() { return this.youtubeCurrentVideo; }
   public String getYoutubeSenderName() { return this.youtubeSenderName; }
   public java.util.List<String> getYoutubePlaylist() { return this.youtubePlaylist; }
@@ -250,6 +253,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     this.allowWalkthrough = set.getBoolean("allow_walkthrough");
     this.hideWall = set.getBoolean("allow_hidewall");
     try { this.youtubeEnabled = set.getBoolean("youtube_enabled"); } catch (Exception e) { this.youtubeEnabled = false; }
+    try { this.soundboardEnabled = set.getBoolean("soundboard_enabled"); } catch (Exception e) { this.soundboardEnabled = false; }
     this.chatMode = set.getInt("chat_mode");
     this.chatWeight = set.getInt("chat_weight");
     this.chatSpeed = set.getInt("chat_speed");

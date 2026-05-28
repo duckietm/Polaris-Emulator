@@ -39,12 +39,23 @@ public final class Emulator {
     private static final String OS_NAME = (System.getProperty("os.name") != null ? System.getProperty("os.name") : "Unknown");
     private static final String CLASS_PATH = (System.getProperty("java.class.path") != null ? System.getProperty("java.class.path") : "Unknown");
 
+    // Fallback version, only used when running outside a packaged jar (e.g. from
+    // the IDE). In production the version comes from the jar manifest below.
     public final static int MAJOR = 4;
     public final static int MINOR = 1;
     public final static int BUILD = 0;
     public final static String PREVIEW = "";
 
-    public static final String version = "Arcturus Morningstar" + " " + MAJOR + "." + MINOR + "." + BUILD + " " + PREVIEW;
+    // Tied to the Maven project version: read from the jar manifest
+    // (Implementation-Version = ${project.version}, see pom assembly plugin).
+    private static String resolveVersionNumber() {
+        String implementation = Emulator.class.getPackage().getImplementationVersion();
+        if (implementation != null && !implementation.isEmpty()) return implementation;
+        String fallback = MAJOR + "." + MINOR + "." + BUILD;
+        return PREVIEW.isEmpty() ? fallback : fallback + " " + PREVIEW;
+    }
+
+    public static final String version = "Arcturus Morningstar Extended " + resolveVersionNumber();
     private static final String logo =
             "\n" +
                     "███╗   ███╗ ██████╗ ██████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗ ███████╗████████╗ █████╗ ██████╗ \n" +

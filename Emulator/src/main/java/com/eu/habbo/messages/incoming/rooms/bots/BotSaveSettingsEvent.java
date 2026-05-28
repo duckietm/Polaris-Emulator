@@ -5,11 +5,13 @@ import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.bots.BotManager;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomUserRotation;
 import com.eu.habbo.habbohotel.users.DanceType;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.BotErrorComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserDanceComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserNameChangedComposer;
+import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUsersComposer;
 import com.eu.habbo.plugin.events.bots.BotSavedChatEvent;
 import com.eu.habbo.plugin.events.bots.BotSavedLookEvent;
@@ -28,16 +30,20 @@ public class BotSaveSettingsEvent extends MessageHandler {
 
         if (room.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() || this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)) {
             int botId = this.packet.readInt();
-
             Bot bot = room.getBot(Math.abs(botId));
-
             if (bot == null)
                 return;
-
-            if (bot.getOwnerActionIds().length == 0)
-                return;
-
             int settingId = this.packet.readInt();
+            boolean allowed = false;
+            for (short a : bot.getOwnerActionIds()) {
+                if (a == settingId) {
+                    allowed = true;
+                    break;
+                }
+            }
+            if (!allowed) return;
+
+            if (!bot.tryAcquireOwnerActionSlot()) return;
 
             switch (settingId) {
                 case 1:
@@ -163,7 +169,17 @@ public class BotSaveSettingsEvent extends MessageHandler {
                     bot.needsUpdate(true);
                     room.sendComposer(new RoomUsersComposer(bot).compose());
                     break;
+                case Bot.ACTION_ROTATE:
+                    if (bot.getRoomUnit() == null) break;
+                    int next = (bot.getRoomUnit().getBodyRotation().getValue() + 2) % 8;
+                    RoomUserRotation rotation = RoomUserRotation.fromValue(next);
+                    bot.getRoomUnit().setRotation(rotation);
+                    bot.needsUpdate(true);
+                    room.sendComposer(new RoomUserStatusComposer(bot.getRoomUnit()).compose());
+                    break;
             }
+
+            bot.onPostOwnerAction(settingId);
 
             if (bot.needsUpdate()) {
                 Emulator.getThreading().run(bot);

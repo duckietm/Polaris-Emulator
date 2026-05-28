@@ -38,6 +38,7 @@
                     <archive>
                         <manifest>
                             <mainClass>com.eu.habbo.Emulator</mainClass>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                         </manifest>
                     </archive>
                 </configuration>

@@ -23,7 +23,6 @@ import java.util.regex.Pattern;
 
 public class FrankBot extends ButlerBot {
     private static final Logger LOGGER = LoggerFactory.getLogger(FrankBot.class);
-
     public static final String BOT_TYPE = "frank";
     public static final String PERMISSION_USE = "acc_bot_frank";
     private static final String KEY_DOOR_LINES = "__door_lines";
@@ -75,11 +74,18 @@ public class FrankBot extends ButlerBot {
         }
     }
 
-    private static final short[] FRANK_OWNER_ACTIONS = new short[0];
+    private static final short[] FRANK_OWNER_ACTIONS = { (short) Bot.ACTION_ROTATE };
 
     @Override
     public short[] getOwnerActionIds() {
         return FRANK_OWNER_ACTIONS;
+    }
+
+    @Override
+    public void onPostOwnerAction(int actionId) {
+        if (actionId == ACTION_ROTATE && this.getRoomUnit() != null) {
+            this.homeRotation = this.getRoomUnit().getBodyRotation();
+        }
     }
 
     public static void initialise() {

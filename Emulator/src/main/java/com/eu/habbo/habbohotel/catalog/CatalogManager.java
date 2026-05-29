@@ -202,8 +202,8 @@ public class CatalogManager {
     public final Item ecotronItem;
     public final THashMap<Integer, CatalogLimitedConfiguration> limitedNumbers;
     private final List<Voucher> vouchers;
-    // spriteId -> [credits, points, pointsType], derived from catalog_items (see loadFurnitureValues)
     public final TIntObjectMap<int[]> furnitureValues;
+    private volatile byte[] rareValuesPayloadCache;
 
     public CatalogManager() {
         long millis = System.currentTimeMillis();
@@ -249,10 +249,6 @@ public class CatalogManager {
         this.loadFurnitureValues();
     }
 
-    // Builds spriteId -> [credits, points, pointsType] from catalog_items so the
-    // client can show a furni's "value" (toolbar price guide + infostand line).
-    // Only single-item, single-amount FLOOR/WALL sales are considered, so bundles
-    // and multi-packs don't pollute the per-rare price. First clean entry wins.
     private synchronized void loadFurnitureValues() {
         this.furnitureValues.clear();
         final int diamondType = Emulator.getConfig().getInt("seasonal.currency.diamond", 5);
@@ -266,8 +262,6 @@ public class CatalogManager {
                 int points = catalogItem.getPoints();
                 int pointsType = catalogItem.getPointsType();
 
-                // Only diamond-priced items — both the "Valore Rari" panel and the
-                // infostand value line show diamonds only.
                 if (points <= 0 || pointsType != diamondType)
                     continue;
 
@@ -291,11 +285,37 @@ public class CatalogManager {
             }
         }
 
+        this.rebuildRareValuesPayloadCache();
+
         LOGGER.info("Furniture Values -> Loaded! ({} entries)", this.furnitureValues.size());
+    }
+
+    private void rebuildRareValuesPayloadCache() {
+        try (java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream(this.furnitureValues.size() * 16 + 8);
+             java.io.DataOutputStream out = new java.io.DataOutputStream(baos)) {
+            out.writeInt(this.furnitureValues.size());
+            TIntObjectIterator<int[]> iterator = this.furnitureValues.iterator();
+            while (iterator.hasNext()) {
+                iterator.advance();
+                int[] value = iterator.value();
+                out.writeInt(iterator.key()); // spriteId
+                out.writeInt(value[0]);        // credits
+                out.writeInt(value[1]);        // points
+                out.writeInt(value[2]);        // pointsType
+            }
+            this.rareValuesPayloadCache = baos.toByteArray();
+        } catch (java.io.IOException e) {
+            LOGGER.error("Failed to build rare values payload cache", e);
+            this.rareValuesPayloadCache = null;
+        }
     }
 
     public TIntObjectMap<int[]> getFurnitureValues() {
         return this.furnitureValues;
+    }
+
+    public byte[] getRareValuesPayloadSnapshot() {
+        return this.rareValuesPayloadCache;
     }
 
     private synchronized void loadLimitedNumbers() {
@@ -1104,9 +1124,6 @@ public class CatalogManager {
                                 type = type.replace("bot_", "");
                                 type = type.replace("visitor_logger", "visitor_log");
 
-                                // Permission gate keyed on the canonical base-item name
-                                // (admin-controlled but stable), not the catalog page name
-                                // which can be renamed and bypass the check.
                                 if (("bot_" + com.eu.habbo.habbohotel.bots.FrankBot.BOT_TYPE).equals(baseName)
                                         || ("rentable_bot_" + com.eu.habbo.habbohotel.bots.FrankBot.BOT_TYPE).equals(baseName)) {
                                     if (!habbo.getClient().getHabbo().hasPermission(com.eu.habbo.habbohotel.bots.FrankBot.PERMISSION_USE)) {

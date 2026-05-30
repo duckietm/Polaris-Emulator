@@ -153,7 +153,13 @@ public class GameClient {
             this.channel.close();
 
             if (this.habbo != null) {
-                if (this.habbo.isOnline()) {
+                // Agisci sull'Habbo SOLO se è ancora attaccato a QUESTO client. Su un
+                // reconnect veloce (drop Cloudflare → il client riconnette) l'Habbo può
+                // essere già stato riassegnato alla NUOVA connessione (session resume):
+                // in quel caso questo dispose della vecchia connessione NON deve
+                // parcheggiarlo né disconnetterlo, altrimenti ucciderebbe la sessione
+                // appena ripristinata (era la causa del "Bye"/kick al 2° reconnect).
+                if (this.habbo.getClient() == this && this.habbo.isOnline()) {
                     // Try to park the habbo in the grace period instead of immediate disconnect
                     boolean parked = SessionResumeManager.getInstance().parkHabbo(this.habbo, this.ssoTicket);
 

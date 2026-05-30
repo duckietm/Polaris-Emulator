@@ -42,14 +42,18 @@ public class RoomBundleLayout extends SingleBundle {
         }
 
         if (this.room == null) {
-            if (this.roomId > 0) {
-                this.room = Emulator.getGameEnvironment().getRoomManager().loadRoom(this.roomId);
+            RoomManager roomManager = Emulator.getGameEnvironment().getRoomManager();
+            if (this.roomId > 0 && roomManager != null) {
+                this.room = roomManager.loadRoom(this.roomId);
 
                 if (this.room != null)
                     this.room.preventUnloading = true;
-            } else {
+            } else if (this.roomId <= 0) {
                 LOGGER.error("No room id specified for room bundle {}({})", this.getPageName(), this.getId());
             }
+            // roomManager can be null when CatalogManager.loadFurnitureValues() runs
+            // during GameEnvironment.load() before RoomManager is constructed; in that
+            // case skip eager room loading — the bundle resolves lazily at runtime.
         }
 
         if (this.room == null) {

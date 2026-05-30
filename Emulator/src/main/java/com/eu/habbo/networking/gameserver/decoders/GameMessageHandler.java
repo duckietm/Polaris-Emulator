@@ -11,6 +11,7 @@ import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.TooLongFrameException;
 import io.netty.handler.codec.UnsupportedMessageTypeException;
 import io.netty.handler.ssl.NotSslRecordException;
+import io.netty.util.ReferenceCountUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +40,19 @@ public class GameMessageHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        if (!(msg instanceof ClientMessage)) {
+            try {
+                if (Emulator.getConfig().getBoolean("debug.mode")) {
+                    LOGGER.debug("Discarding non-game message {} from {}",
+                            msg.getClass().getSimpleName(), ctx.channel().remoteAddress());
+                }
+            } finally {
+                ReferenceCountUtil.release(msg);
+                ctx.channel().close();
+            }
+            return;
+        }
+
         ClientMessage message = (ClientMessage) msg;
 
         try {

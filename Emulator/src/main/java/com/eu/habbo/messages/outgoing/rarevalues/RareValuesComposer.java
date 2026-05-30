@@ -6,18 +6,29 @@ import com.eu.habbo.messages.outgoing.Outgoing;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntObjectMap;
 
-// Sends the full spriteId -> value map to the client. Consumed by the toolbar
-// price guide and the furni infostand "value" line. See CatalogManager#loadFurnitureValues.
 public class RareValuesComposer extends MessageComposer {
     private final TIntObjectMap<int[]> values;
+    private final byte[] snapshot;
+
+    public RareValuesComposer(byte[] snapshot) {
+        this.values = null;
+        this.snapshot = snapshot;
+    }
 
     public RareValuesComposer(TIntObjectMap<int[]> values) {
         this.values = values;
+        this.snapshot = null;
     }
 
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.RareValuesComposer);
+
+        if (this.snapshot != null) {
+            this.response.appendRawBytes(this.snapshot);
+            return this.response;
+        }
+
         this.response.appendInt(this.values.size());
 
         TIntObjectIterator<int[]> iterator = this.values.iterator();

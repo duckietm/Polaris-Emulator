@@ -133,17 +133,10 @@ public class SecureLoginEvent extends MessageHandler {
                 this.client.setHabbo(habbo);
                 this.client.setMachineId(habbo.getHabboInfo().getMachineID());
 
-                // Clear the SSO ticket now that session is resumed (prevent reuse)
-                if (!Emulator.debugging) {
-                    try (java.sql.Connection conn = Emulator.getDatabase().getDataSource().getConnection();
-                         java.sql.PreparedStatement stmt = conn.prepareStatement("UPDATE users SET auth_ticket = ? WHERE id = ? LIMIT 1")) {
-                        stmt.setString(1, "");
-                        stmt.setInt(2, habbo.getHabboInfo().getId());
-                        stmt.execute();
-                    } catch (Exception e) {
-                        LOGGER.error("Failed to clear SSO ticket after session resume", e);
-                    }
-                }
+                // NB: NON svuotiamo il ticket SSO qui (vedi HabboManager.loadHabbo):
+                // dietro Cloudflare il client ritenta la connessione con lo stesso
+                // ticket, quindi deve restare valido fino alla scadenza TTL. Consumarlo
+                // farebbe fallire i retry / l'hard-refresh con "non-existing SSO token".
             } else {
                 // Normal login — load from database
                 habbo = Emulator.getGameEnvironment().getHabboManager().loadHabbo(sso);

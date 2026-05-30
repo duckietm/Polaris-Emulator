@@ -132,15 +132,12 @@ public class HabboManager {
                         Emulator.getPluginManager().fireEvent(new UserRegisteredEvent(habbo));
                     }
 
-                    if (!Emulator.debugging) {
-                        try (PreparedStatement stmt = connection.prepareStatement("UPDATE users SET auth_ticket = ? WHERE id = ? LIMIT 1")) {
-                            stmt.setString(1, "");
-                            stmt.setInt(2, habbo.getHabboInfo().getId());
-                            stmt.execute();
-                        } catch (SQLException e) {
-                            LOGGER.error("Caught SQL exception", e);
-                        }
-                    }
+                    // NB: il ticket SSO NON viene svuotato qui di proposito. Dietro
+                    // Cloudflare il WebSocket viene droppato e il client ritenta più
+                    // volte con lo STESSO ticket: se lo consumassimo al primo uso, i
+                    // retry (e l'hard-refresh) fallirebbero con "non-existing SSO token".
+                    // Il ticket resta valido fino alla scadenza (auth_ticket_expires_at,
+                    // TTL gestito dal CMS) o finché il CMS non ne scrive uno nuovo / logout.
                 }
             }
         } catch (SQLException e) {

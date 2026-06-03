@@ -21,6 +21,7 @@ public class HabboMention {
     private final int mentionType;
     private final int timestamp;
     private final boolean read;
+    private final String senderFigure;
 
     public HabboMention(ResultSet set) throws SQLException {
         this.id = set.getInt("id");
@@ -33,6 +34,16 @@ public class HabboMention {
         this.mentionType = set.getInt("mention_type");
         this.timestamp = set.getInt("timestamp");
         this.read = set.getInt("read") == 1;
+        this.senderFigure = hasSenderFigure(set) ? set.getString("sender_figure") : "";
+    }
+
+    private static boolean hasSenderFigure(ResultSet set) {
+        try {
+            set.findColumn("sender_figure");
+            return true;
+        } catch (SQLException e) {
+            return false;
+        }
     }
 
     public HabboMention(int targetUserId, int id, Habbo sender, Room room, String roomName, String message, int mentionType, int timestamp) {
@@ -46,6 +57,7 @@ public class HabboMention {
         this.mentionType = mentionType;
         this.timestamp = timestamp;
         this.read = false;
+        this.senderFigure = sender.getHabboInfo().getLook();
     }
 
     public int getId() {
@@ -86,5 +98,9 @@ public class HabboMention {
 
     public boolean isRead() {
         return this.read;
+    }
+
+    public String getSenderFigure() {
+        return this.senderFigure == null ? "" : this.senderFigure;
     }
 }

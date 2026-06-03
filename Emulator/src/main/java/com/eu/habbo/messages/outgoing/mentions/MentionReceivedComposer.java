@@ -18,6 +18,7 @@ public class MentionReceivedComposer extends MessageComposer {
         this.response.appendInt(this.mention.getId());
         this.response.appendInt(this.mention.getSenderUserId());
         this.response.appendString(this.mention.getSenderUsername());
+        this.response.appendString(this.mention.getSenderFigure());
         this.response.appendInt(this.mention.getRoomId());
         this.response.appendString(this.mention.getRoomName());
         this.response.appendString(this.mention.getMessage());

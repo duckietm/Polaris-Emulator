@@ -74,3 +74,16 @@ INSERT IGNORE INTO `emulator_settings` (`key`, `value`, `comment`) VALUES
 ALTER TABLE `wordfilter`
 ADD COLUMN `prefix_only` ENUM('0','1') NOT NULL DEFAULT '0'
 COMMENT 'When 1, this word only applies to custom prefixes, not to chat/motto/guild.' AFTER `mute`;
+
+-- ----------------------------------------------------------------------------
+-- 5. Per-user mention preferences (:disablementions / :disablemassmentions)
+--
+--    Read by HabboStats (default '1' = enabled), toggled by the commands.
+--    Without these columns the toggle commands cannot persist.
+-- ----------------------------------------------------------------------------
+
+ALTER TABLE `users_settings`
+    ADD COLUMN IF NOT EXISTS `mentions_enabled`      ENUM('0','1') NOT NULL DEFAULT '1'
+        COMMENT 'Receive @nick mention notifications.',
+    ADD COLUMN IF NOT EXISTS `mass_mentions_enabled` ENUM('0','1') NOT NULL DEFAULT '1'
+        COMMENT 'Receive broadcast (@all / @friends / @room) mentions.';

@@ -23,6 +23,7 @@ public class MentionsListComposer extends MessageComposer {
             this.response.appendInt(mention.getId());
             this.response.appendInt(mention.getSenderUserId());
             this.response.appendString(mention.getSenderUsername());
+            this.response.appendString(mention.getSenderFigure());
             this.response.appendInt(mention.getRoomId());
             this.response.appendString(mention.getRoomName());
             this.response.appendString(mention.getMessage());

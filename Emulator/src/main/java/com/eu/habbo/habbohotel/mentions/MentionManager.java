@@ -297,7 +297,7 @@ public class MentionManager {
         if (limit > 200) limit = 200;
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                     "SELECT * FROM habbo_mentions WHERE target_user_id = ? ORDER BY id DESC LIMIT ?")) {
+                     "SELECT habbo_mentions.*, users.look AS sender_figure FROM habbo_mentions LEFT JOIN users ON users.id = habbo_mentions.sender_user_id WHERE target_user_id = ? ORDER BY id DESC LIMIT ?")) {
             statement.setInt(1, userId);
             statement.setInt(2, limit);
             try (ResultSet set = statement.executeQuery()) {
@@ -428,9 +428,20 @@ public class MentionManager {
         if (habbo != null) {
             return habbo;
         }
+        // Hotel-wide fallback: a @nick mention must reach the target even when
+        // they are online in a different room (not just the sender's room).
+        HabboManager habboManager = Emulator.getGameEnvironment().getHabboManager();
+        habbo = habboManager.getHabbo(rawToken);
+        if (habbo != null) {
+            return habbo;
+        }
         String trimmed = trimTrailingPunctuation(rawToken);
         if (!trimmed.isEmpty() && !trimmed.equals(rawToken)) {
-            return room.getHabbo(trimmed);
+            habbo = room.getHabbo(trimmed);
+            if (habbo != null) {
+                return habbo;
+            }
+            return habboManager.getHabbo(trimmed);
         }
         return null;
     }

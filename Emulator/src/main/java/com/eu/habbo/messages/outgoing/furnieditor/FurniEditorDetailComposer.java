@@ -12,12 +12,14 @@ public class FurniEditorDetailComposer extends MessageComposer {
     private final int usageCount;
     private final List<Map<String, Object>> catalogItems;
     private final String furniDataJson;
+    private final String resolverPreviewJson;
 
-    public FurniEditorDetailComposer(Map<String, Object> item, int usageCount, List<Map<String, Object>> catalogItems, String furniDataJson) {
+    public FurniEditorDetailComposer(Map<String, Object> item, int usageCount, List<Map<String, Object>> catalogItems, String furniDataJson, String resolverPreviewJson) {
         this.item = item;
         this.usageCount = usageCount;
         this.catalogItems = catalogItems;
         this.furniDataJson = furniDataJson;
+        this.resolverPreviewJson = resolverPreviewJson;
     }
 
     @Override
@@ -71,6 +73,7 @@ public class FurniEditorDetailComposer extends MessageComposer {
 
         // furnidata JSON string
         this.response.appendString(this.furniDataJson != null ? this.furniDataJson : "{}");
+        this.response.appendString(this.resolverPreviewJson != null ? this.resolverPreviewJson : "{\"fields\":[]}");
 
         return this.response;
     }

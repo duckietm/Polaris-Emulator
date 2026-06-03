@@ -74,8 +74,8 @@ public class FurniEditorDetailEvent extends MessageHandler {
                     "ci.page_id AS ci_page_id, COALESCE(cp.caption, '') AS page_caption " +
                     "FROM catalog_items ci " +
                     "LEFT JOIN catalog_pages cp ON ci.page_id = cp.id " +
-                    "WHERE ci.item_ids LIKE ?")) {
-                stmt.setString(1, "%" + itemId + "%");
+                    "WHERE FIND_IN_SET(?, REPLACE(REPLACE(ci.item_ids, ';', ','), ' ', '')) > 0")) {
+                stmt.setString(1, String.valueOf(itemId));
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
                         catalogItems.add(FurniEditorHelper.readCatalogRef(rs));
@@ -90,7 +90,8 @@ public class FurniEditorDetailEvent extends MessageHandler {
         } catch (Exception e) {
             furniDataJson = "{}";
         }
+        String resolverPreviewJson = FurniEditorResolverPreview.build(item, furniDataJson);
 
-        client.sendResponse(new FurniEditorDetailComposer(item, usageCount, catalogItems, furniDataJson));
+        client.sendResponse(new FurniEditorDetailComposer(item, usageCount, catalogItems, furniDataJson, resolverPreviewJson));
     }
 }

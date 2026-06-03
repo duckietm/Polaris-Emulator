@@ -23,7 +23,6 @@ public class WordFilter {
     private static final Logger LOGGER = LoggerFactory.getLogger(WordFilter.class);
 
     private static final Pattern DIACRITICS_AND_FRIENDS = Pattern.compile("[\\p{InCombiningDiacriticalMarks}\\p{IsLm}\\p{IsSk}]+");
-    //Configuration. Loaded from database & updated accordingly.
     public static boolean ENABLED_FRIENDCHAT = true;
     public static String DEFAULT_REPLACEMENT = "bobba";
     protected THashSet<WordFilterWord> autoReportWords = new THashSet<>();
@@ -63,10 +62,12 @@ public class WordFilter {
                         continue;
                     }
 
-                    if (word.autoReport)
-                        this.autoReportWords.add(word);
-                    else if (word.hideMessage)
-                        this.hideMessageWords.add(word);
+                    if (!word.prefixOnly) {
+                        if (word.autoReport)
+                            this.autoReportWords.add(word);
+                        else if (word.hideMessage)
+                            this.hideMessageWords.add(word);
+                    }
 
                     this.words.add(word);
                 }
@@ -146,6 +147,8 @@ public class WordFilter {
         while (iterator.hasNext()) {
             WordFilterWord word = (WordFilterWord) iterator.next();
 
+            if (word.prefixOnly) continue;
+
             if (StringUtils.containsIgnoreCase(filteredMessage, word.key)) {
                 if (habbo != null) {
                     if (Emulator.getPluginManager().fireEvent(new UserTriggerWordFilterEvent(habbo, word)).isCancelled())
@@ -178,6 +181,8 @@ public class WordFilter {
 
         while (iterator.hasNext()) {
             WordFilterWord word = (WordFilterWord) iterator.next();
+
+            if (word.prefixOnly) continue;
 
             if (StringUtils.containsIgnoreCase(message, word.key)) {
                 if (habbo != null) {

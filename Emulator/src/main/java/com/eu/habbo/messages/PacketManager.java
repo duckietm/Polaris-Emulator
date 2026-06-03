@@ -39,6 +39,7 @@ import com.eu.habbo.messages.incoming.hotelview.*;
 import com.eu.habbo.messages.incoming.inventory.*;
 import com.eu.habbo.messages.incoming.inventory.nickicons.*;
 import com.eu.habbo.messages.incoming.inventory.prefixes.*;
+import com.eu.habbo.messages.incoming.mentions.*;
 import com.eu.habbo.messages.incoming.modtool.*;
 import com.eu.habbo.messages.incoming.navigator.*;
 import com.eu.habbo.messages.incoming.polls.AnswerPollEvent;
@@ -426,6 +427,9 @@ public class PacketManager {
     }
 
     void registerRooms() throws Exception {
+        this.registerHandler(Incoming.RequestMentionsEvent, RequestMentionsEvent.class);
+        this.registerHandler(Incoming.MarkMentionsReadEvent, MarkMentionsReadEvent.class);
+        this.registerHandler(Incoming.DeleteMentionEvent, DeleteMentionEvent.class);
         this.registerHandler(Incoming.RequestRoomLoadEvent, RequestRoomLoadEvent.class);
         this.registerHandler(Incoming.RequestHeightmapEvent, RequestRoomHeightmapEvent.class);
         this.registerHandler(Incoming.RequestRoomHeightmapEvent, RequestRoomHeightmapEvent.class);

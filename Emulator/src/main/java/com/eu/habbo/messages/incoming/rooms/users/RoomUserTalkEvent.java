@@ -36,6 +36,9 @@ public class RoomUserTalkEvent extends MessageHandler {
                 if (RoomChatMessage.SAVE_ROOM_CHATS) {
                     Emulator.getThreading().run(message);
                 }
+
+                Emulator.getGameEnvironment().getMentionManager()
+                    .process(this.client.getHabbo(), room, message.getMessage(), RoomChatType.TALK);
             }
         } else {
             String reportMessage = Emulator.getTexts().getValue("scripter.warning.chat.length").replace("%username%", this.client.getHabbo().getHabboInfo().getUsername()).replace("%length%", message.getMessage().length() + "");

@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.campaign.calendar.CalendarManager;
 import com.eu.habbo.habbohotel.catalog.CatalogManager;
 import com.eu.habbo.habbohotel.wheel.WheelManager;
 import com.eu.habbo.habbohotel.soundboard.SoundboardManager;
+import com.eu.habbo.habbohotel.mentions.MentionManager;
 import com.eu.habbo.habbohotel.commands.CommandHandler;
 import com.eu.habbo.habbohotel.crafting.CraftingManager;
 import com.eu.habbo.habbohotel.guides.GuideManager;
@@ -68,6 +69,7 @@ public class GameEnvironment {
     private InfostandBackgroundManager infostandBackgroundManager;
     private WheelManager wheelManager;
     private SoundboardManager soundboardManager;
+    private MentionManager mentionManager;
 
     public void load() throws Exception {
         LOGGER.info("GameEnvironment -> Loading...");
@@ -99,6 +101,7 @@ public class GameEnvironment {
         this.infostandBackgroundManager = new InfostandBackgroundManager();
         this.wheelManager = new WheelManager();
         this.soundboardManager = new SoundboardManager();
+        this.mentionManager = new MentionManager();
 
         this.roomManager.loadPublicRooms();
         this.navigatorManager.loadNavigator();
@@ -200,6 +203,10 @@ public class GameEnvironment {
 
     public PetManager getPetManager() {
         return this.petManager;
+    }
+
+    public MentionManager getMentionManager() {
+        return this.mentionManager;
     }
 
     public AchievementManager getAchievementManager() {

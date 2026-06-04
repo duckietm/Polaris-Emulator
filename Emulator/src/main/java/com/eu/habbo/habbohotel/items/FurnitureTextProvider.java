@@ -51,6 +51,7 @@ public class FurnitureTextProvider {
             LOGGER.info("FurnitureTextProvider: indexed {} furnidata names from {}", this.index.size(), this.source);
 
             if (Boolean.parseBoolean(Emulator.getConfig().getValue("items.furnidata.watch.enabled", "true"))) {
+                if (this.watcher != null) this.watcher.stop();
                 this.watcher = new FurnidataWatcher(this, this.source, DEFAULT_MAX_BYTES);
                 this.watcher.start();
             }

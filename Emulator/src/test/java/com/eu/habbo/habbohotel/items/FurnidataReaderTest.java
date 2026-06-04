@@ -56,6 +56,17 @@ class FurnidataReaderTest {
     }
 
     @Test
+    void oversizedManifestIsSkippedNeverThrows(@TempDir Path dir) throws Exception {
+        Path base = dir.resolve("furnidata");
+        Path core = base.resolve("core");
+        Files.createDirectories(core);
+        // A root manifest larger than the cap we pass in.
+        Files.writeString(base.resolve("manifest.json"), "{ \"tiers\": [ \"core\" ] }   // padding ".repeat(50));
+        List<FurnidataEntry> entries = new FurnidataReader(base, 8 /* bytes */).read();
+        assertTrue(entries.isEmpty());
+    }
+
+    @Test
     void splitDirRejectsTraversalFiles(@TempDir Path dir) throws Exception {
         Path secret = dir.resolve("secret.json");
         Files.writeString(secret, "{ \"roomitemtypes\": { \"furnitype\": [ { \"id\": 99, \"classname\": \"x\", \"name\": \"LEAK\", \"description\": \"\" } ] } }");

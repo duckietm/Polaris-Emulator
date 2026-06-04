@@ -85,7 +85,9 @@ public class FurnidataReader {
             Path m = dir.resolve(name);
             if (!Files.exists(m)) continue;
             try {
-                JsonObject obj = JsonParser.parseString(readJson5Capped(m)).getAsJsonObject();
+                String raw = readJson5Capped(m);
+                if (raw == null) continue;
+                JsonObject obj = JsonParser.parseString(raw).getAsJsonObject();
                 if (obj.has(key) && obj.get(key).isJsonArray()) {
                     List<String> list = new ArrayList<>();
                     for (JsonElement el : obj.getAsJsonArray(key)) list.add(el.getAsString());
@@ -133,7 +135,13 @@ public class FurnidataReader {
         return candidate.toAbsolutePath().normalize().startsWith(baseNorm);
     }
 
-    /** Strip // and block comments and trailing commas so Gson can parse JSON5. */
+    /**
+     * Strip // and block comments and trailing commas so Gson can parse JSON5.
+     * Known limitation: the trailing-comma pass is a regex over the whole output,
+     * so a string value literally containing ",[whitespace]}" or ",[whitespace]]"
+     * would be altered. Real Habbo furnidata names/descriptions do not contain
+     * that pattern; values are additionally sanitized downstream before use.
+     */
     static String stripJson5(String content) {
         if (content == null || content.isEmpty()) return content;
         StringBuilder out = new StringBuilder(content.length());

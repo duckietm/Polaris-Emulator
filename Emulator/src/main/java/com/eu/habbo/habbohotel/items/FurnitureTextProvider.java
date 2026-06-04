@@ -69,15 +69,30 @@ public class FurnitureTextProvider {
         return Files.exists(legacy) ? legacy : null;
     }
 
-    /** Build a fresh sanitized index from the given entries and swap it in atomically. */
-    public void reindex(List<FurnidataEntry> entries) {
+    /**
+     * Build a fresh sanitized index, swap it in atomically, and return the
+     * changed/added entries (sanitized) as the delta versus the previous index.
+     */
+    public java.util.List<FurnidataEntry> reindex(java.util.List<FurnidataEntry> entries) {
         Map<String, FurniText> next = new HashMap<>(Math.max(16, entries.size() * 2));
         for (FurnidataEntry e : entries) {
             String key = baseKey(e.classname());
             if (key == null) continue;
             next.put(key, new FurniText(e.id(), e.type(), sanitize(e.name()), sanitize(e.description())));
         }
+
+        Map<String, FurniText> prev = this.index;
+        java.util.List<FurnidataEntry> delta = new java.util.ArrayList<>();
+        for (Map.Entry<String, FurniText> en : next.entrySet()) {
+            FurniText cur = en.getValue();
+            FurniText old = prev.get(en.getKey());
+            if (old == null || !old.name().equals(cur.name()) || !old.description().equals(cur.description())) {
+                delta.add(new FurnidataEntry(cur.id(), en.getKey(), cur.type(), cur.name(), cur.description()));
+            }
+        }
+
         this.index = next; // atomic reference swap
+        return delta;
     }
 
     /** Returns the sanitized display name for a DB classname, or null if absent/disabled. */

@@ -173,9 +173,12 @@ public class Item implements ISerialize {
      * Never returns null.
      */
     public String getDisplayName() {
-        FurnitureTextProvider provider = Emulator.getGameEnvironment().getFurnitureTextProvider();
+        FurnitureTextProvider provider = (Emulator.getGameEnvironment() != null)
+                ? Emulator.getGameEnvironment().getFurnitureTextProvider()
+                : null;
         String name = (provider != null) ? provider.getName(this.name) : null;
-        return (name != null && !name.isBlank()) ? name : this.fullName;
+        if (name != null && !name.isBlank()) return name;
+        return (this.fullName != null) ? this.fullName : "";
     }
 
     public FurnitureType getType() {

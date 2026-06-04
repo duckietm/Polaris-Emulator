@@ -56,7 +56,9 @@ public class FurnitureTextProvider {
         String override = Emulator.getConfig().getValue("items.furnidata.path", "");
         if (!override.isEmpty()) {
             Path p = Paths.get(override);
-            return Files.exists(p) ? p : null;
+            if (Files.exists(p)) return p;
+            LOGGER.warn("FurnitureTextProvider: items.furnidata.path '{}' does not exist", override);
+            return null;
         }
         String basePath = Emulator.getConfig().getValue("furni.editor.asset.base.path", "");
         if (basePath.isEmpty()) return null;

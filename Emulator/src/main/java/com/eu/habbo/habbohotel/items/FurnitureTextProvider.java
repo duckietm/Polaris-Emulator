@@ -27,6 +27,8 @@ public class FurnitureTextProvider {
 
     private final boolean enabled;
     private volatile Map<String, FurniText> index = Map.of();
+    private volatile Path source;
+    private FurnidataWatcher watcher;
 
     public FurnitureTextProvider(boolean enabled) {
         this.enabled = enabled;
@@ -40,16 +42,25 @@ public class FurnitureTextProvider {
     /** Resolve the furnidata source from config and build the initial index. Never throws. */
     public void init() {
         try {
-            Path source = resolveSource();
-            if (source == null) {
+            this.source = resolveSource();
+            if (this.source == null) {
                 LOGGER.warn("FurnitureTextProvider: no furnidata source resolved — names fall back to public_name");
                 return;
             }
-            reindex(new FurnidataReader(source, DEFAULT_MAX_BYTES).read());
-            LOGGER.info("FurnitureTextProvider: indexed {} furnidata names from {}", this.index.size(), source);
+            reindex(new FurnidataReader(this.source, DEFAULT_MAX_BYTES).read());
+            LOGGER.info("FurnitureTextProvider: indexed {} furnidata names from {}", this.index.size(), this.source);
+
+            if (Boolean.parseBoolean(Emulator.getConfig().getValue("items.furnidata.watch.enabled", "true"))) {
+                this.watcher = new FurnidataWatcher(this, this.source, DEFAULT_MAX_BYTES);
+                this.watcher.start();
+            }
         } catch (Exception e) {
             LOGGER.warn("FurnitureTextProvider.init failed — names fall back to public_name", e);
         }
+    }
+
+    public Path getSource() {
+        return this.source;
     }
 
     private static Path resolveSource() {

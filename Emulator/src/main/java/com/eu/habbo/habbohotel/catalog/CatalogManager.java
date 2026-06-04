@@ -1054,13 +1054,13 @@ public class CatalogManager {
                     if (Emulator.getConfig().getBoolean("hotel.catalog.ltd.limit.enabled")) {
                         int ltdLimit = Emulator.getConfig().getInt("hotel.purchase.ltd.limit.daily.total");
                         if (habbo.getHabboStats().totalLtds() >= ltdLimit) {
-                            habbo.alert(Emulator.getTexts().getValue("error.catalog.buy.limited.daily.total").replace("%itemname%", item.getBaseItems().iterator().next().getFullName()).replace("%limit%", ltdLimit + ""));
+                            habbo.alert(Emulator.getTexts().getValue("error.catalog.buy.limited.daily.total").replace("%itemname%", item.getBaseItems().iterator().next().getDisplayName()).replace("%limit%", ltdLimit + ""));
                             return;
                         }
 
                         ltdLimit = Emulator.getConfig().getInt("hotel.purchase.ltd.limit.daily.item");
                         if (habbo.getHabboStats().totalLtds(item.id) >= ltdLimit) {
-                            habbo.alert(Emulator.getTexts().getValue("error.catalog.buy.limited.daily.item").replace("%itemname%", item.getBaseItems().iterator().next().getFullName()).replace("%limit%", ltdLimit + ""));
+                            habbo.alert(Emulator.getTexts().getValue("error.catalog.buy.limited.daily.item").replace("%itemname%", item.getBaseItems().iterator().next().getDisplayName()).replace("%limit%", ltdLimit + ""));
                             return;
                         }
                     }

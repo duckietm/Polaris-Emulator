@@ -248,7 +248,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                                 LOGGER.debug("sender reached daily total LTD limit");
                                 this.client.getHabbo().alert(
                                         Emulator.getTexts().getValue("error.catalog.buy.limited.daily.total")
-                                                .replace("%itemname%", item.getBaseItems().iterator().next().getFullName())
+                                                .replace("%itemname%", item.getBaseItems().iterator().next().getDisplayName())
                                                 .replace("%limit%", ltdLimit + "")
                                 );
                                 return;
@@ -259,7 +259,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                                 LOGGER.debug("sender reached daily LTD item limit");
                                 this.client.getHabbo().alert(
                                         Emulator.getTexts().getValue("error.catalog.buy.limited.daily.item")
-                                                .replace("%itemname%", item.getBaseItems().iterator().next().getFullName())
+                                                .replace("%itemname%", item.getBaseItems().iterator().next().getDisplayName())
                                                 .replace("%limit%", ltdLimit + "")
                                 );
                                 return;

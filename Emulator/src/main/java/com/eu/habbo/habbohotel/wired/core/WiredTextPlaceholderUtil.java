@@ -279,7 +279,7 @@ public final class WiredTextPlaceholderUtil {
                 continue;
             }
 
-            String furniName = item.getBaseItem().getFullName();
+            String furniName = item.getBaseItem().getDisplayName();
             if (furniName == null || furniName.trim().isEmpty()) {
                 furniName = item.getBaseItem().getName();
             }

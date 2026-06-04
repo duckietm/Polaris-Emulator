@@ -47,7 +47,7 @@ class FurnitureTextProviderTest {
         FurnitureTextProvider p = provider(true,
             new FurnidataEntry(1, "x", FurnitureType.FLOOR, evil, ""));
         String name = p.getName("x");
-        assertTrue(name.length() <= 256, "must be capped to 256");
+        assertEquals(256, name.length(), "input far exceeds the cap, so it must be exactly 256");
         assertFalse(name.chars().anyMatch(Character::isISOControl), "no control chars remain after sanitize");
         assertFalse(name.contains("%"), "ASCII percent neutralized");
     }

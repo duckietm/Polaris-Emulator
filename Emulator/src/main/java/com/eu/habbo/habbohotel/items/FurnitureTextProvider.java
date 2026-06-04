@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.items;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -47,11 +48,16 @@ public class FurnitureTextProvider {
         if (classname == null) return null;
         int star = classname.indexOf('*');
         String base = (star >= 0) ? classname.substring(0, star) : classname;
-        base = base.trim().toLowerCase();
+        base = base.trim().toLowerCase(Locale.ROOT);
         return base.isEmpty() ? null : base;
     }
 
-    /** Cap length, strip control chars/newlines, neutralize % (placeholder-injection safe). */
+    /**
+     * Cap length, strip control chars/newlines, neutralize % (placeholder-injection safe).
+     * The 256 cap is in Java {@code char} units (UTF-16 code units), which is acceptable for
+     * furni names (controlled, predominantly ASCII source). Lone/astral surrogates are not
+     * specially handled.
+     */
     static String sanitize(String value) {
         if (value == null) return "";
         StringBuilder sb = new StringBuilder(Math.min(value.length(), MAX_LEN));

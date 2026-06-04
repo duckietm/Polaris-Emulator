@@ -1,5 +1,11 @@
 package com.eu.habbo.habbohotel.items;
 
+import com.eu.habbo.Emulator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -16,12 +22,49 @@ import java.util.Map;
 public class FurnitureTextProvider {
 
     private static final int MAX_LEN = 256;
+    private static final Logger LOGGER = LoggerFactory.getLogger(FurnitureTextProvider.class);
+    private static final long DEFAULT_MAX_BYTES = 64L * 1024 * 1024;
 
     private final boolean enabled;
     private volatile Map<String, FurniText> index = Map.of();
 
     public FurnitureTextProvider(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    /** Production constructor: reads the enable toggle from config. */
+    public FurnitureTextProvider() {
+        this(Boolean.parseBoolean(Emulator.getConfig().getValue("items.furnidata.names.enabled", "true")));
+    }
+
+    /** Resolve the furnidata source from config and build the initial index. Never throws. */
+    public void init() {
+        try {
+            Path source = resolveSource();
+            if (source == null) {
+                LOGGER.warn("FurnitureTextProvider: no furnidata source resolved — names fall back to public_name");
+                return;
+            }
+            reindex(new FurnidataReader(source, DEFAULT_MAX_BYTES).read());
+            LOGGER.info("FurnitureTextProvider: indexed {} furnidata names from {}", this.index.size(), source);
+        } catch (Exception e) {
+            LOGGER.warn("FurnitureTextProvider.init failed — names fall back to public_name", e);
+        }
+    }
+
+    private static Path resolveSource() {
+        String override = Emulator.getConfig().getValue("items.furnidata.path", "");
+        if (!override.isEmpty()) {
+            Path p = Paths.get(override);
+            return Files.exists(p) ? p : null;
+        }
+        String basePath = Emulator.getConfig().getValue("furni.editor.asset.base.path", "");
+        if (basePath.isEmpty()) return null;
+        Path dir = Paths.get(basePath);
+        Path split = dir.resolve("furnidata");
+        if (Files.isDirectory(split)) return split;
+        Path legacy = dir.resolve("FurnitureData.json");
+        return Files.exists(legacy) ? legacy : null;
     }
 
     /** Build a fresh sanitized index from the given entries and swap it in atomically. */

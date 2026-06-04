@@ -9,18 +9,8 @@ import com.eu.habbo.habbohotel.users.HabboManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.sql.*;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class MentionManager {
@@ -43,7 +33,6 @@ public class MentionManager {
         return Emulator.getConfig().getInt("mentions.enabled", 1) == 1;
     }
 
-    /** Broadcast category resolved from a mention alias. */
     public enum BroadcastScope {
         NONE,
         ROOM,
@@ -249,7 +238,9 @@ public class MentionManager {
     }
 
     private boolean acceptsMention(Habbo recipient, boolean isBroadcast) {
-        if (recipient == null || recipient.getHabboStats() == null) return true;
+        if (recipient == null) return false;
+        if (recipient.getClient() == null) return false;
+        if (recipient.getHabboStats() == null) return false;
         if (!recipient.getHabboStats().mentionsEnabled()) return false;
         if (isBroadcast && !recipient.getHabboStats().massMentionsEnabled()) return false;
         return true;
@@ -297,7 +288,7 @@ public class MentionManager {
         if (limit > 200) limit = 200;
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                     "SELECT * FROM habbo_mentions WHERE target_user_id = ? ORDER BY id DESC LIMIT ?")) {
+                     "SELECT habbo_mentions.*, users.look AS sender_figure FROM habbo_mentions LEFT JOIN users ON users.id = habbo_mentions.sender_user_id WHERE target_user_id = ? ORDER BY id DESC LIMIT ?")) {
             statement.setInt(1, userId);
             statement.setInt(2, limit);
             try (ResultSet set = statement.executeQuery()) {
@@ -423,14 +414,49 @@ public class MentionManager {
         return value.substring(0, max);
     }
 
+    private boolean isBotOrPetName(Room room, String token) {
+        if (room == null || token == null || token.isEmpty()) return false;
+
+        List<com.eu.habbo.habbohotel.bots.Bot> bots = room.getBots(token);
+        if (bots != null && !bots.isEmpty()) return true;
+
+        if (room.getUnitManager() != null && room.getUnitManager().getPets() != null) {
+            for (com.eu.habbo.habbohotel.pets.Pet pet : room.getUnitManager().getPets()) {
+                if (pet != null && pet.getName() != null && pet.getName().equalsIgnoreCase(token)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     private Habbo resolveHabbo(Room room, String rawToken) {
+        if (isBotOrPetName(room, rawToken)) {
+            return null;
+        }
+        String trimmedForBotCheck = trimTrailingPunctuation(rawToken);
+        if (!trimmedForBotCheck.equals(rawToken) && isBotOrPetName(room, trimmedForBotCheck)) {
+            return null;
+        }
+
         Habbo habbo = room.getHabbo(rawToken);
+        if (habbo != null) {
+            return habbo;
+        }
+
+        HabboManager habboManager = Emulator.getGameEnvironment().getHabboManager();
+        habbo = habboManager.getHabbo(rawToken);
         if (habbo != null) {
             return habbo;
         }
         String trimmed = trimTrailingPunctuation(rawToken);
         if (!trimmed.isEmpty() && !trimmed.equals(rawToken)) {
-            return room.getHabbo(trimmed);
+            habbo = room.getHabbo(trimmed);
+            if (habbo != null) {
+                return habbo;
+            }
+            return habboManager.getHabbo(trimmed);
         }
         return null;
     }

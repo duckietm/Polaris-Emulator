@@ -10,7 +10,7 @@ and is developed for free by talented developers and is compatible with the foll
 [Latest compiled version](https://github.com/duckietm/Arcturus-Morningstar-Extended/tree/main/Latest_Compiled_Version)
 
 ## Connection ##
-Use the Websocket plugin!
+Use the BUILD-IN Websocket so do NOT load any websocket plugin!
 
 ### How do I connect to my emulator using Secure Websockets (wss)?
 You have several options to add WSS support to your websocket server. 

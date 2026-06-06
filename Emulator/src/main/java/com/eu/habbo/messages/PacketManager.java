@@ -298,6 +298,8 @@ public class PacketManager {
         this.registerHandler(Incoming.CatalogAdminPublishEvent, CatalogAdminPublishEvent.class);
         this.registerHandler(Incoming.CatalogAdminSavePageImagesEvent, CatalogAdminSavePageImagesEvent.class);
         this.registerHandler(Incoming.CatalogAdminSavePageIconEvent, CatalogAdminSavePageIconEvent.class);
+        this.registerHandler(Incoming.CatalogAdminLoadOfferEvent, CatalogAdminLoadOfferEvent.class);
+        this.registerHandler(Incoming.CatalogAdminLoadPageEvent, CatalogAdminLoadPageEvent.class);
     }
 
     private void registerEvent() throws Exception {

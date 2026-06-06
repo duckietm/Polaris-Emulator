@@ -574,6 +574,8 @@ public class Outgoing {
 
     // Catalog Admin
     public static final int CatalogAdminResultComposer = 10059;
+    public static final int CatalogAdminOfferDetailsComposer = 10062;
+    public static final int CatalogAdminPageDetailsComposer = 10063;
 
     // Custom Prefixes
     public static final int UserPrefixesComposer = 7001;

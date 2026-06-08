@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.furnieditor;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.items.FurnidataSourceResolver;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -9,12 +10,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Manages reading and writing of FurnitureData entries.
@@ -43,24 +47,172 @@ public class FurniDataManager {
     private static final List<String> DEFAULT_TIERS = Arrays.asList("core", "custom", "seasonal");
     private static final List<String> MANIFEST_NAMES = Arrays.asList("manifest.json5", "manifest.json");
     private static final List<String> SECTIONS = Arrays.asList("roomitemtypes", "wallitemtypes");
+    private static volatile CachedIndex cachedIndex = null;
+
+    public record LookupResult(String itemJson, String diagnosticJson) {
+    }
 
     /**
      * Get the JSON string for a specific item.
      * Returns "{}" if not found or on error.
      */
     public static String getItemJson(int itemId) {
-        try {
-            ResolvedSource source = resolveSource();
-            if (source == null) return "{}";
+        return getItemJson(itemId, null);
+    }
 
-            if (source.directory) {
-                return findItemInSplitDir(source.path, itemId);
+    /**
+     * Get the JSON string for a specific item.
+     * Prefer the DB classname because items_base.id can diverge from the
+     * furnidata id after imports/reconciliations. Falls back to id lookup.
+     * Returns "{}" if not found or on error.
+     */
+    public static String getItemJson(int itemId, String classname) {
+        return getItemLookup(itemId, classname).itemJson();
+    }
+
+    public static LookupResult getItemLookup(int itemId, String classname) {
+        FurnidataSourceResolver.Source source = FurnidataSourceResolver.resolve();
+        if (source == null || !source.ok()) {
+            return new LookupResult("{}", diagnostic(source, itemId, classname, "source_missing"));
+        }
+
+        try {
+            CachedIndex index = indexFor(source);
+            String key = baseClassname(classname);
+            String byClassname = key != null ? index.byClassname.get(key) : null;
+            if (byClassname != null) {
+                return new LookupResult(byClassname, diagnostic(source, itemId, classname, "matched_classname"));
             }
 
-            if (!Files.exists(source.path)) return "{}";
+            String byId = index.byId.get(itemId);
+            if (byId != null) {
+                return new LookupResult(byId, diagnostic(source, itemId, classname, "matched_id"));
+            }
 
-            String content = readJson5(source.path);
-            return findItemInRoot(JsonParser.parseString(content).getAsJsonObject(), itemId);
+            String reason = index.empty ? "manifest_empty" : "not_found";
+            return new LookupResult("{}", diagnostic(source, itemId, classname, reason));
+        } catch (Exception e) {
+            LOGGER.warn("Failed to read FurnitureData for item " + itemId, e);
+            FurnidataSourceResolver.Source errorSource = new FurnidataSourceResolver.Source(source.path(), source.directory(), FurnidataSourceResolver.Status.ERROR, e.getMessage());
+            return new LookupResult("{}", diagnostic(errorSource, itemId, classname, "error"));
+        }
+    }
+
+    private static CachedIndex indexFor(FurnidataSourceResolver.Source source) {
+        long signature = sourceSignature(source.path());
+        String sourceKey = source.path().toAbsolutePath().normalize().toString();
+        CachedIndex current = cachedIndex;
+        if (current != null && current.sourceKey.equals(sourceKey) && current.signature == signature) return current;
+
+        CachedIndex next = buildIndex(source, sourceKey, signature);
+        cachedIndex = next;
+        return next;
+    }
+
+    private static CachedIndex buildIndex(FurnidataSourceResolver.Source source, String sourceKey, long signature) {
+        Map<Integer, String> byId = new HashMap<>();
+        Map<String, String> byClassname = new HashMap<>();
+
+        if (source.directory()) {
+            indexSplitDir(source.path(), byId, byClassname);
+        } else {
+            try {
+                String content = readJson5(source.path());
+                indexRoot(JsonParser.parseString(content).getAsJsonObject(), byId, byClassname);
+            } catch (Exception e) {
+                LOGGER.warn("Failed to parse furnidata source {}", source.path(), e);
+            }
+        }
+
+        return new CachedIndex(sourceKey, signature, Map.copyOf(byId), Map.copyOf(byClassname), byId.isEmpty() && byClassname.isEmpty());
+    }
+
+    private static void indexSplitDir(Path baseDir, Map<Integer, String> byId, Map<String, String> byClassname) {
+        if (!Files.isDirectory(baseDir)) return;
+
+        for (String tier : readTiersManifest(baseDir)) {
+            Path tierDir = baseDir.resolve(tier);
+            if (!Files.isDirectory(tierDir)) continue;
+
+            for (String fileName : readFilesManifest(tierDir)) {
+                Path file = tierDir.resolve(fileName);
+                if (!Files.exists(file)) continue;
+
+                try {
+                    String content = readJson5(file);
+                    indexRoot(JsonParser.parseString(content).getAsJsonObject(), byId, byClassname);
+                } catch (Exception e) {
+                    LOGGER.warn("Failed to parse split gamedata file " + file, e);
+                }
+            }
+        }
+    }
+
+    private static void indexRoot(JsonObject root, Map<Integer, String> byId, Map<String, String> byClassname) {
+        for (String section : SECTIONS) {
+            if (!root.has(section)) continue;
+            JsonObject sectionObj = root.getAsJsonObject(section);
+            if (!sectionObj.has("furnitype")) continue;
+
+            for (JsonElement el : sectionObj.getAsJsonArray("furnitype")) {
+                JsonObject obj = el.getAsJsonObject();
+                String json = obj.toString();
+
+                if (obj.has("id")) byId.put(obj.get("id").getAsInt(), json);
+                if (obj.has("classname")) {
+                    String key = baseClassname(obj.get("classname").getAsString());
+                    if (key != null) byClassname.put(key, json);
+                }
+            }
+        }
+    }
+
+    private static long sourceSignature(Path source) {
+        try {
+            if (source == null || !Files.exists(source)) return -1L;
+            if (!Files.isDirectory(source)) return Files.getLastModifiedTime(source).toMillis() ^ Files.size(source);
+
+            final long[] signature = { 17L };
+            try (var stream = Files.walk(source)) {
+                stream.filter(Files::isRegularFile).forEach(path -> {
+                    try {
+                        signature[0] = (signature[0] * 31L) ^ Files.getLastModifiedTime(path).toMillis() ^ Files.size(path);
+                    } catch (Exception ignored) {
+                    }
+                });
+            }
+            return signature[0];
+        } catch (Exception e) {
+            return System.nanoTime();
+        }
+    }
+
+    private static String diagnostic(FurnidataSourceResolver.Source source, int itemId, String classname, String reason) {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("reason", reason);
+        obj.addProperty("itemId", itemId);
+        obj.addProperty("classname", classname != null ? classname : "");
+        obj.addProperty("sourcePath", source != null && source.path() != null ? source.path().toString() : "");
+        obj.addProperty("sourceDirectory", source != null && source.directory());
+        obj.addProperty("sourceStatus", source != null ? source.status().name() : "CONFIG_MISSING");
+        obj.addProperty("message", source != null && source.message() != null ? source.message() : "");
+        return obj.toString();
+    }
+
+    private record CachedIndex(String sourceKey, long signature, Map<Integer, String> byId, Map<String, String> byClassname, boolean empty) {
+    }
+
+    static String findItemJson(Path source, boolean directory, int itemId, String classname) {
+        try {
+            if (directory) {
+                return findItemInSplitDir(source, itemId, classname);
+            }
+
+            if (!Files.exists(source)) return "{}";
+
+            String content = readJson5(source);
+            String found = findItemInRoot(JsonParser.parseString(content).getAsJsonObject(), itemId, classname);
+            return found != null ? found : "{}";
         } catch (Exception e) {
             LOGGER.warn("Failed to read FurnitureData for item " + itemId, e);
         }
@@ -69,6 +221,13 @@ public class FurniDataManager {
     }
 
     private static String findItemInRoot(JsonObject root, int itemId) {
+        return findItemInRoot(root, itemId, null);
+    }
+
+    private static String findItemInRoot(JsonObject root, int itemId, String classname) {
+        String byClassname = findItemInRootByClassname(root, classname);
+        if (byClassname != null) return byClassname;
+
         for (String section : SECTIONS) {
             if (!root.has(section)) continue;
             JsonObject sectionObj = root.getAsJsonObject(section);
@@ -85,11 +244,43 @@ public class FurniDataManager {
         return null;
     }
 
+    private static String findItemInRootByClassname(JsonObject root, String classname) {
+        String wanted = baseClassname(classname);
+        if (wanted == null) return null;
+
+        for (String section : SECTIONS) {
+            if (!root.has(section)) continue;
+            JsonObject sectionObj = root.getAsJsonObject(section);
+            if (!sectionObj.has("furnitype")) continue;
+            JsonArray types = sectionObj.getAsJsonArray("furnitype");
+
+            for (JsonElement el : types) {
+                JsonObject obj = el.getAsJsonObject();
+                if (!obj.has("classname")) continue;
+
+                String actual = baseClassname(obj.get("classname").getAsString());
+                if (wanted.equals(actual)) return obj.toString();
+            }
+        }
+
+        return null;
+    }
+
+    private static String baseClassname(String classname) {
+        if (classname == null) return null;
+
+        int star = classname.indexOf('*');
+        String base = star >= 0 ? classname.substring(0, star) : classname;
+        base = base.trim().toLowerCase(java.util.Locale.ROOT);
+
+        return base.isEmpty() ? null : base;
+    }
+
     /**
      * Walk the split directory layout looking for an item by id.
      * Later tiers (custom, then seasonal) override earlier ones.
      */
-    private static String findItemInSplitDir(Path baseDir, int itemId) {
+    private static String findItemInSplitDir(Path baseDir, int itemId, String classname) {
         if (!Files.isDirectory(baseDir)) return "{}";
 
         List<String> tiers = readTiersManifest(baseDir);
@@ -107,7 +298,7 @@ public class FurniDataManager {
                 try {
                     String content = readJson5(file);
                     JsonObject obj = JsonParser.parseString(content).getAsJsonObject();
-                    String match = findItemInRoot(obj, itemId);
+                    String match = findItemInRoot(obj, itemId, classname);
                     if (match != null) found = match;
                 } catch (Exception e) {
                     LOGGER.warn("Failed to parse split gamedata file " + file, e);
@@ -239,7 +430,7 @@ public class FurniDataManager {
      * Represents the resolved location of the furnidata source: either a single
      * file or a directory in split-layout mode.
      */
-    private static class ResolvedSource {
+    static class ResolvedSource {
         final Path path;
         final boolean directory;
 
@@ -270,9 +461,9 @@ public class FurniDataManager {
 
             if (!rendererObj.has("furnidata.url")) return null;
 
-            String furniUrl = rendererObj.get("furnidata.url").getAsString();
+            String furniUrl = expandRendererUrl(rendererObj, "furnidata.url");
 
-            if (furniUrl.contains("${")) {
+            if (hasUnresolvedPathPlaceholder(furniUrl)) {
                 Path fallback = fallbackToBasePath();
                 return fallback != null ? new ResolvedSource(fallback, Files.isDirectory(fallback)) : null;
             }
@@ -295,6 +486,9 @@ public class FurniDataManager {
 
             String basePath = Emulator.getConfig().getValue("furni.editor.asset.base.path", "");
             if (basePath.isEmpty()) return null;
+
+            ResolvedSource mapped = toLocalSource(Paths.get(basePath), furniUrl);
+            if (mapped != null) return mapped;
 
             if (splitMode) {
                 // Derive the directory name from the URL: take the last non-empty
@@ -325,5 +519,87 @@ public class FurniDataManager {
         Path legacy = dir.resolve("FurnitureData.json");
         if (Files.exists(legacy)) return legacy;
         return null;
+    }
+
+    static String expandRendererUrl(JsonObject rendererObj, String key) {
+        if (rendererObj == null || !rendererObj.has(key)) return "";
+
+        String value = rendererObj.get(key).getAsString();
+        for (int i = 0; i < 10; i++) {
+            int start = value.indexOf("${");
+            if (start < 0) break;
+
+            int end = value.indexOf('}', start + 2);
+            if (end < 0) break;
+
+            String placeholder = value.substring(start + 2, end);
+            if (!rendererObj.has(placeholder)) break;
+
+            String replacement = rendererObj.get(placeholder).getAsString();
+            value = value.substring(0, start) + replacement + value.substring(end + 1);
+        }
+
+        return value;
+    }
+
+    private static boolean hasUnresolvedPathPlaceholder(String value) {
+        if (value == null) return false;
+
+        String pathOnly = stripQueryAndFragment(value);
+        return pathOnly.contains("${");
+    }
+
+    static ResolvedSource toLocalSource(Path assetBase, String furniUrl) {
+        if (furniUrl == null || furniUrl.isBlank()) return null;
+
+        String cleanUrl = stripQueryAndFragment(furniUrl);
+        boolean splitMode = cleanUrl.endsWith("/");
+
+        if (!cleanUrl.startsWith("http")) {
+            Path local = Paths.get(cleanUrl);
+            return new ResolvedSource(local, splitMode || Files.isDirectory(local));
+        }
+
+        if (assetBase == null) return null;
+
+        String urlPath;
+        try {
+            urlPath = URI.create(cleanUrl).getPath();
+        } catch (Exception e) {
+            int scheme = cleanUrl.indexOf("://");
+            int pathStart = scheme >= 0 ? cleanUrl.indexOf('/', scheme + 3) : -1;
+            urlPath = pathStart >= 0 ? cleanUrl.substring(pathStart) : cleanUrl;
+        }
+
+        String normalizedUrlPath = urlPath.replace('\\', '/');
+        String baseName = assetBase.getFileName() != null ? assetBase.getFileName().toString() : "";
+        String marker = "/" + baseName + "/";
+
+        Path candidate;
+        int markerIndex = baseName.isEmpty() ? -1 : normalizedUrlPath.indexOf(marker);
+        if (markerIndex >= 0) {
+            String relative = normalizedUrlPath.substring(markerIndex + marker.length());
+            candidate = assetBase.resolve(relative);
+        } else if (splitMode) {
+            String trimmed = normalizedUrlPath.endsWith("/")
+                ? normalizedUrlPath.substring(0, normalizedUrlPath.length() - 1)
+                : normalizedUrlPath;
+            String dirName = trimmed.substring(trimmed.lastIndexOf('/') + 1);
+            candidate = assetBase.resolve(dirName);
+        } else {
+            String filename = normalizedUrlPath.substring(normalizedUrlPath.lastIndexOf('/') + 1);
+            candidate = assetBase.resolve(filename);
+        }
+
+        return new ResolvedSource(candidate, splitMode || Files.isDirectory(candidate));
+    }
+
+    private static String stripQueryAndFragment(String value) {
+        String out = value;
+        int q = out.indexOf('?');
+        if (q >= 0) out = out.substring(0, q);
+        int h = out.indexOf('#');
+        if (h >= 0) out = out.substring(0, h);
+        return out;
     }
 }

@@ -109,13 +109,13 @@ public class FurnidataReader {
             JsonArray types = sectionObj.getAsJsonArray("furnitype");
             for (JsonElement el : types) {
                 JsonObject o = el.getAsJsonObject();
-                if (!o.has("id") || !o.has("classname")) continue;
+                if (!o.has("id") || o.get("id").isJsonNull() || !o.has("classname") || o.get("classname").isJsonNull()) continue;
                 out.add(new FurnidataEntry(
                     o.get("id").getAsInt(),
                     o.get("classname").getAsString(),
                     type,
-                    o.has("name") ? o.get("name").getAsString() : "",
-                    o.has("description") ? o.get("description").getAsString() : ""
+                    (o.has("name") && !o.get("name").isJsonNull()) ? o.get("name").getAsString() : "",
+                    (o.has("description") && !o.get("description").isJsonNull()) ? o.get("description").getAsString() : ""
                 ));
             }
         }

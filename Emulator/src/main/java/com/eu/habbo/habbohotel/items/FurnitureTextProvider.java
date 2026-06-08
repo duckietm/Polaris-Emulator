@@ -5,7 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -44,7 +43,7 @@ public class FurnitureTextProvider {
         try {
             this.source = resolveSource();
             if (this.source == null) {
-                LOGGER.warn("FurnitureTextProvider: no furnidata source resolved — names fall back to public_name");
+                LOGGER.warn("FurnitureTextProvider: no furnidata source resolved - names fall back to public_name");
                 return;
             }
             reindex(new FurnidataReader(this.source, DEFAULT_MAX_BYTES).read());
@@ -90,20 +89,10 @@ public class FurnitureTextProvider {
     }
 
     private static Path resolveSource() {
-        String override = Emulator.getConfig().getValue("items.furnidata.path", "");
-        if (!override.isEmpty()) {
-            Path p = Paths.get(override);
-            if (Files.exists(p)) return p;
-            LOGGER.warn("FurnitureTextProvider: items.furnidata.path '{}' does not exist", override);
-            return null;
-        }
-        String basePath = Emulator.getConfig().getValue("furni.editor.asset.base.path", "");
-        if (basePath.isEmpty()) return null;
-        Path dir = Paths.get(basePath);
-        Path split = dir.resolve("furnidata");
-        if (Files.isDirectory(split)) return split;
-        Path legacy = dir.resolve("FurnitureData.json");
-        return Files.exists(legacy) ? legacy : null;
+        FurnidataSourceResolver.Source source = FurnidataSourceResolver.resolve();
+        if (source.ok()) return source.path();
+        LOGGER.warn("FurnitureTextProvider: no furnidata source resolved ({}) - {}", source.status(), source.message());
+        return null;
     }
 
     /**

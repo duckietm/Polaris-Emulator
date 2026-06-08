@@ -41,6 +41,7 @@ public class FurniEditorDetailEvent extends MessageHandler {
         int usageCount = 0;
         List<Map<String, Object>> catalogItems = new ArrayList<>();
         String furniDataJson = "{}";
+        String furniDataDiagnosticJson = "{}";
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
             // Load full item data
@@ -86,11 +87,15 @@ public class FurniEditorDetailEvent extends MessageHandler {
 
         // Try to read furnidata.json entry
         try {
-            furniDataJson = FurniDataManager.getItemJson(itemId);
+            Object classname = item.get("item_name");
+            FurniDataManager.LookupResult lookup = FurniDataManager.getItemLookup(itemId, classname != null ? classname.toString() : null);
+            furniDataJson = lookup.itemJson();
+            furniDataDiagnosticJson = lookup.diagnosticJson();
         } catch (Exception e) {
             furniDataJson = "{}";
+            furniDataDiagnosticJson = "{}";
         }
 
-        client.sendResponse(new FurniEditorDetailComposer(item, usageCount, catalogItems, furniDataJson));
+        client.sendResponse(new FurniEditorDetailComposer(item, usageCount, catalogItems, furniDataJson, furniDataDiagnosticJson));
     }
 }

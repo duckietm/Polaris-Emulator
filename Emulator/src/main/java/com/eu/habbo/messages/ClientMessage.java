@@ -61,7 +61,14 @@ public class ClientMessage {
 
     public String readString() {
         try {
-            int length = this.readShort();
+            // Length is an unsigned short in the protocol; mask to avoid a
+            // negative array size, and clamp to what's actually buffered so a
+            // bogus length can't throw mid-read and desync the remaining fields.
+            int length = this.readShort() & 0xFFFF;
+            int available = this.buffer.readableBytes();
+            if (length > available) {
+                length = available;
+            }
             byte[] data = new byte[length];
             this.buffer.readBytes(data);
             return new String(data);

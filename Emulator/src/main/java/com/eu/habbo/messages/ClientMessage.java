@@ -4,6 +4,8 @@ import com.eu.habbo.util.PacketUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
+import java.nio.charset.StandardCharsets;
+
 public class ClientMessage {
     private final int header;
     private final ByteBuf buffer;
@@ -71,7 +73,7 @@ public class ClientMessage {
             }
             byte[] data = new byte[length];
             this.buffer.readBytes(data);
-            return new String(data);
+            return new String(data, StandardCharsets.UTF_8);
         } catch (Exception e) {
             return "";
         }

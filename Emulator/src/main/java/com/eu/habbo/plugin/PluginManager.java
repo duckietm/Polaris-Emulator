@@ -277,7 +277,7 @@ public class PluginManager {
                 byte[] content = new byte[stream.available()];
 
                 if (stream.read(content) > 0) {
-                    String body = new String(content);
+                    String body = new String(content, java.nio.charset.StandardCharsets.UTF_8);
 
                     HabboPluginConfiguration pluginConfigurtion = PLUGIN_GSON.fromJson(body, HabboPluginConfiguration.class);
 

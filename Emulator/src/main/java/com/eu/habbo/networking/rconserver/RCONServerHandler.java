@@ -41,7 +41,7 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
 
         byte[] d = new byte[data.readableBytes()];
         data.getBytes(0, d);
-        String message = new String(d);
+        String message = new String(d, java.nio.charset.StandardCharsets.UTF_8);
         Gson gson = GSON;
         String response = "ERROR";
         String key = "";
@@ -56,7 +56,7 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
             e.printStackTrace();
         }
 
-        ChannelFuture f = ctx.channel().write(Unpooled.copiedBuffer(response.getBytes()), ctx.channel().voidPromise());
+        ChannelFuture f = ctx.channel().write(Unpooled.copiedBuffer(response.getBytes(java.nio.charset.StandardCharsets.UTF_8)), ctx.channel().voidPromise());
         ctx.channel().flush();
         ctx.flush();
         f.channel().close();

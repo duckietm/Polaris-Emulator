@@ -7,6 +7,7 @@ import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.Unpooled;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 public class ServerMessage {
 
@@ -61,7 +62,7 @@ public class ServerMessage {
         }
 
         try {
-            byte[] data = obj.getBytes();
+            byte[] data = obj.getBytes(StandardCharsets.UTF_8);
             this.stream.writeShort(data.length);
             this.stream.write(data);
         } catch (IOException e) {

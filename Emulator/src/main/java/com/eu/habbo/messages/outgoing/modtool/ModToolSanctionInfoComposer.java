@@ -9,8 +9,8 @@ import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
 import gnu.trove.map.hash.THashMap;
-import org.joda.time.DateTime;
 
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 
@@ -47,7 +47,10 @@ public class ModToolSanctionInfoComposer extends MessageComposer {
                 if (item.probationTimestamp > 0) {
                     probationEndTime = new Date((long) item.probationTimestamp * 1000);
 
-                    probationStartTime = new DateTime(probationEndTime).minusDays(modToolSanctions.getProbationDays(modToolSanctionLevelItem)).toDate();
+                    probationStartTime = Date.from(probationEndTime.toInstant()
+                            .atZone(ZoneId.systemDefault())
+                            .minusDays(modToolSanctions.getProbationDays(modToolSanctionLevelItem))
+                            .toInstant());
 
                     Date tradeLockedUntil = null;
 

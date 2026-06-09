@@ -54,7 +54,7 @@ public class WebSocketHttpHandler extends ChannelInboundHandlerAdapter {
             FullHttpResponse response = new DefaultFullHttpResponse(
                     HttpVersion.HTTP_1_1,
                     HttpResponseStatus.FORBIDDEN,
-                    Unpooled.wrappedBuffer("Origin forbidden".getBytes())
+                    Unpooled.wrappedBuffer("Origin forbidden".getBytes(java.nio.charset.StandardCharsets.UTF_8))
             );
             response.headers().set("Vary", "Origin");
             ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);

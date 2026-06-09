@@ -28,7 +28,7 @@ import java.sql.SQLException;
 import java.util.Base64;
 import java.util.regex.Pattern;
 
-final class AuthHttpUtil {
+public final class AuthHttpUtil {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthHttpUtil.class);
 
@@ -132,7 +132,10 @@ final class AuthHttpUtil {
         String ipHeader = Emulator.getConfig() != null
                 ? Emulator.getConfig().getValue("ws.ip.header", "")
                 : "";
-        if (!ipHeader.isEmpty() && req.headers().contains(ipHeader)) {
+        // Only trust a client-supplied forwarded-IP header when the DIRECT peer
+        // is a trusted reverse proxy; otherwise an attacker hitting the port
+        // directly could spoof it to evade per-IP rate limiting and IP bans.
+        if (!ipHeader.isEmpty() && req.headers().contains(ipHeader) && isTrustedProxy(ctx)) {
             String hv = req.headers().get(ipHeader);
             if (hv != null && !hv.isEmpty()) {
                 int comma = hv.indexOf(',');
@@ -146,6 +149,32 @@ final class AuthHttpUtil {
             return addr.getAddress().getHostAddress();
         }
         return "";
+    }
+
+    /**
+     * Whether the channel's direct peer may set a forwarded-IP header. Loopback
+     * is always trusted; additional proxies can be allow-listed (exact IP or
+     * string prefix, comma-separated) via the {@code ws.ip.header.trusted}
+     * config key. Default-deny so the header can't be spoofed from the open net.
+     */
+    public static boolean isTrustedProxy(ChannelHandlerContext ctx) {
+        String peerIp = (ctx.channel().remoteAddress() instanceof InetSocketAddress a)
+                ? a.getAddress().getHostAddress() : null;
+        if (peerIp == null || peerIp.isEmpty()) return false;
+        if (peerIp.equals("127.0.0.1") || peerIp.equals("::1") || peerIp.equals("0:0:0:0:0:0:0:1")) {
+            return true;
+        }
+        String trusted = Emulator.getConfig() != null
+                ? Emulator.getConfig().getValue("ws.ip.header.trusted", "")
+                : "";
+        if (trusted.isEmpty()) return false;
+        for (String entry : trusted.split(",")) {
+            String prefix = entry.trim();
+            if (!prefix.isEmpty() && (peerIp.equals(prefix) || peerIp.startsWith(prefix))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     static boolean checkPassword(String plain, String stored) {

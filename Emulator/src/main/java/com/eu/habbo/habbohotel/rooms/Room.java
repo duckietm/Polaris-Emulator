@@ -1028,6 +1028,10 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
             com.eu.habbo.habbohotel.wired.core.WiredManager.getEngine().clearRoomDiagnostics(this.id);
           }
 
+          // Drop this room's shared wired-variable assignment caches (otherwise
+          // they accrue per (room, item, user) for the JVM lifetime).
+          com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredVariableReferenceSupport.invalidateRoom(this.id);
+
           this.itemManager.clear();
 
           this.unitManager.clearQueue();

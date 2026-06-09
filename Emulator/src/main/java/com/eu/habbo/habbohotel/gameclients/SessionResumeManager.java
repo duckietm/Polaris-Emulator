@@ -71,6 +71,15 @@ public class SessionResumeManager {
             }
         }, graceSeconds * 1000);
 
+        if (future == null) {
+            // The scheduler refused the grace-expiry task (pool saturated or
+            // shutting down). Parking now would leave a GhostSession that nothing
+            // can ever reap (the Habbo + room refs pinned for the JVM lifetime),
+            // so disconnect immediately instead.
+            performFullDisconnect(habbo);
+            return false;
+        }
+
         ghostSessions.put(userId, new GhostSession(habbo, ssoTicket, future, previousEffectId, previousEffectEnd));
 
         applyPausedEffect(habbo);

@@ -6,6 +6,11 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 
 public class TriggerOneWayGateEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        return 100;
+    }
+
+    @Override
     public void handle() throws Exception {
         if (this.client.getHabbo().getHabboInfo().getCurrentRoom() == null)
             return;

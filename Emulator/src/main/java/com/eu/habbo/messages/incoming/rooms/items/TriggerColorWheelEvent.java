@@ -7,6 +7,11 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 
 public class TriggerColorWheelEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        return 100;
+    }
+
+    @Override
     public void handle() throws Exception {
         int itemId = this.packet.readInt();
 

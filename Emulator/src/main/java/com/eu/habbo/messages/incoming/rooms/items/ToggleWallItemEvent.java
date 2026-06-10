@@ -10,6 +10,11 @@ import com.eu.habbo.plugin.events.furniture.FurnitureToggleEvent;
 
 public class ToggleWallItemEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        return 100;
+    }
+
+    @Override
     public void handle() throws Exception {
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 

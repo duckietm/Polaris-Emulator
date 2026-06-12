@@ -78,10 +78,22 @@ public class FurniDataManager {
 
         try {
             CachedIndex index = indexFor(source);
+
+            // 1. Try exact classname match (preserves *N suffix for multicolor items)
             String key = baseClassname(classname);
             String byClassname = key != null ? index.byClassname.get(key) : null;
             if (byClassname != null) {
                 return new LookupResult(byClassname, diagnostic(source, itemId, classname, "matched_classname"));
+            }
+
+            // 2. Fallback: try stripped classname (without *N suffix) for items whose
+            //    furnidata entry does not include the color-variant suffix.
+            String strippedKey = strippedClassname(classname);
+            if (strippedKey != null && !strippedKey.equals(key)) {
+                String byStripped = index.byClassname.get(strippedKey);
+                if (byStripped != null) {
+                    return new LookupResult(byStripped, diagnostic(source, itemId, classname, "matched_classname_stripped"));
+                }
             }
 
             String byId = index.byId.get(itemId);
@@ -258,21 +270,58 @@ public class FurniDataManager {
                 JsonObject obj = el.getAsJsonObject();
                 if (!obj.has("classname")) continue;
 
+                // Try exact match first (preserves *N suffix)
                 String actual = baseClassname(obj.get("classname").getAsString());
                 if (wanted.equals(actual)) return obj.toString();
+            }
+        }
+
+        // Fallback: try stripped classname (without *N suffix)
+        String strippedWanted = strippedClassname(classname);
+        if (strippedWanted != null && !strippedWanted.equals(wanted)) {
+            for (String section : SECTIONS) {
+                if (!root.has(section)) continue;
+                JsonObject sectionObj = root.getAsJsonObject(section);
+                if (!sectionObj.has("furnitype")) continue;
+                JsonArray types = sectionObj.getAsJsonArray("furnitype");
+
+                for (JsonElement el : types) {
+                    JsonObject obj = el.getAsJsonObject();
+                    if (!obj.has("classname")) continue;
+
+                    String actual = strippedClassname(obj.get("classname").getAsString());
+                    if (strippedWanted.equals(actual)) return obj.toString();
+                }
             }
         }
 
         return null;
     }
 
+    /**
+     * Normalize a classname for index/lookup.
+     *
+     * Preserves the full classname including any {@code *N} color-variant suffix
+     * so that multicolor items (e.g. {@code rare_dragonlamp*1}, {@code rare_dragonlamp*2})
+     * each get their own index entry.  The stripped variant (without {@code *N}) is
+     * used as a fallback during lookup for items whose furnidata entry does not
+     * include the suffix.
+     */
     private static String baseClassname(String classname) {
         if (classname == null) return null;
+        String base = classname.trim().toLowerCase(java.util.Locale.ROOT);
+        return base.isEmpty() ? null : base;
+    }
 
+    /**
+     * Like {@link #baseClassname(String)} but strips any trailing {@code *N}
+     * color-variant suffix.  Used as a fallback during lookup.
+     */
+    private static String strippedClassname(String classname) {
+        if (classname == null) return null;
         int star = classname.indexOf('*');
         String base = star >= 0 ? classname.substring(0, star) : classname;
         base = base.trim().toLowerCase(java.util.Locale.ROOT);
-
         return base.isEmpty() ? null : base;
     }
 

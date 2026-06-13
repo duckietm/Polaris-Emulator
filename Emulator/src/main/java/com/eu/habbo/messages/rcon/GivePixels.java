@@ -25,10 +25,11 @@ public class GivePixels extends RCONMessage<GivePixels.JSONGivePixels> {
         if (habbo != null) {
             habbo.givePixels(object.pixels);
         } else {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE users_currency SET users_currency.amount = users_currency.amount + ? WHERE users_currency.user_id = ? AND users_currency.type = 0")) {
-                statement.setInt(1, object.pixels);
-                statement.setInt(2, object.user_id);
-                statement.execute();
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO users_currency (`user_id`, `type`, `amount`) VALUES (?, 0, ?) ON DUPLICATE KEY UPDATE amount = amount + ?")) {
+                statement.setInt(1, object.user_id);
+                statement.setInt(2, object.pixels);
+                statement.setInt(3, object.pixels);
+                statement.executeUpdate();
             } catch (SQLException e) {
                 this.status = RCONMessage.SYSTEM_ERROR;
                 LOGGER.error("Caught SQL exception", e);

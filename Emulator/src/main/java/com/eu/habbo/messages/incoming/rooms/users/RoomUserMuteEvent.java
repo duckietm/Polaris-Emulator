@@ -15,17 +15,18 @@ public class RoomUserMuteEvent extends MessageHandler {
         int roomId = this.packet.readInt();
         int minutes = this.packet.readInt();
 
-        Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
+        Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+        if (room == null || room.getId() != roomId) {
+            return;
+        }
 
-        if (room != null) {
-            if (room.hasRights(this.client.getHabbo()) || this.client.getHabbo().hasPermission("cmd_mute") || this.client.getHabbo().hasPermission(Permission.ACC_AMBASSADOR)) {
-                Habbo habbo = room.getHabbo(userId);
+        if (room.hasRights(this.client.getHabbo()) || this.client.getHabbo().hasPermission("cmd_mute") || this.client.getHabbo().hasPermission(Permission.ACC_AMBASSADOR)) {
+            Habbo habbo = room.getHabbo(userId);
 
-                if (habbo != null) {
-                    room.muteHabbo(habbo, minutes);
-                    habbo.getClient().sendResponse(new MutedWhisperComposer(minutes * 60));
-                    AchievementManager.progressAchievement(this.client.getHabbo(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("SelfModMuteSeen"));
-                }
+            if (habbo != null) {
+                room.muteHabbo(habbo, minutes);
+                habbo.getClient().sendResponse(new MutedWhisperComposer(minutes * 60));
+                AchievementManager.progressAchievement(this.client.getHabbo(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("SelfModMuteSeen"));
             }
         }
     }

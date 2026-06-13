@@ -44,6 +44,11 @@ public class HousekeepingRoomStateEvent extends MessageHandler {
         room.setState(open ? RoomState.OPEN : RoomState.LOCKED);
         room.save();
 
+        com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
+                this.client.getHabbo().getHabboInfo().getId(),
+                this.client.getHabbo().getHabboInfo().getUsername(),
+                actionKey, 0, "roomId=" + roomId + " open=" + open,
+                this.client.getHabbo().getHabboInfo().getIpLogin());
         this.client.sendResponse(new HousekeepingActionResultComposer(actionKey, true, roomId, ""));
     }
 }

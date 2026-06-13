@@ -78,4 +78,33 @@ class FurniDataManagerTest {
         assertEquals(assetBase.resolve("gamedata").resolve("FurnitureData.json"), source.path());
         assertFalse(source.directory());
     }
+
+    @Test
+    void prefersRendererConfigOverLegacyFurnidataPath(@TempDir Path dir) throws Exception {
+        Path legacy = dir.resolve("legacy").resolve("FurnitureData.json");
+        Files.createDirectories(legacy.getParent());
+        Files.writeString(legacy, "{}");
+
+        Path assetBase = dir.resolve("nitro-assets");
+        Path rendererSource = assetBase.resolve("gamedata").resolve("FurnitureData.json");
+        Files.createDirectories(rendererSource.getParent());
+        Files.writeString(rendererSource, "{}");
+
+        Path rendererConfig = dir.resolve("renderer-config.json");
+        Files.writeString(rendererConfig, """
+            {
+              "gamedata.url": "http://localhost:5173/nitro-assets/gamedata",
+              "furnidata.url": "${gamedata.url}/FurnitureData.json?t=%timestamp%"
+            }
+            """);
+
+        FurnidataSourceResolver.Source source = FurnidataSourceResolver.resolveConfigured(
+                legacy.toString(),
+                rendererConfig.toString(),
+                assetBase.toString());
+
+        assertTrue(source.ok());
+        assertEquals(rendererSource, source.path());
+        assertEquals("renderer-config furnidata.url", source.message());
+    }
 }

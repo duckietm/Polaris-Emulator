@@ -90,15 +90,21 @@ public class InfostandBackgroundManager {
         this.enforce = loaded > 0;
 
         if (this.enforce) {
-            LOGGER.info("InfostandBackgroundManager -> Loaded {} backgrounds, {} stands, {} overlays, {} cards, {} borders from infostand_backgrounds.",
+            LOGGER.info(summary(
                     this.entries.get(Category.BACKGROUND).size(),
                     this.entries.get(Category.STAND).size(),
                     this.entries.get(Category.OVERLAY).size(),
                     this.entries.get(Category.CARD).size(),
-                    this.entries.get(Category.BORDER).size());
+                    this.entries.get(Category.BORDER).size()));
         } else {
             LOGGER.info("InfostandBackgroundManager -> infostand_backgrounds is empty, server-side validation disabled (only range clamp will apply).");
         }
+    }
+
+    static String summary(int backgrounds, int stands, int overlays, int cards, int borders) {
+        int total = backgrounds + stands + overlays + cards + borders;
+        return String.format("Infostand Background Manager -> Loaded! (%d assets: %d bg, %d stands, %d overlays, %d cards, %d borders)",
+                total, backgrounds, stands, overlays, cards, borders);
     }
 
     public boolean canUse(Habbo habbo, Category category, int id) {

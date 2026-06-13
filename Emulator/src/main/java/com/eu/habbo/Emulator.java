@@ -154,13 +154,7 @@ public final class Emulator {
             Emulator.config.register("camera.render.delay", "5");
             Emulator.config.register("hotel.timezone", java.time.ZoneId.systemDefault().getId());
             String hotelTimezoneId = Emulator.getConfig().getValue("hotel.timezone", java.time.ZoneId.systemDefault().getId());
-            System.out.println();
-            LOGGER.info("https://github.com/duckietm/Arcturus-Morningstar-Extended, ");
-            System.out.println();
-            LOGGER.info("This project is for educational purposes only. This Emulator is an open-source fork of Arcturus created by TheGeneral.");
-            LOGGER.info("Version: {}", version);
-            LOGGER.info("Build: {}", build);
-            LOGGER.info("Build Timestamp: {} [{}]", formatBuildTimestamp(buildTimestamp, hotelTimezoneId), hotelTimezoneId);
+            System.out.println(startupCard(hotelTimezoneId));
             Emulator.texts.register("camera.permission", "You don't have permission to use the camera!");
             Emulator.texts.register("camera.wait", "Please wait %seconds% seconds before making another picture.");
             Emulator.texts.register("camera.error.creation", "Failed to create your picture. *sadpanda*");
@@ -308,6 +302,18 @@ public final class Emulator {
         }
 
         return -1L;
+    }
+
+    static String startupCard(String hotelTimezoneId) {
+        return "\n" +
+                "+----------------------------------------------------------------+\n" +
+                "| Arcturus Morningstar Extended                                  |\n" +
+                "| Source : github.com/duckietm/Arcturus-Morningstar-Extended     |\n" +
+                "| Scope  : Educational open-source fork by TheGeneral            |\n" +
+                "| Version: " + version + "\n" +
+                "| Build  : " + build + "\n" +
+                "| Time   : " + formatBuildTimestamp(buildTimestamp, hotelTimezoneId) + " [" + hotelTimezoneId + "]\n" +
+                "+----------------------------------------------------------------+\n";
     }
 
     private static String formatBuildTimestamp(long buildTimestamp, String timezoneId) {

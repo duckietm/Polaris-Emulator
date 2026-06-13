@@ -12,7 +12,10 @@ class HousekeepingAuditCoverageContractTest {
     private static final List<String> SENSITIVE_HANDLERS = List.of(
             "HousekeepingBanUserEvent.java",
             "HousekeepingMuteUserEvent.java",
+            "HousekeepingGiveCreditsEvent.java",
+            "HousekeepingGiveCurrencyEvent.java",
             "HousekeepingResetUserPasswordEvent.java",
+            "HousekeepingSetUserRankEvent.java",
             "HousekeepingSetHcSubscriptionEvent.java",
             "HousekeepingTradeLockUserEvent.java",
             "HousekeepingGrantItemEvent.java",

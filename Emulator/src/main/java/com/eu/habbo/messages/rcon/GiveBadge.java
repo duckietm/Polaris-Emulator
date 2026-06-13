@@ -3,6 +3,8 @@ package com.eu.habbo.messages.rcon;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboBadge;
+import com.eu.habbo.habbohotel.users.HabboInfo;
+import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.messages.outgoing.users.AddUserBadgeComposer;
 import com.google.gson.Gson;
 import org.slf4j.Logger;
@@ -53,11 +55,18 @@ public class GiveBadge extends RCONMessage<GiveBadge.GiveBadgeJSON> {
                 this.message = Emulator.getTexts().getValue("commands.succes.cmd_badge.given").replace("%user%", username).replace("%badge%", badgeCode);
             }
         } else {
+            HabboInfo habboInfo = HabboManager.getOfflineHabboInfo(json.user_id);
+            if (habboInfo == null) {
+                this.status = RCONMessage.HABBO_NOT_FOUND;
+                return;
+            }
+
+            username = habboInfo.getUsername();
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
                 for (String badgeCode : json.badge.split(";")) {
                     int numberOfRows = 0;
-                    try (PreparedStatement statement = connection.prepareStatement("SELECT COUNT(slot_id) FROM users_badges INNER JOIN users ON users.id = user_id WHERE users.id = ? AND badge_code = ? LIMIT 1")) {
-                        statement.setInt(1, json.user_id);
+                    try (PreparedStatement statement = connection.prepareStatement("SELECT COUNT(slot_id) FROM users_badges WHERE user_id = ? AND badge_code = ? LIMIT 1")) {
+                        statement.setInt(1, habboInfo.getId());
                         statement.setString(2, badgeCode);
                         try (ResultSet set = statement.executeQuery()) {
                             if (set.next()){
@@ -70,8 +79,8 @@ public class GiveBadge extends RCONMessage<GiveBadge.GiveBadgeJSON> {
                         this.status = RCONMessage.STATUS_ERROR;
                         this.message += Emulator.getTexts().getValue("commands.error.cmd_badge.already_owns").replace("%user%", username).replace("%badge%", badgeCode) + "\r";
                     } else {
-                        try (PreparedStatement statement = connection.prepareStatement("INSERT INTO users_badges VALUES (null, (SELECT id FROM users WHERE users.id = ? LIMIT 1), 0, ?)", Statement.RETURN_GENERATED_KEYS)) {
-                            statement.setInt(1, json.user_id);
+                        try (PreparedStatement statement = connection.prepareStatement("INSERT INTO users_badges (`id`, `user_id`, `slot_id`, `badge_code`) VALUES (null, ?, 0, ?)", Statement.RETURN_GENERATED_KEYS)) {
+                            statement.setInt(1, habboInfo.getId());
                             statement.setString(2, badgeCode);
                             statement.execute();
                         }

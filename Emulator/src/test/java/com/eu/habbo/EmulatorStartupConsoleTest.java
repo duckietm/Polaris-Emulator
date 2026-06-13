@@ -10,6 +10,7 @@ class EmulatorStartupConsoleTest {
     void startupHeroUsesUniversalAsciiLayout() {
         String hero = Emulator.startupHero();
 
+        assertTrue(hero.contains("__  __  ___  ____"));
         assertTrue(hero.contains("MORNINGSTAR EXTENDED"));
         assertTrue(hero.contains("Version"));
         assertTrue(hero.contains("Build"));

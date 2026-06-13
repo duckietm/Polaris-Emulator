@@ -17,7 +17,14 @@ class HousekeepingAuditCoverageContractTest {
             "HousekeepingTradeLockUserEvent.java",
             "HousekeepingGrantItemEvent.java",
             "HousekeepingTransferRoomOwnershipEvent.java",
-            "HousekeepingSendHotelAlertEvent.java"
+            "HousekeepingSendHotelAlertEvent.java",
+            "HousekeepingDeleteRoomEvent.java",
+            "HousekeepingForceDisconnectUserEvent.java",
+            "HousekeepingKickAllFromRoomEvent.java",
+            "HousekeepingKickUserEvent.java",
+            "HousekeepingMuteRoomEvent.java",
+            "HousekeepingRoomStateEvent.java",
+            "HousekeepingUnbanUserEvent.java"
     );
 
     @Test

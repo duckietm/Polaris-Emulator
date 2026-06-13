@@ -39,6 +39,13 @@ public class HousekeepingUnbanUserEvent extends MessageHandler {
         // on a never-banned user is a benign no-op that returns false.
         boolean cleared = Emulator.getGameEnvironment().getModToolManager().unban(info.getUsername());
 
+        if (cleared) {
+            com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
+                    this.client.getHabbo().getHabboInfo().getId(),
+                    this.client.getHabbo().getHabboInfo().getUsername(),
+                    ACTION_KEY, userId, "username=" + info.getUsername(),
+                    this.client.getHabbo().getHabboInfo().getIpLogin());
+        }
         this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, cleared, cleared ? userId : 0, cleared ? "" : "housekeeping.error.no_active_ban"));
     }
 }

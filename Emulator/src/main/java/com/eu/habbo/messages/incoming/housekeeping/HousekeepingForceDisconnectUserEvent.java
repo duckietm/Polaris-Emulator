@@ -47,6 +47,11 @@ public class HousekeepingForceDisconnectUserEvent extends MessageHandler {
         // ACK first so the action result lands before the target's socket
         // closes (otherwise an alerted user on the same emulator thread may
         // already be torn down when we try to write).
+        com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
+                this.client.getHabbo().getHabboInfo().getId(),
+                this.client.getHabbo().getHabboInfo().getUsername(),
+                ACTION_KEY, userId, "reason=" + (reason != null ? reason : ""),
+                this.client.getHabbo().getHabboInfo().getIpLogin());
         this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, userId, ""));
 
         target.disconnect();

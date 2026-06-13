@@ -37,29 +37,35 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        ByteBuf data = (ByteBuf) msg;
-
-        byte[] d = new byte[data.readableBytes()];
-        data.getBytes(0, d);
-        String message = new String(d, java.nio.charset.StandardCharsets.UTF_8);
-        Gson gson = GSON;
-        String response = "ERROR";
-        String key = "";
-        try {
-            JsonObject object = gson.fromJson(message, JsonObject.class);
-            key = object.get("key").getAsString();
-            response = Emulator.getRconServer().handle(ctx, key, object.get("data").toString());
-        } catch (ArrayIndexOutOfBoundsException e) {
-            LOGGER.error("Unknown RCON Message: {}", key);
-        } catch (Exception e) {
-            LOGGER.error("Invalid RCON Message: {}", message);
-            e.printStackTrace();
+        if (!(msg instanceof ByteBuf data)) {
+            ctx.fireChannelRead(msg);
+            return;
         }
 
-        ChannelFuture f = ctx.channel().write(Unpooled.copiedBuffer(response.getBytes(java.nio.charset.StandardCharsets.UTF_8)), ctx.channel().voidPromise());
-        ctx.channel().flush();
-        ctx.flush();
-        f.channel().close();
-        data.release();
+        try {
+            byte[] d = new byte[data.readableBytes()];
+            data.getBytes(0, d);
+            String message = new String(d, java.nio.charset.StandardCharsets.UTF_8);
+            Gson gson = GSON;
+            String response = "ERROR";
+            String key = "";
+            try {
+                JsonObject object = gson.fromJson(message, JsonObject.class);
+                key = object.get("key").getAsString();
+                response = Emulator.getRconServer().handle(ctx, key, object.get("data").toString());
+            } catch (ArrayIndexOutOfBoundsException e) {
+                LOGGER.error("Unknown RCON Message: {}", key);
+            } catch (Exception e) {
+                LOGGER.error("Invalid RCON Message: {}", message);
+                e.printStackTrace();
+            }
+
+            ChannelFuture f = ctx.channel().write(Unpooled.copiedBuffer(response.getBytes(java.nio.charset.StandardCharsets.UTF_8)), ctx.channel().voidPromise());
+            ctx.channel().flush();
+            ctx.flush();
+            f.channel().close();
+        } finally {
+            data.release();
+        }
     }
 }

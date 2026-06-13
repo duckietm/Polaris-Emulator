@@ -56,6 +56,11 @@ public class HousekeepingBanUserEvent extends MessageHandler {
         // object, so we return the target user id as the actionId — it's
         // the only stable handle the client can use until a dedicated
         // housekeeping_log row id supersedes it.
+        com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
+                this.client.getHabbo().getHabboInfo().getId(),
+                this.client.getHabbo().getHabboInfo().getUsername(),
+                ACTION_KEY, userId, "hours=" + hours + " reason=" + (reason != null ? reason : ""),
+                this.client.getHabbo().getHabboInfo().getIpLogin());
         this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, userId, ""));
     }
 }

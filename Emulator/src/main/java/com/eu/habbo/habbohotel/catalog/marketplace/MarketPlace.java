@@ -398,11 +398,12 @@ public class MarketPlace {
         synchronized (client.getHabbo().getInventory()) {
             for (MarketPlaceOffer offer : offers) {
                 if (offer.getState().equals(MarketPlaceState.SOLD)) {
-                    client.getHabbo().getInventory().removeMarketplaceOffer(offer);
-                    credits += offer.getPrice();
-                    removeUser(offer);
-                    offer.needsUpdate(true);
-                    Emulator.getThreading().run(offer);
+                    if (removeUser(offer)) {
+                        client.getHabbo().getInventory().removeMarketplaceOffer(offer);
+                        credits += offer.getPrice();
+                        offer.needsUpdate(true);
+                        Emulator.getThreading().run(offer);
+                    }
                 }
             }
         }
@@ -416,13 +417,14 @@ public class MarketPlace {
         }
     }
 
-    private static void removeUser(MarketPlaceOffer offer) {
+    private static boolean removeUser(MarketPlaceOffer offer) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE marketplace_items SET user_id = ? WHERE id = ?")) {
             statement.setInt(1, -1);
             statement.setInt(2, offer.getOfferId());
-            statement.execute();
+            return statement.executeUpdate() > 0;
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+            return false;
         }
     }
 

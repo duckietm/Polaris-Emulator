@@ -5,6 +5,8 @@ import com.eu.habbo.habbohotel.items.FurnidataEntry;
 import com.eu.habbo.habbohotel.items.FurnidataLock;
 import com.eu.habbo.habbohotel.items.FurnidataWriter;
 import com.eu.habbo.habbohotel.items.FurnitureTextProvider;
+import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.FurnidataEntryBuilder;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -109,6 +111,7 @@ public class FurniEditorUpdateFurnidataEvent extends MessageHandler {
         String safeDesc = (description != null) ? description : "";
 
         boolean written;
+        boolean created = false;
         List<FurnidataEntry> delta;
 
         FurnidataLock.LOCK.lock();
@@ -121,8 +124,37 @@ public class FurniEditorUpdateFurnidataEvent extends MessageHandler {
             );
             written = writer.write(classname, safeName, safeDesc);
             if (!written) {
-                this.client.sendResponse(new FurniEditorResultComposer(false, "Classname not found in furnidata"));
-                return;
+                // Upsert: no furnidata entry for this classname yet → create a
+                // complete one seeded from items_base (id = sprite id).
+                Item item = Emulator.getGameEnvironment().getItemManager().getItem(itemId);
+                if (item == null) {
+                    this.client.sendResponse(new FurniEditorResultComposer(false, "Item not found"));
+                    return;
+                }
+                String createTier = Emulator.getConfig().getValue("items.furnidata.create_tier", "custom");
+                String entry = FurnidataEntryBuilder.build(
+                    item,
+                    FurnitureTextProvider.sanitize(safeName),
+                    FurnitureTextProvider.sanitize(safeDesc));
+                FurnidataWriter.CreateResult cr =
+                    writer.create(item.getName(), item.getSpriteId(), item.getType(), entry, createTier);
+                switch (cr) {
+                    case CREATED:
+                        created = true;
+                        written = true;
+                        break;
+                    case ALREADY_EXISTS:
+                        // entry already present (race / no-op edit) — apply the edit and treat as success
+                        writer.write(classname, safeName, safeDesc);
+                        written = true;
+                        break;
+                    case ID_COLLISION:
+                        this.client.sendResponse(new FurniEditorResultComposer(false, "Sprite id already used by another classname"));
+                        return;
+                    default:
+                        this.client.sendResponse(new FurniEditorResultComposer(false, "Failed to create furnidata entry"));
+                        return;
+                }
             }
 
             delta = provider.reindexFromSource();
@@ -161,7 +193,7 @@ public class FurniEditorUpdateFurnidataEvent extends MessageHandler {
         FurnidataAuditLog.record(
             adminId,
             classname,
-            "edit",
+            created ? "create" : "edit",
             oldName != null ? oldName : "",
             FurnitureTextProvider.sanitize(safeName),
             oldDesc,

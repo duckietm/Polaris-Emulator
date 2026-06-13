@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
+    <conversionRule conversionWord="morningstarLevel" class="com.eu.habbo.util.logback.ConsoleLevelConverter" />
+    <conversionRule conversionWord="morningstarLogger" class="com.eu.habbo.util.logback.ConsoleLoggerConverter" />
+
     <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} %-5level [%-12thread] %-22logger{0} | %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS} %morningstarLevel [%-12thread] %morningstarLogger | %msg%n</pattern>
         </encoder>
     </appender>
 

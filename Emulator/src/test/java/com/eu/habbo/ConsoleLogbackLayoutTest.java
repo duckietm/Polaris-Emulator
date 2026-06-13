@@ -13,7 +13,8 @@ class ConsoleLogbackLayoutTest {
     void consolePatternKeepsStartupMessagesReadable() throws Exception {
         String logback = Files.readString(Path.of("src/main/resources/logback.xml"));
 
-        assertTrue(logback.contains("%-22logger{0}"), "console should show compact class names");
+        assertTrue(logback.contains("morningstarLevel"), "console should use the adaptive level formatter");
+        assertTrue(logback.contains("morningstarLogger"), "console should use the adaptive logger formatter");
         assertTrue(logback.contains("| %msg%n"), "console should leave a clear message column");
         assertFalse(logback.contains("%-36logger{36}"), "wide package loggers waste console space");
     }

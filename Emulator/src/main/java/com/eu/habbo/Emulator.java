@@ -18,6 +18,7 @@ import com.eu.habbo.plugin.events.emulator.EmulatorStartShutdownEvent;
 import com.eu.habbo.plugin.events.emulator.EmulatorStoppedEvent;
 import com.eu.habbo.threading.ThreadPooling;
 import com.eu.habbo.util.imager.badges.BadgeImager;
+import com.eu.habbo.util.logback.ConsoleStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -368,34 +369,7 @@ public final class Emulator {
     }
 
     static boolean shouldStyleConsole(Map<String, String> environment, boolean interactiveConsole, String osName, String styleProperty) {
-        String style = styleProperty == null ? "auto" : styleProperty.trim().toLowerCase(Locale.ROOT);
-        if (style.equals("ansi") || style.equals("color") || style.equals("colours") || style.equals("colors")) {
-            return true;
-        }
-        if (style.equals("plain") || style.equals("none") || style.equals("false") || style.equals("off")) {
-            return false;
-        }
-        if (!interactiveConsole) {
-            return false;
-        }
-
-        Map<String, String> env = environment == null ? Collections.emptyMap() : environment;
-        if (env.containsKey("NO_COLOR")) {
-            return false;
-        }
-        if (env.containsKey("WT_SESSION") || env.containsKey("ANSICON") || "ON".equalsIgnoreCase(env.get("ConEmuANSI"))) {
-            return true;
-        }
-
-        String term = env.getOrDefault("TERM", "");
-        if (term.equalsIgnoreCase("dumb")) {
-            return false;
-        }
-        if (!term.isBlank() && (term.contains("xterm") || term.contains("ansi") || term.contains("screen") || term.contains("tmux"))) {
-            return true;
-        }
-
-        return osName == null || !osName.toLowerCase(Locale.ROOT).startsWith("windows");
+        return ConsoleStyle.isEnabled(environment, interactiveConsole, osName, styleProperty);
     }
 
     private static String fit(String value, int width) {

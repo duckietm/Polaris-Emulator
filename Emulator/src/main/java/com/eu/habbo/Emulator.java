@@ -38,6 +38,12 @@ public final class Emulator {
     private static final Logger LOGGER = LoggerFactory.getLogger(Emulator.class);
     private static final String OS_NAME = (System.getProperty("os.name") != null ? System.getProperty("os.name") : "Unknown");
     private static final String CLASS_PATH = (System.getProperty("java.class.path") != null ? System.getProperty("java.class.path") : "Unknown");
+    private static final String ANSI_RESET = "\u001B[0m";
+    private static final String ANSI_BOLD = "\u001B[1m";
+    private static final String ANSI_CYAN = "\u001B[36m";
+    private static final String ANSI_GREEN = "\u001B[32m";
+    private static final String ANSI_YELLOW = "\u001B[33m";
+    private static final String ANSI_DIM = "\u001B[2m";
 
     // Fallback version, only used when running outside a packaged jar (e.g. from
     // the IDE). In production the version comes from the jar manifest below.
@@ -118,7 +124,11 @@ public final class Emulator {
             ConsoleCommand.load();
             Emulator.logging = new Logging();
 
-            System.out.println(startupHero());
+            System.out.println(startupHero(shouldStyleConsole(
+                    System.getenv(),
+                    System.console() != null,
+                    OS_NAME,
+                    System.getProperty("habbo.console.style", "auto"))));
 
             long startTime = System.nanoTime();
 
@@ -316,6 +326,30 @@ public final class Emulator {
     }
 
     static String startupHero() {
+        return startupHero(false);
+    }
+
+    static String startupHero(boolean styled) {
+        if (styled) {
+            return "\n" +
+                    ANSI_CYAN +
+                    "   __  __  ___  ____  _   _ ___ _   _  ____ ____ _____  _    ____  \n" +
+                    "  |  \\/  |/ _ \\|  _ \\| \\ | |_ _| \\ | |/ ___/ ___|_   _|/ \\  |  _ \\ \n" +
+                    "  | |\\/| | | | | |_) |  \\| || ||  \\| | |  _\\___ \\ | | / _ \\ | |_) |\n" +
+                    "  | |  | | |_| |  _ <| |\\  || || |\\  | |_| |___) || |/ ___ \\|  _ < \n" +
+                    "  |_|  |_|\\___/|_| \\_\\_| \\_|___|_| \\_|\\____|____/ |_/_/   \\_\\_| \\_\\\n" +
+                    ANSI_RESET +
+                    "\n" +
+                    ANSI_DIM + "+------------------------------------------------------------------------------+" + ANSI_RESET + "\n" +
+                    "| " + ANSI_BOLD + ANSI_GREEN + "[OK] MORNINGSTAR EXTENDED" + ANSI_RESET + fit("", 50) + " |\n" +
+                    "| " + ANSI_DIM + "Arcturus game server runtime" + ANSI_RESET + fit("", 48) + " |\n" +
+                    ANSI_DIM + "+------------------------------------------------------------------------------+" + ANSI_RESET + "\n" +
+                    "| " + ANSI_YELLOW + "[VER]" + ANSI_RESET + " Version : " + fit(version, 57) + " |\n" +
+                    "| " + ANSI_YELLOW + "[BLD]" + ANSI_RESET + " Build   : " + fit(build.isBlank() ? "UNKNOWN" : build, 57) + " |\n" +
+                    "| " + ANSI_YELLOW + "[JVM]" + ANSI_RESET + " Runtime : " + fit("Java " + System.getProperty("java.version", "unknown") + " / styled console output", 57) + " |\n" +
+                    ANSI_DIM + "+------------------------------------------------------------------------------+" + ANSI_RESET + "\n";
+        }
+
         return "\n" +
                 "   __  __  ___  ____  _   _ ___ _   _  ____ ____ _____  _    ____  \n" +
                 "  |  \\/  |/ _ \\|  _ \\| \\ | |_ _| \\ | |/ ___/ ___|_   _|/ \\  |  _ \\ \n" +
@@ -331,6 +365,37 @@ public final class Emulator {
                 "| Build   : " + fit(build.isBlank() ? "UNKNOWN" : build, 63) + " |\n" +
                 "| Runtime : " + fit("Java " + System.getProperty("java.version", "unknown") + " / universal console output", 63) + " |\n" +
                 "+------------------------------------------------------------------------------+\n";
+    }
+
+    static boolean shouldStyleConsole(Map<String, String> environment, boolean interactiveConsole, String osName, String styleProperty) {
+        String style = styleProperty == null ? "auto" : styleProperty.trim().toLowerCase(Locale.ROOT);
+        if (style.equals("ansi") || style.equals("color") || style.equals("colours") || style.equals("colors")) {
+            return true;
+        }
+        if (style.equals("plain") || style.equals("none") || style.equals("false") || style.equals("off")) {
+            return false;
+        }
+        if (!interactiveConsole) {
+            return false;
+        }
+
+        Map<String, String> env = environment == null ? Collections.emptyMap() : environment;
+        if (env.containsKey("NO_COLOR")) {
+            return false;
+        }
+        if (env.containsKey("WT_SESSION") || env.containsKey("ANSICON") || "ON".equalsIgnoreCase(env.get("ConEmuANSI"))) {
+            return true;
+        }
+
+        String term = env.getOrDefault("TERM", "");
+        if (term.equalsIgnoreCase("dumb")) {
+            return false;
+        }
+        if (!term.isBlank() && (term.contains("xterm") || term.contains("ansi") || term.contains("screen") || term.contains("tmux"))) {
+            return true;
+        }
+
+        return osName == null || !osName.toLowerCase(Locale.ROOT).startsWith("windows");
     }
 
     private static String fit(String value, int width) {

@@ -28,10 +28,14 @@ public class GiveCredits extends RCONMessage<GiveCredits.JSONGiveCredits> {
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE users SET credits = credits + ? WHERE id = ? LIMIT 1")) {
                 statement.setInt(1, object.credits);
                 statement.setInt(2, object.user_id);
-                statement.execute();
+                if (statement.executeUpdate() == 0) {
+                    this.status = RCONMessage.HABBO_NOT_FOUND;
+                    return;
+                }
             } catch (SQLException e) {
                 this.status = RCONMessage.SYSTEM_ERROR;
                 LOGGER.error("Caught SQL exception", e);
+                return;
             }
 
             this.message = "offline";

@@ -72,6 +72,11 @@ public class HousekeepingTradeLockUserEvent extends MessageHandler {
             }
         }
 
+        com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
+                this.client.getHabbo().getHabboInfo().getId(),
+                this.client.getHabbo().getHabboInfo().getUsername(),
+                ACTION_KEY, userId, "hours=" + hours + " lockedUntil=" + lockedUntil + " reason=" + (reason != null ? reason : ""),
+                this.client.getHabbo().getHabboInfo().getIpLogin());
         this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, userId, ""));
     }
 }

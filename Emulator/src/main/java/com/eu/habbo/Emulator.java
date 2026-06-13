@@ -65,17 +65,6 @@ public final class Emulator {
                     "██║ ╚═╝ ██║╚██████╔╝██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝███████║   ██║   ██║  ██║██║  ██║\n" +
                     "╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝\n" +
                     "Still Rocking in 2026.\n";
-    private static final String consoleLogo =
-            "\n" +
-                    "============================================================\n" +
-                    "   __  __  ___  ____  _   _ ___ _   _  ____ ____ _____  _    ____  \n" +
-                    "  |  \\/  |/ _ \\|  _ \\| \\ | |_ _| \\ | |/ ___/ ___|_   _|/ \\  |  _ \\ \n" +
-                    "  | |\\/| | | | | |_) |  \\| || ||  \\| | |  _\\___ \\ | | / _ \\ | |_) |\n" +
-                    "  | |  | | |_| |  _ <| |\\  || || |\\  | |_| |___) || |/ ___ \\|  _ < \n" +
-                    "  |_|  |_|\\___/|_| \\_\\_| \\_|___|_| \\_|\\____|____/ |_/_/   \\_\\_| \\_\\\n" +
-                    "             Arcturus Morningstar Extended - 2026\n" +
-                    "============================================================\n";
-
     public static String build = "";
     public static long buildTimestamp = -1L;
 
@@ -129,7 +118,7 @@ public final class Emulator {
             ConsoleCommand.load();
             Emulator.logging = new Logging();
 
-            System.out.println(consoleLogo);
+            System.out.println(startupHero());
 
             long startTime = System.nanoTime();
 
@@ -324,6 +313,27 @@ public final class Emulator {
                 "| Build  : " + build + "\n" +
                 "| Time   : " + formatBuildTimestamp(buildTimestamp, hotelTimezoneId) + " [" + hotelTimezoneId + "]\n" +
                 "+----------------------------------------------------------------+\n";
+    }
+
+    static String startupHero() {
+        return "\n" +
+                "+------------------------------------------------------------------------------+\n" +
+                "| MORNINGSTAR EXTENDED                                                         |\n" +
+                "| Arcturus game server runtime                                                  |\n" +
+                "+------------------------------------------------------------------------------+\n" +
+                "| Version : " + fit(version, 63) + " |\n" +
+                "| Build   : " + fit(build.isBlank() ? "UNKNOWN" : build, 63) + " |\n" +
+                "| Runtime : " + fit("Java " + System.getProperty("java.version", "unknown") + " / universal console output", 63) + " |\n" +
+                "+------------------------------------------------------------------------------+\n";
+    }
+
+    private static String fit(String value, int width) {
+        String safe = value == null ? "" : value;
+        if (safe.length() > width) {
+            return safe.substring(0, Math.max(0, width - 3)) + "...";
+        }
+
+        return String.format("%-" + width + "s", safe);
     }
 
     private static String formatBuildTimestamp(long buildTimestamp, String timezoneId) {

@@ -40,6 +40,16 @@ public class HousekeepingGrantItemEvent extends MessageHandler {
             return;
         }
 
+        if (!HousekeepingMutationGuard.userExists(userId)) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.user_not_found"));
+            return;
+        }
+
+        if (!HousekeepingMutationGuard.itemExists(itemId)) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.item_not_found"));
+            return;
+        }
+
         if (quantity > MAX_QUANTITY_PER_CALL) {
             quantity = MAX_QUANTITY_PER_CALL;
         }

@@ -18,7 +18,6 @@ import java.sql.SQLException;
  */
 public class HousekeepingGiveCurrencyEvent extends MessageHandler {
     private static final int CURRENCY_DUCKETS = 0;
-    private static final int MAX_GRANT = 1_000_000_000;
 
     @Override
     public int getRatelimit() {
@@ -37,8 +36,13 @@ public class HousekeepingGiveCurrencyEvent extends MessageHandler {
 
         String actionKey = "user.give_currency_" + currencyType;
 
-        if (userId <= 0 || amount == 0 || amount < -MAX_GRANT || amount > MAX_GRANT) {
+        if (userId <= 0 || !HousekeepingMutationGuard.isCurrencyType(currencyType) || !HousekeepingMutationGuard.isPositiveGrantAmount(amount)) {
             this.client.sendResponse(new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.invalid_input"));
+            return;
+        }
+
+        if (!HousekeepingMutationGuard.userExists(userId)) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.user_not_found"));
             return;
         }
 

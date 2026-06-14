@@ -12,9 +12,13 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.regex.Pattern;
 
 public class UpdateUser extends RCONMessage<UpdateUser.JSON> {
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateUser.class);
+    static final int DEFAULT_MAX_ACHIEVEMENT_SCORE_DELTA = 10_000;
+    static final int MAX_LOOK_LENGTH = 256;
+    private static final Pattern LOOK_PATTERN = Pattern.compile("^[A-Za-z0-9.-]{1,256}$");
 
     public UpdateUser() {
         super(UpdateUser.JSON.class);
@@ -23,6 +27,19 @@ public class UpdateUser extends RCONMessage<UpdateUser.JSON> {
     @Override
     public void handle(Gson gson, JSON json) {
         if (json.user_id > 0) {
+            int maxAchievementScoreDelta = parseMaxAchievementScoreDelta(Emulator.getConfig().getValue("rcon.updateuser.max_achievement_score_delta", String.valueOf(DEFAULT_MAX_ACHIEVEMENT_SCORE_DELTA)));
+            if (!isValidAchievementScoreDelta(json.achievement_score, maxAchievementScoreDelta)) {
+                this.status = RCONMessage.STATUS_ERROR;
+                this.message = "invalid achievement score";
+                return;
+            }
+
+            if (!isValidLook(json.look)) {
+                this.status = RCONMessage.STATUS_ERROR;
+                this.message = "invalid look";
+                return;
+            }
+
             Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(json.user_id);
 
             if (habbo != null) {
@@ -97,21 +114,54 @@ public class UpdateUser extends RCONMessage<UpdateUser.JSON> {
                             index++;
                         }
                         statement.setInt(index, json.user_id);
-                        statement.execute();
+                        if (statement.executeUpdate() == 0) {
+                            this.status = RCONMessage.HABBO_NOT_FOUND;
+                            this.message = "user not found";
+                            return;
+                        }
                     }
 
                     if (!json.look.isEmpty()) {
                         try (PreparedStatement statement = connection.prepareStatement("UPDATE users SET look = ? WHERE id = ? LIMIT 1")) {
                             statement.setString(1, json.look);
                             statement.setInt(2, json.user_id);
-                            statement.execute();
+                            if (statement.executeUpdate() == 0) {
+                                this.status = RCONMessage.HABBO_NOT_FOUND;
+                                this.message = "user not found";
+                                return;
+                            }
                         }
                     }
                 } catch (SQLException e) {
                     LOGGER.error("Caught SQL exception", e);
+                    this.status = RCONMessage.SYSTEM_ERROR;
+                    this.message = "failed to update user";
                 }
             }
+        } else {
+            this.status = RCONMessage.STATUS_ERROR;
+            this.message = "invalid user";
         }
+    }
+
+    static boolean isValidAchievementScoreDelta(int achievementScoreDelta, int maxAchievementScoreDelta) {
+        return achievementScoreDelta >= 0 && achievementScoreDelta <= maxAchievementScoreDelta;
+    }
+
+    static int parseMaxAchievementScoreDelta(String configured) {
+        try {
+            int parsed = Integer.parseInt(configured);
+            if (parsed >= 0) {
+                return parsed;
+            }
+        } catch (NumberFormatException ignored) {
+        }
+
+        return DEFAULT_MAX_ACHIEVEMENT_SCORE_DELTA;
+    }
+
+    static boolean isValidLook(String look) {
+        return look == null || look.isEmpty() || (look.length() <= MAX_LOOK_LENGTH && LOOK_PATTERN.matcher(look).matches());
     }
 
     static class JSON {

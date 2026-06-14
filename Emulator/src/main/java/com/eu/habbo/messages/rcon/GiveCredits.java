@@ -21,6 +21,18 @@ public class GiveCredits extends RCONMessage<GiveCredits.JSONGiveCredits> {
 
     @Override
     public void handle(Gson gson, JSONGiveCredits object) {
+        int maxAmount = RconGrantGuard.parseMaxAmount(
+                Emulator.getConfig().getValue("rcon.grant.max_amount", String.valueOf(RconGrantGuard.DEFAULT_MAX_AMOUNT)));
+        String validationError = RconGrantGuard.validateUserId(object.user_id);
+        if (validationError == null) {
+            validationError = RconGrantGuard.validatePositiveAmount(object.credits, maxAmount, "credits");
+        }
+        if (validationError != null) {
+            this.status = RCONMessage.STATUS_ERROR;
+            this.message = validationError;
+            return;
+        }
+
         Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(object.user_id);
 
         if (habbo != null) {

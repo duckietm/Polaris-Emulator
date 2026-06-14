@@ -20,5 +20,7 @@ class GiveCreditsContractTest {
                 "Offline RCON credit grants must inspect the affected row count");
         assertTrue(source.contains("HABBO_NOT_FOUND"),
                 "Offline RCON credit grants must report missing users when the UPDATE changes no rows");
+        assertTrue(source.contains("RconGrantGuard.validatePositiveAmount"),
+                "RCON credit grants must reject zero, negative, and oversized grants");
     }
 }

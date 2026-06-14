@@ -20,5 +20,9 @@ class GiveRespectContractTest {
                 "respects_given must be incremented with respect_given");
         assertTrue(source.contains("statement.setInt(2, object.respect_received);"),
                 "respects_received must be incremented with respect_received");
+        assertTrue(source.contains("RconGrantGuard.validateNonNegativeAmount"),
+                "RCON respect grants must reject negative values");
+        assertTrue(source.contains("statement.executeUpdate() == 0"),
+                "Offline RCON respect grants must report missing users when the UPDATE changes no rows");
     }
 }

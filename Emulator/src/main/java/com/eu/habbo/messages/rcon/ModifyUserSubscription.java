@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 public class ModifyUserSubscription extends RCONMessage<ModifyUserSubscription.JSON> {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModifyUserSubscription.class);
+    static final int DEFAULT_MAX_DURATION_SECONDS = 31_536_000;
 
     public ModifyUserSubscription() {
         super(ModifyUserSubscription.JSON.class);
@@ -38,10 +39,11 @@ public class ModifyUserSubscription extends RCONMessage<ModifyUserSubscription.J
                 return;
             }
 
+            int maxDuration = parseMaxDuration(Emulator.getConfig().getValue("rcon.subscription.max_duration_seconds", String.valueOf(DEFAULT_MAX_DURATION_SECONDS)));
             if (json.action.equalsIgnoreCase("add") || json.action.equalsIgnoreCase("+") || json.action.equalsIgnoreCase("a")) {
-                if (json.duration < 1) {
+                if (!isValidDuration(json.duration, maxDuration)) {
                     this.status = RCONMessage.STATUS_ERROR;
-                    this.message = "duration must be > 0";
+                    this.message = "duration must be between 1 and " + maxDuration + " seconds";
                     return;
                 }
 
@@ -58,13 +60,13 @@ public class ModifyUserSubscription extends RCONMessage<ModifyUserSubscription.J
                 }
 
                 if (json.duration != -1) {
-                    if (json.duration < 1) {
+                    if (!isValidDuration(json.duration, maxDuration)) {
                         this.status = RCONMessage.STATUS_ERROR;
-                        this.message = "duration must be > 0 or -1 to remove all time";
+                        this.message = "duration must be between 1 and " + maxDuration + " seconds, or -1 to remove all time";
                         return;
                     }
 
-                    s.addDuration(-json.duration);
+                    s.addDuration(-Math.min(json.duration, s.getRemaining()));
                     this.status = RCONMessage.STATUS_OK;
                     this.message = "Successfully removed %time% seconds from %subscription% on %user%".replace("%time%", json.duration + "").replace("%user%", habbo.getUsername()).replace("%subscription%", json.type);
                 } else {
@@ -83,6 +85,22 @@ public class ModifyUserSubscription extends RCONMessage<ModifyUserSubscription.J
             this.message = "Exception occurred";
             LOGGER.error("Exception occurred", e);
         }
+    }
+
+    static boolean isValidDuration(int duration, int maxDuration) {
+        return duration >= 1 && duration <= maxDuration;
+    }
+
+    static int parseMaxDuration(String configured) {
+        try {
+            int parsed = Integer.parseInt(configured);
+            if (parsed > 0) {
+                return parsed;
+            }
+        } catch (NumberFormatException ignored) {
+        }
+
+        return DEFAULT_MAX_DURATION_SECONDS;
     }
 
     static class JSON {

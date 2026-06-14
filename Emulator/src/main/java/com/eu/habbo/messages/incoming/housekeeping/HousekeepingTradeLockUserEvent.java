@@ -20,8 +20,6 @@ import java.sql.SQLException;
  */
 public class HousekeepingTradeLockUserEvent extends MessageHandler {
     private static final String ACTION_KEY = "user.trade_lock";
-    private static final int SECONDS_IN_HOUR = 3600;
-    private static final int MAX_DURATION_SECONDS = 100 * 365 * 24 * 3600;
 
     @Override
     public int getRatelimit() {
@@ -48,9 +46,8 @@ public class HousekeepingTradeLockUserEvent extends MessageHandler {
             return;
         }
 
-        long durationLong = (long) hours * SECONDS_IN_HOUR;
-        int duration = durationLong > MAX_DURATION_SECONDS ? MAX_DURATION_SECONDS : (int) durationLong;
-        int lockedUntil = Emulator.getIntUnixTimestamp() + duration;
+        int duration = HousekeepingSanctionDuration.secondsFromHours(hours);
+        int lockedUntil = HousekeepingSanctionDuration.unixUntil(Emulator.getIntUnixTimestamp(), duration);
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement("UPDATE users_settings SET trade_locked_until = ? WHERE user_id = ? LIMIT 1")) {

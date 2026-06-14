@@ -17,9 +17,6 @@ import java.util.List;
  */
 public class HousekeepingBanUserEvent extends MessageHandler {
     private static final String ACTION_KEY = "user.ban";
-    private static final int SECONDS_IN_HOUR = 3600;
-    // 100-year ceiling, matches ModToolSanctionBanEvent's permanent ban.
-    private static final int MAX_DURATION_SECONDS = 100 * 365 * 24 * 3600;
 
     @Override
     public int getRatelimit() {
@@ -46,8 +43,7 @@ public class HousekeepingBanUserEvent extends MessageHandler {
             return;
         }
 
-        long durationLong = (long) hours * SECONDS_IN_HOUR;
-        int duration = durationLong > MAX_DURATION_SECONDS ? MAX_DURATION_SECONDS : (int) durationLong;
+        int duration = HousekeepingSanctionDuration.secondsFromHours(hours);
 
         List<ModToolBan> bans = Emulator.getGameEnvironment().getModToolManager()
                 .ban(userId, this.client.getHabbo(), reason != null ? reason : "", duration, ModToolBanType.ACCOUNT, 0);

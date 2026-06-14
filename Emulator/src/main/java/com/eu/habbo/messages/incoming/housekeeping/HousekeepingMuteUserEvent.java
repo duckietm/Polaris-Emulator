@@ -15,7 +15,6 @@ import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultCompo
  */
 public class HousekeepingMuteUserEvent extends MessageHandler {
     private static final String ACTION_KEY = "user.mute";
-    private static final int SECONDS_IN_MINUTE = 60;
 
     @Override
     public int getRatelimit() {
@@ -49,7 +48,7 @@ public class HousekeepingMuteUserEvent extends MessageHandler {
             return;
         }
 
-        target.mute(minutes * SECONDS_IN_MINUTE, false);
+        target.mute(HousekeepingSanctionDuration.secondsFromMinutes(minutes), false);
 
         if (reason != null && !reason.isEmpty()) {
             target.alert(reason);

@@ -18,7 +18,7 @@ public class CommandsCommand extends Command {
 
         for (Command c : commands) {
             String textKey = "commands.description." + c.permission;
-            String commandText = Emulator.getTexts().getValue(textKey, "");
+            String commandText = Emulator.getTexts().getValueQuietly(textKey, "");
             String commandLine = ":" + c.keys[0];
             String description = "";
 

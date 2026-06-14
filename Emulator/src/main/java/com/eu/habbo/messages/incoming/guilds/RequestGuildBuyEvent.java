@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.guilds;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.guilds.Guild;
+import com.eu.habbo.habbohotel.guilds.GuildBadgeBuilder;
 import com.eu.habbo.habbohotel.modtool.ScripterManager;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -69,24 +70,10 @@ public class RequestGuildBuyEvent extends MessageHandler {
 
         int count = this.packet.readInt();
 
-        StringBuilder badge = new StringBuilder();
-
-        byte base = 1;
-
-        while (base < count) {
-            int id = this.packet.readInt();
-            int color = this.packet.readInt();
-            int pos = this.packet.readInt();
-
-            if (base == 1) {
-                badge.append("b");
-            } else {
-                badge.append("s");
-            }
-
-            badge.append(id < 100 ? "0" : "").append(id < 10 ? "0" : "").append(id).append(color < 10 ? "0" : "").append(color).append(pos);
-
-            base += 3;
+        String badge = GuildBadgeBuilder.readBadge(this.packet, count);
+        if (badge == null) {
+            this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+            return;
         }
 
         // Only charge the player once every step has been validated. Previously the
@@ -103,7 +90,7 @@ public class RequestGuildBuyEvent extends MessageHandler {
             }
         }
 
-        Guild guild = Emulator.getGameEnvironment().getGuildManager().createGuild(this.client.getHabbo(), roomId, r.getName(), name, description, badge.toString(), colorOne, colorTwo);
+        Guild guild = Emulator.getGameEnvironment().getGuildManager().createGuild(this.client.getHabbo(), roomId, r.getName(), name, description, badge, colorOne, colorTwo);
 
         r.setGuild(guild.getId());
         r.removeAllRights();

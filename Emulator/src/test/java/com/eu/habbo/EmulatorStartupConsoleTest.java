@@ -3,6 +3,8 @@ package com.eu.habbo;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -54,5 +56,17 @@ class EmulatorStartupConsoleTest {
                 true,
                 "Windows 11",
                 "plain"));
+    }
+
+    @Test
+    void windowsAnsiModeInstallsJansiBeforePrintingStartupHero() throws Exception {
+        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/Emulator.java"));
+
+        assertTrue(source.contains("AnsiConsole.systemInstall()"),
+                "forced ANSI mode must install the Jansi bridge for Windows CMD/System.out");
+        assertTrue(source.contains("configureAnsiConsole(styledConsole)"),
+                "console bridge must be configured before startupHero is printed");
+        assertTrue(source.indexOf("configureAnsiConsole(styledConsole)") < source.indexOf("startupHero(styledConsole)"),
+                "Jansi must be installed before writing ANSI startup output");
     }
 }

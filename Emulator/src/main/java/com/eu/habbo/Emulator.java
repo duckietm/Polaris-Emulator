@@ -19,6 +19,7 @@ import com.eu.habbo.plugin.events.emulator.EmulatorStoppedEvent;
 import com.eu.habbo.threading.ThreadPooling;
 import com.eu.habbo.util.imager.badges.BadgeImager;
 import com.eu.habbo.util.logback.ConsoleStyle;
+import org.fusesource.jansi.AnsiConsole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,14 +111,12 @@ public final class Emulator {
 
     public static void main(String[] args) throws Exception {
         try {
-            if (OS_NAME.startsWith("Windows") && !CLASS_PATH.contains("idea_rt.jar")) {
-                ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-                ConsoleAppender<ILoggingEvent> appender = (ConsoleAppender<ILoggingEvent>) root.getAppender("Console");
-
-                appender.stop();
-                appender.setWithJansi(true);
-                appender.start();
-            }
+            boolean styledConsole = shouldStyleConsole(
+                    System.getenv(),
+                    System.console() != null,
+                    OS_NAME,
+                    System.getProperty("habbo.console.style", "auto"));
+            configureAnsiConsole(styledConsole);
 
             Locale.setDefault(Locale.of("en"));
             setBuild();
@@ -125,11 +124,7 @@ public final class Emulator {
             ConsoleCommand.load();
             Emulator.logging = new Logging();
 
-            System.out.println(startupHero(shouldStyleConsole(
-                    System.getenv(),
-                    System.console() != null,
-                    OS_NAME,
-                    System.getProperty("habbo.console.style", "auto"))));
+            System.out.println(startupHero(styledConsole));
 
             long startTime = System.nanoTime();
 
@@ -370,6 +365,26 @@ public final class Emulator {
 
     static boolean shouldStyleConsole(Map<String, String> environment, boolean interactiveConsole, String osName, String styleProperty) {
         return ConsoleStyle.isEnabled(environment, interactiveConsole, osName, styleProperty);
+    }
+
+    static void configureAnsiConsole(boolean styledConsole) {
+        if (!styledConsole || !OS_NAME.startsWith("Windows") || CLASS_PATH.contains("idea_rt.jar")) {
+            return;
+        }
+
+        try {
+            AnsiConsole.systemInstall();
+
+            ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+            ConsoleAppender<ILoggingEvent> appender = (ConsoleAppender<ILoggingEvent>) root.getAppender("Console");
+            if (appender != null) {
+                appender.stop();
+                appender.setWithJansi(true);
+                appender.start();
+            }
+        } catch (Throwable e) {
+            LOGGER.debug("Unable to install Jansi console bridge; continuing with raw console output.", e);
+        }
     }
 
     private static String fit(String value, int width) {

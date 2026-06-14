@@ -36,7 +36,10 @@ public class CatalogAdminDeletePageEvent extends MessageHandler {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setInt(1, pageId);
-            statement.execute();
+            if (statement.executeUpdate() == 0) {
+                this.client.sendResponse(new CatalogAdminResultComposer(false, "Page not found: " + pageId));
+                return;
+            }
         }
 
         Emulator.getGameEnvironment().getCatalogManager().getCatalogPagesMap(pageType).remove(pageId);

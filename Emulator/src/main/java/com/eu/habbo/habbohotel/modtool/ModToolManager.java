@@ -410,13 +410,16 @@ public class ModToolManager {
             return;
         }
 
+        if (target == null || !canModerateTarget(moderator, target.getHabboInfo().getId())) {
+            return;
+        }
+
         SupportUserAlertedEvent alertedEvent = new SupportUserAlertedEvent(moderator, target, message, reason);
 
         if (Emulator.getPluginManager().fireEvent(alertedEvent).isCancelled())
             return;
 
-        if (target != null)
-            alertedEvent.target.getClient().sendResponse(new ModToolIssueHandledComposer(alertedEvent.message));
+        alertedEvent.target.getClient().sendResponse(new ModToolIssueHandledComposer(alertedEvent.message));
     }
 
     public void kick(Habbo moderator, Habbo target, String message) {
@@ -488,6 +491,17 @@ public class ModToolManager {
         }
 
         return bans;
+    }
+
+    public static boolean canModerateTarget(Habbo moderator, int targetUserId) {
+        if (moderator == null || targetUserId <= 0)
+            return false;
+
+        HabboInfo targetInfo = Emulator.getGameEnvironment().getHabboManager().getHabboInfo(targetUserId);
+        if (targetInfo == null)
+            return false;
+
+        return targetInfo.getRank().getId() < moderator.getHabboInfo().getRank().getId();
     }
 
     public void roomAction(Room room, Habbo moderator, boolean kickUsers, boolean lockDoor, boolean changeTitle) {

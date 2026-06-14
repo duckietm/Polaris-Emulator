@@ -29,6 +29,10 @@ public class ModToolSanctionTradeLockEvent extends MessageHandler {
             Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
 
             if (habbo != null) {
+                if (!ModToolManager.canModerateTarget(this.client.getHabbo(), userId)) {
+                    return;
+                }
+
                 ModToolSanctions modToolSanctions = Emulator.getGameEnvironment().getModToolSanctions();
 
                 if (Emulator.getConfig().getBoolean("hotel.sanctions.enabled")) {

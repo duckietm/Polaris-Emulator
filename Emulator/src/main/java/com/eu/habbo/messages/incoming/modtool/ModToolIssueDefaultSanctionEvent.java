@@ -30,6 +30,10 @@ public class ModToolIssueDefaultSanctionEvent extends MessageHandler {
                     if (defaultSanction != null) {
                         Habbo target = Emulator.getGameEnvironment().getHabboManager().getHabbo(issue.reportedId);
 
+                        if (!ModToolManager.canModerateTarget(this.client.getHabbo(), issue.reportedId)) {
+                            return;
+                        }
+
                         if (defaultSanction.banLength > 0) {
                             Emulator.getGameEnvironment().getModToolManager().ban(issue.reportedId, this.client.getHabbo(), defaultSanction.message, defaultSanction.banLength * 86400, ModToolBanType.ACCOUNT, modToolCategory.id);
                         } else if (defaultSanction.muteLength > 0) {

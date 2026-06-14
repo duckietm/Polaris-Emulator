@@ -23,7 +23,7 @@ public class AvailableCommandsComposer extends MessageComposer {
         for (Command cmd : this.commands) {
             this.response.appendString(cmd.keys[0]);
             this.response.appendString(
-                    Emulator.getTexts().getValue("commands.description." + cmd.permission, cmd.permission)
+                    Emulator.getTexts().getValueQuietly("commands.description." + cmd.permission, cmd.permission)
             );
         }
 

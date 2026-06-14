@@ -291,11 +291,12 @@ public class GuildManager {
                         }
                     }
                 } else if (!error) {
-                    try (PreparedStatement statement = connection.prepareStatement("UPDATE guilds_members SET level_id = ?, member_since = ? WHERE user_id = ? AND guild_id = ?")) {
+                    try (PreparedStatement statement = connection.prepareStatement("UPDATE guilds_members SET level_id = ?, member_since = ? WHERE user_id = ? AND guild_id = ? AND level_id = ?")) {
                         statement.setInt(1, GuildRank.MEMBER.type);
                         statement.setInt(2, Emulator.getIntUnixTimestamp());
                         statement.setInt(3, userId);
                         statement.setInt(4, guild.getId());
+                        statement.setInt(5, GuildRank.REQUESTED.type);
                         statement.execute();
                     }
                 }

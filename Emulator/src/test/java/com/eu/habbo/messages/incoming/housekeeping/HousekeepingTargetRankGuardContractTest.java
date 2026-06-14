@@ -27,6 +27,10 @@ class HousekeepingTargetRankGuardContractTest {
     void privilegedUserActionsRejectPeerRanksUnlessOperatorIsCoreRank() throws Exception {
         String guard = Files.readString(Path.of("src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingTargetRankGuard.java"));
 
+        assertTrue(guard.contains("static boolean canTargetRank(Habbo operator, int targetRankId)"),
+                "rank comparison should be reusable for online and offline housekeeping targets");
+        assertTrue(guard.contains("static boolean canAssignRank(Habbo operator, int rankId)"),
+                "rank assignment should use the same peer/core ceiling as target moderation");
         assertTrue(guard.contains("targetRankId < operatorRankId"),
                 "non-core housekeeping operators must only target lower-ranked users");
         assertTrue(guard.contains("isCoreRank(operatorRankId) && targetRankId <= operatorRankId"),
@@ -46,5 +50,17 @@ class HousekeepingTargetRankGuardContractTest {
             assertTrue(source.contains("housekeeping.error.rank_too_high"),
                     handler + " must return a rank-ceiling error when the target cannot be managed");
         }
+    }
+
+    @Test
+    void housekeepingRankChangesUseCentralRankCeilings() throws Exception {
+        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingSetUserRankEvent.java"));
+
+        assertTrue(source.contains("HousekeepingTargetRankGuard.canAssignRank(this.client.getHabbo(), rank.getId())"),
+                "housekeeping rank assignment must not grant peer-or-higher ranks to non-core operators");
+        assertTrue(source.contains("HousekeepingTargetRankGuard.canTargetRank(this.client.getHabbo(), targetRankId)"),
+                "housekeeping rank assignment must not modify peer-or-higher ranked targets for non-core operators");
+        assertTrue(source.contains("housekeeping.error.user_not_found"),
+                "rank changes must reject missing offline users instead of reporting success for a zero-row update");
     }
 }

@@ -45,13 +45,7 @@ public class HousekeepingSetUserRankEvent extends MessageHandler {
 
         Rank rank = permissions.getRank(rankId);
 
-        // Rank-ceiling guard: an operator must never be able to grant a rank
-        // above their own, nor modify a user who already outranks them. This
-        // mirrors GiveRankCommand and prevents privilege escalation through
-        // the housekeeping path (including self-promotion).
-        int operatorRankId = this.client.getHabbo().getHabboInfo().getRank().getId();
-
-        if (rank.getId() > operatorRankId) {
+        if (!HousekeepingTargetRankGuard.canAssignRank(this.client.getHabbo(), rank.getId())) {
             this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
             return;
         }
@@ -77,7 +71,12 @@ public class HousekeepingSetUserRankEvent extends MessageHandler {
             }
         }
 
-        if (targetRankId > operatorRankId) {
+        if (targetRankId <= 0) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.user_not_found"));
+            return;
+        }
+
+        if (!HousekeepingTargetRankGuard.canTargetRank(this.client.getHabbo(), targetRankId)) {
             this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
             return;
         }

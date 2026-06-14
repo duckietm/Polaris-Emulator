@@ -19,10 +19,21 @@ final class HousekeepingTargetRankGuard {
             return true;
         }
 
+        return canTargetRank(operator, targetInfo.getRank().getId());
+    }
+
+    static boolean canTargetRank(Habbo operator, int targetRankId) {
+        if (operator == null || targetRankId <= 0) {
+            return false;
+        }
+
         int operatorRankId = operator.getHabboInfo().getRank().getId();
-        int targetRankId = targetInfo.getRank().getId();
 
         return targetRankId < operatorRankId || isCoreRank(operatorRankId) && targetRankId <= operatorRankId;
+    }
+
+    static boolean canAssignRank(Habbo operator, int rankId) {
+        return canTargetRank(operator, rankId);
     }
 
     private static boolean isCoreRank(int rankId) {

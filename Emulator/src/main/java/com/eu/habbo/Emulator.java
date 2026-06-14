@@ -153,6 +153,10 @@ public final class Emulator {
             Emulator.config.register("camera.price.points.type", "5");
             Emulator.config.register("camera.render.delay", "5");
             Emulator.config.register("hotel.timezone", java.time.ZoneId.systemDefault().getId());
+            Emulator.config.register("rcon.rate_limit.enabled", "1");
+            Emulator.config.register("rcon.rate_limit.limit_for_period", "60");
+            Emulator.config.register("rcon.rate_limit.refresh_period_ms", "1000");
+            Emulator.config.register("rcon.rate_limit.timeout_ms", "0");
             String hotelTimezoneId = Emulator.getConfig().getValue("hotel.timezone", java.time.ZoneId.systemDefault().getId());
             System.out.println();
             LOGGER.info("https://github.com/duckietm/Arcturus-Morningstar-Extended, ");

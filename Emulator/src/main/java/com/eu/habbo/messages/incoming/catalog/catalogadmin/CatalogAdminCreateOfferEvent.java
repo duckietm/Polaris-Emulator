@@ -35,33 +35,45 @@ public class CatalogAdminCreateOfferEvent extends MessageHandler {
         int orderNumber = this.packet.readInt();
         CatalogPageType pageType = CatalogPageType.fromString(this.packet.readString());
 
+        CatalogAdminOfferPayload payload = CatalogAdminOfferPayload.validate(pageId, itemIds, catalogName, costCredits,
+                costPoints, pointsType, amount, clubOnly, extradata, haveOffer, offerIdGroup, limitedStack,
+                orderNumber, pageType);
+        if (payload == null) {
+            this.client.sendResponse(new CatalogAdminResultComposer(false, "Invalid offer payload"));
+            return;
+        }
+
+        if (Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(payload.pageId, payload.pageType) == null) {
+            this.client.sendResponse(new CatalogAdminResultComposer(false, "Page not found: " + payload.pageId));
+            return;
+        }
+
         int newId = -1;
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                     (pageType == CatalogPageType.BUILDER)
+                     (payload.pageType == CatalogPageType.BUILDER)
                              ? "INSERT INTO catalog_items_bc (page_id, item_ids, catalog_name, order_number, extradata) VALUES (?, ?, ?, ?, ?)"
                              : "INSERT INTO catalog_items (page_id, item_ids, catalog_name, cost_credits, cost_points, points_type, amount, club_only, extradata, have_offer, offer_id, limited_stack, order_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                      Statement.RETURN_GENERATED_KEYS)) {
-            String cleanItemIds = (itemIds == null || itemIds.trim().isEmpty()) ? "0" : itemIds.trim();
-            statement.setInt(1, pageId);
-            statement.setString(2, cleanItemIds);
-            statement.setString(3, catalogName);
+            statement.setInt(1, payload.pageId);
+            statement.setString(2, payload.itemIds);
+            statement.setString(3, payload.catalogName);
 
-            if (pageType == CatalogPageType.BUILDER) {
-                statement.setInt(4, orderNumber);
-                statement.setString(5, extradata);
+            if (payload.pageType == CatalogPageType.BUILDER) {
+                statement.setInt(4, payload.orderNumber);
+                statement.setString(5, payload.extradata);
             } else {
-                statement.setInt(4, costCredits);
-                statement.setInt(5, costPoints);
-                statement.setInt(6, pointsType);
-                statement.setInt(7, amount);
-                statement.setString(8, clubOnly == 1 ? "1" : "0");
-                statement.setString(9, extradata);
-                statement.setString(10, haveOffer ? "1" : "0");
-                statement.setInt(11, offerIdGroup);
-                statement.setInt(12, limitedStack);
-                statement.setInt(13, orderNumber);
+                statement.setInt(4, payload.costCredits);
+                statement.setInt(5, payload.costPoints);
+                statement.setInt(6, payload.pointsType);
+                statement.setInt(7, payload.amount);
+                statement.setString(8, payload.clubOnly == 1 ? "1" : "0");
+                statement.setString(9, payload.extradata);
+                statement.setString(10, payload.haveOffer ? "1" : "0");
+                statement.setInt(11, payload.offerIdGroup);
+                statement.setInt(12, payload.limitedStack);
+                statement.setInt(13, payload.orderNumber);
             }
             statement.execute();
 

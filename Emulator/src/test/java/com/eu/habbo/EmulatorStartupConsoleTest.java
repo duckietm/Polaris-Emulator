@@ -74,9 +74,9 @@ class EmulatorStartupConsoleTest {
     void registersGuiEnabledBeforeReadingIt() throws Exception {
         String source = Files.readString(Path.of("src/main/java/com/eu/habbo/Emulator.java"));
 
-        assertTrue(source.contains("register(\"gui.enabled\", \"1\")"),
-                "gui.enabled must be registered so the default GUI toggle does not log missing config errors");
-        assertTrue(source.indexOf("register(\"gui.enabled\", \"1\")") < source.indexOf("getBoolean(\"gui.enabled\", true)"),
+        assertTrue(source.contains("register(\"gui.enabled\", \"0\")"),
+                "gui.enabled must be registered disabled by default so it does not log missing config errors or start the UI unexpectedly");
+        assertTrue(source.indexOf("register(\"gui.enabled\", \"0\")") < source.indexOf("getBoolean(\"gui.enabled\", false)"),
                 "gui.enabled must be registered before it is read");
     }
 }

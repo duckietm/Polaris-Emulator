@@ -69,4 +69,14 @@ class EmulatorStartupConsoleTest {
         assertTrue(source.indexOf("configureAnsiConsole(styledConsole)") < source.indexOf("startupHero(styledConsole)"),
                 "Jansi must be installed before writing ANSI startup output");
     }
+
+    @Test
+    void registersGuiEnabledBeforeReadingIt() throws Exception {
+        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/Emulator.java"));
+
+        assertTrue(source.contains("register(\"gui.enabled\", \"1\")"),
+                "gui.enabled must be registered so the default GUI toggle does not log missing config errors");
+        assertTrue(source.indexOf("register(\"gui.enabled\", \"1\")") < source.indexOf("getBoolean(\"gui.enabled\", true)"),
+                "gui.enabled must be registered before it is read");
+    }
 }

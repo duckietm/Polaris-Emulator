@@ -158,6 +158,7 @@ public final class Emulator {
             Emulator.config.register("camera.price.points.type", "5");
             Emulator.config.register("camera.render.delay", "5");
             Emulator.config.register("hotel.timezone", java.time.ZoneId.systemDefault().getId());
+            Emulator.config.register("gui.enabled", "1");
             String hotelTimezoneId = Emulator.getConfig().getValue("hotel.timezone", java.time.ZoneId.systemDefault().getId());
             System.out.println(startupCard(hotelTimezoneId));
             Emulator.texts.register("camera.permission", "You don't have permission to use the camera!");

@@ -27,6 +27,11 @@ public class GuildForumThreadUpdateEvent extends MessageHandler {
         boolean isPinned = this.packet.readBoolean();
         boolean isLocked = this.packet.readBoolean();
 
+        if (!GuildForumInputGuard.isPositiveId(guildId) || !GuildForumInputGuard.isPositiveId(threadId)) {
+            this.client.sendResponse(new ConnectionErrorComposer(400));
+            return;
+        }
+
         Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
         ForumThread thread = ForumThread.getById(threadId);
 

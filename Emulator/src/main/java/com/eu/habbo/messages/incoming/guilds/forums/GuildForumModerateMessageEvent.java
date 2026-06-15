@@ -28,6 +28,14 @@ public class GuildForumModerateMessageEvent extends MessageHandler {
         int messageId = packet.readInt();
         int state = packet.readInt();
 
+        if (!GuildForumInputGuard.isPositiveId(guildId) ||
+                !GuildForumInputGuard.isPositiveId(threadId) ||
+                !GuildForumInputGuard.isPositiveId(messageId) ||
+                !GuildForumInputGuard.isMessageModerationState(state)) {
+            this.client.sendResponse(new ConnectionErrorComposer(400));
+            return;
+        }
+
         Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
         ForumThread thread = ForumThread.getById(threadId);
 

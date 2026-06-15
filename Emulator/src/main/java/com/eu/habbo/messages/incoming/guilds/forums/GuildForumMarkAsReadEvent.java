@@ -24,10 +24,18 @@ public class GuildForumMarkAsReadEvent extends MessageHandler {
         int userId = this.client.getHabbo().getHabboInfo().getId();
         int timestamp = Emulator.getIntUnixTimestamp();
 
+        if (!GuildForumInputGuard.isValidMarkReadBatch(count)) {
+            return;
+        }
+
         for (int i = 0; i < count; i++) {
             int guildId = this.packet.readInt();
             this.packet.readInt(); // messageId (not used, we track by timestamp)
             this.packet.readBoolean(); // isRead
+
+            if (!GuildForumInputGuard.isPositiveId(guildId)) {
+                continue;
+            }
 
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement(
                     "INSERT INTO `guild_forum_views` (`user_id`, `guild_id`, `timestamp`) VALUES (?, ?, ?) " +

@@ -49,6 +49,7 @@ INSERT INTO `permission_definitions` (`permission_key`, `rank_7`, `comment`) VAL
 ON DUPLICATE KEY UPDATE `rank_7` = VALUES(`rank_7`);
 
 INSERT INTO `emulator_texts` (`key`, `value`) VALUES
+  ('commands.description.cmd_setroom_template',   ':setroom_template'),
   ('commands.keys.cmd_setroom_template',           'setroom_template;set_room_template'),
   ('commands.succes.cmd_setroom_template.verify',  'Copy the current room "%roomname%" to room_templates? Type :setroom_template %generic.yes% to confirm.'),
   ('commands.succes.cmd_setroom_template',         'Room saved as template id %id% with %items% items (%skipped% skipped - item_id not in items_base).'),

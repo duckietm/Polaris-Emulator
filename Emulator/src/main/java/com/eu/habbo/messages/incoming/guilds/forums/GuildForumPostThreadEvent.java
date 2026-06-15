@@ -25,8 +25,13 @@ public class GuildForumPostThreadEvent extends MessageHandler {
     public void handle() throws Exception {
         int guildId = this.packet.readInt();
         int threadId = this.packet.readInt();
-        String subject = Emulator.getGameEnvironment().getWordFilter().filter(this.packet.readString(), this.client.getHabbo());
-        String message = Emulator.getGameEnvironment().getWordFilter().filter(this.packet.readString(), this.client.getHabbo());
+        String subject = Emulator.getGameEnvironment().getWordFilter().filter(GuildForumInputGuard.normalize(this.packet.readString()), this.client.getHabbo());
+        String message = Emulator.getGameEnvironment().getWordFilter().filter(GuildForumInputGuard.normalize(this.packet.readString()), this.client.getHabbo());
+
+        if (!GuildForumInputGuard.isPositiveId(guildId) || threadId < 0) {
+            this.client.sendResponse(new ConnectionErrorComposer(400));
+            return;
+        }
 
         Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
 

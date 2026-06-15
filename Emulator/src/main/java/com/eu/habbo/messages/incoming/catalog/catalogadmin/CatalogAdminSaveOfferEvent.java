@@ -34,10 +34,28 @@ public class CatalogAdminSaveOfferEvent extends MessageHandler {
         int orderNumber = this.packet.readInt();
         CatalogPageType pageType = CatalogPageType.fromString(this.packet.readString());
 
+        if (offerId <= 0) {
+            this.client.sendResponse(new CatalogAdminResultComposer(false, "Invalid offer id"));
+            return;
+        }
+
+        CatalogAdminOfferPayload payload = CatalogAdminOfferPayload.validate(pageId, itemIds, catalogName, costCredits,
+                costPoints, pointsType, amount, clubOnly, extradata, haveOffer, offerIdGroup, limitedStack,
+                orderNumber, pageType);
+        if (payload == null) {
+            this.client.sendResponse(new CatalogAdminResultComposer(false, "Invalid offer payload"));
+            return;
+        }
+
+        if (Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(payload.pageId, payload.pageType) == null) {
+            this.client.sendResponse(new CatalogAdminResultComposer(false, "Page not found: " + payload.pageId));
+            return;
+        }
+
         boolean updateItemIds = itemIds != null && !itemIds.trim().isEmpty();
 
         String sql;
-        if (pageType == CatalogPageType.BUILDER) {
+        if (payload.pageType == CatalogPageType.BUILDER) {
             sql = updateItemIds
                     ? "UPDATE catalog_items_bc SET page_id = ?, item_ids = ?, catalog_name = ?, order_number = ?, extradata = ? WHERE id = ?"
                     : "UPDATE catalog_items_bc SET page_id = ?, catalog_name = ?, order_number = ?, extradata = ? WHERE id = ?";
@@ -50,30 +68,33 @@ public class CatalogAdminSaveOfferEvent extends MessageHandler {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             int idx = 1;
-            statement.setInt(idx++, pageId);
+            statement.setInt(idx++, payload.pageId);
             if (updateItemIds) {
-                statement.setString(idx++, itemIds.trim());
+                statement.setString(idx++, payload.itemIds);
             }
-            statement.setString(idx++, catalogName);
+            statement.setString(idx++, payload.catalogName);
 
-            if (pageType == CatalogPageType.BUILDER) {
-                statement.setInt(idx++, orderNumber);
-                statement.setString(idx++, extradata);
+            if (payload.pageType == CatalogPageType.BUILDER) {
+                statement.setInt(idx++, payload.orderNumber);
+                statement.setString(idx++, payload.extradata);
                 statement.setInt(idx, offerId);
             } else {
-                statement.setInt(idx++, costCredits);
-                statement.setInt(idx++, costPoints);
-                statement.setInt(idx++, pointsType);
-                statement.setInt(idx++, amount);
-                statement.setString(idx++, clubOnly == 1 ? "1" : "0");
-                statement.setString(idx++, extradata);
-                statement.setString(idx++, haveOffer ? "1" : "0");
-                statement.setInt(idx++, offerIdGroup);
-                statement.setInt(idx++, limitedStack);
-                statement.setInt(idx++, orderNumber);
+                statement.setInt(idx++, payload.costCredits);
+                statement.setInt(idx++, payload.costPoints);
+                statement.setInt(idx++, payload.pointsType);
+                statement.setInt(idx++, payload.amount);
+                statement.setString(idx++, payload.clubOnly == 1 ? "1" : "0");
+                statement.setString(idx++, payload.extradata);
+                statement.setString(idx++, payload.haveOffer ? "1" : "0");
+                statement.setInt(idx++, payload.offerIdGroup);
+                statement.setInt(idx++, payload.limitedStack);
+                statement.setInt(idx++, payload.orderNumber);
                 statement.setInt(idx, offerId);
             }
-            statement.execute();
+            if (statement.executeUpdate() == 0) {
+                this.client.sendResponse(new CatalogAdminResultComposer(false, "Offer not found: " + offerId));
+                return;
+            }
         }
 
         this.client.sendResponse(new CatalogAdminResultComposer(true, "Offer saved"));

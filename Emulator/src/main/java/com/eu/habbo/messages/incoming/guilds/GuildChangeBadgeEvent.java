@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.guilds;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.guilds.Guild;
+import com.eu.habbo.habbohotel.guilds.GuildBadgeBuilder;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -27,25 +28,8 @@ public class GuildChangeBadgeEvent extends MessageHandler {
 
                 int count = this.packet.readInt();
 
-                String badge = "";
-
-                byte base = 1;
-
-                while (base < count) {
-                    int id = this.packet.readInt();
-                    int color = this.packet.readInt();
-                    int pos = this.packet.readInt();
-
-                    if (base == 1) {
-                        badge += "b";
-                    } else {
-                        badge += "s";
-                    }
-
-                    badge += (id < 100 ? "0" : "") + (id < 10 ? "0" : "") + id + (color < 10 ? "0" : "") + color + "" + pos;
-
-                    base += 3;
-                }
+                String badge = GuildBadgeBuilder.readBadge(this.packet, count);
+                if (badge == null) return;
 
                 if (guild.getBadge().equalsIgnoreCase(badge))
                     return;

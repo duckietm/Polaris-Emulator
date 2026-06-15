@@ -85,10 +85,10 @@ public abstract class Server {
         }
 
         if (!channelFuture.isSuccess()) {
-            LOGGER.info("Failed to connect to the host ({}:{})@{}", this.host, this.port, this.name);
+            LOGGER.info("Failed to start {} on {}:{}", this.name, this.host, this.port);
             System.exit(0);
         } else {
-            LOGGER.info("Started GameServer on {}:{}@{}", this.host, this.port, this.name);
+            LOGGER.info("Started {} on {}:{}", this.name, this.host, this.port);
         }
     }
 
@@ -100,7 +100,7 @@ public abstract class Server {
         } catch(InterruptedException e) {
             LOGGER.error("Exception during {} shutdown... HARD STOP", this.name, e);
         }
-        LOGGER.info("GameServer Stopped!");
+        LOGGER.info("Stopped {}", this.name);
     }
 
     public ServerBootstrap getServerBootstrap() {

@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.polls;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.polls.Poll;
+import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboBadge;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.users.AddUserBadgeComposer;
@@ -31,11 +32,19 @@ public class AnswerPollEvent extends MessageHandler {
         if(answer.length() <= 0) return;
 
         if (pollId == 0 && questionId <= 0) {
-            this.client.getHabbo().getHabboInfo().getCurrentRoom().handleWordQuiz(this.client.getHabbo(), answer.toString());
+            Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+            if (room != null) {
+                room.handleWordQuiz(this.client.getHabbo(), answer.toString());
+            }
             return;
         }
 
         answer = new StringBuilder(answer.substring(1));
+
+        Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+        if (room == null || room.getPollId() != pollId) {
+            return;
+        }
 
         Poll poll = Emulator.getGameEnvironment().getPollManager().getPoll(pollId);
 

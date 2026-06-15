@@ -435,6 +435,16 @@ ON DUPLICATE KEY UPDATE
     `triggers_talking_furniture` = VALUES(`triggers_talking_furniture`);
 
 INSERT IGNORE INTO `emulator_texts` (`key`, `value`) VALUES
+    ('commands.description.acc_modtool_room_info', 'Allows viewing room information in the moderation tool.'),
+    ('commands.description.cmd_add_youtube_playlist', ':add_youtube <base_item_id> <youtube_playlist_id>'),
+    ('commands.description.cmd_disablemassmentions', ':disablemassmentions'),
+    ('commands.description.cmd_disablementions', ':disablementions'),
+    ('commands.description.cmd_give_prefix', ':giveprefix <username> <text> <color> [icon] [effect]'),
+    ('commands.description.cmd_hidewired', ':hidewired'),
+    ('commands.description.cmd_list_prefixes', ':listprefixes <username>'),
+    ('commands.description.cmd_remove_prefix', ':removeprefix <username> <id|all>'),
+    ('commands.description.cmd_setroom_template', ':setroom_template'),
+    ('commands.description.cmd_update_youtube_playlists', ':update_youtube'),
     ('commands.keys.cmd_setroom_template', 'setroom_template;set_room_template'),
     ('commands.succes.cmd_setroom_template.verify', 'Copy the current room "%roomname%" to room_templates? Type :setroom_template %generic.yes% to confirm.'),
     ('commands.succes.cmd_setroom_template', 'Room saved as template id %id% with %items% items (%skipped% skipped - item_id not in items_base).'),

@@ -103,6 +103,10 @@ public class ToggleFloorItemEvent extends MessageHandler {
 
             // Do not move to onClick(). Wired could trigger it.
             if (item instanceof InteractionMonsterPlantSeed) {
+                if (item.getUserId() != this.client.getHabbo().getHabboInfo().getId()) {
+                    return;
+                }
+
                 Emulator.getThreading().run(new QueryDeleteHabboItem(item.getId()));
 
                 boolean isRare = item.getBaseItem().getName().contains("rare");

@@ -37,6 +37,8 @@
 - [ ] Build row state for a user.
 - [ ] Implement single claim and claim-all.
 - [ ] Grant credits/pixels/points through existing `Habbo` APIs.
+- [ ] Grant badges, furni items, and HC days through existing emulator storage paths.
+- [ ] Roll back a claim marker if a DB-backed grant fails.
 
 ### Task 3: Add Persistence
 
@@ -71,6 +73,8 @@
 - [ ] Test single claim success.
 - [ ] Test duplicate claim rejection.
 - [ ] Test claim-all partial success.
+- [ ] Test badge, item, and HC reward serialization state.
+- [ ] Test claim rollback after grant failure.
 - [ ] Run focused tests.
 - [ ] Run `mvn clean package`.
 

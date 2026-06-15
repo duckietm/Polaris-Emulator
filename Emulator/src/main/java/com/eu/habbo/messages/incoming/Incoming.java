@@ -501,6 +501,9 @@ public class Incoming {
     public static final int WheelAdminSavePrizesEvent = 9305;
     public static final int SoundboardPlayEvent = 9306;
     public static final int SoundboardSetEnabledEvent = 9307;
+    public static final int RequestEarningsCenterEvent = 9308;
+    public static final int ClaimEarningsRewardEvent = 9309;
+    public static final int ClaimAllEarningsRewardsEvent = 9310;
     public static final int RequestMentionsEvent = 4803;
     public static final int MarkMentionsReadEvent = 4804;
     public static final int DeleteMentionEvent = 4805;

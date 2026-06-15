@@ -21,6 +21,8 @@ The first emulator version exposes ten earnings categories:
 
 Every category can be enabled, disabled, configured with one or more reward currencies, and claimed through a single-row claim or a claim-all request. Categories that are not yet backed by a native hotel subsystem still work through static configuration, so the UI contract is stable while deeper integrations are added later.
 
+Supported configured reward types are credits, pixels/duckets, seasonal points, badges, furni items, and HC days.
+
 ## Architecture
 
 Add a focused `com.eu.habbo.habbohotel.earnings` package:
@@ -57,6 +59,10 @@ Add emulator settings with safe defaults:
 - `earnings.<category>.pixels=0`
 - `earnings.<category>.points=0`
 - `earnings.<category>.points.type=5`
+- `earnings.<category>.badge=`
+- `earnings.<category>.item_id=0`
+- `earnings.<category>.item.quantity=1`
+- `earnings.<category>.hc.days=0`
 
 The feature defaults off so existing hotels do not receive surprise economy changes after deploying the jar.
 
@@ -80,7 +86,8 @@ Composer format is intentionally simple and renderer-friendly: category key, ena
 - Reject unknown category keys.
 - Reject all claims when `earnings.enabled=0`.
 - Never trust reward amounts from the client.
-- Clamp configured rewards to non-negative values.
+- Clamp configured rewards to non-negative values and bounded item/HC limits.
+- Roll back the claim record if a DB-backed reward grant fails.
 - Use the database unique key to prevent concurrent double claims.
 - `claim all` processes only claimable rows and returns per-category results.
 
@@ -93,5 +100,7 @@ Add unit tests around the manager-level logic:
 - successful claim grants configured currency once
 - duplicate claim in the same period is rejected
 - claim-all grants all claimable rows and skips already claimed rows
+- badge/item/HC reward rows are included in state
+- failed reward grants roll back the claim record
 
 Packet tests can remain light because renderer IDs may be finalized separately; the critical behavior is the server-side claim guard.

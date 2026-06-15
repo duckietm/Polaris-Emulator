@@ -16,7 +16,14 @@ public class ReportThreadEvent extends MessageHandler {
         int groupId = this.packet.readInt();
         int threadId = this.packet.readInt();
         int topicId = this.packet.readInt();
-        String message = this.packet.readString();
+        String message = ModToolReportInputGuard.normalize(this.packet.readString());
+
+        if (!ModToolReportInputGuard.isPositiveId(groupId) ||
+                !ModToolReportInputGuard.isPositiveId(threadId) ||
+                !ModToolReportInputGuard.isPositiveId(topicId) ||
+                !ModToolReportInputGuard.isValidReportMessage(message)) {
+            return;
+        }
 
         CfhTopic topic = Emulator.getGameEnvironment().getModToolManager().getCfhTopic(topicId);
 

@@ -117,11 +117,16 @@ INSERT IGNORE INTO `emulator_settings` (`key`, `value`, `comment`) VALUES
 INSERT IGNORE INTO `emulator_settings` (`key`, `value`, `comment`) VALUES
 ('earnings.daily_gift.native.enabled', '0', 'Use native hotel subsystem data for daily gift earnings claims when available.'),
 ('earnings.games.native.enabled', '0', 'Use native hotel subsystem data for games earnings claims when available.'),
-('earnings.achievements.native.enabled', '0', 'Use native hotel subsystem data for achievements earnings claims when available.'),
+('earnings.achievements.native.enabled', '1', 'Use achievement score thresholds for achievements earnings claims.'),
 ('earnings.marketplace.native.enabled', '1', 'Use marketplace sold item payouts for marketplace earnings claims.'),
 ('earnings.hc_payday.native.enabled', '1', 'Use unclaimed HC payday logs for HC payday earnings claims.'),
-('earnings.level_progress.native.enabled', '0', 'Use native hotel subsystem data for level progress earnings claims when available.'),
+('earnings.level_progress.native.enabled', '1', 'Use talent track levels for level progress earnings claims.'),
 ('earnings.donations.native.enabled', '0', 'Use native hotel subsystem data for donations earnings claims when available.'),
 ('earnings.bonus_bag.native.enabled', '0', 'Use native hotel subsystem data for bonus bag earnings claims when available.'),
 ('earnings.mystery_boxes.native.enabled', '0', 'Use native hotel subsystem data for mystery boxes earnings claims when available.'),
 ('earnings.club_job.native.enabled', '0', 'Use native hotel subsystem data for club and job earnings claims when available.');
+
+INSERT IGNORE INTO `emulator_settings` (`key`, `value`, `comment`) VALUES
+('earnings.achievements.min_score', '1', 'Minimum achievement score required before achievements earnings can be claimed.'),
+('earnings.achievements.score.step', '100', 'Achievement score bucket size used to prevent repeated claims for the same progress band.'),
+('earnings.level_progress.min_level', '1', 'Minimum citizenship/helper talent level required before level progress earnings can be claimed.');

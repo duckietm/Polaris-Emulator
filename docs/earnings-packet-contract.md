@@ -82,6 +82,8 @@ For `points`, `pointsType` carries the currency type. For `badge`, `data` carrie
 
 - `marketplace`: sold marketplace offers waiting for payout
 - `hc_payday`: unclaimed rows in `logs_hc_payday`
+- `achievements`: configured rewards gated by achievement score buckets
+- `level_progress`: configured rewards gated by citizenship/helper talent level
 
 ## Result Status
 

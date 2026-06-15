@@ -517,8 +517,12 @@ public final class Emulator {
             Emulator.config.register(prefix + "item_id", "0");
             Emulator.config.register(prefix + "item.quantity", "1");
             Emulator.config.register(prefix + "hc.days", "0");
-            Emulator.config.register(prefix + "native.enabled", (category.equals("marketplace") || category.equals("hc_payday")) ? "1" : "0");
+            Emulator.config.register(prefix + "native.enabled", (category.equals("marketplace") || category.equals("hc_payday") || category.equals("achievements") || category.equals("level_progress")) ? "1" : "0");
         }
+
+        Emulator.config.register("earnings.achievements.min_score", "1");
+        Emulator.config.register("earnings.achievements.score.step", "100");
+        Emulator.config.register("earnings.level_progress.min_level", "1");
     }
 
     public static RCONServer getRconServer() {

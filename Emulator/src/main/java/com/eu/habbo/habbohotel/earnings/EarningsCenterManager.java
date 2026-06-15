@@ -95,7 +95,11 @@ public class EarningsCenterManager {
             return new EarningsClaimResult(category, EarningsClaimResult.Status.NO_REWARD, buildEntry(habbo, userId, category, now));
         }
 
-        String periodKey = periodKey(now, definition.cooldownSeconds());
+        if (!isEligibleForProgressClaim(habbo, category)) {
+            return new EarningsClaimResult(category, EarningsClaimResult.Status.NO_REWARD, buildEntry(habbo, userId, category, now));
+        }
+
+        String periodKey = periodKey(habbo, category, now, definition.cooldownSeconds());
 
         try {
             if (!this.claims.recordClaim(userId, category.getKey(), periodKey, now)) {
@@ -143,7 +147,11 @@ public class EarningsCenterManager {
                 return new EarningsEntry(category, true, claimable, 0, definition.rewards());
             }
 
-            String periodKey = periodKey(now, definition.cooldownSeconds());
+            if (!isEligibleForProgressClaim(habbo, category)) {
+                return new EarningsEntry(category, true, false, 0, definition.rewards());
+            }
+
+            String periodKey = periodKey(habbo, category, now, definition.cooldownSeconds());
 
             try {
                 claimable = !this.claims.hasClaim(userId, category.getKey(), periodKey);
@@ -184,6 +192,25 @@ public class EarningsCenterManager {
 
     private boolean nativeEnabled(EarningsCategory category) {
         return this.config.getBoolean(CONFIG_PREFIX + category.getKey() + ".native.enabled", true);
+    }
+
+    private boolean isEligibleForProgressClaim(Habbo habbo, EarningsCategory category) {
+        if (!nativeEnabled(category) || habbo == null || habbo.getHabboStats() == null) {
+            return true;
+        }
+
+        if (category == EarningsCategory.ACHIEVEMENTS) {
+            int minimumScore = Math.max(1, this.config.getInt(CONFIG_PREFIX + category.getKey() + ".min_score", 1));
+            return habbo.getHabboStats().getAchievementScore() >= minimumScore;
+        }
+
+        if (category == EarningsCategory.LEVEL_PROGRESS) {
+            int minimumLevel = Math.max(0, this.config.getInt(CONFIG_PREFIX + category.getKey() + ".min_level", 1));
+            int highestLevel = Math.max(habbo.getHabboStats().citizenshipLevel, habbo.getHabboStats().helpersLevel);
+            return highestLevel >= minimumLevel;
+        }
+
+        return true;
     }
 
     private void addReward(List<EarningsReward> rewards, String type, int amount, int pointsType) {
@@ -229,7 +256,19 @@ public class EarningsCenterManager {
         return (int) (this.clock.instant().getEpochSecond());
     }
 
-    private String periodKey(int now, int cooldownSeconds) {
+    private String periodKey(Habbo habbo, EarningsCategory category, int now, int cooldownSeconds) {
+        if (nativeEnabled(category) && habbo != null && habbo.getHabboStats() != null) {
+            if (category == EarningsCategory.ACHIEVEMENTS) {
+                int scoreStep = Math.max(1, this.config.getInt(CONFIG_PREFIX + category.getKey() + ".score.step", 100));
+                return "score:" + (habbo.getHabboStats().getAchievementScore() / scoreStep);
+            }
+
+            if (category == EarningsCategory.LEVEL_PROGRESS) {
+                int highestLevel = Math.max(habbo.getHabboStats().citizenshipLevel, habbo.getHabboStats().helpersLevel);
+                return "level:" + highestLevel;
+            }
+        }
+
         return String.valueOf(now / cooldownSeconds);
     }
 

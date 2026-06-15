@@ -67,6 +67,7 @@ Add emulator settings with safe defaults:
 
 The feature defaults off so existing hotels do not receive surprise economy changes after deploying the jar.
 Marketplace and HC payday default to native integrations once the feature is enabled, because both already have server-side claim ledgers.
+Achievements and level progress use native eligibility by default: achievement score buckets and talent-track levels decide when the configured reward may be claimed.
 
 ## Packet Contract
 
@@ -94,6 +95,8 @@ Composer format is intentionally simple and renderer-friendly: category key, ena
 - `claim all` processes only claimable rows and returns per-category results.
 - Marketplace claims use the existing marketplace sold-offer payout path.
 - HC payday claims use existing unclaimed `logs_hc_payday` rows.
+- Achievement claims can be scoped to score buckets via `earnings.achievements.score.step`.
+- Level progress claims can be scoped to the current highest citizenship/helper level.
 
 ## Tests
 

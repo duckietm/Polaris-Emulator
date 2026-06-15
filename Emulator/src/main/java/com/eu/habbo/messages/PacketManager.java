@@ -21,6 +21,7 @@ import com.eu.habbo.messages.incoming.catalog.recycler.RequestRecyclerLogicEvent
 import com.eu.habbo.messages.incoming.crafting.*;
 import com.eu.habbo.messages.incoming.events.calendar.AdventCalendarForceOpenEvent;
 import com.eu.habbo.messages.incoming.events.calendar.AdventCalendarOpenDayEvent;
+import com.eu.habbo.messages.incoming.earnings.*;
 import com.eu.habbo.messages.incoming.floorplaneditor.FloorPlanEditorRequestBlockedTilesEvent;
 import com.eu.habbo.messages.incoming.floorplaneditor.FloorPlanEditorRequestDoorSettingsEvent;
 import com.eu.habbo.messages.incoming.floorplaneditor.FloorPlanEditorSaveEvent;
@@ -130,6 +131,7 @@ public class PacketManager {
         this.registerCrafting();
         this.registerCamera();
         this.registerGameCenter();
+        this.registerEarnings();
     }
 
     public PacketNames getNames() {
@@ -765,5 +767,11 @@ public class PacketManager {
 
         this.registerHandler(Incoming.SoundboardPlayEvent, com.eu.habbo.messages.incoming.soundboard.SoundboardPlayEvent.class);
         this.registerHandler(Incoming.SoundboardSetEnabledEvent, com.eu.habbo.messages.incoming.soundboard.SoundboardSetEnabledEvent.class);
+    }
+
+    void registerEarnings() throws Exception {
+        this.registerHandler(Incoming.RequestEarningsCenterEvent, RequestEarningsCenterEvent.class);
+        this.registerHandler(Incoming.ClaimEarningsRewardEvent, ClaimEarningsRewardEvent.class);
+        this.registerHandler(Incoming.ClaimAllEarningsRewardsEvent, ClaimAllEarningsRewardsEvent.class);
     }
 }

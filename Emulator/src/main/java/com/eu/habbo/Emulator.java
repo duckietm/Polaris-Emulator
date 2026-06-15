@@ -160,6 +160,13 @@ public final class Emulator {
             Emulator.config.register("hotel.timezone", java.time.ZoneId.systemDefault().getId());
             Emulator.config.register("gui.enabled", "0");
             Emulator.config.register("gui.autostart.enabled", "0");
+            Emulator.config.register("rcon.rate_limit.enabled", "1");
+            Emulator.config.register("rcon.rate_limit.limit_for_period", "60");
+            Emulator.config.register("rcon.rate_limit.refresh_period_ms", "1000");
+            Emulator.config.register("rcon.rate_limit.timeout_ms", "0");
+            Emulator.config.register("rcon.execute_command.denied_permissions", "cmd_shutdown;cmd_give_rank");
+            Emulator.config.register("rcon.execute_command.allowed_permissions", "");
+            registerEarningsSettings();
             String hotelTimezoneId = Emulator.getConfig().getValue("hotel.timezone", java.time.ZoneId.systemDefault().getId());
             System.out.println(startupCard(hotelTimezoneId));
             Emulator.texts.register("camera.permission", "You don't have permission to use the camera!");
@@ -480,6 +487,42 @@ public final class Emulator {
 
     public static GameServer getGameServer() {
         return gameServer;
+    }
+
+    private static void registerEarningsSettings() {
+        Emulator.config.register("earnings.enabled", "0");
+
+        String[] categories = {
+                "daily_gift",
+                "games",
+                "achievements",
+                "marketplace",
+                "hc_payday",
+                "level_progress",
+                "donations",
+                "bonus_bag",
+                "mystery_boxes",
+                "club_job"
+        };
+
+        for (String category : categories) {
+            String prefix = "earnings." + category + ".";
+            Emulator.config.register(prefix + "enabled", "1");
+            Emulator.config.register(prefix + "cooldown.seconds", "86400");
+            Emulator.config.register(prefix + "credits", "0");
+            Emulator.config.register(prefix + "pixels", "0");
+            Emulator.config.register(prefix + "points", "0");
+            Emulator.config.register(prefix + "points.type", "5");
+            Emulator.config.register(prefix + "badge", "");
+            Emulator.config.register(prefix + "item_id", "0");
+            Emulator.config.register(prefix + "item.quantity", "1");
+            Emulator.config.register(prefix + "hc.days", "0");
+            Emulator.config.register(prefix + "native.enabled", (category.equals("marketplace") || category.equals("hc_payday") || category.equals("achievements") || category.equals("level_progress")) ? "1" : "0");
+        }
+
+        Emulator.config.register("earnings.achievements.min_score", "1");
+        Emulator.config.register("earnings.achievements.score.step", "100");
+        Emulator.config.register("earnings.level_progress.min_level", "1");
     }
 
     public static RCONServer getRconServer() {

@@ -21,11 +21,25 @@ public class ReportEvent extends MessageHandler {
             return;
         }
 
-        String message = this.packet.readString();
+        String message = ModToolReportInputGuard.normalize(this.packet.readString());
         int topic = this.packet.readInt();
         int userId = this.packet.readInt();
         int roomId = this.packet.readInt();
         this.packet.readInt();
+
+        if (!ModToolReportInputGuard.isValidReportMessage(message) ||
+                topic <= 0 ||
+                (userId != -1 && !ModToolReportInputGuard.isPositiveId(userId)) ||
+                !ModToolReportInputGuard.isPositiveId(roomId) ||
+                userId == this.client.getHabbo().getHabboInfo().getId()) {
+            return;
+        }
+
+        CfhTopic cfhTopic = Emulator.getGameEnvironment().getModToolManager().getCfhTopic(topic);
+
+        if (cfhTopic == null) {
+            return;
+        }
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
         List<ModToolIssue> issues = Emulator.getGameEnvironment().getModToolManager().openTicketsForHabbo(this.client.getHabbo());
@@ -34,8 +48,6 @@ public class ReportEvent extends MessageHandler {
             this.client.sendResponse(new ReportRoomFormComposer(issues));
             return;
         }
-
-        CfhTopic cfhTopic = Emulator.getGameEnvironment().getModToolManager().getCfhTopic(topic);
 
         if (userId != -1) {
             Habbo reported = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);

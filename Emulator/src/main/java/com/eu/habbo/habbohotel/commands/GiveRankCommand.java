@@ -36,7 +36,7 @@ public class GiveRankCommand extends Command {
             }
 
             if (rank != null) {
-                if (rank.getId() > gameClient.getHabbo().getHabboInfo().getRank().getId()) {
+                if (!CommandTargetGuard.canAssignRank(gameClient.getHabbo(), rank)) {
                     gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_give_rank.higher").replace("%username%", params[1]).replace("%id%", rank.getName()), RoomChatMessageBubbles.ALERT);
                     return true;
                 }
@@ -44,7 +44,7 @@ public class GiveRankCommand extends Command {
                 HabboInfo habbo = HabboManager.getOfflineHabboInfo(params[1]);
 
                 if (habbo != null) {
-                    if (habbo.getRank().getId() > gameClient.getHabbo().getHabboInfo().getRank().getId()) {
+                    if (!CommandTargetGuard.canTarget(gameClient.getHabbo(), habbo)) {
                         gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_give_rank.higher.other").replace("%username%", params[1]).replace("%id%", rank.getName()), RoomChatMessageBubbles.ALERT);
                         return true;
                     }

@@ -43,7 +43,7 @@ public class MachineBanCommand extends Command {
                 return true;
             }
 
-            if (habbo.getRank().getId() >= gameClient.getHabbo().getHabboInfo().getRank().getId()) {
+            if (!CommandTargetGuard.canTarget(gameClient.getHabbo(), habbo)) {
                 gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_ban.target_rank_higher"), RoomChatMessageBubbles.ALERT);
                 return true;
             }

@@ -34,36 +34,43 @@ public class SearchRoomsEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        String name = this.packet.readString();
+        String name = NavigatorInputGuard.normalizeSearch(this.packet.readString());
 
         String prefix = "";
         String query = name;
         ArrayList<Room> rooms;
 
+        if (name.startsWith("owner:")) {
+            query = NavigatorInputGuard.normalizeSearch(name.substring("owner:".length()));
+            prefix = "owner:";
+        } else if (name.startsWith("tag:")) {
+            query = NavigatorInputGuard.normalizeSearch(name.substring("tag:".length()));
+            prefix = "tag:";
+        } else if (name.startsWith("group:")) {
+            query = NavigatorInputGuard.normalizeSearch(name.substring("group:".length()));
+            prefix = "group:";
+        }
+
+        String cacheKey = buildCacheKey(prefix, query);
+
         ServerMessage message = null;
         Map<String, ServerMessage> rankCache = cachedResults.get(this.client.getHabbo().getHabboInfo().getRank());
         if (rankCache != null) {
-            message = rankCache.get((name + "\t" + query).toLowerCase());
+            message = rankCache.get(cacheKey);
         } else {
             rankCache = createLRUCache();
             cachedResults.put(this.client.getHabbo().getHabboInfo().getRank(), rankCache);
         }
 
         if (message == null) {
-            if (name.startsWith("owner:")) {
-                query = name.split("owner:")[1];
-                prefix = "owner:";
-                rooms = (ArrayList<Room>) Emulator.getGameEnvironment().getRoomManager().getRoomsForHabbo(name);
-            } else if (name.startsWith("tag:")) {
-                query = name.split("tag:")[1];
-                prefix = "tag:";
-                rooms = Emulator.getGameEnvironment().getRoomManager().getRoomsWithTag(name);
-            } else if (name.startsWith("group:")) {
-                query = name.split("group:")[1];
-                prefix = "group:";
-                rooms = Emulator.getGameEnvironment().getRoomManager().getGroupRoomsWithName(name);
+            if (prefix.equals("owner:")) {
+                rooms = (ArrayList<Room>) Emulator.getGameEnvironment().getRoomManager().getRoomsForHabbo(query);
+            } else if (prefix.equals("tag:")) {
+                rooms = Emulator.getGameEnvironment().getRoomManager().getRoomsWithTag(query);
+            } else if (prefix.equals("group:")) {
+                rooms = Emulator.getGameEnvironment().getRoomManager().getGroupRoomsWithName(query);
             } else {
-                rooms = Emulator.getGameEnvironment().getRoomManager().getRoomsWithName(name);
+                rooms = Emulator.getGameEnvironment().getRoomManager().getRoomsWithName(query);
             }
 
             message = new PrivateRoomsComposer(rooms).compose();
@@ -73,7 +80,7 @@ public class SearchRoomsEvent extends MessageHandler {
                 map = createLRUCache();
             }
 
-            map.put((name + "\t" + query).toLowerCase(), message);
+            map.put(cacheKey, message);
             cachedResults.put(this.client.getHabbo().getHabboInfo().getRank(), map);
 
             NavigatorSearchResultEvent event = new NavigatorSearchResultEvent(this.client.getHabbo(), prefix, query, rooms);
@@ -83,5 +90,9 @@ public class SearchRoomsEvent extends MessageHandler {
         }
 
         this.client.sendResponse(message);
+    }
+
+    private static String buildCacheKey(String prefix, String query) {
+        return (prefix + "\t" + query).toLowerCase();
     }
 }

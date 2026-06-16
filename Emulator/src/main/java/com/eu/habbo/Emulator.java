@@ -166,6 +166,7 @@ public final class Emulator {
             Emulator.config.register("rcon.rate_limit.timeout_ms", "0");
             Emulator.config.register("rcon.execute_command.denied_permissions", "cmd_shutdown;cmd_give_rank");
             Emulator.config.register("rcon.execute_command.allowed_permissions", "");
+            Emulator.config.register("rcon.max_payload_bytes", "65536");
             registerEarningsSettings();
             String hotelTimezoneId = Emulator.getConfig().getValue("hotel.timezone", java.time.ZoneId.systemDefault().getId());
             System.out.println(startupCard(hotelTimezoneId));

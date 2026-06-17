@@ -15,6 +15,7 @@ class GuildForumInputGuardContractTest {
 
         for (String handler : List.of(
                 "GuildForumPostThreadEvent.java",
+                "GuildForumDataEvent.java",
                 "GuildForumModerateMessageEvent.java",
                 "GuildForumModerateThreadEvent.java",
                 "GuildForumThreadUpdateEvent.java",
@@ -39,9 +40,12 @@ class GuildForumInputGuardContractTest {
         String settings = Files.readString(base.resolve("GuildForumUpdateSettingsEvent.java"));
         String moderateThread = Files.readString(base.resolve("GuildForumModerateThreadEvent.java"));
         String moderateMessage = Files.readString(base.resolve("GuildForumModerateMessageEvent.java"));
+        String threads = Files.readString(base.resolve("GuildForumThreadsEvent.java"));
 
         assertTrue(messages.contains("GuildForumInputGuard.isValidPage(index, limit)"),
                 "thread message reads must bound index/limit before fetching comments");
+        assertTrue(threads.contains("GuildForumInputGuard.isValidThreadIndex(index)"),
+                "thread list reads must bound the client-provided index before composing results");
         assertTrue(markRead.contains("GuildForumInputGuard.isValidMarkReadBatch(count)"),
                 "mark-as-read must bound the client-provided batch count before DB writes");
         assertTrue(settings.contains("GuildForumInputGuard.isSettingsState"),
@@ -58,5 +62,17 @@ class GuildForumInputGuardContractTest {
 
         assertTrue(source.contains("GuildForumInputGuard.normalize(this.packet.readString())"),
                 "forum post subject and body should be normalized before word filtering and length checks");
+    }
+
+    @Test
+    void markAsReadRequiresForumReadAccessBeforeWritingViews() throws Exception {
+        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/messages/incoming/guilds/forums/GuildForumMarkAsReadEvent.java"));
+
+        int guildLookup = source.indexOf("Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId)");
+        int readGuard = source.indexOf("guild.canHabboReadForum(userId, member, staff)");
+        int insert = source.indexOf("INSERT INTO `guild_forum_views`");
+
+        assertTrue(guildLookup > -1 && readGuard > guildLookup && readGuard < insert,
+                "mark-as-read should confirm the user can read the forum before inserting view rows");
     }
 }

@@ -29,6 +29,7 @@ public class SellItemEvent extends MessageHandler {
         final int furniType = this.packet.readInt(); // 1 = FLOOR_TYPE, 2 = WALL_TYPE
         final int itemId = this.packet.readInt();
 
+        if (!MarketplaceInputGuard.isPositiveId(itemId)) return;
         if (furniType != 1 && furniType != 2) return;
 
         HabboItem item = this.client.getHabbo().getInventory().getItemsComponent().getHabboItem(itemId);

@@ -20,14 +20,10 @@ public class RequestOffersEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        int min = this.packet.readInt();
-        int max = this.packet.readInt();
-        String query = this.packet.readString();
-        int type = this.packet.readInt();
-
-        if (query.length() > 30) {
-            query = query.substring(0, 30);
-        }
+        int min = MarketplaceInputGuard.normalizeMinPrice(this.packet.readInt());
+        int max = MarketplaceInputGuard.normalizeMaxPrice(this.packet.readInt(), min);
+        String query = MarketplaceInputGuard.normalizeSearch(this.packet.readString());
+        int type = MarketplaceInputGuard.normalizeSort(this.packet.readInt());
 
 
         boolean tryCache = min == -1 && max == -1 && query.isEmpty();

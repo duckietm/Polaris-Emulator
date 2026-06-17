@@ -12,6 +12,11 @@ public class TakeBackItemEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         int offerId = this.packet.readInt();
+
+        if (!MarketplaceInputGuard.isPositiveId(offerId)) {
+            return;
+        }
+
         MarketPlace.takeBackItem(this.client.getHabbo(), offerId);
     }
 }

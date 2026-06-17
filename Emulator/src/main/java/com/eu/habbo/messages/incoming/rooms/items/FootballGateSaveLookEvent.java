@@ -13,15 +13,21 @@ public class FootballGateSaveLookEvent extends MessageHandler {
         if (room == null || this.client.getHabbo().getHabboInfo().getId() != room.getOwnerId())
             return;
 
-        HabboItem item = room.getHabboItem(this.packet.readInt());
+        int itemId = this.packet.readInt();
+        if (!RoomItemInputGuard.isPositiveId(itemId))
+            return;
+
+        HabboItem item = room.getHabboItem(itemId);
         if (!(item instanceof InteractionFootballGate))
             return;
 
         String gender = this.packet.readString();
-        String look = this.packet.readString();
+        String look = RoomItemInputGuard.trimToMax(this.packet.readString(), RoomItemInputGuard.MAX_LOOK_LENGTH);
+
+        if (!RoomItemInputGuard.isValidGender(gender) || look.isEmpty())
+            return;
 
         switch (gender.toLowerCase()) {
-            default:
             case "m":
                 ((InteractionFootballGate) item).setFigureM(look);
                 room.updateItem(item);

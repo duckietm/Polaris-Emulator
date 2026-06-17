@@ -24,9 +24,14 @@ public class SavePostItStickyPoleEvent extends MessageHandler {
         if (itemId == -1234) {
             if (this.client.getHabbo().hasPermission("cmd_multi")) {
                 String[] commands = this.packet.readString().split("\r");
+                if (commands.length > RoomItemInputGuard.MAX_STICKY_POLE_COMMANDS)
+                    return;
 
                 for (String command : commands) {
-                    command = command.replace("<br>", "\r");
+                    command = RoomItemInputGuard.trimToMax(command.replace("<br>", "\r"), RoomItemInputGuard.MAX_STICKY_POLE_COMMAND_LENGTH);
+                    if (command.isEmpty())
+                        continue;
+
                     CommandHandler.handleCommand(this.client, command);
                 }
             } else {
@@ -36,6 +41,9 @@ public class SavePostItStickyPoleEvent extends MessageHandler {
             String text = Emulator.getGameEnvironment().getWordFilter().filter(this.packet.readString().replace(((char) 9) + "", ""), this.client.getHabbo());
 
             if (text.length() > Emulator.getConfig().getInt("postit.charlimit"))
+                return;
+
+            if (!RoomItemInputGuard.isPositiveId(itemId))
                 return;
 
             Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();

@@ -12,6 +12,9 @@ public class RoomPickupItemEvent extends MessageHandler {
         this.packet.readInt(); //10 = floorItem and 20 = wallItem
         int itemId = this.packet.readInt();
 
+        if (!RoomItemInputGuard.isPositiveId(itemId))
+            return;
+
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
         if (room == null)

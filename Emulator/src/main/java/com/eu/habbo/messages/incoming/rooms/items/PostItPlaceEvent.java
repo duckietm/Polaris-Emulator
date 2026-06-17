@@ -19,6 +19,9 @@ public class PostItPlaceEvent extends MessageHandler {
         int itemId = this.packet.readInt();
         String location = this.packet.readString();
 
+        if (!RoomItemInputGuard.isPositiveId(itemId) || location.length() <= 13)
+            return;
+
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
         if (room != null) {

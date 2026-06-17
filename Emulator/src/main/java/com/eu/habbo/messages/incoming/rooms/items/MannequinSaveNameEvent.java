@@ -12,12 +12,16 @@ public class MannequinSaveNameEvent extends MessageHandler {
         if (room == null || !room.isOwner(this.client.getHabbo()))
             return;
 
-        HabboItem item = room.getHabboItem(this.packet.readInt());
+        int itemId = this.packet.readInt();
+        if (!RoomItemInputGuard.isPositiveId(itemId))
+            return;
+
+        HabboItem item = room.getHabboItem(itemId);
         if (item == null)
             return;
 
         String[] data = item.getExtradata().split(":");
-        String name = this.packet.readString();
+        String name = RoomItemInputGuard.trimToMax(this.packet.readString(), 32);
 
         if (name.length() < 3 || name.length() > 15) {
             name = Emulator.getTexts().getValue("hotel.mannequin.name.default", "My look");

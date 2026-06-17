@@ -89,19 +89,38 @@ public class WiredConditionFurniHaveHabbo extends InteractionWiredCondition {
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
-        this.items.clear();
+        this.onPickUp();
         String wiredData = set.getString("wired_data");
+        if (wiredData == null || wiredData.isEmpty()) {
+            return;
+        }
 
         if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            this.furniSource = data.furniSource;
+            JsonData data;
+            try {
+                data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            } catch (RuntimeException exception) {
+                this.onPickUp();
+                return;
+            }
+
+            if (data == null) {
+                return;
+            }
+
+            this.furniSource = this.normalizeFurniSource(data.furniSource);
             this.all = data.all;
 
-            for(int id : data.itemIds) {
-                HabboItem item = room.getHabboItem(id);
+            if (data.itemIds != null && room != null) {
+                for (Integer id : data.itemIds) {
+                    if (id == null) {
+                        continue;
+                    }
 
-                if (item != null) {
-                    this.items.add(item);
+                    HabboItem item = room.getHabboItem(id);
+                    if (item != null) {
+                        this.items.add(item);
+                    }
                 }
             }
         } else {
@@ -112,10 +131,13 @@ public class WiredConditionFurniHaveHabbo extends InteractionWiredCondition {
                 String[] items = data[1].split(";");
 
                 for (String s : items) {
-                    HabboItem item = room.getHabboItem(Integer.parseInt(s));
+                    try {
+                        HabboItem item = room.getHabboItem(Integer.parseInt(s));
 
-                    if (item != null)
-                        this.items.add(item);
+                        if (item != null)
+                            this.items.add(item);
+                    } catch (NumberFormatException ignored) {
+                    }
                 }
             }
             this.furniSource = this.items.isEmpty() ? WiredSourceUtil.SOURCE_TRIGGER : WiredSourceUtil.SOURCE_SELECTED;
@@ -162,7 +184,7 @@ public class WiredConditionFurniHaveHabbo extends InteractionWiredCondition {
 
         int[] params = settings.getIntParams();
         this.all = (params.length > 0) && (params[0] == 1);
-        this.furniSource = (params.length > 1) ? params[1] : ((params.length > 0 && params[0] > 1) ? params[0] : WiredSourceUtil.SOURCE_TRIGGER);
+        this.furniSource = (params.length > 1) ? this.normalizeFurniSource(params[1]) : ((params.length > 0 && params[0] > 1) ? this.normalizeFurniSource(params[0]) : WiredSourceUtil.SOURCE_TRIGGER);
 
         if (count > 0 && this.furniSource == WiredSourceUtil.SOURCE_TRIGGER) {
             this.furniSource = WiredSourceUtil.SOURCE_SELECTED;
@@ -184,6 +206,18 @@ public class WiredConditionFurniHaveHabbo extends InteractionWiredCondition {
         }
 
         return true;
+    }
+
+    int normalizeFurniSource(int value) {
+        switch (value) {
+            case WiredSourceUtil.SOURCE_SELECTED:
+            case WiredSourceUtil.SOURCE_SELECTOR:
+            case WiredSourceUtil.SOURCE_SIGNAL:
+            case WiredSourceUtil.SOURCE_TRIGGER:
+                return value;
+            default:
+                return WiredSourceUtil.SOURCE_TRIGGER;
+        }
     }
 
     protected boolean hasAvatarOnItem(HabboItem item, Room room, Collection<Habbo> habbos, Collection<Bot> bots, Collection<Pet> pets) {

@@ -92,21 +92,40 @@ public class WiredConditionFurniHaveFurni extends InteractionWiredCondition {
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        this.onPickUp();
         String wiredData = set.getString("wired_data");
+        if (wiredData == null || wiredData.isEmpty()) {
+            return;
+        }
 
         if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            this.all = data.all;
-            this.furniSource = data.furniSource;
-
-            for(int id : data.itemIds) {
-                HabboItem item = room.getHabboItem(id);
-
-                if (item != null) {
-                    this.items.add(item);
-                }
+            JsonData data;
+            try {
+                data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            } catch (RuntimeException exception) {
+                this.onPickUp();
+                return;
             }
 
+            if (data == null) {
+                return;
+            }
+
+            this.all = data.all;
+            this.furniSource = this.normalizeFurniSource(data.furniSource);
+
+            if (data.itemIds != null && room != null) {
+                for (Integer id : data.itemIds) {
+                    if (id == null) {
+                        continue;
+                    }
+
+                    HabboItem item = room.getHabboItem(id);
+                    if (item != null) {
+                        this.items.add(item);
+                    }
+                }
+            }
         } else {
             String[] data = wiredData.split(":");
 
@@ -117,10 +136,13 @@ public class WiredConditionFurniHaveFurni extends InteractionWiredCondition {
                     String[] items = data[1].split(";");
 
                     for (String s : items) {
-                        HabboItem item = room.getHabboItem(Integer.parseInt(s));
+                        try {
+                            HabboItem item = room.getHabboItem(Integer.parseInt(s));
 
-                        if (item != null)
-                            this.items.add(item);
+                            if (item != null)
+                                this.items.add(item);
+                        } catch (NumberFormatException ignored) {
+                        }
                     }
                 }
             }
@@ -172,7 +194,7 @@ public class WiredConditionFurniHaveFurni extends InteractionWiredCondition {
 
         int[] params = settings.getIntParams();
         this.all = params[0] == 1;
-        this.furniSource = (params.length > 1) ? params[1] : WiredSourceUtil.SOURCE_TRIGGER;
+        this.furniSource = (params.length > 1) ? this.normalizeFurniSource(params[1]) : WiredSourceUtil.SOURCE_TRIGGER;
 
         int count = settings.getFurniIds().length;
         if (count > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) return false;
@@ -196,6 +218,18 @@ public class WiredConditionFurniHaveFurni extends InteractionWiredCondition {
             }
         }
         return true;
+    }
+
+    int normalizeFurniSource(int value) {
+        switch (value) {
+            case WiredSourceUtil.SOURCE_SELECTED:
+            case WiredSourceUtil.SOURCE_SELECTOR:
+            case WiredSourceUtil.SOURCE_SIGNAL:
+            case WiredSourceUtil.SOURCE_TRIGGER:
+                return value;
+            default:
+                return WiredSourceUtil.SOURCE_TRIGGER;
+        }
     }
 
     private void refresh() {

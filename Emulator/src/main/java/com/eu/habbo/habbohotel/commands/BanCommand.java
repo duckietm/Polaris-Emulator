@@ -9,6 +9,8 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboManager;
 
+import java.util.List;
+
 public class BanCommand extends Command {
     public BanCommand() {
         super("cmd_ban", Emulator.getTexts().getValue("commands.keys.cmd_ban").split(";"));
@@ -58,7 +60,7 @@ public class BanCommand extends Command {
             return true;
         }
 
-        if (target.getRank().getId() >= gameClient.getHabbo().getHabboInfo().getRank().getId()) {
+        if (!CommandTargetGuard.canTarget(gameClient.getHabbo(), target)) {
             gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_ban.target_rank_higher"), RoomChatMessageBubbles.ALERT);
             return true;
         }
@@ -72,7 +74,13 @@ public class BanCommand extends Command {
             }
         }
 
-        ModToolBan ban = Emulator.getGameEnvironment().getModToolManager().ban(target.getId(), gameClient.getHabbo(), reason.toString(), banTime, ModToolBanType.ACCOUNT, -1).get(0);
+        List<ModToolBan> bans = Emulator.getGameEnvironment().getModToolManager().ban(target.getId(), gameClient.getHabbo(), reason.toString(), banTime, ModToolBanType.ACCOUNT, -1);
+        if (bans == null || bans.isEmpty()) {
+            gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_ban.user_offline"), RoomChatMessageBubbles.ALERT);
+            return true;
+        }
+
+        ModToolBan ban = bans.get(0);
         gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.succes.cmd_ban.ban_issued").replace("%user%", target.getUsername()).replace("%time%", ban.expireDate - Emulator.getIntUnixTimestamp() + "").replace("%reason%", ban.reason), RoomChatMessageBubbles.ALERT);
 
         return true;

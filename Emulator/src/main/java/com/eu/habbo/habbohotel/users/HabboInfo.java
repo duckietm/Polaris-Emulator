@@ -55,6 +55,11 @@ public class HabboInfo implements Runnable {
     private RideablePet riding;
     private Class<? extends Game> currentGame;
     private TIntIntHashMap currencies;
+    // Serializes credits + currencies read-modify-write and the saveCurrencies
+    // snapshot so the credit-roller thread and purchase/trade handler threads
+    // can't lose updates or rehash the Trove map mid-iteration. Never held
+    // across run()'s DB I/O.
+    private final Object currencyLock = new Object();
     private GamePlayer gamePlayer;
     private int photoRoomId;
     private int photoTimestamp;
@@ -123,11 +128,16 @@ public class HabboInfo implements Runnable {
     }
 
     private void saveCurrencies() {
-        List<int[]> entries = new ArrayList<>(this.currencies.size());
-        this.currencies.forEachEntry((type, amount) -> {
-            entries.add(new int[]{type, amount});
-            return true;
-        });
+        // Snapshot under the lock so a concurrent adjustOrPutValue/put can't
+        // rehash the Trove map while we iterate; do the DB batch off-lock.
+        List<int[]> entries;
+        synchronized (this.currencyLock) {
+            entries = new ArrayList<>(this.currencies.size());
+            this.currencies.forEachEntry((type, amount) -> {
+                entries.add(new int[]{type, amount});
+                return true;
+            });
+        }
 
         try {
             SqlQueries.batchUpdate(
@@ -238,20 +248,30 @@ public class HabboInfo implements Runnable {
     }
 
     public int getCurrencyAmount(int type) {
-        return this.currencies.get(type);
+        synchronized (this.currencyLock) {
+            return this.currencies.get(type);
+        }
     }
 
     public TIntIntHashMap getCurrencies() {
-        return this.currencies;
+        // Return a snapshot under the lock: callers iterate this map, which would
+        // otherwise corrupt during a concurrent adjustOrPutValue rehash.
+        synchronized (this.currencyLock) {
+            return new TIntIntHashMap(this.currencies);
+        }
     }
 
     public void addCurrencyAmount(int type, int amount) {
-        this.currencies.adjustOrPutValue(type, amount, amount);
+        synchronized (this.currencyLock) {
+            this.currencies.adjustOrPutValue(type, amount, amount);
+        }
         this.run();
     }
 
     public void setCurrencyAmount(int type, int amount) {
-        this.currencies.put(type, amount);
+        synchronized (this.currencyLock) {
+            this.currencies.put(type, amount);
+        }
         this.run();
     }
 
@@ -380,20 +400,26 @@ public class HabboInfo implements Runnable {
     }
 
     public boolean canBuy(CatalogItem item) {
-        return this.credits >= item.getCredits() && this.getCurrencies().get(item.getPointsType()) >= item.getPoints();
+        return this.getCredits() >= item.getCredits() && this.getCurrencyAmount(item.getPointsType()) >= item.getPoints();
     }
 
     public int getCredits() {
-        return this.credits;
+        synchronized (this.currencyLock) {
+            return this.credits;
+        }
     }
 
     public void setCredits(int credits) {
-        this.credits = credits;
+        synchronized (this.currencyLock) {
+            this.credits = credits;
+        }
         this.run();
     }
 
     public void addCredits(int credits) {
-        this.credits += credits;
+        synchronized (this.currencyLock) {
+            this.credits += credits;
+        }
         this.run();
     }
 
@@ -600,6 +626,13 @@ public class HabboInfo implements Runnable {
     public void run() {
         this.saveCurrencies();
 
+        // Read credits under the lock so the persisted value is consistent with
+        // concurrent addCredits/setCredits (matches the currencyLock invariant).
+        final int creditsForSave;
+        synchronized (this.currencyLock) {
+            creditsForSave = this.credits;
+        }
+
         try {
             SqlQueries.update(
                     "UPDATE users SET motto = ?, online = ?, look = ?, gender = ?, credits = ?, last_login = ?, last_online = ?, home_room = ?, ip_current = ?, `rank` = ?, machine_id = ?, username = ?, background_id = ?, background_stand_id = ?, background_overlay_id = ?, background_card_id = ?, background_border_id = ? WHERE id = ?",
@@ -607,7 +640,7 @@ public class HabboInfo implements Runnable {
                     this.online ? "1" : "0",
                     this.look,
                     this.gender.name(),
-                    this.credits,
+                    creditsForSave,
                     Emulator.getIntUnixTimestamp(),
                     this.lastOnline,
                     this.homeRoom,

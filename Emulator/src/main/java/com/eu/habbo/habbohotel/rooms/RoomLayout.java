@@ -130,13 +130,16 @@ public class RoomLayout {
     this.roomTiles = new RoomTile[this.mapSizeX][this.mapSizeY];
 
     for (short y = 0; y < this.mapSizeY; y++) {
-      if (modelTemp[y].isEmpty() || modelTemp[y].equalsIgnoreCase("\r")) {
-        continue;
-      }
+      // A row shorter/longer than the model width (or empty) cannot be parsed
+      // per-square. Previously such tiles were left null while tileExists()
+      // still reported them present, causing NPEs in the coordinate accessors.
+      // Fill them with INVALID tiles so every in-bounds coordinate is non-null.
+      boolean validRow = !modelTemp[y].isEmpty() && modelTemp[y].length() == this.mapSizeX;
 
       for (short x = 0; x < this.mapSizeX; x++) {
-        if (modelTemp[y].length() != this.mapSizeX) {
-          break;
+        if (!validRow) {
+          this.roomTiles[x][y] = new RoomTile(x, y, (short) 0, RoomTileState.INVALID, true);
+          continue;
         }
 
         String square = modelTemp[y].substring(x, x + 1).trim().toLowerCase();
@@ -159,7 +162,9 @@ public class RoomLayout {
       }
     }
 
-    this.doorTile = this.roomTiles[this.doorX][this.doorY];
+    this.doorTile = (this.doorX >= 0 && this.doorX < this.mapSizeX && this.doorY >= 0 && this.doorY < this.mapSizeY)
+        ? this.roomTiles[this.doorX][this.doorY]
+        : null;
 
     if (this.doorTile != null) {
       this.doorTile.setAllowStack(false);

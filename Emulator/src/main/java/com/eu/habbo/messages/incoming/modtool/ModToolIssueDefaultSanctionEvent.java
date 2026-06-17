@@ -19,7 +19,15 @@ public class ModToolIssueDefaultSanctionEvent extends MessageHandler {
             this.packet.readInt();
             int category = this.packet.readInt();
 
+            if (!ModToolTicketGuard.isPositiveId(issueId) || !ModToolTicketGuard.isPositiveId(category)) {
+                return;
+            }
+
             ModToolIssue issue = Emulator.getGameEnvironment().getModToolManager().getTicket(issueId);
+
+            if (issue == null) {
+                return;
+            }
 
             if (issue.modId == this.client.getHabbo().getHabboInfo().getId()) {
                 CfhTopic modToolCategory = Emulator.getGameEnvironment().getModToolManager().getCfhTopic(category);
@@ -29,6 +37,10 @@ public class ModToolIssueDefaultSanctionEvent extends MessageHandler {
 
                     if (defaultSanction != null) {
                         Habbo target = Emulator.getGameEnvironment().getHabboManager().getHabbo(issue.reportedId);
+
+                        if (!ModToolManager.canModerateTarget(this.client.getHabbo(), issue.reportedId)) {
+                            return;
+                        }
 
                         if (defaultSanction.banLength > 0) {
                             Emulator.getGameEnvironment().getModToolManager().ban(issue.reportedId, this.client.getHabbo(), defaultSanction.message, defaultSanction.banLength * 86400, ModToolBanType.ACCOUNT, modToolCategory.id);

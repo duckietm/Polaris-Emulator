@@ -8,6 +8,8 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboManager;
 
+import java.util.List;
+
 public class IPBanCommand extends Command {
     public final static int TEN_YEARS = 315569260;
 
@@ -45,17 +47,17 @@ public class IPBanCommand extends Command {
                 return true;
             }
 
-            if (habbo.getRank().getId() >= gameClient.getHabbo().getHabboInfo().getRank().getId()) {
+            if (!CommandTargetGuard.canTarget(gameClient.getHabbo(), habbo)) {
                 gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_ban.target_rank_higher"), RoomChatMessageBubbles.ALERT);
                 return true;
             }
 
-            Emulator.getGameEnvironment().getModToolManager().ban(habbo.getId(), gameClient.getHabbo(), reason.toString(), TEN_YEARS, ModToolBanType.IP, -1);
-            count++;
+            List<?> bans = Emulator.getGameEnvironment().getModToolManager().ban(habbo.getId(), gameClient.getHabbo(), reason.toString(), TEN_YEARS, ModToolBanType.IP, -1);
+            count += bans != null ? bans.size() : 0;
             for (Habbo h : Emulator.getGameServer().getGameClientManager().getHabbosWithIP(habbo.getIpLogin())) {
                 if (h != null) {
-                    count++;
-                    Emulator.getGameEnvironment().getModToolManager().ban(h.getHabboInfo().getId(), gameClient.getHabbo(), reason.toString(), TEN_YEARS, ModToolBanType.IP, -1);
+                    bans = Emulator.getGameEnvironment().getModToolManager().ban(h.getHabboInfo().getId(), gameClient.getHabbo(), reason.toString(), TEN_YEARS, ModToolBanType.IP, -1);
+                    count += bans != null ? bans.size() : 0;
                 }
             }
         } else {

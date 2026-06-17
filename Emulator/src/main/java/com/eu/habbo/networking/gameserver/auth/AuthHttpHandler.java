@@ -9,8 +9,15 @@ import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.util.ReferenceCountUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.MAX_BODY_BYTES;
 import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.errorPayload;
@@ -20,6 +27,37 @@ import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.sendCors;
 import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.sendJson;
 
 public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthHttpHandler.class);
+
+    // Dedicated, bounded pool for the auth endpoints. Their work blocks on
+    // BCrypt, JDBC, the Turnstile HTTPS round-trip and SMTP — running that on the
+    // Netty event loop stalls every client on the same worker. A SEPARATE pool
+    // (not the shared game ThreadPooling) also keeps it from starving room cycles.
+    private static final int AUTH_POOL_MAX = authPoolMax();
+    private static final ThreadPoolExecutor AUTH_EXECUTOR = new ThreadPoolExecutor(
+            Math.min(4, AUTH_POOL_MAX), AUTH_POOL_MAX, 60L, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(512),
+            new java.util.concurrent.ThreadFactory() {
+                private final AtomicInteger counter = new AtomicInteger(1);
+                @Override
+                public Thread newThread(Runnable r) {
+                    Thread t = new Thread(r, "auth-http-worker-" + counter.getAndIncrement());
+                    t.setDaemon(true);
+                    return t;
+                }
+            });
+
+    // Max threads for the auth pool. Defaults to 16; set the optional
+    // `auth.http.pool.size` config key to override.
+    private static int authPoolMax() {
+        int fallback = 16;
+        if (com.eu.habbo.Emulator.getConfig() == null) {
+            return fallback;
+        }
+        int configured = com.eu.habbo.Emulator.getConfig().getInt("auth.http.pool.size", fallback);
+        return configured > 0 ? configured : fallback;
+    }
 
     static final String LOGIN_PATH           = "/api/auth/login";
     static final String REGISTER_PATH        = "/api/auth/register";
@@ -52,10 +90,30 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
+        // Offload the (potentially blocking) auth work off the event loop. Netty
+        // writes are thread-safe, so the endpoints' sendJson/writeAndFlush calls
+        // are fine from the worker; the request is released once the work ends.
         try {
-            handle(ctx, req, path);
-        } finally {
-            ReferenceCountUtil.release(req);
+            AUTH_EXECUTOR.execute(() -> {
+                try {
+                    handle(ctx, req, path);
+                } catch (Throwable t) {
+                    LOGGER.error("Auth handler failed for {}", path, t);
+                    try {
+                        sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Internal error."));
+                    } catch (Throwable ignored) {
+                        // response may already be partially written — nothing else to do
+                    }
+                } finally {
+                    ReferenceCountUtil.release(req);
+                }
+            });
+        } catch (RejectedExecutionException rejected) {
+            try {
+                sendJson(ctx, req, HttpResponseStatus.SERVICE_UNAVAILABLE, errorPayload("Server busy, try again shortly."));
+            } finally {
+                ReferenceCountUtil.release(req);
+            }
         }
     }
 

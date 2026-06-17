@@ -167,17 +167,22 @@ public class RoomItemManager {
      */
     public THashSet<HabboItem> getFloorItems() {
         THashSet<HabboItem> items = new THashSet<>();
-        TIntObjectIterator<HabboItem> iterator = this.roomItems.iterator();
+        // roomItems is a TCollections.synchronizedMap; its iterator is not safe
+        // against concurrent put/remove (item place/pickup), so hold the map
+        // monitor for the whole traversal, matching the mutation sites.
+        synchronized (this.roomItems) {
+            TIntObjectIterator<HabboItem> iterator = this.roomItems.iterator();
 
-        for (int i = this.roomItems.size(); i-- > 0; ) {
-            try {
-                iterator.advance();
-            } catch (Exception e) {
-                break;
-            }
+            for (int i = this.roomItems.size(); i-- > 0; ) {
+                try {
+                    iterator.advance();
+                } catch (Exception e) {
+                    break;
+                }
 
-            if (iterator.value().getBaseItem().getType() == FurnitureType.FLOOR) {
-                items.add(iterator.value());
+                if (iterator.value().getBaseItem().getType() == FurnitureType.FLOOR) {
+                    items.add(iterator.value());
+                }
             }
         }
 
@@ -189,17 +194,19 @@ public class RoomItemManager {
      */
     public THashSet<HabboItem> getWallItems() {
         THashSet<HabboItem> items = new THashSet<>();
-        TIntObjectIterator<HabboItem> iterator = this.roomItems.iterator();
+        synchronized (this.roomItems) {
+            TIntObjectIterator<HabboItem> iterator = this.roomItems.iterator();
 
-        for (int i = this.roomItems.size(); i-- > 0; ) {
-            try {
-                iterator.advance();
-            } catch (Exception e) {
-                break;
-            }
+            for (int i = this.roomItems.size(); i-- > 0; ) {
+                try {
+                    iterator.advance();
+                } catch (Exception e) {
+                    break;
+                }
 
-            if (iterator.value().getBaseItem().getType() == FurnitureType.WALL) {
-                items.add(iterator.value());
+                if (iterator.value().getBaseItem().getType() == FurnitureType.WALL) {
+                    items.add(iterator.value());
+                }
             }
         }
 
@@ -211,18 +218,20 @@ public class RoomItemManager {
      */
     public THashSet<HabboItem> getPostItNotes() {
         THashSet<HabboItem> items = new THashSet<>();
-        TIntObjectIterator<HabboItem> iterator = this.roomItems.iterator();
+        synchronized (this.roomItems) {
+            TIntObjectIterator<HabboItem> iterator = this.roomItems.iterator();
 
-        for (int i = this.roomItems.size(); i-- > 0; ) {
-            try {
-                iterator.advance();
-            } catch (Exception e) {
-                break;
-            }
+            for (int i = this.roomItems.size(); i-- > 0; ) {
+                try {
+                    iterator.advance();
+                } catch (Exception e) {
+                    break;
+                }
 
-            if (iterator.value().getBaseItem().getInteractionType().getType()
-                    == InteractionPostIt.class) {
-                items.add(iterator.value());
+                if (iterator.value().getBaseItem().getInteractionType().getType()
+                        == InteractionPostIt.class) {
+                    items.add(iterator.value());
+                }
             }
         }
 
@@ -276,44 +285,49 @@ public class RoomItemManager {
             }
         }
 
-        TIntObjectIterator<HabboItem> iterator = this.roomItems.iterator();
+        // Cache miss: iterate roomItems under its monitor so a concurrent
+        // place/pickup can't rehash the map mid-traversal (which the per-advance
+        // try/catch would otherwise silently swallow into an incomplete result).
+        synchronized (this.roomItems) {
+            TIntObjectIterator<HabboItem> iterator = this.roomItems.iterator();
 
-        for (int i = this.roomItems.size(); i-- > 0; ) {
-            HabboItem item;
-            try {
-                iterator.advance();
-                item = iterator.value();
-            } catch (Exception e) {
-                break;
-            }
+            for (int i = this.roomItems.size(); i-- > 0; ) {
+                HabboItem item;
+                try {
+                    iterator.advance();
+                    item = iterator.value();
+                } catch (Exception e) {
+                    break;
+                }
 
-            if (item == null) {
-                continue;
-            }
+                if (item == null) {
+                    continue;
+                }
 
-            if (item.getBaseItem().getType() != FurnitureType.FLOOR) {
-                continue;
-            }
+                if (item.getBaseItem().getType() != FurnitureType.FLOOR) {
+                    continue;
+                }
 
-            int width, length;
+                int width, length;
 
-            if (item.getRotation() != 2 && item.getRotation() != 6) {
-                width = item.getBaseItem().getWidth() > 0 ? item.getBaseItem().getWidth() : 1;
-                length = item.getBaseItem().getLength() > 0 ? item.getBaseItem().getLength() : 1;
-            } else {
-                width = item.getBaseItem().getLength() > 0 ? item.getBaseItem().getLength() : 1;
-                length = item.getBaseItem().getWidth() > 0 ? item.getBaseItem().getWidth() : 1;
-            }
+                if (item.getRotation() != 2 && item.getRotation() != 6) {
+                    width = item.getBaseItem().getWidth() > 0 ? item.getBaseItem().getWidth() : 1;
+                    length = item.getBaseItem().getLength() > 0 ? item.getBaseItem().getLength() : 1;
+                } else {
+                    width = item.getBaseItem().getLength() > 0 ? item.getBaseItem().getLength() : 1;
+                    length = item.getBaseItem().getWidth() > 0 ? item.getBaseItem().getWidth() : 1;
+                }
 
-            if (!(tile.x >= item.getX() && tile.x <= item.getX() + width - 1 && tile.y >= item.getY()
-                    && tile.y <= item.getY() + length - 1)) {
-                continue;
-            }
+                if (!(tile.x >= item.getX() && tile.x <= item.getX() + width - 1 && tile.y >= item.getY()
+                        && tile.y <= item.getY() + length - 1)) {
+                    continue;
+                }
 
-            items.add(item);
+                items.add(item);
 
-            if (returnOnFirst) {
-                return items;
+                if (returnOnFirst) {
+                    return items;
+                }
             }
         }
 
@@ -956,9 +970,11 @@ public class RoomItemManager {
     public int getUserUniqueFurniCount(int userId) {
         THashSet<Item> items = new THashSet<>();
 
-        for (HabboItem item : this.roomItems.valueCollection()) {
-            if (!items.contains(item.getBaseItem()) && item.getUserId() == userId) {
-                items.add(item.getBaseItem());
+        synchronized (this.roomItems) {
+            for (HabboItem item : this.roomItems.valueCollection()) {
+                if (!items.contains(item.getBaseItem()) && item.getUserId() == userId) {
+                    items.add(item.getBaseItem());
+                }
             }
         }
 

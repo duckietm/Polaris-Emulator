@@ -51,6 +51,10 @@ public class RoomTradeUser {
         this.confirmed = true;
     }
 
+    public void setConfirmed(boolean value) {
+        this.confirmed = value;
+    }
+
     public void addItem(HabboItem item) {
         this.items.add(item);
     }

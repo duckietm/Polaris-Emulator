@@ -8,6 +8,8 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboManager;
 
+import java.util.List;
+
 public class MachineBanCommand extends Command {
     public MachineBanCommand() {
         super("cmd_machine_ban", Emulator.getTexts().getValue("commands.keys.cmd_machine_ban").split(";"));
@@ -41,12 +43,13 @@ public class MachineBanCommand extends Command {
                 return true;
             }
 
-            if (habbo.getRank().getId() >= gameClient.getHabbo().getHabboInfo().getRank().getId()) {
+            if (!CommandTargetGuard.canTarget(gameClient.getHabbo(), habbo)) {
                 gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_ban.target_rank_higher"), RoomChatMessageBubbles.ALERT);
                 return true;
             }
 
-            count = Emulator.getGameEnvironment().getModToolManager().ban(habbo.getId(), gameClient.getHabbo(), reason.toString(), IPBanCommand.TEN_YEARS, ModToolBanType.MACHINE, -1).size();
+            List<?> bans = Emulator.getGameEnvironment().getModToolManager().ban(habbo.getId(), gameClient.getHabbo(), reason.toString(), IPBanCommand.TEN_YEARS, ModToolBanType.MACHINE, -1);
+            count = bans != null ? bans.size() : 0;
 
 
         } else {

@@ -163,7 +163,13 @@ public class RoomUserWalkEvent extends MessageHandler {
           }
 
           if (roomUnit.getMoveBlockingTask() != null) {
-            roomUnit.getMoveBlockingTask().get();
+            try {
+              // Bound the wait so a stuck/delayed move-blocking task can't park
+              // the Netty event loop (and thus every client on it) indefinitely.
+              roomUnit.getMoveBlockingTask().get(2, java.util.concurrent.TimeUnit.SECONDS);
+            } catch (java.util.concurrent.TimeoutException | java.util.concurrent.ExecutionException | InterruptedException e) {
+              // proceed with the walk regardless
+            }
           }
 
           boolean needsLocationResync =

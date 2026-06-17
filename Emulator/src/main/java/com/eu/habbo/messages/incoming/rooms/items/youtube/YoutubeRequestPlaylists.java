@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.items.YoutubeManager;
 import com.eu.habbo.habbohotel.items.interactions.InteractionYoutubeTV;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.messages.incoming.rooms.items.RoomItemInputGuard;
 import com.eu.habbo.messages.outgoing.handshake.ConnectionErrorComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.youtube.YoutubeDisplayListComposer;
 import org.slf4j.Logger;
@@ -18,6 +19,9 @@ public class YoutubeRequestPlaylists extends MessageHandler {
     @Override
     public void handle() throws Exception {
         int itemId = this.packet.readInt();
+
+        if (!RoomItemInputGuard.isPositiveId(itemId))
+            return;
 
         if (this.client.getHabbo().getHabboInfo().getCurrentRoom() != null) {
             HabboItem item = this.client.getHabbo().getHabboInfo().getCurrentRoom().getHabboItem(itemId);

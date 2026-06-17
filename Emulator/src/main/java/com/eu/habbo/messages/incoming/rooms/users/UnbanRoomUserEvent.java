@@ -10,13 +10,17 @@ public class UnbanRoomUserEvent extends MessageHandler {
         int userId = this.packet.readInt();
         int roomId = this.packet.readInt();
 
-        Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
-
-        if (room != null) {
-            if (room.isOwner(this.client.getHabbo())) {
-                room.unbanHabbo(userId);
-            }
+        if (!RoomUserInputGuard.isPositiveId(userId) || !RoomUserInputGuard.isPositiveId(roomId)) {
+            return;
         }
 
+        Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+        if (room == null || room.getId() != roomId) {
+            return;
+        }
+
+        if (room.isOwner(this.client.getHabbo())) {
+            room.unbanHabbo(userId);
+        }
     }
 }

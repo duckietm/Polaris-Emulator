@@ -179,23 +179,31 @@ public class BotManager {
     }
 
     public void pickUpBot(Bot bot, Habbo habbo) {
-        HabboInfo receiverInfo = habbo == null ? Emulator.getGameEnvironment().getHabboManager().getHabboInfo(bot.getOwnerId()) : habbo.getHabboInfo();
-
         if (bot != null) {
+            HabboInfo receiverInfo = resolvePickupReceiver(bot, habbo);
+            Room botRoom = bot.getRoom();
+            if (receiverInfo == null || botRoom == null) {
+                return;
+            }
+
             BotPickUpEvent pickedUpEvent = new BotPickUpEvent(bot, habbo);
             Emulator.getPluginManager().fireEvent(pickedUpEvent);
 
             if (pickedUpEvent.isCancelled())
                 return;
 
-            if (habbo == null || (bot.getOwnerId() == habbo.getHabboInfo().getId() || habbo.hasPermission(Permission.ACC_ANYROOMOWNER))) {
+            Room currentRoom = habbo != null ? habbo.getHabboInfo().getCurrentRoom() : null;
+            if (habbo == null
+                    || bot.getOwnerId() == habbo.getHabboInfo().getId()
+                    || habbo.hasPermission(Permission.ACC_ANYROOMOWNER)
+                    || (currentRoom != null && (currentRoom.getOwnerId() == habbo.getHabboInfo().getId() || habbo.hasPermission(Permission.ACC_PLACEFURNI)))) {
                 if (habbo != null && !habbo.hasPermission(Permission.ACC_UNLIMITED_BOTS) && habbo.getInventory().getBotsComponent().getBots().size() >= BotManager.MAXIMUM_BOT_INVENTORY_SIZE) {
                     habbo.alert(Emulator.getTexts().getValue("error.bots.max.inventory").replace("%amount%", BotManager.MAXIMUM_BOT_INVENTORY_SIZE + ""));
                     return;
                 }
 
-                bot.onPickUp(habbo, receiverInfo.getCurrentRoom());
-                receiverInfo.getCurrentRoom().removeBot(bot);
+                bot.onPickUp(habbo, botRoom);
+                botRoom.removeBot(bot);
                 bot.stopFollowingHabbo();
                 bot.setOwnerId(receiverInfo.getId());
                 bot.setOwnerName(receiverInfo.getUsername());
@@ -209,6 +217,14 @@ public class BotManager {
                 }
             }
         }
+    }
+
+    private HabboInfo resolvePickupReceiver(Bot bot, Habbo picker) {
+        if (picker != null && bot.getOwnerId() == picker.getHabboInfo().getId()) {
+            return picker.getHabboInfo();
+        }
+
+        return Emulator.getGameEnvironment().getHabboManager().getHabboInfo(bot.getOwnerId());
     }
 
     public Bot loadBot(ResultSet set) {

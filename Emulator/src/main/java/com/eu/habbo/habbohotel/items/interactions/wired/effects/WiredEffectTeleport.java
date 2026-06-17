@@ -151,7 +151,7 @@ public class WiredEffectTeleport extends InteractionWiredEffect {
                 @Override
                 public boolean execute(InteractionWiredTrigger object) {
                     if (!object.isTriggeredByRoomUnit()) {
-                        invalidTriggers.add(object.getId());
+                        invalidTriggers.add(object.getBaseItem().getSpriteId());
                     }
                     return true;
                 }

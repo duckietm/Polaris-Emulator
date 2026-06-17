@@ -37,6 +37,8 @@ public class CraftingCraftItemEvent extends MessageHandler {
                     HabboItem habboItem = this.client.getHabbo().getInventory().getItemsComponent().getAndRemoveHabboItem(set.getKey());
 
                     if (habboItem == null) {
+                        // Not enough ingredients — give back whatever we already pulled.
+                        this.restoreItems(toRemove);
                         return;
                     }
 
@@ -70,8 +72,23 @@ public class CraftingCraftItemEvent extends MessageHandler {
                 return;
             }
 
+            // Reward creation failed after we already pulled the ingredients —
+            // restore them so the craft isn't a silent item sink.
+            this.restoreItems(toRemove);
         }
 
         this.client.sendResponse(new CraftingResultComposer(null));
+    }
+
+    private void restoreItems(TIntObjectHashMap<HabboItem> items) {
+        if (items.isEmpty()) {
+            return;
+        }
+        items.forEachValue(item -> {
+            this.client.getHabbo().getInventory().getItemsComponent().addItem(item);
+            this.client.sendResponse(new AddHabboItemComposer(item));
+            return true;
+        });
+        this.client.sendResponse(new InventoryRefreshComposer());
     }
 }

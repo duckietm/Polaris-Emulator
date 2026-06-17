@@ -165,12 +165,10 @@ public class RebugKickBallAction implements Runnable {
                 this.dead = true;
             }
 
-            THashSet<HabboItem> oldItems = this.room.getItemsAt(oldTile);
-            if (oldItems != null && !oldItems.isEmpty()) {
-                oldItems.remove(this.ball);
-            }
-            this.room.getItemsAt(nextTile).add(this.ball);
-
+            // updateTile() below removes both tiles from the item cache (rebuilt
+            // lazily from the ball's already-updated position), so mutating the
+            // shared cached THashSets here is both redundant and a data race
+            // against the room-cycle/IO threads iterating those same sets.
             this.room.updateTile(oldTile);
             this.room.updateTile(nextTile);
 

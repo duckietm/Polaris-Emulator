@@ -22,11 +22,21 @@ public class CatalogAdminMoveOfferEvent extends MessageHandler {
         int orderNumber = this.packet.readInt();
         CatalogPageType pageType = CatalogPageType.fromString(this.packet.readString());
 
+        if (offerId <= 0) {
+            this.client.sendResponse(new CatalogAdminResultComposer(false, "Invalid offer id"));
+            return;
+        }
+
+        if (orderNumber < 0) orderNumber = 0;
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement((pageType == CatalogPageType.BUILDER) ? "UPDATE catalog_items_bc SET order_number = ? WHERE id = ?" : "UPDATE catalog_items SET order_number = ? WHERE id = ?")) {
             statement.setInt(1, orderNumber);
             statement.setInt(2, offerId);
-            statement.execute();
+            if (statement.executeUpdate() == 0) {
+                this.client.sendResponse(new CatalogAdminResultComposer(false, "Offer not found: " + offerId));
+                return;
+            }
         }
 
         this.client.sendResponse(new CatalogAdminResultComposer(true, "Offer reordered"));

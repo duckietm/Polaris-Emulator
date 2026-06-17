@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.items.interactions;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomLayout;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -133,11 +134,17 @@ public class InteractionRentableSpace extends HabboItem {
         if (habbo.getHabboStats().isRentingSpace())
             return;
 
-        if (habbo.getHabboInfo().getCredits() < this.rentCost())
+        int cost = this.rentCost();
+        boolean hasInfiniteCredits = habbo.hasPermission(Permission.ACC_INFINITE_CREDITS);
+        if (!hasInfiniteCredits && habbo.getHabboInfo().getCredits() < cost)
             return;
 
         if (habbo.getHabboStats().getClubExpireTimestamp() < Emulator.getIntUnixTimestamp())
             return;
+
+        if (!hasInfiniteCredits) {
+            habbo.giveCredits(-cost);
+        }
 
         this.setRenterId(habbo.getHabboInfo().getId());
         this.setRenterName(habbo.getHabboInfo().getUsername());

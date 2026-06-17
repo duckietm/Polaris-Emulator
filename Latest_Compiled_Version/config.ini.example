@@ -68,3 +68,9 @@ login.news.limit=5
 ### ws.port=2096
 ### ws.whitelist=localhost #Comma-separated whitelist of allowed origins. Supports wildcards: *.example.com, * (allow all)
 ### ws.ip.header=X-Forwarded-For #Header name for real client IP when behind a proxy (e.g., X-Forwarded-For, CF-Connecting-IP). Leave empty if not using a proxy.
+### ws.ip.header.trusted= #Comma-separated trusted reverse-proxy IPs/prefixes (entries ending in '.' or ':' are prefix ranges, e.g. 10.0.0.) allowed to set ws.ip.header. Loopback (127.0.0.1/::1) is ALWAYS trusted; default-deny otherwise so the forwarded header can't be spoofed from the open net.
+
+#Performance / concurrency (optional — sensible defaults apply if unset; adjust in the Database).
+### io.packet.handler.threads=24 #Game packet-handler pool size; runs game handlers OFF the Netty I/O loop. Default max(16, 2 x CPU cores).
+### auth.http.pool.size=16 #Dedicated worker pool for the /api/auth/* HTTP endpoints (BCrypt/JDBC/Turnstile/SMTP run off the event loop). Default 16.
+### io.netty.allocator.pooled=false #Set true to opt into Netty's pooled ByteBuf allocator. Default false (unpooled-heap).

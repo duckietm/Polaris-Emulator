@@ -13,17 +13,22 @@ public class ModToolReleaseTicketEvent extends MessageHandler {
         if (this.client.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL)) {
             int count = this.packet.readInt();
 
+            if (!ModToolTicketGuard.isValidReleaseBatch(count)) {
+                return;
+            }
+
             while (count != 0) {
                 count--;
 
                 int ticketId = this.packet.readInt();
 
+                if (!ModToolTicketGuard.isPositiveId(ticketId)) {
+                    continue;
+                }
+
                 ModToolIssue issue = Emulator.getGameEnvironment().getModToolManager().getTicket(ticketId);
 
-                if (issue == null)
-                    continue;
-
-                if (issue.modId != this.client.getHabbo().getHabboInfo().getId())
+                if (!ModToolTicketGuard.isOwnedBy(issue, this.client.getHabbo()))
                     continue;
 
                 issue.modId = 0;

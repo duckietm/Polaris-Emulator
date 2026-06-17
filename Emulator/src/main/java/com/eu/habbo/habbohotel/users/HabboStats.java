@@ -448,14 +448,26 @@ public class HabboStats implements Runnable {
             return 0;
         }
 
-        if (this.achievementProgress.containsKey(achievement))
-            return this.achievementProgress.get(achievement);
-
-        return -1;
+        synchronized (this.achievementProgress) {
+            Integer progress = this.achievementProgress.get(achievement);
+            return progress != null ? progress : -1;
+        }
     }
 
     public void setProgress(Achievement achievement, int progress) {
-        this.achievementProgress.put(achievement, progress);
+        synchronized (this.achievementProgress) {
+            this.achievementProgress.put(achievement, progress);
+        }
+    }
+
+    /** Atomic read-add-write so concurrent progress sources don't lose updates. Returns the new total. */
+    public int incrementProgress(Achievement achievement, int amount) {
+        synchronized (this.achievementProgress) {
+            Integer current = this.achievementProgress.get(achievement);
+            int next = (current != null ? current : 0) + amount;
+            this.achievementProgress.put(achievement, next);
+            return next;
+        }
     }
 
     public int getRentedTimeEnd() {

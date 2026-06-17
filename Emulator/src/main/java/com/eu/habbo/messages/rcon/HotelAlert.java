@@ -6,6 +6,9 @@ import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.generic.alerts.GenericAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.StaffAlertWithLinkComposer;
 import com.google.gson.Gson;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 import java.util.Map;
 
@@ -37,9 +40,13 @@ public class HotelAlert extends RCONMessage<HotelAlert.JSONHotelAlert> {
 
     static class JSONHotelAlert {
 
+        @NotBlank(message = "invalid message")
+        @Size(max = 4096, message = "invalid message")
         public String message;
 
 
+        @Size(max = 2048, message = "invalid url")
+        @Pattern(regexp = "^$|https?://.+", message = "invalid url")
         public String url = "";
     }
 }

@@ -56,14 +56,13 @@ public class GameMessageHandler extends ChannelInboundHandlerAdapter {
         ClientMessage message = (ClientMessage) msg;
 
         try {
-            ChannelReadHandler handler = new ChannelReadHandler(ctx, message);
-
-            if (PacketManager.MULTI_THREADED_PACKET_HANDLING) {
-                Emulator.getThreading().run(handler);
-                return;
-            }
-
-            handler.run();
+            // This handler is registered on a dedicated EventExecutorGroup
+            // (see WebSocketChannelInitializer), so channelRead already runs OFF
+            // the Netty I/O event loop, serialized per channel. Running the
+            // handler inline here keeps that per-channel ordering — submitting to
+            // the shared game pool instead would break ordering, so we no longer
+            // branch on MULTI_THREADED_PACKET_HANDLING.
+            new ChannelReadHandler(ctx, message).run();
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
         }

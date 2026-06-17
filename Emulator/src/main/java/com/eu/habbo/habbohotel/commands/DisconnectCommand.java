@@ -29,7 +29,7 @@ public class DisconnectCommand extends Command {
             return true;
         }
 
-        if (target.getHabboInfo().getRank().getId() > gameClient.getHabbo().getHabboInfo().getRank().getId()) {
+        if (!CommandTargetGuard.canTarget(gameClient.getHabbo(), target)) {
             gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_disconnect.higher_rank"), RoomChatMessageBubbles.ALERT);
             return true;
         }

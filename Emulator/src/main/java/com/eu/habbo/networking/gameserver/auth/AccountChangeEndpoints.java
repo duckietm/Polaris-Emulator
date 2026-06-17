@@ -467,7 +467,7 @@ final class AccountChangeEndpoints {
                 com.eu.habbo.habbohotel.users.Habbo habbo =
                         Emulator.getGameServer().getGameClientManager().getHabbo(userId);
                 if (habbo != null && habbo.getClient() != null) {
-                    Emulator.getGameServer().getGameClientManager().disposeClient(habbo.getClient());
+                    Emulator.getGameServer().getGameClientManager().forceDisposeClient(habbo.getClient());
                 }
             }
 

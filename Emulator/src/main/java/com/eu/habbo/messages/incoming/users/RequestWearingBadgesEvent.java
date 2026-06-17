@@ -10,6 +10,10 @@ public class RequestWearingBadgesEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         int userId = this.packet.readInt();
+
+        if (!UserInputGuard.isPositiveId(userId))
+            return;
+
         Habbo habbo = Emulator.getGameServer().getGameClientManager().getHabbo(userId);
 
         if (habbo == null || habbo.getHabboInfo() == null || habbo.getInventory() == null || habbo.getInventory().getBadgesComponent() == null)

@@ -28,6 +28,12 @@ public class ReportPhotoEvent extends MessageHandler {
         int topicId = this.packet.readInt();
         int itemId = this.packet.readInt();
 
+        if (!ModToolReportInputGuard.isPositiveId(roomId) ||
+                !ModToolReportInputGuard.isPositiveId(topicId) ||
+                !ModToolReportInputGuard.isPositiveId(itemId)) {
+            return;
+        }
+
         CfhTopic topic = Emulator.getGameEnvironment().getModToolManager().getCfhTopic(topicId);
 
         if (topic == null) return;

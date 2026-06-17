@@ -49,15 +49,17 @@ public class FurniEditorSearchEvent extends MessageHandler {
             try {
                 int numericQuery = Integer.parseInt(query);
                 isNumeric = true;
+                String likeQuery = "%" + com.eu.habbo.util.SqlLikeEscaper.escape(query) + "%";
                 whereClause.append(" AND (id = ? OR sprite_id = ? OR item_name LIKE ? OR public_name LIKE ?)");
                 params.add(numericQuery);
                 params.add(numericQuery);
-                params.add("%" + query + "%");
-                params.add("%" + query + "%");
+                params.add(likeQuery);
+                params.add(likeQuery);
             } catch (NumberFormatException e) {
+                String likeQuery = "%" + com.eu.habbo.util.SqlLikeEscaper.escape(query) + "%";
                 whereClause.append(" AND (item_name LIKE ? OR public_name LIKE ?)");
-                params.add("%" + query + "%");
-                params.add("%" + query + "%");
+                params.add(likeQuery);
+                params.add(likeQuery);
             }
         }
 

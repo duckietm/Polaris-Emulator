@@ -36,7 +36,7 @@ public class CatalogAdminCreatePageEvent extends MessageHandler {
             pageLayout = CatalogPageLayouts.default_3x3;
         }
 
-        if (parentId != -1 && Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(parentId) == null) {
+        if (parentId != -1 && Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(parentId, pageType) == null) {
             this.client.sendResponse(new CatalogAdminResultComposer(false, "Parent page not found: " + parentId));
             return;
         }

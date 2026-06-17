@@ -1,6 +1,9 @@
 package com.eu.habbo.messages.incoming.guilds.forums;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.guilds.Guild;
+import com.eu.habbo.habbohotel.guilds.GuildMember;
+import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.guilds.forums.GuildForumDataComposer;
 import org.slf4j.Logger;
@@ -24,10 +27,29 @@ public class GuildForumMarkAsReadEvent extends MessageHandler {
         int userId = this.client.getHabbo().getHabboInfo().getId();
         int timestamp = Emulator.getIntUnixTimestamp();
 
+        if (!GuildForumInputGuard.isValidMarkReadBatch(count)) {
+            return;
+        }
+
         for (int i = 0; i < count; i++) {
             int guildId = this.packet.readInt();
             this.packet.readInt(); // messageId (not used, we track by timestamp)
             this.packet.readBoolean(); // isRead
+
+            if (!GuildForumInputGuard.isPositiveId(guildId)) {
+                continue;
+            }
+
+            Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
+            if (guild == null || !guild.hasForum()) {
+                continue;
+            }
+
+            GuildMember member = Emulator.getGameEnvironment().getGuildManager().getGuildMember(guildId, userId);
+            boolean staff = this.client.getHabbo().hasPermission(Permission.ACC_MODTOOL_TICKET_Q);
+            if (!guild.canHabboReadForum(userId, member, staff)) {
+                continue;
+            }
 
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement(
                     "INSERT INTO `guild_forum_views` (`user_id`, `guild_id`, `timestamp`) VALUES (?, ?, ?) " +

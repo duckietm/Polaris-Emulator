@@ -23,6 +23,10 @@ public class GuildChangeNameDescEvent extends MessageHandler {
             if (guild.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() || this.client.getHabbo().hasPermission(Permission.ACC_GUILD_ADMIN)) {
                 String newName = Emulator.getGameEnvironment().getWordFilter().filter(this.packet.readString(), this.client.getHabbo());
                 String newDesc = Emulator.getGameEnvironment().getWordFilter().filter(this.packet.readString(), this.client.getHabbo());
+
+                if (!GuildInputLimits.isValidGuildName(newName) || !GuildInputLimits.isValidGuildDescription(newDesc))
+                    return;
+
                 GuildChangedNameEvent nameEvent = new GuildChangedNameEvent(guild, newName, newDesc);
                 Emulator.getPluginManager().fireEvent(nameEvent);
 
@@ -32,7 +36,7 @@ public class GuildChangeNameDescEvent extends MessageHandler {
                 if (guild.getName().equals(nameEvent.name) && guild.getDescription().equals(nameEvent.description))
                     return;
 
-                if(nameEvent.name.length() > 29 || nameEvent.description.length() > 254)
+                if (!GuildInputLimits.isValidGuildName(nameEvent.name) || !GuildInputLimits.isValidGuildDescription(nameEvent.description))
                     return;
 
                 guild.setName(nameEvent.name);

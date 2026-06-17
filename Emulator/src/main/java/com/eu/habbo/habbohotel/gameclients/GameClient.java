@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class GameClient {
 
@@ -24,6 +25,7 @@ public class GameClient {
 	private final LatencyTracker latencyTracker;
 
     private Habbo habbo;
+    private final AtomicBoolean disposed = new AtomicBoolean(false);
     private boolean handshakeFinished;
     private String machineId = "";
     private String ssoTicket = "";
@@ -149,6 +151,14 @@ public class GameClient {
     }
 
     public void dispose() {
+        this.dispose(true);
+    }
+
+    public void dispose(boolean allowSessionResume) {
+        if (!this.disposed.compareAndSet(false, true)) {
+            return;
+        }
+
         try {
             this.channel.close();
 
@@ -161,7 +171,7 @@ public class GameClient {
                 // appena ripristinata (era la causa del "Bye"/kick al 2° reconnect).
                 if (this.habbo.getClient() == this && this.habbo.isOnline()) {
                     // Try to park the habbo in the grace period instead of immediate disconnect
-                    boolean parked = SessionResumeManager.getInstance().parkHabbo(this.habbo, this.ssoTicket);
+                    boolean parked = allowSessionResume && SessionResumeManager.getInstance().parkHabbo(this.habbo, this.ssoTicket);
 
                     if (!parked) {
                         // No grace period configured — immediate disconnect as before

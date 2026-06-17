@@ -98,12 +98,13 @@ public class ForumThreadComment implements Runnable, ISerialize {
             if (statement.executeUpdate() < 1)
                 return null;
 
-            ResultSet set = statement.getGeneratedKeys();
-            if (set.next()) {
-                int commentId = set.getInt(1);
-                createdComment = new ForumThreadComment(commentId, thread.getThreadId(), poster.getHabboInfo().getId(), message, timestamp, ForumThreadState.OPEN, 0);
+            try (ResultSet set = statement.getGeneratedKeys()) {
+                if (set.next()) {
+                    int commentId = set.getInt(1);
+                    createdComment = new ForumThreadComment(commentId, thread.getThreadId(), poster.getHabboInfo().getId(), message, timestamp, ForumThreadState.OPEN, 0);
 
-                Emulator.getPluginManager().fireEvent(new GuildForumThreadCommentCreated(createdComment));
+                    Emulator.getPluginManager().fireEvent(new GuildForumThreadCommentCreated(createdComment));
+                }
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);

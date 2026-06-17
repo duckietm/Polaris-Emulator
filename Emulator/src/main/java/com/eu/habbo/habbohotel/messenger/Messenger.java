@@ -53,7 +53,7 @@ public class Messenger {
     public static THashSet<MessengerBuddy> searchUsers(String username) {
         THashSet<MessengerBuddy> users = new THashSet<>();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM users WHERE username LIKE ? ORDER BY username ASC LIMIT " + Emulator.getConfig().getInt("hotel.messenger.search.maxresults"))) {
-            statement.setString(1, username + "%");
+            statement.setString(1, com.eu.habbo.util.SqlLikeEscaper.escape(username) + "%");
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
                     users.add(new MessengerBuddy(set, false));

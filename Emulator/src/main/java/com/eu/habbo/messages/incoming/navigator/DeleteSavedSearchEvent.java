@@ -6,6 +6,11 @@ import com.eu.habbo.messages.outgoing.navigator.NewNavigatorSavedSearchesCompose
 
 public class DeleteSavedSearchEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
+    @Override
     public void handle() throws Exception {
         int searchId = this.packet.readInt();
 

@@ -21,6 +21,9 @@ public class RoomUserKickEvent extends MessageHandler {
 
         int userId = this.packet.readInt();
 
+        if (!RoomUserInputGuard.isPositiveId(userId))
+            return;
+
         Habbo target = room.getHabbo(userId);
 
         if (target == null)
@@ -35,14 +38,14 @@ public class RoomUserKickEvent extends MessageHandler {
             return;
         }
 
-        UserKickEvent event = new UserKickEvent(this.client.getHabbo(), target);
-        Emulator.getPluginManager().fireEvent(event);
-
-        if (event.isCancelled())
-            return;
-
         if (room.hasRights(this.client.getHabbo()) || this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER) || this.client.getHabbo().hasPermission(Permission.ACC_AMBASSADOR)) {
             if (target.hasPermission(Permission.ACC_UNKICKABLE)) return;
+
+            UserKickEvent event = new UserKickEvent(this.client.getHabbo(), target);
+            Emulator.getPluginManager().fireEvent(event);
+
+            if (event.isCancelled())
+                return;
 
             room.kickHabbo(target, true);
             AchievementManager.progressAchievement(this.client.getHabbo(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("SelfModKickSeen"));

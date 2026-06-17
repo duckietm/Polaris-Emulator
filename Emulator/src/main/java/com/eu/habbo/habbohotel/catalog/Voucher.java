@@ -14,6 +14,13 @@ import java.util.List;
 public class Voucher {
     private static final Logger LOGGER = LoggerFactory.getLogger(Voucher.class);
 
+    public enum ClaimResult {
+        CLAIMED,
+        EXHAUSTED,
+        USER_LIMIT,
+        FAILED
+    }
+
     public final int id;
     public final String code;
     public final int credits;
@@ -58,18 +65,34 @@ public class Voucher {
         return this.amount > 0 && this.history.size() >= this.amount;
     }
 
-    public void addHistoryEntry(int userId) {
-        int timestamp = Emulator.getIntUnixTimestamp();
-        this.history.add(new VoucherHistoryEntry(this.id, userId, timestamp));
+    public synchronized ClaimResult claimForUser(int userId) {
+        if (this.isExhausted()) {
+            return ClaimResult.EXHAUSTED;
+        }
 
+        if (this.hasUserExhausted(userId)) {
+            return ClaimResult.USER_LIMIT;
+        }
+
+        int timestamp = Emulator.getIntUnixTimestamp();
+        if (!this.insertHistoryEntry(userId, timestamp)) {
+            return ClaimResult.FAILED;
+        }
+
+        this.history.add(new VoucherHistoryEntry(this.id, userId, timestamp));
+        return ClaimResult.CLAIMED;
+    }
+
+    private boolean insertHistoryEntry(int userId, int timestamp) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO voucher_history (`voucher_id`, `user_id`, `timestamp`) VALUES (?, ?, ?)")) {
             statement.setInt(1, this.id);
             statement.setInt(2, userId);
             statement.setInt(3, timestamp);
 
-            statement.execute();
+            return statement.executeUpdate() > 0;
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+            return false;
         }
     }
 }

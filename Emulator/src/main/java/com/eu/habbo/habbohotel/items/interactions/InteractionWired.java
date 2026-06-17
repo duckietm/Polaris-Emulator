@@ -18,6 +18,7 @@ import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Base abstract class for all wired furniture items (triggers, effects, conditions, extras).
@@ -61,7 +62,11 @@ public abstract class InteractionWired extends InteractionDefault {
      */
     private static final long CACHE_EXPIRY_MS = 5 * 60 * 1000;
     
-    private long cooldown;
+    private volatile long cooldown;
+    // Ensures one box is processed by a single thread at a time, so the
+    // cooldown check-and-set in WiredHandler can't double-fire when a packet
+    // thread and the room cycle thread trigger the same box concurrently.
+    private final AtomicBoolean processing = new AtomicBoolean(false);
     private final ConcurrentHashMap<Long, Long> userExecutionCache = new ConcurrentHashMap<>();
 
     InteractionWired(ResultSet set, Item baseItem) throws SQLException {
@@ -147,6 +152,15 @@ public abstract class InteractionWired extends InteractionDefault {
 
     public void setCooldown(long newMillis) {
         this.cooldown = newMillis;
+    }
+
+    /** Claims exclusive processing of this box; returns false if another thread is already in it. */
+    public boolean tryBeginProcessing() {
+        return this.processing.compareAndSet(false, true);
+    }
+
+    public void endProcessing() {
+        this.processing.set(false);
     }
 
     @Override

@@ -29,7 +29,7 @@ public class DisconnectUser extends RCONMessage<DisconnectUser.DisconnectUserJSO
             return;
         }
 
-        Emulator.getGameServer().getGameClientManager().disposeClient(target.getClient());
+        Emulator.getGameServer().getGameClientManager().forceDisposeClient(target.getClient());
         this.message = Emulator.getTexts().getValue("commands.succes.cmd_disconnect.disconnected").replace("%user%", target.getHabboInfo().getUsername());
     }
 

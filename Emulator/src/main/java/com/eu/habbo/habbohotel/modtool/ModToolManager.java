@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.modtool;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.permissions.Permission;
+import com.eu.habbo.habbohotel.permissions.Rank;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomState;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -378,7 +379,9 @@ public class ModToolManager {
             statement.setString(6, reason);
             statement.setString(7, type.getType());
 
-            try (ResultSet set = statement.executeQuery()) {
+            statement.executeUpdate();
+
+            try (ResultSet set = statement.getGeneratedKeys()) {
                 if (set.next()) {
                     try (PreparedStatement selectBanStatement = connection.prepareStatement("SELECT * FROM bans WHERE id = ? LIMIT 1")) {
                         selectBanStatement.setInt(1, set.getInt(1));
@@ -408,22 +411,29 @@ public class ModToolManager {
             return;
         }
 
+        if (target == null || !canModerateTarget(moderator, target.getHabboInfo().getId())) {
+            return;
+        }
+
         SupportUserAlertedEvent alertedEvent = new SupportUserAlertedEvent(moderator, target, message, reason);
 
         if (Emulator.getPluginManager().fireEvent(alertedEvent).isCancelled())
             return;
 
-        if (target != null)
-            alertedEvent.target.getClient().sendResponse(new ModToolIssueHandledComposer(alertedEvent.message));
+        alertedEvent.target.getClient().sendResponse(new ModToolIssueHandledComposer(alertedEvent.message));
     }
 
     public void kick(Habbo moderator, Habbo target, String message) {
-        if (moderator.hasPermission(Permission.ACC_SUPPORTTOOL) && !target.hasPermission(Permission.ACC_UNKICKABLE)) {
-            if (target.getHabboInfo().getCurrentRoom() != null) {
-                Emulator.getGameEnvironment().getRoomManager().leaveRoom(target, target.getHabboInfo().getCurrentRoom());
-            }
-            this.alert(moderator, target, message, SupportUserAlertedReason.KICKED);
+        if (moderator == null || target == null || !moderator.hasPermission(Permission.ACC_SUPPORTTOOL) ||
+                target.hasPermission(Permission.ACC_UNKICKABLE) ||
+                !canModerateTarget(moderator, target.getHabboInfo().getId())) {
+            return;
         }
+
+        if (target.getHabboInfo().getCurrentRoom() != null) {
+            Emulator.getGameEnvironment().getRoomManager().leaveRoom(target, target.getHabboInfo().getCurrentRoom());
+        }
+        this.alert(moderator, target, message, SupportUserAlertedReason.KICKED);
     }
 
     public List<ModToolBan> ban(int targetUserId, Habbo moderator, String reason, int duration, ModToolBanType type, int cfhTopic) {
@@ -434,7 +444,11 @@ public class ModToolManager {
         Habbo target = Emulator.getGameEnvironment().getHabboManager().getHabbo(targetUserId);
         HabboInfo offlineInfo = target != null ? target.getHabboInfo() : HabboManager.getOfflineHabboInfo(targetUserId);
 
-        if (moderator.getHabboInfo().getRank().getId() < offlineInfo.getRank().getId()) {
+        if (offlineInfo == null) {
+            return bans;
+        }
+
+        if (!canModerateTarget(moderator, targetUserId)) {
             return bans;
         }
 
@@ -454,37 +468,65 @@ public class ModToolManager {
         bans.add(ban);
 
         if (target != null) {
-            Emulator.getGameServer().getGameClientManager().disposeClient(target.getClient());
+            Emulator.getGameServer().getGameClientManager().forceDisposeClient(target.getClient());
         }
 
         if ((type == ModToolBanType.IP || type == ModToolBanType.SUPER) && target != null && !ban.ip.equals("offline")) {
             for (Habbo h : Emulator.getGameServer().getGameClientManager().getHabbosWithIP(ban.ip)) {
-                if (h.getHabboInfo().getRank().getId() >= moderator.getHabboInfo().getRank().getId()) continue;
+                if (!canModerateTarget(moderator, h.getHabboInfo().getId())) continue;
 
                 ban = new ModToolBan(h.getHabboInfo().getId(), h != null ? h.getHabboInfo().getIpLogin() : "offline", h != null ? h.getClient().getMachineId() : "offline", moderator.getHabboInfo().getId(), Emulator.getIntUnixTimestamp() + duration, reason, type, cfhTopic);
                 Emulator.getPluginManager().fireEvent(new SupportUserBannedEvent(moderator, h, ban));
                 Emulator.getThreading().run(ban);
                 bans.add(ban);
-                Emulator.getGameServer().getGameClientManager().disposeClient(h.getClient());
+                Emulator.getGameServer().getGameClientManager().forceDisposeClient(h.getClient());
             }
         }
 
         if ((type == ModToolBanType.MACHINE || type == ModToolBanType.SUPER) && target != null && !ban.machineId.equals("offline")) {
             for (Habbo h : Emulator.getGameServer().getGameClientManager().getHabbosWithMachineId(ban.machineId)) {
-                if (h.getHabboInfo().getRank().getId() >= moderator.getHabboInfo().getRank().getId()) continue;
+                if (!canModerateTarget(moderator, h.getHabboInfo().getId())) continue;
 
                 ban = new ModToolBan(h.getHabboInfo().getId(), h != null ? h.getHabboInfo().getIpLogin() : "offline", h != null ? h.getClient().getMachineId() : "offline", moderator.getHabboInfo().getId(), Emulator.getIntUnixTimestamp() + duration, reason, type, cfhTopic);
                 Emulator.getPluginManager().fireEvent(new SupportUserBannedEvent(moderator, h, ban));
                 Emulator.getThreading().run(ban);
                 bans.add(ban);
-                Emulator.getGameServer().getGameClientManager().disposeClient(h.getClient());
+                Emulator.getGameServer().getGameClientManager().forceDisposeClient(h.getClient());
             }
         }
 
         return bans;
     }
 
+    public static boolean canModerateTarget(Habbo moderator, int targetUserId) {
+        if (moderator == null || targetUserId <= 0)
+            return false;
+
+        HabboInfo targetInfo = Emulator.getGameEnvironment().getHabboManager().getHabboInfo(targetUserId);
+        if (targetInfo == null)
+            return false;
+
+        int moderatorRankId = moderator.getHabboInfo().getRank().getId();
+        int targetRankId = targetInfo.getRank().getId();
+
+        return targetRankId < moderatorRankId || isCoreRank(moderatorRankId) && targetRankId <= moderatorRankId;
+    }
+
+    private static boolean isCoreRank(int rankId) {
+        int highestRankId = 0;
+        for (Rank rank : Emulator.getGameEnvironment().getPermissionsManager().getAllRanks()) {
+            highestRankId = Math.max(highestRankId, rank.getId());
+        }
+
+        return highestRankId > 0 && rankId >= highestRankId;
+    }
+
     public void roomAction(Room room, Habbo moderator, boolean kickUsers, boolean lockDoor, boolean changeTitle) {
+        if (room == null || moderator == null || !moderator.hasPermission(Permission.ACC_SUPPORTTOOL) ||
+                !canModerateTarget(moderator, room.getOwnerId())) {
+            return;
+        }
+
         SupportRoomActionEvent roomActionEvent = new SupportRoomActionEvent(moderator, room, kickUsers, lockDoor, changeTitle);
         Emulator.getPluginManager().fireEvent(roomActionEvent);
 

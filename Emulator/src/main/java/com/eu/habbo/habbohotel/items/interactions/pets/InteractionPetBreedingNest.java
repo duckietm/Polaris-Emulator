@@ -190,6 +190,14 @@ public class InteractionPetBreedingNest extends HabboItem {
     }
 
     public void breed(Habbo habbo, String name, int petOneId, int petTwoId) {
+        // Guard before the destructive delete below: a crafted packet can call
+        // this on a nest that isn't full, which would delete the nest furni and
+        // then NPE on petOne/petTwo in the async runnable (losing the furni).
+        if (habbo == null || this.petOne == null || this.petTwo == null
+                || habbo.getHabboInfo().getCurrentRoom() == null) {
+            return;
+        }
+
         Emulator.getThreading().run(new QueryDeleteHabboItem(this.getId()));
 
         this.setExtradata("2");

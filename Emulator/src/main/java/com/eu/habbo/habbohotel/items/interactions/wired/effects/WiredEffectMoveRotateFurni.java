@@ -190,10 +190,15 @@ public class WiredEffectMoveRotateFurni extends InteractionWiredEffect implement
                 }
 
                 for (String s : data[3].split("\r")) {
-                    HabboItem item = room.getHabboItem(Integer.parseInt(s));
+                    if (s.trim().isEmpty()) continue;
+                    try {
+                        HabboItem item = room.getHabboItem(Integer.parseInt(s.trim()));
 
-                    if (item != null)
-                        this.items.add(item);
+                        if (item != null)
+                            this.items.add(item);
+                    } catch (NumberFormatException ignored) {
+                        // skip malformed furni id token
+                    }
                 }
             }
             this.furniSource = this.items.isEmpty() ? WiredSourceUtil.SOURCE_TRIGGER : WiredSourceUtil.SOURCE_SELECTED;

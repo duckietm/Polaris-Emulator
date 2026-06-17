@@ -21,10 +21,19 @@ public class GuildChangeColorsEvent extends MessageHandler {
 
         if (guild != null) {
             if (guild.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() || this.client.getHabbo().hasPermission(Permission.ACC_GUILD_ADMIN)) {
-                GuildChangedColorsEvent colorsEvent = new GuildChangedColorsEvent(guild, this.packet.readInt(), this.packet.readInt());
+                int colorOne = this.packet.readInt();
+                int colorTwo = this.packet.readInt();
+
+                if (!Emulator.getGameEnvironment().getGuildManager().symbolColor(colorOne) || !Emulator.getGameEnvironment().getGuildManager().backgroundColor(colorTwo))
+                    return;
+
+                GuildChangedColorsEvent colorsEvent = new GuildChangedColorsEvent(guild, colorOne, colorTwo);
                 Emulator.getPluginManager().fireEvent(colorsEvent);
 
                 if (colorsEvent.isCancelled())
+                    return;
+
+                if (!Emulator.getGameEnvironment().getGuildManager().symbolColor(colorsEvent.colorOne) || !Emulator.getGameEnvironment().getGuildManager().backgroundColor(colorsEvent.colorTwo))
                     return;
 
                 if (guild.getColorOne() != colorsEvent.colorOne || guild.getColorTwo() != colorsEvent.colorTwo) {

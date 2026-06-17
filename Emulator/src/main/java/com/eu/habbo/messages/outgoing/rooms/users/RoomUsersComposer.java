@@ -99,7 +99,7 @@ public class RoomUsersComposer extends MessageComposer {
                     this.response.appendInt(1);
                     this.response.appendString(habbo.getHabboInfo().getGender().name().toUpperCase());
                     this.response.appendInt(habbo.getHabboStats().guild != 0 ? habbo.getHabboStats().guild : -1);
-                    this.response.appendInt(habbo.getHabboStats().guild != 0 ? habbo.getHabboStats().guild : -1);
+                    this.response.appendInt(habbo.getHabboStats().guild != 0 ? 1 : -1);
                     String name = "";
                     if (habbo.getHabboStats().guild != 0) {
                         Guild g = Emulator.getGameEnvironment().getGuildManager().getGuild(habbo.getHabboStats().guild);

@@ -43,14 +43,34 @@ public class GameClientManager {
 
 
     public void disposeClient(GameClient client) {
-        this.disposeClient(client.getChannel());
+        if (client == null) {
+            return;
+        }
+
+        this.disposeClient(client.getChannel(), true);
+    }
+
+    public void forceDisposeClient(GameClient client) {
+        if (client == null) {
+            return;
+        }
+
+        this.disposeClient(client.getChannel(), false);
     }
 
     private void disposeClient(Channel channel) {
+        this.disposeClient(channel, true);
+    }
+
+    private void disposeClient(Channel channel, boolean allowSessionResume) {
+        if (channel == null) {
+            return;
+        }
+
         GameClient client = channel.attr(GameServerAttributes.CLIENT).get();
 
         if (client != null) {
-            client.dispose();
+            client.dispose(allowSessionResume);
         }
         channel.deregister();
         channel.attr(GameServerAttributes.CLIENT).set(null);

@@ -494,10 +494,11 @@ public class CatalogManager {
                     item = new CatalogItem(set);
                     page.addItem(item);
 
-                    if (item.getOfferId() != -1) {
-                        page.addOfferId(item.getOfferId());
+                    int searchOfferId = item.getSearchOfferId();
+                    if (searchOfferId != -1) {
+                        page.addOfferId(searchOfferId);
 
-                        this.offerDefs.put(item.getOfferId(), item.getId());
+                        this.offerDefs.put(searchOfferId, item.getId());
                     }
                 } else
                     item.update(set);
@@ -711,17 +712,21 @@ public class CatalogManager {
             return;
         }
 
-        if (voucher.isExhausted()) {
-            client.sendResponse(new RedeemVoucherErrorComposer(Emulator.getGameEnvironment().getCatalogManager().deleteVoucher(voucher) ? RedeemVoucherErrorComposer.INVALID_CODE : RedeemVoucherErrorComposer.TECHNICAL_ERROR));
-            return;
+        Voucher.ClaimResult claimResult = voucher.claimForUser(habbo.getHabboInfo().getId());
+        switch (claimResult) {
+            case CLAIMED:
+                break;
+            case EXHAUSTED:
+                client.sendResponse(new RedeemVoucherErrorComposer(Emulator.getGameEnvironment().getCatalogManager().deleteVoucher(voucher) ? RedeemVoucherErrorComposer.INVALID_CODE : RedeemVoucherErrorComposer.TECHNICAL_ERROR));
+                return;
+            case USER_LIMIT:
+                client.sendResponse(new ModToolIssueHandledComposer("You have exceeded the limit for redeeming this voucher."));
+                return;
+            case FAILED:
+            default:
+                client.sendResponse(new RedeemVoucherErrorComposer(RedeemVoucherErrorComposer.TECHNICAL_ERROR));
+                return;
         }
-
-        if (voucher.hasUserExhausted(habbo.getHabboInfo().getId())) {
-            client.sendResponse(new ModToolIssueHandledComposer("You have exceeded the limit for redeeming this voucher."));
-            return;
-        }
-
-        voucher.addHistoryEntry(habbo.getHabboInfo().getId());
 
         if (voucher.points > 0) {
             client.getHabbo().givePoints(voucher.pointsType, voucher.points);
@@ -1247,6 +1252,11 @@ public class CatalogManager {
                                     Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
 
                                     if (guild != null && Emulator.getGameEnvironment().getGuildManager().getGuildMember(guild, habbo) != null) {
+                                        if (baseItem.getName().equals("guild_forum") && guild.getOwnerId() != habbo.getHabboInfo().getId()) {
+                                            habbo.getClient().sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                                            return;
+                                        }
+
                                         InteractionGuildFurni habboItem = (InteractionGuildFurni) Emulator.getGameEnvironment().getItemManager().createItem(habbo.getClient().getHabbo().getHabboInfo().getId(), baseItem, limitedStack, limitedNumber, extradata);
                                         habboItem.setExtradata("");
                                         habboItem.needsUpdate(true);

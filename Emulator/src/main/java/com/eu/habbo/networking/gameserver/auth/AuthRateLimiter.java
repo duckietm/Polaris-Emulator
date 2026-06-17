@@ -11,7 +11,33 @@ public final class AuthRateLimiter {
     private static final Map<String, AtomicReference<State>> STATE = new ConcurrentHashMap<>();
     private static final Map<String, AtomicReference<ProbeState>> PROBE_STATE = new ConcurrentHashMap<>();
 
+    // Both maps are keyed by client IP and reachable by unauthenticated traffic.
+    // recordSuccess removes STATE on login, but failed-only and probe-only IPs
+    // never get removed otherwise — unbounded growth over the JVM lifetime.
+    // Opportunistically evict window-expired entries once the maps get large.
+    private static final int SWEEP_THRESHOLD = 10_000;
+    private static final long SWEEP_MIN_INTERVAL_MS = 60_000L;
+    private static volatile long lastSweepMillis = 0L;
+
     private AuthRateLimiter() {}
+
+    private static void maybeSweep(long now) {
+        if (STATE.size() < SWEEP_THRESHOLD && PROBE_STATE.size() < SWEEP_THRESHOLD) return;
+        if (now - lastSweepMillis < SWEEP_MIN_INTERVAL_MS) return;
+        lastSweepMillis = now;
+
+        long stateWindowMs = configInt("login.ratelimit.window_sec", 60) * 1000L;
+        STATE.entrySet().removeIf(e -> {
+            State s = e.getValue().get();
+            return s == null || (s.lockedUntilMillis <= now && (now - s.windowStartMillis) > stateWindowMs);
+        });
+
+        long probeWindowMs = configInt("login.probe.window_sec", 60) * 1000L;
+        PROBE_STATE.entrySet().removeIf(e -> {
+            ProbeState p = e.getValue().get();
+            return p == null || (now - p.windowStartMillis) > probeWindowMs;
+        });
+    }
 
     public static boolean isLocked(String ip) {
         if (!isEnabled() || ip == null || ip.isEmpty()) return false;
@@ -38,6 +64,7 @@ public final class AuthRateLimiter {
         if (!isEnabled() || ip == null || ip.isEmpty()) return;
 
         long now = System.currentTimeMillis();
+        maybeSweep(now);
         long windowMs = configInt("login.ratelimit.window_sec", 60) * 1000L;
         int maxAttempts = configInt("login.ratelimit.max_attempts", 5);
         long lockoutMs = configInt("login.ratelimit.lockout_sec", 120) * 1000L;
@@ -64,6 +91,7 @@ public final class AuthRateLimiter {
         if (isLocked(ip)) return false;
 
         long now = System.currentTimeMillis();
+        maybeSweep(now);
         long windowMs = configInt("login.probe.window_sec", 60) * 1000L;
         int maxAttempts = configInt("login.probe.max_attempts", 20);
 

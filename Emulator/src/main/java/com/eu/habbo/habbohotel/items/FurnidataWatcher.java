@@ -115,32 +115,39 @@ public class FurnidataWatcher {
         }
     }
 
-    private void onChange() {
+    private void onChange() throws InterruptedException {
+        // Re-index under the shared furnidata lock so the watcher and editor
+        // writes never swap the index concurrently. The lock is released before
+        // the throttle/broadcast below so a slow broadcast can't stall editor saves.
+        List<FurnidataEntry> delta;
         FurnidataLock.LOCK.lock();
         try {
             Path source = this.provider.getSource();
             if (source == null) return;
-
-            List<FurnidataEntry> delta = this.provider.reindex(new FurnidataReader(source, this.maxBytes).read());
-            if (delta.isEmpty()) return;
-
-            long now = System.currentTimeMillis();
-            if (now - this.lastBroadcast < this.minIntervalMs) {
-                LOGGER.info("FurnidataWatcher: {} changes indexed but broadcast skipped (min interval) — clients update on next change or reconnect", delta.size());
-                return;
-            }
-            this.lastBroadcast = now;
-
-            FurnitureDataReloadComposer composer = (delta.size() > this.deltaCap)
-                ? new FurnitureDataReloadComposer(FurnitureDataReloadComposer.MODE_RELOAD_HINT, List.of())
-                : new FurnitureDataReloadComposer(FurnitureDataReloadComposer.MODE_DELTA, delta);
-
-            broadcast(composer);
-            LOGGER.info("FurnidataWatcher: broadcast {} ({} entries)",
-                delta.size() > this.deltaCap ? "reload-hint" : "delta", delta.size());
+            delta = this.provider.reindex(new FurnidataReader(source, this.maxBytes).read());
         } finally {
             FurnidataLock.LOCK.unlock();
         }
+        if (delta.isEmpty()) return;
+
+        // Min-interval throttle: the index has already been swapped, so we must
+        // not drop this delta (the next reindex would diff against the updated
+        // index and never re-emit it). Instead, defer the broadcast until the
+        // interval elapses. Running on a dedicated daemon thread, sleeping is
+        // safe; file events arriving meanwhile coalesce into the next cycle.
+        long sinceLast = System.currentTimeMillis() - this.lastBroadcast;
+        if (sinceLast < this.minIntervalMs) {
+            Thread.sleep(this.minIntervalMs - sinceLast);
+        }
+        this.lastBroadcast = System.currentTimeMillis();
+
+        FurnitureDataReloadComposer composer = (delta.size() > this.deltaCap)
+            ? new FurnitureDataReloadComposer(FurnitureDataReloadComposer.MODE_RELOAD_HINT, List.of())
+            : new FurnitureDataReloadComposer(FurnitureDataReloadComposer.MODE_DELTA, delta);
+
+        broadcast(composer);
+        LOGGER.info("FurnidataWatcher: broadcast {} ({} entries)",
+            delta.size() > this.deltaCap ? "reload-hint" : "delta", delta.size());
     }
 
     private void broadcast(FurnitureDataReloadComposer composer) {

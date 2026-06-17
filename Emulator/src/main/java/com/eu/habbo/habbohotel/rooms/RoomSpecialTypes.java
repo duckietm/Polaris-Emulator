@@ -152,15 +152,23 @@ public class RoomSpecialTypes {
 
 
     public InteractionNest getNest(int itemId) {
-        return this.nests.get(itemId);
+        synchronized (this.nests) {
+            return this.nests.get(itemId);
+        }
     }
 
     public void addNest(InteractionNest item) {
-        this.nests.put(item.getId(), item); this.specialItemsById.put(item.getId(), item);
+        synchronized (this.nests) {
+            this.nests.put(item.getId(), item);
+        }
+        this.specialItemsById.put(item.getId(), item);
     }
 
     public void removeNest(InteractionNest item) {
-        this.nests.remove(item.getId()); this.specialItemsById.remove(item.getId());
+        synchronized (this.nests) {
+            this.nests.remove(item.getId());
+        }
+        this.specialItemsById.remove(item.getId());
     }
 
     public THashSet<InteractionNest> getNests() {
@@ -174,15 +182,23 @@ public class RoomSpecialTypes {
 
 
     public InteractionPetDrink getPetDrink(int itemId) {
-        return this.petDrinks.get(itemId);
+        synchronized (this.petDrinks) {
+            return this.petDrinks.get(itemId);
+        }
     }
 
     public void addPetDrink(InteractionPetDrink item) {
-        this.petDrinks.put(item.getId(), item); this.specialItemsById.put(item.getId(), item);
+        synchronized (this.petDrinks) {
+            this.petDrinks.put(item.getId(), item);
+        }
+        this.specialItemsById.put(item.getId(), item);
     }
 
     public void removePetDrink(InteractionPetDrink item) {
-        this.petDrinks.remove(item.getId()); this.specialItemsById.remove(item.getId());
+        synchronized (this.petDrinks) {
+            this.petDrinks.remove(item.getId());
+        }
+        this.specialItemsById.remove(item.getId());
     }
 
     public THashSet<InteractionPetDrink> getPetDrinks() {
@@ -196,15 +212,23 @@ public class RoomSpecialTypes {
 
 
     public InteractionPetFood getPetFood(int itemId) {
-        return this.petFoods.get(itemId);
+        synchronized (this.petFoods) {
+            return this.petFoods.get(itemId);
+        }
     }
 
     public void addPetFood(InteractionPetFood item) {
-        this.petFoods.put(item.getId(), item); this.specialItemsById.put(item.getId(), item);
+        synchronized (this.petFoods) {
+            this.petFoods.put(item.getId(), item);
+        }
+        this.specialItemsById.put(item.getId(), item);
     }
 
     public void removePetFood(InteractionPetFood petFood) {
-        this.petFoods.remove(petFood.getId()); this.specialItemsById.remove(petFood.getId());
+        synchronized (this.petFoods) {
+            this.petFoods.remove(petFood.getId());
+        }
+        this.specialItemsById.remove(petFood.getId());
     }
 
     public THashSet<InteractionPetFood> getPetFoods() {
@@ -218,15 +242,23 @@ public class RoomSpecialTypes {
 
 
     public InteractionPetToy getPetToy(int itemId) {
-        return this.petToys.get(itemId);
+        synchronized (this.petToys) {
+            return this.petToys.get(itemId);
+        }
     }
 
     public void addPetToy(InteractionPetToy item) {
-        this.petToys.put(item.getId(), item); this.specialItemsById.put(item.getId(), item);
+        synchronized (this.petToys) {
+            this.petToys.put(item.getId(), item);
+        }
+        this.specialItemsById.put(item.getId(), item);
     }
 
     public void removePetToy(InteractionPetToy petToy) {
-        this.petToys.remove(petToy.getId()); this.specialItemsById.remove(petToy.getId());
+        synchronized (this.petToys) {
+            this.petToys.remove(petToy.getId());
+        }
+        this.specialItemsById.remove(petToy.getId());
     }
 
     public THashSet<InteractionPetToy> getPetToys() {
@@ -240,15 +272,23 @@ public class RoomSpecialTypes {
 
 
     public InteractionPetTree getPetTree(int itemId) {
-        return this.petTrees.get(itemId);
+        synchronized (this.petTrees) {
+            return this.petTrees.get(itemId);
+        }
     }
 
     public void addPetTree(InteractionPetTree item) {
-        this.petTrees.put(item.getId(), item); this.specialItemsById.put(item.getId(), item);
+        synchronized (this.petTrees) {
+            this.petTrees.put(item.getId(), item);
+        }
+        this.specialItemsById.put(item.getId(), item);
     }
 
     public void removePetTree(InteractionPetTree petTree) {
-        this.petTrees.remove(petTree.getId()); this.specialItemsById.remove(petTree.getId());
+        synchronized (this.petTrees) {
+            this.petTrees.remove(petTree.getId());
+        }
+        this.specialItemsById.remove(petTree.getId());
     }
 
     public THashSet<InteractionPetTree> getPetTrees() {

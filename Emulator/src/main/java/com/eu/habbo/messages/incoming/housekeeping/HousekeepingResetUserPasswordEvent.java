@@ -46,6 +46,11 @@ public class HousekeepingResetUserPasswordEvent extends MessageHandler {
             return;
         }
 
+        if (!HousekeepingTargetRankGuard.canTargetUser(this.client.getHabbo(), userId)) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
+            return;
+        }
+
         String plain = randomPassword();
         String hash;
 
@@ -74,6 +79,11 @@ public class HousekeepingResetUserPasswordEvent extends MessageHandler {
         // Plaintext flows through `message` — the client surfaces it via the
         // status banner so the operator can read it once. SSL is on the
         // operator: the only secure transport for the WS is wss://.
+        com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
+                this.client.getHabbo().getHabboInfo().getId(),
+                this.client.getHabbo().getHabboInfo().getUsername(),
+                ACTION_KEY, userId, "password_reset=1",
+                this.client.getHabbo().getHabboInfo().getIpLogin());
         this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, userId, plain));
     }
 

@@ -52,6 +52,10 @@ public class TextsManager {
         return this.texts.getProperty(key, defaultValue);
     }
 
+    public String getValueQuietly(String key, String defaultValue) {
+        return this.texts.getProperty(key, defaultValue);
+    }
+
     public boolean getBoolean(String key) {
         return this.getBoolean(key, false);
     }

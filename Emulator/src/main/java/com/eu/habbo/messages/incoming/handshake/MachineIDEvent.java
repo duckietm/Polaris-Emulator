@@ -32,6 +32,13 @@ public class MachineIDEvent extends MessageHandler {
         if (!storedMachineId.isEmpty() && this.client.getHabbo() != null && this.client.getHabbo().getHabboInfo() != null) {
             this.client.getHabbo().getHabboInfo().setMachineID(storedMachineId);
             Emulator.getThreading().run(this.client.getHabbo());
+
+            // The fingerprint can arrive AFTER login (UniqueID is sent right after the
+            // SSO ticket), so Habbo.connect() may have skipped the MAC-ban check for
+            // lack of a machineId. Enforce it now that the fingerprint is known.
+            if (Emulator.getGameEnvironment().getModToolManager().hasMACBan(this.client)) {
+                Emulator.getGameServer().getGameClientManager().forceDisposeClient(this.client);
+            }
         }
 
         LOGGER.debug("Setting client MachineId to {}", storedMachineId);

@@ -14,7 +14,7 @@ public class RoomRequestBannedUsersEvent extends MessageHandler {
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
         if (room == null) return;
-        if (!room.hasRights(this.client.getHabbo()) || !this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)) return;
+        if (!room.hasRights(this.client.getHabbo()) && !this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)) return;
 
         this.client.sendResponse(new RoomBannedUsersComposer(room));
 

@@ -2,6 +2,7 @@ package com.eu.habbo.networking.gameserver.decoders;
 
 import com.eu.habbo.networking.gameserver.GameServerAttributes;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 
@@ -15,14 +16,17 @@ public class GameByteDecryption extends ByteToMessageDecoder {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
-        // Read all available bytes.
-        ByteBuf data = in.readBytes(in.readableBytes());
+        // Copy the readable region into a plain array (offset-safe, so this is
+        // correct for pooled buffers too — buf.array() would have read the wrong
+        // region for a pooled/sliced buffer).
+        byte[] bytes = new byte[in.readableBytes()];
+        in.readBytes(bytes);
 
-        // Decrypt.
-        ctx.channel().attr(GameServerAttributes.CRYPTO_CLIENT).get().parse(data.array());
+        // Decrypt in place.
+        ctx.channel().attr(GameServerAttributes.CRYPTO_CLIENT).get().parse(bytes);
 
         // Continue in the pipeline.
-        out.add(data);
+        out.add(Unpooled.wrappedBuffer(bytes));
     }
 
 }

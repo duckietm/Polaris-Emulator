@@ -10,6 +10,10 @@ public class RequestProfileFriendsEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         int userId = this.packet.readInt();
+
+        if (!UserInputGuard.isPositiveId(userId))
+            return;
+
         Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
 
         if (habbo != null)

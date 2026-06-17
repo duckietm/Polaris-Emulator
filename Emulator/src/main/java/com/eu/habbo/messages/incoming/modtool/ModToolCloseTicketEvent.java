@@ -15,9 +15,13 @@ public class ModToolCloseTicketEvent extends MessageHandler {
             this.packet.readInt();
             int ticketId = this.packet.readInt();
 
+            if (!ModToolTicketGuard.isPositiveId(ticketId) || state < 1 || state > 3) {
+                return;
+            }
+
             ModToolIssue issue = Emulator.getGameEnvironment().getModToolManager().getTicket(ticketId);
 
-            if (issue == null || issue.modId != this.client.getHabbo().getHabboInfo().getId())
+            if (!ModToolTicketGuard.isOwnedBy(issue, this.client.getHabbo()))
                 return;
 
             Habbo sender = Emulator.getGameEnvironment().getHabboManager().getHabbo(issue.senderId);

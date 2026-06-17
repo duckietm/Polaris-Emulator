@@ -11,9 +11,15 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.plugin.events.users.UserSignEvent;
 
 public class RoomUserSignEvent extends MessageHandler {
+    private static final int MIN_SIGN_ID = 0;
+    private static final int MAX_SIGN_ID = 10;
+
     @Override
     public void handle() throws Exception {
         int signId = this.packet.readInt();
+
+        if (signId < MIN_SIGN_ID || signId > MAX_SIGN_ID)
+            return;
 
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
@@ -26,12 +32,10 @@ public class RoomUserSignEvent extends MessageHandler {
             this.client.getHabbo().getHabboInfo().getCurrentRoom().unIdle(this.client.getHabbo());
             WiredManager.triggerUserPerformsAction(room, this.client.getHabbo().getRoomUnit(), WiredUserActionType.SIGN, event.sign);
 
-            if(signId <= 10) {
-                int userId = this.client.getHabbo().getHabboInfo().getId();
-                for (HabboItem item : room.getRoomSpecialTypes().getItemsOfType(InteractionVoteCounter.class)) {
-                    if (item instanceof InteractionVoteCounter) {
-                        ((InteractionVoteCounter)item).vote(room, userId, signId);
-                    }
+            int userId = this.client.getHabbo().getHabboInfo().getId();
+            for (HabboItem item : room.getRoomSpecialTypes().getItemsOfType(InteractionVoteCounter.class)) {
+                if (item instanceof InteractionVoteCounter) {
+                    ((InteractionVoteCounter)item).vote(room, userId, signId);
                 }
             }
         }

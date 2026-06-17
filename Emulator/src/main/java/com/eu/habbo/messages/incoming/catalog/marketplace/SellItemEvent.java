@@ -29,6 +29,7 @@ public class SellItemEvent extends MessageHandler {
         final int furniType = this.packet.readInt(); // 1 = FLOOR_TYPE, 2 = WALL_TYPE
         final int itemId = this.packet.readInt();
 
+        if (!MarketplaceInputGuard.isPositiveId(itemId)) return;
         if (furniType != 1 && furniType != 2) return;
 
         HabboItem item = this.client.getHabbo().getInventory().getItemsComponent().getHabboItem(itemId);
@@ -41,7 +42,7 @@ public class SellItemEvent extends MessageHandler {
                 return;
             }
 
-            if (credits < 0) {
+            if (!MarketPlace.isValidListingPrice(credits)) {
                 String message = Emulator.getTexts().getValue("scripter.warning.marketplace.negative").replace("%username%", this.client.getHabbo().getHabboInfo().getUsername()).replace("%itemname%", item.getBaseItem().getName()).replace("%credits%", credits + "");
                 ScripterManager.scripterDetected(this.client, message);
                 LOGGER.info(message);

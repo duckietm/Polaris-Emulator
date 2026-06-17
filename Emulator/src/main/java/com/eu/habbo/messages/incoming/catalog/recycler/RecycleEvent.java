@@ -40,21 +40,24 @@ public class RecycleEvent extends MessageHandler {
                 }
             }
 
-            if (items.size() == count) {
-                for (HabboItem item : items) {
-                    this.client.getHabbo().getInventory().getItemsComponent().removeHabboItem(item);
-                    this.client.sendResponse(new RemoveHabboItemComposer(item.getGiftAdjustedId()));
-                    Emulator.getThreading().run(new QueryDeleteHabboItem(item.getId()));
-                }
-            } else {
+            if (items.size() != count) {
                 this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
                 return;
             }
 
+            // Compute the reward BEFORE consuming the inputs. Previously the
+            // inputs were deleted first, so a null reward (misconfiguration)
+            // permanently destroyed the 8 furni with nothing in return.
             HabboItem reward = Emulator.getGameEnvironment().getItemManager().handleRecycle(this.client.getHabbo(), Emulator.getGameEnvironment().getCatalogManager().getRandomRecyclerPrize().getId() + "");
             if (reward == null) {
                 this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
                 return;
+            }
+
+            for (HabboItem item : items) {
+                this.client.getHabbo().getInventory().getItemsComponent().removeHabboItem(item);
+                this.client.sendResponse(new RemoveHabboItemComposer(item.getGiftAdjustedId()));
+                Emulator.getThreading().run(new QueryDeleteHabboItem(item.getId()));
             }
 
             this.client.sendResponse(new AddHabboItemComposer(reward));

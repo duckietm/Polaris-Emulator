@@ -111,7 +111,7 @@ public class HabboManager {
         habbo = this.cloneCheck(userId);
         if (habbo != null) {
             habbo.alert(Emulator.getTexts().getValue("loggedin.elsewhere"));
-            Emulator.getGameServer().getGameClientManager().disposeClient(habbo.getClient());
+            Emulator.getGameServer().getGameClientManager().forceDisposeClient(habbo.getClient());
             habbo = null;
         }
 

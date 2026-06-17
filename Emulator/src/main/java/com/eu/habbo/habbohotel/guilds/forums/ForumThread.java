@@ -101,19 +101,25 @@ public class ForumThread implements Runnable, ISerialize {
             if (statement.executeUpdate() < 1)
                 return null;
 
-            ResultSet set = statement.getGeneratedKeys();
-            if (set.next()) {
-                int threadId = set.getInt(1);
-                createdThread = new ForumThread(threadId, guild.getId(), opener.getHabboInfo().getId(), subject, 0, timestamp, timestamp, ForumThreadState.OPEN, false, false, 0, null);
-                cacheThread(createdThread);
-
-                ForumThreadComment comment = ForumThreadComment.create(createdThread, opener, message);
-                createdThread.addComment(comment);
-
-                Emulator.getPluginManager().fireEvent(new GuildForumThreadCreated(createdThread));
+            try (ResultSet set = statement.getGeneratedKeys()) {
+                if (set.next()) {
+                    int threadId = set.getInt(1);
+                    createdThread = new ForumThread(threadId, guild.getId(), opener.getHabboInfo().getId(), subject, 0, timestamp, timestamp, ForumThreadState.OPEN, false, false, 0, null);
+                    cacheThread(createdThread);
+                }
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+        }
+
+        // ForumThreadComment.create() opens its OWN connection; do it after the
+        // thread's connection has been released to avoid holding two pooled
+        // connections simultaneously per forum-thread creation.
+        if (createdThread != null) {
+            ForumThreadComment comment = ForumThreadComment.create(createdThread, opener, message);
+            createdThread.addComment(comment);
+
+            Emulator.getPluginManager().fireEvent(new GuildForumThreadCreated(createdThread));
         }
 
         return createdThread;

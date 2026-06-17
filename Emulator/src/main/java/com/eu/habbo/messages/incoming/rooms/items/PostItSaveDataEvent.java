@@ -20,6 +20,9 @@ public class PostItSaveDataEvent extends MessageHandler {
         String color = this.packet.readString();
         String text = Emulator.getGameEnvironment().getWordFilter().filter(this.packet.readString().replace(((char) 9) + "", ""), this.client.getHabbo());
 
+        if (!RoomItemInputGuard.isPositiveId(itemId))
+            return;
+
         if (text.length() > Emulator.getConfig().getInt("postit.charlimit")) {
             ScripterManager.scripterDetected(this.client, Emulator.getTexts().getValue("scripter.warning.sticky.size").replace("%username%", this.client.getHabbo().getHabboInfo().getUsername()).replace("%amount%", text.length() + "").replace("%limit%", Emulator.getConfig().getInt("postit.charlimit") + ""));
             return;

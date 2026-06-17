@@ -1493,6 +1493,10 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     return this.getGuildId() != 0;
   }
 
+  public boolean belongsToGuild() {
+    return this.guild > 0;
+  }
+
   public void setGuild(int guild) {
     this.guild = guild;
   }

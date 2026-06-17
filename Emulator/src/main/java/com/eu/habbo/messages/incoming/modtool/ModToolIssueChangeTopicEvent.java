@@ -14,9 +14,17 @@ public class ModToolIssueChangeTopicEvent extends MessageHandler {
             this.packet.readInt();
             int categoryId = this.packet.readInt();
 
+            if (!ModToolTicketGuard.isPositiveId(ticketId) || !ModToolTicketGuard.isPositiveId(categoryId)) {
+                return;
+            }
+
+            if (Emulator.getGameEnvironment().getModToolManager().getCfhTopic(categoryId) == null) {
+                return;
+            }
+
             ModToolIssue issue = Emulator.getGameEnvironment().getModToolManager().getTicket(ticketId);
 
-            if (issue != null) {
+            if (ModToolTicketGuard.isOwnedBy(issue, this.client.getHabbo())) {
                 issue.category = categoryId;
                 new UpdateModToolIssue(issue).run();
                 Emulator.getGameEnvironment().getModToolManager().updateTicketToMods(issue);

@@ -263,22 +263,29 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
         } else {
             String[] data = wiredData.split(":");
 
-            int itemCount = Integer.parseInt(data[0]);
+            if (data.length >= 5) {
+                try {
+                    int itemCount = Integer.parseInt(data[0]);
 
-            String[] items = data[1].split(";");
+                    String[] items = data[1].split(";");
 
-            for (int i = 0; i < itemCount; i++) {
-                String[] stuff = items[i].split("-");
+                    for (int i = 0; i < itemCount && i < items.length; i++) {
+                        String[] stuff = items[i].split("-");
 
-                if (stuff.length >= 6)
-                    this.settings.add(new WiredMatchFurniSetting(Integer.parseInt(stuff[0]), stuff[1], Integer.parseInt(stuff[2]), Integer.parseInt(stuff[3]), Integer.parseInt(stuff[4]), Double.parseDouble(stuff[5])));
-                else if (stuff.length >= 5)
-                    this.settings.add(new WiredMatchFurniSetting(Integer.parseInt(stuff[0]), stuff[1], Integer.parseInt(stuff[2]), Integer.parseInt(stuff[3]), Integer.parseInt(stuff[4])));
+                        if (stuff.length >= 6)
+                            this.settings.add(new WiredMatchFurniSetting(Integer.parseInt(stuff[0]), stuff[1], Integer.parseInt(stuff[2]), Integer.parseInt(stuff[3]), Integer.parseInt(stuff[4]), Double.parseDouble(stuff[5])));
+                        else if (stuff.length >= 5)
+                            this.settings.add(new WiredMatchFurniSetting(Integer.parseInt(stuff[0]), stuff[1], Integer.parseInt(stuff[2]), Integer.parseInt(stuff[3]), Integer.parseInt(stuff[4])));
+                    }
+
+                    this.state = data[2].equals("1");
+                    this.direction = data[3].equals("1");
+                    this.position = data[4].equals("1");
+                } catch (NumberFormatException ignored) {
+                    // malformed legacy data — keep whatever was parsed plus defaults
+                }
             }
 
-            this.state = data[2].equals("1");
-            this.direction = data[3].equals("1");
-            this.position = data[4].equals("1");
             this.altitude = false;
             this.furniSource = this.settings.isEmpty() ? WiredSourceUtil.SOURCE_TRIGGER : WiredSourceUtil.SOURCE_SELECTED;
             this.quantifier = QUANTIFIER_ALL;

@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.polls;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.polls.Poll;
+import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboBadge;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.users.AddUserBadgeComposer;
@@ -15,6 +16,9 @@ import java.sql.SQLException;
 
 public class AnswerPollEvent extends MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(AnswerPollEvent.class);
+    private static final int MAX_ANSWER_COUNT = 20;
+    private static final int MAX_ANSWER_PART_LENGTH = 255;
+    private static final int MAX_COMBINED_ANSWER_LENGTH = 2048;
 
     @Override
     public void handle() throws Exception {
@@ -22,20 +26,34 @@ public class AnswerPollEvent extends MessageHandler {
         int questionId = this.packet.readInt();
         int count = this.packet.readInt();
         String answers = this.packet.readString();
+        if (count <= 0 || count > MAX_ANSWER_COUNT || answers == null || answers.length() > MAX_ANSWER_PART_LENGTH) {
+            return;
+        }
         
         StringBuilder answer = new StringBuilder();
         for (int i = 0; i < count; i++) {
             answer.append(":").append(answers);
+            if (answer.length() > MAX_COMBINED_ANSWER_LENGTH) {
+                return;
+            }
         }
 
-        if(answer.length() <= 0) return;
+        if (answer.length() <= 0) return;
 
         if (pollId == 0 && questionId <= 0) {
-            this.client.getHabbo().getHabboInfo().getCurrentRoom().handleWordQuiz(this.client.getHabbo(), answer.toString());
+            Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+            if (room != null) {
+                room.handleWordQuiz(this.client.getHabbo(), answer.toString());
+            }
             return;
         }
 
         answer = new StringBuilder(answer.substring(1));
+
+        Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+        if (room == null || room.getPollId() != pollId) {
+            return;
+        }
 
         Poll poll = Emulator.getGameEnvironment().getPollManager().getPoll(pollId);
 

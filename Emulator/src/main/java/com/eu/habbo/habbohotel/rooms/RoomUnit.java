@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ScheduledFuture;
 import java.util.stream.Collectors;
 
@@ -71,7 +72,10 @@ public class RoomUnit {
   private RoomUserRotation headRotation = RoomUserRotation.NORTH;
   private DanceType danceType;
   private RoomUnitType roomUnitType;
-  private Deque<RoomTile> path = new LinkedList<>();
+  // Concurrent + volatile: the room cycle thread polls/clears this path while a
+  // walk packet thread rebuilds it via findPath/setPath. A plain LinkedList would
+  // corrupt under the concurrent structural modification.
+  private volatile Deque<RoomTile> path = new ConcurrentLinkedDeque<>();
   private int handItem;
   private long handItemTimestamp;
   private long lastRollerTime;
@@ -587,7 +591,7 @@ public class RoomUnit {
     Deque<RoomTile> newPath = this.room.getLayout().getPathfinder()
         .findPath(this.currentLocation, this.goalLocation, this.goalLocation, this);
     if (newPath != null && !newPath.isEmpty()) {
-      this.path = newPath;
+      this.path = new ConcurrentLinkedDeque<>(newPath);
     }
   }
 
@@ -765,7 +769,7 @@ public class RoomUnit {
   }
 
   public void setPath(Deque<RoomTile> path) {
-    this.path = path;
+    this.path = (path == null) ? new ConcurrentLinkedDeque<>() : new ConcurrentLinkedDeque<>(path);
   }
 
   public RoomRightLevels getRightsLevel() {

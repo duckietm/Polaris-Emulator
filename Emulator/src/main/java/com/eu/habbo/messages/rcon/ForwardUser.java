@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.rooms.ForwardToRoomComposer;
 import com.google.gson.Gson;
+import jakarta.validation.constraints.Positive;
 
 public class ForwardUser extends RCONMessage<ForwardUser.ForwardUserJSON> {
 
@@ -26,8 +27,10 @@ public class ForwardUser extends RCONMessage<ForwardUser.ForwardUserJSON> {
 
                 habbo.getClient().sendResponse(new ForwardToRoomComposer(object.room_id));
                 Emulator.getGameEnvironment().getRoomManager().enterRoom(habbo, object.room_id, "", true);
+                return;
             } else {
                 this.status = RCONMessage.ROOM_NOT_FOUND;
+                return;
             }
         }
 
@@ -36,9 +39,11 @@ public class ForwardUser extends RCONMessage<ForwardUser.ForwardUserJSON> {
 
     static class ForwardUserJSON {
 
+        @Positive(message = "invalid user")
         public int user_id;
 
 
+        @Positive(message = "invalid room")
         public int room_id;
     }
 }

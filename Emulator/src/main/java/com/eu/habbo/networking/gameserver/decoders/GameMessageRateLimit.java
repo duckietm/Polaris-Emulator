@@ -23,7 +23,12 @@ public class GameMessageRateLimit extends MessageToMessageDecoder<ClientMessage>
     protected void decode(ChannelHandlerContext ctx, ClientMessage message, List<Object> out) throws Exception {
         GameClient client = ctx.channel().attr(GameServerAttributes.CLIENT).get();
 
+        // ClientMessage is not ReferenceCounted, so MessageToMessageDecoder's
+        // auto-release is a no-op for it; on every drop path we must release the
+        // wrapped ByteBuf ourselves or it leaks (it is only released downstream
+        // in ChannelReadHandler on the success path).
         if (client == null) {
+            message.release();
             return;
         }
 
@@ -42,6 +47,7 @@ public class GameMessageRateLimit extends MessageToMessageDecoder<ClientMessage>
         }
 
         if (count > MAX_COUNTER) {
+            message.release();
             return;
         }
 
@@ -53,6 +59,7 @@ public class GameMessageRateLimit extends MessageToMessageDecoder<ClientMessage>
                 LOGGER.warn("Global packet rate limit exceeded for {} ({} packets/sec) — dropping excess packets",
                         username, globalCount);
             }
+            message.release();
             return;
         }
 

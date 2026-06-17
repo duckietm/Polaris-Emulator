@@ -24,8 +24,11 @@ public class PathfinderImpl implements Pathfinder {
 
   private static final int CACHED_TIMEOUT_MS = Emulator.getConfig()
       .getInt(CONFIG_EXECUTION_TIME, 25);
+  // Default ON: bound A* to CACHED_TIMEOUT_MS (25ms) so a pathological search
+  // can't run unbounded and stall the thread. On timeout findPath returns an
+  // empty path (the unit simply doesn't move there) — graceful degradation.
   private static final boolean CACHED_TIMEOUT_ENABLED = Emulator.getConfig()
-      .getBoolean(CONFIG_TIMEOUT_ENABLED, false);
+      .getBoolean(CONFIG_TIMEOUT_ENABLED, true);
   private static final long CACHED_TIMEOUT_NANOS = CACHED_TIMEOUT_MS * 1_000_000L;
 
   private final Room room;

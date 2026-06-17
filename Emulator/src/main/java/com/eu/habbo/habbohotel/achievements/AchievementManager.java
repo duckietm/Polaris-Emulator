@@ -100,9 +100,9 @@ public class AchievementManager {
         if (oldLevel != null && (oldLevel.level == achievement.levels.size() && currentProgress >= oldLevel.progress)) //Maximum achievement gotten.
             return;
 
-        habbo.getHabboStats().setProgress(achievement, currentProgress + amount);
+        int newProgress = habbo.getHabboStats().incrementProgress(achievement, amount);
 
-        AchievementLevel newLevel = achievement.getLevelForProgress(currentProgress + amount);
+        AchievementLevel newLevel = achievement.getLevelForProgress(newProgress);
 
         if (AchievementManager.TALENTTRACK_ENABLED) {
             for (TalentTrackType type : TalentTrackType.values()) {

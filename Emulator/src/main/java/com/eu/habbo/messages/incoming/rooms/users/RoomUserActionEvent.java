@@ -28,6 +28,9 @@ public class RoomUserActionEvent extends MessageHandler {
             }
 
             int action = this.packet.readInt();
+            if (!RoomUserInputGuard.isValidAction(action))
+                return;
+
             int wiredAction = 0;
 
             if (action == 5) {

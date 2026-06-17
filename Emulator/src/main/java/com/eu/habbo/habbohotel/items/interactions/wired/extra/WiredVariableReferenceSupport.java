@@ -227,6 +227,18 @@ public final class WiredVariableReferenceSupport {
         USER_ASSIGNMENT_CACHE.entrySet().removeIf(entry -> entry.getKey().startsWith(prefix));
     }
 
+    /**
+     * Drops all cached shared-variable assignments belonging to a room. Both
+     * caches are keyed "roomId:itemId[:userId]", so the trailing colon makes the
+     * prefix match the exact room id. Called on room dispose so the static caches
+     * don't retain entries for the JVM lifetime.
+     */
+    public static void invalidateRoom(int roomId) {
+        String prefix = roomId + ":";
+        USER_ASSIGNMENT_CACHE.entrySet().removeIf(entry -> entry.getKey().startsWith(prefix));
+        ROOM_ASSIGNMENT_CACHE.entrySet().removeIf(entry -> entry.getKey().startsWith(prefix));
+    }
+
     public static SharedRoomAssignment getSharedRoomAssignment(WiredExtraVariableReference reference) {
         if (reference == null || !reference.isRoomReference()) {
             return null;

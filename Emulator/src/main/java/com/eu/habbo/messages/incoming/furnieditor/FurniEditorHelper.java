@@ -11,6 +11,15 @@ import java.util.Map;
  * FurniEditorSearchEvent to ensure consistent field reading.
  */
 public class FurniEditorHelper {
+    public static final String CATALOG_ITEM_IDS_TOKEN_SQL = "CONCAT(',', REPLACE(item_ids, ' ', ''), ',') LIKE ?";
+
+    public static String catalogItemIdsTokenSql(String column) {
+        return "CONCAT(',', REPLACE(" + column + ", ' ', ''), ',') LIKE ?";
+    }
+
+    public static String catalogItemIdsTokenPattern(int itemId) {
+        return "%," + itemId + ",%";
+    }
 
     /**
      * Read the 14 base fields from items_base into a Map.

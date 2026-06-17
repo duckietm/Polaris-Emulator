@@ -10,7 +10,13 @@ public class ModToolChangeRoomSettingsEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         if (this.client.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL)) {
-            Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.packet.readInt());
+            int roomId = this.packet.readInt();
+
+            if (!ModToolTicketGuard.isPositiveId(roomId)) {
+                return;
+            }
+
+            Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
 
             if (room != null) {
                 final boolean lockDoor = this.packet.readInt() == 1;

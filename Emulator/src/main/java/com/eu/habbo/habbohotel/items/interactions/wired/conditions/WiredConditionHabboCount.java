@@ -65,8 +65,14 @@ public class WiredConditionHabboCount extends InteractionWiredCondition {
         } else {
             String[] data = wiredData.split(":");
 
-            this.lowerLimit = Integer.parseInt(data[0]);
-            this.upperLimit = Integer.parseInt(data[1]);
+            if (data.length >= 2) {
+                try {
+                    this.lowerLimit = Integer.parseInt(data[0].trim());
+                    this.upperLimit = Integer.parseInt(data[1].trim());
+                } catch (NumberFormatException ignored) {
+                    // malformed legacy data — keep the constructed defaults
+                }
+            }
             this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
         }
     }

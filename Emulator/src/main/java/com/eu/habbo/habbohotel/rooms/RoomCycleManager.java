@@ -300,15 +300,20 @@ public class RoomCycleManager {
             return;
         }
 
-        TIntObjectIterator<Bot> botIterator = currentBots.iterator();
-        for (int i = currentBots.size(); i-- > 0; ) {
+        // Snapshot under the map monitor (currentBots is a synchronizedMap whose
+        // iterator isn't concurrency-safe), then cycle OFF-lock. Holding the
+        // monitor across the whole tick would block bot place/pickup and room
+        // dispose for the tick duration AND invert the lock order vs
+        // roomUnitLock -> currentBots taken by RoomUnitManager.addBot/clear.
+        final ArrayList<Bot> bots;
+        synchronized (currentBots) {
+            bots = new ArrayList<>(currentBots.valueCollection());
+        }
+
+        for (Bot bot : bots) {
             try {
-                final Bot bot;
-                try {
-                    botIterator.advance();
-                    bot = botIterator.value();
-                } catch (Exception e) {
-                    break;
+                if (bot == null || bot.getRoomUnit() == null) {
+                    continue;
                 }
 
                 if (!this.room.isAllowBotsWalk() && bot.getRoomUnit().isWalking()) {
@@ -322,10 +327,8 @@ public class RoomCycleManager {
                 if (this.cycleRoomUnit(bot.getRoomUnit(), RoomUnitType.BOT)) {
                     updatedUnit.add(bot.getRoomUnit());
                 }
-
-            } catch (NoSuchElementException e) {
+            } catch (Exception e) {
                 LOGGER.error("Caught exception", e);
-                break;
             }
         }
     }
@@ -339,31 +342,37 @@ public class RoomCycleManager {
             return;
         }
 
-        TIntObjectIterator<Pet> petIterator = currentPets.iterator();
-        for (int i = currentPets.size(); i-- > 0; ) {
+        // Snapshot under the monitor, then cycle off-lock (see processBots): avoids
+        // holding currentPets for the whole tick and the roomUnitLock inversion.
+        final ArrayList<Pet> pets;
+        synchronized (currentPets) {
+            pets = new ArrayList<>(currentPets.valueCollection());
+        }
+
+        for (Pet pet : pets) {
             try {
-                petIterator.advance();
-            } catch (NoSuchElementException e) {
+                if (pet == null || pet.getRoomUnit() == null) {
+                    continue;
+                }
+
+                if (this.cycleRoomUnit(pet.getRoomUnit(), RoomUnitType.PET)) {
+                    updatedUnit.add(pet.getRoomUnit());
+                }
+
+                pet.cycle();
+
+                if (pet.packetUpdate) {
+                    updatedUnit.add(pet.getRoomUnit());
+                    pet.packetUpdate = false;
+                }
+
+                if (pet.getRoomUnit().isWalking() && pet.getRoomUnit().getPath().size() == 1
+                        && pet.getRoomUnit().hasStatus(RoomUnitStatus.GESTURE)) {
+                    pet.getRoomUnit().removeStatus(RoomUnitStatus.GESTURE);
+                    updatedUnit.add(pet.getRoomUnit());
+                }
+            } catch (Exception e) {
                 LOGGER.error("Caught exception", e);
-                break;
-            }
-
-            Pet pet = petIterator.value();
-            if (this.cycleRoomUnit(pet.getRoomUnit(), RoomUnitType.PET)) {
-                updatedUnit.add(pet.getRoomUnit());
-            }
-
-            pet.cycle();
-
-            if (pet.packetUpdate) {
-                updatedUnit.add(pet.getRoomUnit());
-                pet.packetUpdate = false;
-            }
-
-            if (pet.getRoomUnit().isWalking() && pet.getRoomUnit().getPath().size() == 1
-                    && pet.getRoomUnit().hasStatus(RoomUnitStatus.GESTURE)) {
-                pet.getRoomUnit().removeStatus(RoomUnitStatus.GESTURE);
-                updatedUnit.add(pet.getRoomUnit());
             }
         }
     }

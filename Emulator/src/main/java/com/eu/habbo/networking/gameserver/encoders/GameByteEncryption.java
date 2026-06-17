@@ -2,6 +2,7 @@ package com.eu.habbo.networking.gameserver.encoders;
 
 import com.eu.habbo.networking.gameserver.GameServerAttributes;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
@@ -14,16 +15,19 @@ public class GameByteEncryption extends ChannelOutboundHandlerAdapter {
         // convert to Bytebuf
         ByteBuf in = (ByteBuf) msg;
 
-        // read available bytes
-        ByteBuf data = (in).readBytes(in.readableBytes());
+        // Copy the readable region into a plain array (respects readerIndex /
+        // arrayOffset, so this is correct for pooled buffers too — buf.array()
+        // would have returned the wrong region for a pooled/sliced buffer).
+        byte[] bytes = new byte[in.readableBytes()];
+        in.readBytes(bytes);
 
         //release old object
         ReferenceCountUtil.release(in);
 
-        // Encrypt.
-        ctx.channel().attr(GameServerAttributes.CRYPTO_SERVER).get().parse(data.array());
+        // Encrypt in place.
+        ctx.channel().attr(GameServerAttributes.CRYPTO_SERVER).get().parse(bytes);
 
         // Continue in the pipeline.
-        ctx.write(data, promise);
+        ctx.write(Unpooled.wrappedBuffer(bytes), promise);
     }
 }

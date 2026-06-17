@@ -36,28 +36,34 @@ public final class FurnidataSourceResolver {
     public static Source resolve() {
         try {
             String override = Emulator.getConfig().getValue("items.furnidata.path", "");
-            if (!override.isEmpty()) {
-                Path p = Paths.get(override);
-                if (Files.exists(p)) return new Source(p, Files.isDirectory(p), Status.RESOLVED, "items.furnidata.path");
-                return new Source(p, Files.isDirectory(p), Status.SOURCE_MISSING, "items.furnidata.path does not exist");
-            }
-
             String rendererConfigPath = Emulator.getConfig().getValue("furni.editor.renderer.config.path", "");
             String assetBasePath = Emulator.getConfig().getValue("furni.editor.asset.base.path", "");
 
-            if (!rendererConfigPath.isEmpty()) {
-                Source fromRenderer = resolveFromRendererConfig(Paths.get(rendererConfigPath), assetBasePath.isEmpty() ? null : Paths.get(assetBasePath));
-                if (fromRenderer.ok() || fromRenderer.status() == Status.UNRESOLVED_PLACEHOLDER) return fromRenderer;
-            }
-
-            Source fallback = resolveFromAssetBase(assetBasePath);
-            if (fallback != null) return fallback;
-
-            return new Source(null, false, Status.CONFIG_MISSING, "No furnidata source config found");
+            return resolveConfigured(override, rendererConfigPath, assetBasePath);
         } catch (Exception e) {
             LOGGER.warn("FurnidataSourceResolver failed", e);
             return new Source(null, false, Status.ERROR, e.getMessage() != null ? e.getMessage() : "Resolver error");
         }
+    }
+
+    public static Source resolveConfigured(String legacyOverridePath, String rendererConfigPath, String assetBasePath) {
+        if (rendererConfigPath != null && !rendererConfigPath.isEmpty()) {
+            Source fromRenderer = resolveFromRendererConfig(Paths.get(rendererConfigPath), assetBasePath == null || assetBasePath.isEmpty() ? null : Paths.get(assetBasePath));
+            if (fromRenderer.ok() || fromRenderer.status() == Status.UNRESOLVED_PLACEHOLDER) return fromRenderer;
+        }
+
+        Source fromAssetBase = resolveFromAssetBase(assetBasePath);
+        if (fromAssetBase != null && fromAssetBase.ok()) return fromAssetBase;
+
+        if (legacyOverridePath != null && !legacyOverridePath.isEmpty()) {
+            Path p = Paths.get(legacyOverridePath);
+            if (Files.exists(p)) return new Source(p, Files.isDirectory(p), Status.RESOLVED, "items.furnidata.path fallback");
+            return new Source(p, Files.isDirectory(p), Status.SOURCE_MISSING, "items.furnidata.path fallback does not exist");
+        }
+
+        if (fromAssetBase != null) return fromAssetBase;
+
+        return new Source(null, false, Status.CONFIG_MISSING, "No furnidata source config found");
     }
 
     public static Source resolveFromRendererConfig(Path rendererConfig, Path assetBase) {

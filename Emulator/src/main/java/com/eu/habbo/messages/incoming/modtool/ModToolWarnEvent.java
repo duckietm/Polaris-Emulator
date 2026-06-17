@@ -16,10 +16,17 @@ public class ModToolWarnEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         if (this.client.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL)) {
-            Habbo alertedUser = Emulator.getGameEnvironment().getHabboManager().getHabbo(this.packet.readInt());
+            int userId = this.packet.readInt();
+            String message = ModToolInputGuard.normalize(this.packet.readString());
+
+            if (!ModToolTicketGuard.isPositiveId(userId) || !ModToolInputGuard.isSafeMessage(message)) {
+                return;
+            }
+
+            Habbo alertedUser = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
 
             if (alertedUser != null)
-                Emulator.getGameEnvironment().getModToolManager().alert(this.client.getHabbo(), alertedUser, this.packet.readString(), SupportUserAlertedReason.CAUTION);
+                Emulator.getGameEnvironment().getModToolManager().alert(this.client.getHabbo(), alertedUser, message, SupportUserAlertedReason.CAUTION);
         } else {
             ScripterManager.scripterDetected(this.client, Emulator.getTexts().getValue("scripter.warning.modtools.kick").replace("%username%", this.client.getHabbo().getHabboInfo().getUsername()));
         }

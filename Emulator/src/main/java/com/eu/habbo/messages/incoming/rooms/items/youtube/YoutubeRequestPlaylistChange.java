@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.messages.incoming.rooms.items.RoomItemInputGuard;
 import com.eu.habbo.messages.outgoing.rooms.items.youtube.YoutubeVideoComposer;
 import com.eu.habbo.threading.runnables.YoutubeAdvanceVideo;
 
@@ -17,7 +18,10 @@ public class YoutubeRequestPlaylistChange extends MessageHandler {
     @Override
     public void handle() throws Exception {
         int itemId = this.packet.readInt();
-        String playlistId = this.packet.readString();
+        String playlistId = RoomItemInputGuard.trimToMax(this.packet.readString(), RoomItemInputGuard.MAX_YOUTUBE_PLAYLIST_ID_LENGTH);
+
+        if (!RoomItemInputGuard.isPositiveId(itemId) || playlistId.isEmpty())
+            return;
 
         Habbo habbo = this.client.getHabbo();
 
@@ -30,13 +34,16 @@ public class YoutubeRequestPlaylistChange extends MessageHandler {
         if (!room.isOwner(habbo) && !habbo.hasPermission(Permission.ACC_ANYROOMOWNER)) return;
 
 
-        HabboItem item = this.client.getHabbo().getHabboInfo().getCurrentRoom().getHabboItem(itemId);
+        HabboItem item = room.getHabboItem(itemId);
 
         if (item == null || !(item instanceof  InteractionYoutubeTV)) return;
 
         Optional<YoutubeManager.YoutubePlaylist> playlist = Emulator.getGameEnvironment().getItemManager().getYoutubeManager().getPlaylistsForItemId(item.getId()).stream().filter(p -> p.getId().equals(playlistId)).findAny();
 
         if (playlist.isPresent()) {
+            if (playlist.get().getVideos().isEmpty())
+                return;
+
             YoutubeManager.YoutubeVideo video = playlist.get().getVideos().get(0);
             if (video == null) return;
 

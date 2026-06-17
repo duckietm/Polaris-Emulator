@@ -26,6 +26,11 @@ public class ToggleFloorItemEvent extends MessageHandler {
     private static HashSet<String> PET_BOXES = new HashSet<>(Arrays.asList("val11_present", "gnome_box", "leprechaun_box", "velociraptor_egg", "pterosaur_egg", "petbox_epic"));
 
     @Override
+    public int getRatelimit() {
+        return 100;
+    }
+
+    @Override
     public void handle() throws Exception {
         try {
             Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
@@ -35,6 +40,9 @@ public class ToggleFloorItemEvent extends MessageHandler {
 
             int itemId = this.packet.readInt();
             int state = this.packet.readInt();
+
+            if (!RoomItemInputGuard.isPositiveId(itemId))
+                return;
 
             HabboItem item = room.getHabboItem(itemId);
 
@@ -98,6 +106,10 @@ public class ToggleFloorItemEvent extends MessageHandler {
 
             // Do not move to onClick(). Wired could trigger it.
             if (item instanceof InteractionMonsterPlantSeed) {
+                if (item.getUserId() != this.client.getHabbo().getHabboInfo().getId()) {
+                    return;
+                }
+
                 Emulator.getThreading().run(new QueryDeleteHabboItem(item.getId()));
 
                 boolean isRare = item.getBaseItem().getName().contains("rare");

@@ -31,6 +31,17 @@ public abstract class RCONMessage<T> {
 
     public abstract void handle(Gson gson, T json);
 
+    public boolean validate(T json) {
+        String validationError = RconPayloadValidator.validate(json);
+        if (validationError == null) {
+            return true;
+        }
+
+        this.status = STATUS_ERROR;
+        this.message = validationError;
+        return false;
+    }
+
     @SuppressWarnings("rawtypes")
     public static class RCONMessageSerializer implements JsonSerializer<RCONMessage> {
         @Override

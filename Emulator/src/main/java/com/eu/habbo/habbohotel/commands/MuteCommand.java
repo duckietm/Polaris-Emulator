@@ -29,6 +29,11 @@ public class MuteCommand extends Command {
                 return true;
             }
 
+            if (!CommandTargetGuard.canTarget(gameClient.getHabbo(), habbo)) {
+                gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_ban.target_rank_higher"), RoomChatMessageBubbles.ALERT);
+                return true;
+            }
+
             int duration = Integer.MAX_VALUE;
 
             if (params.length == 3) {

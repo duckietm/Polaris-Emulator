@@ -13,11 +13,13 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class InteractionGift extends HabboItem {
     private static final Logger LOGGER = LoggerFactory.getLogger(InteractionGift.class);
 
     public boolean explode = false;
+    private final AtomicBoolean opening = new AtomicBoolean(false);
     private int[] itemId;
     private int colorId = 0;
     private int ribbonId = 0;
@@ -44,6 +46,15 @@ public class InteractionGift extends HabboItem {
         } catch (Exception e) {
             LOGGER.warn("Incorrect extradata for gift with ID {}", this.getId());
         }
+    }
+
+    /**
+     * Claims the right to open this gift, returning true exactly once. Guards
+     * against two near-simultaneous OpenRecycleBox packets both scheduling an
+     * (async, delayed) OpenGift before the wrapper is removed from the room.
+     */
+    public boolean tryStartOpening() {
+        return this.opening.compareAndSet(false, true);
     }
 
     @Override

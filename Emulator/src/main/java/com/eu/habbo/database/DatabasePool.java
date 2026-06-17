@@ -79,6 +79,14 @@ class DatabasePool {
             databaseConfiguration.addDataSourceProperty("useLocalSessionState",     "true");
             databaseConfiguration.addDataSourceProperty("cacheResultSetMetadata",   "true");
             databaseConfiguration.addDataSourceProperty("elideSetAutoCommits",      "true");
+
+            // Fail fast instead of pinning a pooled connection (and its worker
+            // thread) indefinitely on a stalled/slow MariaDB. HikariCP's
+            // connectionTimeout only bounds the pool *borrow*; these bound the
+            // actual socket/connect round-trip. Overridable via db.params.
+            databaseConfiguration.addDataSourceProperty("socketTimeout",  "30000");
+            databaseConfiguration.addDataSourceProperty("connectTimeout", "10000");
+            databaseConfiguration.addDataSourceProperty("tcpKeepAlive",   "true");
             databaseConfiguration.addDataSourceProperty("maintainTimeStats",        "false");
 
             databaseConfiguration.setPoolName("HabboHikariPool");

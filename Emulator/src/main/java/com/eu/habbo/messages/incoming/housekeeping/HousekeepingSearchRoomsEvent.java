@@ -36,14 +36,11 @@ public class HousekeepingSearchRoomsEvent extends MessageHandler {
             return;
         }
 
-        String query = this.packet.readString();
+        String query = HousekeepingInputGuard.normalize(this.packet.readString());
         boolean exactMatch = this.packet.readBoolean();
         int limit = Math.min(Math.max(this.packet.readInt(), 1), HARD_LIMIT);
 
-        if (query == null) query = "";
-        query = query.trim();
-
-        if (query.isEmpty()) {
+        if (query.isEmpty() || !HousekeepingInputGuard.isWithinLimit(query, HousekeepingInputGuard.MAX_LOOKUP_LENGTH)) {
             this.client.sendResponse(new HousekeepingRoomListComposer(new ArrayList<>()));
             return;
         }
@@ -56,7 +53,7 @@ public class HousekeepingSearchRoomsEvent extends MessageHandler {
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, exactMatch ? query : query + "%");
+            statement.setString(1, exactMatch ? query : com.eu.habbo.util.SqlLikeEscaper.escape(query) + "%");
             statement.setInt(2, limit);
 
             try (ResultSet set = statement.executeQuery()) {

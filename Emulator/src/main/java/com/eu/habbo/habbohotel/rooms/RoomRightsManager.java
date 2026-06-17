@@ -272,10 +272,16 @@ public class RoomRightsManager {
         } else if (this.isOwner(habbo)) {
             habbo.getClient().sendResponse(new RoomOwnerComposer());
             flatCtrl = RoomRightLevels.MODERATOR;
-        } else if (this.hasRights(habbo) && !this.room.hasGuild()) {
-            flatCtrl = RoomRightLevels.RIGHTS;
         } else if (this.room.hasGuild()) {
-            flatCtrl = this.getGuildRightLevel(habbo);
+            // Explicit room rights must still be honoured in guild rooms (the old
+            // `&& !hasGuild()` guard stripped them for non-guild members) — take
+            // whichever of the two is stronger.
+            RoomRightLevels guildLevel = this.getGuildRightLevel(habbo);
+            flatCtrl = (this.hasRights(habbo) && RoomRightLevels.RIGHTS.isEqualOrGreaterThan(guildLevel))
+                    ? RoomRightLevels.RIGHTS
+                    : guildLevel;
+        } else if (this.hasRights(habbo)) {
+            flatCtrl = RoomRightLevels.RIGHTS;
         }
 
         habbo.getClient().sendResponse(new RoomRightsComposer(flatCtrl));

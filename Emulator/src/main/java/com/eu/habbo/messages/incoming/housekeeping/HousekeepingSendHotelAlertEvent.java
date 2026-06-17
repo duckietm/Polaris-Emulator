@@ -31,10 +31,15 @@ public class HousekeepingSendHotelAlertEvent extends MessageHandler {
             return;
         }
 
-        String message = this.packet.readString();
+        String message = HousekeepingInputGuard.normalize(this.packet.readString());
 
-        if (message == null || message.trim().isEmpty()) {
+        if (message.isEmpty()) {
             this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.alert_empty"));
+            return;
+        }
+
+        if (!HousekeepingInputGuard.isWithinLimit(message, HousekeepingInputGuard.MAX_ALERT_LENGTH)) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.input_too_long"));
             return;
         }
 
@@ -53,6 +58,11 @@ public class HousekeepingSendHotelAlertEvent extends MessageHandler {
             reached++;
         }
 
+        com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
+                this.client.getHabbo().getHabboInfo().getId(),
+                this.client.getHabbo().getHabboInfo().getUsername(),
+                ACTION_KEY, 0, "reached=" + reached + " message=" + HousekeepingInputGuard.auditValue(message),
+                this.client.getHabbo().getHabboInfo().getIpLogin());
         this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, reached, ""));
     }
 }

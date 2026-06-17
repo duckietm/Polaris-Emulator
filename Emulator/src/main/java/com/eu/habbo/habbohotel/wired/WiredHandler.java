@@ -178,6 +178,15 @@ public class WiredHandler {
     private static boolean handle(InteractionWiredTrigger trigger, final RoomUnit roomUnit, final Room room, final Object[] stuff, final LegacyExecutionPlan executionPlan) {
         long millis = System.currentTimeMillis();
         int roomUnitId = roomUnit != null ? roomUnit.getId() : -1;
+
+        // Only one thread may process a given trigger box at a time, so the
+        // cooldown check (below) and setCooldown (further down) act as one
+        // atomic claim — preventing a concurrent packet/cycle double-fire.
+        if (!trigger.tryBeginProcessing()) {
+            return false;
+        }
+
+        try {
         if (Emulator.isReady && ((Emulator.getConfig().getBoolean("wired.custom.enabled", false) && (trigger.canExecute(millis) || roomUnitId > -1) && trigger.userCanExecute(roomUnitId, millis)) || (!Emulator.getConfig().getBoolean("wired.custom.enabled", false) && trigger.canExecute(millis))) && trigger.execute(roomUnit, room, stuff)) {
             THashSet<InteractionWiredCondition> conditions = room.getRoomSpecialTypes().getConditions(trigger.getX(), trigger.getY());
             THashSet<InteractionWiredEffect> effects = room.getRoomSpecialTypes().getEffects(trigger.getX(), trigger.getY());
@@ -272,6 +281,9 @@ public class WiredHandler {
         }
 
         return false;
+        } finally {
+            trigger.endProcessing();
+        }
     }
 
     private static boolean evaluateConditions(THashSet<InteractionWiredCondition> conditions, RoomUnit roomUnit, Room room, Object[] stuff, int evaluationMode, int evaluationValue) {

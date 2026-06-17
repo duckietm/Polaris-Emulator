@@ -2,6 +2,7 @@ package com.eu.habbo.networking.gameserver.handlers;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.networking.gameserver.GameServerAttributes;
+import com.eu.habbo.networking.gameserver.auth.AuthHttpUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -53,7 +54,7 @@ public class WebSocketHttpHandler extends ChannelInboundHandlerAdapter {
             FullHttpResponse response = new DefaultFullHttpResponse(
                     HttpVersion.HTTP_1_1,
                     HttpResponseStatus.FORBIDDEN,
-                    Unpooled.wrappedBuffer("Origin forbidden".getBytes())
+                    Unpooled.wrappedBuffer("Origin forbidden".getBytes(java.nio.charset.StandardCharsets.UTF_8))
             );
             response.headers().set("Vary", "Origin");
             ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
@@ -65,9 +66,14 @@ public class WebSocketHttpHandler extends ChannelInboundHandlerAdapter {
 
     private static void captureForwardedIp(ChannelHandlerContext ctx, HttpMessage req) {
         String ipHeader = Emulator.getConfig().getValue("ws.ip.header", "");
-        if (!ipHeader.isEmpty() && req.headers().contains(ipHeader)) {
+        // Only honour the forwarded-IP header from a trusted reverse proxy,
+        // otherwise the game-session IP (used for bans/rate-limits) is spoofable.
+        if (!ipHeader.isEmpty() && req.headers().contains(ipHeader) && AuthHttpUtil.isTrustedProxy(ctx)) {
             String ip = req.headers().get(ipHeader);
-            ctx.channel().attr(GameServerAttributes.WS_IP).set(ip);
+            if (ip != null && !ip.isEmpty()) {
+                int comma = ip.indexOf(',');
+                ctx.channel().attr(GameServerAttributes.WS_IP).set((comma > 0 ? ip.substring(0, comma) : ip).trim());
+            }
         }
     }
 

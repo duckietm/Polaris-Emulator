@@ -26,9 +26,9 @@ public class HousekeepingForceDisconnectUserEvent extends MessageHandler {
         }
 
         int userId = this.packet.readInt();
-        String reason = this.packet.readString();
+        String reason = HousekeepingInputGuard.normalize(this.packet.readString());
 
-        if (userId <= 0) {
+        if (userId <= 0 || !HousekeepingInputGuard.isWithinLimit(reason, HousekeepingInputGuard.MAX_REASON_LENGTH)) {
             this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.invalid_input"));
             return;
         }
@@ -40,13 +40,23 @@ public class HousekeepingForceDisconnectUserEvent extends MessageHandler {
             return;
         }
 
-        if (reason != null && !reason.isEmpty()) {
+        if (!HousekeepingTargetRankGuard.canTargetUser(this.client.getHabbo(), userId)) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
+            return;
+        }
+
+        if (!reason.isEmpty()) {
             target.alert(reason);
         }
 
         // ACK first so the action result lands before the target's socket
         // closes (otherwise an alerted user on the same emulator thread may
         // already be torn down when we try to write).
+        com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
+                this.client.getHabbo().getHabboInfo().getId(),
+                this.client.getHabbo().getHabboInfo().getUsername(),
+                ACTION_KEY, userId, "reason=" + HousekeepingInputGuard.auditValue(reason),
+                this.client.getHabbo().getHabboInfo().getIpLogin());
         this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, userId, ""));
 
         target.disconnect();

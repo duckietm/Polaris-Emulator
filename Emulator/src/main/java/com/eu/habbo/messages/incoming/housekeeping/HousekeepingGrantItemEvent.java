@@ -40,6 +40,21 @@ public class HousekeepingGrantItemEvent extends MessageHandler {
             return;
         }
 
+        if (!HousekeepingTargetRankGuard.canTargetUser(this.client.getHabbo(), userId)) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
+            return;
+        }
+
+        if (!HousekeepingMutationGuard.userExists(userId)) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.user_not_found"));
+            return;
+        }
+
+        if (!HousekeepingMutationGuard.itemExists(itemId)) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.item_not_found"));
+            return;
+        }
+
         if (quantity > MAX_QUANTITY_PER_CALL) {
             quantity = MAX_QUANTITY_PER_CALL;
         }
@@ -57,6 +72,11 @@ public class HousekeepingGrantItemEvent extends MessageHandler {
             return;
         }
 
+        com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
+                this.client.getHabbo().getHabboInfo().getId(),
+                this.client.getHabbo().getHabboInfo().getUsername(),
+                ACTION_KEY, userId, "itemId=" + itemId + " quantity=" + quantity,
+                this.client.getHabbo().getHabboInfo().getIpLogin());
         this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, userId, ""));
     }
 }

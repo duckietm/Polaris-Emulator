@@ -13,6 +13,10 @@ public class RoomUserGiveRightsEvent extends MessageHandler {
     public void handle() throws Exception {
         int userId = this.packet.readInt();
 
+        if (!RoomUserInputGuard.isPositiveId(userId)) {
+            return;
+        }
+
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
         if (room == null)

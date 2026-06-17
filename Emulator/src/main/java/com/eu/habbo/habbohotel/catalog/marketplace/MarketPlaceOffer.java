@@ -98,6 +98,10 @@ public class MarketPlaceOffer implements Runnable {
         return this.offerId;
     }
 
+    public boolean isPersisted() {
+        return this.offerId > 0;
+    }
+
     public void setOfferId(int offerId) {
         this.offerId = offerId;
     }

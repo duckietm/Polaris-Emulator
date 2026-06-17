@@ -31,7 +31,7 @@ public class HousekeepingMuteRoomEvent extends MessageHandler {
         int roomId = this.packet.readInt();
         int minutes = this.packet.readInt();
 
-        if (roomId <= 0) {
+        if (roomId <= 0 || minutes < 0) {
             this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.invalid_input"));
             return;
         }
@@ -43,8 +43,18 @@ public class HousekeepingMuteRoomEvent extends MessageHandler {
             return;
         }
 
+        if (!HousekeepingRoomGuard.canManageRoom(this.client.getHabbo(), room)) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
+            return;
+        }
+
         room.setMuted(minutes > 0);
 
+        com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
+                this.client.getHabbo().getHabboInfo().getId(),
+                this.client.getHabbo().getHabboInfo().getUsername(),
+                ACTION_KEY, 0, "roomId=" + roomId + " minutes=" + minutes + " muted=" + (minutes > 0),
+                this.client.getHabbo().getHabboInfo().getIpLogin());
         this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, roomId, ""));
     }
 }

@@ -146,31 +146,23 @@ public class Habbo implements Runnable {
             this.habboInfo.setIpLogin(ip);
         }
 
-        if (this.client.getMachineId() == null || this.client.getMachineId().length() == 0) {
-            return false;
-        }
+        // The Nitro client sends the UniqueID (machine fingerprint) packet right
+        // AFTER the SSO ticket, so client.getMachineId() may still be null here.
+        // Do NOT reject the login for a missing machineId — MachineIDEvent sets it
+        // and enforces the MAC ban as soon as the UniqueID packet arrives. Only
+        // MAC-ban check here when the fingerprint is already available.
+        String machineId = this.client.getMachineId();
+        if (machineId != null && !machineId.isEmpty()) {
+            this.habboInfo.setMachineID(machineId);
 
-        this.habboInfo.setMachineID(this.client.getMachineId());
-
-        if (Emulator.getGameEnvironment().getModToolManager().hasMACBan(this.client)) {
-            return false;
-        }
-
-        if (Emulator.getGameEnvironment().getModToolManager().hasIPBan(this.habboInfo.getIpLogin())) {
-            return false;
-        }
-
-        this.habboInfo.setMachineID(this.client.getMachineId());
-
-        if (Emulator.getGameEnvironment().getModToolManager().hasMACBan(this.client)) {
-            return false;
+            if (Emulator.getGameEnvironment().getModToolManager().hasMACBan(this.client)) {
+                return false;
+            }
         }
 
         if (Emulator.getGameEnvironment().getModToolManager().hasIPBan(this.habboInfo.getIpLogin())) {
             return false;
         }
-
-        this.habboInfo.setMachineID(this.client.getMachineId());
         this.isOnline(true);
 
         this.messenger.connectionChanged(this, true, false);

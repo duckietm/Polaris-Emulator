@@ -19,8 +19,13 @@ public class RoomTradeManager {
      * Starts a trade between two users.
      */
     public void startTrade(Habbo userOne, Habbo userTwo) {
-        RoomTrade trade = new RoomTrade(userOne, userTwo, this.room);
+        RoomTrade trade;
         synchronized (this.activeTrades) {
+            if (this.hasActiveTrade(userOne) || this.hasActiveTrade(userTwo)) {
+                return;
+            }
+
+            trade = new RoomTrade(userOne, userTwo, this.room);
             this.activeTrades.add(trade);
         }
 
@@ -57,5 +62,17 @@ public class RoomTradeManager {
      */
     public THashSet<RoomTrade> getActiveTrades() {
         return this.activeTrades;
+    }
+
+    private boolean hasActiveTrade(Habbo user) {
+        for (RoomTrade trade : this.activeTrades) {
+            for (RoomTradeUser habbo : trade.getRoomTradeUsers()) {
+                if (habbo.getHabbo() == user) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

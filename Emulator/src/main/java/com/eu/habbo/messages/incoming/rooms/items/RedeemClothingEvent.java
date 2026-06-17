@@ -26,6 +26,9 @@ public class RedeemClothingEvent extends MessageHandler {
     public void handle() throws Exception {
         int itemId = this.packet.readInt();
 
+        if (!RoomItemInputGuard.isPositiveId(itemId))
+            return;
+
         if (this.client.getHabbo().getHabboInfo().getCurrentRoom() != null &&
                 this.client.getHabbo().getHabboInfo().getCurrentRoom().hasRights(this.client.getHabbo())) {
             HabboItem item = this.client.getHabbo().getHabboInfo().getCurrentRoom().getHabboItem(itemId);
@@ -36,21 +39,21 @@ public class RedeemClothingEvent extends MessageHandler {
 
                     if (clothing != null) {
                         if (!this.client.getHabbo().getInventory().getWardrobeComponent().getClothing().contains(clothing.id)) {
+                            if (!this.grantClothing(clothing.id)) {
+                                return;
+                            }
+
                             item.setRoomId(0);
                             RoomTile tile = this.client.getHabbo().getHabboInfo().getCurrentRoom().getLayout().getTile(item.getX(), item.getY());
+                            if (tile == null) {
+                                return;
+                            }
+
                             this.client.getHabbo().getHabboInfo().getCurrentRoom().removeHabboItem(item);
                             this.client.getHabbo().getHabboInfo().getCurrentRoom().updateTile(tile);
                             this.client.getHabbo().getHabboInfo().getCurrentRoom().sendComposer(new UpdateStackHeightComposer(tile.x, tile.y, tile.z, tile.relativeHeight()).compose());
                             this.client.getHabbo().getHabboInfo().getCurrentRoom().sendComposer(new RemoveFloorItemComposer(item, true).compose());
                             Emulator.getThreading().run(new QueryDeleteHabboItem(item.getId()));
-
-                            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO users_clothing (user_id, clothing_id) VALUES (?, ?)")) {
-                                statement.setInt(1, this.client.getHabbo().getHabboInfo().getId());
-                                statement.setInt(2, clothing.id);
-                                statement.execute();
-                            } catch (SQLException e) {
-                                LOGGER.error("Caught SQL exception", e);
-                            }
 
                             this.client.getHabbo().getInventory().getWardrobeComponent().getClothing().add(clothing.id);
                             this.client.getHabbo().getInventory().getWardrobeComponent().getClothingSets().addAll(clothing.setId);
@@ -65,6 +68,17 @@ public class RedeemClothingEvent extends MessageHandler {
                     }
                 }
             }
+        }
+    }
+
+    private boolean grantClothing(int clothingId) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO users_clothing (user_id, clothing_id) VALUES (?, ?)")) {
+            statement.setInt(1, this.client.getHabbo().getHabboInfo().getId());
+            statement.setInt(2, clothingId);
+            return statement.executeUpdate() > 0;
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+            return false;
         }
     }
 }

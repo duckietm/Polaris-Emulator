@@ -29,6 +29,12 @@ public class GuildForumThreadsMessagesEvent extends MessageHandler {
         int index = packet.readInt(); // 40
         int limit = packet.readInt(); // 20
 
+        if (!GuildForumInputGuard.isPositiveId(guildId) ||
+                !GuildForumInputGuard.isPositiveId(threadId) ||
+                !GuildForumInputGuard.isValidPage(index, limit)) {
+            this.client.sendResponse(new ConnectionErrorComposer(400));
+            return;
+        }
 
         Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
         ForumThread thread = ForumThread.getById(threadId);

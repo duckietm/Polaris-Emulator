@@ -84,7 +84,7 @@ public class GameServer extends Server {
         this.webSocketBootstrap.childOption(ChannelOption.SO_REUSEADDR, true);
         this.webSocketBootstrap.childOption(ChannelOption.SO_RCVBUF, 4096);
         this.webSocketBootstrap.childOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(4096));
-        this.webSocketBootstrap.childOption(ChannelOption.ALLOCATOR, new UnpooledByteBufAllocator(false));
+        this.webSocketBootstrap.childOption(ChannelOption.ALLOCATOR, allocator());
         this.webSocketBootstrap.childHandler(wsInitializer);
 
         ChannelFuture wsFuture = this.webSocketBootstrap.bind(wsHost, wsPort);

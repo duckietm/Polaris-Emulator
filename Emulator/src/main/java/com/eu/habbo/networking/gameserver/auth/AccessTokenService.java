@@ -21,6 +21,7 @@ public final class AccessTokenService {
     private static final SecureRandom RNG = new SecureRandom();
     private static final Base64.Encoder URL_ENC = Base64.getUrlEncoder().withoutPadding();
     private static final Base64.Decoder URL_DEC = Base64.getUrlDecoder();
+    private static final int MAX_TOKEN_CHARS = 2048;
 
     private static volatile String cachedSecret = null;
 
@@ -63,7 +64,7 @@ public final class AccessTokenService {
     }
 
     public static int verify(String token) {
-        if (token == null || token.isEmpty()) return 0;
+        if (token == null || token.isEmpty() || token.length() > MAX_TOKEN_CHARS) return 0;
 
         String[] parts = token.split("\\.");
         if (parts.length != 3) return 0;

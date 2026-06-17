@@ -24,6 +24,7 @@ public final class RememberJwtService {
     private static final SecureRandom RNG = new SecureRandom();
     private static final Base64.Encoder URL_ENC = Base64.getUrlEncoder().withoutPadding();
     private static final Base64.Decoder URL_DEC = Base64.getUrlDecoder();
+    private static final int MAX_TOKEN_CHARS = 2048;
 
     private static volatile String cachedSecret = null;
 
@@ -238,7 +239,7 @@ public final class RememberJwtService {
     }
 
     private static ParsedJwt verifyAndParse(String jwt) throws Exception {
-        if (jwt == null || jwt.isEmpty()) throw new IllegalArgumentException("empty");
+        if (jwt == null || jwt.isEmpty() || jwt.length() > MAX_TOKEN_CHARS) throw new IllegalArgumentException("empty");
 
         String[] parts = jwt.split("\\.");
         if (parts.length != 3) throw new IllegalArgumentException("not 3 segments");

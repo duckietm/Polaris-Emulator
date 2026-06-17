@@ -566,6 +566,10 @@ public class ItemManager {
 
 
     public int calculateCrackState(int count, int max, Item baseItem) {
+        if (count <= 0 || max <= 0 || baseItem == null || baseItem.getStateCount() <= 0) {
+            return 0;
+        }
+
         return (int) Math.floor((1.0D / ((double) max / (double) count) * baseItem.getStateCount()));
     }
 
@@ -574,7 +578,8 @@ public class ItemManager {
     }
 
     public Item getCrackableReward(int itemId) {
-        return this.getItem(this.crackableRewards.get(itemId).getRandomReward());
+        CrackableReward reward = this.crackableRewards.get(itemId);
+        return reward == null ? null : this.getItem(reward.getRandomReward());
     }
 
 
@@ -604,6 +609,12 @@ public class ItemManager {
     }
 
     public HabboItem createItem(int habboId, Item item, int limitedStack, int limitedSells, String extraData) {
+        if (habboId <= 0 || item == null) {
+            return null;
+        }
+
+        extraData = ItemDataGuard.normalizeExtraData(extraData);
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO items (user_id, item_id, extra_data, limited_data) VALUES (?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
             statement.setInt(1, habboId);
             statement.setInt(2, item.getId());
@@ -673,6 +684,12 @@ public class ItemManager {
     }
 
     public HabboItem handleRecycle(Habbo habbo, String itemId) {
+        int rewardItemId = ItemDataGuard.parsePositiveInt(itemId);
+        if (habbo == null || habbo.getHabboInfo() == null || rewardItemId <= 0
+                || Emulator.getGameEnvironment().getCatalogManager().ecotronItem == null) {
+            return null;
+        }
+
         String extradata = Calendar.getInstance().get(Calendar.DAY_OF_MONTH) + "-" + (Calendar.getInstance().get(Calendar.MONTH) + 1) + "-" + Calendar.getInstance().get(Calendar.YEAR);
 
         HabboItem item = null;
@@ -686,7 +703,7 @@ public class ItemManager {
                 try (PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO items_presents (item_id, base_item_reward) VALUES (?, ?)")) {
                     while (set.next() && item == null) {
                         preparedStatement.setInt(1, set.getInt(1));
-                        preparedStatement.setInt(2, Integer.parseInt(itemId));
+                        preparedStatement.setInt(2, rewardItemId);
                         preparedStatement.addBatch();
                         item = new InteractionDefault(set.getInt(1), habbo.getHabboInfo().getId(), Emulator.getGameEnvironment().getCatalogManager().ecotronItem, extradata, 0, 0);
                     }
@@ -829,6 +846,10 @@ public class ItemManager {
     }
 
     public HabboItem createGift(String username, Item item, String extraData, int limitedStack, int limitedSells) {
+        if (username == null || username.isBlank() || item == null) {
+            return null;
+        }
+
         Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(username);
 
         int userId = 0;
@@ -857,13 +878,13 @@ public class ItemManager {
     }
 
     public HabboItem createGift(int userId, Item item, String extraData, int limitedStack, int limitedSells) {
-        if (userId == 0)
+        if (userId <= 0 || item == null)
             return null;
 
-        if (extraData.length() > 1000) {
+        if (extraData != null && extraData.length() > ItemDataGuard.MAX_EXTRA_DATA_LENGTH) {
             LOGGER.error("Extradata exceeds maximum length of 1000 characters: {}", extraData);
-            extraData = extraData.substring(0, 1000);
         }
+        extraData = ItemDataGuard.normalizeExtraData(extraData);
 
         HabboItem gift = this.createItem(userId, item, limitedStack, limitedSells, extraData);
 
@@ -879,7 +900,7 @@ public class ItemManager {
     }
 
     public Item getItem(int itemId) {
-        if (itemId < 0)
+        if (itemId <= 0)
             return null;
 
         return this.items.get(itemId);
@@ -890,12 +911,16 @@ public class ItemManager {
     }
 
     public Item getItem(String itemName) {
+        if (itemName == null || itemName.isBlank()) {
+            return null;
+        }
+
         TIntObjectIterator<Item> item = this.items.iterator();
 
         for (int i = this.items.size(); i-- > 0; ) {
             try {
                 item.advance();
-                if (item.value().getName().equalsIgnoreCase(itemName)) {
+                if (item.value() != null && item.value().getName() != null && item.value().getName().equalsIgnoreCase(itemName)) {
                     return item.value();
                 }
             } catch (NoSuchElementException e) {

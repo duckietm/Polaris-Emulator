@@ -441,7 +441,7 @@ public class GuildManager {
     public int getGuildMembersCount(Guild guild, int page, int levelId, String query) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) FROM guilds_members INNER JOIN users ON guilds_members.user_id = users.id WHERE guilds_members.guild_id = ?  " + (rankQuery(levelId)) + " AND users.username LIKE ? ORDER BY level_id, member_since ASC")) {
             statement.setInt(1, guild.getId());
-            statement.setString(2, "%" + query + "%");
+            statement.setString(2, "%" + com.eu.habbo.util.SqlLikeEscaper.escape(query) + "%");
 
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {

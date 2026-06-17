@@ -87,7 +87,7 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
         this.direction = params[1] == 1;
         this.position = params[2] == 1;
         this.altitude = (params.length > 3) && (params[3] == 1);
-        this.furniSource = (params.length > 4) ? params[4] : ((params.length > 3 && params[3] > 1) ? params[3] : WiredSourceUtil.SOURCE_TRIGGER);
+        this.furniSource = (params.length > 4) ? WiredMatchPositionInputGuard.normalizeFurniSource(params[4], false) : ((params.length > 3 && params[3] > 1) ? WiredMatchPositionInputGuard.normalizeFurniSource(params[3], false) : WiredSourceUtil.SOURCE_TRIGGER);
         this.quantifier = (params.length > 5) ? this.normalizeQuantifier(params[5]) : QUANTIFIER_ALL;
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
@@ -107,6 +107,8 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
             if (item != null)
                 this.settings.add(new WiredMatchFurniSetting(item.getId(), item.getExtradata(), item.getRotation(), item.getX(), item.getY(), item.getZ()));
         }
+
+        this.furniSource = WiredMatchPositionInputGuard.normalizeFurniSource(this.furniSource, !this.settings.isEmpty());
 
         return true;
     }
@@ -255,27 +257,23 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
             this.position = data.position;
             this.direction = data.direction;
             this.altitude = data.altitude;
-            if (data.settings != null) {
-                this.settings.addAll(data.settings);
-            }
-            this.furniSource = data.furniSource;
+            this.settings.addAll(WiredMatchPositionInputGuard.sanitizeSettings(data.settings, room));
+            this.furniSource = WiredMatchPositionInputGuard.normalizeFurniSource(data.furniSource, !this.settings.isEmpty());
             this.quantifier = this.normalizeQuantifier(data.quantifier);
         } else {
             String[] data = wiredData.split(":");
 
             if (data.length >= 5) {
                 try {
-                    int itemCount = Integer.parseInt(data[0]);
+                    int itemCount = Math.min(Integer.parseInt(data[0]), WiredManager.MAXIMUM_FURNI_SELECTION);
 
                     String[] items = data[1].split(";");
 
                     for (int i = 0; i < itemCount && i < items.length; i++) {
-                        String[] stuff = items[i].split("-");
-
-                        if (stuff.length >= 6)
-                            this.settings.add(new WiredMatchFurniSetting(Integer.parseInt(stuff[0]), stuff[1], Integer.parseInt(stuff[2]), Integer.parseInt(stuff[3]), Integer.parseInt(stuff[4]), Double.parseDouble(stuff[5])));
-                        else if (stuff.length >= 5)
-                            this.settings.add(new WiredMatchFurniSetting(Integer.parseInt(stuff[0]), stuff[1], Integer.parseInt(stuff[2]), Integer.parseInt(stuff[3]), Integer.parseInt(stuff[4])));
+                        WiredMatchFurniSetting setting = this.parseLegacySetting(items[i], room);
+                        if (setting != null) {
+                            this.settings.add(setting);
+                        }
                     }
 
                     this.state = data[2].equals("1");
@@ -287,8 +285,30 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
             }
 
             this.altitude = false;
-            this.furniSource = this.settings.isEmpty() ? WiredSourceUtil.SOURCE_TRIGGER : WiredSourceUtil.SOURCE_SELECTED;
+            this.furniSource = WiredMatchPositionInputGuard.normalizeFurniSource(WiredSourceUtil.SOURCE_TRIGGER, !this.settings.isEmpty());
             this.quantifier = QUANTIFIER_ALL;
+        }
+    }
+
+    private WiredMatchFurniSetting parseLegacySetting(String value, Room room) {
+        String[] parts = value.split("-", 6);
+        if (parts.length < 5) {
+            return null;
+        }
+
+        try {
+            double z = (parts.length >= 6) ? Double.parseDouble(parts[5]) : 0.0D;
+            return WiredMatchPositionInputGuard.sanitizeParts(
+                    Integer.parseInt(parts[0]),
+                    parts[1],
+                    Integer.parseInt(parts[2]),
+                    Integer.parseInt(parts[3]),
+                    Integer.parseInt(parts[4]),
+                    z,
+                    room
+            );
+        } catch (NumberFormatException ignored) {
+            return null;
         }
     }
 

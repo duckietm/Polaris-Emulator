@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredLegacyDataGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.pets.RideablePet;
 import com.eu.habbo.habbohotel.rooms.*;
@@ -287,16 +288,11 @@ public class WiredEffectTeleport extends InteractionWiredEffect {
             String[] wiredDataOld = wiredData.split("\t");
 
             if (wiredDataOld.length >= 1) {
-                this.setDelay(Integer.parseInt(wiredDataOld[0]));
+                this.setDelay(WiredLegacyDataGuard.parseDelay(wiredDataOld[0]));
             }
             if (wiredDataOld.length == 2) {
                 if (wiredDataOld[1].contains(";")) {
-                    for (String s : wiredDataOld[1].split(";")) {
-                        HabboItem item = room.getHabboItem(Integer.parseInt(s));
-
-                        if (item != null)
-                            this.items.add(item);
-                    }
+                    this.items.addAll(WiredLegacyDataGuard.parseRoomItems(wiredDataOld[1], room));
                 }
             }
             this.fastTeleport = false;

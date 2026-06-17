@@ -16,6 +16,9 @@ import java.sql.SQLException;
 
 public class AnswerPollEvent extends MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(AnswerPollEvent.class);
+    private static final int MAX_ANSWER_COUNT = 20;
+    private static final int MAX_ANSWER_PART_LENGTH = 255;
+    private static final int MAX_COMBINED_ANSWER_LENGTH = 2048;
 
     @Override
     public void handle() throws Exception {
@@ -23,13 +26,19 @@ public class AnswerPollEvent extends MessageHandler {
         int questionId = this.packet.readInt();
         int count = this.packet.readInt();
         String answers = this.packet.readString();
+        if (count <= 0 || count > MAX_ANSWER_COUNT || answers == null || answers.length() > MAX_ANSWER_PART_LENGTH) {
+            return;
+        }
         
         StringBuilder answer = new StringBuilder();
         for (int i = 0; i < count; i++) {
             answer.append(":").append(answers);
+            if (answer.length() > MAX_COMBINED_ANSWER_LENGTH) {
+                return;
+            }
         }
 
-        if(answer.length() <= 0) return;
+        if (answer.length() <= 0) return;
 
         if (pollId == 0 && questionId <= 0) {
             Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();

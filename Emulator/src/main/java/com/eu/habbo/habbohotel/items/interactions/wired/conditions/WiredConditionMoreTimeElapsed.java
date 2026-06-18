@@ -52,10 +52,10 @@ public class WiredConditionMoreTimeElapsed extends InteractionWiredCondition {
         try {
             if (wiredData.startsWith("{")) {
                 JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-                this.cycles = data.cycles;
+                this.cycles = WiredConditionInputGuard.normalizeTimerCycles(data.cycles);
             } else {
                 if (!wiredData.equals(""))
-                    this.cycles = Integer.parseInt(wiredData);
+                    this.cycles = WiredConditionInputGuard.normalizeTimerCycles(Integer.parseInt(wiredData));
             }
         } catch (Exception e) {
         }
@@ -90,7 +90,7 @@ public class WiredConditionMoreTimeElapsed extends InteractionWiredCondition {
     @Override
     public boolean saveData(WiredSettings settings) {
         if(settings.getIntParams().length < 1) return false;
-        this.cycles = settings.getIntParams()[0];
+        this.cycles = WiredConditionInputGuard.normalizeTimerCycles(settings.getIntParams()[0]);
         return true;
     }
 

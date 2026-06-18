@@ -298,7 +298,7 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
         String wiredData = set.getString("wired_data");
         if (wiredData == null || wiredData.isEmpty() || !wiredData.startsWith("{")) return;
 
-        JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+        JsonData data = WiredUtilityPayloadGuard.fromJson(wiredData, JsonData.class);
         if (data == null) return;
 
         this.destinationTargetType = normalizeTargetType(data.destinationTargetType);
@@ -312,7 +312,7 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
         this.destinationFurniSource = normalizeDestinationFurniSource(data.destinationFurniSource);
         this.referenceUserSource = normalizeUserSource(data.referenceUserSource);
         this.referenceFurniSource = normalizeReferenceFurniSource(data.referenceFurniSource);
-        this.setDelay(Math.max(0, data.delay));
+        this.setDelay(WiredUtilityPayloadGuard.delay(data.delay));
 
         if (room != null) {
             try {

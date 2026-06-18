@@ -20,6 +20,8 @@ public class UpdateFurniturePositionEvent extends MessageHandler {
         if (room == null) return;
 
         int furniId = this.packet.readInt();
+        if (!RoomItemInputGuard.isPositiveId(furniId)) return;
+
         HabboItem item = room.getHabboItem(furniId);
         if (item == null) return;
 

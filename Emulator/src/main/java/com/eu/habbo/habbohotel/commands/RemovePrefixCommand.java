@@ -31,6 +31,11 @@ public class RemovePrefixCommand extends Command {
             return true;
         }
 
+        if (!CommandTargetGuard.canTarget(gameClient.getHabbo(), target)) {
+            gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_ban.target_rank_higher"), RoomChatMessageBubbles.ALERT);
+            return true;
+        }
+
         if (prefixIdStr.equalsIgnoreCase("all")) {
             List<UserPrefix> prefixes = target.getInventory().getPrefixesComponent().getPrefixes();
             for (UserPrefix prefix : prefixes) {

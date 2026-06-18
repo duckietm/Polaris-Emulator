@@ -23,6 +23,7 @@ public class RoomTrade {
     //Configuration. Loaded from database & updated accordingly.
     public static boolean TRADING_ENABLED = true;
     public static boolean TRADING_REQUIRES_PERK = true;
+    public static final int MAX_OFFERED_ITEMS = 100;
 
     private final List<RoomTradeUser> users;
     private final Room room;
@@ -58,7 +59,7 @@ public class RoomTrade {
     public synchronized void offerItem(Habbo habbo, HabboItem item) {
         RoomTradeUser user = this.getRoomTradeUserForHabbo(habbo);
 
-        if (user == null || item == null || user.getItems().contains(item))
+        if (user == null || item == null || user.getItems().contains(item) || user.getItems().size() >= MAX_OFFERED_ITEMS)
             return;
 
         habbo.getInventory().getItemsComponent().removeHabboItem(item);
@@ -75,6 +76,9 @@ public class RoomTrade {
             return;
 
         for (HabboItem item : items) {
+            if (user.getItems().size() >= MAX_OFFERED_ITEMS)
+                break;
+
             if (!user.getItems().contains(item)) {
                 habbo.getInventory().getItemsComponent().removeHabboItem(item);
                 user.getItems().add(item);

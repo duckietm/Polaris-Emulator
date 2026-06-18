@@ -21,6 +21,8 @@ class GuildForumInputGuardTest {
         assertFalse(GuildForumInputGuard.isValidPage(0, 0));
         assertTrue(GuildForumInputGuard.isValidPage(0, GuildForumInputGuard.MAX_PAGE_LIMIT));
         assertFalse(GuildForumInputGuard.isValidPage(0, GuildForumInputGuard.MAX_PAGE_LIMIT + 1));
+        assertTrue(GuildForumInputGuard.isValidThreadIndex(GuildForumInputGuard.MAX_THREAD_INDEX));
+        assertFalse(GuildForumInputGuard.isValidThreadIndex(GuildForumInputGuard.MAX_THREAD_INDEX + 1));
     }
 
     @Test

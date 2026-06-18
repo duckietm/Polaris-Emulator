@@ -53,8 +53,7 @@ public class WiredConditionDateRangeActive extends InteractionWiredCondition {
     @Override
     public boolean saveData(WiredSettings settings) {
         if(settings.getIntParams().length < 2) return false;
-        this.startDate = settings.getIntParams()[0];
-        this.endDate = settings.getIntParams()[1];
+        this.applyRange(settings.getIntParams()[0], settings.getIntParams()[1]);
         return true;
     }
 
@@ -80,20 +79,28 @@ public class WiredConditionDateRangeActive extends InteractionWiredCondition {
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        this.onPickUp();
         String wiredData = set.getString("wired_data");
+        if (wiredData == null || wiredData.isEmpty()) {
+            this.applyRange(0, 0);
+            return;
+        }
 
         if (wiredData.startsWith("{")) {
             JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            this.startDate = data.startDate;
-            this.endDate = data.endDate;
+            if (data == null) {
+                this.applyRange(0, 0);
+                return;
+            }
+            this.applyRange(data.startDate, data.endDate);
         } else {
             String[] data = wiredData.split("\t");
 
             if (data.length == 2) {
                 try {
-                    this.startDate = Integer.parseInt(data[0]);
-                    this.endDate = Integer.parseInt(data[1]);
+                    this.applyRange(Integer.parseInt(data[0]), Integer.parseInt(data[1]));
                 } catch (Exception e) {
+                    this.applyRange(0, 0);
                 }
             }
         }
@@ -103,6 +110,12 @@ public class WiredConditionDateRangeActive extends InteractionWiredCondition {
     public void onPickUp() {
         this.startDate = 0;
         this.endDate = 0;
+    }
+
+    private void applyRange(int startDate, int endDate) {
+        int[] range = WiredDateRangeInputGuard.normalizeRange(startDate, endDate);
+        this.startDate = range[0];
+        this.endDate = range[1];
     }
 
     static class JsonData {

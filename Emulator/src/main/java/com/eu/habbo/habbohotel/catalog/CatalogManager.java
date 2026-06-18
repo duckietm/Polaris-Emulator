@@ -494,10 +494,11 @@ public class CatalogManager {
                     item = new CatalogItem(set);
                     page.addItem(item);
 
-                    if (item.getOfferId() != -1) {
-                        page.addOfferId(item.getOfferId());
+                    int searchOfferId = item.getSearchOfferId();
+                    if (searchOfferId != -1) {
+                        page.addOfferId(searchOfferId);
 
-                        this.offerDefs.put(item.getOfferId(), item.getId());
+                        this.offerDefs.put(searchOfferId, item.getId());
                     }
                 } else
                     item.update(set);

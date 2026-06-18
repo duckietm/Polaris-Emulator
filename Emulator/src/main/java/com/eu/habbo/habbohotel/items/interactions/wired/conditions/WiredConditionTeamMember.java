@@ -97,12 +97,12 @@ public class WiredConditionTeamMember extends InteractionWiredCondition {
 
             if (wiredData.startsWith("{")) {
                 JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-                this.teamColor = data.teamColor;
-                this.userSource = data.userSource;
+                this.teamColor = WiredConditionInputGuard.normalizeTeamColor(data.teamColor, GameTeamColors.RED);
+                this.userSource = WiredConditionInputGuard.normalizeUserSource(data.userSource);
                 this.quantifier = this.normalizeQuantifier(data.quantifier, QUANTIFIER_ANY);
             } else {
                 if (!wiredData.equals(""))
-                    this.teamColor = GameTeamColors.values()[Integer.parseInt(wiredData)];
+                    this.teamColor = WiredConditionInputGuard.normalizeTeamColorType(Integer.parseInt(wiredData), GameTeamColors.RED);
                 this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
                 this.quantifier = QUANTIFIER_ANY;
             }
@@ -147,8 +147,8 @@ public class WiredConditionTeamMember extends InteractionWiredCondition {
     public boolean saveData(WiredSettings settings) {
         if(settings.getIntParams().length < 1) return false;
         int[] params = settings.getIntParams();
-        this.teamColor = GameTeamColors.values()[params[0]];
-        this.userSource = (params.length > 1) ? params[1] : WiredSourceUtil.SOURCE_TRIGGER;
+        this.teamColor = WiredConditionInputGuard.normalizeTeamColorType(params[0], GameTeamColors.RED);
+        this.userSource = (params.length > 1) ? WiredConditionInputGuard.normalizeUserSource(params[1]) : WiredSourceUtil.SOURCE_TRIGGER;
         this.quantifier = (params.length > 2) ? this.normalizeQuantifier(params[2], QUANTIFIER_ALL) : QUANTIFIER_ANY;
 
         return true;

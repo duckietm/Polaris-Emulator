@@ -23,7 +23,9 @@ public final class HotelDateTimeUtil {
     }
 
     public static ZoneId getZoneId() {
-        String configuredZoneId = Emulator.getConfig().getValue(CONFIG_KEY, ZoneId.systemDefault().getId());
+        String configuredZoneId = Emulator.getConfig() != null
+                ? Emulator.getConfig().getValue(CONFIG_KEY, ZoneId.systemDefault().getId())
+                : ZoneId.systemDefault().getId();
 
         try {
             lastInvalidTimezoneId = null;

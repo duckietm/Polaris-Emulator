@@ -87,7 +87,13 @@ public class WiredConditionUserPerformsAction extends InteractionWiredCondition 
             return;
         }
 
-        JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+        JsonData data;
+        try {
+            data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+        } catch (RuntimeException ignored) {
+            this.resetSettings();
+            return;
+        }
 
         if (data == null) {
             return;
@@ -253,7 +259,7 @@ public class WiredConditionUserPerformsAction extends InteractionWiredCondition 
         }
 
         long timestamp = (Long) timestampValue;
-        if ((System.currentTimeMillis() - timestamp) > TRANSIENT_ACTION_WINDOW_MS) {
+        if (!WiredUserActionInputGuard.isRecentTimestamp(timestamp, System.currentTimeMillis(), TRANSIENT_ACTION_WINDOW_MS)) {
             return false;
         }
 

@@ -26,6 +26,9 @@ public class RedeemClothingEvent extends MessageHandler {
     public void handle() throws Exception {
         int itemId = this.packet.readInt();
 
+        if (!RoomItemInputGuard.isPositiveId(itemId))
+            return;
+
         if (this.client.getHabbo().getHabboInfo().getCurrentRoom() != null &&
                 this.client.getHabbo().getHabboInfo().getCurrentRoom().hasRights(this.client.getHabbo())) {
             HabboItem item = this.client.getHabbo().getHabboInfo().getCurrentRoom().getHabboItem(itemId);
@@ -42,6 +45,10 @@ public class RedeemClothingEvent extends MessageHandler {
 
                             item.setRoomId(0);
                             RoomTile tile = this.client.getHabbo().getHabboInfo().getCurrentRoom().getLayout().getTile(item.getX(), item.getY());
+                            if (tile == null) {
+                                return;
+                            }
+
                             this.client.getHabbo().getHabboInfo().getCurrentRoom().removeHabboItem(item);
                             this.client.getHabbo().getHabboInfo().getCurrentRoom().updateTile(tile);
                             this.client.getHabbo().getHabboInfo().getCurrentRoom().sendComposer(new UpdateStackHeightComposer(tile.x, tile.y, tile.z, tile.relativeHeight()).compose());

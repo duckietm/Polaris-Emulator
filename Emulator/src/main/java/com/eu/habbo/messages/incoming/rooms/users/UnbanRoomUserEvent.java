@@ -10,6 +10,10 @@ public class UnbanRoomUserEvent extends MessageHandler {
         int userId = this.packet.readInt();
         int roomId = this.packet.readInt();
 
+        if (!RoomUserInputGuard.isPositiveId(userId) || !RoomUserInputGuard.isPositiveId(roomId)) {
+            return;
+        }
+
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
         if (room == null || room.getId() != roomId) {
             return;

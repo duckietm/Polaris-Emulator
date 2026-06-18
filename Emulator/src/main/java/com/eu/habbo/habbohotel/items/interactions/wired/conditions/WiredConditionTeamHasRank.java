@@ -65,7 +65,13 @@ public class WiredConditionTeamHasRank extends WiredConditionTeamGameBase {
             return;
         }
 
-        JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+        JsonData data;
+        try {
+            data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+        } catch (RuntimeException ignored) {
+            this.resetSettings();
+            return;
+        }
         if (data == null) {
             return;
         }

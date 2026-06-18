@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.triggers;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredTimerInputGuard;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.wired.WiredTriggerType;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
@@ -94,8 +95,7 @@ public class WiredTriggerRepeaterShort extends WiredTriggerRepeater {
     public boolean saveData(WiredSettings settings) {
         if (settings.getIntParams().length < 1) return false;
 
-        int newRepeatTime = settings.getIntParams()[0] * STEP_MS;
-        this.repeatTime = clampRepeatTime(newRepeatTime);
+        this.repeatTime = WiredTimerInputGuard.fromClientUnits(settings.getIntParams()[0], STEP_MS, MIN_DELAY, MAX_DELAY);
 
         return true;
     }

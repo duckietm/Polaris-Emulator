@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.guilds.forums;
 
 final class GuildForumInputGuard {
     static final int MAX_PAGE_LIMIT = 50;
+    static final int MAX_THREAD_INDEX = 1000;
     static final int MAX_MARK_READ_BATCH = 50;
 
     private GuildForumInputGuard() {
@@ -17,6 +18,10 @@ final class GuildForumInputGuard {
 
     static boolean isValidPage(int index, int limit) {
         return index >= 0 && limit > 0 && limit <= MAX_PAGE_LIMIT;
+    }
+
+    static boolean isValidThreadIndex(int index) {
+        return index >= 0 && index <= MAX_THREAD_INDEX;
     }
 
     static boolean isValidMarkReadBatch(int count) {

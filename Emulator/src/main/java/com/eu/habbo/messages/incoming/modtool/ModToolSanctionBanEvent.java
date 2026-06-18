@@ -37,7 +37,7 @@ public class ModToolSanctionBanEvent extends MessageHandler {
 
         int duration = 0;
 
-        if (!ModToolInputGuard.isSafeMessage(message)) {
+        if (!ModToolTicketGuard.isPositiveId(userId) || !ModToolTicketGuard.isPositiveId(cfhTopic) || !ModToolInputGuard.isSafeMessage(message)) {
             return;
         }
 

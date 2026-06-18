@@ -26,7 +26,7 @@ public class ModToolSanctionMuteEvent extends MessageHandler {
         String message = ModToolInputGuard.normalize(this.packet.readString());
         int cfhTopic = this.packet.readInt();
 
-        if (!ModToolInputGuard.isSafeMessage(message)) {
+        if (!ModToolTicketGuard.isPositiveId(userId) || !ModToolTicketGuard.isPositiveId(cfhTopic) || !ModToolInputGuard.isSafeMessage(message)) {
             return;
         }
 

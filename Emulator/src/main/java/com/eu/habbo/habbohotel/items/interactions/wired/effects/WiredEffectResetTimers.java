@@ -96,19 +96,16 @@ public class WiredEffectResetTimers extends InteractionWiredEffect {
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
         String wiredData = set.getString("wired_data");
 
-        if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            this.delay = data.delay;
+        JsonData jsonData = WiredUtilityPayloadGuard.fromJson(wiredData, JsonData.class);
+        if (jsonData != null) {
+            this.delay = WiredUtilityPayloadGuard.delay(jsonData.delay);
         } else {
-            try {
-                if (!wiredData.equals("")) {
-                    this.delay = Integer.parseInt(wiredData);
-                }
-            } catch (Exception e) {
+            if (wiredData != null && !wiredData.equals("")) {
+                this.delay = WiredUtilityPayloadGuard.parseDelay(wiredData);
             }
         }
 
-        this.setDelay(this.delay);
+        this.setDelay(WiredUtilityPayloadGuard.delay(this.delay));
     }
 
     @Override

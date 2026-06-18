@@ -15,6 +15,9 @@ public class PostItDeleteEvent extends MessageHandler {
     public void handle() throws Exception {
         int itemId = this.packet.readInt();
 
+        if (!RoomItemInputGuard.isPositiveId(itemId))
+            return;
+
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
         if (room == null)

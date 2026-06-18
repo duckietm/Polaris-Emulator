@@ -20,6 +20,10 @@ public class WiredConditionNotFurniTypeMatch extends WiredConditionFurniTypeMatc
 
     @Override
     public boolean evaluate(WiredContext ctx) {
+        if (ctx == null) {
+            return false;
+        }
+
         if (this.getQuantifier() == QUANTIFIER_ANY) {
             return !this.evaluateAllMatches(ctx);
         }

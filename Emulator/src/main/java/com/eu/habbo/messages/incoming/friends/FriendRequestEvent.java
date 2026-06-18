@@ -26,9 +26,9 @@ public class FriendRequestEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        String username = this.packet.readString();
+        String username = FriendInputGuard.normalizeUsername(this.packet.readString());
 
-        if (this.client == null || username == null || username.isEmpty())
+        if (this.client == null || !FriendInputGuard.isValidUsername(username))
             return;
 
         // TargetHabbo can be null if the Habbo is not online or when the Habbo doesn't exist
@@ -60,6 +60,12 @@ public class FriendRequestEvent extends MessageHandler {
 
         // Making friends with yourself would be very pathetic, we try to avoid that
         if (targetId == this.client.getHabbo().getHabboInfo().getId())
+            return;
+
+        if (this.client.getHabbo().getMessenger().getFriends().containsKey(targetId))
+            return;
+
+        if (Messenger.friendRequested(targetId, this.client.getHabbo().getHabboInfo().getId()) || Messenger.friendRequested(this.client.getHabbo().getHabboInfo().getId(), targetId))
             return;
 
         // Target Habbo exists

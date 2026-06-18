@@ -13,6 +13,10 @@ public class BuyItemEvent extends MessageHandler {
     public void handle() throws Exception {
         int offerId = this.packet.readInt();
 
+        if (!MarketplaceInputGuard.isPositiveId(offerId)) {
+            return;
+        }
+
         MarketPlace.buyItem(offerId, this.client);
     }
 }

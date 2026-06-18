@@ -93,16 +93,17 @@ public class WiredEffectAdjustClock extends InteractionWiredEffect {
         this.items.clear();
         String wiredData = set.getString("wired_data");
 
-        if (wiredData != null && wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            this.setDelay(data.delay);
-            this.operator = this.normalizeOperator(data.operator);
-            this.furniSource = data.furniSource;
-            this.minutes = this.normalizeMinutes(data.minutes);
-            this.halfSecondSteps = this.normalizeHalfSecondSteps(data.halfSecondSteps);
+        JsonData jsonData = WiredUtilityPayloadGuard.fromJson(wiredData, JsonData.class);
+        if (jsonData != null) {
+            this.setDelay(WiredUtilityPayloadGuard.delay(jsonData.delay));
+            this.operator = this.normalizeOperator(jsonData.operator);
+            this.furniSource = WiredUtilityPayloadGuard.furniSource(jsonData.furniSource);
+            this.minutes = this.normalizeMinutes(jsonData.minutes);
+            this.halfSecondSteps = this.normalizeHalfSecondSteps(jsonData.halfSecondSteps);
 
-            if (data.itemIds != null) {
-                for (Integer id : data.itemIds) {
+            if (jsonData.itemIds != null) {
+                for (Integer id : jsonData.itemIds) {
+                    if (id == null) continue;
                     HabboItem item = room.getHabboItem(id);
 
                     if (item != null) {

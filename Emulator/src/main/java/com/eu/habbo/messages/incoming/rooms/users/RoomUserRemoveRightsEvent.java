@@ -27,6 +27,9 @@ public class RoomUserRemoveRightsEvent extends MessageHandler {
             for (int i = 0; i < amount; i++) {
                 int userId = this.packet.readInt();
 
+                if (!RoomUserInputGuard.isPositiveId(userId))
+                    continue;
+
                 room.removeRights(userId);
             }
         }

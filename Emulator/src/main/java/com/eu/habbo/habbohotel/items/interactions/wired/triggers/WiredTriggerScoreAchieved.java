@@ -18,6 +18,7 @@ import java.sql.SQLException;
 
 public class WiredTriggerScoreAchieved extends InteractionWiredTrigger {
     private static final WiredTriggerType type = WiredTriggerType.SCORE_ACHIEVED;
+    static final int MAX_SCORE = 1_000_000;
     private int score = 0;
     private int teamType = GameTeamColors.NONE.type;
 
@@ -71,17 +72,27 @@ public class WiredTriggerScoreAchieved extends InteractionWiredTrigger {
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
         String wiredData = set.getString("wired_data");
+        JsonData data = parseData(wiredData);
+        this.score = data.score;
+        this.teamType = data.teamType;
+    }
 
-        if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            this.score = data.score;
-            this.teamType = normalizeTeamType(data.teamType);
-        } else {
-            try {
-                this.score = Integer.parseInt(wiredData);
-            } catch (Exception e) {
+    static JsonData parseData(String wiredData) {
+        if (wiredData == null || wiredData.isBlank()) {
+            return new JsonData(0, GameTeamColors.NONE.type);
+        }
+
+        try {
+            if (wiredData.startsWith("{")) {
+                JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+                return data != null
+                        ? new JsonData(clampScore(data.score), normalizeTeamType(data.teamType))
+                        : new JsonData(0, GameTeamColors.NONE.type);
             }
-            this.teamType = GameTeamColors.NONE.type;
+
+            return new JsonData(clampScore(Integer.parseInt(wiredData)), GameTeamColors.NONE.type);
+        } catch (RuntimeException e) {
+            return new JsonData(0, GameTeamColors.NONE.type);
         }
     }
 
@@ -116,7 +127,7 @@ public class WiredTriggerScoreAchieved extends InteractionWiredTrigger {
     @Override
     public boolean saveData(WiredSettings settings) {
         if(settings.getIntParams().length < 1) return false;
-        this.score = settings.getIntParams()[0];
+        this.score = clampScore(settings.getIntParams()[0]);
         this.teamType = (settings.getIntParams().length > 1)
                 ? normalizeTeamType(settings.getIntParams()[1])
                 : GameTeamColors.NONE.type;
@@ -128,7 +139,15 @@ public class WiredTriggerScoreAchieved extends InteractionWiredTrigger {
         return true;
     }
 
-    private int normalizeTeamType(int value) {
+    static int clampScore(int value) {
+        if (value < 0) {
+            return 0;
+        }
+
+        return Math.min(value, MAX_SCORE);
+    }
+
+    static int normalizeTeamType(int value) {
         if (value >= GameTeamColors.RED.type && value <= GameTeamColors.YELLOW.type) {
             return value;
         }

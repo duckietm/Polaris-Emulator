@@ -350,9 +350,9 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
         this.forwardItems = new THashSet<>();
         String wiredData = set.getString("wired_data");
 
-        if (wiredData != null && wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            this.setDelay(data.delay);
+        JsonData data = WiredUtilityPayloadGuard.fromJson(wiredData, JsonData.class);
+        if (data != null) {
+            this.setDelay(WiredUtilityPayloadGuard.delay(data.delay));
             this.antennaSource  = data.antennaSource;
             this.furniForward   = normalizeSource(data.furniForward);
             this.userForward    = normalizeSource(data.userForward);

@@ -100,15 +100,16 @@ public class WiredEffectSetAltitude extends InteractionWiredEffect {
         this.items.clear();
         String wiredData = set.getString("wired_data");
 
-        if (wiredData != null && wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            this.setDelay(data.delay);
-            this.operator = this.normalizeOperator(data.operator);
-            this.altitude = this.parseAltitudeOrDefault(data.altitude);
-            this.furniSource = data.furniSource;
+        JsonData jsonData = WiredUtilityPayloadGuard.fromJson(wiredData, JsonData.class);
+        if (jsonData != null) {
+            this.setDelay(WiredUtilityPayloadGuard.delay(jsonData.delay));
+            this.operator = this.normalizeOperator(jsonData.operator);
+            this.altitude = this.parseAltitudeOrDefault(jsonData.altitude);
+            this.furniSource = WiredUtilityPayloadGuard.furniSource(jsonData.furniSource);
 
-            if (data.itemIds != null) {
-                for (Integer id : data.itemIds) {
+            if (jsonData.itemIds != null) {
+                for (Integer id : jsonData.itemIds) {
+                    if (id == null) continue;
                     HabboItem item = room.getHabboItem(id);
 
                     if (item != null) {

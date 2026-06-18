@@ -19,6 +19,9 @@ public class RedeemItemEvent extends MessageHandler {
     public void handle() throws Exception {
         int itemId = this.packet.readInt();
 
+        if (!RoomItemInputGuard.isPositiveId(itemId))
+            return;
+
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
         if (room != null) {
@@ -98,6 +101,9 @@ public class RedeemItemEvent extends MessageHandler {
                     room.removeHabboItem(item);
                     room.sendComposer(new RemoveFloorItemComposer(item).compose());
                     RoomTile t = room.getLayout().getTile(item.getX(), item.getY());
+                    if (t == null)
+                        return;
+
                     t.setStackHeight(room.getStackHeight(item.getX(), item.getY(), false));
                     room.updateTile(t);
                     room.sendComposer(new UpdateStackHeightComposer(item.getX(), item.getY(), t.z, t.relativeHeight()).compose());

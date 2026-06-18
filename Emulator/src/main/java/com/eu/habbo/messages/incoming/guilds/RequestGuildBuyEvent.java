@@ -31,11 +31,11 @@ public class RequestGuildBuyEvent extends MessageHandler {
         final String name = Emulator.getGameEnvironment().getWordFilter().filter(this.packet.readString(), this.client.getHabbo());
         final String description = Emulator.getGameEnvironment().getWordFilter().filter(this.packet.readString(), this.client.getHabbo());
 
-        if (name.length() == 0 || name.length() > 29) {
+        if (!GuildInputLimits.isValidGuildName(name)) {
             this.client.sendResponse(new GuildEditFailComposer(GuildEditFailComposer.INVALID_GUILD_NAME));
             return;
         }
-        if (description.length() > 254) {
+        if (!GuildInputLimits.isValidGuildDescription(description)) {
             return;
         }
 
@@ -67,6 +67,11 @@ public class RequestGuildBuyEvent extends MessageHandler {
 
         int colorOne = this.packet.readInt();
         int colorTwo = this.packet.readInt();
+
+        if (!Emulator.getGameEnvironment().getGuildManager().symbolColor(colorOne) || !Emulator.getGameEnvironment().getGuildManager().backgroundColor(colorTwo)) {
+            this.client.sendResponse(new GuildEditFailComposer(GuildEditFailComposer.INVALID_GUILD_NAME));
+            return;
+        }
 
         int count = this.packet.readInt();
 

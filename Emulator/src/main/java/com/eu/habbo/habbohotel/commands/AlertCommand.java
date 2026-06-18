@@ -32,6 +32,11 @@ public class AlertCommand extends Command {
         Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(targetUsername);
 
         if (habbo != null) {
+            if (!CommandTargetGuard.canTarget(gameClient.getHabbo(), habbo)) {
+                gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_ban.target_rank_higher"), RoomChatMessageBubbles.ALERT);
+                return true;
+            }
+
             habbo.alert(message + "\r\n    -" + gameClient.getHabbo().getHabboInfo().getUsername());
             gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.succes.cmd_alert.message_send").replace("%user%", targetUsername), RoomChatMessageBubbles.ALERT);
         } else {

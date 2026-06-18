@@ -106,21 +106,21 @@ public class WiredEffectBotClothes extends InteractionWiredEffect {
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
         String wiredData = set.getString("wired_data");
 
-        if(wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            this.setDelay(data.delay);
-            this.botName = data.bot_name;
-            this.botLook = data.look;
-            this.botSource = (data.botSource != null)
-                    ? WiredBotSourceUtil.normalizeBotSource(data.botSource)
+        JsonData jsonData = WiredEffectPayloadGuard.fromJson(wiredData, JsonData.class);
+        if(jsonData != null) {
+            this.setDelay(WiredEffectPayloadGuard.delay(jsonData.delay));
+            this.botName = WiredEffectPayloadGuard.text(jsonData.bot_name);
+            this.botLook = jsonData.look != null ? jsonData.look : "";
+            this.botSource = (jsonData.botSource != null)
+                    ? WiredBotSourceUtil.normalizeBotSource(jsonData.botSource)
                     : WiredBotSourceUtil.SOURCE_BOT_NAME;
         }
         else {
-            String[] data = wiredData.split(((char) 9) + "");
+            String[] data = wiredData != null ? wiredData.split(((char) 9) + "") : new String[0];
 
             if (data.length >= 3) {
-                this.setDelay(Integer.parseInt(data[0]));
-                this.botName = data[1];
+                this.setDelay(WiredEffectPayloadGuard.parseDelay(data[0]));
+                this.botName = WiredEffectPayloadGuard.text(data[1]);
                 this.botLook = data[2];
             }
 

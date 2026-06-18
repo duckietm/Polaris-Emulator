@@ -1625,6 +1625,9 @@ public class RoomManager {
         if (rights != null && !room.hasRights(rights))
             return;
 
+        if (room.getOwnerId() == userId)
+            return;
+
         String name = "";
 
         Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);

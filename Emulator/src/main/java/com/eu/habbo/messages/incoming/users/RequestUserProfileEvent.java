@@ -10,6 +10,10 @@ public class RequestUserProfileEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         int habboId = this.packet.readInt();
+
+        if (!UserInputGuard.isPositiveId(habboId))
+            return;
+
         Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(habboId);
 
         if (habbo != null)

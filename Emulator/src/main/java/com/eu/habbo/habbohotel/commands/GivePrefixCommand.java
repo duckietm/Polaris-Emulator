@@ -47,6 +47,11 @@ public class GivePrefixCommand extends Command {
             return true;
         }
 
+        if (!CommandTargetGuard.canTarget(gameClient.getHabbo(), target)) {
+            gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.error.cmd_ban.target_rank_higher"), RoomChatMessageBubbles.ALERT);
+            return true;
+        }
+
         UserPrefix prefix = new UserPrefix(target.getHabboInfo().getId(), text, color, icon, effect);
         prefix.run();
         target.getInventory().getPrefixesComponent().addPrefix(prefix);

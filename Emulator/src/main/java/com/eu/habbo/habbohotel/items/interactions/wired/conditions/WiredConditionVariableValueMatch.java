@@ -51,6 +51,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
     private static final int COMPARISON_NOT_EQUAL = 5;
     private static final String DELIM = "\t";
     private static final String FURNI_DELIM = ";";
+    static final int MAX_ABS_REFERENCE_CONSTANT = 1_000_000_000;
 
     protected int comparison = COMPARISON_EQUAL;
     protected int referenceMode = REFERENCE_CONSTANT;
@@ -123,7 +124,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
         int nextTargetType = normalizeTargetTypeExtended(param(params, 0, TARGET_USER));
         int nextComparison = normalizeComparison(param(params, 1, COMPARISON_EQUAL));
         int nextReferenceMode = normalizeReferenceMode(param(params, 2, REFERENCE_CONSTANT));
-        int nextReferenceConstantValue = param(params, 3, 0);
+        int nextReferenceConstantValue = normalizeReferenceConstantValue(param(params, 3, 0));
         int nextReferenceTargetType = normalizeTargetTypeExtended(param(params, 4, TARGET_USER));
         int nextUserSource = normalizeUserSource(param(params, 5, WiredSourceUtil.SOURCE_TRIGGER));
         int nextFurniSource = normalizeFurniSource(param(params, 6, WiredSourceUtil.SOURCE_TRIGGER));
@@ -168,6 +169,10 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
 
     @Override
     public boolean evaluate(WiredContext ctx) {
+        if (ctx == null) {
+            return false;
+        }
+
         Room room = ctx.room();
 
         if (room == null || this.variableToken == null || this.variableToken.isEmpty()) {
@@ -220,14 +225,21 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
         String wiredData = set.getString("wired_data");
         if (wiredData == null || wiredData.isEmpty() || !wiredData.startsWith("{")) return;
 
-        JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+        JsonData data;
+        try {
+            data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+        } catch (RuntimeException exception) {
+            this.onPickUp();
+            return;
+        }
+
         if (data == null) return;
 
         this.targetType = normalizeTargetTypeExtended(data.targetType);
         this.setVariableToken(normalizeVariableToken((data.variableToken != null) ? data.variableToken : ((data.variableItemId > 0) ? String.valueOf(data.variableItemId) : "")));
         this.comparison = normalizeComparison(data.comparison);
         this.referenceMode = normalizeReferenceMode(data.referenceMode);
-        this.referenceConstantValue = data.referenceConstantValue;
+        this.referenceConstantValue = normalizeReferenceConstantValue(data.referenceConstantValue);
         this.referenceTargetType = normalizeTargetTypeExtended(data.referenceTargetType);
         this.setReferenceVariableToken(normalizeVariableToken((data.referenceVariableToken != null) ? data.referenceVariableToken : ((data.referenceVariableItemId > 0) ? String.valueOf(data.referenceVariableItemId) : "")));
         this.userSource = normalizeUserSource(data.userSource);
@@ -737,32 +749,36 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
         return (params.length > index) ? params[index] : fallback;
     }
 
-    private static int normalizeTargetTypeExtended(int value) {
+    static int normalizeTargetTypeExtended(int value) {
         return switch (value) {
             case TARGET_FURNI, TARGET_CONTEXT, TARGET_ROOM -> value;
             default -> TARGET_USER;
         };
     }
 
-    private static int normalizeReferenceMode(int value) {
+    static int normalizeReferenceMode(int value) {
         return (value == REFERENCE_VARIABLE) ? REFERENCE_VARIABLE : REFERENCE_CONSTANT;
     }
 
-    private static int normalizeReferenceFurniSource(int value) {
+    static int normalizeReferenceFurniSource(int value) {
         return switch (value) {
             case SOURCE_SECONDARY_SELECTED, WiredSourceUtil.SOURCE_SELECTOR, WiredSourceUtil.SOURCE_SIGNAL -> value;
             default -> WiredSourceUtil.SOURCE_TRIGGER;
         };
     }
 
-    private static int normalizeComparison(int value) {
+    static int normalizeComparison(int value) {
         return switch (value) {
             case COMPARISON_GREATER_THAN, COMPARISON_GREATER_THAN_OR_EQUAL, COMPARISON_LESS_THAN_OR_EQUAL, COMPARISON_LESS_THAN, COMPARISON_NOT_EQUAL -> value;
             default -> COMPARISON_EQUAL;
         };
     }
 
-    private static int parseInteger(String value) {
+    static int normalizeReferenceConstantValue(int value) {
+        return Math.max(-MAX_ABS_REFERENCE_CONSTANT, Math.min(MAX_ABS_REFERENCE_CONSTANT, value));
+    }
+
+    static int parseInteger(String value) {
         try {
             return (value == null || value.trim().isEmpty()) ? 0 : Integer.parseInt(value.trim());
         } catch (NumberFormatException e) {

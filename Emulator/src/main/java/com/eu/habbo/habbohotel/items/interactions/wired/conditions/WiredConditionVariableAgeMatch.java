@@ -35,6 +35,7 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
     private static final int DURATION_UNIT_WEEKS = 5;
     private static final int DURATION_UNIT_MONTHS = 6;
     private static final int DURATION_UNIT_YEARS = 7;
+    static final int MAX_DURATION_AMOUNT = 1_000_000;
 
     protected int compareValue = COMPARE_VALUE_CREATED;
     protected int comparison = COMPARISON_LOWER_THAN;
@@ -97,7 +98,7 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
         this.targetType = (params.length > 0) ? normalizeTargetTypeExtended(params[0]) : TARGET_USER;
         this.compareValue = (params.length > 1) ? normalizeCompareValue(params[1]) : COMPARE_VALUE_CREATED;
         this.comparison = (params.length > 2) ? normalizeComparison(params[2]) : COMPARISON_LOWER_THAN;
-        this.durationAmount = Math.max(0, (params.length > 3) ? params[3] : 0);
+        this.durationAmount = normalizeDurationAmount((params.length > 3) ? params[3] : 0);
         this.durationUnit = (params.length > 4) ? normalizeDurationUnit(params[4]) : DURATION_UNIT_SECONDS;
         this.userSource = (params.length > 5) ? normalizeUserSource(params[5]) : WiredSourceUtil.SOURCE_TRIGGER;
         this.furniSource = (params.length > 6) ? normalizeFurniSource(params[6]) : WiredSourceUtil.SOURCE_TRIGGER;
@@ -130,6 +131,10 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
 
     @Override
     public boolean evaluate(WiredContext ctx) {
+        if (ctx == null) {
+            return false;
+        }
+
         Room room = ctx.room();
 
         if (room == null || this.variableToken == null || this.variableToken.isEmpty() || !isCustomVariableToken(this.variableToken)) {
@@ -192,7 +197,7 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
                 this.targetType = normalizeTargetTypeExtended(data.targetType);
                 this.compareValue = normalizeCompareValue(data.compareValue);
                 this.comparison = normalizeComparison(data.comparison);
-                this.durationAmount = Math.max(0, data.durationAmount);
+                this.durationAmount = normalizeDurationAmount(data.durationAmount);
                 this.durationUnit = normalizeDurationUnit(data.durationUnit);
                 this.userSource = normalizeUserSource(data.userSource);
                 this.furniSource = normalizeFurniSource(data.furniSource);
@@ -345,8 +350,8 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
         return Math.max(0L, System.currentTimeMillis() - timestampMs);
     }
 
-    private static long durationToMillis(int amount, int unit) {
-        long normalizedAmount = Math.max(0L, amount);
+    static long durationToMillis(int amount, int unit) {
+        long normalizedAmount = normalizeDurationAmount(amount);
 
         return switch (unit) {
             case DURATION_UNIT_MILLISECONDS -> normalizedAmount;
@@ -367,22 +372,26 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
         return left * right;
     }
 
-    private static int normalizeTargetTypeExtended(int value) {
+    static int normalizeDurationAmount(int value) {
+        return Math.max(0, Math.min(MAX_DURATION_AMOUNT, value));
+    }
+
+    static int normalizeTargetTypeExtended(int value) {
         return switch (value) {
             case TARGET_FURNI, TARGET_CONTEXT, TARGET_ROOM -> value;
             default -> TARGET_USER;
         };
     }
 
-    private static int normalizeCompareValue(int value) {
+    static int normalizeCompareValue(int value) {
         return (value == COMPARE_VALUE_UPDATED) ? COMPARE_VALUE_UPDATED : COMPARE_VALUE_CREATED;
     }
 
-    private static int normalizeComparison(int value) {
+    static int normalizeComparison(int value) {
         return (value == COMPARISON_HIGHER_THAN) ? COMPARISON_HIGHER_THAN : COMPARISON_LOWER_THAN;
     }
 
-    private static int normalizeDurationUnit(int value) {
+    static int normalizeDurationUnit(int value) {
         return switch (value) {
             case DURATION_UNIT_MILLISECONDS, DURATION_UNIT_SECONDS, DURATION_UNIT_MINUTES, DURATION_UNIT_HOURS,
                 DURATION_UNIT_DAYS, DURATION_UNIT_WEEKS, DURATION_UNIT_MONTHS, DURATION_UNIT_YEARS -> value;

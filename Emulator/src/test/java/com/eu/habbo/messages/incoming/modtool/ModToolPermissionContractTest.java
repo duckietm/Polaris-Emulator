@@ -109,4 +109,28 @@ class ModToolPermissionContractTest {
                     handler + " must reject empty or oversized staff-supplied text");
         }
     }
+
+    @Test
+    void staffSuppliedModToolTargetsArePositiveBeforeLookupOrMutation() throws Exception {
+        Path base = Path.of("src/main/java/com/eu/habbo/messages/incoming/modtool");
+
+        for (String handler : List.of(
+                "ModToolAlertEvent.java",
+                "ModToolWarnEvent.java",
+                "ModToolKickEvent.java",
+                "ModToolChangeRoomSettingsEvent.java",
+                "ModToolRequestRoomInfoEvent.java",
+                "ModToolRequestRoomVisitsEvent.java",
+                "ModToolIssueDefaultSanctionEvent.java",
+                "ModToolSanctionAlertEvent.java",
+                "ModToolSanctionBanEvent.java",
+                "ModToolSanctionMuteEvent.java",
+                "ModToolSanctionTradeLockEvent.java"
+        )) {
+            String source = Files.readString(base.resolve(handler));
+
+            assertTrue(source.contains("ModToolTicketGuard.isPositiveId"),
+                    handler + " must reject zero or negative client-provided ids before manager/database lookups");
+        }
+    }
 }

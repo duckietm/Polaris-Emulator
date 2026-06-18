@@ -111,7 +111,13 @@ public class WiredConditionActorDir extends InteractionWiredCondition {
         }
 
         if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            JsonData data;
+            try {
+                data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            } catch (RuntimeException exception) {
+                this.onPickUp();
+                return;
+            }
 
             if (data == null) {
                 return;
@@ -157,15 +163,15 @@ public class WiredConditionActorDir extends InteractionWiredCondition {
         return (this.directionMask & (1 << direction)) != 0;
     }
 
-    private int normalizeDirectionMask(int value) {
+    int normalizeDirectionMask(int value) {
         return value & ALL_DIRECTIONS_MASK;
     }
 
-    private int normalizeUserSource(int value) {
+    int normalizeUserSource(int value) {
         return WiredSourceUtil.isDefaultUserSource(value) ? value : WiredSourceUtil.SOURCE_TRIGGER;
     }
 
-    private int normalizeQuantifier(int value) {
+    int normalizeQuantifier(int value) {
         return (value == QUANTIFIER_ANY) ? QUANTIFIER_ANY : QUANTIFIER_ALL;
     }
 

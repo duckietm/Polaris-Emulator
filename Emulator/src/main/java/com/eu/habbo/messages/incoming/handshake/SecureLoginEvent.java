@@ -50,6 +50,7 @@ import java.util.Date;
 @NoAuthMessage
 public class SecureLoginEvent extends MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(SecureLoginEvent.class);
+    private static final int MAX_SSO_TICKET_LENGTH = 128;
 
     @Override
     public int getRatelimit() {
@@ -72,17 +73,17 @@ public class SecureLoginEvent extends MessageHandler {
             return;
         }
 
-        String sso = this.packet.readString().replace(" ", "");
+        String sso = SecureLoginInputGuard.normalizeSsoTicket(this.packet.readString());
 
-        if (Emulator.getPluginManager().fireEvent(new SSOAuthenticationEvent(sso)).isCancelled()) {
+        if (!SecureLoginInputGuard.isValidSsoTicket(sso)) {
             Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
-            LOGGER.info("SSO Authentication is cancelled by a plugin. Closed connection...");
+            LOGGER.debug("Client is trying to connect with an invalid SSO ticket! Closed connection...");
             return;
         }
 
-        if (sso.isEmpty()) {
+        if (sso.isEmpty() || sso.length() > MAX_SSO_TICKET_LENGTH) {
             Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
-            LOGGER.debug("Client is trying to connect without SSO ticket! Closed connection...");
+            LOGGER.debug("Client is trying to connect with missing or invalid SSO ticket! Closed connection...");
             return;
         }
 

@@ -19,8 +19,15 @@ public class TradeOfferMultipleItemsEvent extends MessageHandler {
         THashSet<HabboItem> items = new THashSet<>();
 
         int count = this.packet.readInt();
+        if (count <= 0 || count > RoomTrade.MAX_OFFERED_ITEMS)
+            return;
+
         for (int i = 0; i < count; i++) {
-            HabboItem item = this.client.getHabbo().getInventory().getItemsComponent().getHabboItem(this.packet.readInt());
+            int itemId = this.packet.readInt();
+            if (itemId <= 0)
+                continue;
+
+            HabboItem item = this.client.getHabbo().getInventory().getItemsComponent().getHabboItem(itemId);
             if (item != null && item.getBaseItem().allowTrade()) {
                 items.add(item);
             }

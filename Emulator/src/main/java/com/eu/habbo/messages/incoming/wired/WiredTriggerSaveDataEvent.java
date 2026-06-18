@@ -22,7 +22,13 @@ public class WiredTriggerSaveDataEvent extends MessageHandler {
                 InteractionWiredTrigger trigger = room.getRoomSpecialTypes().getTrigger(itemId);
 
                 if (trigger != null) {
-                    WiredSettings settings = InteractionWired.readSettings(this.packet, false);
+                    WiredSettings settings;
+                    try {
+                        settings = InteractionWired.readSettings(this.packet, false);
+                    } catch (IllegalArgumentException e) {
+                        this.client.sendResponse(new UpdateFailedComposer("Invalid wired trigger settings"));
+                        return;
+                    }
 
                     try {
                         boolean saved = trigger.saveData(settings, this.client);

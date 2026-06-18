@@ -8,6 +8,7 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import com.eu.habbo.messages.outgoing.guilds.forums.GuildForumDataComposer;
+import com.eu.habbo.messages.outgoing.handshake.ConnectionErrorComposer;
 
 public class GuildForumDataEvent extends MessageHandler {
     @Override
@@ -18,6 +19,11 @@ public class GuildForumDataEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         int guildId = packet.readInt();
+
+        if (!GuildForumInputGuard.isPositiveId(guildId)) {
+            this.client.sendResponse(new ConnectionErrorComposer(400));
+            return;
+        }
 
         Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
 

@@ -25,7 +25,7 @@ public class ModToolSanctionTradeLockEvent extends MessageHandler {
         int duration = this.packet.readInt();
         int cfhTopic = this.packet.readInt();
 
-        if (!ModToolInputGuard.isSafeMessage(message)) {
+        if (!ModToolTicketGuard.isPositiveId(userId) || !ModToolTicketGuard.isPositiveId(cfhTopic) || !ModToolInputGuard.isSafeMessage(message)) {
             return;
         }
 

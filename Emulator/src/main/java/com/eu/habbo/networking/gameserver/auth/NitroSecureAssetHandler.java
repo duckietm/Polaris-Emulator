@@ -35,6 +35,8 @@ public class NitroSecureAssetHandler extends ChannelInboundHandlerAdapter {
     private static final String BOOTSTRAP_PATH = "/nitro-sec/bootstrap";
     private static final String FILE_PATH = "/nitro-sec/file";
     private static final int MAX_BOOTSTRAP_BODY_BYTES = 4096;
+    private static final int DEFAULT_MAX_CONFIG_BYTES = 2 * 1024 * 1024;
+    private static final int DEFAULT_MAX_GAMEDATA_BYTES = 16 * 1024 * 1024;
     private static final SecureRandom RNG = new SecureRandom();
     private static final KeyPair SERVER_KEYPAIR = createServerKeyPair();
     private static final String SERVER_KEY_FINGERPRINT = fingerprint(SERVER_KEYPAIR.getPublic().getEncoded());
@@ -146,6 +148,9 @@ public class NitroSecureAssetHandler extends ChannelInboundHandlerAdapter {
 
         if (!target.startsWith(root)) throw new IllegalArgumentException("Invalid file.");
         if (!Files.isRegularFile(target)) throw new IOException("Not found");
+        long size = Files.size(target);
+        int maxBytes = maxAssetBytes(kind);
+        if (size > maxBytes) throw new IllegalArgumentException("File too large.");
 
         String cacheKey = kind + ":" + target;
         long modified = Files.getLastModifiedTime(target).toMillis();
@@ -156,6 +161,14 @@ public class NitroSecureAssetHandler extends ChannelInboundHandlerAdapter {
         if (normalized.toLowerCase().endsWith(".json")) bytes = minifyJson(bytes);
         CACHE.put(cacheKey, new CacheEntry(modified, bytes));
         return bytes;
+    }
+
+    static int maxAssetBytes(String kind) {
+        boolean config = "config".equals(kind);
+        String key = config ? "nitro.secure.config.max_file_bytes" : "nitro.secure.gamedata.max_file_bytes";
+        int fallback = config ? DEFAULT_MAX_CONFIG_BYTES : DEFAULT_MAX_GAMEDATA_BYTES;
+        int configured = Emulator.getConfig().getInt(key, fallback);
+        return configured > 0 ? configured : fallback;
     }
 
     private static String normalizeFile(String file) {

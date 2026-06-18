@@ -95,10 +95,10 @@ public class WiredConditionNotFurniHaveHabbo extends InteractionWiredCondition {
 
         if (wiredData.startsWith("{")) {
             WiredConditionFurniHaveHabbo.JsonData data = WiredManager.getGson().fromJson(wiredData, WiredConditionFurniHaveHabbo.JsonData.class);
-            this.furniSource = data.furniSource;
+            this.furniSource = WiredFurniConditionInputGuard.normalizeFurniSource(data.furniSource);
             this.all = data.all;
 
-            for(int id : data.itemIds) {
+            for(int id : WiredFurniConditionInputGuard.sanitizeItemIds(data.itemIds, WiredManager.MAXIMUM_FURNI_SELECTION)) {
                 HabboItem item = room.getHabboItem(id);
 
                 if (item != null) {
@@ -108,11 +108,9 @@ public class WiredConditionNotFurniHaveHabbo extends InteractionWiredCondition {
         } else {
             String[] data = wiredData.split(":");
 
-            if (data.length >= 1) {
-                String[] items = data[1].split(";");
-
-                for (String s : items) {
-                    HabboItem item = room.getHabboItem(Integer.parseInt(s));
+            if (data.length >= 2) {
+                for (int id : WiredFurniConditionInputGuard.parseLegacyItemIds(data[1], WiredManager.MAXIMUM_FURNI_SELECTION)) {
+                    HabboItem item = room.getHabboItem(id);
 
                     if (item != null)
                         this.items.add(item);
@@ -121,9 +119,7 @@ public class WiredConditionNotFurniHaveHabbo extends InteractionWiredCondition {
             this.furniSource = this.items.isEmpty() ? WiredSourceUtil.SOURCE_TRIGGER : WiredSourceUtil.SOURCE_SELECTED;
             this.all = false;
         }
-        if (this.furniSource == WiredSourceUtil.SOURCE_TRIGGER && !this.items.isEmpty()) {
-            this.furniSource = WiredSourceUtil.SOURCE_SELECTED;
-        }
+        this.furniSource = WiredFurniConditionInputGuard.selectedOrNormalizedFurniSource(this.furniSource, !this.items.isEmpty());
     }
 
     @Override
@@ -161,11 +157,9 @@ public class WiredConditionNotFurniHaveHabbo extends InteractionWiredCondition {
 
         int[] params = settings.getIntParams();
         this.all = (params.length > 0) && (params[0] == 1);
-        this.furniSource = (params.length > 1) ? params[1] : ((params.length > 0 && params[0] > 1) ? params[0] : WiredSourceUtil.SOURCE_TRIGGER);
+        this.furniSource = (params.length > 1) ? WiredFurniConditionInputGuard.normalizeFurniSource(params[1]) : ((params.length > 0 && params[0] > 1) ? WiredFurniConditionInputGuard.normalizeFurniSource(params[0]) : WiredSourceUtil.SOURCE_TRIGGER);
 
-        if (count > 0 && this.furniSource == WiredSourceUtil.SOURCE_TRIGGER) {
-            this.furniSource = WiredSourceUtil.SOURCE_SELECTED;
-        }
+        this.furniSource = WiredFurniConditionInputGuard.selectedOrNormalizedFurniSource(this.furniSource, count > 0);
 
         this.items.clear();
 

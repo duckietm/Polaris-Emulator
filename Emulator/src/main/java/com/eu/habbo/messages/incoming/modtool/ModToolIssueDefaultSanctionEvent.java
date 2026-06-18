@@ -19,6 +19,10 @@ public class ModToolIssueDefaultSanctionEvent extends MessageHandler {
             this.packet.readInt();
             int category = this.packet.readInt();
 
+            if (!ModToolTicketGuard.isPositiveId(issueId) || !ModToolTicketGuard.isPositiveId(category)) {
+                return;
+            }
+
             ModToolIssue issue = Emulator.getGameEnvironment().getModToolManager().getTicket(issueId);
 
             if (issue == null) {

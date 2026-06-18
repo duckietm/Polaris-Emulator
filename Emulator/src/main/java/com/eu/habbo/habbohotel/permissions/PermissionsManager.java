@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -65,35 +66,45 @@ public class PermissionsManager {
     }
 
     private void loadPermissionsLegacy(Connection connection) throws SQLException {
+        Set<Integer> loadedRankIds = new HashSet<>();
+
         try (Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery("SELECT * FROM permissions ORDER BY id ASC")) {
             while (set.next()) {
+                int rankId = set.getInt("id");
+                loadedRankIds.add(rankId);
+
                 Rank rank = null;
-                if (!this.ranks.containsKey(set.getInt("id"))) {
+                if (!this.ranks.containsKey(rankId)) {
                     rank = new Rank(set);
-                    this.ranks.put(set.getInt("id"), rank);
+                    this.ranks.put(rankId, rank);
                 } else {
-                    rank = this.ranks.get(set.getInt("id"));
+                    rank = this.ranks.get(rankId);
                     rank.load(set);
                 }
 
                 this.addBadgeMapping(rank);
             }
         }
+
+        this.pruneMissingRanks(loadedRankIds);
     }
 
     private boolean loadPermissionsNormalized(Connection connection) throws SQLException {
         boolean hasRanks = false;
         List<Rank> loadedRanks = new ArrayList<>();
+        Set<Integer> loadedRankIds = new HashSet<>();
 
         try (Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery("SELECT * FROM permission_ranks ORDER BY id ASC")) {
             while (set.next()) {
                 hasRanks = true;
+                int rankId = set.getInt("id");
+                loadedRankIds.add(rankId);
 
-                Rank rank = this.ranks.get(set.getInt("id"));
+                Rank rank = this.ranks.get(rankId);
 
                 if (rank == null) {
-                    rank = new Rank(set.getInt("id"));
-                    this.ranks.put(set.getInt("id"), rank);
+                    rank = new Rank(rankId);
+                    this.ranks.put(rankId, rank);
                 }
 
                 rank.loadNormalizedMetadata(set);
@@ -141,7 +152,16 @@ public class PermissionsManager {
             }
         }
 
+        this.pruneMissingRanks(loadedRankIds);
         return hasDefinitions;
+    }
+
+    private void pruneMissingRanks(Set<Integer> loadedRankIds) {
+        for (int rankId : this.ranks.keys()) {
+            if (!loadedRankIds.contains(rankId)) {
+                this.ranks.remove(rankId);
+            }
+        }
     }
 
     private void ensureNormalizedRankColumns(Connection connection, List<Rank> loadedRanks) throws SQLException {
@@ -254,6 +274,10 @@ public class PermissionsManager {
 
 
     public boolean hasPermission(Habbo habbo, String permission, boolean withRoomRights) {
+        if (habbo == null || habbo.getHabboInfo() == null || permission == null || permission.isBlank()) {
+            return false;
+        }
+
         if (!this.hasPermission(habbo.getHabboInfo().getRank(), permission, withRoomRights)) {
             for (HabboPlugin plugin : Emulator.getPluginManager().getPlugins()) {
                 if (plugin.hasPermission(habbo, permission)) {
@@ -269,15 +293,16 @@ public class PermissionsManager {
 
 
     public boolean hasPermission(Rank rank, String permission, boolean withRoomRights) {
-        return rank.hasPermission(permission, withRoomRights);
+        return rank != null && permission != null && !permission.isBlank() && rank.hasPermission(permission, withRoomRights);
     }
 
     public Set<String> getStaffBadges() {
-        return this.badges.keySet();
+        return Collections.unmodifiableSet(new HashSet<>(this.badges.keySet()));
     }
 
     public List<Rank> getRanksByBadgeCode(String code) {
-        return this.badges.get(code);
+        List<Rank> ranks = this.badges.get(code);
+        return ranks == null ? Collections.emptyList() : Collections.unmodifiableList(new ArrayList<>(ranks));
     }
 
     public List<Rank> getAllRanks() {

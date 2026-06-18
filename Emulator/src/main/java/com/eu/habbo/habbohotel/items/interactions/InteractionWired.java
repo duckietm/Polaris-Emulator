@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.items.interactions;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredInputGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -230,39 +231,18 @@ public abstract class InteractionWired extends InteractionDefault {
 
     public static WiredSettings readSettings(ClientMessage packet, boolean isEffect)
     {
-        int intParamCount = packet.readInt();
-        if (intParamCount < 0 || intParamCount > 100) {
-            throw new IllegalArgumentException("Invalid intParamCount: " + intParamCount);
-        }
-        int[] intParams = new int[intParamCount];
-
-        for(int i = 0; i < intParamCount; i++)
-        {
-            intParams[i] = packet.readInt();
-        }
-
-        String stringParam = packet.readString();
-
-        int itemCount = packet.readInt();
-        int selectionLimit = Emulator.getConfig() != null ? Emulator.getConfig().getInt("hotel.wired.furni.selection.count", 5) : 5;
-        if (itemCount < 0 || itemCount > selectionLimit * 20) {
-            throw new IllegalArgumentException("Invalid itemCount: " + itemCount + " exceeds maximum allowed limit");
-        }
-        int[] itemIds = new int[itemCount];
-
-        for(int i = 0; i < itemCount; i++)
-        {
-            itemIds[i] = packet.readInt();
-        }
+        int[] intParams = WiredInputGuard.readIntParams(packet);
+        String stringParam = WiredInputGuard.readStringParam(packet);
+        int[] itemIds = WiredInputGuard.readFurniIds(packet);
 
         WiredSettings settings = new WiredSettings(intParams, stringParam, itemIds, -1);
 
         if(isEffect)
         {
-            settings.setDelay(packet.readInt());
+            settings.setDelay(WiredInputGuard.normalizeDelay(packet.readInt()));
         }
 
-        settings.setStuffTypeSelectionCode(packet.readInt());
+        settings.setStuffTypeSelectionCode(WiredInputGuard.normalizeStuffSelectionCode(packet.readInt()));
         return settings;
     }
 }

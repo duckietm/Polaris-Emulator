@@ -114,6 +114,10 @@ public class Rank {
     }
 
     public boolean hasPermission(String key, boolean isRoomOwner) {
+        if (key == null || key.isBlank()) {
+            return false;
+        }
+
         if (this.permissions.containsKey(key)) {
             Permission permission = this.permissions.get(key);
 

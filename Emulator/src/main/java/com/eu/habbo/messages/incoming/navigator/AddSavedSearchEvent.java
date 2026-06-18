@@ -14,11 +14,8 @@ public class AddSavedSearchEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        String searchCode = this.packet.readString();
-        String filter = this.packet.readString();
-
-        if (searchCode.length() > 255) searchCode = searchCode.substring(0, 255);
-        if (filter.length() > 255) filter = filter.substring(0, 255);
+        String searchCode = NavigatorInputGuard.normalizeSavedSearchValue(this.packet.readString());
+        String filter = NavigatorInputGuard.normalizeSavedSearchValue(this.packet.readString());
 
         if (this.client.getHabbo().getHabboInfo().getSavedSearches().size() >= MAX_SAVED_SEARCHES) {
             this.client.sendResponse(new NewNavigatorSavedSearchesComposer(this.client.getHabbo().getHabboInfo().getSavedSearches()));

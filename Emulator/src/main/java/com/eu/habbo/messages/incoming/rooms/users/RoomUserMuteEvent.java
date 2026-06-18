@@ -18,6 +18,10 @@ public class RoomUserMuteEvent extends MessageHandler {
         int roomId = this.packet.readInt();
         int minutes = this.packet.readInt();
 
+        if (!RoomUserInputGuard.isPositiveId(userId) || !RoomUserInputGuard.isPositiveId(roomId)) {
+            return;
+        }
+
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
         if (room == null || room.getId() != roomId) {
             return;

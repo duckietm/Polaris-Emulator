@@ -4,6 +4,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionLoveLock;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.messages.incoming.rooms.items.RoomItemInputGuard;
 import com.eu.habbo.messages.outgoing.rooms.items.lovelock.LoveLockFurniFinishedComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.lovelock.LoveLockFurniFriendConfirmedComposer;
 
@@ -11,6 +12,9 @@ public class LoveLockStartConfirmEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         int itemId = this.packet.readInt();
+
+        if (!RoomItemInputGuard.isPositiveId(itemId))
+            return;
 
         if (this.packet.readBoolean()) {
             if (this.client.getHabbo().getHabboInfo().getCurrentRoom() == null)

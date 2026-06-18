@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class GameClient {
 
@@ -24,6 +25,7 @@ public class GameClient {
 	private final LatencyTracker latencyTracker;
 
     private Habbo habbo;
+    private final AtomicBoolean disposed = new AtomicBoolean(false);
     private boolean handshakeFinished;
     private String machineId = "";
     private String ssoTicket = "";
@@ -153,6 +155,10 @@ public class GameClient {
     }
 
     public void dispose(boolean allowSessionResume) {
+        if (!this.disposed.compareAndSet(false, true)) {
+            return;
+        }
+
         try {
             this.channel.close();
 

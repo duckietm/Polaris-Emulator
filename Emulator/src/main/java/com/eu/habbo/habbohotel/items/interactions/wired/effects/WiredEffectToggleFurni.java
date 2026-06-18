@@ -15,6 +15,7 @@ import com.eu.habbo.habbohotel.items.interactions.games.freeze.InteractionFreeze
 import com.eu.habbo.habbohotel.items.interactions.games.tag.InteractionTagField;
 import com.eu.habbo.habbohotel.items.interactions.games.tag.InteractionTagPole;
 import com.eu.habbo.habbohotel.items.interactions.pets.*;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredLegacyDataGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -274,18 +275,15 @@ public class WiredEffectToggleFurni extends InteractionWiredEffect {
             String[] wiredDataOld = wiredData.split("\t");
 
             if (wiredDataOld.length >= 1) {
-                this.setDelay(Integer.parseInt(wiredDataOld[0]));
+                this.setDelay(WiredLegacyDataGuard.parseDelay(wiredDataOld[0]));
             }
             if (wiredDataOld.length == 2) {
                 if (wiredDataOld[1].contains(";")) {
-                    for (String s : wiredDataOld[1].split(";")) {
-                        HabboItem item = room.getHabboItem(Integer.parseInt(s));
-
+                    for (HabboItem item : WiredLegacyDataGuard.parseRoomItems(wiredDataOld[1], room)) {
                         if (item instanceof InteractionFreezeBlock || item instanceof InteractionFreezeTile || item instanceof InteractionCrackable)
                             continue;
 
-                        if (item != null)
-                            this.items.add(item);
+                        this.items.add(item);
                     }
                 }
             }

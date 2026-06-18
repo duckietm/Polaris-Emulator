@@ -15,7 +15,11 @@ public class MannequinSaveLookEvent extends MessageHandler {
         if (room == null || !room.isOwner(habbo))
             return;
 
-        HabboItem item = room.getHabboItem(this.packet.readInt());
+        int itemId = this.packet.readInt();
+        if (!RoomItemInputGuard.isPositiveId(itemId))
+            return;
+
+        HabboItem item = room.getHabboItem(itemId);
         if (item == null)
             return;
 

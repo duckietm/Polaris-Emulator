@@ -174,6 +174,14 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
         return this.offerId;
     }
 
+    public int getSearchOfferId() {
+        if (this.offerId > 0) {
+            return this.offerId;
+        }
+
+        return haveOffer(this) ? this.id : -1;
+    }
+
     public boolean isLimited() {
         return this.limitedStack > 0;
     }

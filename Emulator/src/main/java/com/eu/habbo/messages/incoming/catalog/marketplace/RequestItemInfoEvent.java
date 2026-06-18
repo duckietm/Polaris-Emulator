@@ -9,6 +9,10 @@ public class RequestItemInfoEvent extends MessageHandler {
         this.packet.readInt();
         int id = this.packet.readInt();
 
+        if (!MarketplaceInputGuard.isPositiveId(id)) {
+            return;
+        }
+
         this.client.sendResponse(new MarketplaceItemInfoComposer(id));
     }
 }

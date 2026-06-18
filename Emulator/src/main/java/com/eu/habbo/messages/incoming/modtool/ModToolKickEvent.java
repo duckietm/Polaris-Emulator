@@ -21,7 +21,7 @@ public class ModToolKickEvent extends MessageHandler {
         int userId = this.packet.readInt();
         String message = ModToolInputGuard.normalize(this.packet.readString());
 
-        if (!ModToolInputGuard.isSafeMessage(message)) {
+        if (!ModToolTicketGuard.isPositiveId(userId) || !ModToolInputGuard.isSafeMessage(message)) {
             return;
         }
 

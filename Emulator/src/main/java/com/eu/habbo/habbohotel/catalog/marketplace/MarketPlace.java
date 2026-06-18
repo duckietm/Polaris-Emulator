@@ -58,6 +58,10 @@ public class MarketPlace {
     public static void takeBackItem(Habbo habbo, int offerId) {
         MarketPlaceOffer offer = habbo.getInventory().getOffer(offerId);
 
+        if (offer == null) {
+            return;
+        }
+
         if (!Emulator.getPluginManager().fireEvent(new MarketPlaceItemCancelledEvent(offer)).isCancelled()) {
             takeBackItem(habbo, offer);
         }

@@ -24,7 +24,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class NitroSecureApiHandler extends ChannelDuplexHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(NitroSecureApiHandler.class);
     private static final String ENABLED_CONFIG = "nitro.secure.api.enabled";
+    private static final String MAX_PAYLOAD_CONFIG = "nitro.secure.api.max_payload_bytes";
     private static final String API_PREFIX = "/api/";
+    private static final int DEFAULT_MAX_PAYLOAD_BYTES = 64 * 1024;
     private static final AttributeKey<Deque<SecureApiContext>> SECURE_CONTEXTS =
             AttributeKey.valueOf("nitroSecureApiContexts");
     private static final ConcurrentHashMap<String, Long> NONCE_CACHE = new ConcurrentHashMap<>();
@@ -81,7 +83,14 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
                 return;
             }
 
-            byte[] encrypted = new byte[req.content().readableBytes()];
+            int readableBytes = req.content().readableBytes();
+            int maxPayloadBytes = maxPayloadBytes();
+            if (readableBytes > maxPayloadBytes) {
+                sendText(ctx, req, HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE, "Secure payload too large.");
+                return;
+            }
+
+            byte[] encrypted = new byte[readableBytes];
             req.content().getBytes(req.content().readerIndex(), encrypted);
             byte[] clear = NitroSecureAssetHandler.decrypt(sessionKey, NitroSecureAssetHandler.fromHex(new String(encrypted, StandardCharsets.UTF_8)));
             clear = unwrapEnvelope(clear, req, secureContext);
@@ -171,6 +180,15 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
 
     private static boolean secureApiEnabled() {
         return com.eu.habbo.Emulator.getConfig().getBoolean(ENABLED_CONFIG, true);
+    }
+
+    static int maxPayloadBytes() {
+        if (com.eu.habbo.Emulator.getConfig() == null) {
+            return DEFAULT_MAX_PAYLOAD_BYTES;
+        }
+
+        int configured = com.eu.habbo.Emulator.getConfig().getInt(MAX_PAYLOAD_CONFIG, DEFAULT_MAX_PAYLOAD_BYTES);
+        return configured > 0 ? configured : DEFAULT_MAX_PAYLOAD_BYTES;
     }
 
     private static byte[] unwrapEnvelope(byte[] clear, FullHttpRequest req, SecureApiContext secureContext) {

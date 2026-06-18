@@ -22,7 +22,7 @@ public class GuildForumThreadsEvent extends MessageHandler {
         int guildId = packet.readInt();
         int index = packet.readInt();
 
-        if (!GuildForumInputGuard.isPositiveId(guildId) || index < 0) {
+        if (!GuildForumInputGuard.isPositiveId(guildId) || !GuildForumInputGuard.isValidThreadIndex(index)) {
             this.client.sendResponse(new ConnectionErrorComposer(400));
             return;
         }

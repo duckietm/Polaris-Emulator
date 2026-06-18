@@ -12,6 +12,10 @@ public class RoomUserBanEvent extends MessageHandler {
         int roomId = this.packet.readInt();
         String banName = this.packet.readString();
 
+        if (!RoomUserInputGuard.isPositiveId(userId) || !RoomUserInputGuard.isPositiveId(roomId)) {
+            return;
+        }
+
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
         if (room == null || room.getId() != roomId) {
             return;

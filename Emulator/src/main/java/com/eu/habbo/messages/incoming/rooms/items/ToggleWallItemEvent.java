@@ -24,6 +24,9 @@ public class ToggleWallItemEvent extends MessageHandler {
         int itemId = this.packet.readInt();
         int state = this.packet.readInt();
 
+        if (!RoomItemInputGuard.isPositiveId(itemId))
+            return;
+
         HabboItem item = room.getHabboItem(itemId);
 
         if (item == null)

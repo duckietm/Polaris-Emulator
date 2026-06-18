@@ -4,6 +4,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredTimerInputGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredTriggerReset;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -29,6 +30,9 @@ import java.util.List;
  */
 public class WiredTriggerAtSetTime extends InteractionWiredTrigger implements WiredTickable, WiredTriggerReset {
     public static final WiredTriggerType type = WiredTriggerType.AT_GIVEN_TIME;
+    private static final int STEP_MS = 500;
+    private static final int MIN_DELAY = STEP_MS;
+    private static final int LEGACY_FALLBACK_DELAY = 20 * STEP_MS;
 
     /** The time in milliseconds until the trigger fires */
     public int executeTime;
@@ -68,18 +72,19 @@ public class WiredTriggerAtSetTime extends InteractionWiredTrigger implements Wi
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
         String wiredData = set.getString("wired_data");
 
-        if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            this.executeTime = data.executeTime;
-        } else {
-            if (wiredData.length() >= 1) {
-                this.executeTime = (Integer.parseInt(wiredData));
+        Integer storedExecuteTime = null;
+        try {
+            if (wiredData != null && wiredData.startsWith("{")) {
+                JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+                storedExecuteTime = data != null ? data.executeTime : null;
+            } else if (wiredData != null && wiredData.length() >= 1) {
+                storedExecuteTime = Integer.parseInt(wiredData);
             }
+        } catch (RuntimeException ignored) {
+            storedExecuteTime = null;
         }
 
-        if (this.executeTime < 500) {
-            this.executeTime = 20 * 500;
-        }
+        this.executeTime = WiredTimerInputGuard.normalizeStoredMillis(storedExecuteTime, MIN_DELAY, LEGACY_FALLBACK_DELAY);
         
         // Initialize for tick system - will be registered by RoomItemManager
         this.accumulatedTime = 0;
@@ -134,7 +139,7 @@ public class WiredTriggerAtSetTime extends InteractionWiredTrigger implements Wi
     @Override
     public boolean saveData(WiredSettings settings) {
         if (settings.getIntParams().length < 1) return false;
-        this.executeTime = settings.getIntParams()[0] * 500;
+        this.executeTime = WiredTimerInputGuard.fromClientUnits(settings.getIntParams()[0], STEP_MS, MIN_DELAY);
 
         this.resetTimer();
 

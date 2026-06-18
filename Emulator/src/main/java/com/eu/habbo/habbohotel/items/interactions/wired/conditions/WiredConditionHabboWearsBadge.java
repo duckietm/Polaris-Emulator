@@ -109,7 +109,8 @@ public class WiredConditionHabboWearsBadge extends InteractionWiredCondition {
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
         this.onPickUp();
         String wiredData = set.getString("wired_data");
-        if (wiredData == null || wiredData.isEmpty()) {
+        if (wiredData == null) {
+            this.onPickUp();
             return;
         }
 
@@ -117,20 +118,19 @@ public class WiredConditionHabboWearsBadge extends InteractionWiredCondition {
             JsonData data;
             try {
                 data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            } catch (RuntimeException exception) {
+            } catch (RuntimeException ignored) {
                 this.onPickUp();
                 return;
             }
-
             if (data == null) {
+                this.onPickUp();
                 return;
             }
-
-            this.badge = this.normalizeBadge(data.badge);
-            this.userSource = this.normalizeUserSource(data.userSource);
+            this.badge = WiredUserConditionInputGuard.normalizeBadgeCode(data.badge);
+            this.userSource = WiredUserConditionInputGuard.normalizeUserSource(data.userSource);
             this.quantifier = this.normalizeQuantifier(data.quantifier, QUANTIFIER_ANY);
         } else {
-            this.badge = this.normalizeBadge(wiredData);
+            this.badge = WiredUserConditionInputGuard.normalizeBadgeCode(wiredData);
             this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
             this.quantifier = QUANTIFIER_ANY;
         }
@@ -167,9 +167,9 @@ public class WiredConditionHabboWearsBadge extends InteractionWiredCondition {
 
     @Override
     public boolean saveData(WiredSettings settings) {
-        this.badge = this.normalizeBadge(settings.getStringParam());
+        this.badge = WiredUserConditionInputGuard.normalizeBadgeCode(settings.getStringParam());
         int[] params = settings.getIntParams();
-        this.userSource = (params.length > 0) ? this.normalizeUserSource(params[0]) : WiredSourceUtil.SOURCE_TRIGGER;
+        this.userSource = (params.length > 0) ? WiredUserConditionInputGuard.normalizeUserSource(params[0]) : WiredSourceUtil.SOURCE_TRIGGER;
         this.quantifier = (params.length > 1) ? this.normalizeQuantifier(params[1], QUANTIFIER_ANY) : QUANTIFIER_ANY;
 
         return true;

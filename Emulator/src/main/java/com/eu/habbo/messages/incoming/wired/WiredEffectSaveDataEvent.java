@@ -28,7 +28,13 @@ public class WiredEffectSaveDataEvent extends MessageHandler {
                     if (effect == null && extra == null)
                         throw new WiredSaveException(String.format("Wired effect/extra with item id %s not found in room", itemId));
 
-                    WiredSettings settings = InteractionWired.readSettings(this.packet, true);
+                    WiredSettings settings;
+                    try {
+                        settings = InteractionWired.readSettings(this.packet, true);
+                    } catch (IllegalArgumentException e) {
+                        this.client.sendResponse(new UpdateFailedComposer("Invalid wired effect settings"));
+                        return;
+                    }
                     boolean saved;
 
                     if (effect != null) {

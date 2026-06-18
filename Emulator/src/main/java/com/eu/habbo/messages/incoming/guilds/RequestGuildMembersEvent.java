@@ -9,6 +9,10 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.guilds.GuildMembersComposer;
 
 public class RequestGuildMembersEvent extends MessageHandler {
+    private static final int MAX_PAGE_ID = 1000;
+    private static final int MAX_QUERY_LENGTH = 32;
+    private static final int MAX_LEVEL_ID = 2;
+
     @Override
     public int getRatelimit() {
         return 500;
@@ -20,6 +24,9 @@ public class RequestGuildMembersEvent extends MessageHandler {
         int pageId = this.packet.readInt();
         String query = this.packet.readString();
         int levelId = this.packet.readInt();
+        if (pageId < 0 || pageId > MAX_PAGE_ID || levelId < 0 || levelId > MAX_LEVEL_ID || query == null || query.length() > MAX_QUERY_LENGTH) {
+            return;
+        }
 
         Guild g = Emulator.getGameEnvironment().getGuildManager().getGuild(groupId);
 

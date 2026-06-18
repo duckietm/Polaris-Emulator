@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.gameclients;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GameClientManagerContractTest {
 
@@ -18,5 +19,12 @@ class GameClientManagerContractTest {
 
         assertDoesNotThrow(() -> manager.disposeClient(null));
         assertDoesNotThrow(() -> manager.forceDisposeClient(null));
+    }
+
+    @Test
+    void gameClientDisposeIsExplicitlyIdempotent() throws Exception {
+        assertTrue(java.util.concurrent.atomic.AtomicBoolean.class.isAssignableFrom(
+                GameClient.class.getDeclaredField("disposed").getType()
+        ));
     }
 }

@@ -31,7 +31,13 @@ public class WiredConditionSaveDataEvent extends MessageHandler {
 
                     if(saveMethod.isPresent()) {
                         if (saveMethod.get().getParameterTypes()[0] == WiredSettings.class) {
-                            WiredSettings settings = InteractionWired.readSettings(this.packet, false);
+                            WiredSettings settings;
+                            try {
+                                settings = InteractionWired.readSettings(this.packet, false);
+                            } catch (IllegalArgumentException e) {
+                                this.client.sendResponse(new UpdateFailedComposer("Invalid wired condition settings"));
+                                return;
+                            }
 
                             if (condition.saveData(settings)) {
                                 this.client.sendResponse(new WiredSavedComposer());

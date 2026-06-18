@@ -15,6 +15,15 @@ import java.util.Set;
 
 public class RoomSettingsSaveEvent extends MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomSettingsSaveEvent.class);
+    private static final int MAX_ROOM_PASSWORD_LENGTH = 64;
+    private static final int MAX_TAGS = 2;
+    private static final int MIN_USERS_MAX = 1;
+    private static final int MAX_USERS_MAX = 200;
+    private static final int MIN_THICKNESS = -2;
+    private static final int MAX_THICKNESS = 1;
+    private static final int MAX_OPTION_LEVEL = 2;
+    private static final int MIN_CHAT_DISTANCE = 1;
+    private static final int MAX_CHAT_DISTANCE = 99;
 
     @Override
     public void handle() throws Exception {
@@ -47,19 +56,33 @@ public class RoomSettingsSaveEvent extends MessageHandler {
                     return;
                 }
 
-                RoomState state = RoomState.values()[this.packet.readInt() % RoomState.values().length];
+                int stateId = this.packet.readInt();
+                if (stateId < 0 || stateId >= RoomState.values().length) {
+                    return;
+                }
+                RoomState state = RoomState.values()[stateId];
 
                 String password = this.packet.readString();
+                if (password.length() > MAX_ROOM_PASSWORD_LENGTH) {
+                    return;
+                }
                 if (state == RoomState.PASSWORD && password.isEmpty() && (room.getPassword() == null || room.getPassword().isEmpty())) {
                     this.client.sendResponse(new RoomEditSettingsErrorComposer(room.getId(), RoomEditSettingsErrorComposer.PASSWORD_REQUIRED, ""));
                     return;
                 }
 
                 int usersMax = this.packet.readInt();
+                if (usersMax < MIN_USERS_MAX || usersMax > MAX_USERS_MAX) {
+                    return;
+                }
+
                 int categoryId = this.packet.readInt();
                 StringBuilder tags = new StringBuilder();
                 Set<String> uniqueTags = new HashSet<>();
-                int count = Math.min(this.packet.readInt(), 2);
+                int count = this.packet.readInt();
+                if (count < 0 || count > MAX_TAGS) {
+                    return;
+                }
                 for (int i = 0; i < count; i++) {
                     String tag = this.packet.readString();
 
@@ -113,22 +136,52 @@ public class RoomSettingsSaveEvent extends MessageHandler {
                 }
 
 
+                int tradeMode = this.packet.readInt();
+                boolean allowPets = this.packet.readBoolean();
+                boolean allowPetsEat = this.packet.readBoolean();
+                boolean allowWalkthrough = this.packet.readBoolean();
+                boolean hideWall = this.packet.readBoolean();
+                int wallSize = this.packet.readInt();
+                int floorSize = this.packet.readInt();
+                int muteOption = this.packet.readInt();
+                int kickOption = this.packet.readInt();
+                int banOption = this.packet.readInt();
+                int chatMode = this.packet.readInt();
+                int chatWeight = this.packet.readInt();
+                int chatSpeed = this.packet.readInt();
+                int chatDistance = this.packet.readInt();
+                int chatProtection = this.packet.readInt();
+
+                if (!isInRange(tradeMode, 0, MAX_OPTION_LEVEL)
+                        || !isInRange(wallSize, MIN_THICKNESS, MAX_THICKNESS)
+                        || !isInRange(floorSize, MIN_THICKNESS, MAX_THICKNESS)
+                        || !isInRange(muteOption, 0, MAX_OPTION_LEVEL)
+                        || !isInRange(kickOption, 0, MAX_OPTION_LEVEL)
+                        || !isInRange(banOption, 0, MAX_OPTION_LEVEL)
+                        || !isInRange(chatMode, 0, MAX_OPTION_LEVEL)
+                        || !isInRange(chatWeight, 0, MAX_OPTION_LEVEL)
+                        || !isInRange(chatSpeed, 0, MAX_OPTION_LEVEL)
+                        || !isInRange(chatDistance, MIN_CHAT_DISTANCE, MAX_CHAT_DISTANCE)
+                        || !isInRange(chatProtection, 0, MAX_OPTION_LEVEL)) {
+                    return;
+                }
+
                 room.setTags(tags.toString());
-                room.setTradeMode(this.packet.readInt());
-                room.setAllowPets(this.packet.readBoolean());
-                room.setAllowPetsEat(this.packet.readBoolean());
-                room.setAllowWalkthrough(this.packet.readBoolean());
-                room.setHideWall(this.packet.readBoolean());
-                room.setWallSize(this.packet.readInt());
-                room.setFloorSize(this.packet.readInt());
-                room.setMuteOption(this.packet.readInt());
-                room.setKickOption(this.packet.readInt());
-                room.setBanOption(this.packet.readInt());
-                room.setChatMode(this.packet.readInt());
-                room.setChatWeight(this.packet.readInt());
-                room.setChatSpeed(this.packet.readInt());
-                room.setChatDistance(Math.abs(this.packet.readInt()));
-                room.setChatProtection(this.packet.readInt());
+                room.setTradeMode(tradeMode);
+                room.setAllowPets(allowPets);
+                room.setAllowPetsEat(allowPetsEat);
+                room.setAllowWalkthrough(allowWalkthrough);
+                room.setHideWall(hideWall);
+                room.setWallSize(wallSize);
+                room.setFloorSize(floorSize);
+                room.setMuteOption(muteOption);
+                room.setKickOption(kickOption);
+                room.setBanOption(banOption);
+                room.setChatMode(chatMode);
+                room.setChatWeight(chatWeight);
+                room.setChatSpeed(chatSpeed);
+                room.setChatDistance(chatDistance);
+                room.setChatProtection(chatProtection);
 
                 if (this.packet.bytesAvailable() > 0) {
                     room.setAllowUnderpass(this.packet.readBoolean());
@@ -143,5 +196,9 @@ public class RoomSettingsSaveEvent extends MessageHandler {
                 //TODO Find packet for update room name.
             }
         }
+    }
+
+    private static boolean isInRange(int value, int min, int max) {
+        return value >= min && value <= max;
     }
 }

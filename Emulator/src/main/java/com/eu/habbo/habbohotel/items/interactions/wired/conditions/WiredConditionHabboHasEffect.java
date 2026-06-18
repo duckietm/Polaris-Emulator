@@ -90,6 +90,7 @@ public class WiredConditionHabboHasEffect extends InteractionWiredCondition {
         this.onPickUp();
         String wiredData = set.getString("wired_data");
         if (wiredData == null || wiredData.isEmpty()) {
+            this.onPickUp();
             return;
         }
 
@@ -97,26 +98,25 @@ public class WiredConditionHabboHasEffect extends InteractionWiredCondition {
             JsonData data;
             try {
                 data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            } catch (RuntimeException exception) {
+            } catch (RuntimeException ignored) {
                 this.onPickUp();
                 return;
             }
-
             if (data == null) {
+                this.onPickUp();
                 return;
             }
-
-            this.effectId = this.normalizeEffectId(data.effectId);
-            this.userSource = this.normalizeUserSource(data.userSource);
+            this.effectId = WiredUserConditionInputGuard.normalizeEffectId(data.effectId);
+            this.userSource = WiredUserConditionInputGuard.normalizeUserSource(data.userSource);
             this.quantifier = this.normalizeQuantifier(data.quantifier, QUANTIFIER_ANY);
         } else {
             try {
-                this.effectId = this.normalizeEffectId(Integer.parseInt(wiredData));
-                this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
-                this.quantifier = QUANTIFIER_ANY;
-            } catch (NumberFormatException exception) {
-                this.onPickUp();
+                this.effectId = WiredUserConditionInputGuard.normalizeEffectId(Integer.parseInt(wiredData));
+            } catch (NumberFormatException ignored) {
+                this.effectId = 0;
             }
+            this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
+            this.quantifier = QUANTIFIER_ANY;
         }
     }
 
@@ -154,8 +154,8 @@ public class WiredConditionHabboHasEffect extends InteractionWiredCondition {
     public boolean saveData(WiredSettings settings) {
         if(settings.getIntParams().length < 1) return false;
         int[] params = settings.getIntParams();
-        this.effectId = this.normalizeEffectId(params[0]);
-        this.userSource = (params.length > 1) ? this.normalizeUserSource(params[1]) : WiredSourceUtil.SOURCE_TRIGGER;
+        this.effectId = WiredUserConditionInputGuard.normalizeEffectId(params[0]);
+        this.userSource = (params.length > 1) ? WiredUserConditionInputGuard.normalizeUserSource(params[1]) : WiredSourceUtil.SOURCE_TRIGGER;
         this.quantifier = (params.length > 2) ? this.normalizeQuantifier(params[2], QUANTIFIER_ANY) : QUANTIFIER_ANY;
 
         return true;

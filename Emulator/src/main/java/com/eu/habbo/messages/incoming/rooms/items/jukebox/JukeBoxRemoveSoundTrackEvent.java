@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.rooms.items.jukebox;
 
 import com.eu.habbo.habbohotel.items.interactions.InteractionMusicDisc;
+import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.messages.incoming.MessageHandler;
 
 public class JukeBoxRemoveSoundTrackEvent extends MessageHandler {
@@ -8,12 +9,16 @@ public class JukeBoxRemoveSoundTrackEvent extends MessageHandler {
     public void handle() throws Exception {
         int index = this.packet.readInt();
 
-        if (this.client.getHabbo().getHabboInfo().getCurrentRoom() == null) return;
+        Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+        if (room == null) return;
 
-        InteractionMusicDisc musicDisc = this.client.getHabbo().getHabboInfo().getCurrentRoom().getTraxManager().getSongs().get(index);
+        if (index < 0 || index >= room.getTraxManager().getSongs().size())
+            return;
+
+        InteractionMusicDisc musicDisc = room.getTraxManager().getSongs().get(index);
 
         if (musicDisc != null) {
-            this.client.getHabbo().getHabboInfo().getCurrentRoom().getTraxManager().removeSong(musicDisc.getId());
+            room.getTraxManager().removeSong(musicDisc.getId());
         }
     }
 }

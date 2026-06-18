@@ -1,6 +1,9 @@
 package com.eu.habbo.messages.incoming.guilds.forums;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.guilds.Guild;
+import com.eu.habbo.habbohotel.guilds.GuildMember;
+import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.guilds.forums.GuildForumDataComposer;
 import org.slf4j.Logger;
@@ -34,6 +37,17 @@ public class GuildForumMarkAsReadEvent extends MessageHandler {
             this.packet.readBoolean(); // isRead
 
             if (!GuildForumInputGuard.isPositiveId(guildId)) {
+                continue;
+            }
+
+            Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
+            if (guild == null || !guild.hasForum()) {
+                continue;
+            }
+
+            GuildMember member = Emulator.getGameEnvironment().getGuildManager().getGuildMember(guildId, userId);
+            boolean staff = this.client.getHabbo().hasPermission(Permission.ACC_MODTOOL_TICKET_Q);
+            if (!guild.canHabboReadForum(userId, member, staff)) {
                 continue;
             }
 

@@ -13,6 +13,10 @@ public class ModToolRequestRoomInfoEvent extends MessageHandler {
         if (this.client.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL)) {
             int roomId = this.packet.readInt();
 
+            if (!ModToolTicketGuard.isPositiveId(roomId)) {
+                return;
+            }
+
             Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
 
             if (room != null) {

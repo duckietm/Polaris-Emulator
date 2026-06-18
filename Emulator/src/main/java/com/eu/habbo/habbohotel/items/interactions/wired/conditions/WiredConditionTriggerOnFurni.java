@@ -109,11 +109,11 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
 
         if (wiredData.startsWith("{")) {
             JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            this.furniSource = data.furniSource;
-            this.userSource = data.userSource;
+            this.furniSource = WiredFurniConditionInputGuard.normalizeFurniSource(data.furniSource);
+            this.userSource = WiredFurniConditionInputGuard.normalizeUserSource(data.userSource);
             this.quantifier = this.normalizeQuantifier(data.quantifier);
 
-            for(int id : data.itemIds) {
+            for(int id : WiredFurniConditionInputGuard.sanitizeItemIds(data.itemIds, WiredManager.MAXIMUM_FURNI_SELECTION)) {
                 HabboItem item = room.getHabboItem(id);
 
                 if (item != null) {
@@ -121,10 +121,8 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
                 }
             }
         } else {
-            String[] data = wiredData.split(";");
-
-            for (String s : data) {
-                HabboItem item = room.getHabboItem(Integer.parseInt(s));
+            for (int id : WiredFurniConditionInputGuard.parseLegacyItemIds(wiredData, WiredManager.MAXIMUM_FURNI_SELECTION)) {
+                HabboItem item = room.getHabboItem(id);
 
                 if (item != null) {
                     this.items.add(item);
@@ -134,9 +132,7 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
             this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
             this.quantifier = QUANTIFIER_ALL;
         }
-        if (this.furniSource == WiredSourceUtil.SOURCE_TRIGGER && !this.items.isEmpty()) {
-            this.furniSource = WiredSourceUtil.SOURCE_SELECTED;
-        }
+        this.furniSource = WiredFurniConditionInputGuard.selectedOrNormalizedFurniSource(this.furniSource, !this.items.isEmpty());
     }
 
     @Override
@@ -182,13 +178,11 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
         if (count > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) return false;
 
         int[] params = settings.getIntParams();
-        this.furniSource = (params.length > 0) ? params[0] : WiredSourceUtil.SOURCE_TRIGGER;
-        this.userSource = (params.length > 1) ? params[1] : WiredSourceUtil.SOURCE_TRIGGER;
+        this.furniSource = (params.length > 0) ? WiredFurniConditionInputGuard.normalizeFurniSource(params[0]) : WiredSourceUtil.SOURCE_TRIGGER;
+        this.userSource = (params.length > 1) ? WiredFurniConditionInputGuard.normalizeUserSource(params[1]) : WiredSourceUtil.SOURCE_TRIGGER;
         this.quantifier = (params.length > 2) ? this.normalizeQuantifier(params[2]) : QUANTIFIER_ALL;
 
-        if (count > 0 && this.furniSource == WiredSourceUtil.SOURCE_TRIGGER) {
-            this.furniSource = WiredSourceUtil.SOURCE_SELECTED;
-        }
+        this.furniSource = WiredFurniConditionInputGuard.selectedOrNormalizedFurniSource(this.furniSource, count > 0);
 
         this.items.clear();
 

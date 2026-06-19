@@ -14,7 +14,6 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
-import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -183,12 +182,7 @@ public final class AuthHttpUtil {
     }
 
     static boolean checkPassword(String plain, String stored) {
-        String compatible = stored.startsWith("$2y$") ? "$2a$" + stored.substring(4) : stored;
-        try {
-            return BCrypt.checkpw(plain, compatible);
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
+        return PasswordHasher.verify(plain, stored);
     }
 
     static String mintSsoTicket() {

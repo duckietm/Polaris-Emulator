@@ -21,7 +21,8 @@ import com.eu.habbo.plugin.events.users.UsernameTalkEvent;
 import com.eu.habbo.threading.runnables.YouAreAPirate;
 import com.eu.habbo.util.pathfinding.Rotation;
 import gnu.trove.iterator.TIntObjectIterator;
-import gnu.trove.map.hash.TIntIntHashMap;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +48,7 @@ public class RoomChatManager {
     private final Set<String> wordFilterWords;
 
     // Muted Habbos: userId -> unmute timestamp
-    private final TIntIntHashMap mutedHabbos;
+    private final Int2IntMap mutedHabbos;
 
     // Flood protection settings
     private final int muteTime;
@@ -61,7 +62,7 @@ public class RoomChatManager {
     public RoomChatManager(Room room) {
         this.room = room;
         this.wordFilterWords = new HashSet<>(0);
-        this.mutedHabbos = new TIntIntHashMap();
+        this.mutedHabbos = new Int2IntOpenHashMap();
         this.muteTime = Emulator.getConfig().getInt("hotel.flood.mute.time", 30);
     }
 
@@ -202,7 +203,7 @@ public class RoomChatManager {
     /**
      * Gets the muted Habbos map.
      */
-    public TIntIntHashMap getMutedHabbos() {
+    public Int2IntMap getMutedHabbos() {
         return this.mutedHabbos;
     }
 

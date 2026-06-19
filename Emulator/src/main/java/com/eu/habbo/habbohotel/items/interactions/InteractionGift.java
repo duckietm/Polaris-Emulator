@@ -7,12 +7,13 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class InteractionGift extends HabboItem {
@@ -139,8 +140,8 @@ public class InteractionGift extends HabboItem {
         return this.ribbonId;
     }
 
-    public THashSet<HabboItem> loadItems() {
-        THashSet<HabboItem> items = new THashSet<>();
+    public Set<HabboItem> loadItems() {
+        Set<HabboItem> items = new HashSet<>();
         for (int anItemId : this.itemId) {
             if (anItemId == 0)
                 continue;

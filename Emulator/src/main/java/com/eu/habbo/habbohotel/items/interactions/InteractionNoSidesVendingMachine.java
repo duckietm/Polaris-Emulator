@@ -3,10 +3,11 @@ package com.eu.habbo.habbohotel.items.interactions;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
-import gnu.trove.set.hash.THashSet;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Set;
 
 public class InteractionNoSidesVendingMachine extends InteractionVendingMachine {
     public InteractionNoSidesVendingMachine(ResultSet set, Item baseItem) throws SQLException {
@@ -18,9 +19,9 @@ public class InteractionNoSidesVendingMachine extends InteractionVendingMachine 
     }
 
     @Override
-    public THashSet<RoomTile> getActivatorTiles(Room room) {
+    public Set<RoomTile> getActivatorTiles(Room room) {
 
-        THashSet<RoomTile> tiles = new THashSet<RoomTile>();
+        Set<RoomTile> tiles = new HashSet<RoomTile>();
         for(int x = -1; x <= 1; x++) {
             for(int y = -1; y <= 1; y++) {
                 RoomTile tile = room.getLayout().getTile((short)(this.getX() + x), (short)(this.getY() + y));

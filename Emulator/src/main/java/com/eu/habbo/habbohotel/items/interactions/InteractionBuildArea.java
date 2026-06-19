@@ -12,7 +12,6 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.messages.outgoing.rooms.items.RemoveFloorItemComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.RoomFloorItemsComposer;
-import gnu.trove.set.hash.THashSet;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
@@ -21,6 +20,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -48,16 +48,16 @@ public class InteractionBuildArea extends InteractionCustomValues {
         }
     };
 
-    private THashSet<RoomTile> tiles;
+    private Set<RoomTile> tiles;
 
     public InteractionBuildArea(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem, defaultValues);
-        tiles = new THashSet<>();
+        tiles = new HashSet<>();
     }
 
     public InteractionBuildArea(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells, defaultValues);
-        tiles = new THashSet<>();
+        tiles = new HashSet<>();
     }
 
     @Override
@@ -71,7 +71,7 @@ public class InteractionBuildArea extends InteractionCustomValues {
         super.onPickUp(room);
 
         ArrayList<String> builderNames = new ArrayList<>(Arrays.asList(this.values.get("builders").split(";")));
-        THashSet<Integer> canBuild = new THashSet<>();
+        Set<Integer> canBuild = new HashSet<>();
 
         for (String builderName : builderNames) {
             Habbo builder = Emulator.getGameEnvironment().getHabboManager().getHabbo(builderName);
@@ -105,7 +105,7 @@ public class InteractionBuildArea extends InteractionCustomValues {
         super.onMove(room, oldLocation, newLocation);
 
         ArrayList<String> builderNames = new ArrayList<>(Arrays.asList(this.values.get("builders").split(";")));
-        THashSet<Integer> canBuild = new THashSet<>();
+        Set<Integer> canBuild = new HashSet<>();
 
         for (String builderName : builderNames) {
             Habbo builder = Emulator.getGameEnvironment().getHabboManager().getHabbo(builderName);
@@ -120,8 +120,8 @@ public class InteractionBuildArea extends InteractionCustomValues {
             }
         }
 
-        THashSet<RoomTile> oldTiles = this.tiles;
-        THashSet<RoomTile> newTiles = new THashSet<>();
+        Set<RoomTile> oldTiles = this.tiles;
+        Set<RoomTile> newTiles = new HashSet<>();
 
         int minX = Math.max(0, newLocation.x - Integer.parseInt(this.values.get("tilesBack")));
         int minY = Math.max(0, newLocation.y - Integer.parseInt(this.values.get("tilesRight")));
@@ -182,7 +182,7 @@ public class InteractionBuildArea extends InteractionCustomValues {
     public void onCustomValuesSaved(Room room, GameClient client, Map<String, String> oldValues) {
         regenAffectedTiles(room);
         ArrayList<String> builderNames = new ArrayList<>(Arrays.asList(this.values.get("builders").split(";")));
-        THashSet<Integer> canBuild = new THashSet<>();
+        Set<Integer> canBuild = new HashSet<>();
 
         for (String builderName : builderNames) {
             Habbo builder = Emulator.getGameEnvironment().getHabboManager().getHabbo(builderName);
@@ -197,7 +197,7 @@ public class InteractionBuildArea extends InteractionCustomValues {
             }
         }
 
-        THashSet<RoomTile> oldTiles = new THashSet<>();
+        Set<RoomTile> oldTiles = new HashSet<>();
 
         int minX = Math.max(0, this.getX() - Integer.parseInt(oldValues.get("tilesBack")));
         int minY = Math.max(0, this.getY() - Integer.parseInt(oldValues.get("tilesRight")));
@@ -228,7 +228,7 @@ public class InteractionBuildArea extends InteractionCustomValues {
         if(effectItem != null) {
             Int2ObjectMap<String> ownerNames = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
             ownerNames.put(-1, "System");
-            THashSet<HabboItem> items = new THashSet<>();
+            Set<HabboItem> items = new HashSet<>();
 
             int id = 0;
             for(RoomTile tile : this.tiles) {

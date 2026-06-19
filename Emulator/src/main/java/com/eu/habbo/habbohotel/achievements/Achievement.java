@@ -1,9 +1,9 @@
 package com.eu.habbo.habbohotel.achievements;
 
-import gnu.trove.map.hash.THashMap;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Achievement {
 
@@ -16,11 +16,11 @@ public class Achievement {
     public final AchievementCategories category;
 
 
-    public final THashMap<Integer, AchievementLevel> levels;
+    public final Map<Integer, AchievementLevel> levels;
 
 
     public Achievement(ResultSet set) throws SQLException {
-        this.levels = new THashMap<>();
+        this.levels = new HashMap<>();
 
         this.id = set.getInt("id");
         this.name = set.getString("name");

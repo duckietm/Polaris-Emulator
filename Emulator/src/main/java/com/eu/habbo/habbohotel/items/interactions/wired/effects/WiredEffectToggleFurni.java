@@ -27,15 +27,16 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-import gnu.trove.procedure.TObjectProcedure;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class WiredEffectToggleFurni extends InteractionWiredEffect {
@@ -45,7 +46,7 @@ public class WiredEffectToggleFurni extends InteractionWiredEffect {
 
     public static final WiredEffectType type = WiredEffectType.TOGGLE_STATE;
 
-    private final THashSet<HabboItem> items;
+    private final Set<HabboItem> items;
     private int toggleType = TOGGLE_TYPE_NEXT;
     private int furniSource = WiredSourceUtil.SOURCE_TRIGGER;
 
@@ -91,12 +92,12 @@ public class WiredEffectToggleFurni extends InteractionWiredEffect {
 
     public WiredEffectToggleFurni(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
-        this.items = new THashSet<>();
+        this.items = new LinkedHashSet<>();
     }
 
     public WiredEffectToggleFurni(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
-        this.items = new THashSet<>();
+        this.items = new LinkedHashSet<>();
     }
 
     @Override
@@ -135,15 +136,11 @@ public class WiredEffectToggleFurni extends InteractionWiredEffect {
 
         if (this.requiresTriggeringUser()) {
             List<Integer> invalidTriggers = new ArrayList<>();
-            room.getRoomSpecialTypes().getTriggers(this.getX(), this.getY()).forEach(new TObjectProcedure<InteractionWiredTrigger>() {
-                @Override
-                public boolean execute(InteractionWiredTrigger object) {
-                    if (!object.isTriggeredByRoomUnit()) {
-                        invalidTriggers.add(object.getBaseItem().getSpriteId());
-                    }
-                    return true;
+            for (InteractionWiredTrigger object : room.getRoomSpecialTypes().getTriggers(this.getX(), this.getY())) {
+                if (!object.isTriggeredByRoomUnit()) {
+                    invalidTriggers.add(object.getBaseItem().getSpriteId());
                 }
-            });
+            }
             message.appendInt(invalidTriggers.size());
             for (Integer i : invalidTriggers) {
                 message.appendInt(i);
@@ -206,11 +203,11 @@ public class WiredEffectToggleFurni extends InteractionWiredEffect {
         Room room = ctx.room();
         Habbo habbo = ctx.actor().map(unit -> room.getHabbo(unit)).orElse(null);
 
-        // Snapshot this.items into a new list to avoid undefined behavior from concurrent
-        // THashSet access (serializeWiredData can modify items from the network thread).
+        // Snapshot this.items into a new list to avoid undefined behavior from concurrent access
+        // (serializeWiredData can modify items from the network thread).
         List<HabboItem> effectiveItems = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items);
 
-        THashSet<HabboItem> itemsToRemove = new THashSet<>();
+        Set<HabboItem> itemsToRemove = new HashSet<>();
         for (HabboItem item : effectiveItems) {
             if (item == null || item.getRoomId() == 0 || FORBIDDEN_TYPES.stream().anyMatch(a -> a.isAssignableFrom(item.getClass()))) {
                 itemsToRemove.add(item);

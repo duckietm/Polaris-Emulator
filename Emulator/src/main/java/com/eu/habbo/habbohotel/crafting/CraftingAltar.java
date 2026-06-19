@@ -2,24 +2,25 @@ package com.eu.habbo.habbohotel.crafting;
 
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.users.Habbo;
-import gnu.trove.map.hash.THashMap;
-import gnu.trove.set.hash.THashSet;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class CraftingAltar {
     private final Item baseItem;
-    private final THashSet<Item> ingredients;
-    private final THashMap<Integer, CraftingRecipe> recipes;
+    private final Set<Item> ingredients;
+    private final Map<Integer, CraftingRecipe> recipes;
 
     public CraftingAltar(Item baseItem) {
         this.baseItem = baseItem;
 
-        this.ingredients = new THashSet<>(1);
-        this.recipes = new THashMap<>(1);
+        this.ingredients = new HashSet<>(1);
+        this.recipes = new HashMap<>(1);
     }
 
     public void addIngredient(Item item) {
@@ -31,7 +32,7 @@ public class CraftingAltar {
     }
 
     public Map<CraftingRecipe, Boolean> matchRecipes(Map<Item, Integer> amountMap) {
-        THashMap<CraftingRecipe, Boolean> foundRecepies = new THashMap<>(Math.max(1, this.recipes.size() / 3));
+        Map<CraftingRecipe, Boolean> foundRecepies = new HashMap<>(Math.max(1, this.recipes.size() / 3));
 
         for (Map.Entry<Integer, CraftingRecipe> set : this.recipes.entrySet()) {
             boolean contains = true;

@@ -7,8 +7,8 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.crafting.CraftingRecipesAvailableComposer;
-import gnu.trove.map.hash.THashMap;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class RequestCraftingRecipesAvailableEvent extends MessageHandler {
@@ -21,7 +21,7 @@ public class RequestCraftingRecipesAvailableEvent extends MessageHandler {
         CraftingAltar altar = Emulator.getGameEnvironment().getCraftingManager().getAltar(item.getBaseItem());
 
         if (altar != null) {
-            Map<Item, Integer> items = new THashMap<>();
+            Map<Item, Integer> items = new HashMap<>();
 
             int count = this.packet.readInt();
             for (int i = 0; i < count; i++) {

@@ -9,10 +9,10 @@ import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.modtool.ModToolIssueHandledComposer;
-import gnu.trove.map.hash.THashMap;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Map;
 
 public class ModToolSanctionMuteEvent extends MessageHandler {
     @Override
@@ -41,7 +41,7 @@ public class ModToolSanctionMuteEvent extends MessageHandler {
                 ModToolSanctions modToolSanctions = Emulator.getGameEnvironment().getModToolSanctions();
 
                 if (Emulator.getConfig().getBoolean("hotel.sanctions.enabled")) {
-                    THashMap<Integer, ArrayList<ModToolSanctionItem>> modToolSanctionItemsHashMap = Emulator.getGameEnvironment().getModToolSanctions().getSanctions(habbo.getHabboInfo().getId());
+                    Map<Integer, ArrayList<ModToolSanctionItem>> modToolSanctionItemsHashMap = Emulator.getGameEnvironment().getModToolSanctions().getSanctions(habbo.getHabboInfo().getId());
                     ArrayList<ModToolSanctionItem> modToolSanctionItems = modToolSanctionItemsHashMap.get(habbo.getHabboInfo().getId());
 
                     if (modToolSanctionItems != null && !modToolSanctionItemsHashMap.isEmpty()) {

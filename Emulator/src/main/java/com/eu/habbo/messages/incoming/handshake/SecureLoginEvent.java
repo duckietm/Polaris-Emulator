@@ -40,12 +40,12 @@ import com.eu.habbo.messages.outgoing.navigator.NewNavigatorSavedSearchesCompose
 import com.eu.habbo.messages.outgoing.users.*;
 import com.eu.habbo.plugin.events.emulator.SSOAuthenticationEvent;
 import com.eu.habbo.plugin.events.users.UserLoginEvent;
-import gnu.trove.map.hash.THashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Map;
 
 @NoAuthMessage
 public class SecureLoginEvent extends MessageHandler {
@@ -271,7 +271,7 @@ public class SecureLoginEvent extends MessageHandler {
                 ModToolSanctions modToolSanctions = Emulator.getGameEnvironment().getModToolSanctions();
 
                 if (Emulator.getConfig().getBoolean("hotel.sanctions.enabled")) {
-                    THashMap<Integer, ArrayList<ModToolSanctionItem>> modToolSanctionItemsHashMap = Emulator.getGameEnvironment().getModToolSanctions().getSanctions(habbo.getHabboInfo().getId());
+                    Map<Integer, ArrayList<ModToolSanctionItem>> modToolSanctionItemsHashMap = Emulator.getGameEnvironment().getModToolSanctions().getSanctions(habbo.getHabboInfo().getId());
                     ArrayList<ModToolSanctionItem> modToolSanctionItems = modToolSanctionItemsHashMap.get(habbo.getHabboInfo().getId());
 
                     if (modToolSanctionItems != null && !modToolSanctionItems.isEmpty()) {

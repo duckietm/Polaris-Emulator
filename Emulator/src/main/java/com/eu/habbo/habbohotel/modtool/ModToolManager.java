@@ -15,8 +15,6 @@ import com.eu.habbo.messages.outgoing.modtool.ModToolIssueInfoComposer;
 import com.eu.habbo.messages.outgoing.modtool.ModToolUserInfoComposer;
 import com.eu.habbo.plugin.events.support.*;
 import com.eu.habbo.threading.runnables.InsertModToolIssue;
-import gnu.trove.map.hash.THashMap;
-import gnu.trove.set.hash.THashSet;
 import io.netty.channel.Channel;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
@@ -27,22 +25,25 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class ModToolManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModToolManager.class);
 
     private final Int2ObjectMap<ModToolCategory> category;
-    private final THashMap<String, THashSet<String>> presets;
-    private final THashMap<Integer, ModToolIssue> tickets;
+    private final Map<String, Set<String>> presets;
+    private final Map<Integer, ModToolIssue> tickets;
     private final Int2ObjectMap<CfhCategory> cfhCategories;
 
     public ModToolManager() {
         long millis = System.currentTimeMillis();
         this.category = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>());
-        this.presets = new THashMap<>();
-        this.tickets = new THashMap<>();
+        this.presets = new HashMap<>();
+        this.tickets = new HashMap<>();
         this.cfhCategories = new Int2ObjectOpenHashMap<>();
         this.loadModTool();
         LOGGER.info("ModTool Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
@@ -85,8 +86,8 @@ public class ModToolManager {
         this.presets.clear();
         this.cfhCategories.clear();
 
-        this.presets.put("user", new THashSet<>());
-        this.presets.put("room", new THashSet<>());
+        this.presets.put("user", new HashSet<>());
+        this.presets.put("room", new HashSet<>());
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
             this.loadCategory(connection);
@@ -290,8 +291,8 @@ public class ModToolManager {
         return chatlogs;
     }
 
-    public THashSet<ModToolRoomVisit> getUserRoomVisits(int userId) {
-        THashSet<ModToolRoomVisit> roomVisits = new THashSet<>();
+    public Set<ModToolRoomVisit> getUserRoomVisits(int userId) {
+        Set<ModToolRoomVisit> roomVisits = new HashSet<>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT rooms.name, room_enter_log.* FROM room_enter_log INNER JOIN rooms ON rooms.id = room_enter_log.room_id WHERE user_id = ? ORDER BY timestamp DESC LIMIT 50")) {
             statement.setInt(1, userId);
@@ -308,12 +309,12 @@ public class ModToolManager {
         return roomVisits;
     }
 
-    public THashSet<ModToolRoomVisit> getVisitsForRoom(Room room, int amount, boolean groupUser, int fromTimestamp, int toTimestamp) {
+    public Set<ModToolRoomVisit> getVisitsForRoom(Room room, int amount, boolean groupUser, int fromTimestamp, int toTimestamp) {
         return this.getVisitsForRoom(room, amount, groupUser, fromTimestamp, toTimestamp, "");
     }
 
-    public THashSet<ModToolRoomVisit> getVisitsForRoom(Room room, int amount, boolean groupUser, int fromTimestamp, int toTimestamp, String excludeUsername) {
-        THashSet<ModToolRoomVisit> roomVisits = new THashSet<>();
+    public Set<ModToolRoomVisit> getVisitsForRoom(Room room, int amount, boolean groupUser, int fromTimestamp, int toTimestamp, String excludeUsername) {
+        Set<ModToolRoomVisit> roomVisits = new HashSet<>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM (" +
                 "SELECT " +
@@ -747,11 +748,11 @@ public class ModToolManager {
         return this.category.get(id);
     }
 
-    public THashMap<String, THashSet<String>> getPresets() {
+    public Map<String, Set<String>> getPresets() {
         return this.presets;
     }
 
-    public THashMap<Integer, ModToolIssue> getTickets() {
+    public Map<Integer, ModToolIssue> getTickets() {
         return this.tickets;
     }
 

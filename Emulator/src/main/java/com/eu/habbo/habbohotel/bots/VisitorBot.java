@@ -4,17 +4,18 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.modtool.ModToolRoomVisit;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessage;
 import com.eu.habbo.habbohotel.users.Habbo;
-import gnu.trove.set.hash.THashSet;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 public class VisitorBot extends Bot {
     private static SimpleDateFormat DATE_FORMAT;
     private boolean showedLog = false;
-    private THashSet<ModToolRoomVisit> visits = new THashSet<>(3);
+    private Set<ModToolRoomVisit> visits = new HashSet<>(3);
 
     public VisitorBot(ResultSet set) throws SQLException {
         super(set);

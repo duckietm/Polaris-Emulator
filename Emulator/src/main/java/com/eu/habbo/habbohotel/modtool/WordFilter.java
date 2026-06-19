@@ -6,8 +6,6 @@ import com.eu.habbo.habbohotel.rooms.RoomChatMessage;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.friends.FriendChatMessageComposer;
 import com.eu.habbo.plugin.events.users.UserTriggerWordFilterEvent;
-import gnu.trove.iterator.hash.TObjectHashIterator;
-import gnu.trove.set.hash.THashSet;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +15,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.Normalizer;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 public class WordFilter {
@@ -25,9 +25,9 @@ public class WordFilter {
     private static final Pattern DIACRITICS_AND_FRIENDS = Pattern.compile("[\\p{InCombiningDiacriticalMarks}\\p{IsLm}\\p{IsSk}]+");
     public static boolean ENABLED_FRIENDCHAT = true;
     public static String DEFAULT_REPLACEMENT = "bobba";
-    protected THashSet<WordFilterWord> autoReportWords = new THashSet<>();
-    protected THashSet<WordFilterWord> hideMessageWords = new THashSet<>();
-    protected THashSet<WordFilterWord> words = new THashSet<>();
+    protected Set<WordFilterWord> autoReportWords = new HashSet<>();
+    protected Set<WordFilterWord> hideMessageWords = new HashSet<>();
+    protected Set<WordFilterWord> words = new HashSet<>();
 
     public WordFilter() {
         long start = System.currentTimeMillis();
@@ -92,11 +92,7 @@ public class WordFilter {
     public boolean autoReportCheck(RoomChatMessage roomChatMessage) {
         String message = this.normalise(roomChatMessage.getMessage()).toLowerCase();
 
-        TObjectHashIterator<WordFilterWord> iterator = this.autoReportWords.iterator();
-
-        while (iterator.hasNext()) {
-            WordFilterWord word = (WordFilterWord) iterator.next();
-
+        for (WordFilterWord word : this.autoReportWords) {
             if (message.contains(word.key)) {
                 Emulator.getGameEnvironment().getModToolManager().quickTicket(roomChatMessage.getHabbo(), "Automatic WordFilter", roomChatMessage.getMessage());
 
@@ -113,11 +109,7 @@ public class WordFilter {
     public boolean hideMessageCheck(String message) {
         message = this.normalise(message).toLowerCase();
 
-        TObjectHashIterator<WordFilterWord> iterator = this.hideMessageWords.iterator();
-
-        while (iterator.hasNext()) {
-            WordFilterWord word = (WordFilterWord) iterator.next();
-
+        for (WordFilterWord word : this.hideMessageWords) {
             if (message.contains(word.key)) {
                 return true;
             }
@@ -140,13 +132,9 @@ public class WordFilter {
             filteredMessage = this.normalise(filteredMessage);
         }
 
-        TObjectHashIterator<WordFilterWord> iterator = this.words.iterator();
-
         boolean foundShit = false;
 
-        while (iterator.hasNext()) {
-            WordFilterWord word = (WordFilterWord) iterator.next();
-
+        for (WordFilterWord word : this.words) {
             if (word.prefixOnly) continue;
 
             if (StringUtils.containsIgnoreCase(filteredMessage, word.key)) {
@@ -177,11 +165,7 @@ public class WordFilter {
             message = this.normalise(message);
         }
 
-        TObjectHashIterator<WordFilterWord> iterator = this.words.iterator();
-
-        while (iterator.hasNext()) {
-            WordFilterWord word = (WordFilterWord) iterator.next();
-
+        for (WordFilterWord word : this.words) {
             if (word.prefixOnly) continue;
 
             if (StringUtils.containsIgnoreCase(message, word.key)) {
@@ -200,8 +184,8 @@ public class WordFilter {
         }
     }
 
-    public THashSet<WordFilterWord> getWords() {
-        return new THashSet<>(this.words);
+    public Set<WordFilterWord> getWords() {
+        return new HashSet<>(this.words);
     }
 
     public void addWord(WordFilterWord word) {

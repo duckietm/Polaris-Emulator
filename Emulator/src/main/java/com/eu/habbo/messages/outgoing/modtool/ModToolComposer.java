@@ -9,10 +9,11 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-import gnu.trove.map.hash.THashMap;
-import gnu.trove.set.hash.THashSet;
 
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 public class ModToolComposer extends MessageComposer {
     private final Habbo habbo;
@@ -26,9 +27,9 @@ public class ModToolComposer extends MessageComposer {
         this.response.init(Outgoing.ModToolComposer);
 
         if (this.habbo.hasPermission(Permission.ACC_MODTOOL_TICKET_Q)) {
-            THashSet<ModToolIssue> openTickets = new THashSet<>();
+            Set<ModToolIssue> openTickets = new HashSet<>();
 
-            THashMap<Integer, ModToolIssue> tickets = Emulator.getGameEnvironment().getModToolManager().getTickets();
+            Map<Integer, ModToolIssue> tickets = Emulator.getGameEnvironment().getModToolManager().getTickets();
 
             for (ModToolIssue t : tickets.values()) {
                 if (t.state != ModToolTicketState.CLOSED)

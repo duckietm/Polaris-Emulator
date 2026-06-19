@@ -104,7 +104,7 @@ public class HabboStats implements Runnable {
     public int hcGiftsClaimed;
     public int buildersClubBonusFurni;
     public int hcMessageLastModified = Emulator.getIntUnixTimestamp();
-    public THashSet<Subscription> subscriptions;
+    public Set<Subscription> subscriptions;
 
     private HabboStats(ResultSet set, HabboInfo habboInfo) throws SQLException {
         this.cache = new THashMap<>(1000);

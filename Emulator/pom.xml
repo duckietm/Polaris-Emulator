@@ -194,12 +194,12 @@
             <version>2.4.3</version>
         </dependency>
 
-        <!-- jBCrypt � used by the built-in /api/auth/* HTTP login handler
-             to verify Laravel-style $2y$ BCrypt hashes from users.password -->
+        <!-- favre BCrypt is used by auth endpoints and natively verifies
+             Laravel-style $2y$ hashes from users.password. -->
         <dependency>
-            <groupId>org.mindrot</groupId>
-            <artifactId>jbcrypt</artifactId>
-            <version>0.4</version>
+            <groupId>at.favre.lib</groupId>
+            <artifactId>bcrypt</artifactId>
+            <version>0.10.2</version>
         </dependency>
 
         <!-- Jakarta Mail — used by the built-in forgot-password endpoint

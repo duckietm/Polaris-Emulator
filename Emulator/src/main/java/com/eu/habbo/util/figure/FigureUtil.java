@@ -1,14 +1,14 @@
 package com.eu.habbo.util.figure;
 
-import gnu.trove.map.hash.THashMap;
 import org.apache.commons.lang3.ArrayUtils;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 public class FigureUtil {
-    public static THashMap<String, String> getFigureBits(String looks) {
-        THashMap<String, String> bits = new THashMap<>();
+    public static Map<String, String> getFigureBits(String looks) {
+        Map<String, String> bits = new HashMap<>();
         String[] sets = looks.split("\\.");
 
         for (String set : sets) {
@@ -45,8 +45,8 @@ public class FigureUtil {
     }
 
     public static String mergeFigures(String figure1, String figure2, String[] limitFigure1, String[] limitFigure2) {
-        THashMap<String, String> figureBits1 = getFigureBits(figure1);
-        THashMap<String, String> figureBits2 = getFigureBits(figure2);
+        Map<String, String> figureBits1 = getFigureBits(figure1);
+        Map<String, String> figureBits2 = getFigureBits(figure2);
 
         StringBuilder finalLook = new StringBuilder();
 

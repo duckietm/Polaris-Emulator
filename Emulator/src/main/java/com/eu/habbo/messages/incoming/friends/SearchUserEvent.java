@@ -4,14 +4,14 @@ import com.eu.habbo.habbohotel.messenger.Messenger;
 import com.eu.habbo.habbohotel.messenger.MessengerBuddy;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.friends.UserSearchResultComposer;
-import gnu.trove.set.hash.THashSet;
 
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class SearchUserEvent extends MessageHandler {
     private static final long CACHE_TTL_MS = 30_000; // 30 second TTL
     private static final ConcurrentHashMap<String, Long> cacheTimestamps = new ConcurrentHashMap<>();
-    public static final ConcurrentHashMap<String, THashSet<MessengerBuddy>> cachedResults = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<String, Set<MessengerBuddy>> cachedResults = new ConcurrentHashMap<>();
 
     public static void cleanExpiredCache() {
         long now = System.currentTimeMillis();
@@ -39,7 +39,7 @@ public class SearchUserEvent extends MessageHandler {
         }
 
         if (this.client.getHabbo().getMessenger() != null) {
-            THashSet<MessengerBuddy> buddies = cachedResults.get(username);
+            Set<MessengerBuddy> buddies = cachedResults.get(username);
 
             if (buddies == null) {
                 buddies = Messenger.searchUsers(username);

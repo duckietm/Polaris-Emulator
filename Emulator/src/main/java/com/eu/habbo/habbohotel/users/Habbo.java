@@ -355,7 +355,7 @@ public class Habbo implements Runnable {
     }
 
 
-    public void addFurniture(THashSet<HabboItem> items) {
+    public void addFurniture(Collection<HabboItem> items) {
         this.habboInventory.getItemsComponent().addItems(items);
         this.client.sendResponse(new AddHabboItemComposer(items));
         this.client.sendResponse(new InventoryRefreshComposer());

@@ -2,12 +2,12 @@ package com.eu.habbo.habbohotel.polls;
 
 import com.eu.habbo.messages.ISerialize;
 import com.eu.habbo.messages.ServerMessage;
-import gnu.trove.map.hash.THashMap;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 public class PollQuestion implements ISerialize, Comparable<PollQuestion> {
@@ -24,7 +24,7 @@ public class PollQuestion implements ISerialize, Comparable<PollQuestion> {
     public final String question;
 
 
-    public final THashMap<Integer, String[]> options;
+    public final Map<Integer, String[]> options;
 
 
     public final int minSelections;
@@ -42,7 +42,7 @@ public class PollQuestion implements ISerialize, Comparable<PollQuestion> {
         this.minSelections = set.getInt("min_selections");
         this.order = set.getInt("order");
 
-        this.options = new THashMap<>();
+        this.options = new HashMap<>();
         this.subQuestions = new ArrayList<>();
 
         String opts = set.getString("options");

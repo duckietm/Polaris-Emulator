@@ -4,19 +4,19 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-import gnu.trove.set.hash.THashSet;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 public class AddHabboItemComposer extends MessageComposer {
-    private THashSet<HabboItem> itemsList;
+    private Collection<HabboItem> itemsList;
     private HabboItem item;
     private int[] ids;
     private AddHabboItemCategory category;
     private Map<AddHabboItemCategory, List<Integer>> entries;
 
-    public AddHabboItemComposer(THashSet<HabboItem> itemsList) {
+    public AddHabboItemComposer(Collection<HabboItem> itemsList) {
         this.itemsList = itemsList;
         this.category = AddHabboItemCategory.OWNED_FURNI;
     }
@@ -95,7 +95,7 @@ public class AddHabboItemComposer extends MessageComposer {
         }
     }
 
-    public THashSet<HabboItem> getItemsList() {
+    public Collection<HabboItem> getItemsList() {
         return itemsList;
     }
 

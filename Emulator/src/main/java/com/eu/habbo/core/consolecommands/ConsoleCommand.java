@@ -1,12 +1,14 @@
 package com.eu.habbo.core.consolecommands;
 
-import gnu.trove.map.hash.THashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public abstract class ConsoleCommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConsoleCommand.class);
-    private static final THashMap<String, ConsoleCommand> commands = new THashMap<>();
+    private static final Map<String, ConsoleCommand> commands = new HashMap<>();
 
     public final String key;
     public final String usage;

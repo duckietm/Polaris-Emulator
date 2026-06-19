@@ -2,30 +2,31 @@ package com.eu.habbo.habbohotel.achievements;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.Item;
-import gnu.trove.map.TObjectIntMap;
-import gnu.trove.map.hash.TObjectIntHashMap;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class TalentTrackLevel {
     private static final Logger LOGGER = LoggerFactory.getLogger(TalentTrackLevel.class);
 
     public TalentTrackType type;
     public int level;
-    public TObjectIntMap<Achievement> achievements;
-    public THashSet<Item> items;
+    public Map<Achievement, Integer> achievements;
+    public Set<Item> items;
     public String[] perks;
     public String[] badges;
 
     public TalentTrackLevel(ResultSet set) throws SQLException {
         this.type = TalentTrackType.valueOf(set.getString("type").toUpperCase());
         this.level = set.getInt("level");
-        this.achievements = new TObjectIntHashMap<>();
-        this.items = new THashSet<>();
+        this.achievements = new HashMap<>();
+        this.items = new HashSet<>();
 
         String[] achievements = set.getString("achievement_ids").split(",");
         String[] achievementLevels = set.getString("achievement_levels").split(",");

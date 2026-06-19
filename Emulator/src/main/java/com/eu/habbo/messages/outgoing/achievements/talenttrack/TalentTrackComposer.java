@@ -50,7 +50,9 @@ public class TalentTrackComposer extends MessageComposer {
                     this.response.appendInt(level.achievements.size());
 
                     final TalentTrackState finalState = state;
-                    level.achievements.forEachEntry((achievement, index) -> {
+                    for (Map.Entry<com.eu.habbo.habbohotel.achievements.Achievement, Integer> achievementEntry : level.achievements.entrySet()) {
+                        com.eu.habbo.habbohotel.achievements.Achievement achievement = achievementEntry.getKey();
+                        int index = achievementEntry.getValue();
                         if (achievement != null) {
                             this.response.appendInt(achievement.id);
 
@@ -84,8 +86,7 @@ public class TalentTrackComposer extends MessageComposer {
                             this.response.appendInt(0);
                             this.response.appendInt(0);
                         }
-                        return true;
-                    });
+                    }
 
 
                     if (level.perks != null && level.perks.length > 0) {

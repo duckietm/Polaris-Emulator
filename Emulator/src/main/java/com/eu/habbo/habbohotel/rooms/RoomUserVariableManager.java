@@ -699,7 +699,7 @@ public class RoomUserVariableManager {
             return Collections.emptyList();
         }
 
-        THashSet<InteractionWiredExtra> extras = this.room.getRoomSpecialTypes().getExtras();
+        Collection<InteractionWiredExtra> extras = this.room.getRoomSpecialTypes().getExtras();
         List<WiredExtraUserVariable> result = new ArrayList<>();
 
         for (InteractionWiredExtra extra : extras) {

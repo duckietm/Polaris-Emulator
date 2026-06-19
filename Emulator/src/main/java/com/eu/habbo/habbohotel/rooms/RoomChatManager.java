@@ -31,6 +31,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -611,7 +612,7 @@ public class RoomChatManager {
      */
     private void handleTalkingFurniture(Habbo habbo, RoomChatMessage roomChatMessage) {
         if (roomChatMessage.getBubble().triggersTalkingFurniture()) {
-            THashSet<HabboItem> items = this.room.getRoomSpecialTypes().getItemsOfType(
+            Set<HabboItem> items = this.room.getRoomSpecialTypes().getItemsOfType(
                 InteractionTalkingFurniture.class);
 
             for (HabboItem item : items) {

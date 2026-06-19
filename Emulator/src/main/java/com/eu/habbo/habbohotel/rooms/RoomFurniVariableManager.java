@@ -626,7 +626,7 @@ public class RoomFurniVariableManager {
             return Collections.emptyList();
         }
 
-        THashSet<InteractionWiredExtra> extras = this.room.getRoomSpecialTypes().getExtras();
+        Collection<InteractionWiredExtra> extras = this.room.getRoomSpecialTypes().getExtras();
         List<WiredExtraFurniVariable> result = new ArrayList<>();
 
         for (InteractionWiredExtra extra : extras) {

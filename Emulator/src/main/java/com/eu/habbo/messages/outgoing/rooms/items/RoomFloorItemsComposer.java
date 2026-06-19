@@ -7,15 +7,15 @@ import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntObjectMap;
-import gnu.trove.set.hash.THashSet;
 
+import java.util.Collection;
 import java.util.NoSuchElementException;
 
 public class RoomFloorItemsComposer extends MessageComposer {
     private final TIntObjectMap<String> furniOwnerNames;
-    private final THashSet<? extends HabboItem> items;
+    private final Collection<? extends HabboItem> items;
 
-    public RoomFloorItemsComposer(TIntObjectMap<String> furniOwnerNames, THashSet<? extends HabboItem> items) {
+    public RoomFloorItemsComposer(TIntObjectMap<String> furniOwnerNames, Collection<? extends HabboItem> items) {
         this.furniOwnerNames = furniOwnerNames;
         this.items = items;
     }
@@ -67,7 +67,7 @@ public class RoomFloorItemsComposer extends MessageComposer {
         return furniOwnerNames;
     }
 
-    public THashSet<? extends HabboItem> getItems() {
+    public Collection<? extends HabboItem> getItems() {
         return items;
     }
 }

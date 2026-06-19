@@ -468,7 +468,7 @@ public class RoomVariableManager {
             return Collections.emptyList();
         }
 
-        THashSet<InteractionWiredExtra> extras = this.room.getRoomSpecialTypes().getExtras();
+        Collection<InteractionWiredExtra> extras = this.room.getRoomSpecialTypes().getExtras();
         List<WiredExtraRoomVariable> result = new ArrayList<>();
 
         for (InteractionWiredExtra extra : extras) {

@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -346,8 +347,8 @@ public class RoomSpecialTypes {
      * Gets all wired triggers in the room.
      * @return A new set containing all triggers (safe for iteration)
      */
-    public THashSet<InteractionWiredTrigger> getTriggers() {
-        THashSet<InteractionWiredTrigger> result = new THashSet<>();
+    public Set<InteractionWiredTrigger> getTriggers() {
+        Set<InteractionWiredTrigger> result = new LinkedHashSet<>();
         for (Set<InteractionWiredTrigger> triggers : this.wiredTriggers.values()) {
             result.addAll(triggers);
         }
@@ -359,12 +360,12 @@ public class RoomSpecialTypes {
      * @param type The trigger type to filter by
      * @return A new set containing matching triggers (safe for iteration)
      */
-    public THashSet<InteractionWiredTrigger> getTriggers(WiredTriggerType type) {
+    public Set<InteractionWiredTrigger> getTriggers(WiredTriggerType type) {
         Set<InteractionWiredTrigger> triggers = this.wiredTriggers.get(type);
         if (triggers == null) {
-            return new THashSet<>(0);
+            return new LinkedHashSet<>(0);
         }
-        return new THashSet<>(triggers);
+        return new LinkedHashSet<>(triggers);
     }
 
     /**
@@ -373,13 +374,13 @@ public class RoomSpecialTypes {
      * @param y The Y coordinate
      * @return A new set containing triggers at the location (safe for iteration)
      */
-    public THashSet<InteractionWiredTrigger> getTriggers(int x, int y) {
+    public Set<InteractionWiredTrigger> getTriggers(int x, int y) {
         long key = coordinateKey(x, y);
         Set<InteractionWiredTrigger> triggers = this.wiredTriggersByLocation.get(key);
         if (triggers == null) {
-            return new THashSet<>(0);
+            return new LinkedHashSet<>(0);
         }
-        return new THashSet<>(triggers);
+        return new LinkedHashSet<>(triggers);
     }
 
     /**
@@ -459,7 +460,7 @@ public class RoomSpecialTypes {
 
         boolean changed = false;
 
-        THashSet<InteractionWiredTrigger> receivers = this.getTriggers(WiredTriggerType.RECEIVE_SIGNAL);
+        Set<InteractionWiredTrigger> receivers = this.getTriggers(WiredTriggerType.RECEIVE_SIGNAL);
         for (InteractionWiredTrigger trigger : receivers) {
             if (!(trigger instanceof com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerReceiveSignal receiver)) {
                 continue;
@@ -588,8 +589,8 @@ public class RoomSpecialTypes {
      * Gets all wired effects in the room.
      * @return A new set containing all effects (safe for iteration)
      */
-    public THashSet<InteractionWiredEffect> getEffects() {
-        THashSet<InteractionWiredEffect> result = new THashSet<>();
+    public Set<InteractionWiredEffect> getEffects() {
+        Set<InteractionWiredEffect> result = new LinkedHashSet<>();
         for (Set<InteractionWiredEffect> effects : this.wiredEffects.values()) {
             result.addAll(effects);
         }
@@ -601,12 +602,12 @@ public class RoomSpecialTypes {
      * @param type The effect type to filter by
      * @return A new set containing matching effects (safe for iteration)
      */
-    public THashSet<InteractionWiredEffect> getEffects(WiredEffectType type) {
+    public Set<InteractionWiredEffect> getEffects(WiredEffectType type) {
         Set<InteractionWiredEffect> effects = this.wiredEffects.get(type);
         if (effects == null) {
-            return new THashSet<>(0);
+            return new LinkedHashSet<>(0);
         }
-        return new THashSet<>(effects);
+        return new LinkedHashSet<>(effects);
     }
 
     /**
@@ -615,13 +616,13 @@ public class RoomSpecialTypes {
      * @param y The Y coordinate
      * @return A new set containing effects at the location (safe for iteration)
      */
-    public THashSet<InteractionWiredEffect> getEffects(int x, int y) {
+    public Set<InteractionWiredEffect> getEffects(int x, int y) {
         long key = coordinateKey(x, y);
         Set<InteractionWiredEffect> effects = this.wiredEffectsByLocation.get(key);
         if (effects == null) {
-            return new THashSet<>(0);
+            return new LinkedHashSet<>(0);
         }
-        return new THashSet<>(effects);
+        return new LinkedHashSet<>(effects);
     }
 
     /**
@@ -708,8 +709,8 @@ public class RoomSpecialTypes {
      * Gets all wired conditions in the room.
      * @return A new set containing all conditions (safe for iteration)
      */
-    public THashSet<InteractionWiredCondition> getConditions() {
-        THashSet<InteractionWiredCondition> result = new THashSet<>();
+    public Set<InteractionWiredCondition> getConditions() {
+        Set<InteractionWiredCondition> result = new LinkedHashSet<>();
         for (Set<InteractionWiredCondition> conditions : this.wiredConditions.values()) {
             result.addAll(conditions);
         }
@@ -721,12 +722,12 @@ public class RoomSpecialTypes {
      * @param type The condition type to filter by
      * @return A new set containing matching conditions (safe for iteration)
      */
-    public THashSet<InteractionWiredCondition> getConditions(WiredConditionType type) {
+    public Set<InteractionWiredCondition> getConditions(WiredConditionType type) {
         Set<InteractionWiredCondition> conditions = this.wiredConditions.get(type);
         if (conditions == null) {
-            return new THashSet<>(0);
+            return new LinkedHashSet<>(0);
         }
-        return new THashSet<>(conditions);
+        return new LinkedHashSet<>(conditions);
     }
 
     /**
@@ -735,13 +736,13 @@ public class RoomSpecialTypes {
      * @param y The Y coordinate
      * @return A new set containing conditions at the location (safe for iteration)
      */
-    public THashSet<InteractionWiredCondition> getConditions(int x, int y) {
+    public Set<InteractionWiredCondition> getConditions(int x, int y) {
         long key = coordinateKey(x, y);
         Set<InteractionWiredCondition> conditions = this.wiredConditionsByLocation.get(key);
         if (conditions == null) {
-            return new THashSet<>(0);
+            return new LinkedHashSet<>(0);
         }
-        return new THashSet<>(conditions);
+        return new LinkedHashSet<>(conditions);
     }
 
     /**
@@ -812,8 +813,8 @@ public class RoomSpecialTypes {
      * Gets all wired extras in the room.
      * @return A new set containing all extras (safe for iteration)
      */
-    public THashSet<InteractionWiredExtra> getExtras() {
-        THashSet<InteractionWiredExtra> result = new THashSet<>();
+    public Set<InteractionWiredExtra> getExtras() {
+        Set<InteractionWiredExtra> result = new LinkedHashSet<>();
         result.addAll(this.wiredExtras.values());
         return result;
     }
@@ -833,13 +834,13 @@ public class RoomSpecialTypes {
      * @param y The Y coordinate
      * @return A new set containing extras at the location (safe for iteration)
      */
-    public THashSet<InteractionWiredExtra> getExtras(int x, int y) {
+    public Set<InteractionWiredExtra> getExtras(int x, int y) {
         long key = coordinateKey(x, y);
         Set<InteractionWiredExtra> extras = this.wiredExtrasByLocation.get(key);
         if (extras == null) {
-            return new THashSet<>(0);
+            return new LinkedHashSet<>(0);
         }
-        return new THashSet<>(extras);
+        return new LinkedHashSet<>(extras);
     }
 
     /**
@@ -1115,8 +1116,8 @@ public class RoomSpecialTypes {
         this.specialItemsById.remove(item.getId());
     }
 
-    public THashSet<HabboItem> getItemsOfType(Class<? extends HabboItem> type) {
-        THashSet<HabboItem> items = new THashSet<>();
+    public Set<HabboItem> getItemsOfType(Class<? extends HabboItem> type) {
+        Set<HabboItem> items = new LinkedHashSet<>();
         
         // Check pet trees collection for InteractionPetTree type
         if (type == InteractionPetTree.class) {

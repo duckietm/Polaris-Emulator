@@ -10,11 +10,11 @@ import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import gnu.trove.set.hash.THashSet;
 
 import java.awt.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Set;
 
 public class InteractionSnowboardSlope extends InteractionMultiHeight {
     public InteractionSnowboardSlope(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
@@ -42,7 +42,7 @@ public class InteractionSnowboardSlope extends InteractionMultiHeight {
     @Override
     public void onPlace(Room room) {
         super.onPlace(room);
-        THashSet<HabboItem> items = room.getRoomSpecialTypes().getItemsOfType(InteractionSnowboardSlope.class);
+        Set<HabboItem> items = room.getRoomSpecialTypes().getItemsOfType(InteractionSnowboardSlope.class);
 
         Achievement snowboardBuild = Emulator.getGameEnvironment().getAchievementManager().getAchievement("snowBoardBuild");
 

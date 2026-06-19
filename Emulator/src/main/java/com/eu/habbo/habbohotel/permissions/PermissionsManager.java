@@ -213,6 +213,10 @@ public class PermissionsManager {
     }
 
     private boolean tableHasRows(Connection connection, String tableName) throws SQLException {
+        if (!tableName.matches("^[A-Za-z_][A-Za-z0-9_]*$")) {
+            throw new SQLException("Refusing to query unsafe table name: " + tableName);
+        }
+
         try (Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery("SELECT COUNT(*) FROM " + tableName)) {
             return set.next() && set.getInt(1) > 0;
         }

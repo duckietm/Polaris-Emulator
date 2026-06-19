@@ -1823,7 +1823,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     return this.unitManager.getCurrentPets();
   }
 
-  public THashSet<String> getWordFilterWords() {
+  public Set<String> getWordFilterWords() {
     return this.chatManager.getWordFilterWords();
   }
 

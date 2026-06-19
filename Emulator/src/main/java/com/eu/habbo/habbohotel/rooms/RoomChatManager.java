@@ -22,7 +22,6 @@ import com.eu.habbo.threading.runnables.YouAreAPirate;
 import com.eu.habbo.util.pathfinding.Rotation;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.hash.TIntIntHashMap;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +30,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -44,7 +44,7 @@ public class RoomChatManager {
     private final Room room;
 
     // Word filter
-    private final THashSet<String> wordFilterWords;
+    private final Set<String> wordFilterWords;
 
     // Muted Habbos: userId -> unmute timestamp
     private final TIntIntHashMap mutedHabbos;
@@ -60,7 +60,7 @@ public class RoomChatManager {
 
     public RoomChatManager(Room room) {
         this.room = room;
-        this.wordFilterWords = new THashSet<>(0);
+        this.wordFilterWords = new HashSet<>(0);
         this.mutedHabbos = new TIntIntHashMap();
         this.muteTime = Emulator.getConfig().getInt("hotel.flood.mute.time", 30);
     }
@@ -134,7 +134,7 @@ public class RoomChatManager {
     /**
      * Gets the word filter words.
      */
-    public THashSet<String> getWordFilterWords() {
+    public Set<String> getWordFilterWords() {
         return this.wordFilterWords;
     }
 

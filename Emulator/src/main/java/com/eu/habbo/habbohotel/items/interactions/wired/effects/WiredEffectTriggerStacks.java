@@ -16,35 +16,36 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-import gnu.trove.procedure.TObjectProcedure;
-import gnu.trove.set.hash.THashSet;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class WiredEffectTriggerStacks extends InteractionWiredEffect {
     public static final WiredEffectType type = WiredEffectType.CALL_STACKS;
 
-    protected THashSet<HabboItem> items;
+    protected Set<HabboItem> items;
     protected int furniSource = WiredSourceUtil.SOURCE_TRIGGER;
 
     public WiredEffectTriggerStacks(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
-        this.items = new THashSet<>();
+        this.items = new LinkedHashSet<>();
     }
 
     public WiredEffectTriggerStacks(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
-        this.items = new THashSet<>();
+        this.items = new LinkedHashSet<>();
     }
 
     @Override
     public void serializeWiredData(ServerMessage message, Room room) {
         List<HabboItem> itemsSnapshot = new ArrayList<>(this.items);
-        THashSet<HabboItem> items = new THashSet<>();
+        Set<HabboItem> items = new HashSet<>();
 
         for (HabboItem item : itemsSnapshot) {
             if (item.getRoomId() != this.getRoomId() || Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId()).getHabboItem(item.getId()) == null)
@@ -72,15 +73,11 @@ public class WiredEffectTriggerStacks extends InteractionWiredEffect {
 
         if (this.requiresTriggeringUser()) {
             List<Integer> invalidTriggers = new ArrayList<>();
-            room.getRoomSpecialTypes().getTriggers(this.getX(), this.getY()).forEach(new TObjectProcedure<InteractionWiredTrigger>() {
-                @Override
-                public boolean execute(InteractionWiredTrigger object) {
-                    if (!object.isTriggeredByRoomUnit()) {
-                        invalidTriggers.add(object.getBaseItem().getSpriteId());
-                    }
-                    return true;
+            for (InteractionWiredTrigger trigger : room.getRoomSpecialTypes().getTriggers(this.getX(), this.getY())) {
+                if (!trigger.isTriggeredByRoomUnit()) {
+                    invalidTriggers.add(trigger.getBaseItem().getSpriteId());
                 }
-            });
+            }
             message.appendInt(invalidTriggers.size());
             for (Integer i : invalidTriggers) {
                 message.appendInt(i);
@@ -151,7 +148,7 @@ public class WiredEffectTriggerStacks extends InteractionWiredEffect {
             return;
         }
 
-        THashSet<RoomTile> usedTiles = collectTargetTiles(room, ctx);
+        Set<RoomTile> usedTiles = collectTargetTiles(room, ctx);
 
         WiredManager.executeEffectsAtTiles(usedTiles, roomUnit, room, currentDepth + 1);
     }
@@ -175,7 +172,7 @@ public class WiredEffectTriggerStacks extends InteractionWiredEffect {
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
-        this.items = new THashSet<>();
+        this.items = new LinkedHashSet<>();
         String wiredData = set.getString("wired_data");
 
         JsonData jsonData = WiredMovementPayloadGuard.fromJson(wiredData, JsonData.class);
@@ -236,8 +233,8 @@ public class WiredEffectTriggerStacks extends InteractionWiredEffect {
         return WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items);
     }
 
-    protected THashSet<RoomTile> collectTargetTiles(Room room, WiredContext ctx) {
-        THashSet<RoomTile> usedTiles = new THashSet<>();
+    protected Set<RoomTile> collectTargetTiles(Room room, WiredContext ctx) {
+        Set<RoomTile> usedTiles = new LinkedHashSet<>();
 
         if (room == null || room.getLayout() == null) {
             return usedTiles;

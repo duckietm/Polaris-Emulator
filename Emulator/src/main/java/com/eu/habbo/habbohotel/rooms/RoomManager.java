@@ -914,7 +914,7 @@ public class RoomManager {
         habbo.getClient().sendResponse(new HanditemBlockStateComposer(room).compose());
 
         if (!room.getCurrentPets().isEmpty()) {
-            habbo.getClient().sendResponse(new RoomPetComposer(room.getCurrentPets()));
+            habbo.getClient().sendResponse(new RoomPetComposer(room.getCurrentPets().valueCollection()));
             for (Pet pet : room.getCurrentPets().valueCollection()) {
                 habbo.getClient().sendResponse(new RoomUserStatusComposer(pet.getRoomUnit()));
             }

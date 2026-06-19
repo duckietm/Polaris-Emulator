@@ -1,0 +1,20 @@
+version: 2
+updates:
+  - package-ecosystem: "maven"
+    directory: "/Emulator"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "build"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "ci"
+    commit-message:
+      prefix: "ci"

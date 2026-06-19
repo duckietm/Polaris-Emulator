@@ -57,13 +57,12 @@ public class ConfigurationManager {
 
             } catch (IOException ex) {
                 LOGGER.error("Failed to load config file.", ex);
-                ex.printStackTrace();
             } finally {
                 if (input != null) {
                     try {
                         input.close();
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        LOGGER.error("Failed to close config file input stream.", e);
                     }
                 }
             }

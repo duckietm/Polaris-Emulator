@@ -138,7 +138,8 @@ public class YoutubeManager {
             try {
                 youtubeDataLoaderPool.awaitTermination(60, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                LOGGER.error("Interrupted while waiting for YouTube playlist loading to finish.", e);
+                Thread.currentThread().interrupt();
             }
 
             LOGGER.info("YouTube Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);

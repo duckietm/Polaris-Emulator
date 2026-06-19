@@ -209,7 +209,7 @@ public class GuildForumDataComposer extends MessageComposer {
                 this.response.appendBoolean(guild.getOwnerId() == this.habbo.getHabboInfo().getId() || isStaff || isAdmin); //Can Mod (staff)
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error("Caught exception", e);
             return new ConnectionErrorComposer(500).compose();
         }
 

@@ -82,7 +82,7 @@ public class InteractionFireworks extends InteractionDefault {
                     try {
                         this.onClick(client, room, objects);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        LOGGER.error("Caught exception", e);
                     }
                 });
 

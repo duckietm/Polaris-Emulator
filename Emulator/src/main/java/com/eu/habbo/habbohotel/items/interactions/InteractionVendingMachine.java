@@ -11,6 +11,8 @@ import com.eu.habbo.threading.runnables.RoomUnitGiveHanditem;
 import com.eu.habbo.threading.runnables.RoomUnitWalkToLocation;
 import com.eu.habbo.util.pathfinding.Rotation;
 import gnu.trove.set.hash.THashSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -18,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class InteractionVendingMachine extends HabboItem {
+    private static final Logger LOGGER = LoggerFactory.getLogger(InteractionVendingMachine.class);
+
     public InteractionVendingMachine(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
         this.setExtradata("0");
@@ -73,7 +77,7 @@ public class InteractionVendingMachine extends HabboItem {
         try {
             super.onClick(client, room, new Object[]{"TOGGLE_OVERRIDE"});
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error("Caught exception", e);
         }
 
         if(!unit.isWalking() && !unit.hasStatus(RoomUnitStatus.SIT) && !unit.hasStatus(RoomUnitStatus.LAY)) {

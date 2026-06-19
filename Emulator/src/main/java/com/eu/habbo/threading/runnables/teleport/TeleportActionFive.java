@@ -8,11 +8,15 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredFreezeUtil;
 import com.eu.habbo.threading.runnables.HabboItemNewState;
 import com.eu.habbo.threading.runnables.RoomUnitWalkToLocation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
 class TeleportActionFive implements Runnable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TeleportActionFive.class);
+
     private final HabboItem currentTeleport;
     private final Room room;
     private final GameClient client;
@@ -74,7 +78,7 @@ class TeleportActionFive implements Runnable {
             try {
                 teleportTile.onWalkOn(unit, this.room, new Object[]{});
             } catch (Exception e) {
-                e.printStackTrace();
+                LOGGER.error("Caught exception", e);
             }
         }
     }

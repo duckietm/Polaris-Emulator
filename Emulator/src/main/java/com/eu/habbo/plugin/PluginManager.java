@@ -236,7 +236,7 @@ public class PluginManager {
             try {
                 NewNavigatorEventCategoriesComposer.CATEGORIES.add(new EventCategory(category));
             } catch (Exception e) {
-                e.printStackTrace();
+                LOGGER.error("Caught exception", e);
             }
         }
 

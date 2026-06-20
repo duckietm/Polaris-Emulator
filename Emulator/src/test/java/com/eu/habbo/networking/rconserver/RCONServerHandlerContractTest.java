@@ -37,7 +37,7 @@ class RCONServerHandlerContractTest {
     @Test
     void rconRateLimitDefaultsAreRegisteredBeforeServerStarts() throws Exception {
         String source = emulatorSource();
-        int registerIndex = source.indexOf("register(\"rcon.rate_limit.enabled\", \"1\")");
+        int registerIndex = source.indexOf("registerStartupConfigDefaults();");
         int serverIndex = source.indexOf("new RCONServer");
 
         assertTrue(registerIndex >= 0, "RCON rate limiting must have a registered default toggle");

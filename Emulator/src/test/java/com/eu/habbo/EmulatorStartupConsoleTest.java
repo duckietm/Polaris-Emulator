@@ -78,7 +78,7 @@ class EmulatorStartupConsoleTest {
                 "gui.enabled must be registered disabled by default so it does not log missing config errors or start the UI unexpectedly");
         assertTrue(source.contains("register(\"gui.autostart.enabled\", \"0\")"),
                 "GUI autostart must use a new disabled-by-default key so old gui.enabled=1 settings do not launch the current UI");
-        assertTrue(source.indexOf("register(\"gui.autostart.enabled\", \"0\")") < source.indexOf("shouldLaunchGui()"),
+        assertTrue(source.indexOf("registerStartupConfigDefaults();") < source.indexOf("shouldLaunchGui()"),
                 "GUI autostart must be registered before the launch decision");
         assertFalse(source.contains("getBoolean(\"gui.enabled\", true)"),
                 "GUI must not use a true fallback");

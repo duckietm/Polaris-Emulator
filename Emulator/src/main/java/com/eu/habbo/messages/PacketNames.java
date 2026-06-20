@@ -22,6 +22,11 @@ public class PacketNames {
     }
 
     public void initialize() {
+        RuntimeValidationReport report = new RuntimeValidationReport();
+        report.merge(PacketRuntimeValidator.validatePacketNameClass("Incoming", Incoming.class));
+        report.merge(PacketRuntimeValidator.validatePacketNameClass("Outgoing", Outgoing.class));
+        report.logErrors(LOGGER, "Packet name validation");
+
         PacketNames.getNames(Incoming.class, this.incoming);
         PacketNames.getNames(Outgoing.class, this.outgoing);
     }

@@ -264,8 +264,10 @@ public class PluginManager {
         }
 
         for (File file : Objects.requireNonNull(loc.listFiles(file -> file.getPath().toLowerCase().endsWith(".jar")))) {
-            URLClassLoader urlClassLoader;
-            InputStream stream;
+            URLClassLoader urlClassLoader = null;
+            InputStream stream = null;
+            boolean retainPluginResources = false;
+
             try {
                 urlClassLoader = URLClassLoader.newInstance(new URL[]{file.toURI().toURL()});
                 stream = urlClassLoader.getResourceAsStream("plugin.json");
@@ -296,6 +298,7 @@ public class PluginManager {
                         plugin.classLoader = urlClassLoader;
                         plugin.stream = stream;
                         this.plugins.add(plugin);
+                        retainPluginResources = true;
                         plugin.onEnable();
                     } catch (Exception e) {
                         LOGGER.error("Could not load plugin {}!", pluginConfigurtion.name);
@@ -304,6 +307,28 @@ public class PluginManager {
                 }
             } catch (Exception e) {
                 LOGGER.error("Caught exception", e);
+            } finally {
+                if (!retainPluginResources) {
+                    closeRejectedPluginResources(stream, urlClassLoader, file.getName());
+                }
+            }
+        }
+    }
+
+    private static void closeRejectedPluginResources(InputStream stream, URLClassLoader classLoader, String jarName) {
+        if (stream != null) {
+            try {
+                stream.close();
+            } catch (IOException e) {
+                LOGGER.warn("Failed to close plugin.json stream for rejected plugin {}.", jarName, e);
+            }
+        }
+
+        if (classLoader != null) {
+            try {
+                classLoader.close();
+            } catch (IOException e) {
+                LOGGER.warn("Failed to close classloader for rejected plugin {}.", jarName, e);
             }
         }
     }

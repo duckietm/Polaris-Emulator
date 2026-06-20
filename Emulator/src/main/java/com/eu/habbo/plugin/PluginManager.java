@@ -29,6 +29,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredEngine;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreManager;
 import com.eu.habbo.messages.PacketManager;
+import com.eu.habbo.messages.RuntimeValidationReport;
 import com.eu.habbo.messages.incoming.catalog.CheckPetNameEvent;
 import com.eu.habbo.messages.incoming.floorplaneditor.FloorPlanEditorSaveEvent;
 import com.eu.habbo.messages.incoming.hotelview.HotelViewRequestLTDAvailabilityEvent;
@@ -279,6 +280,12 @@ public class PluginManager {
                     String body = new String(content, java.nio.charset.StandardCharsets.UTF_8);
 
                     HabboPluginConfiguration pluginConfigurtion = PLUGIN_GSON.fromJson(body, HabboPluginConfiguration.class);
+                    RuntimeValidationReport validationReport = PluginRuntimeValidator.validatePluginClass(file.getName(), pluginConfigurtion, urlClassLoader);
+
+                    if (validationReport.hasErrors()) {
+                        validationReport.logErrors(LOGGER, "Plugin validation");
+                        continue;
+                    }
 
                     try {
                         Class<?> clazz = urlClassLoader.loadClass(pluginConfigurtion.main);

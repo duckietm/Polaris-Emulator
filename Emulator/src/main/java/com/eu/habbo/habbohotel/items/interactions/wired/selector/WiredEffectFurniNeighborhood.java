@@ -19,7 +19,6 @@ import org.slf4j.LoggerFactory;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class WiredEffectFurniNeighborhood extends InteractionWiredEffect {
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredEffectFurniNeighborhood.class);
@@ -163,7 +162,7 @@ public class WiredEffectFurniNeighborhood extends InteractionWiredEffect {
             case SOURCE_USER_SIGNAL: {
                 List<int[]> positions = ctx.targets().users().stream()
                         .map(user -> new int[]{ user.getX(), user.getY() })
-                        .collect(Collectors.toList());
+                        .toList();
 
                 if (!positions.isEmpty()) {
                     return positions;
@@ -182,7 +181,7 @@ public class WiredEffectFurniNeighborhood extends InteractionWiredEffect {
 
                 List<int[]> positions = ctx.targets().users().stream()
                         .map(user -> new int[]{ user.getX(), user.getY() })
-                        .collect(Collectors.toList());
+                        .toList();
 
                 if (!positions.isEmpty()) {
                     return positions;
@@ -200,12 +199,12 @@ public class WiredEffectFurniNeighborhood extends InteractionWiredEffect {
                         .map(room::getHabboItem)
                         .filter(Objects::nonNull)
                         .map(i -> new int[]{ i.getX(), i.getY() })
-                        .collect(Collectors.toList());
+                        .toList();
             }
             case SOURCE_FURNI_SIGNAL: {
                 List<int[]> positions = ctx.targets().items().stream()
                         .map(i -> new int[]{ i.getX(), i.getY() })
-                        .collect(Collectors.toList());
+                        .toList();
 
                 if (!positions.isEmpty()) {
                     return positions;

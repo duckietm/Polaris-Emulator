@@ -175,7 +175,7 @@ public class WiredEffectUsersNeighborhood extends InteractionWiredEffect {
             case SOURCE_USER_SIGNAL: {
                 List<int[]> positions = ctx.targets().users().stream()
                         .map(user -> new int[]{ user.getX(), user.getY() })
-                        .collect(Collectors.toList());
+                        .toList();
 
                 if (!positions.isEmpty()) {
                     return positions;
@@ -194,7 +194,7 @@ public class WiredEffectUsersNeighborhood extends InteractionWiredEffect {
 
                 List<int[]> positions = ctx.targets().users().stream()
                         .map(user -> new int[]{ user.getX(), user.getY() })
-                        .collect(Collectors.toList());
+                        .toList();
 
                 if (!positions.isEmpty()) {
                     return positions;
@@ -212,12 +212,12 @@ public class WiredEffectUsersNeighborhood extends InteractionWiredEffect {
                         .map(room::getHabboItem)
                         .filter(Objects::nonNull)
                         .map(i -> new int[]{ i.getX(), i.getY() })
-                        .collect(Collectors.toList());
+                        .toList();
             }
             case SOURCE_FURNI_SIGNAL: {
                 List<int[]> positions = ctx.targets().items().stream()
                         .map(i -> new int[]{ i.getX(), i.getY() })
-                        .collect(Collectors.toList());
+                        .toList();
 
                 if (!positions.isEmpty()) {
                     return positions;

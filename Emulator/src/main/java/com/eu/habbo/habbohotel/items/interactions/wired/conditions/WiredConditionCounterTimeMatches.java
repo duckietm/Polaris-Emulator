@@ -18,7 +18,6 @@ import gnu.trove.set.hash.THashSet;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class WiredConditionCounterTimeMatches extends InteractionWiredCondition {
     private static final int COMPARISON_LESS = 0;
@@ -105,7 +104,7 @@ public class WiredConditionCounterTimeMatches extends InteractionWiredCondition 
                 this.halfSecondSteps,
                 this.furniSource,
                 this.quantifier,
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList())
+                this.items.stream().map(HabboItem::getId).toList()
         ));
     }
 

@@ -20,7 +20,6 @@ import gnu.trove.set.hash.THashSet;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class WiredTriggerHabboClicksFurni extends InteractionWiredTrigger {
     public static final WiredTriggerType type = WiredTriggerType.CLICKS_FURNI;
@@ -133,7 +132,7 @@ public class WiredTriggerHabboClicksFurni extends InteractionWiredTrigger {
     public String getWiredData() {
         return WiredManager.getGson().toJson(new JsonData(
                 this.furniSource,
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList())
+                this.items.stream().map(HabboItem::getId).toList()
         ));
     }
 

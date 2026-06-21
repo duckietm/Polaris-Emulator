@@ -21,7 +21,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class WiredEffectRelativeMove extends InteractionWiredEffect {
     private static final int HORIZONTAL_NEGATIVE = 0;
@@ -96,7 +95,7 @@ public class WiredEffectRelativeMove extends InteractionWiredEffect {
     public String getWiredData() {
         return WiredManager.getGson().toJson(new JsonData(
                 this.getDelay(),
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                this.items.stream().map(HabboItem::getId).toList(),
                 this.horizontalDirection,
                 this.horizontalDistance,
                 this.verticalDirection,

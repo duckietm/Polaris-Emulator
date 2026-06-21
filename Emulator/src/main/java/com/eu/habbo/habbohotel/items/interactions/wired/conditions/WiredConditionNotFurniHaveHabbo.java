@@ -22,7 +22,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class WiredConditionNotFurniHaveHabbo extends InteractionWiredCondition {
     public static final WiredConditionType type = WiredConditionType.NOT_FURNI_HAVE_HABBO;
@@ -82,7 +81,7 @@ public class WiredConditionNotFurniHaveHabbo extends InteractionWiredCondition {
     public String getWiredData() {
         this.refresh();
         return WiredManager.getGson().toJson(new JsonData(
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                this.items.stream().map(HabboItem::getId).toList(),
                 this.furniSource,
                 this.all
         ));

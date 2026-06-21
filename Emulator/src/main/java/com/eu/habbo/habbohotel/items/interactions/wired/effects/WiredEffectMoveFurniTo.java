@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class WiredEffectMoveFurniTo extends InteractionWiredEffect {
     public static final WiredEffectType type = WiredEffectType.MOVE_FURNI_TO;
@@ -209,7 +208,7 @@ public class WiredEffectMoveFurniTo extends InteractionWiredEffect {
                 this.direction,
                 this.spacing,
                 this.getDelay(),
-                itemsSnapshot.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                itemsSnapshot.stream().map(HabboItem::getId).toList(),
                 this.furniSource
         ));
     }

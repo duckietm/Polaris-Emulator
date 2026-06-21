@@ -18,7 +18,6 @@ import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class WiredEffectFurniByType extends InteractionWiredEffect {
 
@@ -82,7 +81,7 @@ public class WiredEffectFurniByType extends InteractionWiredEffect {
                 return pickedFurniIds.stream()
                     .map(room::getHabboItem)
                     .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
+                    .toList();
             }
             case SOURCE_FURNI_SIGNAL: {
                 return WiredSourceUtil.resolveItemsRaw(ctx, WiredSourceUtil.SOURCE_SIGNAL, null);

@@ -166,7 +166,7 @@ public class WiredConditionTriggererMatch extends InteractionWiredCondition {
         Set<Integer> compareUserIds = compareUsers.stream()
                 .filter(this::matchesEntityType)
                 .map(RoomUnit::getId)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toUnmodifiableSet());
 
         if (compareUserIds.isEmpty()) {
             return MatchResult.valid(false);
@@ -216,7 +216,7 @@ public class WiredConditionTriggererMatch extends InteractionWiredCondition {
 
             resolved = resolved.stream()
                     .filter(roomUnit -> normalizedName.equalsIgnoreCase(this.getRoomUnitName(ctx.room(), roomUnit)))
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         return this.deduplicate(resolved);

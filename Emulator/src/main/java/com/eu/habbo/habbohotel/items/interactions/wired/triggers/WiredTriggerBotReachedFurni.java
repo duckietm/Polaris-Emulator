@@ -24,7 +24,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class WiredTriggerBotReachedFurni extends InteractionWiredTrigger {
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredTriggerBotReachedFurni.class);
@@ -171,7 +170,7 @@ public class WiredTriggerBotReachedFurni extends InteractionWiredTrigger {
             this.botName,
             this.furniSource,
             this.botSource,
-            this.items.stream().map(HabboItem::getId).collect(Collectors.toList())
+            this.items.stream().map(HabboItem::getId).toList()
         ));
     }
 

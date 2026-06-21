@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class WiredEffectFurniOnFurni extends InteractionWiredEffect {
     private static final double EPSILON = 0.0001D;
@@ -142,7 +141,7 @@ public class WiredEffectFurniOnFurni extends InteractionWiredEffect {
                 this.furniSource,
                 this.filterExisting,
                 this.invert,
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                this.items.stream().map(HabboItem::getId).toList(),
                 this.getDelay()
         ));
     }

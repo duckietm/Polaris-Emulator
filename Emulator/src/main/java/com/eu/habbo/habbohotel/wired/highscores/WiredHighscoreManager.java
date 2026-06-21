@@ -80,7 +80,7 @@ public class WiredHighscoreManager {
         Emulator.getThreading().run(() -> {
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO `items_highscore_data` (`item_id`, `user_ids`, `score`, `is_win`, `timestamp`) VALUES (?, ?, ?, ?, ?)")) {
                 statement.setInt(1, entry.getItemId());
-                statement.setString(2, String.join(",", entry.getUserIds().stream().map(Object::toString).collect(Collectors.toList())));
+                statement.setString(2, String.join(",", entry.getUserIds().stream().map(Object::toString).toList()));
                 statement.setInt(3, entry.getScore());
                 statement.setInt(4, entry.isWin() ? 1 : 0);
                 statement.setInt(5, entry.getTimestamp());
@@ -123,7 +123,7 @@ public class WiredHighscoreManager {
                     .stream()
                     .map(e -> e.getValue().stream()
                             .sorted(WiredHighscoreRow::compareTo)
-                            .collect(Collectors.toList())
+                            .toList()
                             .get(0)
                     )
                     .sorted(WiredHighscoreRow::compareTo)

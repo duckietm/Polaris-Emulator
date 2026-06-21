@@ -21,7 +21,6 @@ import gnu.trove.set.hash.THashSet;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class WiredTriggerClockCounter extends InteractionWiredTrigger {
     private static final int MAX_MINUTES = 99;
@@ -146,7 +145,7 @@ public class WiredTriggerClockCounter extends InteractionWiredTrigger {
                 this.minutes,
                 this.halfSecondSteps,
                 this.furniSource,
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList())
+                this.items.stream().map(HabboItem::getId).toList()
         ));
     }
 

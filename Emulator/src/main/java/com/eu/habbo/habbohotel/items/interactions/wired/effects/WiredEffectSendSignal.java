@@ -95,7 +95,7 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
         List<HabboItem> resolvedAntennas = antennas.stream()
                 .filter(Objects::nonNull)
                 .filter(this::isAntennaItem)
-                .collect(Collectors.toList());
+                .toList();
 
         if (resolvedAntennas.isEmpty()) {
             LOGGER.debug("[SendSignal] No antennas resolved, aborting. antennaSource={}, selectorModified={}", antennaSource, ctx.targets().isItemsModifiedBySelector());
@@ -338,8 +338,8 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
         List<HabboItem> forwardSnapshot = new ArrayList<>(this.forwardItems);
         return WiredManager.getGson().toJson(new JsonData(
                 this.getDelay(),
-                itemsSnapshot.stream().map(HabboItem::getId).collect(Collectors.toList()),
-                forwardSnapshot.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                itemsSnapshot.stream().map(HabboItem::getId).toList(),
+                forwardSnapshot.stream().map(HabboItem::getId).toList(),
                 antennaSource, furniForward, userForward, signalPerFurni, signalPerUser, channel
         ));
     }

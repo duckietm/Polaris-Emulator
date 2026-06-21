@@ -22,7 +22,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
     public static final int CODE = 80;
@@ -135,7 +134,7 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
                 this.furniSource,
                 this.placeholderName,
                 this.delimiter,
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList())
+                this.items.stream().map(HabboItem::getId).toList()
         ));
     }
 

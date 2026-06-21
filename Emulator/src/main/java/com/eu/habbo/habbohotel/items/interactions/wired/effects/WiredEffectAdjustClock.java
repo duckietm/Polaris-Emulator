@@ -20,7 +20,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class WiredEffectAdjustClock extends InteractionWiredEffect {
     private static final int OPERATOR_INCREASE = 0;
@@ -80,7 +79,7 @@ public class WiredEffectAdjustClock extends InteractionWiredEffect {
     public String getWiredData() {
         return WiredManager.getGson().toJson(new JsonData(
                 this.getDelay(),
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                this.items.stream().map(HabboItem::getId).toList(),
                 this.operator,
                 this.furniSource,
                 this.minutes,

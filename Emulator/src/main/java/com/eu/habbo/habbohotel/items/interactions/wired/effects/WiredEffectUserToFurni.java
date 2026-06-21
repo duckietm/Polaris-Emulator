@@ -26,7 +26,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class WiredEffectUserToFurni extends WiredEffectUserFurniBase {
     private static final int WALKMODE_IF_CLOSER = 0;
@@ -79,7 +78,7 @@ public class WiredEffectUserToFurni extends WiredEffectUserFurniBase {
     public String getWiredData() {
         return WiredManager.getGson().toJson(new JsonData(
             this.getDelay(),
-            this.items.stream().map(HabboItem::getId).collect(Collectors.toList()),
+            this.items.stream().map(HabboItem::getId).toList(),
             this.furniSource,
             this.userSource,
             this.walkMode

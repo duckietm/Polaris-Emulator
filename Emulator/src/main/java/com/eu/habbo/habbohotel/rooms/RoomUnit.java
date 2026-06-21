@@ -32,7 +32,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ScheduledFuture;
-import java.util.stream.Collectors;
 
 public class RoomUnit {
 
@@ -885,7 +884,7 @@ public class RoomUnit {
     return this.getClosestTile(
         rotations.stream().map(rotation -> room.getLayout().getTileInFront(baseTile, rotation))
             .filter(t -> t != null && t.isWalkable() && (this.getCurrentLocation().equals(t)
-                || !room.hasHabbosAt(t.x, t.y))).collect(Collectors.toList()));
+                || !room.hasHabbosAt(t.x, t.y))).toList());
   }
 
   public ScheduledFuture<?> getMoveBlockingTask() {

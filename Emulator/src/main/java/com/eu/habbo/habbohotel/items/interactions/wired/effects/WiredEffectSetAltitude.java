@@ -24,7 +24,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class WiredEffectSetAltitude extends InteractionWiredEffect {
     private static final Pattern ALTITUDE_PATTERN = Pattern.compile("^\\d+(\\.\\d{1,2})?$");
@@ -88,7 +87,7 @@ public class WiredEffectSetAltitude extends InteractionWiredEffect {
     public String getWiredData() {
         return WiredManager.getGson().toJson(new JsonData(
                 this.getDelay(),
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                this.items.stream().map(HabboItem::getId).toList(),
                 this.operator,
                 this.formatAltitude(this.altitude),
                 this.furniSource

@@ -19,7 +19,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
     protected static final int QUANTIFIER_ALL = 0;
@@ -99,7 +98,7 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
     public String getWiredData() {
         this.refresh();
         return WiredManager.getGson().toJson(new JsonData(
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                this.items.stream().map(HabboItem::getId).toList(),
                 this.furniSource,
                 this.userSource,
                 this.quantifier

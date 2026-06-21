@@ -18,7 +18,6 @@ import gnu.trove.set.hash.THashSet;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class WiredConditionFurniHaveFurni extends InteractionWiredCondition {
     public static final WiredConditionType type = WiredConditionType.FURNI_HAS_FURNI;
@@ -85,7 +84,7 @@ public class WiredConditionFurniHaveFurni extends InteractionWiredCondition {
         this.refresh();
         return WiredManager.getGson().toJson(new JsonData(
                 this.all,
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                this.items.stream().map(HabboItem::getId).toList(),
                 this.furniSource
         ));
     }

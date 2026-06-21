@@ -1204,7 +1204,7 @@ public class RoomUnitManager {
     public Collection<RoomUnit> getRoomUnitsAt(RoomTile tile) {
         THashSet<RoomUnit> roomUnits = getRoomUnits();
         return roomUnits.stream().filter(unit -> unit.getCurrentLocation().equals(tile))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     // ==================== EFFECTS AND HAND ITEMS ====================

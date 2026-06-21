@@ -518,6 +518,6 @@ public class Habbo implements Runnable {
                 .filter(c -> !clothingIDs.contains(c.id))
                 .map(c -> c.setId)
                 .flatMap(c -> Arrays.stream(c).boxed())
-                .collect(Collectors.toSet());
+                .collect(Collectors.toUnmodifiableSet());
     }
 }

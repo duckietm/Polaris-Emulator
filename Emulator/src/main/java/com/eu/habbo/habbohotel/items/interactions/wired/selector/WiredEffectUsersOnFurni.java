@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class WiredEffectUsersOnFurni extends InteractionWiredEffect {
     public static final WiredEffectType type = WiredEffectType.USERS_ON_FURNI_SELECTOR;
@@ -128,7 +127,7 @@ public class WiredEffectUsersOnFurni extends InteractionWiredEffect {
                 this.furniSource,
                 this.filterExisting,
                 this.invert,
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                this.items.stream().map(HabboItem::getId).toList(),
                 this.getDelay()
         ));
     }

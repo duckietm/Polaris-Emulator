@@ -17,7 +17,6 @@ import gnu.trove.set.hash.THashSet;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class WiredConditionSelectionQuantity extends InteractionWiredCondition {
     private static final int COMPARISON_LESS_THAN = 0;
@@ -153,7 +152,7 @@ public class WiredConditionSelectionQuantity extends InteractionWiredCondition {
                 this.quantity,
                 this.sourceGroup,
                 this.sourceType,
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList())
+                this.items.stream().map(HabboItem::getId).toList()
         ));
     }
 

@@ -22,7 +22,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class WiredEffectBotWalkToFurni extends InteractionWiredEffect {
     public static final WiredEffectType type = WiredEffectType.BOT_MOVE;
@@ -140,7 +139,7 @@ public class WiredEffectBotWalkToFurni extends InteractionWiredEffect {
         for (Bot bot : bots) {
             List<HabboItem> possibleItems = effectiveItems.stream()
                     .filter(item -> !room.getBotsOnItem(item).contains(bot))
-                    .collect(Collectors.toList());
+                    .toList();
 
             if (possibleItems.isEmpty()) {
                 continue;

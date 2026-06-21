@@ -97,8 +97,8 @@ public class WiredEffectFurniToFurni extends InteractionWiredEffect {
     public String getWiredData() {
         return WiredManager.getGson().toJson(new JsonData(
                 this.getDelay(),
-                this.moveItems.stream().map(HabboItem::getId).collect(Collectors.toList()),
-                this.targetItems.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                this.moveItems.stream().map(HabboItem::getId).toList(),
+                this.targetItems.stream().map(HabboItem::getId).toList(),
                 this.moveSource,
                 this.targetSource
         ));
@@ -260,7 +260,7 @@ public class WiredEffectFurniToFurni extends InteractionWiredEffect {
 
         return WiredSourceUtil.resolveItems(ctx, source, items).stream()
                 .filter(item -> item != null && ctx.room().getHabboItem(item.getId()) != null)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private List<HabboItem> parseItems(String data, Room room) throws WiredSaveException {
@@ -305,7 +305,7 @@ public class WiredEffectFurniToFurni extends InteractionWiredEffect {
 
     private List<Integer> parseIds(String data, Room room) {
         try {
-            return this.parseItems(data, room).stream().map(HabboItem::getId).collect(Collectors.toList());
+            return this.parseItems(data, room).stream().map(HabboItem::getId).toList();
         } catch (WiredSaveException e) {
             return new ArrayList<>();
         }

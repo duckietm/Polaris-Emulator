@@ -23,7 +23,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class WiredEffectTriggerStacks extends InteractionWiredEffect {
     public static final WiredEffectType type = WiredEffectType.CALL_STACKS;
@@ -168,7 +167,7 @@ public class WiredEffectTriggerStacks extends InteractionWiredEffect {
         List<HabboItem> itemsSnapshot = new ArrayList<>(this.items);
         return WiredManager.getGson().toJson(new JsonData(
                 this.getDelay(),
-                itemsSnapshot.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                itemsSnapshot.stream().map(HabboItem::getId).toList(),
                 this.furniSource
         ));
     }

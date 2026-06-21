@@ -36,7 +36,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class WiredEffectToggleFurni extends InteractionWiredEffect {
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredEffectToggleFurni.class);
@@ -241,7 +240,7 @@ public class WiredEffectToggleFurni extends InteractionWiredEffect {
     public String getWiredData() {
         return WiredManager.getGson().toJson(new JsonData(
                 this.getDelay(),
-                new ArrayList<>(this.items).stream().map(HabboItem::getId).collect(Collectors.toList()),
+                new ArrayList<>(this.items).stream().map(HabboItem::getId).toList(),
                 this.toggleType,
                 this.furniSource
         ));

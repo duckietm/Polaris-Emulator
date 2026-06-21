@@ -16,7 +16,6 @@ import gnu.trove.set.hash.THashSet;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class WiredExtraOrEval extends InteractionWiredExtra {
     public static final int CODE = 66;
@@ -89,7 +88,7 @@ public class WiredExtraOrEval extends InteractionWiredExtra {
                 this.evaluationMode,
                 this.furniSource,
                 this.compareValue,
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList())
+                this.items.stream().map(HabboItem::getId).toList()
         ));
     }
 

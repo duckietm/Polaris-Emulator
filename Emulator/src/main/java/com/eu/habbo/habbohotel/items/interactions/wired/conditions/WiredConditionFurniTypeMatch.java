@@ -144,8 +144,8 @@ public class WiredConditionFurniTypeMatch extends InteractionWiredCondition {
     public String getWiredData() {
         this.refresh();
         return WiredManager.getGson().toJson(new JsonData(
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList()),
-                this.secondaryItems.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                this.items.stream().map(HabboItem::getId).toList(),
+                this.secondaryItems.stream().map(HabboItem::getId).toList(),
                 this.furniSource,
                 this.compareFurniSource,
                 this.quantifier

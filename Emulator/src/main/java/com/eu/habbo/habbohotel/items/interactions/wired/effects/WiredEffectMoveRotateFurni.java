@@ -22,7 +22,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 public class WiredEffectMoveRotateFurni extends InteractionWiredEffect implements ICycleable {
 
@@ -152,7 +151,7 @@ public class WiredEffectMoveRotateFurni extends InteractionWiredEffect implement
                 this.direction,
                 this.rotation,
                 this.getDelay(),
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                this.items.stream().map(HabboItem::getId).toList(),
                 this.furniSource
         ));
     }

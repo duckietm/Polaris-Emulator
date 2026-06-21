@@ -832,7 +832,15 @@ public class HabboStats implements Runnable {
         persistFlag("mass_mentions_enabled", enabled);
     }
 
+    private static final Set<String> PERSIST_FLAG_COLUMNS =
+            Set.of("mentions_enabled", "mass_mentions_enabled");
+
     private void persistFlag(String column, boolean enabled) {
+        if (!PERSIST_FLAG_COLUMNS.contains(column)) {
+            LOGGER.error("Refusing to persist unknown users_settings column '{}'", column);
+            return;
+        }
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement("UPDATE users_settings SET `" + column + "` = ? WHERE user_id = ? LIMIT 1")) {
             statement.setString(1, enabled ? "1" : "0");

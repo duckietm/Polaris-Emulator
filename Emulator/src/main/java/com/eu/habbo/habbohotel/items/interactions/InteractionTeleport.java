@@ -11,6 +11,8 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.threading.runnables.RoomUnitWalkToLocation;
 import com.eu.habbo.threading.runnables.teleport.TeleportActionOne;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -18,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class InteractionTeleport extends HabboItem {
+    private static final Logger LOGGER = LoggerFactory.getLogger(InteractionTeleport.class);
+
     private int targetId;
     private int targetRoomId;
     private int roomUnitID = -1;
@@ -87,7 +91,7 @@ public class InteractionTeleport extends HabboItem {
             try {
                 super.onClick(client, room, new Object[]{"TOGGLE_OVERRIDE"});
             } catch (Exception e) {
-                e.printStackTrace();
+                LOGGER.error("Caught exception", e);
             }
         } else if (unit.getCurrentLocation().equals(currentLocation) || unit.getCurrentLocation().equals(infrontTile)) {
             // set state 1 and walk on item

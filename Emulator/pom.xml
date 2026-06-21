@@ -12,6 +12,29 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
+
+        <netty.version>4.2.15.Final</netty.version>
+        <gson.version>2.14.0</gson.version>
+        <mariadb.version>3.5.8</mariadb.version>
+        <trove4j.version>3.0.3</trove4j.version>
+        <hikaricp.version>7.0.2</hikaricp.version>
+        <caffeine.version>3.2.4</caffeine.version>
+        <resilience4j.version>2.4.0</resilience4j.version>
+        <hibernate-validator.version>9.1.0.Final</hibernate-validator.version>
+        <commons-lang3.version>3.20.0</commons-lang3.version>
+        <commons-math3.version>3.6.1</commons-math3.version>
+        <jsoup.version>1.22.2</jsoup.version>
+        <slf4j.version>2.0.18</slf4j.version>
+        <logback.version>1.5.34</logback.version>
+        <jansi.version>2.4.3</jansi.version>
+        <jbcrypt.version>0.4</jbcrypt.version>
+        <jakarta-mail.version>2.0.5</jakarta-mail.version>
+        <junit.version>6.1.0</junit.version>
+
+        <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
+        <maven-assembly-plugin.version>3.7.1</maven-assembly-plugin.version>
+        <maven-javadoc-plugin.version>3.10.1</maven-javadoc-plugin.version>
+        <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
     </properties>
 
     <build>
@@ -19,7 +42,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.15.0</version>
+                <version>${maven-compiler-plugin.version}</version>
                 <configuration>
                     <source>19</source>
                     <target>19</target>
@@ -30,7 +53,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.7.1</version>
+                <version>${maven-assembly-plugin.version}</version>
                 <configuration>
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
@@ -56,7 +79,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.10.1</version>
+                <version>${maven-javadoc-plugin.version}</version>
                 <configuration>
                     <doclint>none</doclint>
                     <show>public</show>
@@ -66,7 +89,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.2</version>
+                <version>${maven-surefire-plugin.version}</version>
             </plugin>
         </plugins>
     </build>
@@ -83,21 +106,21 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
-            <version>4.2.15.Final</version>
+            <version>${netty.version}</version>
         </dependency>
 
         <!-- GSON -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
-            <version>2.14.0</version>
+            <version>${gson.version}</version>
         </dependency>
 
         <!-- MariaDB Connector/J (native driver for MariaDB) -->
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
-            <version>3.5.8</version>
+            <version>${mariadb.version}</version>
             <scope>runtime</scope>
         </dependency>
 
@@ -105,7 +128,7 @@
         <dependency>
             <groupId>net.sf.trove4j</groupId>
             <artifactId>trove4j</artifactId>
-            <version>3.0.3</version>
+            <version>${trove4j.version}</version>
             <scope>compile</scope>
         </dependency>
 
@@ -113,7 +136,7 @@
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
-            <version>7.0.2</version>
+            <version>${hikaricp.version}</version>
             <scope>compile</scope>
         </dependency>
 
@@ -121,7 +144,7 @@
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
-            <version>3.2.4</version>
+            <version>${caffeine.version}</version>
             <scope>compile</scope>
         </dependency>
 
@@ -129,14 +152,14 @@
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-ratelimiter</artifactId>
-            <version>2.4.0</version>
+            <version>${resilience4j.version}</version>
             <scope>compile</scope>
         </dependency>
 
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-circuitbreaker</artifactId>
-            <version>2.4.0</version>
+            <version>${resilience4j.version}</version>
             <scope>compile</scope>
         </dependency>
 
@@ -144,7 +167,7 @@
         <dependency>
             <groupId>org.hibernate.validator</groupId>
             <artifactId>hibernate-validator</artifactId>
-            <version>9.1.0.Final</version>
+            <version>${hibernate-validator.version}</version>
             <scope>compile</scope>
         </dependency>
 
@@ -152,7 +175,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.20.0</version>
+            <version>${commons-lang3.version}</version>
             <scope>compile</scope>
         </dependency>
 
@@ -160,7 +183,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
-            <version>3.6.1</version>
+            <version>${commons-math3.version}</version>
             <scope>compile</scope>
         </dependency>
 
@@ -168,7 +191,7 @@
         <dependency>
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
-            <version>1.22.2</version>
+            <version>${jsoup.version}</version>
             <scope>compile</scope>
         </dependency>
 
@@ -176,14 +199,14 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>2.0.18</version>
+            <version>${slf4j.version}</version>
         </dependency>
 
         <!-- Logback -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.5.34</version>
+            <version>${logback.version}</version>
             <scope>compile</scope>
         </dependency>
 
@@ -191,15 +214,15 @@
         <dependency>
             <groupId>org.fusesource.jansi</groupId>
             <artifactId>jansi</artifactId>
-            <version>2.4.3</version>
+            <version>${jansi.version}</version>
         </dependency>
 
         <!-- favre BCrypt is used by auth endpoints and natively verifies
              Laravel-style $2y$ hashes from users.password. -->
         <dependency>
-            <groupId>at.favre.lib</groupId>
-            <artifactId>bcrypt</artifactId>
-            <version>0.10.2</version>
+            <groupId>org.mindrot</groupId>
+            <artifactId>jbcrypt</artifactId>
+            <version>${jbcrypt.version}</version>
         </dependency>
 
         <!-- Jakarta Mail — used by the built-in forgot-password endpoint
@@ -207,14 +230,14 @@
         <dependency>
             <groupId>org.eclipse.angus</groupId>
             <artifactId>jakarta.mail</artifactId>
-            <version>2.0.5</version>
+            <version>${jakarta-mail.version}</version>
         </dependency>
 
         <!-- JUnit Jupiter -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>6.1.0</version>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

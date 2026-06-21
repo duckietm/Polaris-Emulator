@@ -69,7 +69,7 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
                 LOGGER.error("Unknown RCON Message: {}", key);
             } catch (Exception e) {
                 LOGGER.error("Invalid RCON Message: {}", message);
-                e.printStackTrace();
+            LOGGER.error("Caught exception", e);
             }
 
             writeAndClose(ctx, response);

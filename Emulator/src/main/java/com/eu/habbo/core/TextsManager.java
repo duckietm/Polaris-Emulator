@@ -23,7 +23,7 @@ public class TextsManager {
 
             LOGGER.info("Texts Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error("Caught exception", e);
         }
     }
 

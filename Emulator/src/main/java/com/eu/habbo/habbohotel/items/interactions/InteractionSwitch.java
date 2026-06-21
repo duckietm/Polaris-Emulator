@@ -8,6 +8,8 @@ import com.eu.habbo.habbohotel.rooms.RoomLayout;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.threading.runnables.RoomUnitWalkToLocation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -15,6 +17,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class InteractionSwitch extends InteractionDefault {
+    private static final Logger LOGGER = LoggerFactory.getLogger(InteractionSwitch.class);
+
     public InteractionSwitch(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
     }
@@ -57,7 +61,7 @@ public class InteractionSwitch extends InteractionDefault {
                     try {
                         this.onClick(client, room, objects);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        LOGGER.error("Caught exception", e);
                     }
                 });
 

@@ -48,9 +48,11 @@ public class HabboInfo implements Runnable {
     private int InfostandCardBg;
     private int InfostandBorder;
     private int loadingRoom;
-    private Room currentRoom;
-    private String roomEntryMethod = "door";
-    private int roomEntryTeleportId = 0;
+    // volatile: written by packet handlers (room enter/leave) and read by the room
+    // cycle thread + other handlers — needs a happens-before edge across threads.
+    private volatile Room currentRoom;
+    private volatile String roomEntryMethod = "door";
+    private volatile int roomEntryTeleportId = 0;
     private int roomQueueId;
     private RideablePet riding;
     private Class<? extends Game> currentGame;

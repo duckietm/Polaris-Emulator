@@ -24,11 +24,16 @@ public class GameClient {
     private final HabboEncryption encryption;
 	private final LatencyTracker latencyTracker;
 
-    private Habbo habbo;
+    // volatile: this client's identity/state is read by GameClientManager lookups
+    // (findClientBySsoTicket, getHabbosWithIP/MachineId, containsHabbo/getHabbo)
+    // running on OTHER clients' handler threads while this client's own handler or
+    // dispose() writes them — without volatile those readers can observe stale
+    // values (no happens-before edge), causing check-then-act NPEs / wrong matches.
+    private volatile Habbo habbo;
     private final AtomicBoolean disposed = new AtomicBoolean(false);
-    private boolean handshakeFinished;
-    private String machineId = "";
-    private String ssoTicket = "";
+    private volatile boolean handshakeFinished;
+    private volatile String machineId = "";
+    private volatile String ssoTicket = "";
 
     public final ConcurrentHashMap<Integer, Integer> incomingPacketCounter = new ConcurrentHashMap<>(25);
     public final ConcurrentHashMap<Class<? extends MessageHandler>, Long> messageTimestamps = new ConcurrentHashMap<>();

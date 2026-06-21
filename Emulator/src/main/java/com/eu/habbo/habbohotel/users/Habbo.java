@@ -45,7 +45,9 @@ public class Habbo implements Runnable {
     // without volatile they could observe a stale client (no happens-before edge).
     // Pre-existing cross-executor race, independent of the virtual-thread flag.
     private volatile GameClient client;
-    private RoomUnit roomUnit;
+    // volatile: set/cleared on room enter/leave and disconnect, read by the room
+    // cycle thread + handlers across threads.
+    private volatile RoomUnit roomUnit;
 
     private volatile boolean update;
     private volatile boolean disconnected = false;

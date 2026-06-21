@@ -60,7 +60,7 @@ public class RoomUnit {
   private double previousLocationZ;
   private RoomTile currentLocation;
   private RoomTile goalLocation;
-  private double z;
+  private volatile double z; // read by room cycle, written by walk handlers — cross-thread
   private int tilesWalked;
   private boolean inRoom;
   private boolean canWalk;
@@ -68,8 +68,8 @@ public class RoomUnit {
   private boolean statusUpdate = false;
   private boolean invisible = false;
   private boolean canLeaveRoomByDoor = true;
-  private RoomUserRotation bodyRotation = RoomUserRotation.NORTH;
-  private RoomUserRotation headRotation = RoomUserRotation.NORTH;
+  private volatile RoomUserRotation bodyRotation = RoomUserRotation.NORTH;
+  private volatile RoomUserRotation headRotation = RoomUserRotation.NORTH;
   private DanceType danceType;
   private RoomUnitType roomUnitType;
   // Concurrent + volatile: the room cycle thread polls/clears this path while a

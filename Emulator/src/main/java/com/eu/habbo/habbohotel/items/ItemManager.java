@@ -308,6 +308,14 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_act_toggle_moodlight", WiredEffectToggleMoodlight.class));
         this.interactionsList.add(new ItemInteraction("wf_act_reset_highscores", WiredEffectResetHighscores.class));
         this.interactionsList.add(new ItemInteraction("wf_act_move_user_tiles", WiredEffectMoveUserTiles.class));
+        // Phase C — canDoNow conditions (reuse existing condition dialog codes; no new client furnidata).
+        this.interactionsList.add(new ItemInteraction("wf_cnd_not_habbo_has_credits", WiredConditionHabboLacksCredits.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_not_habbo_has_diamonds", WiredConditionHabboLacksDiamonds.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_not_habbo_has_duckets", WiredConditionHabboLacksDuckets.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_freeze", WiredConditionFrozen.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_not_freeze", WiredConditionNotFrozen.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_furni_in_range", WiredConditionFurniInRange.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_furni_not_in_range", WiredConditionFurniNotInRange.class));
         this.interactionsList.add(new ItemInteraction("wf_act_call_stacks", WiredEffectTriggerStacks.class));
         this.interactionsList.add(new ItemInteraction("wf_act_neg_call_stack", WiredEffectNegativeTriggerStacks.class));
         this.interactionsList.add(new ItemInteraction("wf_act_neg_call_stacks", WiredEffectNegativeTriggerStacks.class));

@@ -164,6 +164,18 @@ class WiredAliasResolutionTest {
     }
 
     @Test
+    void phaseCCanDoNowConditionsResolve() {
+        // Phase C — new condition classes that reuse existing condition dialog codes.
+        assertSame(WiredConditionHabboLacksCredits.class, itemManager.getItemInteraction("wf_cnd_not_habbo_has_credits").getType());
+        assertSame(WiredConditionHabboLacksDiamonds.class, itemManager.getItemInteraction("wf_cnd_not_habbo_has_diamonds").getType());
+        assertSame(WiredConditionHabboLacksDuckets.class, itemManager.getItemInteraction("wf_cnd_not_habbo_has_duckets").getType());
+        assertSame(WiredConditionFrozen.class, itemManager.getItemInteraction("wf_cnd_freeze").getType());
+        assertSame(WiredConditionNotFrozen.class, itemManager.getItemInteraction("wf_cnd_not_freeze").getType());
+        assertSame(WiredConditionFurniInRange.class, itemManager.getItemInteraction("wf_cnd_furni_in_range").getType());
+        assertSame(WiredConditionFurniNotInRange.class, itemManager.getItemInteraction("wf_cnd_furni_not_in_range").getType());
+    }
+
+    @Test
     void unknownTypeStillFallsBackToDefault() {
         // sanity: an unregistered name must still resolve to InteractionDefault (resolution unchanged)
         assertSame(InteractionDefault.class,

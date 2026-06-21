@@ -15,15 +15,15 @@ public class MentionReceivedComposer extends MessageComposer {
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.MentionReceivedComposer);
-        this.response.appendInt(this.mention.getId());
-        this.response.appendInt(this.mention.getSenderUserId());
-        this.response.appendString(this.mention.getSenderUsername());
-        this.response.appendString(this.mention.getSenderFigure());
-        this.response.appendInt(this.mention.getRoomId());
-        this.response.appendString(this.mention.getRoomName());
-        this.response.appendString(this.mention.getMessage());
-        this.response.appendInt(this.mention.getMentionType());
-        this.response.appendInt(this.mention.getTimestamp());
+        this.response.appendInt(this.mention.id());
+        this.response.appendInt(this.mention.senderUserId());
+        this.response.appendString(this.mention.senderUsername());
+        this.response.appendString(this.mention.senderFigure());
+        this.response.appendInt(this.mention.roomId());
+        this.response.appendString(this.mention.roomName());
+        this.response.appendString(this.mention.message());
+        this.response.appendInt(this.mention.mentionType());
+        this.response.appendInt(this.mention.timestamp());
         return this.response;
     }
 }

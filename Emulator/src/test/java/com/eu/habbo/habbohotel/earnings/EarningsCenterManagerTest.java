@@ -33,9 +33,9 @@ class EarningsCenterManagerTest {
         List<EarningsEntry> entries = manager.getEntries(null);
         EarningsClaimResult result = manager.claim(null, "daily_gift");
 
-        assertFalse(entries.getFirst().isEnabled());
-        assertFalse(entries.getFirst().isClaimable());
-        assertEquals(EarningsClaimResult.Status.DISABLED, result.getStatus());
+        assertFalse(entries.getFirst().enabled());
+        assertFalse(entries.getFirst().claimable());
+        assertEquals(EarningsClaimResult.Status.DISABLED, result.status());
         assertTrue(rewards.granted.isEmpty());
     }
 
@@ -45,7 +45,7 @@ class EarningsCenterManagerTest {
 
         EarningsClaimResult result = manager.claim(null, "not_real");
 
-        assertEquals(EarningsClaimResult.Status.UNKNOWN_CATEGORY, result.getStatus());
+        assertEquals(EarningsClaimResult.Status.UNKNOWN_CATEGORY, result.status());
     }
 
     @Test
@@ -61,13 +61,13 @@ class EarningsCenterManagerTest {
         EarningsClaimResult first = manager.claim(null, "daily_gift");
         EarningsClaimResult duplicate = manager.claim(null, "daily_gift");
 
-        assertEquals(EarningsClaimResult.Status.SUCCESS, first.getStatus());
-        assertEquals(EarningsClaimResult.Status.ALREADY_CLAIMED, duplicate.getStatus());
+        assertEquals(EarningsClaimResult.Status.SUCCESS, first.status());
+        assertEquals(EarningsClaimResult.Status.ALREADY_CLAIMED, duplicate.status());
         assertEquals(2, rewards.granted.size());
-        assertEquals(EarningsReward.TYPE_CREDITS, rewards.granted.get(0).getType());
-        assertEquals(25, rewards.granted.get(0).getAmount());
-        assertEquals(EarningsReward.TYPE_POINTS, rewards.granted.get(1).getType());
-        assertEquals(7, rewards.granted.get(1).getPointsType());
+        assertEquals(EarningsReward.TYPE_CREDITS, rewards.granted.get(0).type());
+        assertEquals(25, rewards.granted.get(0).amount());
+        assertEquals(EarningsReward.TYPE_POINTS, rewards.granted.get(1).type());
+        assertEquals(7, rewards.granted.get(1).pointsType());
     }
 
     @Test
@@ -76,8 +76,8 @@ class EarningsCenterManagerTest {
 
         EarningsClaimResult result = manager.claim(null, "games");
 
-        assertEquals(EarningsClaimResult.Status.NO_REWARD, result.getStatus());
-        assertFalse(result.getEntry().isClaimable());
+        assertEquals(EarningsClaimResult.Status.NO_REWARD, result.status());
+        assertFalse(result.entry().claimable());
     }
 
     @Test
@@ -90,19 +90,19 @@ class EarningsCenterManagerTest {
         EarningsCenterManager manager = new EarningsCenterManager(config, new TestClaims(), new TestRewards(), FIXED_CLOCK);
 
         EarningsEntry entry = manager.getEntries(null).stream()
-                .filter(current -> current.getCategory() == EarningsCategory.BONUS_BAG)
+                .filter(current -> current.category() == EarningsCategory.BONUS_BAG)
                 .findFirst()
                 .orElseThrow();
 
-        assertTrue(entry.isClaimable());
-        assertEquals(3, entry.getRewards().size());
-        assertEquals(EarningsReward.TYPE_BADGE, entry.getRewards().get(0).getType());
-        assertEquals("ACH_Test1", entry.getRewards().get(0).getData());
-        assertEquals(EarningsReward.TYPE_ITEM, entry.getRewards().get(1).getType());
-        assertEquals("123", entry.getRewards().get(1).getData());
-        assertEquals(2, entry.getRewards().get(1).getAmount());
-        assertEquals(EarningsReward.TYPE_HC_DAYS, entry.getRewards().get(2).getType());
-        assertEquals(7, entry.getRewards().get(2).getAmount());
+        assertTrue(entry.claimable());
+        assertEquals(3, entry.rewards().size());
+        assertEquals(EarningsReward.TYPE_BADGE, entry.rewards().get(0).type());
+        assertEquals("ACH_Test1", entry.rewards().get(0).data());
+        assertEquals(EarningsReward.TYPE_ITEM, entry.rewards().get(1).type());
+        assertEquals("123", entry.rewards().get(1).data());
+        assertEquals(2, entry.rewards().get(1).amount());
+        assertEquals(EarningsReward.TYPE_HC_DAYS, entry.rewards().get(2).type());
+        assertEquals(7, entry.rewards().get(2).amount());
     }
 
     @Test
@@ -117,8 +117,8 @@ class EarningsCenterManagerTest {
         EarningsClaimResult retried = new EarningsCenterManager(config, claims, new TestRewards(), FIXED_CLOCK)
                 .claim(null, "daily_gift");
 
-        assertEquals(EarningsClaimResult.Status.ERROR, failed.getStatus());
-        assertEquals(EarningsClaimResult.Status.SUCCESS, retried.getStatus());
+        assertEquals(EarningsClaimResult.Status.ERROR, failed.status());
+        assertEquals(EarningsClaimResult.Status.SUCCESS, retried.status());
     }
 
     @Test
@@ -130,14 +130,14 @@ class EarningsCenterManagerTest {
         EarningsCenterManager manager = new EarningsCenterManager(config, claims, new TestRewards(), nativeIntegration, FIXED_CLOCK);
 
         EarningsEntry entry = manager.getEntries(null).stream()
-                .filter(current -> current.getCategory() == EarningsCategory.MARKETPLACE)
+                .filter(current -> current.category() == EarningsCategory.MARKETPLACE)
                 .findFirst()
                 .orElseThrow();
         EarningsClaimResult result = manager.claim(null, "marketplace");
 
-        assertTrue(entry.isClaimable());
-        assertEquals(45, entry.getRewards().getFirst().getAmount());
-        assertEquals(EarningsClaimResult.Status.SUCCESS, result.getStatus());
+        assertTrue(entry.claimable());
+        assertEquals(45, entry.rewards().getFirst().amount());
+        assertEquals(EarningsClaimResult.Status.SUCCESS, result.status());
         assertEquals(1, nativeIntegration.claims);
         assertTrue(claims.claims.isEmpty());
     }
@@ -149,13 +149,13 @@ class EarningsCenterManagerTest {
         EarningsCenterManager manager = new EarningsCenterManager(config, new TestClaims(), new TestRewards(), nativeIntegration, FIXED_CLOCK);
 
         EarningsEntry entry = manager.getEntries(null).stream()
-                .filter(current -> current.getCategory() == EarningsCategory.HC_PAYDAY)
+                .filter(current -> current.category() == EarningsCategory.HC_PAYDAY)
                 .findFirst()
                 .orElseThrow();
         EarningsClaimResult result = manager.claim(null, "hc_payday");
 
-        assertFalse(entry.isClaimable());
-        assertEquals(EarningsClaimResult.Status.NO_REWARD, result.getStatus());
+        assertFalse(entry.claimable());
+        assertEquals(EarningsClaimResult.Status.NO_REWARD, result.status());
         assertEquals(0, nativeIntegration.claims);
     }
 
@@ -171,11 +171,11 @@ class EarningsCenterManagerTest {
         claims.recordClaim(0, "daily_gift", String.valueOf(1_800_000_000L / 86400), 1_800_000_000);
         List<EarningsClaimResult> results = manager.claimAll(null);
 
-        assertEquals(EarningsClaimResult.Status.ALREADY_CLAIMED, results.get(0).getStatus());
-        assertEquals(EarningsClaimResult.Status.SUCCESS, results.get(1).getStatus());
+        assertEquals(EarningsClaimResult.Status.ALREADY_CLAIMED, results.get(0).status());
+        assertEquals(EarningsClaimResult.Status.SUCCESS, results.get(1).status());
         assertEquals(1, rewards.granted.size());
-        assertEquals(EarningsReward.TYPE_PIXELS, rewards.granted.getFirst().getType());
-        assertEquals(4, rewards.granted.getFirst().getAmount());
+        assertEquals(EarningsReward.TYPE_PIXELS, rewards.granted.getFirst().type());
+        assertEquals(4, rewards.granted.getFirst().amount());
     }
 
     private static TestConfig enabledConfig() {

@@ -67,7 +67,7 @@ public class SecureLoginEvent extends MessageHandler {
         if (!Emulator.isReady)
             return;
 
-        if (Emulator.getConfig().getBoolean("encryption.forced", false) && Emulator.getCrypto().isEnabled() && !this.client.isHandshakeFinished()) {
+        if (Emulator.getConfig().getBoolean("encryption.forced", false) && Emulator.getCrypto().enabled() && !this.client.isHandshakeFinished()) {
             Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
             LOGGER.warn("Encryption is forced and TLS Handshake isn't finished! Closed connection...");
             return;

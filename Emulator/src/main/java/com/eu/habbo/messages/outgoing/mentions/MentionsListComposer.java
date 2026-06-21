@@ -20,16 +20,16 @@ public class MentionsListComposer extends MessageComposer {
         this.response.appendInt(this.mentions.size());
 
         for (HabboMention mention : this.mentions) {
-            this.response.appendInt(mention.getId());
-            this.response.appendInt(mention.getSenderUserId());
-            this.response.appendString(mention.getSenderUsername());
-            this.response.appendString(mention.getSenderFigure());
-            this.response.appendInt(mention.getRoomId());
-            this.response.appendString(mention.getRoomName());
-            this.response.appendString(mention.getMessage());
-            this.response.appendInt(mention.getMentionType());
-            this.response.appendInt(mention.getTimestamp());
-            this.response.appendBoolean(mention.isRead());
+            this.response.appendInt(mention.id());
+            this.response.appendInt(mention.senderUserId());
+            this.response.appendString(mention.senderUsername());
+            this.response.appendString(mention.senderFigure());
+            this.response.appendInt(mention.roomId());
+            this.response.appendString(mention.roomName());
+            this.response.appendString(mention.message());
+            this.response.appendInt(mention.mentionType());
+            this.response.appendInt(mention.timestamp());
+            this.response.appendBoolean(mention.read());
         }
 
         return this.response;

@@ -395,7 +395,7 @@ public class Messenger {
     public FriendRequest findFriendRequest(String username) {
         synchronized (this.friendRequests) {
             for (FriendRequest friendRequest : this.friendRequests) {
-                if (friendRequest.getUsername().equalsIgnoreCase(username)) {
+                if (friendRequest.username().equalsIgnoreCase(username)) {
                     return friendRequest;
                 }
             }

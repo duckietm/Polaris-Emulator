@@ -41,11 +41,11 @@ public class GameClient {
 
     public GameClient(Channel channel) {
         this.channel = channel;
-        this.encryption = Emulator.getCrypto().isEnabled()
+        this.encryption = Emulator.getCrypto().enabled()
                 ? new HabboEncryption(
-                    Emulator.getCrypto().getExponent(),
-                    Emulator.getCrypto().getModulus(),
-                    Emulator.getCrypto().getPrivateExponent())
+                    Emulator.getCrypto().exponent(),
+                    Emulator.getCrypto().modulus(),
+                    Emulator.getCrypto().privateExponent())
                 : null;
 			this.latencyTracker = new LatencyTracker();
     }

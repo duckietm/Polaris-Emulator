@@ -22,9 +22,9 @@ public class LoadFriendRequestsComposer extends MessageComposer {
             this.response.appendInt(this.habbo.getMessenger().getFriendRequests().size());
 
             for (FriendRequest friendRequest : this.habbo.getMessenger().getFriendRequests()) {
-                this.response.appendInt(friendRequest.getId());
-                this.response.appendString(friendRequest.getUsername());
-                this.response.appendString(friendRequest.getLook());
+                this.response.appendInt(friendRequest.id());
+                this.response.appendString(friendRequest.username());
+                this.response.appendString(friendRequest.look());
             }
         }
 

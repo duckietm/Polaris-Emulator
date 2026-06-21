@@ -28,17 +28,17 @@ public class EarningsCenterComposer extends MessageComposer {
     }
 
     private void serializeEntry(EarningsEntry entry) {
-        this.response.appendString(entry.getCategory().getKey());
-        this.response.appendBoolean(entry.isEnabled());
-        this.response.appendBoolean(entry.isClaimable());
-        this.response.appendInt(entry.getNextClaimAt());
-        this.response.appendInt(entry.getRewards().size());
+        this.response.appendString(entry.category().getKey());
+        this.response.appendBoolean(entry.enabled());
+        this.response.appendBoolean(entry.claimable());
+        this.response.appendInt(entry.nextClaimAt());
+        this.response.appendInt(entry.rewards().size());
 
-        for (EarningsReward reward : entry.getRewards()) {
-            this.response.appendString(reward.getType());
-            this.response.appendInt(reward.getAmount());
-            this.response.appendInt(reward.getPointsType());
-            this.response.appendString(reward.getData());
+        for (EarningsReward reward : entry.rewards()) {
+            this.response.appendString(reward.type());
+            this.response.appendInt(reward.amount());
+            this.response.appendInt(reward.pointsType());
+            this.response.appendString(reward.data());
         }
     }
 }

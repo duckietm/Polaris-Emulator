@@ -372,13 +372,13 @@ public class EarningsCenterManager {
             }
 
             for (EarningsReward reward : rewards) {
-                switch (reward.getType()) {
-                    case EarningsReward.TYPE_CREDITS -> habbo.giveCredits(reward.getAmount());
-                    case EarningsReward.TYPE_PIXELS -> habbo.givePixels(reward.getAmount());
-                    case EarningsReward.TYPE_POINTS -> habbo.givePoints(reward.getPointsType(), reward.getAmount());
-                    case EarningsReward.TYPE_BADGE -> grantBadge(habbo, reward.getData());
-                    case EarningsReward.TYPE_ITEM -> grantItem(habbo, Integer.parseInt(reward.getData()), reward.getAmount());
-                    case EarningsReward.TYPE_HC_DAYS -> grantHcDays(habbo, reward.getAmount());
+                switch (reward.type()) {
+                    case EarningsReward.TYPE_CREDITS -> habbo.giveCredits(reward.amount());
+                    case EarningsReward.TYPE_PIXELS -> habbo.givePixels(reward.amount());
+                    case EarningsReward.TYPE_POINTS -> habbo.givePoints(reward.pointsType(), reward.amount());
+                    case EarningsReward.TYPE_BADGE -> grantBadge(habbo, reward.data());
+                    case EarningsReward.TYPE_ITEM -> grantItem(habbo, Integer.parseInt(reward.data()), reward.amount());
+                    case EarningsReward.TYPE_HC_DAYS -> grantHcDays(habbo, reward.amount());
                     default -> {
                     }
                 }

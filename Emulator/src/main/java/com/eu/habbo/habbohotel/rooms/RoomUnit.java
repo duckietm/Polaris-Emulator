@@ -45,14 +45,16 @@ public class RoomUnit {
   private final THashMap<String, Object> cacheable;
   public boolean canRotate = true;
   public boolean animateWalk = false;
-  public boolean cmdTeleport = false;
-  public boolean cmdSit = false;
-  public boolean cmdStand = false;
-  public boolean cmdLay = false;
-  public boolean sitUpdate = false;
-  public boolean isTeleporting = false;
-  public boolean isKicked;
-  public int kickCount = 0;
+  // volatile: command/kick flags set by packet/command handlers and read by the
+  // room cycle thread — cross-thread, need a happens-before edge.
+  public volatile boolean cmdTeleport = false;
+  public volatile boolean cmdSit = false;
+  public volatile boolean cmdStand = false;
+  public volatile boolean cmdLay = false;
+  public volatile boolean sitUpdate = false;
+  public volatile boolean isTeleporting = false;
+  public volatile boolean isKicked;
+  public volatile int kickCount = 0;
   private int id;
   private RoomTile startLocation;
   private RoomTile botStartLocation;

@@ -222,3 +222,26 @@ unchanged) plus `public static RoomLayout fromHeightmap(name, heightmap, doorX,
 doorY, doorDir, room)`. This decouples layout construction from the room_models
 schema and unlocked `RoomLayoutParseCharacterizationTest` (3 tests, via the
 config seam). Suite now **398 tests, 0 failures**.
+
+### Phase 3 baseline — CAPTURED (Java 25 runtime VALIDATED)
+The user ran the staged command in a normal terminal. The full emulator boots on
+**Java 25 + Generational ZGC + Compact Object Headers** against the `amx_test`
+clone — the upgrade is now validated end-to-end, not just compile+tests.
+- **Startup ~8.07s**, **heap ~948 MB** after full load, 24 threads.
+- Startup hot spots: `FurnitureTextProvider` ~2.0s (43,031 names), `ItemManager`
+  1.65s, `CatalogManager` 0.60s, DB connect 0.22s → Phase 3 optimization targets.
+- Config-log fix confirmed live: no `Config key not found enc.*` ERROR spam.
+
+**Key upgrade-readiness finding — schema drift on the live `next` DB.**
+`PetManager` threw `Unknown label 'cost_happiness'` because the live DB still has
+the old misspelled column `cost_happyness`. The CODE and `Default Database` are
+correct (`cost_happiness`); a rename migration exists at
+`Database Updates/Own_Database_RunFirst/000_all_database_updates.sql:56`. So the
+live `next` DB is **behind on migrations** — before upgrading it to this build,
+apply the `Own_Database_RunFirst/*.sql` set. Boot still succeeded (the pet error
+is non-fatal). NOT a code bug — verified before touching, avoiding a wrong "fix".
+
+Other findings (non-fatal): `runtime.threads`=16 in DB vs 24 logical CPUs (tuning
+headroom); `CraftingManager` "Unknown ingredient item ..." (missing furni data in
+the clone); `BadgeImager` path is a Linux path from `next` (expected on Windows);
+RCON bound :3001 (rcon.port comes from the DB, overriding config.ini).

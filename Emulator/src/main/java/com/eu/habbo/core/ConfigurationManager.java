@@ -153,7 +153,12 @@ public class ConfigurationManager {
         }
 
         if (!targetProperties.containsKey(key)) {
-            LOGGER.error("Config key not found {}", key);
+            // A missing key for which the caller supplied a default is a normal
+            // "optional setting" case, not an error. getInt/getBoolean/getDouble
+            // all route through here, so an absent optional key used to spam the
+            // ERROR stream on every lookup (twice for getBoolean), drowning the
+            // real errors operators watch. Log at DEBUG instead.
+            LOGGER.debug("Config key not found, using default: {}", key);
         }
 
         return defaultValue;

@@ -5,8 +5,12 @@ import com.eu.habbo.habbohotel.items.interactions.wired.conditions.*;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.*;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraOrEval;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerCollision;
+import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboIdles;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboLeavesRoom;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboSaysKeyword;
+import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboStartsDancing;
+import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboStopsDancing;
+import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboUnidles;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -119,6 +123,15 @@ class WiredAliasResolutionTest {
             assertSame(e.getValue(), resolved.getType(),
                     "variant '" + e.getKey() + "' must resolve to " + e.getValue().getSimpleName());
         }
+    }
+
+    @Test
+    void phaseBDanceIdleTriggersResolve() {
+        // Phase B — new trigger classes for events that already fire from RoomUnitManager/RoomCycleManager.
+        assertSame(WiredTriggerHabboStartsDancing.class, itemManager.getItemInteraction("wf_trg_starts_dancing").getType());
+        assertSame(WiredTriggerHabboStopsDancing.class, itemManager.getItemInteraction("wf_trg_stops_dancing").getType());
+        assertSame(WiredTriggerHabboIdles.class, itemManager.getItemInteraction("wf_trg_idles").getType());
+        assertSame(WiredTriggerHabboUnidles.class, itemManager.getItemInteraction("wf_trg_unidles").getType());
     }
 
     @Test

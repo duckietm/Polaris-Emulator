@@ -263,6 +263,13 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_trg_game_team_lose", WiredTriggerTeamLoses.class));
         this.interactionsList.add(new ItemInteraction("wf_trg_recv_signal", WiredTriggerReceiveSignal.class));
 
+        // Phase B — dance/idle triggers. The USER_STARTS_DANCING/STOPS_DANCING/IDLES/UNIDLES events
+        // already fire from RoomUnitManager/RoomCycleManager; these classes subscribe to them.
+        this.interactionsList.add(new ItemInteraction("wf_trg_starts_dancing", WiredTriggerHabboStartsDancing.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_stops_dancing", WiredTriggerHabboStopsDancing.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_idles", WiredTriggerHabboIdles.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_unidles", WiredTriggerHabboUnidles.class));
+
 
         this.interactionsList.add(new ItemInteraction("wf_act_toggle_state", WiredEffectToggleFurni.class));
         this.interactionsList.add(new ItemInteraction("wf_act_reset_timers", WiredEffectResetTimers.class));

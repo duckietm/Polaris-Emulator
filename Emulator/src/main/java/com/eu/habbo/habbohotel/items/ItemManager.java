@@ -312,6 +312,8 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_act_add_tag", WiredEffectAddTag.class));
         this.interactionsList.add(new ItemInteraction("wf_act_add_tag_perm", WiredEffectAddTag.class));
         this.interactionsList.add(new ItemInteraction("wf_act_remove_tag", WiredEffectRemoveTag.class));
+        // give_look exists client-side (FurnitureData): set the user's figure (text dialog = figure string).
+        this.interactionsList.add(new ItemInteraction("wf_act_give_look", WiredEffectGiveLook.class));
         // Phase C — canDoNow conditions (reuse existing condition dialog codes; no new client furnidata).
         this.interactionsList.add(new ItemInteraction("wf_cnd_not_habbo_has_credits", WiredConditionHabboLacksCredits.class));
         this.interactionsList.add(new ItemInteraction("wf_cnd_not_habbo_has_diamonds", WiredConditionHabboLacksDiamonds.class));

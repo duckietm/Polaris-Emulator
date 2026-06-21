@@ -163,6 +163,7 @@ class WiredAliasResolutionTest {
         assertSame(WiredEffectAddTag.class, itemManager.getItemInteraction("wf_act_add_tag").getType());
         assertSame(WiredEffectAddTag.class, itemManager.getItemInteraction("wf_act_add_tag_perm").getType());
         assertSame(WiredEffectRemoveTag.class, itemManager.getItemInteraction("wf_act_remove_tag").getType());
+        assertSame(WiredEffectGiveLook.class, itemManager.getItemInteraction("wf_act_give_look").getType());
         assertSame(WiredEffectAllUsersLeaveTeam.class, itemManager.getItemInteraction("wf_act_all_users_leave_team").getType());
     }
 

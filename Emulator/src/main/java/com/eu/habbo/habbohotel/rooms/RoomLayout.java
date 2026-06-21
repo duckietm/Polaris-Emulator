@@ -55,14 +55,24 @@ public class RoomLayout {
   }
 
   public RoomLayout(RoomManager.RoomLayoutData data, Room room) {
+    this(data.name, data.doorX, data.doorY, data.doorDir, data.heightmap, room);
+  }
+
+  /**
+   * Raw-values constructor with no JDBC ResultSet. Both the ResultSet /
+   * RoomLayoutData constructors and {@link #fromHeightmap} funnel through here.
+   * {@code room} may be null when only the parsed tile grid is needed — parse()
+   * does not touch the room.
+   */
+  private RoomLayout(String name, int doorX, int doorY, int doorDir, String heightmap, Room room) {
     this.room = room;
     try {
-      this.name = data.name;
-      this.doorX = (short) data.doorX;
-      this.doorY = (short) data.doorY;
+      this.name = name;
+      this.doorX = (short) doorX;
+      this.doorY = (short) doorY;
 
-      this.doorDirection = data.doorDir;
-      this.heightmap = data.heightmap;
+      this.doorDirection = doorDir;
+      this.heightmap = heightmap;
 
       this.parse();
       this.pathfinder = new PathfinderImpl(this.room, MAXIMUM_STEP_HEIGHT,
@@ -71,6 +81,16 @@ public class RoomLayout {
     } catch (Exception e) {
       LOGGER.error("Caught exception", e);
     }
+  }
+
+  /**
+   * Build a layout from a raw heightmap with no database access. A seam for
+   * unit-testing the parser and for synthetic/in-memory rooms; decouples layout
+   * construction from the room_models DB schema.
+   */
+  public static RoomLayout fromHeightmap(String name, String heightmap, int doorX, int doorY,
+      int doorDir, Room room) {
+    return new RoomLayout(name, doorX, doorY, doorDir, heightmap, room);
   }
 
   public static boolean squareInSquare(Rectangle outerSquare, Rectangle innerSquare) {

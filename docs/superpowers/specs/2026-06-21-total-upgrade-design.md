@@ -203,12 +203,13 @@ so optional settings spammed the ERROR stream on boot (`enc.e/enc.n/enc.d`, etc.
 seen live). Downgraded to DEBUG — return value unchanged, real errors stay
 visible. Guarded by `ConfigurationManagerLoggingTest` (logback ListAppender).
 
-### Next safe seam to propose — RoomLayout.fromHeightmap()
-`RoomLayout.parse()` is a pure function of `heightmap` + door fields (no `Room`
-needed) encoding real logic (`x`=invalid, `0-9`=height, `A-Z`=10+letter, door
-front-tile adjustment). It's worth characterizing, but `RoomLayout`'s only
-constructors take a JDBC `ResultSet` / `RoomLayoutData(ResultSet)`, so a test
-needs Mockito (absent) or `Unsafe` reflection — both disproportionate. A small
-additive seam (a `static RoomLayout fromHeightmap(name, heightmap, doorX, doorY,
-doorZ, dir)` factory) would unlock clean tests AND decouple the class from the DB
-schema. Left as a proposal — it changes a core class's API, so it's a human call.
+### Done — RoomLayout.fromHeightmap() seam + parser characterization
+`RoomLayout.parse()` is a pure function of `heightmap` + door fields (no `Room`)
+encoding real logic (`x`=invalid, `0-9`=height, `A-Z`=10+letter, door front-tile
+adjustment, ragged rows → INVALID fill). It was untestable because the only
+constructors took a JDBC `ResultSet`. Added an **additive** seam: a private
+raw-values constructor (the `RoomLayoutData` ctor now delegates to it, behaviour
+unchanged) plus `public static RoomLayout fromHeightmap(name, heightmap, doorX,
+doorY, doorDir, room)`. This decouples layout construction from the room_models
+schema and unlocked `RoomLayoutParseCharacterizationTest` (3 tests, via the
+config seam). Suite now **398 tests, 0 failures**.

@@ -195,3 +195,20 @@ flagged for a future cleanup pass.
   `cd Emulator/target/run-baseline && "<temurin25>/bin/java" -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Xms256m -Xmx2g -XX:+UseZGC -XX:+UseCompactObjectHeaders -jar ../Habbo-4.2.45-jar-with-dependencies.jar`
   Watch for `Memory: x/yMB` and `System launched in: Nms`. Drop the clone later
   with `DROP DATABASE amx_test;`.
+
+### Done this round — false-ERROR config logging fixed
+`ConfigurationManager.getValue` logged ERROR for every absent optional key (the
+ones with a caller default); `getInt/getBoolean/getDouble` all route through it,
+so optional settings spammed the ERROR stream on boot (`enc.e/enc.n/enc.d`, etc.,
+seen live). Downgraded to DEBUG — return value unchanged, real errors stay
+visible. Guarded by `ConfigurationManagerLoggingTest` (logback ListAppender).
+
+### Next safe seam to propose — RoomLayout.fromHeightmap()
+`RoomLayout.parse()` is a pure function of `heightmap` + door fields (no `Room`
+needed) encoding real logic (`x`=invalid, `0-9`=height, `A-Z`=10+letter, door
+front-tile adjustment). It's worth characterizing, but `RoomLayout`'s only
+constructors take a JDBC `ResultSet` / `RoomLayoutData(ResultSet)`, so a test
+needs Mockito (absent) or `Unsafe` reflection — both disproportionate. A small
+additive seam (a `static RoomLayout fromHeightmap(name, heightmap, doorX, doorY,
+doorZ, dir)` factory) would unlock clean tests AND decouple the class from the DB
+schema. Left as a proposal — it changes a core class's API, so it's a human call.

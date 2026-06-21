@@ -93,3 +93,65 @@ ground.
   BUILD SUCCESS.
 - `java -XX:+UseZGC -XX:+UseCompactObjectHeaders` accepted on JDK 25 (Phase 1
   tuning is viable).
+
+---
+
+## Progress log — autonomous run (2026-06-21)
+
+### Done & verified (after the initial Phase 0 commit)
+
+**Phase 1 (started) — GC tuning in start scripts**
+- `Emulator/Example_Start/Windows/emulator.cmd` and `.../Linux/emulator`: added
+  `-XX:+UseZGC -XX:+UseCompactObjectHeaders`, fixed `-Dfile.encoding=UTF-8`, and
+  corrected the stale jar name (`Habbo-3.5.3` → `Habbo-4.2.45`). Config-only,
+  flags verified accepted on Temurin 25.0.3. Expected effect: lower GC pauses
+  and lower RAM with many in-memory furni/items/users.
+
+**Phase 0-D (partial) — characterization tests on the codec hot path**
+- `GameCodecCharacterizationTest` (4 tests, Netty `EmbeddedChannel`): locks in
+  the inbound `[header:short][body]` decode, the outbound
+  `[length:int][header:short][body]` encode, the header-only empty-body case,
+  and a full encode→decode round-trip.
+- `PacketSerializationCharacterizationTest` (7 tests): pins `ClientMessage`'s
+  defensive reads — most importantly that a bogus declared string length
+  **clamps to available bytes and never throws or desyncs** — plus
+  `ServerMessage` length-prefix framing.
+- Full suite now **387 tests, 0 failures** on JDK 25 (`mvn clean verify`).
+
+### Deferred — needs your involvement / a running instance
+
+These were intentionally NOT done autonomously because the existing unit tests
+cannot prove them safe, and getting them wrong is costly:
+
+1. **Virtual threads on the `GamePacketHandler` executor**
+   (`WebSocketChannelInitializer`, the `DefaultEventExecutorGroup`). Netty's
+   `EventExecutorGroup` guarantees **per-channel ordering**; naively swapping in
+   `Executors.newVirtualThreadPerTaskExecutor()` can reorder/parallelise packets
+   for the same client → races and, in a Habbo economy, item dupes. This needs a
+   real Nitro client + load test to validate. **Requires:** integration testing.
+   (Note: pathfinding is CPU-bound A*, so virtual threads give it no benefit —
+   not a candidate.)
+
+2. **Phase 3 performance work** (room tick loop, pathfinding, DB query hot
+   paths). Measuring real gains needs the emulator running against a **MariaDB**
+   instance with representative data — not available in this environment.
+   **Requires:** a running hotel + DB to baseline and profile.
+
+3. **Characterization tests for the room tick loop & pathfinding.**
+   `PathfinderImpl` resolves config in a **static initializer**
+   (`Emulator.getConfig()` at class-load) and needs a loaded `Room`; the room
+   cycle needs the full `Emulator` singleton. A proper test needs a bootstrap
+   harness (or light dependency-injection refactor) first. **Requires:** a test
+   harness for the `Emulator` singleton.
+
+4. **Phase 4 god-class decomposition** (e.g. `Room`, `Emulator`) and **Phase 2**
+   beyond what already exists. The codebase already has extensive packet-boundary
+   guards (37+ `*InputGuard`/`*Contract`) and custom rate limiting
+   (`AuthRateLimiter`, `GameMessageRateLimit`), so Phase 2 is largely in place.
+   Invasive refactors are high-risk and should follow the harness in (3).
+
+### Observation: unused declared dependencies
+The pom declares **Hibernate Validator** and **Resilience4j**, but the code uses
+custom guards and a custom rate limiter instead — these libraries appear unused.
+Not removed (needs confirmation they aren't loaded reflectively/by plugins);
+flagged for a future cleanup pass.

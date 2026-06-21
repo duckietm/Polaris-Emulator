@@ -404,6 +404,43 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_var_echo", WiredExtraVariableEcho.class));
 
 
+        // --- DB-furnidata name aliases (Phase A) ---
+        // These interaction_type names exist in the furnidata under a different spelling than the
+        // canonical registrations above, but denote the EXACT same wired behaviour. Each is bound to
+        // the existing class (the codebase already uses this duplicate-class alias pattern, e.g.
+        // wf_trg_state_changed/wf_trg_stuff_state above). Lookup is by name (getItemInteraction(String));
+        // the class->name reverse lookup is only ever used for InteractionDefault, so duplicate classes
+        // are safe. NOTE: *_owns_badge is intentionally NOT aliased here — the only existing class checks
+        // WORN badges, not owned ones, so it needs a dedicated condition (deferred to a later phase).
+        this.interactionsList.add(new ItemInteraction("wf_act_alert_habbo", WiredEffectAlert.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_bot_talk_custom", WiredEffectBotTalk.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_bot_talk_to_avatar_custom", WiredEffectBotTalkToHabbo.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_call_stacks_custom", WiredEffectTriggerStacks.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_execute_stack_custom", WiredEffectTriggerStacks.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_cnd_move_furni", WiredEffectMoveFurniTo.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_cnd_move_rotate", WiredEffectMoveRotateFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_cnd_toggle_state", WiredEffectToggleFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_freeze_habbo", WiredEffectFreeze.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_unfreeze_habbo", WiredEffectUnfreeze.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_match_to_sshot_new", WiredEffectMatchFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_move_furni_to_furni", WiredEffectFurniToFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_teleport_bots_to_furni", WiredEffectBotTeleport.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_tp_furni_to_habbo", WiredEffectFurniToUser.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_habbo_in_group", WiredConditionGroupMember.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_not_habbo_in_group", WiredConditionNotInGroup.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_match_snapshot_new", WiredConditionMatchStatePosition.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_not_match_snap_new", WiredConditionNotMatchStatePosition.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_tgr_furni_hv_avtrs", WiredConditionFurniHaveHabbo.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_not_tgr_furni_hv_avtrs", WiredConditionNotFurniHaveHabbo.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_wears_effect", WiredConditionHabboHasEffect.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_not_wears_effect", WiredConditionNotHabboHasEffect.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_wears_handitem", WiredConditionHabboHasHandItem.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_not_wears_handitem", WiredConditionNotHabboHasHandItem.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_trgr_stuff_matches", WiredConditionFurniTypeMatch.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_cnd_collision", WiredTriggerCollision.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_user_exits_room", WiredTriggerHabboLeavesRoom.class));
+
+
         this.interactionsList.add(new ItemInteraction("wf_highscore", InteractionWiredHighscore.class));
 
 

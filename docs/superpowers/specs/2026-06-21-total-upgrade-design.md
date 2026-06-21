@@ -118,6 +118,27 @@ ground.
   `ServerMessage` length-prefix framing.
 - Full suite now **387 tests, 0 failures** on JDK 25 (`mvn clean verify`).
 
+**Phase 0-D (round 2) — config seam + more characterization**
+- `EmulatorTestSupport` (test-only): installs a DB-free `ConfigurationManager`
+  into the private static `Emulator.config` via reflection — the minimal first
+  step of an Emulator test harness, with **no production change**. This is what
+  unblocks future tests of config-dependent classes without a database.
+- `EmulatorConfigBootstrapTest`: proves the seam and characterizes
+  `ConfigurationManager` default handling.
+- `RoomLayoutGeometryCharacterizationTest`: pins RoomLayout's pure static
+  geometry helpers (`getRectangle`, `squareInSquare`, `pointInSquare`,
+  `tilesAdjecent`).
+- Full suite now **393 tests, 0 failures** on JDK 25.
+
+### Findings to act on (not changed — need a human/gameplay call)
+- **`ConfigurationManager.getBoolean(key, default)` ignores `default` for an
+  absent key** and always returns `false` (the default is only honoured while
+  loading or on a parse error). Confirmed by a passing characterization test.
+  This means calls like `getBoolean("pathfinder.step.allow.falling", true)`
+  resolve to **false** on any hotel that doesn't set the key. `getInt`/`getDouble`
+  do NOT share this bug. Fixing it is a behaviour change (gameplay flags would
+  flip) — flagged for a conscious decision, not done autonomously.
+
 ### Deferred — needs your involvement / a running instance
 
 These were intentionally NOT done autonomously because the existing unit tests

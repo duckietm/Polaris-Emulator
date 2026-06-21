@@ -25,7 +25,6 @@ import com.eu.habbo.threading.runnables.RoomUnitKick;
 import com.eu.habbo.util.pathfinding.Rotation;
 import gnu.trove.map.TMap;
 import gnu.trove.map.hash.THashMap;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,7 +89,11 @@ public class RoomUnit {
   private int idleTimer;
   private Room room;
   private RoomRightLevels rightsLevel = RoomRightLevels.NONE;
-  private THashSet<Integer> overridableTiles;
+  // ConcurrentHashMap-backed Set: READ on pathfinding threads (canOverrideTile via
+  // PathfinderImpl/AdjacentTileFinder) while WRITTEN by item interactions
+  // (teleport/gate/breeding nest) on other threads. A plain THashSet here risked
+  // corruption / ConcurrentModificationException under that concurrent access.
+  private Set<Integer> overridableTiles;
 
   public RoomUnit() {
     this.id = 0;
@@ -105,7 +108,7 @@ public class RoomUnit {
     this.walkTimeOut = Emulator.getIntUnixTimestamp();
     this.effectId = 0;
     this.isKicked = false;
-    this.overridableTiles = new THashSet<>();
+    this.overridableTiles = ConcurrentHashMap.newKeySet();
   }
 
   public void clearWalking() {

@@ -158,10 +158,16 @@ entityType=HABBO — verify), `wf_xtra_condition_change` (semantics unclear).
 
 ## 5. Recommended phased approach (to decide together)
 
-- **Phase A — Aliases & variants (quick win, ~1 line each):** wire the 30 ALIAS +
-  the clearly-covered VARIANTs to existing classes in `ItemManager`. This makes
-  ~50-60 wired boxes functional with near-zero risk. Verify each class's dialog code
-  matches the furni before aliasing; spot-check the `_owns_badge` semantics.
+- **Phase A — Aliases & variants — ✅ DONE** (`ItemManager`, commits after
+  `0d44e4d3`): **56 types bound** = 27 pure aliases + 29 parameter-variants, each
+  proven to resolve to the intended class by `WiredAliasResolutionTest` (constructs
+  `ItemManager` + `loadItemInteractions()`, no DB; 410 tests green). Deferred from A:
+  2× `*_owns_badge` (only a worn-badge class exists → needs a real condition),
+  `wf_pyramid` (non-wired furni), and 10 low-confidence/superset variants
+  (dont_chase, give_enable, give_score_pp/room, send_bubble,
+  bot_give_handitem_or_effect, move_rotate_no_under, not_bot_is_dancing,
+  execute_for_users, exec_delay). **Pending: an in-room smoke test** — these are the
+  server binding; the variants especially depend on the client SWF save-packet shape.
 - **Phase B — Cheap new triggers:** dance/idle/anti-afk triggers — the events already
   fire, so each is a small trigger class + registration.
 - **Phase C — High-demand effects:** currency/reward + posture (sit/lay) + tags +

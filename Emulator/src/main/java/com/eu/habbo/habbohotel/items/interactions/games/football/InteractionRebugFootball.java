@@ -59,9 +59,9 @@ public class InteractionRebugFootball extends InteractionDefault {
     public void onWalkOff(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
         super.onWalkOff(roomUnit, room, objects);
 
-        if (objects != null && objects.length >= 2 && objects[1] instanceof RoomTile && objects[0] instanceof RoomTile) {
-            RoomTile fromTile = (RoomTile) objects[0];
-            RoomTile nextTile = (RoomTile) objects[1];
+        if (objects != null && objects.length >= 2 && objects[1] instanceof RoomTile nextTileTmp && objects[0] instanceof RoomTile fromTileTmp) {
+            RoomTile fromTile = fromTileTmp;
+            RoomTile nextTile = nextTileTmp;
 
             int dx = nextTile.x - fromTile.x;
             int dy = nextTile.y - fromTile.y;

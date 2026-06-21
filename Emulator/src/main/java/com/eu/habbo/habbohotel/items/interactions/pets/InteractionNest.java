@@ -61,7 +61,7 @@ public class InteractionNest extends HabboItem {
         if (pet == null)
             return;
 
-        if (pet instanceof RideablePet && ((RideablePet) pet).getRider() != null)
+        if (pet instanceof RideablePet rideablePet && rideablePet.getRider() != null)
             return;
 
         if (!pet.getPetData().haveNest(this))

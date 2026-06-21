@@ -51,8 +51,8 @@ public class InteractionTotemHead extends InteractionDefault {
         InteractionTotemLegs legs = null;
 
         for(HabboItem item : room.getItemsAt(tile)) {
-            if(item instanceof InteractionTotemLegs && item.getZ() < this.getZ())
-                legs = (InteractionTotemLegs)item;
+            if(item instanceof InteractionTotemLegs legsItem && item.getZ() < this.getZ())
+                legs = legsItem;
         }
 
         if(legs == null)

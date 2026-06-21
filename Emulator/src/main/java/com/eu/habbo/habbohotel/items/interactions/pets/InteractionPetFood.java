@@ -49,7 +49,7 @@ public class InteractionPetFood extends InteractionDefault {
 
         if (pet != null) {
             // Don't let ridden pets eat
-            if (pet instanceof RideablePet && ((RideablePet) pet).getRider() != null)
+            if (pet instanceof RideablePet rideablePet && rideablePet.getRider() != null)
                 return;
 
             if (pet.getPetData().haveFoodItem(this)) {

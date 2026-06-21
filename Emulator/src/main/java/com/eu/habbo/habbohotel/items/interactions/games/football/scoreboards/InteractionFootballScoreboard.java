@@ -97,8 +97,7 @@ public class InteractionFootballScoreboard extends InteractionGameScoreboard {
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
         super.onClick(client, room, objects);
 
-        if (objects.length >= 1 && objects[0] instanceof Integer && client != null && !(objects.length >= 2 && objects[1] instanceof WiredEffectType)) {
-            int state = (Integer) objects[0];
+        if (objects.length >= 1 && objects[0] instanceof Integer state && client != null && !(objects.length >= 2 && objects[1] instanceof WiredEffectType)) {
 
             switch (state) {
                 case 1: {

@@ -38,7 +38,7 @@ public class InteractionPetBreedingNest extends HabboItem {
         Pet pet = room.getPet(roomUnit);
         if (pet == null) return false;
         // Don't let ridden pets enter breeding nest
-        if (pet instanceof RideablePet && ((RideablePet) pet).getRider() != null) return false;
+        if (pet instanceof RideablePet ridable && ridable.getRider() != null) return false;
         return !this.boxFull();
     }
 

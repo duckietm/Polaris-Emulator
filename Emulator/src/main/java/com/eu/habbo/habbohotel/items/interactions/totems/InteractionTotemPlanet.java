@@ -42,8 +42,8 @@ public class InteractionTotemPlanet extends InteractionDefault {
         THashSet<HabboItem> items = room.getItemsAt(room.getLayout().getTile(this.getX(), this.getY()));
 
         for(HabboItem item : items) {
-            if(item instanceof InteractionTotemLegs && item.getZ() < this.getZ())
-                legs = (InteractionTotemLegs)item;
+            if(item instanceof InteractionTotemLegs legsItem && item.getZ() < this.getZ())
+                legs = legsItem;
         }
 
         if(legs == null) {
@@ -52,8 +52,8 @@ public class InteractionTotemPlanet extends InteractionDefault {
         }
 
         for(HabboItem item : items) {
-            if(item instanceof InteractionTotemHead && item.getZ() > legs.getZ())
-                head = (InteractionTotemHead)item;
+            if(item instanceof InteractionTotemHead headItem && item.getZ() > legs.getZ())
+                head = headItem;
         }
 
         if(head == null) {

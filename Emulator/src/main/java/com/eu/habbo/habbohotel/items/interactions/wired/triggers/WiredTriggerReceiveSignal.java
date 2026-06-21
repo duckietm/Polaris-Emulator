@@ -17,12 +17,14 @@ import com.eu.habbo.habbohotel.wired.core.WiredTriggerSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredTriggerSaveException;
 import com.eu.habbo.messages.outgoing.rooms.items.ItemStateComposer;
-import gnu.trove.set.hash.THashSet;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -34,18 +36,18 @@ public class WiredTriggerReceiveSignal extends InteractionWiredTrigger {
     private static final String REQUIRE_ANTENNA_ERROR = "You can only select antenna furni.";
 
     private int channel = 0; // signal channel (0-based)
-    private THashSet<HabboItem> items;
+    private Set<HabboItem> items;
     private int furniSource = WiredSourceUtil.SOURCE_SELECTED;
     private final AtomicLong activationToken = new AtomicLong();
 
     public WiredTriggerReceiveSignal(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
-        this.items = new THashSet<>();
+        this.items = new LinkedHashSet<>();
     }
 
     public WiredTriggerReceiveSignal(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
-        this.items = new THashSet<>();
+        this.items = new LinkedHashSet<>();
     }
 
     @Override
@@ -76,7 +78,7 @@ public class WiredTriggerReceiveSignal extends InteractionWiredTrigger {
         boolean changed = false;
 
         if (!this.items.isEmpty()) {
-            THashSet<HabboItem> itemsToRemove = new THashSet<>();
+            Set<HabboItem> itemsToRemove = new HashSet<>();
 
             for (HabboItem item : this.items) {
                 if (item == null || item.getId() == antennaItemId) {
@@ -140,7 +142,7 @@ public class WiredTriggerReceiveSignal extends InteractionWiredTrigger {
         } catch (Exception e) {
         }
 
-        THashSet<HabboItem> itemsToRemove = new THashSet<>();
+        Set<HabboItem> itemsToRemove = new HashSet<>();
         for (HabboItem item : this.items) {
             if (item.getRoomId() != this.getRoomId() || room.getHabboItem(item.getId()) == null) {
                 itemsToRemove.add(item);
@@ -246,7 +248,7 @@ public class WiredTriggerReceiveSignal extends InteractionWiredTrigger {
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
-        this.items = new THashSet<>();
+        this.items = new LinkedHashSet<>();
         String wiredData = set.getString("wired_data");
         this.furniSource = WiredSourceUtil.SOURCE_SELECTED;
 

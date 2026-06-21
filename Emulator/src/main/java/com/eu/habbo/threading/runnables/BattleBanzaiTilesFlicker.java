@@ -6,17 +6,18 @@ import com.eu.habbo.habbohotel.items.interactions.games.battlebanzai.Interaction
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.outgoing.rooms.items.ItemsDataUpdateComposer;
-import gnu.trove.set.hash.THashSet;
+
+import java.util.Set;
 
 public class BattleBanzaiTilesFlicker implements Runnable {
-    private final THashSet<HabboItem> items;
+    private final Set<HabboItem> items;
     private final GameTeamColors color;
     private final Room room;
 
     private boolean on = false;
     private int count = 0;
 
-    public BattleBanzaiTilesFlicker(THashSet<HabboItem> items, GameTeamColors color, Room room) {
+    public BattleBanzaiTilesFlicker(Set<HabboItem> items, GameTeamColors color, Room room) {
         this.items = items;
         this.color = color;
         this.room = room;

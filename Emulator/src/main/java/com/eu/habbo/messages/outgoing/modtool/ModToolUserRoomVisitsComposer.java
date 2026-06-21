@@ -5,16 +5,16 @@ import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-import gnu.trove.set.hash.THashSet;
 
 import java.util.Calendar;
+import java.util.Set;
 import java.util.TimeZone;
 
 public class ModToolUserRoomVisitsComposer extends MessageComposer {
     private final HabboInfo habboInfo;
-    private final THashSet<ModToolRoomVisit> roomVisits;
+    private final Set<ModToolRoomVisit> roomVisits;
 
-    public ModToolUserRoomVisitsComposer(HabboInfo habboInfo, THashSet<ModToolRoomVisit> roomVisits) {
+    public ModToolUserRoomVisitsComposer(HabboInfo habboInfo, Set<ModToolRoomVisit> roomVisits) {
         this.habboInfo = habboInfo;
         this.roomVisits = roomVisits;
     }
@@ -41,7 +41,7 @@ public class ModToolUserRoomVisitsComposer extends MessageComposer {
         return habboInfo;
     }
 
-    public THashSet<ModToolRoomVisit> getRoomVisits() {
+    public Set<ModToolRoomVisit> getRoomVisits() {
         return roomVisits;
     }
 }

@@ -59,7 +59,7 @@ public class ToggleFloorItemEvent extends MessageHandler {
 
             /*
             if (item.getBaseItem().getName().equalsIgnoreCase("totem_planet")) {
-                THashSet<HabboItem> items = room.getItemsAt(room.getLayout().getTile(item.getX(), item.getY()));
+                Set<HabboItem> items = room.getItemsAt(room.getLayout().getTile(item.getX(), item.getY()));
                 HabboItem totemLeg = null;
                 HabboItem totemHead = null;
 

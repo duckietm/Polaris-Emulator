@@ -8,11 +8,11 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-import gnu.trove.map.hash.THashMap;
 
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Map;
 
 public class ModToolSanctionInfoComposer extends MessageComposer {
 
@@ -30,7 +30,7 @@ public class ModToolSanctionInfoComposer extends MessageComposer {
         Date probationStartTime;
 
         if (Emulator.getConfig().getBoolean("hotel.sanctions.enabled")) {
-            THashMap<Integer, ArrayList<ModToolSanctionItem>> modToolSanctionItemsHashMap = Emulator.getGameEnvironment().getModToolSanctions().getSanctions(habbo.getHabboInfo().getId());
+            Map<Integer, ArrayList<ModToolSanctionItem>> modToolSanctionItemsHashMap = Emulator.getGameEnvironment().getModToolSanctions().getSanctions(habbo.getHabboInfo().getId());
             ArrayList<ModToolSanctionItem> modToolSanctionItems = modToolSanctionItemsHashMap.get(habbo.getHabboInfo().getId());
 
             if (modToolSanctionItems != null && modToolSanctionItems.size() > 0) {

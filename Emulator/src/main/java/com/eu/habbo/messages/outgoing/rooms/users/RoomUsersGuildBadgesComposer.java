@@ -3,13 +3,13 @@ package com.eu.habbo.messages.outgoing.rooms.users;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-import gnu.trove.map.hash.THashMap;
-import gnu.trove.procedure.TObjectObjectProcedure;
+
+import java.util.Map;
 
 public class RoomUsersGuildBadgesComposer extends MessageComposer {
-    private final THashMap<Integer, String> guildBadges;
+    private final Map<Integer, String> guildBadges;
 
-    public RoomUsersGuildBadgesComposer(THashMap<Integer, String> guildBadges) {
+    public RoomUsersGuildBadgesComposer(Map<Integer, String> guildBadges) {
         this.guildBadges = guildBadges;
     }
 
@@ -18,18 +18,14 @@ public class RoomUsersGuildBadgesComposer extends MessageComposer {
         this.response.init(Outgoing.RoomUsersGuildBadgesComposer);
         this.response.appendInt(this.guildBadges.size());
 
-        this.guildBadges.forEachEntry(new TObjectObjectProcedure<Integer, String>() {
-            @Override
-            public boolean execute(Integer guildId, String badge) {
-                RoomUsersGuildBadgesComposer.this.response.appendInt(guildId);
-                RoomUsersGuildBadgesComposer.this.response.appendString(badge);
-                return true;
-            }
-        });
+        for (Map.Entry<Integer, String> guildBadge : this.guildBadges.entrySet()) {
+            this.response.appendInt(guildBadge.getKey());
+            this.response.appendString(guildBadge.getValue());
+        }
         return this.response;
     }
 
-    public THashMap<Integer, String> getGuildBadges() {
+    public Map<Integer, String> getGuildBadges() {
         return guildBadges;
     }
 }

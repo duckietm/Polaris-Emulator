@@ -5,7 +5,6 @@ import com.eu.habbo.habbohotel.guilds.Guild;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.guilds.forums.GuildForumListComposer;
 import com.eu.habbo.messages.outgoing.handshake.ConnectionErrorComposer;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +12,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -25,13 +25,13 @@ public class GuildForumListEvent extends MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(GuildForumListEvent.class);
 
     // Cache for active forums list (shared across all users)
-    private static volatile THashSet<Guild> activeForumsCache = null;
+    private static volatile Set<Guild> activeForumsCache = null;
     private static volatile long activeForumsCachedAt = 0;
     private static final long ACTIVE_FORUMS_TTL = 30 * 60 * 1000; // 30 minutes
 
     // Cache for user's forum list
     private static final ConcurrentHashMap<Integer, long[]> myForumsCache = new ConcurrentHashMap<>(); // userId -> {cachedAt}
-    private static final ConcurrentHashMap<Integer, THashSet<Guild>> myForumsData = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Integer, Set<Guild>> myForumsData = new ConcurrentHashMap<>();
     private static final long MY_FORUMS_TTL = 10 * 60 * 1000; // 10 minutes
 
     public static void invalidateActiveForumsCache() {
@@ -70,14 +70,14 @@ public class GuildForumListEvent extends MessageHandler {
         }
     }
 
-    private THashSet<Guild> getActiveForums() {
+    private Set<Guild> getActiveForums() {
         long now = System.currentTimeMillis();
 
         if (activeForumsCache != null && (now - activeForumsCachedAt) < ACTIVE_FORUMS_TTL) {
             return activeForumsCache;
         }
 
-        THashSet<Guild> guilds = new THashSet<Guild>();
+        Set<Guild> guilds = new HashSet<Guild>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT `guilds`.`id`, SUM(`guilds_forums_threads`.`posts_count`) AS `post_count` " +
                 "FROM `guilds_forums_threads` " +
@@ -106,16 +106,16 @@ public class GuildForumListEvent extends MessageHandler {
         return guilds;
     }
 
-    private THashSet<Guild> getMyForums(int userId) {
+    private Set<Guild> getMyForums(int userId) {
         long now = System.currentTimeMillis();
 
         long[] cached = myForumsCache.get(userId);
         if (cached != null && (now - cached[0]) < MY_FORUMS_TTL) {
-            THashSet<Guild> data = myForumsData.get(userId);
+            Set<Guild> data = myForumsData.get(userId);
             if (data != null) return data;
         }
 
-        THashSet<Guild> guilds = new THashSet<Guild>();
+        Set<Guild> guilds = new HashSet<Guild>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT `guilds`.`id` FROM `guilds_members` " +
                 "LEFT JOIN `guilds` ON `guilds`.`id` = `guilds_members`.`guild_id` " +

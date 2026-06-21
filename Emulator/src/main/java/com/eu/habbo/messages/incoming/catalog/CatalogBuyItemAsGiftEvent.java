@@ -23,13 +23,15 @@ import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.users.UserClubComposer;
 import com.eu.habbo.threading.runnables.ShutdownEmulator;
-import gnu.trove.map.hash.THashMap;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class CatalogBuyItemAsGiftEvent extends MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(CatalogBuyItemAsGiftEvent.class);
@@ -180,7 +182,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                     // CatalogBuyItemEvent. Fall back to scanning the
                     // page for the matching offer_id.
                     if (item == null) {
-                        for (CatalogItem candidate : page.getCatalogItems().valueCollection()) {
+                        for (CatalogItem candidate : page.getCatalogItems().values()) {
                             if (candidate != null && candidate.getOfferId() == itemId) {
                                 item = candidate;
                                 break;
@@ -277,7 +279,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                         this.client.getHabbo().getHabboStats().addLtdLog(item.getId(), Emulator.getIntUnixTimestamp());
                     }
 
-                    THashSet<HabboItem> itemsList = new THashSet<>();
+                    Set<HabboItem> itemsList = new HashSet<>();
 
                     boolean badgeFound = false;
                     for (Item baseItem : item.getBaseItems()) {
@@ -545,7 +547,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                         habbo.getClient().getHabbo().getInventory().getItemsComponent().addItem(gift);
                         habbo.getClient().sendResponse(new InventoryRefreshComposer());
 
-                        THashMap<String, String> keys = new THashMap<>();
+                        Map<String, String> keys = new HashMap<>();
                         keys.put("display", "BUBBLE");
                         keys.put("image", "${image.library.url}notifications/gift.gif");
                         keys.put("message", Emulator.getTexts().getValue("generic.gift.received.anonymous"));
@@ -697,7 +699,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
             String daysWord = Emulator.getTexts().getValue("generic.days", "days");
             String clubLabel = offer.isBuildersClubSubscription() ? "Builders Club" : "HC";
             String giftDescription = clubLabel + " (" + offer.getDays() + " " + daysWord + ")";
-            THashMap<String, String> keys = new THashMap<>();
+            Map<String, String> keys = new HashMap<>();
             keys.put("display", "BUBBLE");
             keys.put("image", "${image.library.url}notifications/gift.gif");
             keys.put("message", prefix + " " + giftDescription);

@@ -38,7 +38,7 @@ public class FrontPageFeaturedLayout extends CatalogPage {
 
         message.appendInt(Emulator.getGameEnvironment().getCatalogManager().getCatalogFeaturedPages().size());
 
-        for (CatalogFeaturedPage page : Emulator.getGameEnvironment().getCatalogManager().getCatalogFeaturedPages().valueCollection()) {
+        for (CatalogFeaturedPage page : Emulator.getGameEnvironment().getCatalogManager().getCatalogFeaturedPages().values()) {
             page.serialize(message);
         }
         message.appendInt(1); //Position

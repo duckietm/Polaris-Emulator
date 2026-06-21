@@ -10,8 +10,8 @@ import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import com.eu.habbo.messages.outgoing.users.AddUserBadgeComposer;
-import gnu.trove.map.hash.THashMap;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class MassBadgeCommand extends Command {
@@ -27,7 +27,7 @@ public class MassBadgeCommand extends Command {
             badge = params[1];
 
             if (!badge.isEmpty()) {
-                THashMap<String, String> keys = new THashMap<>();
+                Map<String, String> keys = new HashMap<>();
                 keys.put("display", "BUBBLE");
                 keys.put("image", "${image.library.url}album1584/" + badge + ".gif");
                 keys.put("message", Emulator.getTexts().getValue("commands.generic.cmd_badge.received"));

@@ -14,7 +14,6 @@ import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemComposer;
 import com.eu.habbo.plugin.events.marketplace.MarketPlaceItemCancelledEvent;
 import com.eu.habbo.plugin.events.marketplace.MarketPlaceItemOfferedEvent;
 import com.eu.habbo.plugin.events.marketplace.MarketPlaceItemSoldEvent;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +22,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 
 public class MarketPlace {
@@ -38,8 +39,8 @@ public class MarketPlace {
     public static int MARKETPLACE_CURRENCY = 0;
 
 
-    public static THashSet<MarketPlaceOffer> getOwnOffers(Habbo habbo) {
-        THashSet<MarketPlaceOffer> offers = new THashSet<>();
+    public static Set<MarketPlaceOffer> getOwnOffers(Habbo habbo) {
+        Set<MarketPlaceOffer> offers = new HashSet<>();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT items_base.type AS type, items.item_id AS base_item_id, items.limited_data AS ltd_data, marketplace_items.* FROM marketplace_items INNER JOIN items ON marketplace_items.item_id = items.id INNER JOIN items_base ON items.item_id = items_base.id WHERE marketplace_items.user_id = ?")) {
             statement.setInt(1, habbo.getHabboInfo().getId());
             try (ResultSet set = statement.executeQuery()) {
@@ -408,7 +409,7 @@ public class MarketPlace {
     public static void getCredits(GameClient client) {
         int credits = 0;
 
-        THashSet<MarketPlaceOffer> offers = new THashSet<>();
+        Set<MarketPlaceOffer> offers = new HashSet<>();
         offers.addAll(client.getHabbo().getInventory().getMarketplaceItems());
 
         synchronized (client.getHabbo().getInventory()) {

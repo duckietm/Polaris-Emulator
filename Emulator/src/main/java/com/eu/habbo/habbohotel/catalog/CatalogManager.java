@@ -29,14 +29,11 @@ import com.eu.habbo.messages.outgoing.users.AddUserBadgeComposer;
 import com.eu.habbo.plugin.events.emulator.EmulatorLoadCatalogManagerEvent;
 import com.eu.habbo.plugin.events.users.catalog.UserCatalogFurnitureBoughtEvent;
 import com.eu.habbo.plugin.events.users.catalog.UserCatalogItemPurchasedEvent;
-import gnu.trove.TCollections;
-import gnu.trove.iterator.TIntObjectIterator;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.THashMap;
-import gnu.trove.map.hash.TIntIntHashMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.procedure.TObjectProcedure;
-import gnu.trove.set.hash.THashSet;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +45,7 @@ public class CatalogManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CatalogManager.class);
 
-    public static final THashMap<String, Class<? extends CatalogPage>> pageDefinitions = new THashMap<String, Class<? extends CatalogPage>>(CatalogPageLayouts.values().length) {
+    public static final Map<String, Class<? extends CatalogPage>> pageDefinitions = new HashMap<String, Class<? extends CatalogPage>>(CatalogPageLayouts.values().length) {
         {
             for (CatalogPageLayouts layout : CatalogPageLayouts.values()) {
                 switch (layout) {
@@ -187,41 +184,41 @@ public class CatalogManager {
     public static int catalogItemAmount;
     public static int PURCHASE_COOLDOWN = 1;
     public static boolean SORT_USING_ORDERNUM = false;
-    public final TIntObjectMap<CatalogPage> catalogPages;
-    public final TIntObjectMap<CatalogPage> buildersClubCatalogPages;
-    public final TIntObjectMap<CatalogFeaturedPage> catalogFeaturedPages;
-    public final THashMap<Integer, THashSet<Item>> prizes;
-    public final THashMap<Integer, Integer> giftWrappers;
-    public final THashMap<Integer, Integer> giftFurnis;
-    public final THashSet<CatalogItem> clubItems;
-    public final THashMap<Integer, ClubOffer> clubOffers;
-    public final THashMap<Integer, TargetOffer> targetOffers;
-    public final THashMap<Integer, ClothItem> clothing;
-    public final TIntIntHashMap offerDefs;
-    public final TIntIntHashMap buildersClubOfferDefs;
+    public final Int2ObjectMap<CatalogPage> catalogPages;
+    public final Int2ObjectMap<CatalogPage> buildersClubCatalogPages;
+    public final Int2ObjectMap<CatalogFeaturedPage> catalogFeaturedPages;
+    public final Map<Integer, Set<Item>> prizes;
+    public final Map<Integer, Integer> giftWrappers;
+    public final Map<Integer, Integer> giftFurnis;
+    public final Set<CatalogItem> clubItems;
+    public final Map<Integer, ClubOffer> clubOffers;
+    public final Map<Integer, TargetOffer> targetOffers;
+    public final Map<Integer, ClothItem> clothing;
+    public final Int2IntMap offerDefs;
+    public final Int2IntMap buildersClubOfferDefs;
     public final Item ecotronItem;
-    public final THashMap<Integer, CatalogLimitedConfiguration> limitedNumbers;
+    public final Map<Integer, CatalogLimitedConfiguration> limitedNumbers;
     private final List<Voucher> vouchers;
-    public final TIntObjectMap<int[]> furnitureValues;
+    public final Int2ObjectMap<int[]> furnitureValues;
     private volatile byte[] rareValuesPayloadCache;
 
     public CatalogManager() {
         long millis = System.currentTimeMillis();
-        this.catalogPages = TCollections.synchronizedMap(new TIntObjectHashMap<>());
-        this.buildersClubCatalogPages = TCollections.synchronizedMap(new TIntObjectHashMap<>());
-        this.catalogFeaturedPages = new TIntObjectHashMap<>();
-        this.prizes = new THashMap<>();
-        this.giftWrappers = new THashMap<>();
-        this.giftFurnis = new THashMap<>();
-        this.clubItems = new THashSet<>();
-        this.clubOffers = new THashMap<>();
-        this.targetOffers = new THashMap<>();
-        this.clothing = new THashMap<>();
-        this.offerDefs = new TIntIntHashMap();
-        this.buildersClubOfferDefs = new TIntIntHashMap();
+        this.catalogPages = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>());
+        this.buildersClubCatalogPages = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>());
+        this.catalogFeaturedPages = new Int2ObjectOpenHashMap<>();
+        this.prizes = new HashMap<>();
+        this.giftWrappers = new HashMap<>();
+        this.giftFurnis = new HashMap<>();
+        this.clubItems = new HashSet<>();
+        this.clubOffers = new HashMap<>();
+        this.targetOffers = new HashMap<>();
+        this.clothing = new HashMap<>();
+        this.offerDefs = new Int2IntOpenHashMap();
+        this.buildersClubOfferDefs = new Int2IntOpenHashMap();
         this.vouchers = new ArrayList<>();
-        this.limitedNumbers = new THashMap<>();
-        this.furnitureValues = new TIntObjectHashMap<>();
+        this.limitedNumbers = new HashMap<>();
+        this.furnitureValues = new Int2ObjectOpenHashMap<>();
 
         this.initialize();
 
@@ -253,8 +250,8 @@ public class CatalogManager {
         this.furnitureValues.clear();
         final int diamondType = Emulator.getConfig().getInt("seasonal.currency.diamond", 5);
 
-        for (CatalogPage page : this.catalogPages.valueCollection()) {
-            for (CatalogItem catalogItem : page.getCatalogItems().valueCollection()) {
+        for (CatalogPage page : this.catalogPages.values()) {
+            for (CatalogItem catalogItem : page.getCatalogItems().values()) {
                 if (catalogItem.getAmount() != 1)
                     continue;
 
@@ -265,7 +262,7 @@ public class CatalogManager {
                 if (points <= 0 || pointsType != diamondType)
                     continue;
 
-                THashSet<Item> baseItems = catalogItem.getBaseItems();
+                Set<Item> baseItems = catalogItem.getBaseItems();
 
                 if (baseItems.size() != 1)
                     continue;
@@ -294,11 +291,9 @@ public class CatalogManager {
         try (java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream(this.furnitureValues.size() * 16 + 8);
              java.io.DataOutputStream out = new java.io.DataOutputStream(baos)) {
             out.writeInt(this.furnitureValues.size());
-            TIntObjectIterator<int[]> iterator = this.furnitureValues.iterator();
-            while (iterator.hasNext()) {
-                iterator.advance();
-                int[] value = iterator.value();
-                out.writeInt(iterator.key()); // spriteId
+            for (Int2ObjectMap.Entry<int[]> entry : this.furnitureValues.int2ObjectEntrySet()) {
+                int[] value = entry.getValue();
+                out.writeInt(entry.getIntKey()); // spriteId
                 out.writeInt(value[0]);        // credits
                 out.writeInt(value[1]);        // points
                 out.writeInt(value[2]);        // pointsType
@@ -310,7 +305,7 @@ public class CatalogManager {
         }
     }
 
-    public TIntObjectMap<int[]> getFurnitureValues() {
+    public Int2ObjectMap<int[]> getFurnitureValues() {
         return this.furnitureValues;
     }
 
@@ -321,8 +316,8 @@ public class CatalogManager {
     private synchronized void loadLimitedNumbers() {
         this.limitedNumbers.clear();
 
-        THashMap<Integer, LinkedList<Integer>> limiteds = new THashMap<>();
-        TIntIntHashMap totals = new TIntIntHashMap();
+        Map<Integer, LinkedList<Integer>> limiteds = new HashMap<>();
+        Int2IntMap totals = new Int2IntOpenHashMap();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM catalog_items_limited")) {
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
@@ -330,7 +325,8 @@ public class CatalogManager {
                         limiteds.put(set.getInt("catalog_item_id"), new LinkedList<>());
                     }
 
-                    totals.adjustOrPutValue(set.getInt("catalog_item_id"), 1, 1);
+                    int catalogItemId = set.getInt("catalog_item_id");
+                    totals.put(catalogItemId, totals.get(catalogItemId) + 1);
 
                     if (set.getInt("user_id") == 0) {
                         limiteds.get(set.getInt("catalog_item_id")).push(set.getInt("number"));
@@ -350,7 +346,7 @@ public class CatalogManager {
     private synchronized void loadCatalogPages() {
         this.catalogPages.clear();
 
-        final THashMap<Integer, CatalogPage> pages = new THashMap<>();
+        final Map<Integer, CatalogPage> pages = new HashMap<>();
         pages.put(-1, new CatalogRootLayout());
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM catalog_pages ORDER BY parent_id, id")) {
             try (ResultSet set = statement.executeQuery()) {
@@ -374,7 +370,7 @@ public class CatalogManager {
             LOGGER.error("Caught SQL exception", e);
         }
 
-        pages.forEachValue((object) -> {
+        for (CatalogPage object : pages.values()) {
             CatalogPage page = pages.get(object.parentId);
 
             if (page != null) {
@@ -386,8 +382,7 @@ public class CatalogManager {
                     LOGGER.info("Parent Page not found for {} (ID: {}, parent_id: {})", object.getPageName(), object.id, object.parentId);
                 }
             }
-            return true;
-        });
+        }
 
         this.catalogPages.putAll(pages);
 
@@ -397,7 +392,7 @@ public class CatalogManager {
     private synchronized void loadBuildersClubCatalogPages() {
         this.buildersClubCatalogPages.clear();
 
-        final THashMap<Integer, CatalogPage> pages = new THashMap<>();
+        final Map<Integer, CatalogPage> pages = new HashMap<>();
         pages.put(-1, new CatalogRootLayout());
 
         String query = "SELECT id, parent_id, caption, caption AS caption_save, page_layout, icon_color, icon_image, 1 AS min_rank, order_num, visible, enabled, '0' AS club_only, 'BUILDERS_CLUB' AS catalog_mode, page_headline, page_teaser, page_special, page_text1, page_text2, page_text_details, page_text_teaser, '' AS includes FROM catalog_pages_bc ORDER BY parent_id, id";
@@ -425,7 +420,7 @@ public class CatalogManager {
             LOGGER.error("Caught SQL exception", e);
         }
 
-        pages.forEachValue((object) -> {
+        for (CatalogPage object : pages.values()) {
             CatalogPage page = pages.get(object.parentId);
 
             if (page != null) {
@@ -437,8 +432,7 @@ public class CatalogManager {
                     LOGGER.info("Builders Club parent page not found for {} (ID: {}, parent_id: {})", object.getPageName(), object.id, object.parentId);
                 }
             }
-            return true;
-        });
+        }
 
         this.buildersClubCatalogPages.putAll(pages);
 
@@ -511,7 +505,7 @@ public class CatalogManager {
             LOGGER.error("Caught SQL exception", e);
         }
 
-        for (CatalogPage page : this.catalogPages.valueCollection()) {
+        for (CatalogPage page : this.catalogPages.values()) {
             for (Integer id : page.getIncluded()) {
                 CatalogPage p = this.catalogPages.get(id);
 
@@ -558,7 +552,7 @@ public class CatalogManager {
             LOGGER.error("Caught SQL exception", e);
         }
 
-        for (CatalogPage page : this.buildersClubCatalogPages.valueCollection()) {
+        for (CatalogPage page : this.buildersClubCatalogPages.values()) {
             for (Integer id : page.getIncluded()) {
                 CatalogPage includedPage = this.buildersClubCatalogPages.get(id);
 
@@ -626,7 +620,7 @@ public class CatalogManager {
 
                     if (item != null) {
                         if (this.prizes.get(set.getInt("rarity")) == null) {
-                            this.prizes.put(set.getInt("rarity"), new THashSet<>());
+                            this.prizes.put(set.getInt("rarity"), new HashSet<>());
                         }
 
                         this.prizes.get(set.getInt("rarity")).add(item);
@@ -772,13 +766,13 @@ public class CatalogManager {
     }
 
     public CatalogPage getCatalogPage(String captionSafe) {
-        return this.catalogPages.valueCollection().stream()
+        return this.catalogPages.values().stream()
                 .filter(p -> p != null && p.getPageName() != null && p.getPageName().equalsIgnoreCase(captionSafe))
                 .findAny().orElse(null);
     }
 
     public CatalogPage getCatalogPageByLayout(String layoutName) {
-        return this.catalogPages.valueCollection().stream()
+        return this.catalogPages.values().stream()
                 .filter(p -> p != null &&
                         p.isVisible() &&
                         p.isEnabled() &&
@@ -794,17 +788,15 @@ public class CatalogManager {
 
     public CatalogItem getCatalogItem(int id, CatalogPageType pageType) {
         final CatalogItem[] item = {null};
-        final TIntObjectMap<CatalogPage> pagesMap = this.getCatalogPagesMap(pageType);
+        final Int2ObjectMap<CatalogPage> pagesMap = this.getCatalogPagesMap(pageType);
 
         synchronized (pagesMap) {
-            pagesMap.forEachValue(new TObjectProcedure<CatalogPage>() {
-                @Override
-                public boolean execute(CatalogPage object) {
-                    item[0] = object.getCatalogItem(id);
-
-                    return item[0] == null;
+            for (CatalogPage object : pagesMap.values()) {
+                item[0] = object.getCatalogItem(id);
+                if (item[0] != null) {
+                    break;
                 }
-            });
+            }
         }
 
         return item[0];
@@ -817,34 +809,29 @@ public class CatalogManager {
 
     public List<CatalogPage> getCatalogPages(int parentId, final Habbo habbo, final CatalogPageType pageType) {
         final List<CatalogPage> pages = new ArrayList<>();
-        final TIntObjectMap<CatalogPage> pagesMap = this.getCatalogPagesMap(pageType);
+        final Int2ObjectMap<CatalogPage> pagesMap = this.getCatalogPagesMap(pageType);
         CatalogPage parentPage = pagesMap.get(parentId);
 
         if (parentPage == null) {
             return pages;
         }
 
-        parentPage.childPages.forEachValue(new TObjectProcedure<CatalogPage>() {
-            @Override
-            public boolean execute(CatalogPage object) {
+        for (CatalogPage object : parentPage.childPages.values()) {
+            boolean isVisiblePage = object.visible;
+            boolean hasRightRank = object.getRank() <= habbo.getHabboInfo().getRank().getId();
+            boolean clubRightsOkay = !object.isClubOnly() || habbo.getHabboInfo().getHabboStats().hasActiveClub();
+            boolean pageTypeMatches = (pageType == CatalogPageType.BUILDER) || object.getCatalogPageType().matches(pageType);
 
-                boolean isVisiblePage = object.visible;
-                boolean hasRightRank = object.getRank() <= habbo.getHabboInfo().getRank().getId();
-                boolean clubRightsOkay = !object.isClubOnly() || habbo.getHabboInfo().getHabboStats().hasActiveClub();
-                boolean pageTypeMatches = (pageType == CatalogPageType.BUILDER) || object.getCatalogPageType().matches(pageType);
-
-                if (isVisiblePage && hasRightRank && clubRightsOkay && pageTypeMatches) {
-                    pages.add(object);
-                }
-                return true;
+            if (isVisiblePage && hasRightRank && clubRightsOkay && pageTypeMatches) {
+                pages.add(object);
             }
-        });
+        }
         Collections.sort(pages);
 
         return pages;
     }
 
-    public TIntObjectMap<CatalogFeaturedPage> getCatalogFeaturedPages() {
+    public Int2ObjectMap<CatalogFeaturedPage> getCatalogFeaturedPages() {
         return this.catalogFeaturedPages;
     }
 
@@ -1009,12 +996,8 @@ public class CatalogManager {
 
 
     public void dispose() {
-        TIntObjectIterator<CatalogPage> pageIterator = this.catalogPages.iterator();
-
-        while (pageIterator.hasNext()) {
-            pageIterator.advance();
-
-            for (CatalogItem item : pageIterator.value().getCatalogItems().valueCollection()) {
+        for (CatalogPage page : this.catalogPages.values()) {
+            for (CatalogItem item : page.getCatalogItems().values()) {
                 item.run();
                 if (item.isLimited()) {
                     this.limitedNumbers.get(item.getId()).run();
@@ -1083,7 +1066,7 @@ public class CatalogManager {
                     }
                 }
 
-                THashSet<HabboItem> itemsList = new THashSet<>();
+                Set<HabboItem> itemsList = new HashSet<>();
 
 
                 if (amount > 1 && !CatalogItem.haveOffer(item)) {
@@ -1137,7 +1120,7 @@ public class CatalogManager {
                                     }
                                 }
 
-                                THashMap<String, String> data = new THashMap<>();
+                                Map<String, String> data = new HashMap<>();
 
                                 for (String s : item.getExtradata().split(";")) {
                                     if (s.contains(":")) {
@@ -1337,7 +1320,7 @@ public class CatalogManager {
                     Emulator.getThreading().run(badge);
                     habbo.getInventory().getBadgesComponent().addBadge(badge);
                     habbo.getClient().sendResponse(new AddUserBadgeComposer(badge));
-                    THashMap<String, String> keys = new THashMap<>();
+                    Map<String, String> keys = new HashMap<>();
                     keys.put("display", "BUBBLE");
                     keys.put("image", "${image.library.url}album1584/" + badge.getCode() + ".gif");
                     keys.put("message", Emulator.getTexts().getValue("commands.generic.cmd_badge.received"));
@@ -1351,7 +1334,7 @@ public class CatalogManager {
                 habbo.getClient().sendResponse(new PurchaseOKComposer(purchasedEvent.catalogItem));
                 habbo.getClient().sendResponse(new InventoryRefreshComposer());
 
-                THashSet<String> itemIds = new THashSet<>();
+                Set<String> itemIds = new HashSet<>();
 
                 for(HabboItem ix : purchasedEvent.itemsList) {
                     itemIds.add(ix.getId() + "");
@@ -1384,7 +1367,7 @@ public class CatalogManager {
         return this.getClubOffers(ClubOffer.WINDOW_HABBO_CLUB);
     }
 
-    public TIntObjectMap<CatalogPage> getCatalogPagesMap(CatalogPageType pageType) {
+    public Int2ObjectMap<CatalogPage> getCatalogPagesMap(CatalogPageType pageType) {
         return (pageType == CatalogPageType.BUILDER) ? this.buildersClubCatalogPages : this.catalogPages;
     }
 

@@ -74,7 +74,7 @@ public class CatalogPagesListComposer extends MessageComposer {
         this.response.appendString(category.getPageName());
         this.response.appendString(category.getCaption() + (this.hasPermission ? " (" + category.getId() + ")" : ""));
 
-        int[] offers = category.getOfferIds().toArray();
+        int[] offers = category.getOfferIds().toIntArray();
         int offerCount = Math.min(offers.length, MAX_OFFERS);
         this.response.appendInt(offerCount);
 

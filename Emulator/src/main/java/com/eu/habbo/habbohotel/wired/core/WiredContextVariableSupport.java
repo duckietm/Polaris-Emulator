@@ -5,9 +5,9 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextV
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
 import com.eu.habbo.messages.outgoing.wired.WiredUserVariablesDataComposer;
-import gnu.trove.set.hash.THashSet;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 
@@ -22,7 +22,7 @@ public final class WiredContextVariableSupport {
             return definitions;
         }
 
-        THashSet<InteractionWiredExtra> extras = room.getRoomSpecialTypes().getExtras();
+        Collection<InteractionWiredExtra> extras = room.getRoomSpecialTypes().getExtras();
         if (extras == null || extras.isEmpty()) {
             return definitions;
         }

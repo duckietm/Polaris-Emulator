@@ -13,7 +13,9 @@ import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemComposer;
 import com.eu.habbo.threading.runnables.QueryDeleteHabboItem;
 import com.eu.habbo.threading.runnables.ShutdownEmulator;
-import gnu.trove.set.hash.THashSet;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class RecycleEvent extends MessageHandler {
     @Override
@@ -24,7 +26,7 @@ public class RecycleEvent extends MessageHandler {
         }
 
         if (Emulator.getGameEnvironment().getCatalogManager().ecotronItem != null && ItemManager.RECYCLER_ENABLED) {
-            THashSet<HabboItem> items = new THashSet<>();
+            Set<HabboItem> items = new HashSet<>();
 
             int count = this.packet.readInt();
             if (count != Emulator.getConfig().getInt("recycler.value", 8)) return;

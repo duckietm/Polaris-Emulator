@@ -4,9 +4,10 @@ import com.eu.habbo.habbohotel.campaign.calendar.CalendarRewardClaimed;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-import gnu.trove.list.array.TIntArrayList;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class AdventCalendarDataComposer extends MessageComposer {
     private final String eventName;
@@ -34,7 +35,7 @@ public class AdventCalendarDataComposer extends MessageComposer {
         this.response.appendInt(this.totalDays);
         this.response.appendInt(this.unlocked.size());
 
-        TIntArrayList expired = new TIntArrayList();
+        Set<Integer> expired = new LinkedHashSet<>();
         if (this.lockExpired) { for (int i = 0; i < this.totalDays; i++) {
             expired.add(i);
         }
@@ -51,10 +52,9 @@ public class AdventCalendarDataComposer extends MessageComposer {
 
         if (this.lockExpired) {
             this.response.appendInt(expired.size());
-            expired.forEach(value -> {
-                AdventCalendarDataComposer.this.response.appendInt(value);
-                return true;
-            });
+            for (int day : expired) {
+                this.response.appendInt(day);
+            }
         } else {
             this.response.appendInt(0);
         }

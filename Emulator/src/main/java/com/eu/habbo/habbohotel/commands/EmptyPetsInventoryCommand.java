@@ -8,7 +8,9 @@ import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.inventory.InventoryPetsComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
-import gnu.trove.map.hash.TIntObjectHashMap;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class EmptyPetsInventoryCommand extends Command {
     public EmptyPetsInventoryCommand() {
@@ -34,13 +36,9 @@ public class EmptyPetsInventoryCommand extends Command {
             Habbo habbo = (params.length == 3 && gameClient.getHabbo().hasPermission(Permission.ACC_EMPTY_OTHERS)) ? Emulator.getGameEnvironment().getHabboManager().getHabbo(params[2]) : gameClient.getHabbo();
 
             if (habbo != null) {
-                TIntObjectHashMap<Pet> pets = new TIntObjectHashMap<>();
-                pets.putAll(habbo.getInventory().getPetsComponent().getPets());
+                List<Pet> pets = new ArrayList<>(habbo.getInventory().getPetsComponent().getPets().values());
                 habbo.getInventory().getPetsComponent().getPets().clear();
-                pets.forEachValue(object -> {
-                    Emulator.getGameEnvironment().getPetManager().deletePet(object);
-                    return true;
-                });
+                pets.forEach(object -> Emulator.getGameEnvironment().getPetManager().deletePet(object));
 
                 habbo.getClient().sendResponse(new InventoryRefreshComposer());
                 habbo.getClient().sendResponse(new InventoryPetsComposer(habbo));

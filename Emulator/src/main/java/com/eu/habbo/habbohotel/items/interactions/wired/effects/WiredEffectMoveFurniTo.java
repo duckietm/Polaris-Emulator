@@ -18,13 +18,14 @@ import com.eu.habbo.habbohotel.wired.core.WiredSimulation;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-import gnu.trove.set.hash.THashSet;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class WiredEffectMoveFurniTo extends InteractionWiredEffect {
@@ -192,7 +193,7 @@ public class WiredEffectMoveFurniTo extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        THashSet<HabboItem> itemsToRemove = new THashSet<>();
+        Set<HabboItem> itemsToRemove = new HashSet<>();
         List<HabboItem> itemsSnapshot = new ArrayList<>(this.items);
 
         for (HabboItem item : itemsSnapshot) {
@@ -217,7 +218,7 @@ public class WiredEffectMoveFurniTo extends InteractionWiredEffect {
     @Override
     public void serializeWiredData(ServerMessage message, Room room) {
         List<HabboItem> itemsSnapshot = new ArrayList<>(this.items);
-        THashSet<HabboItem> items = new THashSet<>();
+        Set<HabboItem> items = new HashSet<>();
 
         for (HabboItem item : itemsSnapshot) {
             if (item.getRoomId() != this.getRoomId() || Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId()).getHabboItem(item.getId()) == null)

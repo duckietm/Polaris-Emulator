@@ -16,7 +16,6 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,7 +102,7 @@ public final class WiredUserMovementHelper {
             roomUnit.resetIdleTimer();
 
             if (habbo != null) {
-                THashSet<Habbo> movedHabbos = new THashSet<>();
+                Set<Habbo> movedHabbos = new HashSet<>();
                 movedHabbos.add(habbo);
                 room.updateHabbosAt(targetTile.x, targetTile.y, movedHabbos);
             }
@@ -171,7 +170,7 @@ public final class WiredUserMovementHelper {
         roomUnit.statusUpdate(true);
 
         if (habbo != null) {
-            THashSet<Habbo> movedHabbos = new THashSet<>();
+            Set<Habbo> movedHabbos = new HashSet<>();
             movedHabbos.add(habbo);
             room.updateHabbosAt(targetTile.x, targetTile.y, movedHabbos);
         } else {

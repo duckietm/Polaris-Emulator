@@ -10,15 +10,15 @@ import com.eu.habbo.messages.outgoing.guardians.*;
 import com.eu.habbo.messages.outgoing.guides.BullyReportClosedComposer;
 import com.eu.habbo.threading.runnables.GuardianNotAccepted;
 import com.eu.habbo.threading.runnables.GuardianVotingFinish;
-import gnu.trove.map.hash.THashMap;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 public class GuardianTicket {
-    private final THashMap<Habbo, GuardianVote> votes = new THashMap<>();
+    private final Map<Habbo, GuardianVote> votes = new HashMap<>();
     private final Habbo reporter;
     private final Habbo reported;
     private final Date date;
@@ -164,7 +164,7 @@ public class GuardianTicket {
         return this.votes.get(guardian);
     }
 
-    public THashMap<Habbo, GuardianVote> getVotes() {
+    public Map<Habbo, GuardianVote> getVotes() {
         return this.votes;
     }
 

@@ -10,7 +10,6 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFilterUs
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import gnu.trove.set.hash.THashSet;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -149,7 +148,7 @@ public final class WiredTriggerSourceUtil {
             return Collections.emptyList();
         }
 
-        THashSet<InteractionWiredEffect> effects = room.getRoomSpecialTypes().getEffects(trigger.getX(), trigger.getY());
+        Collection<InteractionWiredEffect> effects = room.getRoomSpecialTypes().getEffects(trigger.getX(), trigger.getY());
         List<InteractionWiredEffect> selectorEffects = new ArrayList<>();
 
         for (InteractionWiredEffect effect : WiredExecutionOrderUtil.sort(effects)) {

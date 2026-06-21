@@ -11,13 +11,12 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import com.eu.habbo.messages.outgoing.navigator.CanCreateRoomComposer;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.THashMap;
-import gnu.trove.procedure.TObjectProcedure;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
+import java.util.HashMap;
 import java.util.Map;
 
 public class RoomBundleLayout extends SingleBundle {
@@ -35,7 +34,7 @@ public class RoomBundleLayout extends SingleBundle {
     }
 
     @Override
-    public TIntObjectMap<CatalogItem> getCatalogItems() {
+    public Int2ObjectMap<CatalogItem> getCatalogItems() {
         if (Emulator.getIntUnixTimestamp() - this.lastUpdate < 120) {
             this.lastUpdate = Emulator.getIntUnixTimestamp();
             return super.getCatalogItems();
@@ -62,16 +61,12 @@ public class RoomBundleLayout extends SingleBundle {
 
         final CatalogItem[] item = {null};
 
-        super.getCatalogItems().forEachValue(new TObjectProcedure<CatalogItem>() {
-            @Override
-            public boolean execute(CatalogItem object) {
-                if (object == null)
-                    return true;
-
+        for (CatalogItem object : super.getCatalogItems().values()) {
+            if (object != null) {
                 item[0] = object;
-                return false;
+                break;
             }
-        });
+        }
 
         if (this.room.isPreLoaded()) {
             this.room.loadData();
@@ -81,10 +76,10 @@ public class RoomBundleLayout extends SingleBundle {
         if (item[0] != null) {
             item[0].getBundle().clear();
 
-            THashMap<Item, Integer> items = new THashMap<>();
+            Map<Item, Integer> items = new HashMap<>();
 
             for (HabboItem i : this.room.getFloorItems()) {
-                if (!items.contains(i.getBaseItem())) {
+                if (!items.containsKey(i.getBaseItem())) {
                     items.put(i.getBaseItem(), 0);
                 }
 
@@ -92,7 +87,7 @@ public class RoomBundleLayout extends SingleBundle {
             }
 
             for (HabboItem i : this.room.getWallItems()) {
-                if (!items.contains(i.getBaseItem())) {
+                if (!items.containsKey(i.getBaseItem())) {
                     items.put(i.getBaseItem(), 0);
                 }
 
@@ -203,7 +198,7 @@ public class RoomBundleLayout extends SingleBundle {
                     synchronized (this.room.getCurrentBots()) {
                         statement.setInt(1, userId);
                         statement.setInt(2, roomId);
-                        for (Bot bot : this.room.getCurrentBots().valueCollection()) {
+                        for (Bot bot : this.room.getCurrentBots().values()) {
                             statement.setString(3, bot.getName());
                             statement.setString(4, bot.getMotto());
                             statement.setString(5, bot.getFigure());
@@ -238,7 +233,7 @@ public class RoomBundleLayout extends SingleBundle {
         r.setFloorPaint(this.room.getFloorPaint());
         r.setScore(0);
         r.setNeedsUpdate(true);
-        THashMap<String, String> keys = new THashMap<>();
+        Map<String, String> keys = new HashMap<>();
         keys.put("ROOMNAME", r.getName());
         keys.put("ROOMID", r.getId() + "");
         keys.put("OWNER", r.getOwnerName());

@@ -3,7 +3,6 @@ package com.eu.habbo.database;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.core.ConfigurationManager;
 import com.zaxxer.hikari.HikariDataSource;
-import gnu.trove.map.hash.THashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,13 +116,6 @@ public class Database {
             statement.setObject(k + 1, bindValues.get(k));
         }
         return statement;
-    }
-
-    @Deprecated
-    public static PreparedStatement preparedStatementWithParams(Connection connection,
-                                                                String query,
-                                                                THashMap<String, Object> queryParams) throws SQLException {
-        return preparedStatementWithParams(connection, query, (Map<String, Object>) queryParams);
     }
 
     private static boolean isNameStart(char c) {

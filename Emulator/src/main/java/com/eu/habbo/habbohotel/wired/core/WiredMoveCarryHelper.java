@@ -18,7 +18,6 @@ import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.FloorItemOnRollerComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
-import gnu.trove.set.hash.THashSet;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -452,7 +451,7 @@ public final class WiredMoveCarryHelper {
         }
 
         double targetZ = room.getStackHeight(targetTile.x, targetTile.y, false, movingItem);
-        THashSet<RoomTile> occupiedTiles = room.getLayout().getTilesAt(
+        Collection<RoomTile> occupiedTiles = room.getLayout().getTilesAt(
                 targetTile,
                 movingItem.getBaseItem().getWidth(),
                 movingItem.getBaseItem().getLength(),
@@ -565,7 +564,7 @@ public final class WiredMoveCarryHelper {
     }
 
     private static boolean hasMovementBehaviorExtra(Room room, HabboItem stackItem) {
-        THashSet<InteractionWiredExtra> extras = getMovementExtras(room, stackItem);
+        Collection<InteractionWiredExtra> extras = getMovementExtras(room, stackItem);
         if (extras == null || extras.isEmpty()) {
             return false;
         }
@@ -594,7 +593,7 @@ public final class WiredMoveCarryHelper {
             return CarryContext.disabled();
         }
 
-        THashSet<RoomTile> occupiedTiles = room.getLayout().getTilesAt(
+        Collection<RoomTile> occupiedTiles = room.getLayout().getTilesAt(
                 anchorTile,
                 movingItem.getBaseItem().getWidth(),
                 movingItem.getBaseItem().getLength(),
@@ -644,7 +643,7 @@ public final class WiredMoveCarryHelper {
         return WiredSourceUtil.resolveUsers(ctx, userSource);
     }
 
-    private static boolean isEligibleUser(Room room, HabboItem movingItem, RoomUnit roomUnit, THashSet<RoomTile> occupiedTiles, int carryMode) {
+    private static boolean isEligibleUser(Room room, HabboItem movingItem, RoomUnit roomUnit, Collection<RoomTile> occupiedTiles, int carryMode) {
         if (roomUnit == null
                 || roomUnit.getRoomUnitType() != RoomUnitType.USER
                 || roomUnit.getCurrentLocation() == null
@@ -679,7 +678,7 @@ public final class WiredMoveCarryHelper {
         return Math.abs(roomUnit.getZ() - carrySurfaceZ) <= DIRECT_HEIGHT_TOLERANCE;
     }
 
-    private static boolean occupiesMovingFurni(THashSet<RoomTile> occupiedTiles, RoomUnit roomUnit) {
+    private static boolean occupiesMovingFurni(Collection<RoomTile> occupiedTiles, RoomUnit roomUnit) {
         for (RoomTile occupiedTile : occupiedTiles) {
             if (occupiedTile != null
                     && occupiedTile.x == roomUnit.getX()
@@ -692,7 +691,7 @@ public final class WiredMoveCarryHelper {
     }
 
     private static FurnitureMovementError getBlockingUnitError(Room room, HabboItem movingItem, RoomTile targetTile, int rotation, CarryContext carryContext, WiredMovementPhysics movementPhysics) {
-        THashSet<RoomTile> occupiedTiles = room.getLayout().getTilesAt(
+        Collection<RoomTile> occupiedTiles = room.getLayout().getTilesAt(
                 targetTile,
                 movingItem.getBaseItem().getWidth(),
                 movingItem.getBaseItem().getLength(),
@@ -784,7 +783,7 @@ public final class WiredMoveCarryHelper {
 
             Habbo habbo = room.getHabbo(carriedMove.roomUnit);
             if (habbo != null && shouldRefreshPostureWithTileUpdate(carriedMove.roomUnit)) {
-                THashSet<Habbo> movedHabbos = new THashSet<>();
+                Set<Habbo> movedHabbos = new HashSet<>();
                 movedHabbos.add(habbo);
                 room.updateHabbosAt(carriedMove.destinationTile.x, carriedMove.destinationTile.y, movedHabbos);
             }
@@ -800,7 +799,7 @@ public final class WiredMoveCarryHelper {
             return carriedMoves;
         }
 
-        THashSet<RoomTile> occupiedTiles = room.getLayout().getTilesAt(
+        Collection<RoomTile> occupiedTiles = room.getLayout().getTilesAt(
                 targetTile,
                 movingItem.getBaseItem().getWidth(),
                 movingItem.getBaseItem().getLength(),
@@ -887,7 +886,7 @@ public final class WiredMoveCarryHelper {
     }
 
     private static WiredExtraMoveCarryUsers getActiveExtra(Room room, HabboItem stackItem) {
-        THashSet<InteractionWiredExtra> extras = getMovementExtras(room, stackItem);
+        Collection<InteractionWiredExtra> extras = getMovementExtras(room, stackItem);
         if (extras == null || extras.isEmpty()) {
             return null;
         }
@@ -902,7 +901,7 @@ public final class WiredMoveCarryHelper {
     }
 
     private static WiredExtraMoveNoAnimation getNoAnimationExtra(Room room, HabboItem stackItem) {
-        THashSet<InteractionWiredExtra> extras = getMovementExtras(room, stackItem);
+        Collection<InteractionWiredExtra> extras = getMovementExtras(room, stackItem);
         if (extras == null || extras.isEmpty()) {
             return null;
         }
@@ -917,7 +916,7 @@ public final class WiredMoveCarryHelper {
     }
 
     private static WiredExtraAnimationTime getAnimationTimeExtra(Room room, HabboItem stackItem) {
-        THashSet<InteractionWiredExtra> extras = getMovementExtras(room, stackItem);
+        Collection<InteractionWiredExtra> extras = getMovementExtras(room, stackItem);
         if (extras == null || extras.isEmpty()) {
             return null;
         }
@@ -1001,7 +1000,7 @@ public final class WiredMoveCarryHelper {
     }
 
     private static WiredExtraMovePhysics getMovementPhysicsExtra(Room room, HabboItem stackItem) {
-        THashSet<InteractionWiredExtra> extras = getMovementExtras(room, stackItem);
+        Collection<InteractionWiredExtra> extras = getMovementExtras(room, stackItem);
         if (extras == null || extras.isEmpty()) {
             return null;
         }
@@ -1015,12 +1014,12 @@ public final class WiredMoveCarryHelper {
         return null;
     }
 
-    private static THashSet<InteractionWiredExtra> getMovementExtras(Room room, HabboItem stackItem) {
+    private static Collection<InteractionWiredExtra> getMovementExtras(Room room, HabboItem stackItem) {
         if (room == null || stackItem == null || room.getRoomSpecialTypes() == null) {
             return null;
         }
 
-        THashSet<InteractionWiredExtra> extras = room.getRoomSpecialTypes().getExtras(stackItem.getX(), stackItem.getY());
+        Collection<InteractionWiredExtra> extras = room.getRoomSpecialTypes().getExtras(stackItem.getX(), stackItem.getY());
         if (extras == null || extras.isEmpty()) {
             return null;
         }

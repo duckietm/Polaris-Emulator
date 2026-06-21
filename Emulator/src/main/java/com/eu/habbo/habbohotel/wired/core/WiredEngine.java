@@ -29,8 +29,6 @@ import com.eu.habbo.messages.outgoing.generic.alerts.GenericAlertComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.ItemStateComposer;
 import com.eu.habbo.plugin.events.furniture.wired.WiredStackExecutedEvent;
 import com.eu.habbo.plugin.events.furniture.wired.WiredStackTriggeredEvent;
-import gnu.trove.map.hash.THashMap;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1381,8 +1379,8 @@ public final class WiredEngine {
         // Build legacy collections for event
         if (stack.triggerItem() instanceof InteractionWiredTrigger) {
             // This event is checked for cancellation
-            THashSet<InteractionWiredEffect> legacyEffects = new THashSet<>();
-            THashSet<InteractionWiredCondition> legacyConditions = new THashSet<>();
+            Set<InteractionWiredEffect> legacyEffects = new HashSet<>();
+            Set<InteractionWiredCondition> legacyConditions = new HashSet<>();
 
             // Extract effects (all effects should now implement both interfaces)
             for (IWiredEffect eff : stack.effects()) {
@@ -1414,8 +1412,8 @@ public final class WiredEngine {
      */
     private void fireExecutedEvent(WiredStack stack, WiredEvent event) {
         if (stack.triggerItem() instanceof InteractionWiredTrigger) {
-            THashSet<InteractionWiredEffect> legacyEffects = new THashSet<>();
-            THashSet<InteractionWiredCondition> legacyConditions = new THashSet<>();
+            Set<InteractionWiredEffect> legacyEffects = new HashSet<>();
+            Set<InteractionWiredCondition> legacyConditions = new HashSet<>();
 
             for (IWiredEffect eff : stack.effects()) {
                 if (eff instanceof InteractionWiredEffect) {
@@ -1462,7 +1460,7 @@ public final class WiredEngine {
             return;
         }
 
-        THashSet<InteractionWiredExtra> extras = room.getRoomSpecialTypes().getExtras(
+        Collection<InteractionWiredExtra> extras = room.getRoomSpecialTypes().getExtras(
                 triggerItem.getX(), triggerItem.getY());
 
         if (extras != null) {
@@ -1495,7 +1493,7 @@ public final class WiredEngine {
             return null;
         }
 
-        THashSet<InteractionWiredExtra> extras = room.getRoomSpecialTypes().getExtras(
+        Collection<InteractionWiredExtra> extras = room.getRoomSpecialTypes().getExtras(
                 stack.triggerItem().getX(),
                 stack.triggerItem().getY());
 
@@ -1709,7 +1707,7 @@ public final class WiredEngine {
             room.sendComposer(new GenericAlertComposer(roomAlertMessage).compose());
 
             // Send scripter bubble alert to staff with room link
-            THashMap<String, String> keys = new THashMap<>();
+            Map<String, String> keys = new HashMap<>();
             keys.put("title", Emulator.getTexts().getValue("wired.abuse.staff.title"));
             keys.put("message", Emulator.getTexts().getValue("wired.abuse.staff.message")
                     .replace("%roomname%", room.getName())

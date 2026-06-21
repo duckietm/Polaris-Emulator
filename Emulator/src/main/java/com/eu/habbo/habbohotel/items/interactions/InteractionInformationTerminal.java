@@ -5,13 +5,14 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.habboway.nux.NuxAlertComposer;
-import gnu.trove.map.hash.THashMap;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class InteractionInformationTerminal extends InteractionCustomValues {
-    public static final THashMap<String, String> defaultValues = new THashMap<String, String>() {
+    public static final Map<String, String> defaultValues = new HashMap<String, String>() {
         {
             this.put("internalLink", "habbopages/chat/commands");
         }

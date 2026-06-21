@@ -7,26 +7,27 @@ import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.guides.*;
 import com.eu.habbo.threading.runnables.GuardianTicketFindMoreSlaves;
 import com.eu.habbo.threading.runnables.GuideFindNewHelper;
-import gnu.trove.map.hash.THashMap;
-import gnu.trove.set.hash.THashSet;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class GuideManager {
-    private final THashSet<GuideTour> activeTours;
-    private final THashSet<GuardianTicket> activeTickets;
-    private final THashSet<GuardianTicket> closedTickets;
-    private final THashMap<Habbo, Boolean> activeHelpers;
-    private final THashMap<Habbo, GuardianTicket> activeGuardians;
-    private final THashMap<Integer, Integer> tourRequestTiming;
+    private final Set<GuideTour> activeTours;
+    private final Set<GuardianTicket> activeTickets;
+    private final Set<GuardianTicket> closedTickets;
+    private final Map<Habbo, Boolean> activeHelpers;
+    private final Map<Habbo, GuardianTicket> activeGuardians;
+    private final Map<Integer, Integer> tourRequestTiming;
 
     public GuideManager() {
-        this.activeTours = new THashSet<>();
-        this.activeTickets = new THashSet<>();
-        this.closedTickets = new THashSet<>();
-        this.activeHelpers = new THashMap<>();
-        this.activeGuardians = new THashMap<>();
-        this.tourRequestTiming = new THashMap<>();
+        this.activeTours = new HashSet<>();
+        this.activeTickets = new HashSet<>();
+        this.closedTickets = new HashSet<>();
+        this.activeHelpers = new HashMap<>();
+        this.activeGuardians = new HashMap<>();
+        this.tourRequestTiming = new HashMap<>();
     }
 
     public void userLogsOut(Habbo habbo) {
@@ -224,7 +225,7 @@ public class GuideManager {
         synchronized (this.activeGuardians) {
             int count = ticket.getVotedCount();
 
-            THashSet<Habbo> selectedGuardians = new THashSet<>();
+            Set<Habbo> selectedGuardians = new HashSet<>();
 
             for (Map.Entry<Habbo, GuardianTicket> set : this.activeGuardians.entrySet()) {
                 if (count == 5)
@@ -326,7 +327,7 @@ public class GuideManager {
             this.closedTickets.add(ticket);
         }
 
-        THashSet<Habbo> toUpdate = new THashSet<>();
+        Set<Habbo> toUpdate = new HashSet<>();
 
         synchronized (this.activeGuardians) {
             for (Map.Entry<Habbo, GuardianTicket> set : this.activeGuardians.entrySet()) {
@@ -359,7 +360,7 @@ public class GuideManager {
 
     public void cleanup() {
         synchronized (this.activeTours) {
-            THashSet<GuideTour> tours = new THashSet<>();
+            Set<GuideTour> tours = new HashSet<>();
             for (GuideTour tour : this.activeTours) {
                 if (tour.isEnded() && (Emulator.getIntUnixTimestamp() - tour.getEndTime() > 300)) {
                     tours.add(tour);
@@ -372,7 +373,7 @@ public class GuideManager {
         }
 
         synchronized (this.activeTickets) {
-            THashSet<GuardianTicket> tickets = new THashSet<>();
+            Set<GuardianTicket> tickets = new HashSet<>();
 
             for (GuardianTicket ticket : this.closedTickets) {
                 if (Emulator.getIntUnixTimestamp() - (ticket.getDate().getTime() / 1000) > 15 * 60) {

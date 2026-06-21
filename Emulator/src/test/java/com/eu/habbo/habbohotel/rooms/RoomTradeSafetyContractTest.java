@@ -17,7 +17,7 @@ class RoomTradeSafetyContractTest {
     void sqlFailureStopsBeforeInventoryTransfer() throws Exception {
         String source = roomTradeSource();
         int catchIndex = source.indexOf("catch (SQLException e)");
-        int inventoryTransferIndex = source.indexOf("THashSet<HabboItem> itemsUserOne");
+        int inventoryTransferIndex = source.indexOf("Set<HabboItem> itemsUserOne");
 
         assertTrue(catchIndex > -1, "RoomTrade must handle SQL failures explicitly");
         assertTrue(inventoryTransferIndex > catchIndex, "Inventory transfer should happen after SQL ownership updates");

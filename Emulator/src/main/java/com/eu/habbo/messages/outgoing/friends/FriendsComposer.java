@@ -5,12 +5,13 @@ import com.eu.habbo.habbohotel.users.HabboGender;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 public class FriendsComposer extends MessageComposer {
     private static final Logger LOGGER = LoggerFactory.getLogger(FriendsComposer.class);
@@ -59,7 +60,7 @@ public class FriendsComposer extends MessageComposer {
 
     public static ArrayList<ServerMessage> getMessagesForBuddyList(Collection<MessengerBuddy> buddies) {
         ArrayList<ServerMessage> messages = new ArrayList<ServerMessage>();
-        THashSet<MessengerBuddy> friends = new THashSet<MessengerBuddy>();
+        Set<MessengerBuddy> friends = new HashSet<MessengerBuddy>();
 
         int totalPages = (int)Math.ceil(buddies.size() / 750.0);
         int page = 0;

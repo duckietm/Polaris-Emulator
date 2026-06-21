@@ -5,11 +5,11 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.google.gson.Gson;
-import gnu.trove.map.hash.THashMap;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class ImageHotelAlert extends RCONMessage<ImageHotelAlert.JSON> {
@@ -19,7 +19,7 @@ public class ImageHotelAlert extends RCONMessage<ImageHotelAlert.JSON> {
 
     @Override
     public void handle(Gson gson, JSON json) {
-        THashMap<String, String> keys = new THashMap<>();
+        Map<String, String> keys = new HashMap<>();
 
         if (!json.message.isEmpty()) {
             keys.put("message", json.message);

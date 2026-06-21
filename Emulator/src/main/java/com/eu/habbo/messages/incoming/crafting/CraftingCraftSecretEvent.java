@@ -13,10 +13,11 @@ import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemComposer;
 import com.eu.habbo.threading.runnables.QueryDeleteHabboItem;
-import gnu.trove.map.hash.THashMap;
-import gnu.trove.set.hash.THashSet;
 
+import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
+import java.util.IdentityHashMap;
 import java.util.Set;
 
 public class CraftingCraftSecretEvent extends MessageHandler {
@@ -38,8 +39,8 @@ public class CraftingCraftSecretEvent extends MessageHandler {
             CraftingAltar altar = Emulator.getGameEnvironment().getCraftingManager().getAltar(craftingAltar.getBaseItem());
 
             if (altar != null) {
-                Set<HabboItem> habboItems = new THashSet<>();
-                Map<Item, Integer> items = new THashMap<>();
+                Set<HabboItem> habboItems = Collections.newSetFromMap(new IdentityHashMap<>());
+                Map<Item, Integer> items = new HashMap<>();
 
                 for (int i = 0; i < count; i++) {
                     int itemId = this.packet.readInt();

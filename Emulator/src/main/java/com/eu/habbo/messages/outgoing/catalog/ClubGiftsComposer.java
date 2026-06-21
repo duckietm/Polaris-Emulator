@@ -34,7 +34,7 @@ public class ClubGiftsComposer extends MessageComposer {
         CatalogPage page = Emulator.getGameEnvironment().getCatalogManager().getCatalogPageByLayout(CatalogPageLayouts.club_gift.name().toLowerCase());
 
         if (page != null) {
-            final List<CatalogItem> items = new ArrayList<>(page.getCatalogItems().valueCollection());
+            final List<CatalogItem> items = new ArrayList<>(page.getCatalogItems().values());
             Collections.sort(items);
 
             this.response.appendInt(items.size());

@@ -5,7 +5,8 @@ import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-import gnu.trove.set.hash.THashSet;
+
+import java.util.Set;
 
 public class FloorPlanEditorBlockedTilesComposer extends MessageComposer {
     private final Room room;
@@ -18,7 +19,7 @@ public class FloorPlanEditorBlockedTilesComposer extends MessageComposer {
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.FloorPlanEditorBlockedTilesComposer);
 
-        THashSet<RoomTile> tileList = this.room.getLockedTiles();
+        Set<RoomTile> tileList = this.room.getLockedTiles();
 
         this.response.appendInt(tileList.size());
         for (RoomTile node : tileList) {

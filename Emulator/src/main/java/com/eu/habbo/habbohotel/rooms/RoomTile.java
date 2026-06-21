@@ -1,16 +1,17 @@
 package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.habbohotel.items.Item;
-import gnu.trove.set.hash.THashSet;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class RoomTile {
     public final short x;
     public final short y;
     public final short z;
-    private final THashSet<RoomUnit> units;
+    private final Set<RoomUnit> units;
     public RoomTileState state;
     private double stackHeight;
     private boolean allowStack = true;
@@ -27,7 +28,7 @@ public class RoomTile {
         this.stackHeight = z;
         this.state = state;
         this.setAllowStack(allowStack);
-        this.units = new THashSet<>();
+        this.units = new HashSet<>();
     }
 
     public RoomTile(RoomTile tile) {

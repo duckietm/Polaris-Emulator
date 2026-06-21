@@ -22,14 +22,16 @@ import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public class WiredConditionHasVariable extends InteractionWiredCondition {
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredConditionHasVariable.class);
@@ -45,7 +47,7 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
 
     public static final WiredConditionType type = WiredConditionType.HAS_VAR;
 
-    protected final THashSet<HabboItem> selectedItems = new THashSet<>();
+    protected final Set<HabboItem> selectedItems = new LinkedHashSet<>();
     protected int targetType = TARGET_USER;
     protected int userSource = WiredSourceUtil.SOURCE_TRIGGER;
     protected int furniSource = WiredSourceUtil.SOURCE_TRIGGER;
@@ -375,7 +377,7 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
     }
 
     protected void refresh() {
-        THashSet<HabboItem> staleItems = new THashSet<>();
+        Set<HabboItem> staleItems = new HashSet<>();
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
 
         if (room == null) {

@@ -6,10 +6,10 @@ import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.catalog.TargetedOfferComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.MessagesForYouComposer;
-import gnu.trove.map.hash.THashMap;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class PromoteTargetOfferCommand extends Command {
 
@@ -27,7 +27,7 @@ public class PromoteTargetOfferCommand extends Command {
         String offerKey = params[1];
 
         if (offerKey.equalsIgnoreCase(Emulator.getTexts().getValue("commands.cmd_promote_offer.info"))) {
-            THashMap<Integer, TargetOffer> targetOffers = Emulator.getGameEnvironment().getCatalogManager().targetOffers;
+            Map<Integer, TargetOffer> targetOffers = Emulator.getGameEnvironment().getCatalogManager().targetOffers;
             String[] textConfig = Emulator.getTexts().getValue("commands.cmd_promote_offer.list").replace("%amount%", targetOffers.size() + "").split("<br>");
 
             String entryConfig = Emulator.getTexts().getValue("commands.cmd_promote_offer.list.entry");

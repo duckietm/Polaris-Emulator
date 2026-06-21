@@ -16,8 +16,6 @@ import com.eu.habbo.habbohotel.wired.core.*;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-import gnu.trove.procedure.TObjectProcedure;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,8 +40,8 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
     private static final long ANTENNA_PULSE_MS = 300L;
     private static final ConcurrentHashMap<Integer, Long> ANTENNA_PULSE_TOKENS = new ConcurrentHashMap<>();
 
-    private THashSet<HabboItem> items;
-    private THashSet<HabboItem> forwardItems;
+    private Set<HabboItem> items;
+    private Set<HabboItem> forwardItems;
     private int     antennaSource   = ANTENNA_PICKED;
     private int     furniForward    = WiredSourceUtil.SOURCE_TRIGGER;
     private int     userForward     = WiredSourceUtil.SOURCE_TRIGGER;
@@ -53,14 +51,14 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
 
     public WiredEffectSendSignal(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
-        this.items = new THashSet<>();
-        this.forwardItems = new THashSet<>();
+        this.items = new LinkedHashSet<>();
+        this.forwardItems = new LinkedHashSet<>();
     }
 
     public WiredEffectSendSignal(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
-        this.items = new THashSet<>();
-        this.forwardItems = new THashSet<>();
+        this.items = new LinkedHashSet<>();
+        this.forwardItems = new LinkedHashSet<>();
     }
 
     @Override
@@ -246,15 +244,11 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
 
         if (this.requiresTriggeringUser()) {
             List<Integer> invalidTriggers = new ArrayList<>();
-            room.getRoomSpecialTypes().getTriggers(this.getX(), this.getY()).forEach(new TObjectProcedure<InteractionWiredTrigger>() {
-                @Override
-                public boolean execute(InteractionWiredTrigger object) {
-                    if (!object.isTriggeredByRoomUnit()) {
-                        invalidTriggers.add(object.getBaseItem().getSpriteId());
-                    }
-                    return true;
+            for (InteractionWiredTrigger trigger : room.getRoomSpecialTypes().getTriggers(this.getX(), this.getY())) {
+                if (!trigger.isTriggeredByRoomUnit()) {
+                    invalidTriggers.add(trigger.getBaseItem().getSpriteId());
                 }
-            });
+            }
             message.appendInt(invalidTriggers.size());
             for (Integer i : invalidTriggers) {
                 message.appendInt(i);
@@ -346,8 +340,8 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
-        this.items = new THashSet<>();
-        this.forwardItems = new THashSet<>();
+        this.items = new LinkedHashSet<>();
+        this.forwardItems = new LinkedHashSet<>();
         String wiredData = set.getString("wired_data");
 
         JsonData data = WiredUtilityPayloadGuard.fromJson(wiredData, JsonData.class);

@@ -5,7 +5,8 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-import gnu.trove.map.hash.THashMap;
+
+import java.util.Map;
 
 public class InventoryBotsComposer extends MessageComposer {
     private final Habbo habbo;
@@ -18,7 +19,7 @@ public class InventoryBotsComposer extends MessageComposer {
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.InventoryBotsComposer);
 
-        THashMap<Integer, Bot> userBots = this.habbo.getInventory().getBotsComponent().getBots();
+        Map<Integer, Bot> userBots = this.habbo.getInventory().getBotsComponent().getBots();
         this.response.appendInt(userBots.size());
         for (Bot bot : userBots.values()) {
             this.response.appendInt(bot.getId());

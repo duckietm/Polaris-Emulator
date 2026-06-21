@@ -3,13 +3,15 @@ package com.eu.habbo.habbohotel.guides;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.users.Habbo;
-import gnu.trove.set.hash.THashSet;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class GuideTour {
     private final Habbo noob;
     private final String helpRequest;
-    private final THashSet<GuideChatMessage> sendMessages = new THashSet<>();
-    private final THashSet<Integer> declinedHelpers = new THashSet<>();
+    private final Set<GuideChatMessage> sendMessages = new HashSet<>();
+    private final Set<Integer> declinedHelpers = new HashSet<>();
     public int checkSum = 0;
     private Habbo helper;
     private int startTime;

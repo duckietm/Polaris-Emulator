@@ -43,7 +43,7 @@ public class MoodLightSaveSettingsEvent extends MessageHandler {
             return;
         }
 
-        for (RoomMoodlightData data : room.getMoodlightData().valueCollection()) {
+        for (RoomMoodlightData data : room.getMoodlightData().values()) {
             if (data.getId() == id) {
                 data.setBackgroundOnly(backgroundOnly == 2);
                 data.setColor(color);
@@ -62,6 +62,6 @@ public class MoodLightSaveSettingsEvent extends MessageHandler {
         }
 
         room.setNeedsUpdate(true);
-        this.client.sendResponse(new MoodLightDataComposer(room.getMoodlightData()));
+        this.client.sendResponse(new MoodLightDataComposer(room.getMoodlightData().values()));
     }
 }

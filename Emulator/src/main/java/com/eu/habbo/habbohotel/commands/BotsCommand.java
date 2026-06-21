@@ -14,7 +14,7 @@ public class BotsCommand extends Command {
         if (gameClient.getHabbo().getHabboInfo().getCurrentRoom() == null || !gameClient.getHabbo().getHabboInfo().getCurrentRoom().hasRights(gameClient.getHabbo()))
             return false;
 
-        StringBuilder data = new StringBuilder(Emulator.getTexts().getValue("total") + ": " + gameClient.getHabbo().getHabboInfo().getCurrentRoom().getCurrentBots().values().length);
+        StringBuilder data = new StringBuilder(Emulator.getTexts().getValue("total") + ": " + gameClient.getHabbo().getHabboInfo().getCurrentRoom().getCurrentBots().values().size());
 
         for (Object bot : gameClient.getHabbo().getHabboInfo().getCurrentRoom().getCurrentBots().values()) {
             if (bot instanceof Bot) {

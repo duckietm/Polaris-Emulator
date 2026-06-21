@@ -14,7 +14,8 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
-import gnu.trove.map.hash.TIntIntHashMap;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +55,7 @@ public class HabboInfo implements Runnable {
     private int roomQueueId;
     private RideablePet riding;
     private Class<? extends Game> currentGame;
-    private TIntIntHashMap currencies;
+    private Int2IntOpenHashMap currencies;
     // Serializes credits + currencies read-modify-write and the saveCurrencies
     // snapshot so the credit-roller thread and purchase/trade handler threads
     // can't lose updates or rehash the Trove map mid-iteration. Never held
@@ -115,7 +116,7 @@ public class HabboInfo implements Runnable {
     }
 
     private void loadCurrencies() {
-        this.currencies = new TIntIntHashMap();
+        this.currencies = new Int2IntOpenHashMap();
 
         try {
             SqlQueries.forEach(
@@ -133,10 +134,9 @@ public class HabboInfo implements Runnable {
         List<int[]> entries;
         synchronized (this.currencyLock) {
             entries = new ArrayList<>(this.currencies.size());
-            this.currencies.forEachEntry((type, amount) -> {
-                entries.add(new int[]{type, amount});
-                return true;
-            });
+            for (Int2IntMap.Entry entry : this.currencies.int2IntEntrySet()) {
+                entries.add(new int[]{entry.getIntKey(), entry.getIntValue()});
+            }
         }
 
         try {
@@ -253,17 +253,17 @@ public class HabboInfo implements Runnable {
         }
     }
 
-    public TIntIntHashMap getCurrencies() {
+    public Int2IntOpenHashMap getCurrencies() {
         // Return a snapshot under the lock: callers iterate this map, which would
-        // otherwise corrupt during a concurrent adjustOrPutValue rehash.
+        // otherwise corrupt during a concurrent addTo/put rehash.
         synchronized (this.currencyLock) {
-            return new TIntIntHashMap(this.currencies);
+            return new Int2IntOpenHashMap(this.currencies);
         }
     }
 
     public void addCurrencyAmount(int type, int amount) {
         synchronized (this.currencyLock) {
-            this.currencies.adjustOrPutValue(type, amount, amount);
+            this.currencies.addTo(type, amount);
         }
         this.run();
     }

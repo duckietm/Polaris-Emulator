@@ -1,23 +1,23 @@
 package com.eu.habbo.habbohotel.modtool;
 
-import gnu.trove.TCollections;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 public class ModToolCategory {
     private final String name;
-    private final TIntObjectMap<ModToolPreset> presets;
+    private final Int2ObjectMap<ModToolPreset> presets;
 
     public ModToolCategory(String name) {
         this.name = name;
-        this.presets = TCollections.synchronizedMap(new TIntObjectHashMap<>());
+        this.presets = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>());
     }
 
     public void addPreset(ModToolPreset preset) {
         this.presets.put(preset.id, preset);
     }
 
-    public TIntObjectMap<ModToolPreset> getPresets() {
+    public Int2ObjectMap<ModToolPreset> getPresets() {
         return this.presets;
     }
 

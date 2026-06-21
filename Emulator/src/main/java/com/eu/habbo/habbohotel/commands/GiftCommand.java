@@ -11,7 +11,9 @@ import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
-import gnu.trove.map.hash.THashMap;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class GiftCommand extends Command {
     public GiftCommand() {
@@ -76,7 +78,7 @@ public class GiftCommand extends Command {
             if (habbo != null) {
                 habbo.getClient().sendResponse(new InventoryRefreshComposer());
 
-                THashMap<String, String> keys = new THashMap<>();
+                Map<String, String> keys = new HashMap<>();
                 keys.put("display", "BUBBLE");
                 keys.put("image", "${image.library.url}notifications/gift.gif");
                 keys.put("message", Emulator.getTexts().getValue("generic.gift.received.anonymous"));

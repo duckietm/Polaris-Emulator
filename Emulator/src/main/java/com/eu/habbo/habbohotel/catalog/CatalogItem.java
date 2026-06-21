@@ -5,7 +5,6 @@ import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.messages.ISerialize;
 import com.eu.habbo.messages.ServerMessage;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,6 +13,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem> {
     private static final Logger LOGGER = LoggerFactory.getLogger(CatalogItem.class);
@@ -48,7 +50,7 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
     private int orderNumber;
 
 
-    private HashMap<Integer, Integer> bundle;
+    private Map<Integer, Integer> bundle;
 
     public CatalogItem(ResultSet set) throws SQLException {
         this.load(set);
@@ -206,8 +208,8 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
         Emulator.getThreading().run(this);
     }
 
-    public THashSet<Item> getBaseItems() {
-        THashSet<Item> items = new THashSet<>();
+    public Set<Item> getBaseItems() {
+        Set<Item> items = new HashSet<>();
 
         if (!this.itemId.isEmpty()) {
             String[] itemIds = this.itemId.split(";");
@@ -247,7 +249,7 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
             return this.amount;
     }
 
-    public HashMap<Integer, Integer> getBundle() {
+    public Map<Integer, Integer> getBundle() {
         return this.bundle;
     }
 
@@ -297,7 +299,7 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
         message.appendInt(this.getPointsType());
         message.appendBoolean(this.allowGift); //Can gift
 
-        THashSet<Item> items = this.getBaseItems();
+        Set<Item> items = this.getBaseItems();
 
         message.appendInt(items.size());
 

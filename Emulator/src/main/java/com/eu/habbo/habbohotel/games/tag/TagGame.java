@@ -16,14 +16,14 @@ import com.eu.habbo.plugin.EventHandler;
 import com.eu.habbo.plugin.events.roomunit.RoomUnitLookAtPointEvent;
 import com.eu.habbo.plugin.events.users.UserTakeStepEvent;
 import com.eu.habbo.threading.runnables.HabboItemNewState;
-import gnu.trove.iterator.hash.TObjectHashIterator;
-import gnu.trove.map.hash.THashMap;
-import gnu.trove.set.hash.THashSet;
 
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 public abstract class TagGame extends Game {
-    public THashMap<Habbo, InteractionTagPole> taggers = new THashMap<>();
+    public Map<Habbo, InteractionTagPole> taggers = new HashMap<>();
 
     public TagGame(Class<? extends GameTeam> gameTeamClazz, Class<? extends GamePlayer> gamePlayerClazz, Room room) {
         super(gameTeamClazz, gamePlayerClazz, room, false);
@@ -62,7 +62,7 @@ public abstract class TagGame extends Game {
     @EventHandler
     public static void onUserWalkEvent(UserTakeStepEvent event) {
         if (event.habbo.getHabboInfo().getCurrentGame() != null && TagGame.class.isAssignableFrom(event.habbo.getHabboInfo().getCurrentGame())) {
-            THashSet<HabboItem> items = event.habbo.getHabboInfo().getCurrentRoom().getItemsAt(event.toLocation);
+            Set<HabboItem> items = event.habbo.getHabboInfo().getCurrentRoom().getItemsAt(event.toLocation);
 
             TagGame game = (TagGame) event.habbo.getHabboInfo().getCurrentRoom().getGame(event.habbo.getHabboInfo().getCurrentGame());
 
@@ -96,7 +96,7 @@ public abstract class TagGame extends Game {
             return;
         }
 
-        THashSet<HabboItem> poles = room.getRoomSpecialTypes().getItemsOfType(this.getTagPole());
+        Set<HabboItem> poles = room.getRoomSpecialTypes().getItemsOfType(this.getTagPole());
         InteractionTagPole pole = this.taggers.get(tagger);
         room.giveEffect(tagged, this.getTaggedEffect(tagged), -1);
 
@@ -130,14 +130,14 @@ public abstract class TagGame extends Game {
         super.addHabbo(habbo, GameTeamColors.RED);
 
         if (this.getTagPole() != null) {
-            THashSet<HabboItem> poles = habbo.getHabboInfo().getCurrentRoom().getRoomSpecialTypes().getItemsOfType(this.getTagPole());
+            Set<HabboItem> poles = habbo.getHabboInfo().getCurrentRoom().getRoomSpecialTypes().getItemsOfType(this.getTagPole());
 
             if (poles.size() > this.taggers.size()) {
                 for (Map.Entry<Habbo, InteractionTagPole> set : this.taggers.entrySet()) {
                     poles.remove(set.getValue());
                 }
 
-                TObjectHashIterator<HabboItem> iterator = poles.iterator();
+                Iterator<HabboItem> iterator = poles.iterator();
                 if ((iterator.hasNext())) {
                     HabboItem item = iterator.next();
                     habbo.getHabboInfo().getCurrentRoom().giveEffect(habbo, this.getEffect(habbo), -1);

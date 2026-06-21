@@ -12,7 +12,6 @@ import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
 import com.eu.habbo.messages.outgoing.handshake.ConnectionErrorComposer;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +19,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 
@@ -109,7 +109,7 @@ public class GuildForumDataComposer extends MessageComposer {
 
     public static void serializeForumData(ServerMessage response, Guild guild, Habbo habbo) {
 
-        final THashSet<ForumThread> forumThreads = ForumThread.getByGuildId(guild.getId());
+        final Set<ForumThread> forumThreads = ForumThread.getByGuildId(guild.getId());
         int lastSeenAt = getLastSeenAt(habbo.getHabboInfo().getId(), guild.getId());
 
         int totalComments = 0;

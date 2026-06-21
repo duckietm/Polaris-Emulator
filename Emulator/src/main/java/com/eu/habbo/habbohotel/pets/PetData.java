@@ -7,14 +7,16 @@ import com.eu.habbo.habbohotel.items.interactions.pets.InteractionPetDrink;
 import com.eu.habbo.habbohotel.items.interactions.pets.InteractionPetFood;
 import com.eu.habbo.habbohotel.items.interactions.pets.InteractionPetToy;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import gnu.trove.map.hash.THashMap;
-import gnu.trove.set.hash.THashSet;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class PetData implements Comparable<PetData> {
 
@@ -26,11 +28,11 @@ public class PetData implements Comparable<PetData> {
     public static final List<Item> generalFoodItems = new ArrayList<>();
     public static final List<Item> generalNestItems = new ArrayList<>();
     public static final List<Item> generalToyItems = new ArrayList<>();
-    public static final THashMap<PetVocalsType, THashSet<PetVocal>> generalPetVocals = new THashMap<>();
+    public static final Map<PetVocalsType, Set<PetVocal>> generalPetVocals = new HashMap<>();
     public String[] actionsHappy;
     public String[] actionsTired;
     public String[] actionsRandom;
-    public THashMap<PetVocalsType, THashSet<PetVocal>> petVocals;
+    public Map<PetVocalsType, Set<PetVocal>> petVocals;
     public boolean canSwim;
     private int type;
     private String name;
@@ -105,7 +107,7 @@ public class PetData implements Comparable<PetData> {
     }
 
 
-    public HabboItem randomNest(THashSet<InteractionNest> items) {
+    public HabboItem randomNest(Set<InteractionNest> items) {
         List<HabboItem> nestList = new ArrayList<>();
         
         // If no nest items are registered, allow all nests in the room
@@ -151,7 +153,7 @@ public class PetData implements Comparable<PetData> {
     }
 
 
-    public HabboItem randomFoodItem(THashSet<InteractionPetFood> items) {
+    public HabboItem randomFoodItem(Set<InteractionPetFood> items) {
         List<HabboItem> foodList = new ArrayList<>();
         
         // If no food items are registered, allow all food in the room
@@ -196,7 +198,7 @@ public class PetData implements Comparable<PetData> {
     }
 
 
-    public HabboItem randomDrinkItem(THashSet<InteractionPetDrink> items) {
+    public HabboItem randomDrinkItem(Set<InteractionPetDrink> items) {
         List<HabboItem> drinkList = new ArrayList<>();
         
         // If no drink items are registered, allow all drinks in the room
@@ -241,7 +243,7 @@ public class PetData implements Comparable<PetData> {
     }
 
 
-    public HabboItem randomToyItem(THashSet<InteractionPetToy> toys) {
+    public HabboItem randomToyItem(Set<InteractionPetToy> toys) {
         List<HabboItem> toyList = new ArrayList<>();
         
         // If no toy items are registered, allow all toys in the room
@@ -265,7 +267,7 @@ public class PetData implements Comparable<PetData> {
      * Finds a random toy item from a generic set of HabboItems.
      * Used for finding pet items like trampolines, trees, etc.
      */
-    public HabboItem randomToyHabboItem(THashSet<HabboItem> items) {
+    public HabboItem randomToyHabboItem(Set<HabboItem> items) {
         List<HabboItem> itemList = new ArrayList<>();
         
         // If no toy items are registered, allow all toys in the room
@@ -287,8 +289,8 @@ public class PetData implements Comparable<PetData> {
 
 
     public PetVocal randomVocal(PetVocalsType type) {
-        THashSet<PetVocal> petTypeVocals = this.petVocals.get(type);
-        THashSet<PetVocal> generalVocals = PetData.generalPetVocals.get(type);
+        Set<PetVocal> petTypeVocals = this.petVocals.get(type);
+        Set<PetVocal> generalVocals = PetData.generalPetVocals.get(type);
 
         int petTypeSize = petTypeVocals != null ? petTypeVocals.size() : 0;
         int generalSize = generalVocals != null ? generalVocals.size() : 0;
@@ -355,15 +357,15 @@ public class PetData implements Comparable<PetData> {
         this.drinkItems = new ArrayList<>();
         this.toyItems = new ArrayList<>();
 
-        this.petVocals = new THashMap<>();
+        this.petVocals = new HashMap<>();
 
         for (PetVocalsType type : PetVocalsType.values()) {
-            this.petVocals.put(type, new THashSet<>());
+            this.petVocals.put(type, new HashSet<>());
         }
 
         if (PetData.generalPetVocals.isEmpty()) {
             for (PetVocalsType type : PetVocalsType.values()) {
-                PetData.generalPetVocals.put(type, new THashSet<>());
+                PetData.generalPetVocals.put(type, new HashSet<>());
             }
         }
     }

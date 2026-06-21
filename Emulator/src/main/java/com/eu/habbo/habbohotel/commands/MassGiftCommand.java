@@ -10,8 +10,8 @@ import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
-import gnu.trove.map.hash.THashMap;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class MassGiftCommand extends Command {
@@ -53,7 +53,7 @@ public class MassGiftCommand extends Command {
 
             final String finalMessage = message.toString();
 
-            THashMap<String, String> keys = new THashMap<>();
+            Map<String, String> keys = new HashMap<>();
             keys.put("display", "BUBBLE");
             keys.put("image", "${image.library.url}notifications/gift.gif");
             keys.put("message", Emulator.getTexts().getValue("generic.gift.received.anonymous"));

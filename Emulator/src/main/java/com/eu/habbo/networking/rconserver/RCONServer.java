@@ -7,7 +7,6 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import gnu.trove.map.hash.THashMap;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.github.resilience4j.ratelimiter.RateLimiterConfig;
 import io.netty.channel.ChannelHandlerContext;
@@ -20,14 +19,16 @@ import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class RCONServer extends Server {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RCONServer.class);
 
-    private final THashMap<String, Class<? extends RCONMessage>> messages;
+    private final Map<String, Class<? extends RCONMessage>> messages;
     private final GsonBuilder gsonBuilder;
     private final boolean rateLimitEnabled;
     private final LoadingCache<String, RateLimiter> rateLimiters;
@@ -36,7 +37,7 @@ public class RCONServer extends Server {
     public RCONServer(String host, int port) throws Exception {
         super("RCON Server", host, port, 1, 2);
 
-        this.messages = new THashMap<>();
+        this.messages = new HashMap<>();
 
         this.gsonBuilder = new GsonBuilder();
         this.gsonBuilder.registerTypeAdapter(RCONMessage.class, new RCONMessage.RCONMessageSerializer());

@@ -4,7 +4,6 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.guilds.Guild;
 import com.eu.habbo.habbohotel.guilds.GuildPart;
 import com.eu.habbo.habbohotel.guilds.GuildPartType;
-import gnu.trove.map.hash.THashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,13 +15,14 @@ import java.awt.image.ColorModel;
 import java.awt.image.WritableRaster;
 import java.io.File;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
 public class BadgeImager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BadgeImager.class);
 
-    final THashMap<String, BufferedImage> cachedImages = new THashMap<>();
+    final Map<String, BufferedImage> cachedImages = new HashMap<>();
 
     public BadgeImager() {
         if (Emulator.getConfig().getBoolean("imager.internal.enabled")) {
@@ -124,7 +124,7 @@ public class BadgeImager {
 
         this.cachedImages.clear();
         try {
-            for (Map.Entry<GuildPartType, THashMap<Integer, GuildPart>> set : Emulator.getGameEnvironment().getGuildManager().getGuildParts().entrySet()) {
+            for (Map.Entry<GuildPartType, ? extends Map<Integer, GuildPart>> set : Emulator.getGameEnvironment().getGuildManager().getGuildParts().entrySet()) {
                 if (set.getKey() == GuildPartType.SYMBOL || set.getKey() == GuildPartType.BASE) {
                     for (Map.Entry<Integer, GuildPart> map : set.getValue().entrySet()) {
                         for (String part : Arrays.asList(map.getValue().valueA, map.getValue().valueB)) {

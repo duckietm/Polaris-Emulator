@@ -366,7 +366,7 @@ public class TraxManager implements Disposable {
     }
 
     public List<InteractionMusicDisc> myList(Habbo habbo) {
-        return habbo.getInventory().getItemsComponent().getItems().valueCollection().stream()
+        return habbo.getInventory().getItemsComponent().getItems().values().stream()
                 .filter(i -> i instanceof InteractionMusicDisc && i.getRoomId() == 0)
                 .map(i -> (InteractionMusicDisc) i)
                 .collect(Collectors.toList());

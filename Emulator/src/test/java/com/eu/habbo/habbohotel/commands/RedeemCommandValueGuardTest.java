@@ -1,7 +1,9 @@
 package com.eu.habbo.habbohotel.commands;
 
-import gnu.trove.map.hash.TIntIntHashMap;
 import org.junit.jupiter.api.Test;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -27,7 +29,7 @@ class RedeemCommandValueGuardTest {
 
     @Test
     void rejectsOverflowingPointTotalsWithoutChangingTheMap() {
-        TIntIntHashMap points = new TIntIntHashMap();
+        Map<Integer, Integer> points = new HashMap<>();
         points.put(5, Integer.MAX_VALUE);
 
         assertFalse(RedeemCommand.addRedeemPoints(points, 5, 1));

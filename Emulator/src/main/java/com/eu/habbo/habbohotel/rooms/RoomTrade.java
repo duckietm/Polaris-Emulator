@@ -10,13 +10,14 @@ import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
 import com.eu.habbo.messages.outgoing.trading.*;
 import com.eu.habbo.plugin.events.trading.TradeConfirmEvent;
 import com.eu.habbo.threading.runnables.QueryDeleteHabboItem;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class RoomTrade {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomTrade.class);
@@ -69,7 +70,7 @@ public class RoomTrade {
         this.updateWindow();
     }
 
-    public synchronized void offerMultipleItems(Habbo habbo, THashSet<HabboItem> items) {
+    public synchronized void offerMultipleItems(Habbo habbo, Set<HabboItem> items) {
         RoomTradeUser user = this.getRoomTradeUserForHabbo(habbo);
 
         if (user == null || items == null)
@@ -260,14 +261,14 @@ public class RoomTrade {
             item.setUserId(userOne.getHabbo().getHabboInfo().getId());
         }
 
-        THashSet<HabboItem> itemsUserOne = new THashSet<>(userOne.getItems());
-        THashSet<HabboItem> itemsUserTwo = new THashSet<>(userTwo.getItems());
+        Set<HabboItem> itemsUserOne = new HashSet<>(userOne.getItems());
+        Set<HabboItem> itemsUserTwo = new HashSet<>(userTwo.getItems());
 
         userOne.clearItems();
         userTwo.clearItems();
 
         int creditsForUserTwo = 0;
-        THashSet<HabboItem> creditFurniUserOne = new THashSet<>();
+        Set<HabboItem> creditFurniUserOne = new HashSet<>();
         for (HabboItem item : itemsUserOne) {
             int worth = RoomTrade.getCreditsByItem(item);
             if (worth > 0) {
@@ -279,7 +280,7 @@ public class RoomTrade {
         itemsUserOne.removeAll(creditFurniUserOne);
 
         int creditsForUserOne = 0;
-        THashSet<HabboItem> creditFurniUserTwo = new THashSet<>();
+        Set<HabboItem> creditFurniUserTwo = new HashSet<>();
         for (HabboItem item : itemsUserTwo) {
             int worth = RoomTrade.getCreditsByItem(item);
             if (worth > 0) {

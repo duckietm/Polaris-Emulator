@@ -3,7 +3,9 @@ package com.eu.habbo.messages.incoming.trading;
 import com.eu.habbo.habbohotel.rooms.RoomTrade;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
-import gnu.trove.set.hash.THashSet;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class TradeOfferMultipleItemsEvent extends MessageHandler {
     @Override
@@ -16,7 +18,7 @@ public class TradeOfferMultipleItemsEvent extends MessageHandler {
         if (trade == null)
             return;
 
-        THashSet<HabboItem> items = new THashSet<>();
+        Set<HabboItem> items = new HashSet<>();
 
         int count = this.packet.readInt();
         if (count <= 0 || count > RoomTrade.MAX_OFFERED_ITEMS)

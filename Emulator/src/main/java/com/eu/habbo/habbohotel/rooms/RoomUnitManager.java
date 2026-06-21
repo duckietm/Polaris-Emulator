@@ -21,12 +21,9 @@ import com.eu.habbo.messages.outgoing.generic.alerts.GenericErrorMessagesCompose
 import com.eu.habbo.messages.outgoing.inventory.AddPetComposer;
 import com.eu.habbo.messages.outgoing.rooms.pets.RoomPetComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.*;
-import gnu.trove.TCollections;
-import gnu.trove.iterator.TIntObjectIterator;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.procedure.TObjectProcedure;
-import gnu.trove.set.hash.THashSet;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,8 +33,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -53,9 +51,9 @@ public class RoomUnitManager {
 
     // Unit collections - these are the actual data stores
     private final ConcurrentHashMap<Integer, Habbo> currentHabbos = new ConcurrentHashMap<>(3);
-    private final TIntObjectMap<Habbo> habboQueue = TCollections.synchronizedMap(new TIntObjectHashMap<>(0));
-    private final TIntObjectMap<Bot> currentBots = TCollections.synchronizedMap(new TIntObjectHashMap<>(0));
-    private final TIntObjectMap<Pet> currentPets = TCollections.synchronizedMap(new TIntObjectHashMap<>(0));
+    private final Int2ObjectMap<Habbo> habboQueue = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
+    private final Int2ObjectMap<Bot> currentBots = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
+    private final Int2ObjectMap<Pet> currentPets = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
 
     // Unit counter for assigning IDs
     private volatile int unitCounter;
@@ -77,13 +75,13 @@ public class RoomUnitManager {
                     WiredUserMovementHelper.cleanupRoomUnit(habbo.getRoomUnit());
                 }
             }
-            for (Bot bot : this.currentBots.valueCollection()) {
+            for (Bot bot : this.currentBots.values()) {
                 if (bot.getRoomUnit() != null) {
                     WiredMoveCarryHelper.cleanupRoomUnit(bot.getRoomUnit());
                     WiredUserMovementHelper.cleanupRoomUnit(bot.getRoomUnit());
                 }
             }
-            for (Pet pet : this.currentPets.valueCollection()) {
+            for (Pet pet : this.currentPets.values()) {
                 if (pet.getRoomUnit() != null) {
                     WiredMoveCarryHelper.cleanupRoomUnit(pet.getRoomUnit());
                     WiredUserMovementHelper.cleanupRoomUnit(pet.getRoomUnit());
@@ -327,15 +325,15 @@ public class RoomUnitManager {
     /**
      * Gets all Habbos at a specific position.
      */
-    public THashSet<Habbo> getHabbosAt(short x, short y) {
+    public Set<Habbo> getHabbosAt(short x, short y) {
         return this.getHabbosAt(this.room.getLayout().getTile(x, y));
     }
 
     /**
      * Gets all Habbos at a specific tile.
      */
-    public THashSet<Habbo> getHabbosAt(RoomTile tile) {
-        THashSet<Habbo> habbos = new THashSet<>();
+    public Set<Habbo> getHabbosAt(RoomTile tile) {
+        Set<Habbo> habbos = new HashSet<>();
 
         for (Habbo habbo : this.getHabbos()) {
             if (habbo.getRoomUnit().getCurrentLocation().equals(tile)) {
@@ -349,8 +347,8 @@ public class RoomUnitManager {
     /**
      * Gets all Habbos on a specific item.
      */
-    public THashSet<Habbo> getHabbosOnItem(HabboItem item) {
-        THashSet<Habbo> habbos = new THashSet<>();
+    public Set<Habbo> getHabbosOnItem(HabboItem item) {
+        Set<Habbo> habbos = new HashSet<>();
         for (short x = item.getX(); x < item.getX() + item.getBaseItem().getLength(); x++) {
             for (short y = item.getY(); y < item.getY() + item.getBaseItem().getWidth(); y++) {
                 habbos.addAll(this.getHabbosAt(x, y));
@@ -370,7 +368,7 @@ public class RoomUnitManager {
     /**
      * Updates specific Habbos at a position.
      */
-    public void updateHabbosAt(short x, short y, THashSet<Habbo> habbos) {
+    public void updateHabbosAt(short x, short y, Collection<Habbo> habbos) {
         RoomTile tile = this.room.getLayout().getTile(x, y);
 
         if (tile == null) {
@@ -420,7 +418,7 @@ public class RoomUnitManager {
 
                 // For double beds: if another user already occupies this pillow, use the other side
                 if (pillowTile != null && bedProfile.isDouble()) {
-                    THashSet<Habbo> habbosAtPillow = this.getHabbosAt(pillowTile.x, pillowTile.y);
+                    Set<Habbo> habbosAtPillow = this.getHabbosAt(pillowTile.x, pillowTile.y);
                     for (Habbo other : habbosAtPillow) {
                         if (other == habbo || other.getRoomUnit() == null) continue;
                         RoomTile otherSide = bedProfile.getOtherSide(this.room, topItem, pillowTile);
@@ -459,7 +457,7 @@ public class RoomUnitManager {
         }
 
         if (!habbos.isEmpty()) {
-            THashSet<RoomUnit> roomUnits = new THashSet<>();
+            Set<RoomUnit> roomUnits = new HashSet<>();
             for (Habbo habbo : habbos) {
                 if (habbo.getRoomUnit() == null
                         || WiredMoveCarryHelper.shouldSuppressStatusUpdate(habbo.getRoomUnit())
@@ -509,7 +507,7 @@ public class RoomUnitManager {
     /**
      * Gets the Habbo queue.
      */
-    public TIntObjectMap<Habbo> getHabboQueue() {
+    public Int2ObjectMap<Habbo> getHabboQueue() {
         return this.habboQueue;
     }
 
@@ -566,18 +564,9 @@ public class RoomUnitManager {
      */
     public Bot getBot(RoomUnit roomUnit) {
         synchronized (this.currentBots) {
-            TIntObjectIterator<Bot> iterator = this.currentBots.iterator();
-
-            for (int i = this.currentBots.size(); i-- > 0; ) {
-                try {
-                    iterator.advance();
-                } catch (NoSuchElementException e) {
-                    LOGGER.error("Caught exception", e);
-                    break;
-                }
-
-                if (iterator.value().getRoomUnit() == roomUnit) {
-                    return iterator.value();
+            for (Bot bot : this.currentBots.values()) {
+                if (bot.getRoomUnit() == roomUnit) {
+                    return bot;
                 }
             }
         }
@@ -590,18 +579,9 @@ public class RoomUnitManager {
      */
     public Bot getBotByRoomUnitId(int id) {
         synchronized (this.currentBots) {
-            TIntObjectIterator<Bot> iterator = this.currentBots.iterator();
-
-            for (int i = this.currentBots.size(); i-- > 0; ) {
-                try {
-                    iterator.advance();
-                } catch (NoSuchElementException e) {
-                    LOGGER.error("Caught exception", e);
-                    break;
-                }
-
-                if (iterator.value().getRoomUnit().getId() == id) {
-                    return iterator.value();
+            for (Bot bot : this.currentBots.values()) {
+                if (bot.getRoomUnit().getId() == id) {
+                    return bot;
                 }
             }
         }
@@ -616,18 +596,9 @@ public class RoomUnitManager {
         List<Bot> bots = new ArrayList<>();
 
         synchronized (this.currentBots) {
-            TIntObjectIterator<Bot> iterator = this.currentBots.iterator();
-
-            for (int i = this.currentBots.size(); i-- > 0; ) {
-                try {
-                    iterator.advance();
-                } catch (NoSuchElementException e) {
-                    LOGGER.error("Caught exception", e);
-                    break;
-                }
-
-                if (iterator.value().getName().equalsIgnoreCase(name)) {
-                    bots.add(iterator.value());
+            for (Bot bot : this.currentBots.values()) {
+                if (bot.getName().equalsIgnoreCase(name)) {
+                    bots.add(bot);
                 }
             }
         }
@@ -639,13 +610,13 @@ public class RoomUnitManager {
      * Gets all Bots in the room.
      */
     public Collection<Bot> getBots() {
-        return this.currentBots.valueCollection();
+        return this.currentBots.values();
     }
 
     /**
      * Gets the Bot map.
      */
-    public TIntObjectMap<Bot> getCurrentBots() {
+    public Int2ObjectMap<Bot> getCurrentBots() {
         return this.currentBots;
     }
 
@@ -694,41 +665,26 @@ public class RoomUnitManager {
      * Checks if there are Bots at the specified position.
      */
     public boolean hasBotsAt(final int x, final int y) {
-        final boolean[] result = {false};
-
         synchronized (this.currentBots) {
-            this.currentBots.forEachValue(new TObjectProcedure<Bot>() {
-                @Override
-                public boolean execute(Bot object) {
-                    if (object.getRoomUnit().getX() == x && object.getRoomUnit().getY() == y) {
-                        result[0] = true;
-                        return false;
-                    }
+            for (Bot bot : this.currentBots.values()) {
+                if (bot.getRoomUnit().getX() == x && bot.getRoomUnit().getY() == y) {
                     return true;
                 }
-            });
+            }
         }
 
-        return result[0];
+        return false;
     }
 
     /**
      * Gets all Bots at a specific tile.
      */
-    public THashSet<Bot> getBotsAt(RoomTile tile) {
-        THashSet<Bot> bots = new THashSet<>();
+    public Set<Bot> getBotsAt(RoomTile tile) {
+        Set<Bot> bots = new HashSet<>();
         synchronized (this.currentBots) {
-            TIntObjectIterator<Bot> botIterator = this.currentBots.iterator();
-
-            for (int i = this.currentBots.size(); i-- > 0; ) {
-                try {
-                    botIterator.advance();
-
-                    if (botIterator.value().getRoomUnit().getCurrentLocation().equals(tile)) {
-                        bots.add(botIterator.value());
-                    }
-                } catch (Exception e) {
-                    break;
+            for (Bot bot : this.currentBots.values()) {
+                if (bot.getRoomUnit().getCurrentLocation().equals(tile)) {
+                    bots.add(bot);
                 }
             }
         }
@@ -739,8 +695,8 @@ public class RoomUnitManager {
     /**
      * Gets all Bots on a specific item.
      */
-    public THashSet<Bot> getBotsOnItem(HabboItem item) {
-        THashSet<Bot> bots = new THashSet<>();
+    public Set<Bot> getBotsOnItem(HabboItem item) {
+        Set<Bot> bots = new HashSet<>();
         for (short x = item.getX(); x < item.getX() + item.getBaseItem().getLength(); x++) {
             for (short y = item.getY(); y < item.getY() + item.getBaseItem().getWidth(); y++) {
                 bots.addAll(this.getBotsAt(this.room.getLayout().getTile(x, y)));
@@ -760,7 +716,7 @@ public class RoomUnitManager {
             return;
         }
 
-        THashSet<Bot> bots = this.getBotsAt(tile);
+        Set<Bot> bots = this.getBotsAt(tile);
         HabboItem topItem = this.room.getTopItemAt(x, y);
 
         for (Bot bot : bots) {
@@ -798,7 +754,7 @@ public class RoomUnitManager {
 
         if (!bots.isEmpty()) {
             this.room.sendComposer(new RoomUserStatusComposer(
-                    bots.stream().map(Bot::getRoomUnit).collect(Collectors.toCollection(THashSet::new)),
+                    bots.stream().map(Bot::getRoomUnit).collect(Collectors.toCollection(HashSet::new)),
                     true).compose());
         }
     }
@@ -851,18 +807,11 @@ public class RoomUnitManager {
      * Gets a Pet by RoomUnit.
      */
     public Pet getPet(RoomUnit roomUnit) {
-        TIntObjectIterator<Pet> petIterator = this.currentPets.iterator();
-
-        for (int i = this.currentPets.size(); i-- > 0; ) {
-            try {
-                petIterator.advance();
-            } catch (NoSuchElementException e) {
-                LOGGER.error("Caught exception", e);
-                break;
-            }
-
-            if (petIterator.value().getRoomUnit() == roomUnit) {
-                return petIterator.value();
+        synchronized (this.currentPets) {
+            for (Pet pet : this.currentPets.values()) {
+                if (pet.getRoomUnit() == roomUnit) {
+                    return pet;
+                }
             }
         }
 
@@ -873,13 +822,13 @@ public class RoomUnitManager {
      * Gets all Pets in the room.
      */
     public Collection<Pet> getPets() {
-        return this.currentPets.valueCollection();
+        return this.currentPets.values();
     }
 
     /**
      * Gets the Pet map.
      */
-    public TIntObjectMap<Pet> getCurrentPets() {
+    public Int2ObjectMap<Pet> getCurrentPets() {
         return this.currentPets;
     }
 
@@ -956,18 +905,8 @@ public class RoomUnitManager {
      */
     public boolean hasPetsAt(int x, int y) {
         synchronized (this.currentPets) {
-            TIntObjectIterator<Pet> petIterator = this.currentPets.iterator();
-
-            for (int i = this.currentPets.size(); i-- > 0; ) {
-                try {
-                    petIterator.advance();
-                } catch (NoSuchElementException e) {
-                    LOGGER.error("Caught exception", e);
-                    break;
-                }
-
-                if (petIterator.value().getRoomUnit().getX() == x
-                        && petIterator.value().getRoomUnit().getY() == y) {
+            for (Pet pet : this.currentPets.values()) {
+                if (pet.getRoomUnit().getX() == x && pet.getRoomUnit().getY() == y) {
                     return true;
                 }
             }
@@ -979,20 +918,12 @@ public class RoomUnitManager {
     /**
      * Gets all Pets at a specific tile.
      */
-    public THashSet<Pet> getPetsAt(RoomTile tile) {
-        THashSet<Pet> pets = new THashSet<>();
+    public Set<Pet> getPetsAt(RoomTile tile) {
+        Set<Pet> pets = new HashSet<>();
         synchronized (this.currentPets) {
-            TIntObjectIterator<Pet> petIterator = this.currentPets.iterator();
-
-            for (int i = this.currentPets.size(); i-- > 0; ) {
-                try {
-                    petIterator.advance();
-
-                    if (petIterator.value().getRoomUnit().getCurrentLocation().equals(tile)) {
-                        pets.add(petIterator.value());
-                    }
-                } catch (Exception e) {
-                    break;
+            for (Pet pet : this.currentPets.values()) {
+                if (pet.getRoomUnit().getCurrentLocation().equals(tile)) {
+                    pets.add(pet);
                 }
             }
         }
@@ -1010,7 +941,7 @@ public class RoomUnitManager {
             return;
         }
 
-        THashSet<Pet> pets = this.getPetsAt(tile);
+        Set<Pet> pets = this.getPetsAt(tile);
         HabboItem topItem = this.room.getTopItemAt(x, y);
 
         for (Pet pet : pets) {
@@ -1036,7 +967,7 @@ public class RoomUnitManager {
 
         if (!pets.isEmpty()) {
             this.room.sendComposer(new RoomUserStatusComposer(
-                    pets.stream().map(Pet::getRoomUnit).collect(Collectors.toCollection(THashSet::new)),
+                    pets.stream().map(Pet::getRoomUnit).collect(Collectors.toCollection(HashSet::new)),
                     true).compose());
         }
     }
@@ -1045,21 +976,12 @@ public class RoomUnitManager {
      * Picks up all pets belonging to a Habbo.
      */
     public void pickupPetsForHabbo(Habbo habbo) {
-        THashSet<Pet> pets = new THashSet<>();
+        Set<Pet> pets = new HashSet<>();
 
         synchronized (this.currentPets) {
-            TIntObjectIterator<Pet> petIterator = this.currentPets.iterator();
-
-            for (int i = this.currentPets.size(); i-- > 0; ) {
-                try {
-                    petIterator.advance();
-                } catch (NoSuchElementException e) {
-                    LOGGER.error("Caught exception", e);
-                    break;
-                }
-
-                if (petIterator.value().getUserId() == habbo.getHabboInfo().getId()) {
-                    pets.add(petIterator.value());
+            for (Pet pet : this.currentPets.values()) {
+                if (pet.getUserId() == habbo.getHabboInfo().getId()) {
+                    pets.add(pet);
                 }
             }
         }
@@ -1092,21 +1014,12 @@ public class RoomUnitManager {
      * @param excludeUserId User ID whose pets should NOT be removed, -1 to remove all
      */
     public void removeAllPets(int excludeUserId) {
-        THashSet<Pet> toRemove = new THashSet<>();
+        Set<Pet> toRemove = new HashSet<>();
 
         synchronized (this.currentPets) {
-            TIntObjectIterator<Pet> petIterator = this.currentPets.iterator();
-
-            for (int i = this.currentPets.size(); i-- > 0; ) {
-                try {
-                    petIterator.advance();
-                } catch (NoSuchElementException e) {
-                    LOGGER.error("Caught exception", e);
-                    break;
-                }
-
-                if (petIterator.value().getUserId() != excludeUserId) {
-                    toRemove.add(petIterator.value());
+            for (Pet pet : this.currentPets.values()) {
+                if (pet.getUserId() != excludeUserId) {
+                    toRemove.add(pet);
                 }
             }
         }
@@ -1137,15 +1050,15 @@ public class RoomUnitManager {
     /**
      * Gets all Habbos and Bots at a position.
      */
-    public THashSet<RoomUnit> getHabbosAndBotsAt(short x, short y) {
+    public Set<RoomUnit> getHabbosAndBotsAt(short x, short y) {
         return this.getHabbosAndBotsAt(this.room.getLayout().getTile(x, y));
     }
 
     /**
      * Gets all Habbos and Bots at a tile.
      */
-    public THashSet<RoomUnit> getHabbosAndBotsAt(RoomTile tile) {
-        THashSet<RoomUnit> list = new THashSet<>();
+    public Set<RoomUnit> getHabbosAndBotsAt(RoomTile tile) {
+        Set<RoomUnit> list = new HashSet<>();
 
         for (Bot bot : this.getBotsAt(tile)) {
             list.add(bot.getRoomUnit());
@@ -1161,15 +1074,15 @@ public class RoomUnitManager {
     /**
      * Gets all room units (Habbos, Bots, Pets).
      */
-    public THashSet<RoomUnit> getRoomUnits() {
+    public Set<RoomUnit> getRoomUnits() {
         return getRoomUnits(null);
     }
 
     /**
      * Gets all room units at a specific tile.
      */
-    public THashSet<RoomUnit> getRoomUnits(RoomTile atTile) {
-        THashSet<RoomUnit> units = new THashSet<>();
+    public Set<RoomUnit> getRoomUnits(RoomTile atTile) {
+        Set<RoomUnit> units = new HashSet<>();
 
         for (Habbo habbo : this.currentHabbos.values()) {
             if (habbo != null && habbo.getRoomUnit() != null && habbo.getRoomUnit().getRoom() != null
@@ -1179,7 +1092,7 @@ public class RoomUnitManager {
             }
         }
 
-        for (Pet pet : this.currentPets.valueCollection()) {
+        for (Pet pet : this.currentPets.values()) {
             if (pet != null && pet.getRoomUnit() != null && pet.getRoomUnit().getRoom() != null
                     && pet.getRoomUnit().getRoom().getId() == this.room.getId() && (atTile == null
                     || pet.getRoomUnit().getCurrentLocation() == atTile)) {
@@ -1187,7 +1100,7 @@ public class RoomUnitManager {
             }
         }
 
-        for (Bot bot : this.currentBots.valueCollection()) {
+        for (Bot bot : this.currentBots.values()) {
             if (bot != null && bot.getRoomUnit() != null && bot.getRoomUnit().getRoom() != null
                     && bot.getRoomUnit().getRoom().getId() == this.room.getId() && (atTile == null
                     || bot.getRoomUnit().getCurrentLocation() == atTile)) {
@@ -1202,7 +1115,7 @@ public class RoomUnitManager {
      * Gets room units at a specific tile as a collection.
      */
     public Collection<RoomUnit> getRoomUnitsAt(RoomTile tile) {
-        THashSet<RoomUnit> roomUnits = getRoomUnits();
+        Set<RoomUnit> roomUnits = getRoomUnits();
         return roomUnits.stream().filter(unit -> unit.getCurrentLocation().equals(tile))
                 .collect(Collectors.toSet());
     }
@@ -1240,7 +1153,7 @@ public class RoomUnitManager {
         BedProfile bedProfile = new BedProfile(bed);
         if (!bedProfile.isDouble()) return;
 
-        THashSet<Habbo> habbosOnBed = this.getHabbosOnItem(bed);
+        Set<Habbo> habbosOnBed = this.getHabbosOnItem(bed);
 
         Habbo male = null;
         Habbo female = null;
@@ -1395,18 +1308,11 @@ public class RoomUnitManager {
 
         // Have pets greet their owner
         synchronized (this.currentPets) {
-            TIntObjectIterator<Pet> petIterator = this.currentPets.iterator();
-            for (int i = this.currentPets.size(); i-- > 0; ) {
-                try {
-                    petIterator.advance();
-                    Pet pet = petIterator.value();
-                    if (pet.getUserId() == habbo.getHabboInfo().getId()) {
-                        // Pet sees its owner - greet them!
-                        pet.say(pet.getPetData().randomVocal(PetVocalsType.GREET_OWNER));
-                        pet.addHappiness(10);
-                    }
-                } catch (Exception e) {
-                    break;
+            for (Pet pet : this.currentPets.values()) {
+                if (pet.getUserId() == habbo.getHabboInfo().getId()) {
+                    // Pet sees its owner - greet them!
+                    pet.say(pet.getPetData().randomVocal(PetVocalsType.GREET_OWNER));
+                    pet.addHappiness(10);
                 }
             }
         }
@@ -1415,18 +1321,9 @@ public class RoomUnitManager {
             if (habbo.getHabboInfo().getId() != this.room.getOwnerId()) {
                 return;
             }
-
-            TIntObjectIterator<Bot> botIterator = this.currentBots.iterator();
-
-            for (int i = this.currentBots.size(); i-- > 0; ) {
-                try {
-                    botIterator.advance();
-
-                    if (botIterator.value() instanceof VisitorBot) {
-                        ((VisitorBot) botIterator.value()).onUserEnter(habbo);
-                        break;
-                    }
-                } catch (Exception e) {
+            for (Bot bot : this.currentBots.values()) {
+                if (bot instanceof VisitorBot) {
+                    ((VisitorBot) bot).onUserEnter(habbo);
                     break;
                 }
             }
@@ -1493,13 +1390,13 @@ public class RoomUnitManager {
                 WiredUserMovementHelper.cleanupRoomUnit(habbo.getRoomUnit());
             }
         }
-        for (Bot bot : this.currentBots.valueCollection()) {
+        for (Bot bot : this.currentBots.values()) {
             if (bot.getRoomUnit() != null) {
                 WiredMoveCarryHelper.cleanupRoomUnit(bot.getRoomUnit());
                 WiredUserMovementHelper.cleanupRoomUnit(bot.getRoomUnit());
             }
         }
-        for (Pet pet : this.currentPets.valueCollection()) {
+        for (Pet pet : this.currentPets.values()) {
             if (pet.getRoomUnit() != null) {
                 WiredMoveCarryHelper.cleanupRoomUnit(pet.getRoomUnit());
                 WiredUserMovementHelper.cleanupRoomUnit(pet.getRoomUnit());

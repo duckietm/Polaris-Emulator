@@ -8,7 +8,6 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.rooms.RoomRightsComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserRemoveRightsComposer;
-import gnu.trove.procedure.TIntProcedure;
 
 public class RoomRemoveAllRightsEvent extends MessageHandler {
     @Override
@@ -19,20 +18,15 @@ public class RoomRemoveAllRightsEvent extends MessageHandler {
             return;
 
         if (room.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() || this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)) {
-            room.getRights().forEach(new TIntProcedure() {
-                @Override
-                public boolean execute(int value) {
-                    Habbo habbo = room.getHabbo(value);
+            for (int value : room.getRights().toIntArray()) {
+                Habbo habbo = room.getHabbo(value);
 
-                    if (habbo != null) {
-                        room.sendComposer(new RoomUserRemoveRightsComposer(room, value).compose());
-                        habbo.getRoomUnit().removeStatus(RoomUnitStatus.FLAT_CONTROL);
-                        habbo.getClient().sendResponse(new RoomRightsComposer(RoomRightLevels.NONE));
-                    }
-
-                    return true;
+                if (habbo != null) {
+                    room.sendComposer(new RoomUserRemoveRightsComposer(room, value).compose());
+                    habbo.getRoomUnit().removeStatus(RoomUnitStatus.FLAT_CONTROL);
+                    habbo.getClient().sendResponse(new RoomRightsComposer(RoomRightLevels.NONE));
                 }
-            });
+            }
 
             room.removeAllRights();
         }

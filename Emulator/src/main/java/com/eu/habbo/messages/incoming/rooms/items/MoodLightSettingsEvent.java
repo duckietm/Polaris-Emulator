@@ -7,6 +7,6 @@ public class MoodLightSettingsEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         if (this.client.getHabbo().getHabboInfo().getCurrentRoom() != null)
-            this.client.sendResponse(new MoodLightDataComposer(this.client.getHabbo().getHabboInfo().getCurrentRoom().getMoodlightData()));
+            this.client.sendResponse(new MoodLightDataComposer(this.client.getHabbo().getHabboInfo().getCurrentRoom().getMoodlightData().values()));
     }
 }

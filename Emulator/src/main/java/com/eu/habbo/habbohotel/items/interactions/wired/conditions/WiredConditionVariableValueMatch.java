@@ -25,16 +25,18 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.util.HotelDateTimeUtil;
-import gnu.trove.set.hash.THashSet;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.ZonedDateTime;
 import java.time.temporal.WeekFields;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public class WiredConditionVariableValueMatch extends WiredConditionHasVariable {
     public static final WiredConditionType type = WiredConditionType.VAR_VAL_MATCH;
@@ -61,7 +63,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
     protected int referenceFurniSource = WiredSourceUtil.SOURCE_TRIGGER;
     protected String referenceVariableToken = "";
     protected int referenceVariableItemId = 0;
-    protected final THashSet<HabboItem> referenceSelectedItems = new THashSet<>();
+    protected final Set<HabboItem> referenceSelectedItems = new LinkedHashSet<>();
 
     public WiredConditionVariableValueMatch(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -680,7 +682,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
     }
 
     private void refreshReferenceItems() {
-        THashSet<HabboItem> staleItems = new THashSet<>();
+        Set<HabboItem> staleItems = new HashSet<>();
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
 
         if (room == null) {
@@ -704,7 +706,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
         return (value == null || value.isEmpty()) ? new String[0] : value.split("\\t", -1);
     }
 
-    private List<Integer> toIds(THashSet<HabboItem> items) {
+    private List<Integer> toIds(Set<HabboItem> items) {
         List<Integer> ids = new ArrayList<>();
         for (HabboItem item : items) {
             if (item != null) ids.add(item.getId());
@@ -712,7 +714,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
         return ids;
     }
 
-    private String serializeIds(THashSet<HabboItem> items) {
+    private String serializeIds(Set<HabboItem> items) {
         StringBuilder builder = new StringBuilder();
 
         for (HabboItem item : items) {

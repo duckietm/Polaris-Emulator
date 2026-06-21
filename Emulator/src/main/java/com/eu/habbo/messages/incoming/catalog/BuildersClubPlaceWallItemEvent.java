@@ -111,7 +111,7 @@ public class BuildersClubPlaceWallItemEvent extends MessageHandler {
             return null;
         }
 
-        for (CatalogItem catalogItem : page.getCatalogItems().valueCollection()) {
+        for (CatalogItem catalogItem : page.getCatalogItems().values()) {
             if (catalogItem.getOfferId() == offerId) {
                 return catalogItem;
             }

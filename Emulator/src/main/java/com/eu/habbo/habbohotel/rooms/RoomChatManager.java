@@ -20,9 +20,8 @@ import com.eu.habbo.plugin.events.users.UserIdleEvent;
 import com.eu.habbo.plugin.events.users.UsernameTalkEvent;
 import com.eu.habbo.threading.runnables.YouAreAPirate;
 import com.eu.habbo.util.pathfinding.Rotation;
-import gnu.trove.iterator.TIntObjectIterator;
-import gnu.trove.map.hash.TIntIntHashMap;
-import gnu.trove.set.hash.THashSet;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +30,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -43,10 +44,10 @@ public class RoomChatManager {
     private final Room room;
 
     // Word filter
-    private final THashSet<String> wordFilterWords;
+    private final Set<String> wordFilterWords;
 
     // Muted Habbos: userId -> unmute timestamp
-    private final TIntIntHashMap mutedHabbos;
+    private final Int2IntMap mutedHabbos;
 
     // Flood protection settings
     private final int muteTime;
@@ -59,8 +60,8 @@ public class RoomChatManager {
 
     public RoomChatManager(Room room) {
         this.room = room;
-        this.wordFilterWords = new THashSet<>(0);
-        this.mutedHabbos = new TIntIntHashMap();
+        this.wordFilterWords = new HashSet<>(0);
+        this.mutedHabbos = new Int2IntOpenHashMap();
         this.muteTime = Emulator.getConfig().getInt("hotel.flood.mute.time", 30);
     }
 
@@ -133,7 +134,7 @@ public class RoomChatManager {
     /**
      * Gets the word filter words.
      */
-    public THashSet<String> getWordFilterWords() {
+    public Set<String> getWordFilterWords() {
         return this.wordFilterWords;
     }
 
@@ -201,7 +202,7 @@ public class RoomChatManager {
     /**
      * Gets the muted Habbos map.
      */
-    public TIntIntHashMap getMutedHabbos() {
+    public Int2IntMap getMutedHabbos() {
         return this.mutedHabbos;
     }
 
@@ -590,12 +591,8 @@ public class RoomChatManager {
      */
     private void notifyBots(RoomChatMessage roomChatMessage) {
         synchronized (this.room.getUnitManager().getCurrentBots()) {
-            TIntObjectIterator<Bot> botIterator = this.room.getUnitManager().getCurrentBots().iterator();
-
-            for (int i = this.room.getUnitManager().getCurrentBots().size(); i-- > 0; ) {
+            for (Bot bot : this.room.getUnitManager().getCurrentBots().values()) {
                 try {
-                    botIterator.advance();
-                    Bot bot = botIterator.value();
                     bot.onUserSay(roomChatMessage);
 
                 } catch (Exception e) {
@@ -611,7 +608,7 @@ public class RoomChatManager {
      */
     private void handleTalkingFurniture(Habbo habbo, RoomChatMessage roomChatMessage) {
         if (roomChatMessage.getBubble().triggersTalkingFurniture()) {
-            THashSet<HabboItem> items = this.room.getRoomSpecialTypes().getItemsOfType(
+            Set<HabboItem> items = this.room.getRoomSpecialTypes().getItemsOfType(
                 InteractionTalkingFurniture.class);
 
             for (HabboItem item : items) {

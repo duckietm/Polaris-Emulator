@@ -6,7 +6,6 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-import gnu.trove.procedure.TIntProcedure;
 
 import java.util.ArrayList;
 
@@ -26,22 +25,17 @@ public class UserClothesComposer extends MessageComposer {
     private final ArrayList<ClothEntry> clothEntries = new ArrayList<>();
 
     public UserClothesComposer(Habbo habbo) {
-        habbo.getInventory().getWardrobeComponent().getClothing().forEach(new TIntProcedure() {
-            @Override
-            public boolean execute(int value) {
-                ClothItem item = Emulator.getGameEnvironment().getCatalogManager().clothing.get(value);
+        for (int value : habbo.getInventory().getWardrobeComponent().getClothing()) {
+            ClothItem item = Emulator.getGameEnvironment().getCatalogManager().clothing.get(value);
 
-                if (item != null) {
-                    for (Integer j : item.setId) {
-                        UserClothesComposer.this.idList.add(j);
-                    }
-
-                    UserClothesComposer.this.nameList.add(item.name);
+            if (item != null) {
+                for (Integer j : item.setId) {
+                    this.idList.add(j);
                 }
 
-                return true;
+                this.nameList.add(item.name);
             }
-        });
+        }
 
         for (ClothItem item : Emulator.getGameEnvironment().getCatalogManager().clothing.values()) {
             if (item != null) {

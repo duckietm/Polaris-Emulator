@@ -7,7 +7,6 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomCategory;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.navigator.NewNavigatorSearchResultsComposer;
-import gnu.trove.map.hash.THashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,7 +120,7 @@ public class RequestNewNavigatorRoomsEvent extends MessageHandler {
 
     private ArrayList<SearchResultList> toQueryResults(List<SearchResultList> resultLists) {
         ArrayList<SearchResultList> nList = new ArrayList<>();
-        THashMap<Integer, Room> searchRooms = new THashMap<>();
+        Map<Integer, Room> searchRooms = new HashMap<>();
 
         for (SearchResultList li : resultLists) {
             for (Room room : li.rooms) {

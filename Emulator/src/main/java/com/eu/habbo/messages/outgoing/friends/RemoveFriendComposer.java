@@ -3,17 +3,17 @@ package com.eu.habbo.messages.outgoing.friends;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-import gnu.trove.list.array.TIntArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 
 public class RemoveFriendComposer extends MessageComposer {
-    private final TIntArrayList unfriendIds;
+    private final IntArrayList unfriendIds;
 
-    public RemoveFriendComposer(TIntArrayList unfriendIds) {
+    public RemoveFriendComposer(IntArrayList unfriendIds) {
         this.unfriendIds = unfriendIds;
     }
 
     public RemoveFriendComposer(int i) {
-        this.unfriendIds = new TIntArrayList();
+        this.unfriendIds = new IntArrayList();
         this.unfriendIds.add(i);
     }
 
@@ -25,13 +25,13 @@ public class RemoveFriendComposer extends MessageComposer {
         this.response.appendInt(this.unfriendIds.size());
         for (int i = 0; i < this.unfriendIds.size(); i++) {
             this.response.appendInt(-1);
-            this.response.appendInt(this.unfriendIds.get(i));
+            this.response.appendInt(this.unfriendIds.getInt(i));
         }
 
         return this.response;
     }
 
-    public TIntArrayList getUnfriendIds() {
+    public IntArrayList getUnfriendIds() {
         return unfriendIds;
     }
 }

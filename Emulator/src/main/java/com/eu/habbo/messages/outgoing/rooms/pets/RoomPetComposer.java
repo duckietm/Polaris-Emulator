@@ -4,19 +4,18 @@ import com.eu.habbo.habbohotel.pets.*;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.procedure.TIntObjectProcedure;
 
-public class RoomPetComposer extends MessageComposer implements TIntObjectProcedure<Pet> {
-    private final TIntObjectMap<Pet> pets;
+import java.util.Collection;
+import java.util.Collections;
+
+public class RoomPetComposer extends MessageComposer {
+    private final Collection<Pet> pets;
 
     public RoomPetComposer(Pet pet) {
-        this.pets = new TIntObjectHashMap<>();
-        this.pets.put(pet.getId(), pet);
+        this.pets = Collections.singletonList(pet);
     }
 
-    public RoomPetComposer(TIntObjectMap<Pet> pets) {
+    public RoomPetComposer(Collection<Pet> pets) {
         this.pets = pets;
     }
 
@@ -24,12 +23,13 @@ public class RoomPetComposer extends MessageComposer implements TIntObjectProced
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.RoomUsersComposer);
         this.response.appendInt(this.pets.size());
-        this.pets.forEachEntry(this);
+        for (Pet pet : this.pets) {
+            this.serializePet(pet);
+        }
         return this.response;
     }
 
-    @Override
-    public boolean execute(int a, Pet pet) {
+    private void serializePet(Pet pet) {
         this.response.appendInt(pet.getId());
         this.response.appendString(pet.getName());
         this.response.appendString("");
@@ -63,7 +63,5 @@ public class RoomPetComposer extends MessageComposer implements TIntObjectProced
         this.response.appendString("unknown");
         this.response.appendInt(0);
         this.response.appendInt(0);
-
-        return true;
     }
 }

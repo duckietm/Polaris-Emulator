@@ -12,7 +12,6 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.items.rentablespaces.RentableSpaceInfoComposer;
 import com.eu.habbo.threading.runnables.ClearRentedSpace;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +20,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Set;
 
 public class InteractionRentableSpace extends HabboItem {
     private static final Logger LOGGER = LoggerFactory.getLogger(InteractionRentableSpace.class);
@@ -166,7 +167,7 @@ public class InteractionRentableSpace extends HabboItem {
 
         Rectangle rect = RoomLayout.getRectangle(this.getX(), this.getY(), this.getBaseItem().getWidth(), this.getBaseItem().getLength(), this.getRotation());
 
-        THashSet<HabboItem> items = new THashSet<>();
+        Set<HabboItem> items = new HashSet<>();
         for (int i = rect.x; i < rect.x + rect.getWidth(); i++) {
             for (int j = rect.y; j < rect.y + rect.getHeight(); j++) {
                 items.addAll(room.getItemsAt(i, j, this.getZ()));

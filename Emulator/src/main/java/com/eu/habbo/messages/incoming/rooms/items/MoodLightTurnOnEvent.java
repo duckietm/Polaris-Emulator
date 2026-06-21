@@ -20,7 +20,7 @@ public class MoodLightTurnOnEvent extends MessageHandler {
             // enabled ? 2 : 1, preset id, background only ? 2 : 1, color, intensity
 
             String extradata = "2,1,2,#FF00FF,255";
-            for (RoomMoodlightData data : room.getMoodlightData().valueCollection()) {
+            for (RoomMoodlightData data : room.getMoodlightData().values()) {
                 if (data.isEnabled()) {
                     extradata = data.toString();
                     break;

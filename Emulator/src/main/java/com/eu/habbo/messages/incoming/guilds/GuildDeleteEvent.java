@@ -9,7 +9,8 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.guilds.GuildFavoriteRoomUserUpdateComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomDataComposer;
 import com.eu.habbo.plugin.events.guilds.GuildDeletedEvent;
-import gnu.trove.set.hash.THashSet;
+
+import java.util.Set;
 
 public class GuildDeleteEvent extends MessageHandler {
     @Override
@@ -26,7 +27,7 @@ public class GuildDeleteEvent extends MessageHandler {
         if (guild != null) {
             if (guild.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() || this.client.getHabbo().hasPermission(Permission.ACC_GUILD_ADMIN))
             {
-                THashSet<GuildMember> members = Emulator.getGameEnvironment().getGuildManager().getGuildMembers(guild.getId());
+                Set<GuildMember> members = Emulator.getGameEnvironment().getGuildManager().getGuildMembers(guild.getId());
 
                 for (GuildMember member : members) {
                     Habbo habbo = Emulator.getGameServer().getGameClientManager().getHabbo(member.getUserId());

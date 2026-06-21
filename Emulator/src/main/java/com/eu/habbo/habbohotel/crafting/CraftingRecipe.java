@@ -2,10 +2,11 @@ package com.eu.habbo.habbohotel.crafting;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.Item;
-import gnu.trove.map.hash.THashMap;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class CraftingRecipe {
     private final int id;
@@ -14,7 +15,7 @@ public class CraftingRecipe {
     private final boolean secret;
     private final String achievement;
     private final boolean limited;
-    private final THashMap<Item, Integer> ingredients;
+    private final Map<Item, Integer> ingredients;
     private int remaining;
 
     public CraftingRecipe(ResultSet set) throws SQLException {
@@ -26,7 +27,7 @@ public class CraftingRecipe {
         this.limited = set.getString("limited").equals("1");
         this.remaining = set.getInt("remaining");
 
-        this.ingredients = new THashMap<>();
+        this.ingredients = new HashMap<>();
     }
 
     public boolean canBeCrafted() {
@@ -78,7 +79,7 @@ public class CraftingRecipe {
         return this.limited;
     }
 
-    public THashMap<Item, Integer> getIngredients() {
+    public Map<Item, Integer> getIngredients() {
         return this.ingredients;
     }
 

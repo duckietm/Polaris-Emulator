@@ -4,7 +4,9 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.guilds.Guild;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.guilds.GuildListComposer;
-import gnu.trove.set.hash.THashSet;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class RequestOwnGuildsEvent extends MessageHandler {
     @Override
@@ -14,7 +16,7 @@ public class RequestOwnGuildsEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        THashSet<Guild> guilds = new THashSet<Guild>();
+        Set<Guild> guilds = new HashSet<Guild>();
 
         for (int i : this.client.getHabbo().getHabboStats().guilds) {
             if (i == 0)

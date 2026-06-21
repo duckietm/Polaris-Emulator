@@ -9,8 +9,9 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.outgoing.inventory.InventoryItemsComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.threading.runnables.QueryDeleteHabboItems;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class EmptyInventoryCommand extends Command {
     public EmptyInventoryCommand() {
@@ -36,8 +37,7 @@ public class EmptyInventoryCommand extends Command {
             Habbo habbo = (params.length == 3 && gameClient.getHabbo().hasPermission(Permission.ACC_EMPTY_OTHERS)) ? Emulator.getGameEnvironment().getHabboManager().getHabbo(params[2]) : gameClient.getHabbo();
 
             if (habbo != null) {
-                TIntObjectMap<HabboItem> items = new TIntObjectHashMap<>();
-                items.putAll(habbo.getInventory().getItemsComponent().getItems());
+                List<HabboItem> items = new ArrayList<>(habbo.getInventory().getItemsComponent().getItems().values());
                 habbo.getInventory().getItemsComponent().getItems().clear();
                 Emulator.getThreading().run(new QueryDeleteHabboItems(items));
 

@@ -13,12 +13,14 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-import gnu.trove.set.hash.THashSet;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
@@ -27,7 +29,7 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
 
     public static final WiredConditionType type = WiredConditionType.TRIGGER_ON_FURNI;
 
-    protected THashSet<HabboItem> items = new THashSet<>();
+    protected Set<HabboItem> items = new LinkedHashSet<>();
     protected int furniSource = WiredSourceUtil.SOURCE_TRIGGER;
     protected int userSource = WiredSourceUtil.SOURCE_TRIGGER;
     protected int quantifier = QUANTIFIER_ALL;
@@ -72,7 +74,7 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
     protected boolean isAnyUserOnFurni(Collection<RoomUnit> users, Collection<HabboItem> items, Room room) {
         for (RoomUnit roomUnit : users) {
             if (roomUnit == null) continue;
-            THashSet<HabboItem> itemsAtUser = room.getItemsAt(roomUnit.getCurrentLocation());
+            Set<HabboItem> itemsAtUser = room.getItemsAt(roomUnit.getCurrentLocation());
             if (items.stream().anyMatch(itemsAtUser::contains)) {
                 return true;
             }
@@ -86,7 +88,7 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
                 return false;
             }
 
-            THashSet<HabboItem> itemsAtUser = room.getItemsAt(roomUnit.getCurrentLocation());
+            Set<HabboItem> itemsAtUser = room.getItemsAt(roomUnit.getCurrentLocation());
             if (itemsAtUser == null || items.stream().noneMatch(itemsAtUser::contains)) {
                 return false;
             }
@@ -211,7 +213,7 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
     }
 
     protected void refresh() {
-        THashSet<HabboItem> items = new THashSet<>();
+        Set<HabboItem> items = new HashSet<>();
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
         if (room == null) {

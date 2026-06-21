@@ -11,11 +11,13 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-import gnu.trove.set.hash.THashSet;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class WiredExtraOrEval extends InteractionWiredExtra {
@@ -30,19 +32,19 @@ public class WiredExtraOrEval extends InteractionWiredExtra {
     public static final int MIN_COMPARE_VALUE = 0;
     public static final int MAX_COMPARE_VALUE = 100;
 
-    private final THashSet<HabboItem> items;
+    private final Set<HabboItem> items;
     private int evaluationMode = MODE_ALL;
     private int furniSource = WiredSourceUtil.SOURCE_TRIGGER;
     private int compareValue = 1;
 
     public WiredExtraOrEval(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
-        this.items = new THashSet<>();
+        this.items = new LinkedHashSet<>();
     }
 
     public WiredExtraOrEval(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
-        this.items = new THashSet<>();
+        this.items = new LinkedHashSet<>();
     }
 
     @Override
@@ -201,7 +203,7 @@ public class WiredExtraOrEval extends InteractionWiredExtra {
     }
 
     private void refresh(Room room) {
-        THashSet<HabboItem> remove = new THashSet<>();
+        Set<HabboItem> remove = new HashSet<>();
 
         for (HabboItem item : this.items) {
             HabboItem roomItem = room.getHabboItem(item.getId());

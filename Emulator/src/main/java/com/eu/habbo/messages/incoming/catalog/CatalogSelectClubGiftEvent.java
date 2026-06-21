@@ -8,9 +8,11 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.catalog.*;
 import com.eu.habbo.messages.outgoing.users.ClubGiftReceivedComposer;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class CatalogSelectClubGiftEvent extends MessageHandler {
 
@@ -41,7 +43,7 @@ public class CatalogSelectClubGiftEvent extends MessageHandler {
             return;
         }
 
-        CatalogItem catalogItem = page.getCatalogItems().valueCollection().stream().filter(x -> x.getName().equalsIgnoreCase(itemName)).findAny().orElse(null);
+        CatalogItem catalogItem = page.getCatalogItems().values().stream().filter(x -> x.getName().equalsIgnoreCase(itemName)).findAny().orElse(null);
 
         if(catalogItem == null) {
             LOGGER.error("Catalog item not found");
@@ -61,7 +63,7 @@ public class CatalogSelectClubGiftEvent extends MessageHandler {
             return;
         }
 
-        THashSet<Item> itemsGiven = new THashSet<>();
+        Set<Item> itemsGiven = new HashSet<>();
         for(Item item : catalogItem.getBaseItems()) {
             if(Emulator.getGameEnvironment().getItemManager().createGift(this.client.getHabbo().getHabboInfo().getId(), item, "", 0, 0) != null) {
                 itemsGiven.add(item);

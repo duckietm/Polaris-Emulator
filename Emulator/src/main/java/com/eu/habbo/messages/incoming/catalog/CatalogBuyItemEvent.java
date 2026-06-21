@@ -22,8 +22,10 @@ import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.navigator.CanCreateRoomComposer;
 import com.eu.habbo.messages.outgoing.users.AddUserBadgeComposer;
 import com.eu.habbo.threading.runnables.ShutdownEmulator;
-import gnu.trove.map.hash.THashMap;
 import org.apache.commons.lang3.StringUtils;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.eu.habbo.messages.incoming.catalog.CheckPetNameEvent.PET_NAME_LENGTH_MAXIMUM;
 import static com.eu.habbo.messages.incoming.catalog.CheckPetNameEvent.PET_NAME_LENGTH_MINIMUM;
@@ -86,10 +88,10 @@ public class CatalogBuyItemEvent extends MessageHandler {
 
                 if (page instanceof RoomBundleLayout) {
                     final CatalogItem[] item = new CatalogItem[1];
-                    page.getCatalogItems().forEachValue(object -> {
+                    for (CatalogItem object : page.getCatalogItems().values()) {
                         item[0] = object;
-                        return false;
-                    });
+                        break;
+                    }
 
                     CatalogItem roomBundleItem = item[0];
                     if (roomBundleItem == null || roomBundleItem.getCredits() > this.client.getHabbo().getHabboInfo().getCredits() || roomBundleItem.getPoints() > this.client.getHabbo().getHabboInfo().getCurrencyAmount(roomBundleItem.getPointsType())) {
@@ -119,7 +121,7 @@ public class CatalogBuyItemEvent extends MessageHandler {
                             Emulator.getThreading().run(badge);
                             this.client.getHabbo().getInventory().getBadgesComponent().addBadge(badge);
                             this.client.sendResponse(new AddUserBadgeComposer(badge));
-                            THashMap<String, String> keys = new THashMap<>();
+                            Map<String, String> keys = new HashMap<>();
                             keys.put("display", "BUBBLE");
                             keys.put("image", "${image.library.url}album1584/" + badge.getCode() + ".gif");
                             keys.put("message", Emulator.getTexts().getValue("commands.generic.cmd_badge.received"));
@@ -202,7 +204,7 @@ public class CatalogBuyItemEvent extends MessageHandler {
                 item = page.getCatalogItem(itemId);
 
             if (item == null && !(page instanceof RecentPurchasesLayout)) {
-                for (CatalogItem candidate : page.getCatalogItems().valueCollection()) {
+                for (CatalogItem candidate : page.getCatalogItems().values()) {
                     if (candidate != null && candidate.getOfferId() == itemId) {
                         item = candidate;
                         break;

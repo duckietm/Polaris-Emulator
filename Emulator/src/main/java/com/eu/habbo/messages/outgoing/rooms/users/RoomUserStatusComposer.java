@@ -8,21 +8,20 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-import gnu.trove.set.hash.THashSet;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 public class RoomUserStatusComposer extends MessageComposer {
     private Collection<Habbo> habbos;
-    private THashSet<RoomUnit> roomUnits;
+    private Collection<RoomUnit> roomUnits;
     private double overrideZ = -1;
 
     public RoomUserStatusComposer(RoomUnit roomUnit) {
-        this.roomUnits = new THashSet<>();
-        this.roomUnits.add(roomUnit);
+        this.roomUnits = Collections.singletonList(roomUnit);
     }
 
     public RoomUserStatusComposer(RoomUnit roomUnit, double overrideZ) {
@@ -30,7 +29,7 @@ public class RoomUserStatusComposer extends MessageComposer {
         this.overrideZ = overrideZ;
     }
 
-    public RoomUserStatusComposer(THashSet<RoomUnit> roomUnits, boolean value) {
+    public RoomUserStatusComposer(Collection<RoomUnit> roomUnits, boolean value) {
         this.roomUnits = roomUnits;
     }
 
@@ -116,7 +115,7 @@ public class RoomUserStatusComposer extends MessageComposer {
         return habbos;
     }
 
-    public THashSet<RoomUnit> getRoomUnits() {
+    public Collection<RoomUnit> getRoomUnits() {
         return roomUnits;
     }
 

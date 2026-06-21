@@ -6,11 +6,11 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import gnu.trove.set.hash.THashSet;
 
 import java.awt.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Set;
 
 public class InteractionWaterItem extends InteractionMultiHeight {
     public InteractionWaterItem(ResultSet set, Item baseItem) throws SQLException {
@@ -60,7 +60,7 @@ public class InteractionWaterItem extends InteractionMultiHeight {
         for (short x = (short) rectangle.x; x < rectangle.getWidth() + rectangle.x && foundWater; x++) {
             for (short y = (short) rectangle.y; y < rectangle.getHeight() + rectangle.y && foundWater; y++) {
                 boolean tile = false;
-                THashSet<HabboItem> items = room.getItemsAt(room.getLayout().getTile(x, y));
+                Set<HabboItem> items = room.getItemsAt(room.getLayout().getTile(x, y));
 
                 for (HabboItem item : items) {
                     if (item instanceof InteractionWater) {

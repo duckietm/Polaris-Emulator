@@ -47,12 +47,12 @@ public class RequestDeleteRoomEvent extends MessageHandler {
                 room.ejectAll();
                 room.ejectUserFurni(room.getOwnerId());
 
-                List<Bot> bots = new ArrayList<>(room.getCurrentBots().valueCollection());
+                List<Bot> bots = new ArrayList<>(room.getCurrentBots().values());
                 for (Bot bot : bots) {
                     Emulator.getGameEnvironment().getBotManager().pickUpBot(bot, null);
                 }
 
-                List<Pet> pets = new ArrayList<>(room.getCurrentPets().valueCollection());
+                List<Pet> pets = new ArrayList<>(room.getCurrentPets().values());
                 for (Pet pet : pets) {
                     if (pet instanceof RideablePet) {
                         RideablePet rideablePet = (RideablePet) pet;

@@ -56,7 +56,9 @@ public class RedeemClothingEvent extends MessageHandler {
                             Emulator.getThreading().run(new QueryDeleteHabboItem(item.getId()));
 
                             this.client.getHabbo().getInventory().getWardrobeComponent().getClothing().add(clothing.id);
-                            this.client.getHabbo().getInventory().getWardrobeComponent().getClothingSets().addAll(clothing.setId);
+                            for (int setId : clothing.setId) {
+                                this.client.getHabbo().getInventory().getWardrobeComponent().getClothingSets().add(setId);
+                            }
                             this.client.sendResponse(new UserClothesComposer(this.client.getHabbo()));
                             this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FIGURESET_REDEEMED.key));
 

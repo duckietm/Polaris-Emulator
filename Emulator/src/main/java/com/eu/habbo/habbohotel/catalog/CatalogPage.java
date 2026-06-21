@@ -2,24 +2,26 @@ package com.eu.habbo.habbohotel.catalog;
 
 import com.eu.habbo.messages.ISerialize;
 import com.eu.habbo.messages.ServerMessage;
-import gnu.trove.TCollections;
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.THashMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public abstract class CatalogPage implements Comparable<CatalogPage>, ISerialize {
     private static final Logger LOGGER = LoggerFactory.getLogger(CatalogPage.class);
 
-    protected final TIntArrayList offerIds = new TIntArrayList();
-    protected final THashMap<Integer, CatalogPage> childPages = new THashMap<>();
-    private final TIntObjectMap<CatalogItem> catalogItems = TCollections.synchronizedMap(new TIntObjectHashMap<>());
+    protected final IntList offerIds = new IntArrayList();
+    protected final Map<Integer, CatalogPage> childPages = new HashMap<>();
+    private final Int2ObjectMap<CatalogItem> catalogItems = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>());
     private final ArrayList<Integer> included = new ArrayList<>();
     protected int id;
     protected int parentId;
@@ -171,7 +173,7 @@ public abstract class CatalogPage implements Comparable<CatalogPage>, ISerialize
         return this.textTeaser;
     }
 
-    public TIntArrayList getOfferIds() {
+    public IntList getOfferIds() {
         return this.offerIds;
     }
 
@@ -183,7 +185,7 @@ public abstract class CatalogPage implements Comparable<CatalogPage>, ISerialize
         this.catalogItems.put(item.getId(), item);
     }
 
-    public TIntObjectMap<CatalogItem> getCatalogItems() {
+    public Int2ObjectMap<CatalogItem> getCatalogItems() {
         return this.catalogItems;
     }
 
@@ -195,7 +197,7 @@ public abstract class CatalogPage implements Comparable<CatalogPage>, ISerialize
         return this.included;
     }
 
-    public THashMap<Integer, CatalogPage> getChildPages() {
+    public Map<Integer, CatalogPage> getChildPages() {
         return this.childPages;
     }
 

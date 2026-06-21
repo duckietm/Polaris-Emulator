@@ -17,9 +17,10 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUnitOnRollerComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
 import com.eu.habbo.plugin.events.users.UserIdleEvent;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Set;
 
 public class RoomUserWalkEvent extends MessageHandler {
 
@@ -139,7 +140,7 @@ public class RoomUserWalkEvent extends MessageHandler {
           return;
         }
 
-        THashSet<HabboItem> items = room.getItemsAt(tile);
+        Set<HabboItem> items = room.getItemsAt(tile);
 
         if (!items.isEmpty()) {
           for (HabboItem item : items) {

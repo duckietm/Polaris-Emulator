@@ -3,13 +3,13 @@ package com.eu.habbo.plugin.events.users.catalog;
 import com.eu.habbo.habbohotel.catalog.CatalogItem;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import gnu.trove.set.hash.THashSet;
 
 import java.util.List;
+import java.util.Set;
 
 public class UserCatalogItemPurchasedEvent extends UserCatalogEvent {
 
-    public final THashSet<HabboItem> itemsList;
+    public final Set<HabboItem> itemsList;
 
 
     public int totalCredits;
@@ -21,7 +21,7 @@ public class UserCatalogItemPurchasedEvent extends UserCatalogEvent {
     public List<String> badges;
 
 
-    public UserCatalogItemPurchasedEvent(Habbo habbo, CatalogItem catalogItem, THashSet<HabboItem> itemsList, int totalCredits, int totalPoints, List<String> badges) {
+    public UserCatalogItemPurchasedEvent(Habbo habbo, CatalogItem catalogItem, Set<HabboItem> itemsList, int totalCredits, int totalPoints, List<String> badges) {
         super(habbo, catalogItem);
 
         this.itemsList = itemsList;

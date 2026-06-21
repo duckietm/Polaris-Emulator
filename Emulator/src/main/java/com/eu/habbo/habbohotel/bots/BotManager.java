@@ -15,12 +15,12 @@ import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUsersComposer;
 import com.eu.habbo.plugin.events.bots.BotPickUpEvent;
 import com.eu.habbo.plugin.events.bots.BotPlacedEvent;
-import gnu.trove.map.hash.THashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 import java.sql.*;
+import java.util.HashMap;
 import java.util.Map;
 
 
@@ -28,7 +28,7 @@ import java.util.Map;
 public class BotManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(BotManager.class);
 
-    final private static THashMap<String, Class<? extends Bot>> botDefenitions = new THashMap<>();
+    final private static Map<String, Class<? extends Bot>> botDefenitions = new HashMap<>();
     public static int MINIMUM_CHAT_SPEED = 7;
     public static int MAXIMUM_CHAT_SPEED = 604800;
     public static int MAXIMUM_CHAT_LENGTH = 120;
@@ -71,11 +71,11 @@ public class BotManager {
         return true;
     }
 
-    public Bot createBot(THashMap<String, String> data, String type) {
+    public Bot createBot(Map<String, String> data, String type) {
         return this.createBot(data, type, 0);
     }
 
-    public Bot createBot(THashMap<String, String> data, String type, int ownerId) {
+    public Bot createBot(Map<String, String> data, String type, int ownerId) {
         if (ownerId <= 0) {
             LOGGER.error("Cannot create bot of type '{}' without a valid owner user id.", type);
             return null;

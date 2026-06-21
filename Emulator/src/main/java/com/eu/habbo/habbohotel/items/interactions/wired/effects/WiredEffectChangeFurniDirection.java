@@ -14,14 +14,16 @@ import com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-import gnu.trove.map.hash.THashMap;
-import gnu.trove.set.hash.THashSet;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class WiredEffectChangeFurniDirection extends InteractionWiredEffect {
@@ -35,7 +37,7 @@ public class WiredEffectChangeFurniDirection extends InteractionWiredEffect {
 
     public static final WiredEffectType type = WiredEffectType.MOVE_DIRECTION;
 
-    private final THashMap<HabboItem, WiredChangeDirectionSetting> items = new THashMap<>(0);
+    private final Map<HabboItem, WiredChangeDirectionSetting> items = new LinkedHashMap<>(0);
     private final ConcurrentHashMap<Integer, WiredChangeDirectionSetting> runtimeItems = new ConcurrentHashMap<>();
     private RoomUserRotation startRotation = RoomUserRotation.NORTH;
     private int blockedAction = 0;
@@ -56,11 +58,11 @@ public class WiredEffectChangeFurniDirection extends InteractionWiredEffect {
         if (room == null || room.getLayout() == null) return;
 
         List<HabboItem> resolvedItems = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items.keySet());
-        THashMap<HabboItem, WiredChangeDirectionSetting> effectiveItems;
+        Map<HabboItem, WiredChangeDirectionSetting> effectiveItems;
 
         if (this.furniSource == WiredSourceUtil.SOURCE_SELECTED) {
             this.runtimeItems.clear();
-            THashSet<HabboItem> toRemove = new THashSet<>();
+            Set<HabboItem> toRemove = new HashSet<>();
             for (HabboItem item : this.items.keySet()) {
                 if (item == null || Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId()).getHabboItem(item.getId()) == null)
                     toRemove.add(item);
@@ -71,7 +73,7 @@ public class WiredEffectChangeFurniDirection extends InteractionWiredEffect {
             effectiveItems = this.items;
         } else {
             this.pruneRuntimeItems(room);
-            effectiveItems = new THashMap<>();
+            effectiveItems = new HashMap<>();
             for (HabboItem item : resolvedItems) {
                 if (item != null) {
                     WiredChangeDirectionSetting setting = this.runtimeItems.computeIfAbsent(
@@ -294,7 +296,7 @@ public class WiredEffectChangeFurniDirection extends InteractionWiredEffect {
             this.furniSource = WiredSourceUtil.SOURCE_SELECTED;
         }
 
-        THashMap<HabboItem, WiredChangeDirectionSetting> newItems = new THashMap<>();
+        Map<HabboItem, WiredChangeDirectionSetting> newItems = new LinkedHashMap<>();
 
         for (int i = 0; i < itemsCount; i++) {
             int itemId = settings.getFurniIds()[i];

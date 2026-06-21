@@ -5,7 +5,9 @@ import com.eu.habbo.habbohotel.users.HabboBadge;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-import gnu.trove.set.hash.THashSet;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class InventoryBadgesComposer extends MessageComposer {
     private final Habbo habbo;
@@ -19,7 +21,7 @@ public class InventoryBadgesComposer extends MessageComposer {
         if (this.habbo == null)
             return null;
 
-        THashSet<HabboBadge> equippedBadges = new THashSet<>();
+        Set<HabboBadge> equippedBadges = new HashSet<>();
 
         this.response.init(Outgoing.InventoryBadgesComposer);
 

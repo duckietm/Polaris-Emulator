@@ -16,14 +16,15 @@ import com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.math.BigDecimal;
 
@@ -32,7 +33,7 @@ public class WiredEffectMatchFurni extends InteractionWiredEffect implements Int
 
     private static final WiredEffectType type = WiredEffectType.MATCH_SSHOT;
     public boolean checkForWiredResetPermission = true;
-    private THashSet<WiredMatchFurniSetting> settings;
+    private Set<WiredMatchFurniSetting> settings;
     private boolean state = false;
     private boolean direction = false;
     private boolean position = false;
@@ -41,12 +42,12 @@ public class WiredEffectMatchFurni extends InteractionWiredEffect implements Int
 
     public WiredEffectMatchFurni(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
-        this.settings = new THashSet<>(0);
+        this.settings = new HashSet<>(0);
     }
 
     public WiredEffectMatchFurni(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
-        this.settings = new THashSet<>(0);
+        this.settings = new HashSet<>(0);
     }
 
     @Override
@@ -304,7 +305,7 @@ public class WiredEffectMatchFurni extends InteractionWiredEffect implements Int
     }
 
     @Override
-    public THashSet<WiredMatchFurniSetting> getMatchFurniSettings() {
+    public Set<WiredMatchFurniSetting> getMatchFurniSettings() {
         return this.settings;
     }
 

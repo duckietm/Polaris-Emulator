@@ -7,9 +7,10 @@ import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnitStatus;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Set;
 
 public class ActionPlay extends PetAction {
     private static final Logger LOGGER = LoggerFactory.getLogger(ActionPlay.class);
@@ -36,7 +37,7 @@ public class ActionPlay extends PetAction {
         }
         
         // Get all pet toys in the room
-        THashSet<InteractionPetToy> toys = pet.getRoom().getRoomSpecialTypes().getPetToys();
+        Set<InteractionPetToy> toys = pet.getRoom().getRoomSpecialTypes().getPetToys();
         LOGGER.info("[ActionPlay] Found {} pet toys in room", toys.size());
         
         // Find a toy to play with

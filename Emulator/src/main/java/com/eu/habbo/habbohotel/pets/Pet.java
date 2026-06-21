@@ -17,14 +17,14 @@ import com.eu.habbo.messages.outgoing.rooms.pets.RoomPetRespectComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserRemoveComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserTalkComposer;
 import com.eu.habbo.plugin.events.pets.PetTalkEvent;
-import gnu.trove.map.hash.THashMap;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -487,7 +487,7 @@ public class Pet implements ISerialize, Runnable {
     }
 
     public void clearPosture() {
-        THashMap<RoomUnitStatus, String> keys = new THashMap<>();
+        Map<RoomUnitStatus, String> keys = new HashMap<>();
 
         if (this.roomUnit.hasStatus(RoomUnitStatus.MOVE))
             keys.put(RoomUnitStatus.MOVE, this.roomUnit.getStatus(RoomUnitStatus.MOVE));
@@ -633,7 +633,7 @@ public class Pet implements ISerialize, Runnable {
         }
         
         // Get all pet toys in the room
-        THashSet<InteractionPetToy> toys = this.room.getRoomSpecialTypes().getPetToys();
+        Set<InteractionPetToy> toys = this.room.getRoomSpecialTypes().getPetToys();
         if (toys.isEmpty()) {
             return;
         }

@@ -1,18 +1,20 @@
 package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.habbohotel.users.Habbo;
-import gnu.trove.set.hash.THashSet;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Manages trading operations within a room.
  */
 public class RoomTradeManager {
     private final Room room;
-    private final THashSet<RoomTrade> activeTrades;
+    private final Set<RoomTrade> activeTrades;
 
     public RoomTradeManager(Room room) {
         this.room = room;
-        this.activeTrades = new THashSet<>(0);
+        this.activeTrades = new HashSet<>(0);
     }
 
     /**
@@ -60,7 +62,7 @@ public class RoomTradeManager {
     /**
      * Gets all active trades.
      */
-    public THashSet<RoomTrade> getActiveTrades() {
+    public Set<RoomTrade> getActiveTrades() {
         return this.activeTrades;
     }
 

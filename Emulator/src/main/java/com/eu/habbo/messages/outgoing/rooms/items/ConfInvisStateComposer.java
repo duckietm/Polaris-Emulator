@@ -5,12 +5,13 @@ import com.eu.habbo.habbohotel.rooms.RoomConfInvisSupport;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-import gnu.trove.list.array.TIntArrayList;
+
+import java.util.List;
 
 public class ConfInvisStateComposer extends MessageComposer {
     private final int roomId;
     private final boolean active;
-    private final TIntArrayList hiddenItemIds;
+    private final List<Integer> hiddenItemIds;
 
     public ConfInvisStateComposer(Room room) {
         this.roomId = (room != null) ? room.getId() : 0;
@@ -25,8 +26,8 @@ public class ConfInvisStateComposer extends MessageComposer {
         this.response.appendBoolean(this.active);
         this.response.appendInt(this.hiddenItemIds.size());
 
-        for (int i = 0; i < this.hiddenItemIds.size(); i++) {
-            this.response.appendInt(this.hiddenItemIds.get(i));
+        for (int itemId : this.hiddenItemIds) {
+            this.response.appendInt(itemId);
         }
 
         return this.response;

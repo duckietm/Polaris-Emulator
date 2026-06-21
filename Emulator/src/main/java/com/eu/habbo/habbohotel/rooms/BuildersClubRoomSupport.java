@@ -13,8 +13,6 @@ import com.eu.habbo.messages.outgoing.catalog.BuildersClubSubscriptionStatusComp
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import com.eu.habbo.messages.outgoing.generic.alerts.SimpleAlertComposer;
-import gnu.trove.map.hash.THashMap;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +20,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class BuildersClubRoomSupport {
     private static final Logger LOGGER = LoggerFactory.getLogger(BuildersClubRoomSupport.class);
@@ -290,7 +292,7 @@ public class BuildersClubRoomSupport {
             return;
         }
 
-        THashSet<Integer> updatedUsers = new THashSet<>();
+        Set<Integer> updatedUsers = new HashSet<>();
 
         if (room != null) {
             for (Habbo habbo : room.getHabbos()) {
@@ -484,7 +486,7 @@ public class BuildersClubRoomSupport {
     }
 
     public static void sendVisitDeniedOwnerBubble(int ownerId, String username) {
-        THashMap<String, String> keys = new THashMap<>();
+        Map<String, String> keys = new HashMap<>();
         keys.put("USERNAME", username);
 
         sendBubbleNotification(ownerId, BubbleAlertKeys.BUILDERS_CLUB_VISIT_DENIED_OWNER, keys);
@@ -507,7 +509,7 @@ public class BuildersClubRoomSupport {
         );
     }
 
-    private static void sendBubbleNotification(int userId, BubbleAlertKeys key, THashMap<String, String> keys) {
+    private static void sendBubbleNotification(int userId, BubbleAlertKeys key, Map<String, String> keys) {
         Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
 
         if (habbo == null || habbo.getClient() == null) {

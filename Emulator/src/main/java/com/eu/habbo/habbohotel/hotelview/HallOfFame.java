@@ -1,7 +1,6 @@
 package com.eu.habbo.habbohotel.hotelview;
 
 import com.eu.habbo.Emulator;
-import gnu.trove.map.hash.THashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,11 +8,13 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashMap;
+import java.util.Map;
 
 public class HallOfFame {
     private static final Logger LOGGER = LoggerFactory.getLogger(HallOfFame.class);
 
-    private final THashMap<Integer, HallOfFameWinner> winners = new THashMap<>();
+    private final Map<Integer, HallOfFameWinner> winners = new HashMap<>();
 
 
     private String competitionName;
@@ -40,7 +41,7 @@ public class HallOfFame {
         }
     }
 
-    public THashMap<Integer, HallOfFameWinner> getWinners() {
+    public Map<Integer, HallOfFameWinner> getWinners() {
         return this.winners;
     }
 

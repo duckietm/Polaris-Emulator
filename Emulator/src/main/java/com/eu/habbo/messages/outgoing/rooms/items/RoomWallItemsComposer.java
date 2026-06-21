@@ -5,13 +5,9 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-import gnu.trove.iterator.TIntObjectIterator;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.THashMap;
-import gnu.trove.set.hash.THashSet;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.Set;
 
 public class RoomWallItemsComposer extends MessageComposer {
     private final Room room;
@@ -23,27 +19,15 @@ public class RoomWallItemsComposer extends MessageComposer {
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.RoomWallItemsComposer);
-        THashMap<Integer, String> userNames = new THashMap<>();
-        TIntObjectMap<String> furniOwnerNames = this.room.getFurniOwnerNames();
-        TIntObjectIterator<String> iterator = furniOwnerNames.iterator();
-
-        for (int i = furniOwnerNames.size(); i-- > 0; ) {
-            try {
-                iterator.advance();
-
-                userNames.put(iterator.key(), iterator.value());
-            } catch (NoSuchElementException e) {
-                break;
-            }
-        }
+        Int2ObjectMap<String> userNames = this.room.getFurniOwnerNames();
 
         this.response.appendInt(userNames.size());
-        for (Map.Entry<Integer, String> set : userNames.entrySet()) {
-            this.response.appendInt(set.getKey());
+        for (Int2ObjectMap.Entry<String> set : userNames.int2ObjectEntrySet()) {
+            this.response.appendInt(set.getIntKey());
             this.response.appendString(set.getValue());
         }
 
-        THashSet<HabboItem> items = this.room.getWallItems();
+        Set<HabboItem> items = this.room.getWallItems();
 
         this.response.appendInt(items.size());
         for (HabboItem item : items) {

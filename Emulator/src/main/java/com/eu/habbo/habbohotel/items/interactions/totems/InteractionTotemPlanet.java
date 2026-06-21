@@ -5,10 +5,10 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionDefault;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import gnu.trove.set.hash.THashSet;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Set;
 
 public class InteractionTotemPlanet extends InteractionDefault {
     public InteractionTotemPlanet(ResultSet set, Item baseItem) throws SQLException {
@@ -39,7 +39,7 @@ public class InteractionTotemPlanet extends InteractionDefault {
         InteractionTotemLegs legs = null;
         InteractionTotemHead head = null;
 
-        THashSet<HabboItem> items = room.getItemsAt(room.getLayout().getTile(this.getX(), this.getY()));
+        Set<HabboItem> items = room.getItemsAt(room.getLayout().getTile(this.getX(), this.getY()));
 
         for(HabboItem item : items) {
             if(item instanceof InteractionTotemLegs && item.getZ() < this.getZ())

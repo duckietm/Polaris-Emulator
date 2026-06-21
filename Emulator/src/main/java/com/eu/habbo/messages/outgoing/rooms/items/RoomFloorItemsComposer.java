@@ -5,17 +5,15 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-import gnu.trove.iterator.TIntObjectIterator;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.set.hash.THashSet;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 
-import java.util.NoSuchElementException;
+import java.util.Collection;
 
 public class RoomFloorItemsComposer extends MessageComposer {
-    private final TIntObjectMap<String> furniOwnerNames;
-    private final THashSet<? extends HabboItem> items;
+    private final Int2ObjectMap<String> furniOwnerNames;
+    private final Collection<? extends HabboItem> items;
 
-    public RoomFloorItemsComposer(TIntObjectMap<String> furniOwnerNames, THashSet<? extends HabboItem> items) {
+    public RoomFloorItemsComposer(Int2ObjectMap<String> furniOwnerNames, Collection<? extends HabboItem> items) {
         this.furniOwnerNames = furniOwnerNames;
         this.items = items;
     }
@@ -24,17 +22,10 @@ public class RoomFloorItemsComposer extends MessageComposer {
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.RoomFloorItemsComposer);
 
-        TIntObjectIterator<String> iterator = this.furniOwnerNames.iterator();
-
         this.response.appendInt(this.furniOwnerNames.size());
-        for (int i = this.furniOwnerNames.size(); i-- > 0; ) {
-            try {
-                iterator.advance();
-                this.response.appendInt(iterator.key());
-                this.response.appendString(iterator.value());
-            } catch (NoSuchElementException e) {
-                break;
-            }
+        for (Int2ObjectMap.Entry<String> entry : this.furniOwnerNames.int2ObjectEntrySet()) {
+            this.response.appendInt(entry.getIntKey());
+            this.response.appendString(entry.getValue());
         }
 
         this.response.appendInt(this.items.size());
@@ -63,11 +54,11 @@ public class RoomFloorItemsComposer extends MessageComposer {
         return this.response;
     }
 
-    public TIntObjectMap<String> getFurniOwnerNames() {
+    public Int2ObjectMap<String> getFurniOwnerNames() {
         return furniOwnerNames;
     }
 
-    public THashSet<? extends HabboItem> getItems() {
+    public Collection<? extends HabboItem> getItems() {
         return items;
     }
 }

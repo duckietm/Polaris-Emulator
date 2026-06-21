@@ -3,12 +3,13 @@ package com.eu.habbo.habbohotel.rooms;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.rooms.pathfinding.Pathfinder;
 import com.eu.habbo.habbohotel.rooms.pathfinding.impl.PathfinderImpl;
-import gnu.trove.set.hash.THashSet;
 import java.awt.Rectangle;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -456,8 +457,8 @@ public class RoomLayout {
     return true;
   }
 
-  public THashSet<RoomTile> getTilesAt(RoomTile tile, int width, int length, int rotation) {
-    THashSet<RoomTile> pointList = new THashSet<>(width * length, 0.1f);
+  public Set<RoomTile> getTilesAt(RoomTile tile, int width, int length, int rotation) {
+    Set<RoomTile> pointList = new HashSet<>(width * length);
 
     if (tile != null) {
       if (rotation == 0 || rotation == 4) {

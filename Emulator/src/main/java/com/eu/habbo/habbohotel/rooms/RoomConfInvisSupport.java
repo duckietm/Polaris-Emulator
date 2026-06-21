@@ -5,8 +5,9 @@ import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.interactions.InteractionConfInvisControl;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.outgoing.rooms.items.ConfInvisStateComposer;
-import gnu.trove.list.array.TIntArrayList;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Pattern;
 
 public final class RoomConfInvisSupport {
@@ -29,8 +30,8 @@ public final class RoomConfInvisSupport {
             && hasCustomParamToken(item.getBaseItem().getCustomParams(), "is_invisible");
     }
 
-    public static TIntArrayList collectHiddenFloorItemIds(Room room) {
-        TIntArrayList hiddenItemIds = new TIntArrayList();
+    public static List<Integer> collectHiddenFloorItemIds(Room room) {
+        List<Integer> hiddenItemIds = new ArrayList<>();
 
         if (room == null) {
             return hiddenItemIds;

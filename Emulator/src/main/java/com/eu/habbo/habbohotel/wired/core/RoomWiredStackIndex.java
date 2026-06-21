@@ -16,7 +16,6 @@ import com.eu.habbo.habbohotel.wired.api.IWiredCondition;
 import com.eu.habbo.habbohotel.wired.api.IWiredEffect;
 import com.eu.habbo.habbohotel.wired.api.IWiredTrigger;
 import com.eu.habbo.habbohotel.wired.api.WiredStack;
-import gnu.trove.set.hash.THashSet;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -120,7 +119,7 @@ public final class RoomWiredStackIndex implements WiredStackIndex {
         }
 
         // Get all triggers of this type
-        THashSet<InteractionWiredTrigger> triggers = specialTypes.getTriggers(legacyType);
+        Collection<InteractionWiredTrigger> triggers = specialTypes.getTriggers(legacyType);
         if (triggers == null || triggers.isEmpty()) {
             return Collections.emptyList();
         }
@@ -149,7 +148,7 @@ public final class RoomWiredStackIndex implements WiredStackIndex {
         }
 
         RoomSpecialTypes specialTypes = room.getRoomSpecialTypes();
-        THashSet<InteractionWiredTrigger> triggers = specialTypes.getTriggers(tile.x, tile.y);
+        Collection<InteractionWiredTrigger> triggers = specialTypes.getTriggers(tile.x, tile.y);
 
         if (triggers == null || triggers.isEmpty()) {
             return Collections.emptyList();
@@ -180,15 +179,15 @@ public final class RoomWiredStackIndex implements WiredStackIndex {
         IWiredTrigger wrappedTrigger = trigger;
 
         // Get conditions at this location
-        THashSet<InteractionWiredCondition> rawConditions = specialTypes.getConditions(x, y);
+        Collection<InteractionWiredCondition> rawConditions = specialTypes.getConditions(x, y);
         List<IWiredCondition> conditions = collectConditions(rawConditions);
 
         // Get effects at this location
-        THashSet<InteractionWiredEffect> rawEffects = specialTypes.getEffects(x, y);
+        Collection<InteractionWiredEffect> rawEffects = specialTypes.getEffects(x, y);
         List<IWiredEffect> effects = collectEffects(rawEffects);
 
         // Check for extras
-        THashSet<InteractionWiredExtra> extras = specialTypes.getExtras(x, y);
+        Collection<InteractionWiredExtra> extras = specialTypes.getExtras(x, y);
         int conditionEvaluationMode = WiredExtraOrEval.MODE_ALL;
         int conditionEvaluationValue = 1;
         boolean useRandom = false;
@@ -232,7 +231,7 @@ public final class RoomWiredStackIndex implements WiredStackIndex {
     /**
      * Collect conditions into a list (they already implement IWiredCondition).
      */
-    private List<IWiredCondition> collectConditions(THashSet<InteractionWiredCondition> rawConditions) {
+    private List<IWiredCondition> collectConditions(Collection<InteractionWiredCondition> rawConditions) {
         if (rawConditions == null || rawConditions.isEmpty()) {
             return Collections.emptyList();
         }
@@ -247,7 +246,7 @@ public final class RoomWiredStackIndex implements WiredStackIndex {
     /**
      * Collect effects into a list (they already implement IWiredEffect).
      */
-    private List<IWiredEffect> collectEffects(THashSet<InteractionWiredEffect> rawEffects) {
+    private List<IWiredEffect> collectEffects(Collection<InteractionWiredEffect> rawEffects) {
         if (rawEffects == null || rawEffects.isEmpty()) {
             return Collections.emptyList();
         }

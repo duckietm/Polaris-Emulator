@@ -46,7 +46,7 @@ public class InteractionMoodLight extends HabboItem {
     @Override
     public void onPlace(Room room) {
         if (room != null) {
-            for (RoomMoodlightData data : room.getMoodlightData().valueCollection()) {
+            for (RoomMoodlightData data : room.getMoodlightData().values()) {
                 if (data.isEnabled()) {
                     this.setExtradata(data.toString());
                     this.needsUpdate(true);

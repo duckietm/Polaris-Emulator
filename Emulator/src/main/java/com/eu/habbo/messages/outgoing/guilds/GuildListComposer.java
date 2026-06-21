@@ -6,13 +6,14 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-import gnu.trove.set.hash.THashSet;
+
+import java.util.Set;
 
 public class GuildListComposer extends MessageComposer {
-    private final THashSet<Guild> guilds;
+    private final Set<Guild> guilds;
     private final Habbo habbo;
 
-    public GuildListComposer(THashSet<Guild> guilds, Habbo habbo) {
+    public GuildListComposer(Set<Guild> guilds, Habbo habbo) {
         this.guilds = guilds;
         this.habbo = habbo;
     }
@@ -34,7 +35,7 @@ public class GuildListComposer extends MessageComposer {
         return this.response;
     }
 
-    public THashSet<Guild> getGuilds() {
+    public Set<Guild> getGuilds() {
         return guilds;
     }
 

@@ -4,9 +4,10 @@ import com.eu.habbo.habbohotel.catalog.marketplace.MarketPlace;
 import com.eu.habbo.habbohotel.catalog.marketplace.MarketPlaceOffer;
 import com.eu.habbo.habbohotel.catalog.marketplace.MarketPlaceState;
 import com.eu.habbo.habbohotel.users.inventory.*;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Set;
 
 public class HabboInventory {
 
@@ -14,7 +15,7 @@ public class HabboInventory {
 
     //Configuration. Loaded from database & updated accordingly.
     public static int MAXIMUM_ITEMS = 10000;
-    private final THashSet<MarketPlaceOffer> items;
+    private final Set<MarketPlaceOffer> items;
     private final Habbo habbo;
     private WardrobeComponent wardrobeComponent;
     private BadgesComponent badgesComponent;
@@ -187,7 +188,7 @@ public class HabboInventory {
         this.items.remove(marketPlaceOffer);
     }
 
-    public THashSet<MarketPlaceOffer> getMarketplaceItems() {
+    public Set<MarketPlaceOffer> getMarketplaceItems() {
         return this.items;
     }
 

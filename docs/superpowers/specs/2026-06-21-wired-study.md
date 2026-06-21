@@ -168,8 +168,13 @@ entityType=HABBO — verify), `wf_xtra_condition_change` (semantics unclear).
   bot_give_handitem_or_effect, move_rotate_no_under, not_bot_is_dancing,
   execute_for_users, exec_delay). **Pending: an in-room smoke test** — these are the
   server binding; the variants especially depend on the client SWF save-packet shape.
-- **Phase B — Cheap new triggers:** dance/idle/anti-afk triggers — the events already
-  fire, so each is a small trigger class + registration.
+- **Phase B — Cheap new triggers — ✅ DONE** (4 classes + registration; 411 tests):
+  `WiredTriggerHabbo{StartsDancing,StopsDancing,Idles,Unidles}`, each modelled on the
+  no-config `WiredTriggerCollision` (client code 11). The events already fire from
+  RoomUnitManager/RoomCycleManager and the items_base furni rows exist, so the boxes
+  are placeable now. `wf_trg_anti_afk` deferred (ambiguous: unidles vs periodic).
+  Remaining cheap triggers worth a look: dice_rolled, double_click_furni, click_bot,
+  user_gets_handitem (need a new WiredEvent.Type + a fire site).
 - **Phase C — High-demand effects:** currency/reward + posture (sit/lay) + tags +
   identity conditions (gender/motto/rights). Well-understood patterns, one class each,
   each independently testable.

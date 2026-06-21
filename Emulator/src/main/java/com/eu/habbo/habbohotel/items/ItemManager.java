@@ -336,6 +336,9 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_cnd_habbo_has_at_least_x_items", WiredConditionHabboHasMinItems.class));
         this.interactionsList.add(new ItemInteraction("wf_cnd_has_tag", WiredConditionHasTag.class));
         this.interactionsList.add(new ItemInteraction("wf_cnd_not_has_tag", WiredConditionNotHasTag.class));
+        // owns_furni: check the triggerer's inventory for the picked furni type(s) (reuse HAS_ALTITUDE picker).
+        this.interactionsList.add(new ItemInteraction("wf_cnd_habbo_owns_furni", WiredConditionHabboOwnsFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_habbo_not_owns_furni", WiredConditionHabboNotOwnsFurni.class));
         this.interactionsList.add(new ItemInteraction("wf_act_call_stacks", WiredEffectTriggerStacks.class));
         this.interactionsList.add(new ItemInteraction("wf_act_neg_call_stack", WiredEffectNegativeTriggerStacks.class));
         this.interactionsList.add(new ItemInteraction("wf_act_neg_call_stacks", WiredEffectNegativeTriggerStacks.class));

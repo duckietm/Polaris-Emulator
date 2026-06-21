@@ -26,10 +26,8 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
-import io.netty.util.concurrent.DefaultEventExecutor;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.DefaultThreadFactory;
-import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.EventExecutorGroup;
 
 import javax.net.ssl.SSLEngine;
@@ -60,26 +58,32 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
         return configured > 0 ? configured : fallback;
     }
 
-    // Opt-in (io.packet.handler.virtual=1): each channel gets its OWN virtual-thread
-    // serial executor instead of sharing the fixed N-thread group above. Per-channel
-    // packet order is still guaranteed (a single serial executor per channel), but a
-    // handler blocking on JDBC no longer head-of-line-blocks the other channels that
-    // shared its executor, and virtual threads scale to thousands of concurrently
-    // blocked handlers cheaply. Default OFF — behaviour is identical to the shared
-    // group unless this is enabled, so production is unaffected until you opt in.
+    // Opt-in (io.packet.handler.virtual=1): back the SAME shared packet-handler group
+    // with virtual threads instead of platform threads. Channels are still pinned to
+    // one of the N executors (per-channel packet order preserved), but a handler that
+    // blocks on JDBC unmounts its virtual thread from the carrier instead of parking a
+    // platform thread — so io.packet.handler.threads can be raised far higher (more
+    // per-channel isolation) at almost no cost. A SHARED group has no per-channel
+    // lifecycle, so it avoids the teardown race a per-channel executor hits
+    // (RejectedExecutionException when channelInactive/Unregistered are delivered to a
+    // handler whose executor was already shut down on channel close). Default OFF.
     private static final ThreadFactory VIRTUAL_HANDLER_FACTORY =
             Thread.ofVirtual().name("GamePacketHandler-vt-", 0).factory();
 
     private final SslContext sslContext;
     private final boolean sslEnabled;
-    private final boolean useVirtualHandlerThreads;
+    private final EventExecutorGroup packetHandlerGroup;
     private final WebSocketServerProtocolConfig wsConfig;
 
     public WebSocketChannelInitializer() {
         this.sslContext = SSLCertificateLoader.getContext();
         this.sslEnabled = this.sslContext != null;
-        this.useVirtualHandlerThreads = Emulator.getConfig() != null
+        boolean useVirtual = Emulator.getConfig() != null
                 && Emulator.getConfig().getBoolean("io.packet.handler.virtual", false);
+        // One server-lifetime group either way — no per-channel executor lifecycle.
+        this.packetHandlerGroup = useVirtual
+                ? new DefaultEventExecutorGroup(packetHandlerThreads(), VIRTUAL_HANDLER_FACTORY)
+                : PACKET_HANDLER_GROUP;
         this.wsConfig = WebSocketServerProtocolConfig.newBuilder()
                 .websocketPath("/")
                 .checkStartsWith(true)
@@ -124,17 +128,7 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
         ch.pipeline().addLast("idleEventHandler", new IdleTimeoutHandler(30, 60));
         ch.pipeline().addLast(new GameMessageRateLimit());
 
-        if (this.useVirtualHandlerThreads) {
-            // One serial executor per channel, run on a virtual thread. Per-channel
-            // ordering is preserved (single serial executor); cross-channel head-of-
-            // line blocking on JDBC is removed. Shut it down on channel close so the
-            // executor and its virtual thread are released (no leak per connection).
-            EventExecutor channelExecutor = new DefaultEventExecutor(VIRTUAL_HANDLER_FACTORY);
-            ch.closeFuture().addListener(future -> channelExecutor.shutdownGracefully());
-            ch.pipeline().addLast(channelExecutor, "gameMessageHandler", new GameMessageHandler());
-        } else {
-            ch.pipeline().addLast(PACKET_HANDLER_GROUP, "gameMessageHandler", new GameMessageHandler());
-        }
+        ch.pipeline().addLast(this.packetHandlerGroup, "gameMessageHandler", new GameMessageHandler());
 
         ch.pipeline().addLast("messageEncoder", new GameServerMessageEncoder());
 

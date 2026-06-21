@@ -245,3 +245,18 @@ Other findings (non-fatal): `runtime.threads`=16 in DB vs 24 logical CPUs (tunin
 headroom); `CraftingManager` "Unknown ingredient item ..." (missing furni data in
 the clone); `BadgeImager` path is a Linux path from `next` (expected on Windows);
 RCON bound :3001 (rcon.port comes from the DB, overriding config.ini).
+
+### Phase 3 drift-check — Own_Database_RunFirst applied to the clone (PASS)
+All 23 `Database Updates/Own_Database_RunFirst/*.sql` migrations were applied to
+`amx_test`. Every error was a **benign "already present" duplicate** (1060/1061/
+1062 — duplicate column/key/entry), meaning `next` already had those changes. The
+one genuinely-missing migration — the `pet_commands_data.cost_happyness ->
+cost_happiness` rename — applied cleanly, and the clone's column is now
+`cost_happiness` (verified); the original `next` is untouched (still
+`cost_happyness`).
+
+**Upgrade-readiness verdict:** applying `Own_Database_RunFirst/*.sql` to the live
+`next` DB is safe — the duplicate errors are expected and harmless — and it
+resolves the pet schema drift that broke `PetManager` on this build. Do this as
+part of the upgrade. (The migrations carry no `USE`/`CREATE DATABASE`/db-qualified
+names, so they apply to whatever DB is selected — they won't touch other DBs.)

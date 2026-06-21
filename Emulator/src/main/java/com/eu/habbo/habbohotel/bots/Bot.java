@@ -408,7 +408,7 @@ public class Bot implements Runnable {
     }
 
     public void setChatDelay(short chatDelay) {
-        this.chatDelay = (short) Math.min(Math.max(chatDelay, BotManager.MINIMUM_CHAT_SPEED), BotManager.MAXIMUM_CHAT_SPEED);
+        this.chatDelay = (short) Math.clamp(chatDelay, BotManager.MINIMUM_CHAT_SPEED, BotManager.MAXIMUM_CHAT_SPEED);
         this.needsUpdate = true;
         this.chatTimeOut = Emulator.getIntUnixTimestamp() + this.chatDelay;
     }

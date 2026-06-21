@@ -214,7 +214,7 @@ public class EarningsCenterManager {
     }
 
     private void addReward(List<EarningsReward> rewards, String type, int amount, int pointsType) {
-        int clampedAmount = Math.min(Math.max(0, amount), MAX_CONFIGURED_REWARD);
+        int clampedAmount = Math.clamp(amount, 0, MAX_CONFIGURED_REWARD);
         if (clampedAmount > 0) {
             rewards.add(new EarningsReward(type, clampedAmount, pointsType));
         }

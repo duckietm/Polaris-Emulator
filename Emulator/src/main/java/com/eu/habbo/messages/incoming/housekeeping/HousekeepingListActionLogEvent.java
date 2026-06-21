@@ -50,7 +50,7 @@ public class HousekeepingListActionLogEvent extends MessageHandler {
             return;
         }
 
-        int limit = Math.min(Math.max(this.packet.readInt(), 1), HARD_LIMIT);
+        int limit = Math.clamp(this.packet.readInt(), 1, HARD_LIMIT);
 
         List<HousekeepingActionLogComposer.Row> rows = new ArrayList<>();
 

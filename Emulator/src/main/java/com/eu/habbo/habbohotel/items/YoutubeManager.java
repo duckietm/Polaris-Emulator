@@ -89,7 +89,10 @@ public class YoutubeManager {
         long millis = System.currentTimeMillis();
 
         Emulator.getThreading().run(() -> {
-            ExecutorService youtubeDataLoaderPool = Executors.newFixedThreadPool(10);
+            // Java 25 virtual threads: each playlist's blocking HTTP fetch gets its
+            // own virtual thread instead of queueing behind a fixed pool of 10.
+            // Isolated one-shot I/O — no Netty event loop, no ordering constraints.
+            ExecutorService youtubeDataLoaderPool = Executors.newVirtualThreadPerTaskExecutor();
 
             LOGGER.info("YouTube Manager -> Loading...");
 

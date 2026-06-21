@@ -38,7 +38,7 @@ public class HousekeepingSearchRoomsEvent extends MessageHandler {
 
         String query = HousekeepingInputGuard.normalize(this.packet.readString());
         boolean exactMatch = this.packet.readBoolean();
-        int limit = Math.min(Math.max(this.packet.readInt(), 1), HARD_LIMIT);
+        int limit = Math.clamp(this.packet.readInt(), 1, HARD_LIMIT);
 
         if (query.isEmpty() || !HousekeepingInputGuard.isWithinLimit(query, HousekeepingInputGuard.MAX_LOOKUP_LENGTH)) {
             this.client.sendResponse(new HousekeepingRoomListComposer(new ArrayList<>()));

@@ -227,9 +227,19 @@ config seam). Suite now **398 tests, 0 failures**.
 The user ran the staged command in a normal terminal. The full emulator boots on
 **Java 25 + Generational ZGC + Compact Object Headers** against the `amx_test`
 clone — the upgrade is now validated end-to-end, not just compile+tests.
-- **Startup ~8.07s**, **heap ~948 MB** after full load, 24 threads.
+- **Startup ~8.07s**, 24 threads.
+- **Memory is healthy — earlier "948 MB" was a misread.** That boot-log number
+  is `totalMemory()-freeMemory()` which under ZGC reports *committed* memory, not
+  live. A `GC.class_histogram` + `GC.heap_info` shows **ZHeap used ~140 MB**
+  (~88 MB of live objects), with ~806 MB merely committed/cached by ZGC up to
+  -Xmx. App-specific live objects: `Item` ×80,855 (9 MB), `CatalogItem` ×79,496
+  (7 MB), `FurniText` ×43,031 (1.7 MB), plus Strings/byte[] backing catalog text
+  — all proportionate to a full catalog (~110 bytes/item; Compact Object Headers
+  helping). **No RAM optimization needed.** For a smaller *committed* footprint on
+  a tiny VPS, lower `-Xmx` or set `-XX:SoftMaxHeapSize`; cosmetic only.
 - Startup hot spots: `FurnitureTextProvider` ~2.0s (43,031 names), `ItemManager`
-  1.65s, `CatalogManager` 0.60s, DB connect 0.22s → Phase 3 optimization targets.
+  1.65s, `CatalogManager` 0.60s, DB connect 0.22s → the real Phase 3 targets
+  (startup latency, not memory).
 - Config-log fix confirmed live: no `Config key not found enc.*` ERROR spam.
 
 **Key upgrade-readiness finding — schema drift on the live `next` DB.**

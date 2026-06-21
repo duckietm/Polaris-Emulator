@@ -4,7 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
-import org.mindrot.jbcrypt.BCrypt;
+import com.eu.habbo.networking.gameserver.auth.PasswordHasher;
 
 import java.security.SecureRandom;
 import java.sql.Connection;
@@ -13,7 +13,7 @@ import java.sql.SQLException;
 
 /**
  * Reset a user's password to a fresh random 12-character alphanumeric
- * string. Persists a BCrypt `$2a$` hash of the new password into
+ * string. Persists a BCrypt hash of the new password into
  * `users.password` (matches what `AuthHttpUtil.checkPassword` /
  * `SessionEndpoints` / `AccountChangeEndpoints` already write and read),
  * clears `auth_ticket` so any active session can't be re-used to bypass
@@ -55,7 +55,7 @@ public class HousekeepingResetUserPasswordEvent extends MessageHandler {
         String hash;
 
         try {
-            hash = BCrypt.hashpw(plain, BCrypt.gensalt(BCRYPT_COST));
+            hash = PasswordHasher.hash(plain, BCRYPT_COST);
         } catch (IllegalArgumentException e) {
             this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.hash_failed"));
             return;

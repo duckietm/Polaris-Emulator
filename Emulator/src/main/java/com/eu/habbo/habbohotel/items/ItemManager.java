@@ -440,6 +440,45 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_trg_cnd_collision", WiredTriggerCollision.class));
         this.interactionsList.add(new ItemInteraction("wf_trg_user_exits_room", WiredTriggerHabboLeavesRoom.class));
 
+        // --- DB-furnidata parameter-variants (Phase A) ---
+        // These furnidata names denote behaviour that an existing class already covers via one of its
+        // configurable parameters (a dropdown/flag the user selects in the dialog) rather than as a
+        // dedicated class. Binding them to the base class makes the box functional; it exposes the base
+        // class's full dialog, so the specific preset (e.g. raise = increase) is chosen by the user.
+        // These need an in-room smoke test since the client save-packet shape depends on the furni's SWF
+        // dialog. Low-confidence/superset mappings were intentionally left out for a dedicated impl
+        // (dont_chase, give_enable, give_score_pp/room, send_bubble, bot_give_handitem_or_effect,
+        // move_rotate_no_under, not_bot_is_dancing, execute_for_users, exec_delay).
+        this.interactionsList.add(new ItemInteraction("wf_act_all_users_leave_team", WiredEffectLeaveTeam.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_give_score_custom", WiredEffectGiveScore.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_lower_furni", WiredEffectSetAltitude.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_raise_furni", WiredEffectSetAltitude.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_match_to_sshot_height", WiredEffectMatchFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_match_to_sshot_height_instant", WiredEffectMatchFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_plus_match_furni_state", WiredEffectMatchFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_move_rotate_collide", WiredEffectMoveRotateFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_move_rotate_diagonal", WiredEffectMoveRotateFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_rotate_habbo", WiredEffectMoveRotateUser.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_show_message_room", WiredEffectWhisper.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_toggle_state_down", WiredEffectToggleFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_toggle_state_trg", WiredEffectToggleFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_atleast_one_user_in_team", WiredConditionTeamMember.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_bot_is_dancing", WiredConditionUserPerformsAction.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_habbo_is_dancing", WiredConditionUserPerformsAction.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_not_habbo_is_dancing", WiredConditionNotUserPerformsAction.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_furni_state_pattern", WiredConditionMatchStatePosition.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_is_state", WiredConditionMatchStatePosition.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_trg_state_is", WiredConditionMatchStatePosition.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_furnis_hv_avtrs_custom", WiredConditionFurniHaveHabbo.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_x_habbos_on_furni", WiredConditionFurniHaveHabbo.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_exact_keyword", WiredTriggerHabboSaysKeyword.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_says_command", WiredTriggerHabboSaysKeyword.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_habbo_says_command", WiredTriggerHabboSaysKeyword.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_other_collides_user", WiredTriggerCollision.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_user_collides_bot", WiredTriggerCollision.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_user_collides_other", WiredTriggerCollision.class));
+        this.interactionsList.add(new ItemInteraction("wf_xtra_one_condition", WiredExtraOrEval.class));
+
 
         this.interactionsList.add(new ItemInteraction("wf_highscore", InteractionWiredHighscore.class));
 

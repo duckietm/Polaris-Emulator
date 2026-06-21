@@ -3,8 +3,10 @@ package com.eu.habbo.habbohotel.items;
 import com.eu.habbo.habbohotel.items.interactions.InteractionDefault;
 import com.eu.habbo.habbohotel.items.interactions.wired.conditions.*;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.*;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraOrEval;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerCollision;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboLeavesRoom;
+import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboSaysKeyword;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -70,6 +72,52 @@ class WiredAliasResolutionTest {
             ItemInteraction resolved = itemManager.getItemInteraction(e.getKey());
             assertSame(e.getValue(), resolved.getType(),
                     "alias '" + e.getKey() + "' must resolve to " + e.getValue().getSimpleName());
+        }
+    }
+
+    @Test
+    void parameterVariantsResolveToTheirBaseClass() {
+        Map<String, Class<?>> expected = new LinkedHashMap<>();
+        // effects
+        expected.put("wf_act_all_users_leave_team", WiredEffectLeaveTeam.class);
+        expected.put("wf_act_give_score_custom", WiredEffectGiveScore.class);
+        expected.put("wf_act_lower_furni", WiredEffectSetAltitude.class);
+        expected.put("wf_act_raise_furni", WiredEffectSetAltitude.class);
+        expected.put("wf_act_match_to_sshot_height", WiredEffectMatchFurni.class);
+        expected.put("wf_act_match_to_sshot_height_instant", WiredEffectMatchFurni.class);
+        expected.put("wf_act_plus_match_furni_state", WiredEffectMatchFurni.class);
+        expected.put("wf_act_move_rotate_collide", WiredEffectMoveRotateFurni.class);
+        expected.put("wf_act_move_rotate_diagonal", WiredEffectMoveRotateFurni.class);
+        expected.put("wf_act_rotate_habbo", WiredEffectMoveRotateUser.class);
+        expected.put("wf_act_show_message_room", WiredEffectWhisper.class);
+        expected.put("wf_act_toggle_state_down", WiredEffectToggleFurni.class);
+        expected.put("wf_act_toggle_state_trg", WiredEffectToggleFurni.class);
+        // conditions
+        expected.put("wf_cnd_atleast_one_user_in_team", WiredConditionTeamMember.class);
+        expected.put("wf_cnd_bot_is_dancing", WiredConditionUserPerformsAction.class);
+        expected.put("wf_cnd_habbo_is_dancing", WiredConditionUserPerformsAction.class);
+        expected.put("wf_cnd_not_habbo_is_dancing", WiredConditionNotUserPerformsAction.class);
+        expected.put("wf_cnd_furni_state_pattern", WiredConditionMatchStatePosition.class);
+        expected.put("wf_cnd_is_state", WiredConditionMatchStatePosition.class);
+        expected.put("wf_cnd_trg_state_is", WiredConditionMatchStatePosition.class);
+        expected.put("wf_cnd_furnis_hv_avtrs_custom", WiredConditionFurniHaveHabbo.class);
+        expected.put("wf_cnd_x_habbos_on_furni", WiredConditionFurniHaveHabbo.class);
+        // triggers
+        expected.put("wf_trg_exact_keyword", WiredTriggerHabboSaysKeyword.class);
+        expected.put("wf_trg_says_command", WiredTriggerHabboSaysKeyword.class);
+        expected.put("wf_trg_habbo_says_command", WiredTriggerHabboSaysKeyword.class);
+        expected.put("wf_trg_other_collides_user", WiredTriggerCollision.class);
+        expected.put("wf_trg_user_collides_bot", WiredTriggerCollision.class);
+        expected.put("wf_trg_user_collides_other", WiredTriggerCollision.class);
+        // extra
+        expected.put("wf_xtra_one_condition", WiredExtraOrEval.class);
+
+        assertEquals(29, expected.size(), "expected exactly the 29 Phase-A parameter-variants");
+
+        for (Map.Entry<String, Class<?>> e : expected.entrySet()) {
+            ItemInteraction resolved = itemManager.getItemInteraction(e.getKey());
+            assertSame(e.getValue(), resolved.getType(),
+                    "variant '" + e.getKey() + "' must resolve to " + e.getValue().getSimpleName());
         }
     }
 

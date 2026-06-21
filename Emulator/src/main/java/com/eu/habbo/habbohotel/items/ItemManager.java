@@ -322,6 +322,9 @@ public class ItemManager {
         // wears-badge dialog but checks inventory ownership via BadgesComponent.hasBadge.
         this.interactionsList.add(new ItemInteraction("wf_cnd_habbo_owns_badge", WiredConditionHabboOwnsBadge.class));
         this.interactionsList.add(new ItemInteraction("wf_cnd_not_habbo_owns_badge", WiredConditionNotHabboOwnsBadge.class));
+        // Identity conditions reusing a meaningful existing dialog field (text = motto / int = item count).
+        this.interactionsList.add(new ItemInteraction("wf_cnd_motto_contains", WiredConditionMottoContains.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_habbo_has_at_least_x_items", WiredConditionHabboHasMinItems.class));
         this.interactionsList.add(new ItemInteraction("wf_act_call_stacks", WiredEffectTriggerStacks.class));
         this.interactionsList.add(new ItemInteraction("wf_act_neg_call_stack", WiredEffectNegativeTriggerStacks.class));
         this.interactionsList.add(new ItemInteraction("wf_act_neg_call_stacks", WiredEffectNegativeTriggerStacks.class));

@@ -177,6 +177,8 @@ class WiredAliasResolutionTest {
         assertSame(WiredConditionNotSameHeight.class, itemManager.getItemInteraction("wf_cnd_not_has_same_height").getType());
         assertSame(WiredConditionHabboOwnsBadge.class, itemManager.getItemInteraction("wf_cnd_habbo_owns_badge").getType());
         assertSame(WiredConditionNotHabboOwnsBadge.class, itemManager.getItemInteraction("wf_cnd_not_habbo_owns_badge").getType());
+        assertSame(WiredConditionMottoContains.class, itemManager.getItemInteraction("wf_cnd_motto_contains").getType());
+        assertSame(WiredConditionHabboHasMinItems.class, itemManager.getItemInteraction("wf_cnd_habbo_has_at_least_x_items").getType());
     }
 
     @Test

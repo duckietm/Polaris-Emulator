@@ -843,6 +843,86 @@ public class HabboStats implements Runnable {
         }
     }
 
+    /** True if the user has the given profile tag (case-insensitive). */
+    public boolean hasTag(String tag) {
+        if (tag == null || tag.isEmpty() || this.tags == null) {
+            return false;
+        }
+
+        for (String existing : this.tags) {
+            if (existing != null && existing.equalsIgnoreCase(tag)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Adds a profile tag (if absent) and persists it. Returns true if the tag set changed. */
+    public boolean addTag(String tag) {
+        if (tag == null) {
+            return false;
+        }
+
+        String trimmed = tag.trim();
+        if (trimmed.isEmpty() || this.hasTag(trimmed)) {
+            return false;
+        }
+
+        java.util.List<String> list = new java.util.ArrayList<>();
+        if (this.tags != null) {
+            for (String existing : this.tags) {
+                if (existing != null && !existing.isEmpty()) {
+                    list.add(existing);
+                }
+            }
+        }
+        list.add(trimmed);
+        this.tags = list.toArray(new String[0]);
+        this.persistTags();
+        return true;
+    }
+
+    /** Removes a profile tag (if present) and persists it. Returns true if the tag set changed. */
+    public boolean removeTag(String tag) {
+        if (tag == null || this.tags == null) {
+            return false;
+        }
+
+        String trimmed = tag.trim();
+        java.util.List<String> list = new java.util.ArrayList<>();
+        boolean removed = false;
+        for (String existing : this.tags) {
+            if (existing == null || existing.isEmpty()) {
+                continue;
+            }
+            if (existing.equalsIgnoreCase(trimmed)) {
+                removed = true;
+                continue;
+            }
+            list.add(existing);
+        }
+
+        if (!removed) {
+            return false;
+        }
+
+        this.tags = list.toArray(new String[0]);
+        this.persistTags();
+        return true;
+    }
+
+    private void persistTags() {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+             PreparedStatement statement = connection.prepareStatement("UPDATE users_settings SET `tags` = ? WHERE user_id = ? LIMIT 1")) {
+            statement.setString(1, this.tags == null ? "" : String.join(";", this.tags));
+            statement.setInt(2, this.habboInfo.getId());
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.error("Failed to persist users_settings.tags for user {}", this.habboInfo.getId(), e);
+        }
+    }
+
     private static String safeColumnString(ResultSet set, String column, String defaultValue) {
         try {
             String value = set.getString(column);

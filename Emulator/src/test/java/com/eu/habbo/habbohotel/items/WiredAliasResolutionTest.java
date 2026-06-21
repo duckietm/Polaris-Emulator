@@ -160,6 +160,9 @@ class WiredAliasResolutionTest {
         assertSame(WiredEffectToggleMoodlight.class, itemManager.getItemInteraction("wf_act_toggle_moodlight").getType());
         assertSame(WiredEffectResetHighscores.class, itemManager.getItemInteraction("wf_act_reset_highscores").getType());
         assertSame(WiredEffectMoveUserTiles.class, itemManager.getItemInteraction("wf_act_move_user_tiles").getType());
+        assertSame(WiredEffectAddTag.class, itemManager.getItemInteraction("wf_act_add_tag").getType());
+        assertSame(WiredEffectAddTag.class, itemManager.getItemInteraction("wf_act_add_tag_perm").getType());
+        assertSame(WiredEffectRemoveTag.class, itemManager.getItemInteraction("wf_act_remove_tag").getType());
         assertSame(WiredEffectAllUsersLeaveTeam.class, itemManager.getItemInteraction("wf_act_all_users_leave_team").getType());
     }
 
@@ -179,6 +182,8 @@ class WiredAliasResolutionTest {
         assertSame(WiredConditionNotHabboOwnsBadge.class, itemManager.getItemInteraction("wf_cnd_not_habbo_owns_badge").getType());
         assertSame(WiredConditionMottoContains.class, itemManager.getItemInteraction("wf_cnd_motto_contains").getType());
         assertSame(WiredConditionHabboHasMinItems.class, itemManager.getItemInteraction("wf_cnd_habbo_has_at_least_x_items").getType());
+        assertSame(WiredConditionHasTag.class, itemManager.getItemInteraction("wf_cnd_has_tag").getType());
+        assertSame(WiredConditionNotHasTag.class, itemManager.getItemInteraction("wf_cnd_not_has_tag").getType());
     }
 
     @Test

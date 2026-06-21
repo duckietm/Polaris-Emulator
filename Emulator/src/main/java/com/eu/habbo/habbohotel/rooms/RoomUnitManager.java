@@ -1068,8 +1068,8 @@ public class RoomUnitManager {
             pet.setRoom(null);
             pet.needsUpdate = true;
 
-            if (pet instanceof RideablePet) {
-                ((RideablePet) pet).setRider(null);
+            if (pet instanceof RideablePet rideablePet) {
+                rideablePet.setRider(null);
             }
 
             pet.run();  // Run synchronously to ensure DB is updated before returning pet to inventory
@@ -1115,8 +1115,8 @@ public class RoomUnitManager {
             pet.setRoom(null);
             pet.needsUpdate = true;
 
-            if (pet instanceof RideablePet) {
-                ((RideablePet) pet).setRider(null);
+            if (pet instanceof RideablePet rideablePet) {
+                rideablePet.setRider(null);
             }
 
             pet.run();  // Run synchronously to ensure DB is updated before room reload
@@ -1422,8 +1422,8 @@ public class RoomUnitManager {
                 try {
                     botIterator.advance();
 
-                    if (botIterator.value() instanceof VisitorBot) {
-                        ((VisitorBot) botIterator.value()).onUserEnter(habbo);
+                    if (botIterator.value() instanceof VisitorBot visitorBot) {
+                        visitorBot.onUserEnter(habbo);
                         break;
                     }
                 } catch (Exception e) {

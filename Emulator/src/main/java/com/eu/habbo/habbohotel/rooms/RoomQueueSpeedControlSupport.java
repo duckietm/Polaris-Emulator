@@ -65,8 +65,8 @@ public final class RoomQueueSpeedControlSupport {
                 continue;
             }
 
-            if (item instanceof InteractionQueueSpeedControl) {
-                ((InteractionQueueSpeedControl) item).ensureAnimationLoop(room);
+            if (item instanceof InteractionQueueSpeedControl control) {
+                control.ensureAnimationLoop(room);
             }
 
             return item;

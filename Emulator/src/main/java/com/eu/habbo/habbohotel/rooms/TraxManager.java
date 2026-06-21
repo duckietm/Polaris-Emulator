@@ -77,10 +77,10 @@ public class TraxManager implements Disposable {
                 if (set.next()) {
                     HabboItem jukebox = Emulator.getGameEnvironment().getItemManager().loadHabboItem(set.getInt("trax_item_id"));
                     if(jukebox != null) {
-                        if (!(jukebox instanceof InteractionJukeBox)) {
+                        if (!(jukebox instanceof InteractionJukeBox jb)) {
                             return null;
                         } else {
-                            return (InteractionJukeBox) jukebox;
+                            return jb;
                         }
                     }
                 }
@@ -103,13 +103,13 @@ public class TraxManager implements Disposable {
                 while (set.next()) {
                     HabboItem musicDisc = Emulator.getGameEnvironment().getItemManager().loadHabboItem(set.getInt("item_id"));
                     if(musicDisc != null) {
-                        if (!(musicDisc instanceof  InteractionMusicDisc) || musicDisc.getRoomId() != -1) {
+                        if (!(musicDisc instanceof  InteractionMusicDisc disc) || musicDisc.getRoomId() != -1) {
                             deleteSongFromPlaylist(this.jukeBox.getId(), musicDisc.getId());
                         } else {
-                            SoundTrack track = Emulator.getGameEnvironment().getItemManager().getSoundTrack(((InteractionMusicDisc) musicDisc).getSongId());
+                            SoundTrack track = Emulator.getGameEnvironment().getItemManager().getSoundTrack(disc.getSongId());
 
                             if (track != null) {
-                                this.songs.add((InteractionMusicDisc) musicDisc);
+                                this.songs.add(disc);
                                 this.totalLength += track.getLength();
                             }
                         }

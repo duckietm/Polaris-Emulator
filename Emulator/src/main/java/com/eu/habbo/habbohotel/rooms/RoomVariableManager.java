@@ -97,12 +97,12 @@ public class RoomVariableManager {
         }
 
         InteractionWiredExtra extra = this.getDefinitionExtra(definitionItemId);
-        if (extra instanceof WiredExtraVariableEcho) {
-            return ((WiredExtraVariableEcho) extra).getCurrentValue(this.room, this.room.getId());
+        if (extra instanceof WiredExtraVariableEcho echo) {
+            return echo.getCurrentValue(this.room, this.room.getId());
         }
 
-        if (extra instanceof WiredExtraVariableReference) {
-            WiredVariableReferenceSupport.SharedRoomAssignment assignment = WiredVariableReferenceSupport.getSharedRoomAssignment((WiredExtraVariableReference) extra);
+        if (extra instanceof WiredExtraVariableReference reference) {
+            WiredVariableReferenceSupport.SharedRoomAssignment assignment = WiredVariableReferenceSupport.getSharedRoomAssignment(reference);
             return assignment != null ? assignment.getValue() : 0;
         }
 
@@ -121,8 +121,8 @@ public class RoomVariableManager {
         }
 
         InteractionWiredExtra extra = this.getDefinitionExtra(definitionItemId);
-        if (extra instanceof WiredExtraVariableEcho) {
-            return ((WiredExtraVariableEcho) extra).getCreatedAt(this.room, this.room.getId());
+        if (extra instanceof WiredExtraVariableEcho echo) {
+            return echo.getCreatedAt(this.room, this.room.getId());
         }
 
         if (extra instanceof WiredExtraVariableReference) {
@@ -143,12 +143,12 @@ public class RoomVariableManager {
         }
 
         InteractionWiredExtra extra = this.getDefinitionExtra(definitionItemId);
-        if (extra instanceof WiredExtraVariableEcho) {
-            return ((WiredExtraVariableEcho) extra).getUpdatedAt(this.room, this.room.getId());
+        if (extra instanceof WiredExtraVariableEcho echo) {
+            return echo.getUpdatedAt(this.room, this.room.getId());
         }
 
-        if (extra instanceof WiredExtraVariableReference) {
-            WiredVariableReferenceSupport.SharedRoomAssignment assignment = WiredVariableReferenceSupport.getSharedRoomAssignment((WiredExtraVariableReference) extra);
+        if (extra instanceof WiredExtraVariableReference reference) {
+            WiredVariableReferenceSupport.SharedRoomAssignment assignment = WiredVariableReferenceSupport.getSharedRoomAssignment(reference);
             return assignment != null ? assignment.getUpdatedAt() : 0;
         }
 
@@ -167,8 +167,8 @@ public class RoomVariableManager {
         }
 
         InteractionWiredExtra extra = this.getDefinitionExtra(definitionItemId);
-        if (extra instanceof WiredExtraVariableEcho) {
-            return ((WiredExtraVariableEcho) extra).hasVariable(this.room, this.room.getId());
+        if (extra instanceof WiredExtraVariableEcho echo) {
+            return echo.hasVariable(this.room, this.room.getId());
         }
 
         return this.getDefinitionInfo(definitionItemId) != null;
@@ -186,8 +186,8 @@ public class RoomVariableManager {
 
         Integer previousValue = definitionInfo.hasValue() ? this.getCurrentValue(definitionItemId) : null;
 
-        if (extra instanceof WiredExtraVariableEcho) {
-            boolean changed = ((WiredExtraVariableEcho) extra).updateValue(this.room, this.room.getId(), value);
+        if (extra instanceof WiredExtraVariableEcho echo) {
+            boolean changed = echo.updateValue(this.room, this.room.getId(), value);
             boolean shouldEmit = changed || (definitionInfo.hasValue() && previousValue != null && previousValue == value);
 
             if (shouldEmit) {
@@ -202,8 +202,8 @@ public class RoomVariableManager {
             return changed;
         }
 
-        if (extra instanceof WiredExtraVariableReference) {
-            boolean changed = WiredVariableReferenceSupport.updateSharedRoomVariable((WiredExtraVariableReference) extra, value);
+        if (extra instanceof WiredExtraVariableReference reference) {
+            boolean changed = WiredVariableReferenceSupport.updateSharedRoomVariable(reference, value);
             boolean shouldEmit = changed || (definitionInfo.hasValue() && previousValue != null && previousValue == value);
 
             if (shouldEmit) {
@@ -262,8 +262,8 @@ public class RoomVariableManager {
         Integer previousValue = definitionInfo.hasValue() ? this.getCurrentValue(definitionItemId) : null;
 
         InteractionWiredExtra extra = this.getDefinitionExtra(definitionItemId);
-        if (extra instanceof WiredExtraVariableEcho) {
-            boolean changed = ((WiredExtraVariableEcho) extra).removeValue(this.room, this.room.getId());
+        if (extra instanceof WiredExtraVariableEcho echo) {
+            boolean changed = echo.removeValue(this.room, this.room.getId());
 
             if (changed) {
                 Integer currentValue = definitionInfo.hasValue() ? this.getCurrentValue(definitionItemId) : null;
@@ -277,8 +277,8 @@ public class RoomVariableManager {
             return changed;
         }
 
-        if (extra instanceof WiredExtraVariableReference) {
-            boolean changed = WiredVariableReferenceSupport.removeSharedRoomVariable((WiredExtraVariableReference) extra);
+        if (extra instanceof WiredExtraVariableReference reference) {
+            boolean changed = WiredVariableReferenceSupport.removeSharedRoomVariable(reference);
 
             if (changed) {
                 Integer currentValue = definitionInfo.hasValue() ? this.getCurrentValue(definitionItemId) : null;
@@ -472,9 +472,7 @@ public class RoomVariableManager {
         List<WiredExtraRoomVariable> result = new ArrayList<>();
 
         for (InteractionWiredExtra extra : extras) {
-            if (extra instanceof WiredExtraRoomVariable) {
-                WiredExtraRoomVariable definition = (WiredExtraRoomVariable) extra;
-
+            if (extra instanceof WiredExtraRoomVariable definition) {
                 if (!hasVisibleDefinitionName(definition.getVariableName())) {
                     continue;
                 }
@@ -523,9 +521,7 @@ public class RoomVariableManager {
     public WiredVariableDefinitionInfo getDefinitionInfo(int definitionItemId) {
         InteractionWiredExtra extra = this.getDefinitionExtra(definitionItemId);
 
-        if (extra instanceof WiredExtraRoomVariable) {
-            WiredExtraRoomVariable definition = (WiredExtraRoomVariable) extra;
-
+        if (extra instanceof WiredExtraRoomVariable definition) {
             if (!hasVisibleDefinitionName(definition.getVariableName())) {
                 return null;
             }
@@ -540,9 +536,7 @@ public class RoomVariableManager {
             );
         }
 
-        if (extra instanceof WiredExtraVariableReference && ((WiredExtraVariableReference) extra).isRoomReference()) {
-            WiredExtraVariableReference reference = (WiredExtraVariableReference) extra;
-
+        if (extra instanceof WiredExtraVariableReference reference && reference.isRoomReference()) {
             if (!hasVisibleDefinitionName(reference.getVariableName())) {
                 return null;
             }
@@ -550,8 +544,8 @@ public class RoomVariableManager {
             return new WiredVariableDefinitionInfo(reference.getId(), reference.getVariableName(), reference.hasValue(), reference.getAvailability(), false, reference.isReadOnly());
         }
 
-        if (extra instanceof WiredExtraVariableEcho && ((WiredExtraVariableEcho) extra).isRoomEcho()) {
-            WiredVariableDefinitionInfo info = ((WiredExtraVariableEcho) extra).createDefinitionInfo(this.room);
+        if (extra instanceof WiredExtraVariableEcho echo && echo.isRoomEcho()) {
+            WiredVariableDefinitionInfo info = echo.createDefinitionInfo(this.room);
             return (info != null && hasVisibleDefinitionName(info.getName())) ? info : null;
         }
 
@@ -561,11 +555,11 @@ public class RoomVariableManager {
     private WiredExtraRoomVariable getDefinition(int definitionItemId) {
         InteractionWiredExtra extra = this.getDefinitionExtra(definitionItemId);
 
-        if (!(extra instanceof WiredExtraRoomVariable)) {
+        if (!(extra instanceof WiredExtraRoomVariable definition)) {
             return null;
         }
 
-        return (WiredExtraRoomVariable) extra;
+        return definition;
     }
 
     private InteractionWiredExtra getDefinitionExtra(int definitionItemId) {
@@ -578,7 +572,7 @@ public class RoomVariableManager {
 
     private boolean isReferenceDefinition(int definitionItemId) {
         InteractionWiredExtra extra = this.getDefinitionExtra(definitionItemId);
-        return extra instanceof WiredExtraVariableReference && ((WiredExtraVariableReference) extra).isRoomReference();
+        return extra instanceof WiredExtraVariableReference reference && reference.isRoomReference();
     }
 
     private List<WiredExtraVariableReference> getRoomReferences() {
@@ -589,9 +583,7 @@ public class RoomVariableManager {
         List<WiredExtraVariableReference> result = new ArrayList<>();
 
         for (InteractionWiredExtra extra : this.room.getRoomSpecialTypes().getExtras()) {
-            if (extra instanceof WiredExtraVariableReference && ((WiredExtraVariableReference) extra).isRoomReference()) {
-                WiredExtraVariableReference reference = (WiredExtraVariableReference) extra;
-
+            if (extra instanceof WiredExtraVariableReference reference && reference.isRoomReference()) {
                 if (!hasVisibleDefinitionName(reference.getVariableName())) {
                     continue;
                 }
@@ -612,9 +604,7 @@ public class RoomVariableManager {
         List<WiredExtraVariableEcho> result = new ArrayList<>();
 
         for (InteractionWiredExtra extra : this.room.getRoomSpecialTypes().getExtras()) {
-            if (extra instanceof WiredExtraVariableEcho && ((WiredExtraVariableEcho) extra).isRoomEcho()) {
-                WiredExtraVariableEcho echo = (WiredExtraVariableEcho) extra;
-
+            if (extra instanceof WiredExtraVariableEcho echo && echo.isRoomEcho()) {
                 if (!hasVisibleDefinitionName(echo.getVariableName())) {
                     continue;
                 }
@@ -633,13 +623,12 @@ public class RoomVariableManager {
         }
 
         InteractionWiredExtra extra = this.getDefinitionExtra(definitionItemId);
-        if (extra instanceof WiredExtraVariableReference) {
-            WiredVariableReferenceSupport.SharedRoomAssignment assignment = WiredVariableReferenceSupport.getSharedRoomAssignment((WiredExtraVariableReference) extra);
+        if (extra instanceof WiredExtraVariableReference reference) {
+            WiredVariableReferenceSupport.SharedRoomAssignment assignment = WiredVariableReferenceSupport.getSharedRoomAssignment(reference);
             return (assignment != null) ? new VariableAssignment(assignment.getValue(), 0, assignment.getUpdatedAt()) : null;
         }
 
-        if (extra instanceof WiredExtraVariableEcho) {
-            WiredExtraVariableEcho echo = (WiredExtraVariableEcho) extra;
+        if (extra instanceof WiredExtraVariableEcho echo) {
             if (!echo.hasVariable(this.room, this.room.getId())) {
                 return null;
             }

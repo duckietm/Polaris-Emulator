@@ -58,9 +58,9 @@ public class RoomRollerManager {
         // Process pyramids
         int currentTime = (int) (cycleTimestamp / 1000);
         for (HabboItem pyramid : this.room.getRoomSpecialTypes().getItemsOfType(InteractionPyramid.class)) {
-            if (pyramid instanceof InteractionPyramid) {
-                if (((InteractionPyramid) pyramid).getNextChange() < currentTime) {
-                    ((InteractionPyramid) pyramid).change(this.room);
+            if (pyramid instanceof InteractionPyramid p) {
+                if (p.getNextChange() < currentTime) {
+                    p.change(this.room);
                 }
             }
         }
@@ -260,7 +260,7 @@ public class RoomRollerManager {
         for (RoomUnit unit : rollerTile.getUnits()) {
             if (unit.getRoomUnitType() == RoomUnitType.PET) {
                 Pet pet = this.room.getPet(unit);
-                if (pet instanceof RideablePet && ((RideablePet) pet).getRider() != null) {
+                if (pet instanceof RideablePet ridable && ridable.getRider() != null) {
                     unitsOnTile.remove(unit);
                 }
             }

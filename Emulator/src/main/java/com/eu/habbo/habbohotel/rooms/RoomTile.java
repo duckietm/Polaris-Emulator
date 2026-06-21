@@ -97,9 +97,9 @@ public class RoomTile {
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof RoomTile &&
-                ((RoomTile) o).x == this.x &&
-                ((RoomTile) o).y == this.y;
+        return o instanceof RoomTile r &&
+                r.x == this.x &&
+                r.y == this.y;
     }
 
     public RoomTile copy() {

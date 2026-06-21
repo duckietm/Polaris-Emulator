@@ -993,8 +993,8 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
           }
 
           for (InteractionGameTimer timer : this.getRoomSpecialTypes().getGameTimers().values()) {
-            if (timer instanceof InteractionGameUpCounter) {
-              ((InteractionGameUpCounter) timer).resetOnRoomUnload(this);
+            if (timer instanceof InteractionGameUpCounter upCounter) {
+              upCounter.resetOnRoomUnload(this);
             } else {
               timer.setRunning(false);
             }
@@ -2632,8 +2632,8 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
               .getTilesAt(this.layout.getTile(item.getX(), item.getY()), item.getBaseItem().getWidth(),
                       item.getBaseItem().getLength(), item.getRotation()));
 
-      if (item instanceof InteractionMultiHeight) {
-        ((InteractionMultiHeight) item).updateUnitsOnItem(this);
+      if (item instanceof InteractionMultiHeight multiHeight) {
+        multiHeight.updateUnitsOnItem(this);
       }
     }
 
@@ -2709,8 +2709,8 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
         HabboItem habboItem = iterator.value();
 
-        if (habboItem instanceof InteractionGuildFurni) {
-          if (((InteractionGuildFurni) habboItem).getGuildId() == guild.getId()) {
+        if (habboItem instanceof InteractionGuildFurni guildFurni) {
+          if (guildFurni.getGuildId() == guild.getId()) {
             this.updateItem(habboItem);
           }
         }

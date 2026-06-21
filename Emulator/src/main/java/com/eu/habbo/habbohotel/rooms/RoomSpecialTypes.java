@@ -405,8 +405,7 @@ public class RoomSpecialTypes {
         int count = 0;
         for (InteractionWiredEffect effect : senders) {
             if (excludeSender != null && effect.getId() == excludeSender.getId()) continue;
-            if (effect instanceof WiredEffectSendSignal) {
-                WiredEffectSendSignal sender = (WiredEffectSendSignal) effect;
+            if (effect instanceof WiredEffectSendSignal sender) {
                 if (sender.hasPickedItem(receiverItemId)) {
                     count++;
                 }
@@ -433,9 +432,8 @@ public class RoomSpecialTypes {
 
         for (InteractionWiredEffect effect : senders) {
             if (excludeSender != null && effect.getId() == excludeSender.getId()) continue;
-            if (!(effect instanceof WiredEffectSendSignal)) continue;
+            if (!(effect instanceof WiredEffectSendSignal sender)) continue;
 
-            WiredEffectSendSignal sender = (WiredEffectSendSignal) effect;
             for (Integer receiverItemId : receiverItemIds) {
                 if (receiverItemId == null) continue;
                 if (!sender.hasPickedItem(receiverItemId)) continue;

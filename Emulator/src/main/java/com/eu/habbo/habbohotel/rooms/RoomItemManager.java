@@ -118,8 +118,8 @@ public class RoomItemManager {
                     try {
                         HabboItem item = this.getHabboItem(set.getInt("id"));
 
-                        if (item instanceof InteractionWired) {
-                            ((InteractionWired) item).loadWiredData(set, this.room);
+                        if (item instanceof InteractionWired wired) {
+                            wired.loadWiredData(set, this.room);
                         }
                     } catch (SQLException e) {
                         LOGGER.error("Caught SQL exception", e);
@@ -632,48 +632,48 @@ public class RoomItemManager {
         synchronized (specialTypes) {
             // Register with tick service for time-based wired triggers (new 50ms tick system)
             // This replaces ICycleable for wired items
-            if (item instanceof WiredTickable) {
-                WiredManager.registerTickable(this.room, (WiredTickable) item);
+            if (item instanceof WiredTickable tickable) {
+                WiredManager.registerTickable(this.room, tickable);
             }
             // Still register non-wired ICycleable items with the old system
-            else if (item instanceof ICycleable) {
-                specialTypes.addCycleTask((ICycleable) item);
+            else if (item instanceof ICycleable cycleable) {
+                specialTypes.addCycleTask(cycleable);
             }
 
-            if (item instanceof InteractionWiredTrigger) {
-                specialTypes.addTrigger((InteractionWiredTrigger) item);
+            if (item instanceof InteractionWiredTrigger trigger) {
+                specialTypes.addTrigger(trigger);
                 isWiredItem = true;
-            } else if (item instanceof InteractionWiredEffect) {
-                specialTypes.addEffect((InteractionWiredEffect) item);
+            } else if (item instanceof InteractionWiredEffect effect) {
+                specialTypes.addEffect(effect);
                 isWiredItem = true;
-            } else if (item instanceof InteractionWiredCondition) {
-                specialTypes.addCondition((InteractionWiredCondition) item);
+            } else if (item instanceof InteractionWiredCondition condition) {
+                specialTypes.addCondition(condition);
                 isWiredItem = true;
-            } else if (item instanceof InteractionWiredExtra) {
-                specialTypes.addExtra((InteractionWiredExtra) item);
+            } else if (item instanceof InteractionWiredExtra extra) {
+                specialTypes.addExtra(extra);
                 isWiredItem = true;
-            } else if (item instanceof InteractionBattleBanzaiTeleporter) {
-                specialTypes.addBanzaiTeleporter((InteractionBattleBanzaiTeleporter) item);
-            } else if (item instanceof InteractionRoller) {
-                specialTypes.addRoller((InteractionRoller) item);
-            } else if (item instanceof InteractionGameScoreboard) {
-                specialTypes.addGameScoreboard((InteractionGameScoreboard) item);
-            } else if (item instanceof InteractionGameGate) {
-                specialTypes.addGameGate((InteractionGameGate) item);
-            } else if (item instanceof InteractionGameTimer) {
-                specialTypes.addGameTimer((InteractionGameTimer) item);
-            } else if (item instanceof InteractionFreezeExitTile) {
-                specialTypes.addFreezeExitTile((InteractionFreezeExitTile) item);
-            } else if (item instanceof InteractionNest) {
-                specialTypes.addNest((InteractionNest) item);
-            } else if (item instanceof InteractionPetDrink) {
-                specialTypes.addPetDrink((InteractionPetDrink) item);
-            } else if (item instanceof InteractionPetFood) {
-                specialTypes.addPetFood((InteractionPetFood) item);
-            } else if (item instanceof InteractionPetToy) {
-                specialTypes.addPetToy((InteractionPetToy) item);
-            } else if (item instanceof InteractionPetTree) {
-                specialTypes.addPetTree((InteractionPetTree) item);
+            } else if (item instanceof InteractionBattleBanzaiTeleporter teleporter) {
+                specialTypes.addBanzaiTeleporter(teleporter);
+            } else if (item instanceof InteractionRoller roller) {
+                specialTypes.addRoller(roller);
+            } else if (item instanceof InteractionGameScoreboard scoreboard) {
+                specialTypes.addGameScoreboard(scoreboard);
+            } else if (item instanceof InteractionGameGate gate) {
+                specialTypes.addGameGate(gate);
+            } else if (item instanceof InteractionGameTimer timer) {
+                specialTypes.addGameTimer(timer);
+            } else if (item instanceof InteractionFreezeExitTile freezeExitTile) {
+                specialTypes.addFreezeExitTile(freezeExitTile);
+            } else if (item instanceof InteractionNest nest) {
+                specialTypes.addNest(nest);
+            } else if (item instanceof InteractionPetDrink petDrink) {
+                specialTypes.addPetDrink(petDrink);
+            } else if (item instanceof InteractionPetFood petFood) {
+                specialTypes.addPetFood(petFood);
+            } else if (item instanceof InteractionPetToy petToy) {
+                specialTypes.addPetToy(petToy);
+            } else if (item instanceof InteractionPetTree petTree) {
+                specialTypes.addPetTree(petTree);
             } else if (item instanceof InteractionMoodLight ||
                     item instanceof InteractionPyramid ||
                     item instanceof InteractionMusicDisc ||
@@ -775,26 +775,26 @@ public class RoomItemManager {
         boolean isWiredItem = false;
 
         // Unregister from tick service for time-based wired triggers (new 50ms tick system)
-        if (item instanceof WiredTickable) {
-            WiredManager.unregisterTickable(this.room, (WiredTickable) item);
+        if (item instanceof WiredTickable tickable) {
+            WiredManager.unregisterTickable(this.room, tickable);
         }
         // Still handle non-wired ICycleable items with the old system
-        else if (item instanceof ICycleable) {
-            specialTypes.removeCycleTask((ICycleable) item);
+        else if (item instanceof ICycleable cycleable) {
+            specialTypes.removeCycleTask(cycleable);
         }
 
-        if (item instanceof InteractionBattleBanzaiTeleporter) {
-            specialTypes.removeBanzaiTeleporter((InteractionBattleBanzaiTeleporter) item);
-        } else if (item instanceof InteractionWiredTrigger) {
-            specialTypes.removeTrigger((InteractionWiredTrigger) item);
+        if (item instanceof InteractionBattleBanzaiTeleporter teleporter) {
+            specialTypes.removeBanzaiTeleporter(teleporter);
+        } else if (item instanceof InteractionWiredTrigger trigger) {
+            specialTypes.removeTrigger(trigger);
             isWiredItem = true;
-        } else if (item instanceof InteractionWiredEffect) {
-            specialTypes.removeEffect((InteractionWiredEffect) item);
+        } else if (item instanceof InteractionWiredEffect effect) {
+            specialTypes.removeEffect(effect);
             isWiredItem = true;
-        } else if (item instanceof InteractionWiredCondition) {
-            specialTypes.removeCondition((InteractionWiredCondition) item);
+        } else if (item instanceof InteractionWiredCondition condition) {
+            specialTypes.removeCondition(condition);
             isWiredItem = true;
-        } else if (item instanceof InteractionWiredExtra) {
+        } else if (item instanceof InteractionWiredExtra extra) {
             boolean removedContextDefinition = false;
             boolean removedVariableTextConnector = false;
             if (item instanceof WiredExtraUserVariable) {
@@ -807,14 +807,13 @@ public class RoomItemManager {
                 removedContextDefinition = true;
             } else if (item instanceof WiredExtraVariableTextConnector) {
                 removedVariableTextConnector = true;
-            } else if (item instanceof WiredExtraVariableReference) {
-                if (((WiredExtraVariableReference) item).isRoomReference()) {
+            } else if (item instanceof WiredExtraVariableReference reference) {
+                if (reference.isRoomReference()) {
                     this.room.getRoomVariableManager().removeDefinition(item.getId());
                 } else {
                     this.room.getUserVariableManager().removeDefinition(item.getId());
                 }
-            } else if (item instanceof WiredExtraVariableEcho) {
-                WiredExtraVariableEcho echo = (WiredExtraVariableEcho) item;
+            } else if (item instanceof WiredExtraVariableEcho echo) {
 
                 if (echo.isRoomEcho()) {
                     this.room.getRoomVariableManager().removeDefinition(item.getId());
@@ -824,31 +823,31 @@ public class RoomItemManager {
                     this.room.getUserVariableManager().removeDefinition(item.getId());
                 }
             }
-            specialTypes.removeExtra((InteractionWiredExtra) item);
+            specialTypes.removeExtra(extra);
             if (removedContextDefinition || removedVariableTextConnector) {
                 WiredContextVariableSupport.broadcastDefinitions(this.room);
             }
             isWiredItem = true;
-        } else if (item instanceof InteractionRoller) {
-            specialTypes.removeRoller((InteractionRoller) item);
-        } else if (item instanceof InteractionGameScoreboard) {
-            specialTypes.removeScoreboard((InteractionGameScoreboard) item);
-        } else if (item instanceof InteractionGameGate) {
-            specialTypes.removeGameGate((InteractionGameGate) item);
-        } else if (item instanceof InteractionGameTimer) {
-            specialTypes.removeGameTimer((InteractionGameTimer) item);
-        } else if (item instanceof InteractionFreezeExitTile) {
-            specialTypes.removeFreezeExitTile((InteractionFreezeExitTile) item);
-        } else if (item instanceof InteractionNest) {
-            specialTypes.removeNest((InteractionNest) item);
-        } else if (item instanceof InteractionPetDrink) {
-            specialTypes.removePetDrink((InteractionPetDrink) item);
-        } else if (item instanceof InteractionPetFood) {
-            specialTypes.removePetFood((InteractionPetFood) item);
-        } else if (item instanceof InteractionPetToy) {
-            specialTypes.removePetToy((InteractionPetToy) item);
-        } else if (item instanceof InteractionPetTree) {
-            specialTypes.removePetTree((InteractionPetTree) item);
+        } else if (item instanceof InteractionRoller roller) {
+            specialTypes.removeRoller(roller);
+        } else if (item instanceof InteractionGameScoreboard scoreboard) {
+            specialTypes.removeScoreboard(scoreboard);
+        } else if (item instanceof InteractionGameGate gate) {
+            specialTypes.removeGameGate(gate);
+        } else if (item instanceof InteractionGameTimer timer) {
+            specialTypes.removeGameTimer(timer);
+        } else if (item instanceof InteractionFreezeExitTile freezeExitTile) {
+            specialTypes.removeFreezeExitTile(freezeExitTile);
+        } else if (item instanceof InteractionNest nest) {
+            specialTypes.removeNest(nest);
+        } else if (item instanceof InteractionPetDrink petDrink) {
+            specialTypes.removePetDrink(petDrink);
+        } else if (item instanceof InteractionPetFood petFood) {
+            specialTypes.removePetFood(petFood);
+        } else if (item instanceof InteractionPetToy petToy) {
+            specialTypes.removePetToy(petToy);
+        } else if (item instanceof InteractionPetTree petTree) {
+            specialTypes.removePetTree(petTree);
         } else if (item instanceof InteractionMoodLight ||
                 item instanceof InteractionPyramid ||
                 item instanceof InteractionMusicDisc ||
@@ -928,8 +927,8 @@ public class RoomItemManager {
                             item.getBaseItem().getWidth(), item.getBaseItem().getLength(),
                             item.getRotation()));
 
-            if (item instanceof InteractionMultiHeight) {
-                ((InteractionMultiHeight) item).updateUnitsOnItem(this.room);
+            if (item instanceof InteractionMultiHeight multiHeight) {
+                multiHeight.updateUnitsOnItem(this.room);
             }
         }
     }
@@ -1722,17 +1721,17 @@ public class RoomItemManager {
 
         // Update wired spatial index + invalidate cache
         if (oldLocation != null) {
-            if (item instanceof InteractionWiredTrigger) {
-                this.room.getRoomSpecialTypes().updateTriggerLocation((InteractionWiredTrigger) item, oldLocation.x, oldLocation.y);
+            if (item instanceof InteractionWiredTrigger trigger) {
+                this.room.getRoomSpecialTypes().updateTriggerLocation(trigger, oldLocation.x, oldLocation.y);
                 WiredManager.invalidateRoom(this.room);
-            } else if (item instanceof InteractionWiredEffect) {
-                this.room.getRoomSpecialTypes().updateEffectLocation((InteractionWiredEffect) item, oldLocation.x, oldLocation.y);
+            } else if (item instanceof InteractionWiredEffect effect) {
+                this.room.getRoomSpecialTypes().updateEffectLocation(effect, oldLocation.x, oldLocation.y);
                 WiredManager.invalidateRoom(this.room);
-            } else if (item instanceof InteractionWiredCondition) {
-                this.room.getRoomSpecialTypes().updateConditionLocation((InteractionWiredCondition) item, oldLocation.x, oldLocation.y);
+            } else if (item instanceof InteractionWiredCondition condition) {
+                this.room.getRoomSpecialTypes().updateConditionLocation(condition, oldLocation.x, oldLocation.y);
                 WiredManager.invalidateRoom(this.room);
-            } else if (item instanceof InteractionWiredExtra) {
-                this.room.getRoomSpecialTypes().updateExtraLocation((InteractionWiredExtra) item, oldLocation.x, oldLocation.y);
+            } else if (item instanceof InteractionWiredExtra extra) {
+                this.room.getRoomSpecialTypes().updateExtraLocation(extra, oldLocation.x, oldLocation.y);
                 WiredManager.invalidateRoom(this.room);
             }
         }
@@ -1877,17 +1876,17 @@ public class RoomItemManager {
         }
 
         if (oldLocation != null) {
-            if (item instanceof InteractionWiredTrigger) {
-                this.room.getRoomSpecialTypes().updateTriggerLocation((InteractionWiredTrigger) item, oldLocation.x, oldLocation.y);
+            if (item instanceof InteractionWiredTrigger trigger) {
+                this.room.getRoomSpecialTypes().updateTriggerLocation(trigger, oldLocation.x, oldLocation.y);
                 WiredManager.invalidateRoom(this.room);
-            } else if (item instanceof InteractionWiredEffect) {
-                this.room.getRoomSpecialTypes().updateEffectLocation((InteractionWiredEffect) item, oldLocation.x, oldLocation.y);
+            } else if (item instanceof InteractionWiredEffect effect) {
+                this.room.getRoomSpecialTypes().updateEffectLocation(effect, oldLocation.x, oldLocation.y);
                 WiredManager.invalidateRoom(this.room);
-            } else if (item instanceof InteractionWiredCondition) {
-                this.room.getRoomSpecialTypes().updateConditionLocation((InteractionWiredCondition) item, oldLocation.x, oldLocation.y);
+            } else if (item instanceof InteractionWiredCondition condition) {
+                this.room.getRoomSpecialTypes().updateConditionLocation(condition, oldLocation.x, oldLocation.y);
                 WiredManager.invalidateRoom(this.room);
-            } else if (item instanceof InteractionWiredExtra) {
-                this.room.getRoomSpecialTypes().updateExtraLocation((InteractionWiredExtra) item, oldLocation.x, oldLocation.y);
+            } else if (item instanceof InteractionWiredExtra extra) {
+                this.room.getRoomSpecialTypes().updateExtraLocation(extra, oldLocation.x, oldLocation.y);
                 WiredManager.invalidateRoom(this.room);
             }
         }
@@ -2105,17 +2104,17 @@ public class RoomItemManager {
         }
 
         // Update wired spatial index and invalidate cache when wired items are moved
-        if (item instanceof InteractionWiredTrigger) {
-            this.room.getRoomSpecialTypes().updateTriggerLocation((InteractionWiredTrigger) item, oldLocation.x, oldLocation.y);
+        if (item instanceof InteractionWiredTrigger trigger) {
+            this.room.getRoomSpecialTypes().updateTriggerLocation(trigger, oldLocation.x, oldLocation.y);
             WiredManager.invalidateRoom(this.room);
-        } else if (item instanceof InteractionWiredEffect) {
-            this.room.getRoomSpecialTypes().updateEffectLocation((InteractionWiredEffect) item, oldLocation.x, oldLocation.y);
+        } else if (item instanceof InteractionWiredEffect effect) {
+            this.room.getRoomSpecialTypes().updateEffectLocation(effect, oldLocation.x, oldLocation.y);
             WiredManager.invalidateRoom(this.room);
-        } else if (item instanceof InteractionWiredCondition) {
-            this.room.getRoomSpecialTypes().updateConditionLocation((InteractionWiredCondition) item, oldLocation.x, oldLocation.y);
+        } else if (item instanceof InteractionWiredCondition condition) {
+            this.room.getRoomSpecialTypes().updateConditionLocation(condition, oldLocation.x, oldLocation.y);
             WiredManager.invalidateRoom(this.room);
-        } else if (item instanceof InteractionWiredExtra) {
-            this.room.getRoomSpecialTypes().updateExtraLocation((InteractionWiredExtra) item, oldLocation.x, oldLocation.y);
+        } else if (item instanceof InteractionWiredExtra extra) {
+            this.room.getRoomSpecialTypes().updateExtraLocation(extra, oldLocation.x, oldLocation.y);
             WiredManager.invalidateRoom(this.room);
         }
 
@@ -2306,17 +2305,17 @@ public class RoomItemManager {
             item.setZ(Room.MAXIMUM_FURNI_HEIGHT);
         }
 
-        if (item instanceof InteractionWiredTrigger) {
-            this.room.getRoomSpecialTypes().updateTriggerLocation((InteractionWiredTrigger) item, oldLocation.x, oldLocation.y);
+        if (item instanceof InteractionWiredTrigger trigger) {
+            this.room.getRoomSpecialTypes().updateTriggerLocation(trigger, oldLocation.x, oldLocation.y);
             WiredManager.invalidateRoom(this.room);
-        } else if (item instanceof InteractionWiredEffect) {
-            this.room.getRoomSpecialTypes().updateEffectLocation((InteractionWiredEffect) item, oldLocation.x, oldLocation.y);
+        } else if (item instanceof InteractionWiredEffect effect) {
+            this.room.getRoomSpecialTypes().updateEffectLocation(effect, oldLocation.x, oldLocation.y);
             WiredManager.invalidateRoom(this.room);
-        } else if (item instanceof InteractionWiredCondition) {
-            this.room.getRoomSpecialTypes().updateConditionLocation((InteractionWiredCondition) item, oldLocation.x, oldLocation.y);
+        } else if (item instanceof InteractionWiredCondition condition) {
+            this.room.getRoomSpecialTypes().updateConditionLocation(condition, oldLocation.x, oldLocation.y);
             WiredManager.invalidateRoom(this.room);
-        } else if (item instanceof InteractionWiredExtra) {
-            this.room.getRoomSpecialTypes().updateExtraLocation((InteractionWiredExtra) item, oldLocation.x, oldLocation.y);
+        } else if (item instanceof InteractionWiredExtra extra) {
+            this.room.getRoomSpecialTypes().updateExtraLocation(extra, oldLocation.x, oldLocation.y);
             WiredManager.invalidateRoom(this.room);
         }
 

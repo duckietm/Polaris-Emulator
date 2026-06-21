@@ -115,8 +115,8 @@ public class RoomFurniVariableManager {
         boolean hadBefore = this.hasVariable(furni.getId(), definitionItemId);
         Integer previousValue = (definitionInfo.hasValue() && hadBefore) ? this.getCurrentValue(furni.getId(), definitionItemId) : null;
 
-        if (extra instanceof WiredExtraVariableEcho) {
-            boolean changed = ((WiredExtraVariableEcho) extra).assignValue(this.room, furni.getId(), definitionInfo.hasValue() ? value : null, overrideExisting);
+        if (extra instanceof WiredExtraVariableEcho echo) {
+            boolean changed = echo.assignValue(this.room, furni.getId(), definitionInfo.hasValue() ? value : null, overrideExisting);
             boolean shouldEmit = changed || (definitionInfo.hasValue() && hadBefore && overrideExisting && Objects.equals(previousValue, value));
 
             if (shouldEmit) {
@@ -190,8 +190,8 @@ public class RoomFurniVariableManager {
         Integer previousValue = hadBefore ? this.getCurrentValue(furniId, definitionItemId) : null;
 
         InteractionWiredExtra extra = this.getDefinitionExtra(definitionItemId);
-        if (extra instanceof WiredExtraVariableEcho) {
-            boolean changed = ((WiredExtraVariableEcho) extra).updateValue(this.room, furniId, value);
+        if (extra instanceof WiredExtraVariableEcho echo) {
+            boolean changed = echo.updateValue(this.room, furniId, value);
             boolean shouldEmit = changed || (hadBefore && Objects.equals(previousValue, value));
 
             if (shouldEmit) {
@@ -255,8 +255,8 @@ public class RoomFurniVariableManager {
         }
 
         InteractionWiredExtra extra = this.getDefinitionExtra(definitionItemId);
-        if (extra instanceof WiredExtraVariableEcho) {
-            return ((WiredExtraVariableEcho) extra).getCurrentValue(this.room, furniId);
+        if (extra instanceof WiredExtraVariableEcho echo) {
+            return echo.getCurrentValue(this.room, furniId);
         }
 
         ConcurrentHashMap<Integer, VariableAssignment> assignments = this.activeAssignmentsByFurniId.get(furniId);
@@ -288,8 +288,8 @@ public class RoomFurniVariableManager {
         }
 
         InteractionWiredExtra extra = this.getDefinitionExtra(definitionItemId);
-        if (extra instanceof WiredExtraVariableEcho) {
-            return ((WiredExtraVariableEcho) extra).getCreatedAt(this.room, furniId);
+        if (extra instanceof WiredExtraVariableEcho echo) {
+            return echo.getCreatedAt(this.room, furniId);
         }
 
         ConcurrentHashMap<Integer, VariableAssignment> assignments = this.activeAssignmentsByFurniId.get(furniId);
@@ -316,8 +316,8 @@ public class RoomFurniVariableManager {
         }
 
         InteractionWiredExtra extra = this.getDefinitionExtra(definitionItemId);
-        if (extra instanceof WiredExtraVariableEcho) {
-            return ((WiredExtraVariableEcho) extra).getUpdatedAt(this.room, furniId);
+        if (extra instanceof WiredExtraVariableEcho echo) {
+            return echo.getUpdatedAt(this.room, furniId);
         }
 
         ConcurrentHashMap<Integer, VariableAssignment> assignments = this.activeAssignmentsByFurniId.get(furniId);
@@ -343,8 +343,8 @@ public class RoomFurniVariableManager {
         }
 
         InteractionWiredExtra extra = this.getDefinitionExtra(definitionItemId);
-        if (extra instanceof WiredExtraVariableEcho) {
-            return ((WiredExtraVariableEcho) extra).hasVariable(this.room, furniId);
+        if (extra instanceof WiredExtraVariableEcho echo) {
+            return echo.hasVariable(this.room, furniId);
         }
 
         ConcurrentHashMap<Integer, VariableAssignment> assignments = this.activeAssignmentsByFurniId.get(furniId);
@@ -368,8 +368,8 @@ public class RoomFurniVariableManager {
         Integer previousValue = (definitionInfo.hasValue() && hadBefore) ? this.getCurrentValue(furniId, definitionItemId) : null;
 
         InteractionWiredExtra extra = this.getDefinitionExtra(definitionItemId);
-        if (extra instanceof WiredExtraVariableEcho) {
-            boolean changed = ((WiredExtraVariableEcho) extra).removeValue(this.room, furniId);
+        if (extra instanceof WiredExtraVariableEcho echo) {
+            boolean changed = echo.removeValue(this.room, furniId);
 
             if (changed) {
                 boolean hasAfter = this.hasVariable(furniId, definitionItemId);
@@ -630,9 +630,7 @@ public class RoomFurniVariableManager {
         List<WiredExtraFurniVariable> result = new ArrayList<>();
 
         for (InteractionWiredExtra extra : extras) {
-            if (extra instanceof WiredExtraFurniVariable) {
-                WiredExtraFurniVariable definition = (WiredExtraFurniVariable) extra;
-
+            if (extra instanceof WiredExtraFurniVariable definition) {
                 if (!hasVisibleDefinitionName(definition.getVariableName())) {
                     continue;
                 }
@@ -681,9 +679,7 @@ public class RoomFurniVariableManager {
     public WiredVariableDefinitionInfo getDefinitionInfo(int definitionItemId) {
         InteractionWiredExtra extra = this.getDefinitionExtra(definitionItemId);
 
-        if (extra instanceof WiredExtraFurniVariable) {
-            WiredExtraFurniVariable definition = (WiredExtraFurniVariable) extra;
-
+        if (extra instanceof WiredExtraFurniVariable definition) {
             if (!hasVisibleDefinitionName(definition.getVariableName())) {
                 return null;
             }
@@ -698,8 +694,8 @@ public class RoomFurniVariableManager {
             );
         }
 
-        if (extra instanceof WiredExtraVariableEcho && ((WiredExtraVariableEcho) extra).isFurniEcho()) {
-            WiredVariableDefinitionInfo info = ((WiredExtraVariableEcho) extra).createDefinitionInfo(this.room);
+        if (extra instanceof WiredExtraVariableEcho echo && echo.isFurniEcho()) {
+            WiredVariableDefinitionInfo info = echo.createDefinitionInfo(this.room);
             return (info != null && hasVisibleDefinitionName(info.getName())) ? info : null;
         }
 
@@ -709,11 +705,11 @@ public class RoomFurniVariableManager {
     private WiredExtraFurniVariable getDefinition(int definitionItemId) {
         InteractionWiredExtra extra = this.getDefinitionExtra(definitionItemId);
 
-        if (!(extra instanceof WiredExtraFurniVariable)) {
+        if (!(extra instanceof WiredExtraFurniVariable definition)) {
             return null;
         }
 
-        return (WiredExtraFurniVariable) extra;
+        return definition;
     }
 
     private InteractionWiredExtra getDefinitionExtra(int definitionItemId) {
@@ -732,9 +728,7 @@ public class RoomFurniVariableManager {
         List<WiredExtraVariableEcho> result = new ArrayList<>();
 
         for (InteractionWiredExtra extra : this.room.getRoomSpecialTypes().getExtras()) {
-            if (extra instanceof WiredExtraVariableEcho && ((WiredExtraVariableEcho) extra).isFurniEcho()) {
-                WiredExtraVariableEcho echo = (WiredExtraVariableEcho) extra;
-
+            if (extra instanceof WiredExtraVariableEcho echo && echo.isFurniEcho()) {
                 if (!hasVisibleDefinitionName(echo.getVariableName())) {
                     continue;
                 }
@@ -757,8 +751,7 @@ public class RoomFurniVariableManager {
         }
 
         InteractionWiredExtra extra = this.getDefinitionExtra(definitionItemId);
-        if (extra instanceof WiredExtraVariableEcho) {
-            WiredExtraVariableEcho echo = (WiredExtraVariableEcho) extra;
+        if (extra instanceof WiredExtraVariableEcho echo) {
             if (!echo.hasVariable(this.room, furniId)) {
                 return null;
             }

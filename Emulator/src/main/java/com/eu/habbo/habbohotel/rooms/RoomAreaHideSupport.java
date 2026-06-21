@@ -75,11 +75,10 @@ public final class RoomAreaHideSupport {
     }
 
     private static int readIntValue(HabboItem item, String key, int fallback) {
-        if (!(item instanceof InteractionAreaHideControl) || key == null) {
+        if (!(item instanceof InteractionAreaHideControl areaHide) || key == null) {
             return fallback;
         }
 
-        InteractionAreaHideControl areaHide = (InteractionAreaHideControl) item;
         String value = areaHide.values.get(key);
 
         try {

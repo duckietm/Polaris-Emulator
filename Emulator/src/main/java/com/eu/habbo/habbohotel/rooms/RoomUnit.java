@@ -134,8 +134,8 @@ public class RoomUnit {
       Habbo rider = null;
       if (this.getRoomUnitType() == RoomUnitType.PET) {
         Pet pet = room.getPet(this);
-        if (pet instanceof RideablePet) {
-          rider = ((RideablePet) pet).getRider();
+        if (pet instanceof RideablePet ridable) {
+          rider = ridable.getRider();
         }
       }
 
@@ -309,7 +309,7 @@ public class RoomUnit {
             item.getY() + item.getBaseItem().getLength() - 1, this.getX(), this.getY())) {
           if (item.canWalkOn(this, room, null)) {
             item.onWalkOn(this, room, new Object[]{this.getCurrentLocation(), next});
-          } else if (item instanceof ConditionalGate) {
+          } else if (item instanceof ConditionalGate gate) {
             this.setRotation(oldRotation);
             this.tilesWalked--;
             this.setGoalLocation(this.currentLocation);
@@ -317,7 +317,7 @@ public class RoomUnit {
             room.sendComposer(new RoomUserStatusComposer(this).compose());
 
             if (habbo != null) {
-              ((ConditionalGate) item).onRejected(this, this.getRoom(), new Object[]{});
+              gate.onRejected(this, this.getRoom(), new Object[]{});
             }
             return false;
           }

@@ -16,24 +16,15 @@ public enum FurnitureType {
     }
 
     public static FurnitureType fromString(String code) {
-        switch (code.toUpperCase()) {
-            case "S":
-                return FLOOR;
-            case "I":
-                return WALL;
-            case "E":
-                return EFFECT;
-            case "B":
-                return BADGE;
-            case "R":
-                return ROBOT;
-            case "H":
-                return HABBO_CLUB;
-            case "P":
-                return PET;
-            default:
-                return FLOOR;
-        }
-
+        return switch (code.toUpperCase()) {
+            case "S" -> FLOOR;
+            case "I" -> WALL;
+            case "E" -> EFFECT;
+            case "B" -> BADGE;
+            case "R" -> ROBOT;
+            case "H" -> HABBO_CLUB;
+            case "P" -> PET;
+            default -> FLOOR;
+        };
     }
 }

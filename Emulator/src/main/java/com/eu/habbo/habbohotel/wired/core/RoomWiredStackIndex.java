@@ -209,9 +209,9 @@ public final class RoomWiredStackIndex implements WiredStackIndex {
                     executeInOrder = true;
                 }
 
-                if (extra instanceof WiredExtraOrEval) {
-                    conditionEvaluationMode = ((WiredExtraOrEval) extra).getEvaluationMode();
-                    conditionEvaluationValue = ((WiredExtraOrEval) extra).getCompareValue();
+                if (extra instanceof WiredExtraOrEval orEval) {
+                    conditionEvaluationMode = orEval.getEvaluationMode();
+                    conditionEvaluationValue = orEval.getCompareValue();
                 }
             }
         }

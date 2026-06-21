@@ -25,25 +25,25 @@ public class LoveLockStartConfirmEvent extends MessageHandler {
             if (item == null)
                 return;
 
-            if (item instanceof InteractionLoveLock) {
+            if (item instanceof InteractionLoveLock loveLock) {
                 int userId = 0;
 
-                if (((InteractionLoveLock) item).userOneId == this.client.getHabbo().getHabboInfo().getId() && ((InteractionLoveLock) item).userTwoId != 0) {
-                    userId = ((InteractionLoveLock) item).userTwoId;
-                } else if (((InteractionLoveLock) item).userOneId != 0 && ((InteractionLoveLock) item).userTwoId == this.client.getHabbo().getHabboInfo().getId()) {
-                    userId = ((InteractionLoveLock) item).userOneId;
+                if (loveLock.userOneId == this.client.getHabbo().getHabboInfo().getId() && loveLock.userTwoId != 0) {
+                    userId = loveLock.userTwoId;
+                } else if (loveLock.userOneId != 0 && loveLock.userTwoId == this.client.getHabbo().getHabboInfo().getId()) {
+                    userId = loveLock.userOneId;
                 }
 
                 if (userId > 0) {
                     Habbo habbo = this.client.getHabbo().getHabboInfo().getCurrentRoom().getHabbo(userId);
 
                     if (habbo != null) {
-                        habbo.getClient().sendResponse(new LoveLockFurniFriendConfirmedComposer((InteractionLoveLock) item));
+                        habbo.getClient().sendResponse(new LoveLockFurniFriendConfirmedComposer(loveLock));
 
-                        habbo.getClient().sendResponse(new LoveLockFurniFinishedComposer((InteractionLoveLock) item));
-                        this.client.sendResponse(new LoveLockFurniFinishedComposer((InteractionLoveLock) item));
+                        habbo.getClient().sendResponse(new LoveLockFurniFinishedComposer(loveLock));
+                        this.client.sendResponse(new LoveLockFurniFinishedComposer(loveLock));
 
-                        ((InteractionLoveLock) item).lock(habbo, this.client.getHabbo(), this.client.getHabbo().getHabboInfo().getCurrentRoom());
+                        loveLock.lock(habbo, this.client.getHabbo(), this.client.getHabbo().getHabboInfo().getCurrentRoom());
                     }
                 }
             }

@@ -61,8 +61,7 @@ public final class WiredTextPlaceholderUtil {
         int replacementCount = 0;
 
         for (InteractionWiredExtra extra : WiredExecutionOrderUtil.sort(extras)) {
-            if (extra instanceof WiredExtraTextOutputUsername) {
-                WiredExtraTextOutputUsername usernameExtra = (WiredExtraTextOutputUsername) extra;
+            if (extra instanceof WiredExtraTextOutputUsername usernameExtra) {
                 String placeholderToken = usernameExtra.getPlaceholderToken();
 
                 if (!placeholderToken.isEmpty() && resolvedText.contains(placeholderToken)) {
@@ -77,8 +76,7 @@ public final class WiredTextPlaceholderUtil {
                 continue;
             }
 
-            if (extra instanceof WiredExtraTextOutputFurniName) {
-                WiredExtraTextOutputFurniName furniExtra = (WiredExtraTextOutputFurniName) extra;
+            if (extra instanceof WiredExtraTextOutputFurniName furniExtra) {
                 String placeholderToken = furniExtra.getPlaceholderToken();
 
                 if (!placeholderToken.isEmpty() && resolvedText.contains(placeholderToken)) {
@@ -93,8 +91,7 @@ public final class WiredTextPlaceholderUtil {
                 continue;
             }
 
-            if (extra instanceof WiredExtraTextOutputVariable) {
-                WiredExtraTextOutputVariable variableExtra = (WiredExtraTextOutputVariable) extra;
+            if (extra instanceof WiredExtraTextOutputVariable variableExtra) {
                 String placeholderToken = variableExtra.getPlaceholderToken();
 
                 if (!placeholderToken.isEmpty() && resolvedText.contains(placeholderToken)) {
@@ -211,14 +208,14 @@ public final class WiredTextPlaceholderUtil {
         }
 
         for (InteractionWiredExtra extra : extras) {
-            if (extra instanceof WiredExtraTextOutputUsername) {
-                int userSource = ((WiredExtraTextOutputUsername) extra).getUserSource();
+            if (extra instanceof WiredExtraTextOutputUsername usernameExtra) {
+                int userSource = usernameExtra.getUserSource();
                 if (userSource == WiredSourceUtil.SOURCE_TRIGGER || userSource == WiredSourceUtil.SOURCE_CLICKED_USER) {
                     return true;
                 }
             }
 
-            if (extra instanceof WiredExtraTextOutputVariable && ((WiredExtraTextOutputVariable) extra).requiresActor()) {
+            if (extra instanceof WiredExtraTextOutputVariable variableExtra && variableExtra.requiresActor()) {
                 return true;
             }
         }

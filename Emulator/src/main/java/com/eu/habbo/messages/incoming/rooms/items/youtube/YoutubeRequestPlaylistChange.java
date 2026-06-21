@@ -36,7 +36,7 @@ public class YoutubeRequestPlaylistChange extends MessageHandler {
 
         HabboItem item = room.getHabboItem(itemId);
 
-        if (item == null || !(item instanceof  InteractionYoutubeTV)) return;
+        if (item == null || !(item instanceof  InteractionYoutubeTV tv)) return;
 
         Optional<YoutubeManager.YoutubePlaylist> playlist = Emulator.getGameEnvironment().getItemManager().getYoutubeManager().getPlaylistsForItemId(item.getId()).stream().filter(p -> p.getId().equals(playlistId)).findAny();
 
@@ -47,14 +47,14 @@ public class YoutubeRequestPlaylistChange extends MessageHandler {
             YoutubeManager.YoutubeVideo video = playlist.get().getVideos().get(0);
             if (video == null) return;
 
-            ((InteractionYoutubeTV) item).currentVideo = video;
-            ((InteractionYoutubeTV) item).currentPlaylist = playlist.get();
+            tv.currentVideo = video;
+            tv.currentPlaylist = playlist.get();
 
-            ((InteractionYoutubeTV) item).cancelAdvancement();
+            tv.cancelAdvancement();
 
             room.updateItem(item);
             room.sendComposer(new YoutubeVideoComposer(itemId, video, true, 0).compose());
-            ((InteractionYoutubeTV) item).autoAdvance = Emulator.getThreading().run(new YoutubeAdvanceVideo((InteractionYoutubeTV) item), video.getDuration() * 1000L);
+            tv.autoAdvance = Emulator.getThreading().run(new YoutubeAdvanceVideo(tv), video.getDuration() * 1000L);
 
             item.needsUpdate(true);
         }

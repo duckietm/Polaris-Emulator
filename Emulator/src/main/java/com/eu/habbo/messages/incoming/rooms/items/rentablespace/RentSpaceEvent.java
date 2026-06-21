@@ -21,13 +21,13 @@ public class RentSpaceEvent extends MessageHandler {
 
         HabboItem item = room.getHabboItem(itemId);
 
-        if (!(item instanceof InteractionRentableSpace))
+        if (!(item instanceof InteractionRentableSpace rentableSpace))
             return;
 
-        ((InteractionRentableSpace) item).rent(this.client.getHabbo());
+        rentableSpace.rent(this.client.getHabbo());
 
         room.updateItem(item);
 
-        ((InteractionRentableSpace) item).sendRentWidget(this.client.getHabbo());
+        rentableSpace.sendRentWidget(this.client.getHabbo());
     }
 }

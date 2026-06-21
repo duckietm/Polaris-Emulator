@@ -41,8 +41,8 @@ public final class WiredVariableLevelSystemSupport {
         }
 
         for (InteractionWiredExtra extra : WiredExecutionOrderUtil.sort(extras)) {
-            if (extra instanceof WiredExtraVariableLevelUpSystem) {
-                return (WiredExtraVariableLevelUpSystem) extra;
+            if (extra instanceof WiredExtraVariableLevelUpSystem levelUpSystem) {
+                return levelUpSystem;
             }
         }
 
@@ -159,9 +159,9 @@ public final class WiredVariableLevelSystemSupport {
         return switch (targetType) {
             case TARGET_FURNI -> extra instanceof WiredExtraFurniVariable;
             case TARGET_ROOM -> (extra instanceof WiredExtraRoomVariable)
-                || (extra instanceof WiredExtraVariableReference && ((WiredExtraVariableReference) extra).isRoomReference());
+                || (extra instanceof WiredExtraVariableReference reference && reference.isRoomReference());
             default -> (extra instanceof WiredExtraUserVariable)
-                || (extra instanceof WiredExtraVariableReference && ((WiredExtraVariableReference) extra).isUserReference());
+                || (extra instanceof WiredExtraVariableReference reference && reference.isUserReference());
         };
     }
 
@@ -170,8 +170,7 @@ public final class WiredVariableLevelSystemSupport {
             return null;
         }
 
-        if (targetType == TARGET_FURNI && extra instanceof WiredExtraFurniVariable) {
-            WiredExtraFurniVariable definition = (WiredExtraFurniVariable) extra;
+        if (targetType == TARGET_FURNI && extra instanceof WiredExtraFurniVariable definition) {
             return new WiredVariableDefinitionInfo(
                 definition.getId(),
                 definition.getVariableName(),
@@ -183,8 +182,7 @@ public final class WiredVariableLevelSystemSupport {
         }
 
         if (targetType == TARGET_USER) {
-            if (extra instanceof WiredExtraUserVariable) {
-                WiredExtraUserVariable definition = (WiredExtraUserVariable) extra;
+            if (extra instanceof WiredExtraUserVariable definition) {
                 return new WiredVariableDefinitionInfo(
                     definition.getId(),
                     definition.getVariableName(),
@@ -195,15 +193,13 @@ public final class WiredVariableLevelSystemSupport {
                 );
             }
 
-            if (extra instanceof WiredExtraVariableReference && ((WiredExtraVariableReference) extra).isUserReference()) {
-                WiredExtraVariableReference reference = (WiredExtraVariableReference) extra;
+            if (extra instanceof WiredExtraVariableReference reference && reference.isUserReference()) {
                 return new WiredVariableDefinitionInfo(reference.getId(), reference.getVariableName(), reference.hasValue(), reference.getAvailability(), false, reference.isReadOnly());
             }
         }
 
         if (targetType == TARGET_ROOM) {
-            if (extra instanceof WiredExtraRoomVariable) {
-                WiredExtraRoomVariable definition = (WiredExtraRoomVariable) extra;
+            if (extra instanceof WiredExtraRoomVariable definition) {
                 return new WiredVariableDefinitionInfo(
                     definition.getId(),
                     definition.getVariableName(),
@@ -214,8 +210,7 @@ public final class WiredVariableLevelSystemSupport {
                 );
             }
 
-            if (extra instanceof WiredExtraVariableReference && ((WiredExtraVariableReference) extra).isRoomReference()) {
-                WiredExtraVariableReference reference = (WiredExtraVariableReference) extra;
+            if (extra instanceof WiredExtraVariableReference reference && reference.isRoomReference()) {
                 return new WiredVariableDefinitionInfo(reference.getId(), reference.getVariableName(), reference.hasValue(), reference.getAvailability(), false, reference.isReadOnly());
             }
         }

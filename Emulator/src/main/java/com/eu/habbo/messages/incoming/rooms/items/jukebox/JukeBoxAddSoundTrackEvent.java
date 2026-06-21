@@ -24,8 +24,8 @@ public class JukeBoxAddSoundTrackEvent extends MessageHandler {
         if (habbo != null) {
             HabboItem item = habbo.getInventory().getItemsComponent().getHabboItem(itemId);
 
-            if (item instanceof InteractionMusicDisc && item.getRoomId() == 0) {
-                room.getTraxManager().addSong((InteractionMusicDisc) item, habbo);
+            if (item instanceof InteractionMusicDisc disc && item.getRoomId() == 0) {
+                room.getTraxManager().addSong(disc, habbo);
             }
         }
     }

@@ -30,8 +30,8 @@ public class AdvertisingSaveEvent extends MessageHandler {
             this.client.getHabbo().alert(Emulator.getTexts().getValue("hotel.error.roomads.nopermission"));
             return;
         }
-        if (item instanceof InteractionCustomValues) {
-            THashMap<String, String> oldValues = new THashMap<>(((InteractionCustomValues) item).values);
+        if (item instanceof InteractionCustomValues customValues) {
+            THashMap<String, String> oldValues = new THashMap<>(customValues.values);
             int count = this.packet.readInt();
             if (!RoomItemInputGuard.isValidCustomValueCount(count))
                 return;
@@ -47,14 +47,14 @@ public class AdvertisingSaveEvent extends MessageHandler {
                     value = value.replace("https://", "http://");
                 }
 
-                ((InteractionCustomValues) item).values.put(key, value);
+                customValues.values.put(key, value);
             }
 
-            item.setExtradata(((InteractionCustomValues) item).toExtraData());
+            item.setExtradata(customValues.toExtraData());
             item.needsUpdate(true);
             Emulator.getThreading().run(item);
             room.updateItem(item);
-            ((InteractionCustomValues) item).onCustomValuesSaved(room, this.client, oldValues);
+            customValues.onCustomValuesSaved(room, this.client, oldValues);
         }
     }
 }

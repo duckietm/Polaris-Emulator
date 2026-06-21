@@ -18,7 +18,7 @@ public class FootballGateSaveLookEvent extends MessageHandler {
             return;
 
         HabboItem item = room.getHabboItem(itemId);
-        if (!(item instanceof InteractionFootballGate))
+        if (!(item instanceof InteractionFootballGate gate))
             return;
 
         String gender = this.packet.readString();
@@ -29,12 +29,12 @@ public class FootballGateSaveLookEvent extends MessageHandler {
 
         switch (gender.toLowerCase()) {
             case "m":
-                ((InteractionFootballGate) item).setFigureM(look);
+                gate.setFigureM(look);
                 room.updateItem(item);
                 break;
 
             case "f":
-                ((InteractionFootballGate) item).setFigureF(look);
+                gate.setFigureF(look);
                 room.updateItem(item);
                 break;
         }

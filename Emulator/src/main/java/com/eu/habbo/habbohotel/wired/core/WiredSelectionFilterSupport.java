@@ -51,10 +51,10 @@ final class WiredSelectionFilterSupport {
         List<WiredExtraFilterFurniByVariable> variableFilters = new ArrayList<>();
 
         for (InteractionWiredExtra extra : extras) {
-            if (extra instanceof WiredExtraFilterFurni) {
-                furniLimit = Math.min(furniLimit, ((WiredExtraFilterFurni) extra).getAmount());
-            } else if (extra instanceof WiredExtraFilterFurniByVariable) {
-                variableFilters.add((WiredExtraFilterFurniByVariable) extra);
+            if (extra instanceof WiredExtraFilterFurni furniFilter) {
+                furniLimit = Math.min(furniLimit, furniFilter.getAmount());
+            } else if (extra instanceof WiredExtraFilterFurniByVariable furniByVariable) {
+                variableFilters.add(furniByVariable);
             }
         }
 
@@ -95,10 +95,10 @@ final class WiredSelectionFilterSupport {
         List<WiredExtraFilterUsersByVariable> variableFilters = new ArrayList<>();
 
         for (InteractionWiredExtra extra : extras) {
-            if (extra instanceof WiredExtraFilterUser) {
-                userLimit = Math.min(userLimit, ((WiredExtraFilterUser) extra).getAmount());
-            } else if (extra instanceof WiredExtraFilterUsersByVariable) {
-                variableFilters.add((WiredExtraFilterUsersByVariable) extra);
+            if (extra instanceof WiredExtraFilterUser userFilter) {
+                userLimit = Math.min(userLimit, userFilter.getAmount());
+            } else if (extra instanceof WiredExtraFilterUsersByVariable usersByVariable) {
+                variableFilters.add(usersByVariable);
             }
         }
 

@@ -56,8 +56,8 @@ public final class WiredVariableTextConnectorSupport {
         List<WiredExtraVariableTextConnector> connectors = new ArrayList<>();
 
         for (InteractionWiredExtra extra : WiredExecutionOrderUtil.sort(extras)) {
-            if (extra instanceof WiredExtraVariableTextConnector) {
-                connectors.add((WiredExtraVariableTextConnector) extra);
+            if (extra instanceof WiredExtraVariableTextConnector connector) {
+                connectors.add(connector);
             }
         }
 

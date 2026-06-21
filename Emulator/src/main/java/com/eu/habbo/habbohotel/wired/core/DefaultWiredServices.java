@@ -343,8 +343,8 @@ public final class DefaultWiredServices implements WiredServices {
         
         // Reset all wired triggers that are timers
         room.getRoomSpecialTypes().getTriggers().forEach(trigger -> {
-            if (trigger instanceof com.eu.habbo.habbohotel.items.interactions.wired.WiredTriggerReset) {
-                ((com.eu.habbo.habbohotel.items.interactions.wired.WiredTriggerReset) trigger).resetTimer();
+            if (trigger instanceof com.eu.habbo.habbohotel.items.interactions.wired.WiredTriggerReset resetTrigger) {
+                resetTrigger.resetTimer();
             }
         });
     }

@@ -125,8 +125,8 @@ public final class WiredTextInputCaptureSupport {
         }
 
         for (InteractionWiredExtra extra : WiredExecutionOrderUtil.sort(extras)) {
-            if (extra instanceof WiredExtraTextInputVariable) {
-                capturers.add((WiredExtraTextInputVariable) extra);
+            if (extra instanceof WiredExtraTextInputVariable capturer) {
+                capturers.add(capturer);
             }
         }
 

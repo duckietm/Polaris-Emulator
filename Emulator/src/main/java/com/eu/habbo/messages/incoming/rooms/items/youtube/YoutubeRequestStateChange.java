@@ -68,9 +68,7 @@ public class YoutubeRequestStateChange extends MessageHandler {
 
         HabboItem item = room.getHabboItem(itemId);
 
-        if (!(item instanceof InteractionYoutubeTV)) return;
-
-        InteractionYoutubeTV tv = (InteractionYoutubeTV) item;
+        if (!(item instanceof InteractionYoutubeTV tv)) return;
 
         if(tv.currentPlaylist == null || tv.currentPlaylist.getVideos().isEmpty()) return;
 

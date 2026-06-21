@@ -24,8 +24,8 @@ public class RentSpaceCancelEvent extends MessageHandler {
 
         if (room.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() ||
                 this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)) {
-            if (item instanceof InteractionRentableSpace) {
-                ((InteractionRentableSpace) item).endRent();
+            if (item instanceof InteractionRentableSpace space) {
+                space.endRent();
 
                 room.updateItem(item);
             }

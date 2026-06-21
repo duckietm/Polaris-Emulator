@@ -279,8 +279,8 @@ public final class WiredEngine {
                     anyTriggered = true;
 
                     if ((event.getType() == WiredEvent.Type.USER_SAYS)
-                            && (stack.triggerItem() instanceof WiredTriggerHabboSaysKeyword)
-                            && ((WiredTriggerHabboSaysKeyword) stack.triggerItem()).isHideMessage()) {
+                            && (stack.triggerItem() instanceof WiredTriggerHabboSaysKeyword saysKeyword)
+                            && saysKeyword.isHideMessage()) {
                         suppressSaysOutput = true;
                     }
                 }
@@ -358,8 +358,8 @@ public final class WiredEngine {
                     anyTriggered = true;
 
                     if ((event.getType() == WiredEvent.Type.USER_SAYS)
-                            && (stack.triggerItem() instanceof WiredTriggerHabboSaysKeyword)
-                            && ((WiredTriggerHabboSaysKeyword) stack.triggerItem()).isHideMessage()) {
+                            && (stack.triggerItem() instanceof WiredTriggerHabboSaysKeyword saysKeyword)
+                            && saysKeyword.isHideMessage()) {
                         suppressSaysOutput = true;
                     }
                 }
@@ -468,9 +468,8 @@ public final class WiredEngine {
 
         if (conditionsPassedForExecution
                 && (event.getType() == WiredEvent.Type.USER_CLICKS_USER)
-                && (stack.triggerItem() instanceof WiredTriggerHabboClicksUser)
+                && (stack.triggerItem() instanceof WiredTriggerHabboClicksUser clickUserTrigger)
                 && event.getActor().isPresent()) {
-            WiredTriggerHabboClicksUser clickUserTrigger = (WiredTriggerHabboClicksUser) stack.triggerItem();
             WiredTriggerHabboClicksUser.applyRuntimeOptions(
                     event.getActor().get(),
                     clickUserTrigger.isBlockMenuOpen(),
@@ -480,8 +479,7 @@ public final class WiredEngine {
         RoomUnit actor = event.getActor().orElse(null);
 
         // Only show the trigger/selector activation when the stack is actually allowed to continue.
-        if (stack.triggerItem() instanceof InteractionWiredTrigger) {
-            InteractionWiredTrigger trigger = (InteractionWiredTrigger) stack.triggerItem();
+        if (stack.triggerItem() instanceof InteractionWiredTrigger trigger) {
             trigger.activateBox(room, actor, currentTime);
         }
 
@@ -586,8 +584,7 @@ public final class WiredEngine {
 
         RoomUnit actor = event.getActor().orElse(null);
 
-        if (stack.triggerItem() instanceof InteractionWiredTrigger) {
-            InteractionWiredTrigger trigger = (InteractionWiredTrigger) stack.triggerItem();
+        if (stack.triggerItem() instanceof InteractionWiredTrigger trigger) {
             trigger.activateBox(room, actor, currentTime);
         }
 
@@ -703,14 +700,13 @@ public final class WiredEngine {
             return true;
         }
 
-        if (stack.triggerItem() instanceof WiredTriggerHabboSaysKeyword) {
-            return ((WiredTriggerHabboSaysKeyword) stack.triggerItem()).isHideMessage();
+        if (stack.triggerItem() instanceof WiredTriggerHabboSaysKeyword saysKeyword) {
+            return saysKeyword.isHideMessage();
         }
 
         if ((event != null)
                 && (event.getType() == WiredEvent.Type.USER_CLICKS_USER)
-                && (stack.triggerItem() instanceof WiredTriggerHabboClicksUser)) {
-            WiredTriggerHabboClicksUser trigger = (WiredTriggerHabboClicksUser) stack.triggerItem();
+                && (stack.triggerItem() instanceof WiredTriggerHabboClicksUser trigger)) {
             return trigger.isBlockMenuOpen() || trigger.isDoNotRotate();
         }
 
@@ -722,14 +718,13 @@ public final class WiredEngine {
             return false;
         }
 
-        if (stack.triggerItem() instanceof WiredTriggerHabboSaysKeyword) {
-            return ((WiredTriggerHabboSaysKeyword) stack.triggerItem()).isHideMessage();
+        if (stack.triggerItem() instanceof WiredTriggerHabboSaysKeyword saysKeyword) {
+            return saysKeyword.isHideMessage();
         }
 
         if ((event != null)
                 && (event.getType() == WiredEvent.Type.USER_CLICKS_USER)
-                && (stack.triggerItem() instanceof WiredTriggerHabboClicksUser)) {
-            WiredTriggerHabboClicksUser trigger = (WiredTriggerHabboClicksUser) stack.triggerItem();
+                && (stack.triggerItem() instanceof WiredTriggerHabboClicksUser trigger)) {
             return trigger.isBlockMenuOpen() || trigger.isDoNotRotate();
         }
 
@@ -770,11 +765,11 @@ public final class WiredEngine {
     }
 
     private boolean isNegativeConditionEffect(IWiredEffect effect) {
-        if (!(effect instanceof InteractionWiredEffect)) {
+        if (!(effect instanceof InteractionWiredEffect wiredEffect)) {
             return false;
         }
 
-        WiredEffectType effectType = ((InteractionWiredEffect) effect).getType();
+        WiredEffectType effectType = wiredEffect.getType();
         return effectType == WiredEffectType.NEG_CALL_STACKS || effectType == WiredEffectType.NEG_SEND_SIGNAL;
     }
 
@@ -895,8 +890,8 @@ public final class WiredEngine {
     }
 
     private String getConditionGroupKey(IWiredCondition condition) {
-        if (condition instanceof InteractionWiredCondition) {
-            return String.valueOf(((InteractionWiredCondition) condition).getType());
+        if (condition instanceof InteractionWiredCondition wiredCondition) {
+            return String.valueOf(wiredCondition.getType());
         }
 
         return condition.getClass().getName();
@@ -1004,8 +999,7 @@ public final class WiredEngine {
                         effect.execute(ctx);
 
                         // Activate box animation after execution
-                        if (effect instanceof InteractionWiredEffect) {
-                            InteractionWiredEffect wiredEffect = (InteractionWiredEffect) effect;
+                        if (effect instanceof InteractionWiredEffect wiredEffect) {
                             wiredEffect.setCooldown(currentTime);
                             wiredEffect.activateBox(ctx.room(), ctx.actor().orElse(null), currentTime);
                         }
@@ -1058,8 +1052,7 @@ public final class WiredEngine {
             ctx.state().step();
             try {
                 effect.execute(ctx);
-                if (effect instanceof InteractionWiredEffect) {
-                    InteractionWiredEffect wiredEffect = (InteractionWiredEffect) effect;
+                if (effect instanceof InteractionWiredEffect wiredEffect) {
                     executedSelectors.add(wiredEffect);
 
                     if (wiredEffect.usesExistingSelectorTargets()) {
@@ -1202,8 +1195,7 @@ public final class WiredEngine {
                 effect.execute(ctx);
 
                 // Activate box animation after execution
-                if (effect instanceof InteractionWiredEffect) {
-                    InteractionWiredEffect wiredEffect = (InteractionWiredEffect) effect;
+                if (effect instanceof InteractionWiredEffect wiredEffect) {
                     wiredEffect.setCooldown(System.currentTimeMillis());
                     wiredEffect.activateBox(room, actor, System.currentTimeMillis());
                 }
@@ -1272,11 +1264,10 @@ public final class WiredEngine {
         long triggerTime = event.getCreatedAtMs();
 
         for (WiredStack stack : stacks) {
-            if (!(stack.triggerItem() instanceof WiredTriggerHabboSaysKeyword)) {
+            if (!(stack.triggerItem() instanceof WiredTriggerHabboSaysKeyword trigger)) {
                 continue;
             }
 
-            WiredTriggerHabboSaysKeyword trigger = (WiredTriggerHabboSaysKeyword) stack.triggerItem();
             if (!trigger.isHideMessage()) {
                 continue;
             }
@@ -1343,8 +1334,7 @@ public final class WiredEngine {
 
                     effect.execute(ctx);
 
-                    if (effect instanceof InteractionWiredEffect) {
-                        InteractionWiredEffect wiredEffect = (InteractionWiredEffect) effect;
+                    if (effect instanceof InteractionWiredEffect wiredEffect) {
                         wiredEffect.setCooldown(executionTime);
                         wiredEffect.activateBox(room, actor, executionTime);
                     }
@@ -1379,27 +1369,27 @@ public final class WiredEngine {
      */
     private boolean fireTriggeredEvent(WiredStack stack, WiredEvent event) {
         // Build legacy collections for event
-        if (stack.triggerItem() instanceof InteractionWiredTrigger) {
+        if (stack.triggerItem() instanceof InteractionWiredTrigger trigger) {
             // This event is checked for cancellation
             THashSet<InteractionWiredEffect> legacyEffects = new THashSet<>();
             THashSet<InteractionWiredCondition> legacyConditions = new THashSet<>();
 
             // Extract effects (all effects should now implement both interfaces)
             for (IWiredEffect eff : stack.effects()) {
-                if (eff instanceof InteractionWiredEffect) {
-                    legacyEffects.add((InteractionWiredEffect) eff);
+                if (eff instanceof InteractionWiredEffect wiredEffect) {
+                    legacyEffects.add(wiredEffect);
                 }
             }
             for (IWiredCondition cond : stack.conditions()) {
-                if (cond instanceof InteractionWiredCondition) {
-                    legacyConditions.add((InteractionWiredCondition) cond);
+                if (cond instanceof InteractionWiredCondition wiredCondition) {
+                    legacyConditions.add(wiredCondition);
                 }
             }
 
             WiredStackTriggeredEvent triggeredEvent = new WiredStackTriggeredEvent(
                     event.getRoom(),
                     event.getActor().orElse(null),
-                    (InteractionWiredTrigger) stack.triggerItem(),
+                    trigger,
                     legacyEffects,
                     legacyConditions
             );
@@ -1413,25 +1403,25 @@ public final class WiredEngine {
      * Fire the WiredStackExecutedEvent for plugin compatibility.
      */
     private void fireExecutedEvent(WiredStack stack, WiredEvent event) {
-        if (stack.triggerItem() instanceof InteractionWiredTrigger) {
+        if (stack.triggerItem() instanceof InteractionWiredTrigger trigger) {
             THashSet<InteractionWiredEffect> legacyEffects = new THashSet<>();
             THashSet<InteractionWiredCondition> legacyConditions = new THashSet<>();
 
             for (IWiredEffect eff : stack.effects()) {
-                if (eff instanceof InteractionWiredEffect) {
-                    legacyEffects.add((InteractionWiredEffect) eff);
+                if (eff instanceof InteractionWiredEffect wiredEffect) {
+                    legacyEffects.add(wiredEffect);
                 }
             }
             for (IWiredCondition cond : stack.conditions()) {
-                if (cond instanceof InteractionWiredCondition) {
-                    legacyConditions.add((InteractionWiredCondition) cond);
+                if (cond instanceof InteractionWiredCondition wiredCondition) {
+                    legacyConditions.add(wiredCondition);
                 }
             }
 
             Emulator.getPluginManager().fireEvent(new WiredStackExecutedEvent(
                     event.getRoom(),
                     event.getActor().orElse(null),
-                    (InteractionWiredTrigger) stack.triggerItem(),
+                    trigger,
                     legacyEffects,
                     legacyConditions
             ));

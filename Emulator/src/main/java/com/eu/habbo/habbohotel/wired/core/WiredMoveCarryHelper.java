@@ -893,8 +893,8 @@ public final class WiredMoveCarryHelper {
         }
 
         for (InteractionWiredExtra extra : extras) {
-            if (extra instanceof WiredExtraMoveCarryUsers) {
-                return (WiredExtraMoveCarryUsers) extra;
+            if (extra instanceof WiredExtraMoveCarryUsers carryUsers) {
+                return carryUsers;
             }
         }
 
@@ -908,8 +908,8 @@ public final class WiredMoveCarryHelper {
         }
 
         for (InteractionWiredExtra extra : extras) {
-            if (extra instanceof WiredExtraMoveNoAnimation) {
-                return (WiredExtraMoveNoAnimation) extra;
+            if (extra instanceof WiredExtraMoveNoAnimation noAnimation) {
+                return noAnimation;
             }
         }
 
@@ -923,8 +923,8 @@ public final class WiredMoveCarryHelper {
         }
 
         for (InteractionWiredExtra extra : extras) {
-            if (extra instanceof WiredExtraAnimationTime) {
-                return (WiredExtraAnimationTime) extra;
+            if (extra instanceof WiredExtraAnimationTime animationTime) {
+                return animationTime;
             }
         }
 
@@ -1007,8 +1007,8 @@ public final class WiredMoveCarryHelper {
         }
 
         for (InteractionWiredExtra extra : extras) {
-            if (extra instanceof WiredExtraMovePhysics) {
-                return (WiredExtraMovePhysics) extra;
+            if (extra instanceof WiredExtraMovePhysics physics) {
+                return physics;
             }
         }
 

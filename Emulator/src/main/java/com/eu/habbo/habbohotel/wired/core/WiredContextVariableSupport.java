@@ -28,8 +28,8 @@ public final class WiredContextVariableSupport {
         }
 
         for (InteractionWiredExtra extra : extras) {
-            if (extra instanceof WiredExtraContextVariable) {
-                definitions.add((WiredExtraContextVariable) extra);
+            if (extra instanceof WiredExtraContextVariable contextVariable) {
+                definitions.add(contextVariable);
             }
         }
 
@@ -66,7 +66,7 @@ public final class WiredContextVariableSupport {
         }
 
         InteractionWiredExtra extra = room.getRoomSpecialTypes().getExtra(definitionItemId);
-        return (extra instanceof WiredExtraContextVariable) ? (WiredExtraContextVariable) extra : null;
+        return (extra instanceof WiredExtraContextVariable contextVariable) ? contextVariable : null;
     }
 
     public static WiredVariableDefinitionInfo getDefinitionInfo(Room room, int definitionItemId) {

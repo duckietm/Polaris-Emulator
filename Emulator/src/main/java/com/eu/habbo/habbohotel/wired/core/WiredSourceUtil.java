@@ -199,8 +199,8 @@ public final class WiredSourceUtil {
 
         if (originalCtx != null && originalCtx.hasStack()) {
             for (IWiredEffect effect : originalCtx.stack().effects()) {
-                if (effect instanceof InteractionWiredEffect && effect.isSelector()) {
-                    selectorEffects.add((InteractionWiredEffect) effect);
+                if (effect instanceof InteractionWiredEffect wiredEffect && effect.isSelector()) {
+                    selectorEffects.add(wiredEffect);
                 }
             }
 

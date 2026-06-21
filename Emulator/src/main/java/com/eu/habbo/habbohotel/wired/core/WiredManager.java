@@ -946,8 +946,8 @@ public final class WiredManager {
         }
 
         for (InteractionWiredExtra extra : extras) {
-            if (extra instanceof WiredExtraExecutionLimit) {
-                return (WiredExtraExecutionLimit) extra;
+            if (extra instanceof WiredExtraExecutionLimit executionLimit) {
+                return executionLimit;
             }
         }
 
@@ -995,8 +995,7 @@ public final class WiredManager {
 
                 long millis = room.getCycleTimestamp();
                 for (final HabboItem item : items) {
-                    if (item instanceof InteractionWiredEffect && !(item instanceof WiredEffectTriggerStacks)) {
-                        InteractionWiredEffect effect = (InteractionWiredEffect) item;
+                    if (item instanceof InteractionWiredEffect effect && !(item instanceof WiredEffectTriggerStacks)) {
                         WiredEvent event = WiredEvent.builder(WiredEvent.Type.CUSTOM, room)
                                 .actor(roomUnit)
                                 .callStackDepth(callStackDepth)

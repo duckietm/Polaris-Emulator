@@ -318,6 +318,10 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_cnd_furni_not_in_range", WiredConditionFurniNotInRange.class));
         this.interactionsList.add(new ItemInteraction("wf_cnd_has_same_height", WiredConditionSameHeight.class));
         this.interactionsList.add(new ItemInteraction("wf_cnd_not_has_same_height", WiredConditionNotSameHeight.class));
+        // OWNED-badge check (Phase A skipped these because only a worn-badge class existed): reuses the
+        // wears-badge dialog but checks inventory ownership via BadgesComponent.hasBadge.
+        this.interactionsList.add(new ItemInteraction("wf_cnd_habbo_owns_badge", WiredConditionHabboOwnsBadge.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_not_habbo_owns_badge", WiredConditionNotHabboOwnsBadge.class));
         this.interactionsList.add(new ItemInteraction("wf_act_call_stacks", WiredEffectTriggerStacks.class));
         this.interactionsList.add(new ItemInteraction("wf_act_neg_call_stack", WiredEffectNegativeTriggerStacks.class));
         this.interactionsList.add(new ItemInteraction("wf_act_neg_call_stacks", WiredEffectNegativeTriggerStacks.class));

@@ -27,7 +27,7 @@
         <slf4j.version>2.0.18</slf4j.version>
         <logback.version>1.5.34</logback.version>
         <jansi.version>2.4.3</jansi.version>
-        <jbcrypt.version>0.4</jbcrypt.version>
+        <bcrypt.version>0.10.2</bcrypt.version>
         <jakarta-mail.version>2.0.5</jakarta-mail.version>
         <junit.version>6.1.0</junit.version>
 
@@ -220,9 +220,9 @@
         <!-- favre BCrypt is used by auth endpoints and natively verifies
              Laravel-style $2y$ hashes from users.password. -->
         <dependency>
-            <groupId>org.mindrot</groupId>
-            <artifactId>jbcrypt</artifactId>
-            <version>${jbcrypt.version}</version>
+            <groupId>at.favre.lib</groupId>
+            <artifactId>bcrypt</artifactId>
+            <version>${bcrypt.version}</version>
         </dependency>
 
         <!-- Jakarta Mail — used by the built-in forgot-password endpoint

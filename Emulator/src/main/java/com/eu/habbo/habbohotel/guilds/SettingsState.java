@@ -13,20 +13,12 @@ public enum SettingsState {
     }
 
     public static SettingsState fromValue(int state) {
-        try {
-            switch (state) {
-                case 0:
-                    return EVERYONE;
-                case 1:
-                    return MEMBERS;
-                case 2:
-                    return ADMINS;
-                case 3:
-                    return OWNER;
-            }
-        } catch (Exception e) {
-        }
-
-        return EVERYONE;
+        return switch (state) {
+            case 0 -> EVERYONE;
+            case 1 -> MEMBERS;
+            case 2 -> ADMINS;
+            case 3 -> OWNER;
+            default -> EVERYONE;
+        };
     }
 }

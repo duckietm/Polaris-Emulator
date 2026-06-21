@@ -474,14 +474,11 @@ public class GuildManager {
     }
 
     private String rankQuery(int level) {
-        switch (level) {
-            case 2:
-                return "AND guilds_members.level_id = 3";
-            case 1:
-                return "AND (guilds_members.level_id = 0 OR guilds_members.level_id = 1)";
-            default:
-                return "AND guilds_members.level_id >= 0 AND guilds_members.level_id <= 2";
-        }
+        return switch (level) {
+            case 2 -> "AND guilds_members.level_id = 3";
+            case 1 -> "AND (guilds_members.level_id = 0 OR guilds_members.level_id = 1)";
+            default -> "AND guilds_members.level_id >= 0 AND guilds_members.level_id <= 2";
+        };
     }
 
 

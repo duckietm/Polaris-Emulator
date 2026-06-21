@@ -6,6 +6,79 @@ and is developed for free by talented developers and is compatible with the foll
 | Community Clients | [Nitro Client](https://github.com/billsonnn/nitro-react) |
 | ------------- | ------------- |
 
+---
+
+## ⚡ What's new in this branch (`java25-wired-modernization`)
+
+This branch brings the emulator up to **Java 25 (LTS)** and massively expands the **WIRED**
+subsystem. Every change keeps the full unit-test suite green (**414 tests, 0 failures**) and the
+new wired boxes were validated live in-room. Detailed design notes live under
+[`docs/superpowers/specs/`](docs/superpowers/specs).
+
+### Runtime & build — Java 25
+- Compiles and runs on **JDK 25**: `pom.xml` uses a single, coherent `maven.compiler.release=25`
+  (previously an inconsistent mix of source 19 / target 19 / release 21).
+- Start scripts enable **ZGC + Compact Object Headers** (`-XX:+UseZGC -XX:+UseCompactObjectHeaders`)
+  for lower-latency GC and a smaller heap footprint.
+- Dependency bumps (HikariCP 7.1.0, MariaDB JDBC 3.5.9) and a **GitHub Actions CI** workflow that
+  runs `mvn verify` on JDK 25 for every push/PR.
+- Validated end-to-end: full boot + classic CMS login confirmed on Java 25 + ZGC.
+
+### Java 25 language modernization
+All conversions are behaviour-preserving (compiler-enforced where possible) and applied package by
+package, each verified by the test suite:
+- **Pattern matching for `instanceof`** — ~340 conversions across the whole module (test-then-cast,
+  guarded-`&&`, and negated early-exit forms); non-candidates correctly skipped.
+- **Switch expressions** — value-mapper / return-only `switch` statements rewritten to arrow form.
+- **`Stream.toList()` / `Collectors.toUnmodifiableSet()`** — ~50 sites; applied via a two-stage
+  adversarial review (each result traced into callers/constructors/serialization) so no mutable
+  use becomes an unmodifiable-collection runtime error.
+- **Sequenced collections** — `getFirst()/getLast()/removeLast()` where the receiver is a
+  `SequencedCollection` and the access is provably non-empty.
+- **`Math.clamp(...)`** replacing nested `min(max(...))`; a YouTube playlist loader moved to a
+  virtual-thread executor.
+- **Records** — 8 immutable carriers (`FriendRequest`, `VoucherHistoryEntry`, `HabboMention`,
+  `EarningsReward/Entry/ClaimResult`, `GuideChatMessage`, `CryptoConfig`) converted to Java records.
+
+### Concurrency correctness
+- `volatile` added to cross-thread shared fields (session-resume visibility races) and the
+  non-thread-safe `gnu.trove` set in `RoomUnit` replaced with a `ConcurrentHashMap`-backed set.
+- **Opt-in virtual-thread packet handler** (`io.packet.handler.virtual=1`) backed by a shared
+  server-lifetime executor group.
+
+### WIRED subsystem — 100+ new interactions
+A full study of the wired engine (see
+[`2026-06-21-wired-study.md`](docs/superpowers/specs/2026-06-21-wired-study.md)) plus a categorized
+gap analysis against the furnidata produced **102 newly registered wired `interaction_type`s and 45
+new classes**:
+- **Furnidata aliases & parameter-variants** — 56 furnidata names bound to existing behaviour
+  (e.g. `wf_act_freeze_habbo` → freeze, `wf_act_raise_furni` → set-altitude).
+- **New triggers** — `wf_trg_starts_dancing / stops_dancing / idles / unidles` (the events already
+  fired from the room manager; only the trigger classes were missing).
+- **New effects** — currency (`give_credits / give_duckets / give_diamonds / give_experience`),
+  badges (`give_badge / give_userbadge / remove_badge / give_achievement`), user actions
+  (`sit / lay / make_fast_walk / walk_to_furni / move_user_tiles / make_user_say / say_command /
+  give_look / open_habbo_pages / log`), room (`toggle_moodlight / reset_highscores /
+  all_users_leave_team`), profile **tags** (`add_tag / remove_tag`, with a new persisted
+  `HabboStats` tag API), and **negative-branch** effects (`neg_show_message / neg_log`).
+- **New conditions** — currency checks, `freeze / not_freeze`, furni range, same-height, owned-badge
+  (`owns_badge`), owned-furni (`owns_furni`), `motto_contains`, and `has_at_least_x_items`.
+- Where a dedicated client dialog is missing, the
+  [Nitro patch list](docs/superpowers/specs/2026-06-21-nitro-wired-dialog-patch-list.md) documents
+  exactly what the client would need.
+
+### Database
+- [`Database Updates/013_wired_interaction_type_fix.sql`](Database%20Updates/013_wired_interaction_type_fix.sql)
+  fixes existing wired furni (selectors `wf_slc_*`, variables `wf_var_*`, signals, extras `wf_xtra_*`)
+  that shipped in `items_base` with `interaction_type = 'default'` and were therefore unplaceable —
+  the whole selector / variable / signal wired subsystem. The migration sets `interaction_type =
+  item_name` for the affected rows (scoped to real registered wired types, idempotent), taking
+  placeable wired types from 257 → 309.
+
+> **Requires an emulator restart** after running migration 013 (`items_base` is read at startup).
+
+---
+
 ## Download ##
 [Latest compiled version](https://github.com/duckietm/Arcturus-Morningstar-Extended/tree/main/Latest_Compiled_Version)
 

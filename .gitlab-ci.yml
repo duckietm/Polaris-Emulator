@@ -17,7 +17,7 @@ variables:
     -DdeployAtEnd=true  
 
 java-build:
-  image: maven:3.8-openjdk-11
+  image: maven:3.9-eclipse-temurin-21
   stage: build
   cache:
     key: "maven-$CI_COMMIT_REF_SLUG"

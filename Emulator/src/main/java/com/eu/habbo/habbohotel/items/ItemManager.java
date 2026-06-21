@@ -291,6 +291,23 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_act_give_credits", WiredEffectGiveCredits.class));
         this.interactionsList.add(new ItemInteraction("wf_act_give_duckets", WiredEffectGiveDuckets.class));
         this.interactionsList.add(new ItemInteraction("wf_act_give_diamonds", WiredEffectGiveDiamonds.class));
+        // Phase C — canDoNow effects (reuse existing dialog codes; no new client furnidata).
+        this.interactionsList.add(new ItemInteraction("wf_act_give_badge", WiredEffectGiveBadge.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_give_userbadge", WiredEffectGiveBadge.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_remove_badge", WiredEffectRemoveBadge.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_give_achievement", WiredEffectGiveAchievement.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_give_experience", WiredEffectGiveExperience.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_say_command", WiredEffectSayCommand.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_open_habbo_pages", WiredEffectOpenHabboPages.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_make_user_say", WiredEffectMakeUserSay.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_log", WiredEffectLog.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_walk_to_furni", WiredEffectWalkToFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_sit", WiredEffectSit.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_lay", WiredEffectLay.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_make_fast_walk", WiredEffectMakeFastWalk.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_toggle_moodlight", WiredEffectToggleMoodlight.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_reset_highscores", WiredEffectResetHighscores.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_move_user_tiles", WiredEffectMoveUserTiles.class));
         this.interactionsList.add(new ItemInteraction("wf_act_call_stacks", WiredEffectTriggerStacks.class));
         this.interactionsList.add(new ItemInteraction("wf_act_neg_call_stack", WiredEffectNegativeTriggerStacks.class));
         this.interactionsList.add(new ItemInteraction("wf_act_neg_call_stacks", WiredEffectNegativeTriggerStacks.class));
@@ -460,7 +477,7 @@ public class ItemManager {
         // dialog. Low-confidence/superset mappings were intentionally left out for a dedicated impl
         // (dont_chase, give_enable, give_score_pp/room, send_bubble, bot_give_handitem_or_effect,
         // move_rotate_no_under, not_bot_is_dancing, execute_for_users, exec_delay).
-        this.interactionsList.add(new ItemInteraction("wf_act_all_users_leave_team", WiredEffectLeaveTeam.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_all_users_leave_team", WiredEffectAllUsersLeaveTeam.class));
         this.interactionsList.add(new ItemInteraction("wf_act_give_score_custom", WiredEffectGiveScore.class));
         this.interactionsList.add(new ItemInteraction("wf_act_lower_furni", WiredEffectSetAltitude.class));
         this.interactionsList.add(new ItemInteraction("wf_act_raise_furni", WiredEffectSetAltitude.class));

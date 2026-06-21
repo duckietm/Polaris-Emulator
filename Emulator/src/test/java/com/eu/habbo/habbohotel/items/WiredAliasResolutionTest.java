@@ -83,7 +83,6 @@ class WiredAliasResolutionTest {
     void parameterVariantsResolveToTheirBaseClass() {
         Map<String, Class<?>> expected = new LinkedHashMap<>();
         // effects
-        expected.put("wf_act_all_users_leave_team", WiredEffectLeaveTeam.class);
         expected.put("wf_act_give_score_custom", WiredEffectGiveScore.class);
         expected.put("wf_act_lower_furni", WiredEffectSetAltitude.class);
         expected.put("wf_act_raise_furni", WiredEffectSetAltitude.class);
@@ -116,7 +115,7 @@ class WiredAliasResolutionTest {
         // extra
         expected.put("wf_xtra_one_condition", WiredExtraOrEval.class);
 
-        assertEquals(29, expected.size(), "expected exactly the 29 Phase-A parameter-variants");
+        assertEquals(28, expected.size(), "expected exactly the 28 Phase-A parameter-variants");
 
         for (Map.Entry<String, Class<?>> e : expected.entrySet()) {
             ItemInteraction resolved = itemManager.getItemInteraction(e.getKey());
@@ -140,6 +139,28 @@ class WiredAliasResolutionTest {
         assertSame(WiredEffectGiveCredits.class, itemManager.getItemInteraction("wf_act_give_credits").getType());
         assertSame(WiredEffectGiveDuckets.class, itemManager.getItemInteraction("wf_act_give_duckets").getType());
         assertSame(WiredEffectGiveDiamonds.class, itemManager.getItemInteraction("wf_act_give_diamonds").getType());
+    }
+
+    @Test
+    void phaseCCanDoNowEffectsResolve() {
+        // Phase C — new effect classes that reuse existing dialog codes (no new client furnidata).
+        assertSame(WiredEffectGiveBadge.class, itemManager.getItemInteraction("wf_act_give_badge").getType());
+        assertSame(WiredEffectGiveBadge.class, itemManager.getItemInteraction("wf_act_give_userbadge").getType());
+        assertSame(WiredEffectRemoveBadge.class, itemManager.getItemInteraction("wf_act_remove_badge").getType());
+        assertSame(WiredEffectGiveAchievement.class, itemManager.getItemInteraction("wf_act_give_achievement").getType());
+        assertSame(WiredEffectGiveExperience.class, itemManager.getItemInteraction("wf_act_give_experience").getType());
+        assertSame(WiredEffectSayCommand.class, itemManager.getItemInteraction("wf_act_say_command").getType());
+        assertSame(WiredEffectOpenHabboPages.class, itemManager.getItemInteraction("wf_act_open_habbo_pages").getType());
+        assertSame(WiredEffectMakeUserSay.class, itemManager.getItemInteraction("wf_act_make_user_say").getType());
+        assertSame(WiredEffectLog.class, itemManager.getItemInteraction("wf_act_log").getType());
+        assertSame(WiredEffectWalkToFurni.class, itemManager.getItemInteraction("wf_act_walk_to_furni").getType());
+        assertSame(WiredEffectSit.class, itemManager.getItemInteraction("wf_act_sit").getType());
+        assertSame(WiredEffectLay.class, itemManager.getItemInteraction("wf_act_lay").getType());
+        assertSame(WiredEffectMakeFastWalk.class, itemManager.getItemInteraction("wf_act_make_fast_walk").getType());
+        assertSame(WiredEffectToggleMoodlight.class, itemManager.getItemInteraction("wf_act_toggle_moodlight").getType());
+        assertSame(WiredEffectResetHighscores.class, itemManager.getItemInteraction("wf_act_reset_highscores").getType());
+        assertSame(WiredEffectMoveUserTiles.class, itemManager.getItemInteraction("wf_act_move_user_tiles").getType());
+        assertSame(WiredEffectAllUsersLeaveTeam.class, itemManager.getItemInteraction("wf_act_all_users_leave_team").getType());
     }
 
     @Test

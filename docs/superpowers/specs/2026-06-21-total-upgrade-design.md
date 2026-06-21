@@ -176,3 +176,22 @@ The pom declares **Hibernate Validator** and **Resilience4j**, but the code uses
 custom guards and a custom rate limiter instead — these libraries appear unused.
 Not removed (needs confirmation they aren't loaded reflectively/by plugins);
 flagged for a future cleanup pass.
+
+### Phase 3 attempt — DB clone OK, runtime boot blocked by the agent shell
+- **DB clone ready:** the live `next` DB was cloned into an isolated `amx_test`
+  (255 tables, `habbo` granted, GUI+WS disabled in the clone only). Run config
+  staged at `Emulator/target/run-baseline/config.ini` (ports 3100/3101 so the
+  real hotel is untouched). The clone connects fine — boot reaches DB connect
+  (~180ms), config-from-DB, thread pool, plugins, texts.
+- **Boot blocker:** constructing the Netty `GameServer` fails — `Selector.open()`
+  → "Unable to establish loopback connection" → `sun.nio.ch.UnixDomainSockets.connect0`
+  "Invalid argument".
+- **Root cause = the agent's execution shell, NOT the code or JDK 25.** A bare
+  `Selector.open()` fails identically on **JDK 21 and JDK 25**; forcing the legacy
+  `WindowsSelectorProvider` doesn't help. The shell context can't create the
+  AF_UNIX self-pipe the NIO selector needs. In a normal terminal it works (that's
+  why the real hotel boots). **This does NOT implicate the Java 25 upgrade.**
+- **Hand-off:** the user must run the baseline in a normal terminal. Command:
+  `cd Emulator/target/run-baseline && "<temurin25>/bin/java" -Dfile.encoding=UTF-8 -Djava.awt.headless=true -Xms256m -Xmx2g -XX:+UseZGC -XX:+UseCompactObjectHeaders -jar ../Habbo-4.2.45-jar-with-dependencies.jar`
+  Watch for `Memory: x/yMB` and `System launched in: Nms`. Drop the clone later
+  with `DROP DATABASE amx_test;`.

@@ -1,0 +1,35 @@
+name: CI (build & test)
+
+# Validation gate: compiles the emulator and runs the full test suite on
+# every pull request and on pushes to any branch other than main (main is
+# handled by build-release.yml, which also runs the tests). A red build here
+# blocks the merge — the 137+ tests are no longer optional.
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Emulator
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Build & test
+        run: mvn -B clean verify

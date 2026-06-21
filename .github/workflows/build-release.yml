@@ -22,11 +22,11 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
           cache: maven
 
       - name: Bump patch version
@@ -40,8 +40,8 @@ jobs:
           mvn -B versions:set -DnewVersion="$NEW" -DgenerateBackupPoms=false
           echo "new_version=$NEW" >> "$GITHUB_OUTPUT"
 
-      - name: Build JAR
-        run: mvn -B clean package -DskipTests
+      - name: Build JAR (tests must pass)
+        run: mvn -B clean package
 
       - name: Commit bumped pom.xml
         run: |

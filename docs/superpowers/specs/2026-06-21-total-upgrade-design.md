@@ -171,11 +171,20 @@ cannot prove them safe, and getting them wrong is costly:
    (`AuthRateLimiter`, `GameMessageRateLimit`), so Phase 2 is largely in place.
    Invasive refactors are high-risk and should follow the harness in (3).
 
-### Observation: unused declared dependencies
-The pom declares **Hibernate Validator** and **Resilience4j**, but the code uses
-custom guards and a custom rate limiter instead — these libraries appear unused.
-Not removed (needs confirmation they aren't loaded reflectively/by plugins);
-flagged for a future cleanup pass.
+### Correction: Hibernate Validator and Resilience4j ARE used (do NOT remove)
+An earlier exploration claimed these pom dependencies were unused — that was
+**wrong**, verified by direct import search:
+- **Resilience4j** `RateLimiter`/`RateLimiterConfig` → `networking/rconserver/RCONServer.java`.
+- **Hibernate Validator** (Jakarta Validation impl) → `messages/rcon/RconPayloadValidator.java`
+  (`Validation`/`Validator`/`ValidatorFactory`/`ConstraintViolation` +
+  Hibernate's `ParameterMessageInterpolator`) and the RCON DTOs
+  (`@NotBlank`/`@Positive`/`@Size`/`@Pattern`/`@Min` across `TalkUser`,
+  `HotelAlert`, `GiveCredits`, etc.).
+
+So declarative validation IS used for the RCON surface (alongside the custom
+`*InputGuard` classes for the game-packet surface). Both libraries are load-
+bearing — leave them in. Lesson: adversarially verify exploration claims before
+acting on them.
 
 ### Phase 3 attempt — DB clone OK, runtime boot blocked by the agent shell
 - **DB clone ready:** the live `next` DB was cloned into an isolated `amx_test`

@@ -13,17 +13,11 @@ public enum CatalogPageType {
             return NORMAL;
         }
 
-        switch (value.trim().toUpperCase()) {
-            case "BUILDERS_CLUB":
-            case "BUILDER":
-            case "BC":
-                return BUILDER;
-            case "BOTH":
-                return BOTH;
-            case "NORMAL":
-            default:
-                return NORMAL;
-        }
+        return switch (value.trim().toUpperCase()) {
+            case "BUILDERS_CLUB", "BUILDER", "BC" -> BUILDER;
+            case "BOTH" -> BOTH;
+            default -> NORMAL;
+        };
     }
 
     public boolean matches(CatalogPageType requestedType) {

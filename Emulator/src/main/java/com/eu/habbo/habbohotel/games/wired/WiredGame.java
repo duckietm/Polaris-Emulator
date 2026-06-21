@@ -53,17 +53,12 @@ public class WiredGame extends Game {
     }
 
     private int getEffectId(GameTeamColors teamColor) {
-        switch (teamColor) {
-            case RED:
-                return RED_EFFECT_ID;
-            case BLUE:
-                return BLUE_EFFECT_ID;
-            case YELLOW:
-                return YELLOW_EFFECT_ID;
-            case GREEN:
-                return GREEN_EFFECT_ID;
-            default:
-                return FreezeGame.effectId + teamColor.type;
-        }
+        return switch (teamColor) {
+            case RED -> RED_EFFECT_ID;
+            case BLUE -> BLUE_EFFECT_ID;
+            case YELLOW -> YELLOW_EFFECT_ID;
+            case GREEN -> GREEN_EFFECT_ID;
+            default -> FreezeGame.effectId + teamColor.type;
+        };
     }
 }

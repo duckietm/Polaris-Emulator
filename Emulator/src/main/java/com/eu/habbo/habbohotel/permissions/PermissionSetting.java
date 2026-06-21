@@ -15,14 +15,10 @@ public enum PermissionSetting {
             return DISALLOWED;
         }
 
-        switch (value) {
-            case "1":
-                return ALLOWED;
-            case "2":
-                return ROOM_OWNER;
-
-        }
-
-        return DISALLOWED;
+        return switch (value) {
+            case "1" -> ALLOWED;
+            case "2" -> ROOM_OWNER;
+            default -> DISALLOWED;
+        };
     }
 }

@@ -13,13 +13,10 @@ public enum RedeemableSubscriptionType {
     public static RedeemableSubscriptionType fromString(String subscriptionType) {
         if (subscriptionType == null) return null;
 
-        switch (subscriptionType) {
-            case "hc":
-                return HABBO_CLUB;
-            case "bc":
-                return BUILDERS_CLUB;
-        }
-
-        return null;
+        return switch (subscriptionType) {
+            case "hc" -> HABBO_CLUB;
+            case "bc" -> BUILDERS_CLUB;
+            default -> null;
+        };
     }
 }

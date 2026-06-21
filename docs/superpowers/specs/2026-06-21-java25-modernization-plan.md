@@ -13,8 +13,8 @@ if red. The pom prerequisite (release=25) is already done.
 | 10a | Virtual-thread executor: YouTube playlist HTTP loader | 1 | ✅ done (`7f1cef10`) |
 | 6 | Switch expressions (value-mapper / return-only) | ~30 | ◑ started — FurnitureType (`2e4176cd`); ~29 left (GuildManager.rankQuery, SettingsState, EarningsCenterManager string switches, …) |
 | 2 | `Collectors.toList()/toSet()` → `Stream.toList()/toSet()` | 72 + 4 | ☐ todo — ONLY where result is read-only (toList() is unmodifiable) |
-| 3 | Pattern matching for `instanceof` (test-then-cast) | ~445 | ☐ todo — package by package; behaviour-preserving by construction |
-| 4 | Pattern matching `instanceof` guarded-`&&` form | ~42 | ☐ todo — follows batch 3 |
+| 3 | Pattern matching for `instanceof` (test-then-cast) | ~445 | ✅ done — waves 1-4 (`f9e59fdb`, `611b7985`, `0be2381e` + items/interactions). ~340 conversions across the whole module; non-candidates (bool checks, `==`, OR-chains, cast-to-other-type) correctly skipped |
+| 4 | Pattern matching `instanceof` guarded-`&&` + negated early-exit | ~42 | ✅ done — folded into waves 1-4; compiler-verified definite-assignment for every binding |
 | 7 | Fall-through / multi-label switch collapsing (`case A, B ->`) | ~8 | ☐ todo |
 | 5 | **Seal** the 3 Wired base hierarchies (Condition/Effect/Trigger) | 112 subclasses | ☐ todo — keystone; declarative + compiler-verified |
 | 8 | Records for vetted immutable carriers | 12 classes | ☐ todo — ONE per commit; keep ResultSet ctor as secondary |

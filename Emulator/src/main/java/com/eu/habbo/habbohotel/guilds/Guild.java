@@ -257,18 +257,13 @@ public class Guild implements Runnable {
             return true;
         }
 
-        switch (this.readForum) {
-            case EVERYONE:
-                return true;
-            case MEMBERS:
-                return member != null && member.getRank().type <= GuildRank.MEMBER.type;
-            case ADMINS:
-                return member != null && member.getRank().type < GuildRank.MEMBER.type;
-            case OWNER:
-                return false;
-            default:
-                return true;
-        }
+        return switch (this.readForum) {
+            case EVERYONE -> true;
+            case MEMBERS -> member != null && member.getRank().type <= GuildRank.MEMBER.type;
+            case ADMINS -> member != null && member.getRank().type < GuildRank.MEMBER.type;
+            case OWNER -> false;
+            default -> true;
+        };
     }
 
     public void setReadForum(SettingsState readForum) {

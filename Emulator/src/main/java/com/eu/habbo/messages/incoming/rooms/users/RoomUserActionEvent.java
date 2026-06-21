@@ -61,22 +61,13 @@ public class RoomUserActionEvent extends MessageHandler {
             room.sendComposer(new RoomUserActionComposer(habbo.getRoomUnit(), RoomUserAction.fromValue(action)).compose());
 
             if (wiredAction == 0) {
-                switch (action) {
-                    case 1:
-                        wiredAction = WiredUserActionType.WAVE;
-                        break;
-                    case 2:
-                        wiredAction = WiredUserActionType.BLOW_KISS;
-                        break;
-                    case 3:
-                        wiredAction = WiredUserActionType.LAUGH;
-                        break;
-                    case 7:
-                        wiredAction = WiredUserActionType.THUMB_UP;
-                        break;
-                    default:
-                        break;
-                }
+                wiredAction = switch (action) {
+                    case 1 -> WiredUserActionType.WAVE;
+                    case 2 -> WiredUserActionType.BLOW_KISS;
+                    case 3 -> WiredUserActionType.LAUGH;
+                    case 7 -> WiredUserActionType.THUMB_UP;
+                    default -> 0;
+                };
             }
 
             if (wiredAction != 0) {

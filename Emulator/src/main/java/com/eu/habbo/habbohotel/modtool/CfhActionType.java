@@ -13,18 +13,12 @@ public enum CfhActionType {
     }
 
     public static CfhActionType get(String name) {
-        switch (name) {
-            case "auto_reply":
-                return CfhActionType.AUTO_REPLY;
-
-            case "auto_ignore":
-                return CfhActionType.AUTO_IGNORE;
-
-            case "guardians":
-                return CfhActionType.GUARDIANS;
-        }
-
-        return CfhActionType.MODS;
+        return switch (name) {
+            case "auto_reply" -> CfhActionType.AUTO_REPLY;
+            case "auto_ignore" -> CfhActionType.AUTO_IGNORE;
+            case "guardians" -> CfhActionType.GUARDIANS;
+            default -> CfhActionType.MODS;
+        };
     }
 
     @Override

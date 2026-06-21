@@ -17,16 +17,11 @@ public enum MarketPlaceState {
     }
 
     public static MarketPlaceState getType(int type) {
-        switch (type) {
-            case 1:
-                return OPEN;
-            case 2:
-                return SOLD;
-            case 3:
-                return CLOSED;
-        }
-
-        return CLOSED;
+        return switch (type) {
+            case 1 -> OPEN;
+            case 2 -> SOLD;
+            default -> CLOSED;
+        };
     }
 
     public int getState() {

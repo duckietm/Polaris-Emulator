@@ -138,27 +138,15 @@ public class MarketPlace {
 
         query += " GROUP BY base_item_id, ltd_data";
 
-        switch (sort) {
-            case 6:
-                query += " ORDER BY number ASC";
-                break;
-            case 5:
-                query += " ORDER BY number DESC";
-                break;
-            case 4:
-                query += " ORDER BY sold_count_today ASC";
-                break;
-            case 3:
-                query += " ORDER BY sold_count_today DESC";
-                break;
-            case 2:
-                query += " ORDER BY minPrice ASC";
-                break;
-            default:
-            case 1:
-                query += " ORDER BY minPrice DESC";
-                break;
-        }
+        query += switch (sort) {
+            case 6 -> " ORDER BY number ASC";
+            case 5 -> " ORDER BY number DESC";
+            case 4 -> " ORDER BY sold_count_today ASC";
+            case 3 -> " ORDER BY sold_count_today DESC";
+            case 2 -> " ORDER BY minPrice ASC";
+            case 1 -> " ORDER BY minPrice DESC";
+            default -> " ORDER BY minPrice DESC";
+        };
 
         query += ")";
 

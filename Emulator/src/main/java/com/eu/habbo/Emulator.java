@@ -142,35 +142,12 @@ public final class Emulator {
             Emulator.threading = new ThreadPooling(Emulator.getConfig().getInt("runtime.threads"));
             Emulator.getDatabase().getDataSource().setMaximumPoolSize(Emulator.getConfig().getInt("runtime.threads") * 2);
             Emulator.getDatabase().getDataSource().setMinimumIdle(10);
+            registerStartupConfigDefaults();
             Emulator.pluginManager = new PluginManager();
             Emulator.pluginManager.reload();
             Emulator.getPluginManager().fireEvent(new EmulatorConfigUpdatedEvent());
             Emulator.texts = new TextsManager();
 
-            Emulator.config.register("camera.url", "http://localhost/camera/");
-            Emulator.config.register("imager.location.output.camera", "/public/camera/");
-            Emulator.config.register("imager.location.output.thumbnail", "/public/camera/thumbnails/");
-            Emulator.config.register("camera.price.points.publish", "1");
-            Emulator.config.register("camera.price.points.publish.type", "5");
-            Emulator.config.register("camera.publish.delay", "180");
-            Emulator.config.register("camera.price.credits", "2");
-            Emulator.config.register("camera.price.points", "0");
-            Emulator.config.register("camera.price.points.type", "5");
-            Emulator.config.register("camera.render.delay", "5");
-            Emulator.config.register("hotel.timezone", java.time.ZoneId.systemDefault().getId());
-            Emulator.config.register("gui.enabled", "0");
-            Emulator.config.register("gui.autostart.enabled", "0");
-            Emulator.config.register("rcon.rate_limit.enabled", "1");
-            Emulator.config.register("rcon.rate_limit.limit_for_period", "60");
-            Emulator.config.register("rcon.rate_limit.refresh_period_ms", "1000");
-            Emulator.config.register("rcon.rate_limit.timeout_ms", "0");
-            Emulator.config.register("rcon.execute_command.denied_permissions", "cmd_shutdown;cmd_give_rank");
-            Emulator.config.register("rcon.execute_command.allowed_permissions", "");
-            Emulator.config.register("rcon.max_payload_bytes", "65536");
-            Emulator.config.register("nitro.secure.api.max_payload_bytes", "65536");
-            Emulator.config.register("nitro.secure.config.max_file_bytes", "2097152");
-            Emulator.config.register("nitro.secure.gamedata.max_file_bytes", "16777216");
-            registerEarningsSettings();
             String hotelTimezoneId = Emulator.getConfig().getValue("hotel.timezone", java.time.ZoneId.systemDefault().getId());
             System.out.println(startupCard(hotelTimezoneId));
             Emulator.texts.register("camera.permission", "You don't have permission to use the camera!");
@@ -402,6 +379,33 @@ public final class Emulator {
 
     static boolean shouldLaunchGui() {
         return Emulator.getConfig() != null && Emulator.getConfig().getBoolean("gui.autostart.enabled", false);
+    }
+
+    private static void registerStartupConfigDefaults() {
+        Emulator.config.register("camera.url", "http://localhost/camera/");
+        Emulator.config.register("imager.location.output.camera", "/public/camera/");
+        Emulator.config.register("imager.location.output.thumbnail", "/public/camera/thumbnails/");
+        Emulator.config.register("camera.price.points.publish", "1");
+        Emulator.config.register("camera.price.points.publish.type", "5");
+        Emulator.config.register("camera.publish.delay", "180");
+        Emulator.config.register("camera.price.credits", "2");
+        Emulator.config.register("camera.price.points", "0");
+        Emulator.config.register("camera.price.points.type", "5");
+        Emulator.config.register("camera.render.delay", "5");
+        Emulator.config.register("hotel.timezone", java.time.ZoneId.systemDefault().getId());
+        Emulator.config.register("gui.enabled", "0");
+        Emulator.config.register("gui.autostart.enabled", "0");
+        Emulator.config.register("rcon.rate_limit.enabled", "1");
+        Emulator.config.register("rcon.rate_limit.limit_for_period", "60");
+        Emulator.config.register("rcon.rate_limit.refresh_period_ms", "1000");
+        Emulator.config.register("rcon.rate_limit.timeout_ms", "0");
+        Emulator.config.register("rcon.execute_command.denied_permissions", "cmd_shutdown;cmd_give_rank");
+        Emulator.config.register("rcon.execute_command.allowed_permissions", "");
+        Emulator.config.register("rcon.max_payload_bytes", "65536");
+        Emulator.config.register("nitro.secure.api.max_payload_bytes", "65536");
+        Emulator.config.register("nitro.secure.config.max_file_bytes", "2097152");
+        Emulator.config.register("nitro.secure.gamedata.max_file_bytes", "16777216");
+        registerEarningsSettings();
     }
 
     private static String fit(String value, int width) {

@@ -199,7 +199,7 @@ public class WheelManager {
             acc += prize.weight;
             if (roll < acc) return prize;
         }
-        return this.prizes.get(this.prizes.size() - 1);
+        return this.prizes.getLast();
     }
 
     private void giveReward(Habbo habbo, WheelPrize prize, WheelUserState state) {
@@ -262,7 +262,7 @@ public class WheelManager {
 
         this.recentWinsCache.add(0, win);
         while (this.recentWinsCache.size() > RECENT_KEEP) {
-            this.recentWinsCache.remove(this.recentWinsCache.size() - 1);
+            this.recentWinsCache.removeLast();
         }
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {

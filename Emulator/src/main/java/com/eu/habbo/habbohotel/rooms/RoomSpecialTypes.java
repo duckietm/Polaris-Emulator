@@ -144,7 +144,7 @@ public class RoomSpecialTypes {
 
         if (!teleporterList.isEmpty()) {
             Collections.shuffle(teleporterList);
-            return teleporterList.get(0);
+            return teleporterList.getFirst();
         }
 
         return null;

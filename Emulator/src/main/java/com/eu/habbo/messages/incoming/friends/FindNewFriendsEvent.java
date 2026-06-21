@@ -20,7 +20,7 @@ public class FindNewFriendsEvent extends MessageHandler {
             List<Room> rooms = Emulator.getGameEnvironment().getRoomManager().getActiveRooms(category.getId());
 
             if (!rooms.isEmpty()) {
-                Room room = rooms.get(0);
+                Room room = rooms.getFirst();
 
                 if (room.getUserCount() > 0) {
                     this.client.sendResponse(new ForwardToRoomComposer(room.getId()));

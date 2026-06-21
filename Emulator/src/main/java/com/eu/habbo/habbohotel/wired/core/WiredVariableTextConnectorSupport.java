@@ -26,7 +26,7 @@ public final class WiredVariableTextConnectorSupport {
 
     public static WiredExtraVariableTextConnector getConnector(Room room, int definitionItemId) {
         List<WiredExtraVariableTextConnector> connectors = getConnectors(room, definitionItemId);
-        return connectors.isEmpty() ? null : connectors.get(0);
+        return connectors.isEmpty() ? null : connectors.getFirst();
     }
 
     public static List<WiredExtraVariableTextConnector> getConnectors(Room room, int definitionItemId) {
@@ -40,7 +40,7 @@ public final class WiredVariableTextConnectorSupport {
 
     public static WiredExtraVariableTextConnector getConnector(Room room, InteractionWiredExtra definition) {
         List<WiredExtraVariableTextConnector> connectors = getConnectors(room, definition);
-        return connectors.isEmpty() ? null : connectors.get(0);
+        return connectors.isEmpty() ? null : connectors.getFirst();
     }
 
     public static List<WiredExtraVariableTextConnector> getConnectors(Room room, InteractionWiredExtra definition) {

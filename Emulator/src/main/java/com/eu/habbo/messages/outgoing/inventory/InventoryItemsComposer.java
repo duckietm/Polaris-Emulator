@@ -91,7 +91,7 @@ public class InventoryItemsComposer extends MessageComposer implements TIntObjec
             this.response.appendString("");
             if(habboItem.getBaseItem().getName().equals("song_disk")) {
                 List<String> extraDataAsList = Arrays.asList(habboItem.getExtradata().split("\n"));
-                this.response.appendInt(Integer.valueOf(extraDataAsList.get(extraDataAsList.size() - 1)));
+                this.response.appendInt(Integer.valueOf(extraDataAsList.getLast()));
                 return true;
             }
             this.response.appendInt(habboItem instanceof InteractionGift gift ? (((gift.getColorId() * 1000) + gift.getRibbonId())) : 1);

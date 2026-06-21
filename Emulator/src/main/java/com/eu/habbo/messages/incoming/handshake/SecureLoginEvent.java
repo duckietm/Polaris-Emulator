@@ -275,7 +275,7 @@ public class SecureLoginEvent extends MessageHandler {
                     ArrayList<ModToolSanctionItem> modToolSanctionItems = modToolSanctionItemsHashMap.get(habbo.getHabboInfo().getId());
 
                     if (modToolSanctionItems != null && !modToolSanctionItems.isEmpty()) {
-                        ModToolSanctionItem item = modToolSanctionItems.get(modToolSanctionItems.size() - 1);
+                        ModToolSanctionItem item = modToolSanctionItems.getLast();
 
                         if (item.sanctionLevel > 0 && item.probationTimestamp != 0 && item.probationTimestamp > Emulator.getIntUnixTimestamp()) {
                             this.client.sendResponse(new ModToolSanctionInfoComposer(this.client.getHabbo()));

@@ -284,7 +284,7 @@ public final class WiredVariableLevelSystemSupport {
             entries.add(new LevelEntry(1, 0));
         }
 
-        int maxLevel = entries.get(entries.size() - 1).level;
+        int maxLevel = entries.getLast().level;
         int currentLevel = 1;
         int currentThreshold = 0;
         int nextThreshold = 0;

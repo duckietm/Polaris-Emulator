@@ -34,7 +34,7 @@ public class ModToolSanctionInfoComposer extends MessageComposer {
             ArrayList<ModToolSanctionItem> modToolSanctionItems = modToolSanctionItemsHashMap.get(habbo.getHabboInfo().getId());
 
             if (modToolSanctionItems != null && modToolSanctionItems.size() > 0) {
-                ModToolSanctionItem item = modToolSanctionItems.get(modToolSanctionItems.size() - 1);
+                ModToolSanctionItem item = modToolSanctionItems.getLast();
 
                 ModToolSanctionItem prevItem = null;
                 if (modToolSanctionItems.size() > 1 && modToolSanctionItems.get(modToolSanctionItems.size() - 2) != null) {

@@ -521,7 +521,7 @@ public class RoomTileManager {
         }
 
         java.util.Collections.shuffle(walkableTiles);
-        return walkableTiles.get(0);
+        return walkableTiles.getFirst();
     }
 
     /**

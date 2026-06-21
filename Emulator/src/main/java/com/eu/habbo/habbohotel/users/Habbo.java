@@ -39,7 +39,12 @@ public class Habbo implements Runnable {
     private final HabboStats habboStats;
     private final Messenger messenger;
     private final HabboInventory habboInventory;
-    private GameClient client;
+    // volatile: read/written across packet-handler executors. On a fast reconnect
+    // (session resume) SecureLoginEvent re-points this to the new GameClient on one
+    // executor while packets still queued on the OLD channel's executor read it —
+    // without volatile they could observe a stale client (no happens-before edge).
+    // Pre-existing cross-executor race, independent of the virtual-thread flag.
+    private volatile GameClient client;
     private RoomUnit roomUnit;
 
     private volatile boolean update;

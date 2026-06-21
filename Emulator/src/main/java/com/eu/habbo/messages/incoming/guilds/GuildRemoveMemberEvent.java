@@ -40,6 +40,19 @@ public class GuildRemoveMemberEvent extends MessageHandler {
             return;
         }
 
+        GuildMember targetMember = Emulator.getGameEnvironment().getGuildManager().getGuildMember(guildId, userId);
+        if (targetMember == null) {
+            return;
+        }
+
+        boolean actorIsGuildOwner = guild.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() || member.getRank().equals(GuildRank.OWNER);
+        boolean actorIsGlobalGuildAdmin = this.client.getHabbo().hasPermission(Permission.ACC_GUILD_ADMIN);
+        if ((targetMember.getRank().equals(GuildRank.ADMIN) || targetMember.getRank().equals(GuildRank.OWNER))
+                && !actorIsGuildOwner
+                && !actorIsGlobalGuildAdmin) {
+            return;
+        }
+
         if (userId == this.client.getHabbo().getHabboInfo().getId() || guild.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() || member.getRank().equals(GuildRank.OWNER) || member.getRank().equals(GuildRank.ADMIN) || this.client.getHabbo().hasPermission(Permission.ACC_GUILD_ADMIN)) {
             Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
             GuildRemovedMemberEvent removedMemberEvent = new GuildRemovedMemberEvent(guild, userId, habbo);

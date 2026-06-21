@@ -28,9 +28,9 @@ public class HousekeepingKickUserEvent extends MessageHandler {
         }
 
         int userId = this.packet.readInt();
-        String reason = this.packet.readString();
+        String reason = HousekeepingInputGuard.normalize(this.packet.readString());
 
-        if (userId <= 0) {
+        if (userId <= 0 || !HousekeepingInputGuard.isWithinLimit(reason, HousekeepingInputGuard.MAX_REASON_LENGTH)) {
             this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.invalid_input"));
             return;
         }
@@ -39,6 +39,11 @@ public class HousekeepingKickUserEvent extends MessageHandler {
 
         if (target == null) {
             this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.user_offline"));
+            return;
+        }
+
+        if (!HousekeepingTargetRankGuard.canTargetUser(this.client.getHabbo(), userId)) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
             return;
         }
 
@@ -51,10 +56,15 @@ public class HousekeepingKickUserEvent extends MessageHandler {
             Emulator.getGameEnvironment().getRoomManager().leaveRoom(target, target.getHabboInfo().getCurrentRoom());
         }
 
-        if (reason != null && !reason.isEmpty()) {
+        if (!reason.isEmpty()) {
             target.alert(reason);
         }
 
+        com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
+                this.client.getHabbo().getHabboInfo().getId(),
+                this.client.getHabbo().getHabboInfo().getUsername(),
+                ACTION_KEY, userId, "reason=" + HousekeepingInputGuard.auditValue(reason),
+                this.client.getHabbo().getHabboInfo().getIpLogin());
         this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, userId, ""));
     }
 }

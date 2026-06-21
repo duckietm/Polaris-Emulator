@@ -32,35 +32,44 @@ public class RedeemCommand extends Command {
         for (HabboItem item : gameClient.getHabbo().getInventory().getItemsComponent().getItemsAsValueCollection()) {
             if (item.getBaseItem().getName().startsWith("CF_") || item.getBaseItem().getName().startsWith("CFC_") || item.getBaseItem().getName().startsWith("DF_") || item.getBaseItem().getName().startsWith("PF_")) {
                 if (item.getUserId() == gameClient.getHabbo().getHabboInfo().getId()) {
-                    items.add(item);
+                    boolean redeemable = false;
                     if ((item.getBaseItem().getName().startsWith("CF_") || item.getBaseItem().getName().startsWith("CFC_")) && !item.getBaseItem().getName().contains("_diamond_")) {
-                        try {
-                            credits += Integer.parseInt(item.getBaseItem().getName().split("_")[1]);
-                        } catch (Exception e) {
+                        Integer amount = parsePositiveRedeemValue(item.getBaseItem().getName(), 1);
+                        if (amount != null) {
+                            Integer total = addRedeemValue(credits, amount);
+                            if (total != null) {
+                                credits = total;
+                                redeemable = true;
+                            }
                         }
 
                     } else if (item.getBaseItem().getName().startsWith("PF_")) {
-                        try {
-                            pixels += Integer.parseInt(item.getBaseItem().getName().split("_")[1]);
-                        } catch (Exception e) {
+                        Integer amount = parsePositiveRedeemValue(item.getBaseItem().getName(), 1);
+                        if (amount != null) {
+                            Integer total = addRedeemValue(pixels, amount);
+                            if (total != null) {
+                                pixels = total;
+                                redeemable = true;
+                            }
                         }
                     } else if (item.getBaseItem().getName().startsWith("DF_")) {
-                        int pointsType;
-                        int pointsAmount;
+                        Integer pointsType = parsePositiveRedeemValue(item.getBaseItem().getName(), 1);
+                        Integer pointsAmount = parsePositiveRedeemValue(item.getBaseItem().getName(), 2);
 
-                        pointsType = Integer.parseInt(item.getBaseItem().getName().split("_")[1]);
-                        pointsAmount = Integer.parseInt(item.getBaseItem().getName().split("_")[2]);
-
-                        points.adjustOrPutValue(pointsType, pointsAmount, pointsAmount);
+                        if (pointsType != null && pointsAmount != null && addRedeemPoints(points, pointsType, pointsAmount)) {
+                            redeemable = true;
+                        }
                     }
                     else if (item.getBaseItem().getName().startsWith("CF_diamond_")) {
-                        int pointsType;
-                        int pointsAmount;
+                        Integer pointsAmount = parsePositiveRedeemValue(item.getBaseItem().getName(), 2);
 
-                        pointsType = 5;
-                        pointsAmount = Integer.parseInt(item.getBaseItem().getName().split("_")[2]);
+                        if (pointsAmount != null && addRedeemPoints(points, 5, pointsAmount)) {
+                            redeemable = true;
+                        }
+                    }
 
-                        points.adjustOrPutValue(pointsType, pointsAmount, pointsAmount);
+                    if (redeemable) {
+                        items.add(item);
                     }
                 }
             }
@@ -101,6 +110,43 @@ public class RedeemCommand extends Command {
 
         gameClient.getHabbo().whisper(message[0], RoomChatMessageBubbles.ALERT);
 
+        return true;
+    }
+
+    static Integer parsePositiveRedeemValue(String itemName, int index) {
+        if (itemName == null) {
+            return null;
+        }
+
+        String[] parts = itemName.split("_");
+        if (index < 0 || index >= parts.length) {
+            return null;
+        }
+
+        try {
+            int value = Integer.parseInt(parts[index]);
+            return value > 0 ? value : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    static Integer addRedeemValue(int current, int amount) {
+        try {
+            return Math.addExact(current, amount);
+        } catch (ArithmeticException e) {
+            return null;
+        }
+    }
+
+    static boolean addRedeemPoints(TIntIntMap points, int pointsType, int amount) {
+        int current = points.get(pointsType);
+        Integer total = addRedeemValue(current, amount);
+        if (total == null) {
+            return false;
+        }
+
+        points.put(pointsType, total);
         return true;
     }
 }

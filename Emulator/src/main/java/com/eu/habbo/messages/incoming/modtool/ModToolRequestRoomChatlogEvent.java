@@ -12,7 +12,13 @@ public class ModToolRequestRoomChatlogEvent extends MessageHandler {
     public void handle() throws Exception {
         if (this.client.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL)) {
             this.packet.readInt();
-            Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.packet.readInt());
+            int roomId = this.packet.readInt();
+
+            if (!ModToolTicketGuard.isPositiveId(roomId)) {
+                return;
+            }
+
+            Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
 
             if (room != null)
                 this.client.sendResponse(new ModToolRoomChatlogComposer(room, Emulator.getGameEnvironment().getModToolManager().getRoomChatlog(room.getId())));

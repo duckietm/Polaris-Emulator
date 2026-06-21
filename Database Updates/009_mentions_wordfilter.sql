@@ -37,6 +37,10 @@ VALUES
 ON DUPLICATE KEY UPDATE
     `comment` = VALUES(`comment`);
 
+INSERT IGNORE INTO `emulator_texts` (`key`, `value`) VALUES
+    ('commands.description.cmd_disablementions', ':disablementions'),
+    ('commands.description.cmd_disablemassmentions', ':disablemassmentions');
+
 
 -- ----------------------------------------------------------------------------
 -- 3. Emulator settings: cooldowns, caps and alias lists

@@ -20,6 +20,7 @@ import java.util.List;
 public class WiredConditionHabboWearsBadge extends InteractionWiredCondition {
     protected static final int QUANTIFIER_ALL = 0;
     protected static final int QUANTIFIER_ANY = 1;
+    protected static final int MAX_BADGE_CODE_LENGTH = 64;
 
     public static final WiredConditionType type = WiredConditionType.ACTOR_WEARS_BADGE;
 
@@ -37,6 +38,10 @@ public class WiredConditionHabboWearsBadge extends InteractionWiredCondition {
 
     @Override
     public boolean evaluate(WiredContext ctx) {
+        if (ctx == null || ctx.room() == null) {
+            return false;
+        }
+
         Room room = ctx.room();
         List<RoomUnit> targets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
         if (targets.isEmpty()) return false;
@@ -102,15 +107,30 @@ public class WiredConditionHabboWearsBadge extends InteractionWiredCondition {
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        this.onPickUp();
         String wiredData = set.getString("wired_data");
+        if (wiredData == null) {
+            this.onPickUp();
+            return;
+        }
 
         if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            this.badge = data.badge;
-            this.userSource = data.userSource;
+            JsonData data;
+            try {
+                data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            } catch (RuntimeException ignored) {
+                this.onPickUp();
+                return;
+            }
+            if (data == null) {
+                this.onPickUp();
+                return;
+            }
+            this.badge = WiredUserConditionInputGuard.normalizeBadgeCode(data.badge);
+            this.userSource = WiredUserConditionInputGuard.normalizeUserSource(data.userSource);
             this.quantifier = this.normalizeQuantifier(data.quantifier, QUANTIFIER_ANY);
         } else {
-            this.badge = wiredData;
+            this.badge = WiredUserConditionInputGuard.normalizeBadgeCode(wiredData);
             this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
             this.quantifier = QUANTIFIER_ANY;
         }
@@ -147,9 +167,9 @@ public class WiredConditionHabboWearsBadge extends InteractionWiredCondition {
 
     @Override
     public boolean saveData(WiredSettings settings) {
-        this.badge = settings.getStringParam();
+        this.badge = WiredUserConditionInputGuard.normalizeBadgeCode(settings.getStringParam());
         int[] params = settings.getIntParams();
-        this.userSource = (params.length > 0) ? params[0] : WiredSourceUtil.SOURCE_TRIGGER;
+        this.userSource = (params.length > 0) ? WiredUserConditionInputGuard.normalizeUserSource(params[0]) : WiredSourceUtil.SOURCE_TRIGGER;
         this.quantifier = (params.length > 1) ? this.normalizeQuantifier(params[1], QUANTIFIER_ANY) : QUANTIFIER_ANY;
 
         return true;
@@ -165,6 +185,19 @@ public class WiredConditionHabboWearsBadge extends InteractionWiredCondition {
         }
 
         return (value == QUANTIFIER_ANY) ? QUANTIFIER_ANY : QUANTIFIER_ALL;
+    }
+
+    protected String normalizeBadge(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        String normalized = value.trim();
+        return normalized.length() <= MAX_BADGE_CODE_LENGTH ? normalized : normalized.substring(0, MAX_BADGE_CODE_LENGTH);
+    }
+
+    protected int normalizeUserSource(int value) {
+        return WiredSourceUtil.isDefaultUserSource(value) ? value : WiredSourceUtil.SOURCE_TRIGGER;
     }
 
     static class JsonData {

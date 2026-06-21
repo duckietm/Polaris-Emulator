@@ -23,9 +23,14 @@ public class InviteFriendsEvent extends MessageHandler {
                 userIds[i] = this.packet.readInt();
             }
 
-            String message = this.packet.readString();
+            String message = FriendInputGuard.normalizeMessage(this.packet.readString());
+
+            if (message.isEmpty()) {
+                return;
+            }
 
             message = Emulator.getGameEnvironment().getWordFilter().filter(message, this.client.getHabbo());
+            message = FriendInputGuard.normalizeMessage(message);
 
             for (int i : userIds) {
                 if (i == 0)

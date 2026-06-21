@@ -41,9 +41,19 @@ public class HousekeepingRoomStateEvent extends MessageHandler {
             return;
         }
 
+        if (!HousekeepingRoomGuard.canManageRoom(this.client.getHabbo(), room)) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.rank_too_high"));
+            return;
+        }
+
         room.setState(open ? RoomState.OPEN : RoomState.LOCKED);
         room.save();
 
+        com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
+                this.client.getHabbo().getHabboInfo().getId(),
+                this.client.getHabbo().getHabboInfo().getUsername(),
+                actionKey, 0, "roomId=" + roomId + " open=" + open,
+                this.client.getHabbo().getHabboInfo().getIpLogin());
         this.client.sendResponse(new HousekeepingActionResultComposer(actionKey, true, roomId, ""));
     }
 }

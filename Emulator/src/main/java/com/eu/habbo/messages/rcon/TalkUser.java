@@ -4,6 +4,9 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.google.gson.Gson;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 
 public class TalkUser extends RCONMessage<TalkUser.JSON> {
     public TalkUser() {
@@ -38,15 +41,20 @@ public class TalkUser extends RCONMessage<TalkUser.JSON> {
 
     static class JSON {
 
+        @NotBlank(message = "invalid type")
+        @Size(max = 16, message = "invalid type")
         public String type;
 
 
+        @Positive(message = "invalid user")
         public int user_id;
 
 
         public int bubble_id = -1;
 
 
+        @NotBlank(message = "invalid message")
+        @Size(max = 512, message = "invalid message")
         public String message;
     }
 }

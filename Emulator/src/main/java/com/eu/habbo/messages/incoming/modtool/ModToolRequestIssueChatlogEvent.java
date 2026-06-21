@@ -16,7 +16,13 @@ public class ModToolRequestIssueChatlogEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         if (this.client.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL)) {
-            ModToolIssue issue = Emulator.getGameEnvironment().getModToolManager().getTicket(this.packet.readInt());
+            int ticketId = this.packet.readInt();
+
+            if (!ModToolTicketGuard.isPositiveId(ticketId)) {
+                return;
+            }
+
+            ModToolIssue issue = Emulator.getGameEnvironment().getModToolManager().getTicket(ticketId);
 
             if (issue != null) {
                 List<ModToolChatLog> chatlog = new ArrayList<>();

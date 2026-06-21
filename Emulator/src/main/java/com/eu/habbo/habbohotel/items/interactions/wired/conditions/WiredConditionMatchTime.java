@@ -126,7 +126,14 @@ public class WiredConditionMatchTime extends InteractionWiredCondition {
         }
 
         if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            JsonData data;
+            try {
+                data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            } catch (RuntimeException exception) {
+                this.reset();
+                return;
+            }
+
             if (data == null) {
                 return;
             }
@@ -195,7 +202,7 @@ public class WiredConditionMatchTime extends InteractionWiredCondition {
         }
     }
 
-    private int normalizeMode(int value) {
+    int normalizeMode(int value) {
         if (value < MODE_SKIP || value > MODE_RANGE) {
             return MODE_SKIP;
         }
@@ -203,11 +210,11 @@ public class WiredConditionMatchTime extends InteractionWiredCondition {
         return value;
     }
 
-    private int normalizeHour(int value) {
+    int normalizeHour(int value) {
         return Math.max(0, Math.min(23, value));
     }
 
-    private int normalizeMinuteOrSecond(int value) {
+    int normalizeMinuteOrSecond(int value) {
         return Math.max(0, Math.min(59, value));
     }
 

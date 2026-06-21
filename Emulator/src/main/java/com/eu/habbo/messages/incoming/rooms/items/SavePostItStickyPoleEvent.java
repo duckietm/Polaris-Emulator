@@ -24,25 +24,39 @@ public class SavePostItStickyPoleEvent extends MessageHandler {
         if (itemId == -1234) {
             if (this.client.getHabbo().hasPermission("cmd_multi")) {
                 String[] commands = this.packet.readString().split("\r");
+                if (commands.length > RoomItemInputGuard.MAX_STICKY_POLE_COMMANDS)
+                    return;
 
                 for (String command : commands) {
-                    command = command.replace("<br>", "\r");
+                    command = RoomItemInputGuard.trimToMax(command.replace("<br>", "\r"), RoomItemInputGuard.MAX_STICKY_POLE_COMMAND_LENGTH);
+                    if (command.isEmpty())
+                        continue;
+
                     CommandHandler.handleCommand(this.client, command);
                 }
             } else {
                 LOGGER.info("Scripter Alert! {} | {}", this.client.getHabbo().getHabboInfo().getUsername(), this.packet.readString());
             }
         } else {
-            String text = this.packet.readString();
+            String text = Emulator.getGameEnvironment().getWordFilter().filter(this.packet.readString().replace(((char) 9) + "", ""), this.client.getHabbo());
+
+            if (text.length() > Emulator.getConfig().getInt("postit.charlimit"))
+                return;
+
+            if (!RoomItemInputGuard.isPositiveId(itemId))
+                return;
 
             Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+            if (room == null)
+                return;
+
             HabboItem sticky = room.getHabboItem(itemId);
 
-            if (sticky != null) {
+            if (sticky instanceof InteractionPostIt) {
                 if (sticky.getUserId() == this.client.getHabbo().getHabboInfo().getId()) {
                     sticky.setUserId(room.getOwnerId());
 
-                    if (color.equalsIgnoreCase(PostItColor.YELLOW.hexColor)) {
+                    if (PostItColor.isCustomColor(color) || color.equalsIgnoreCase(PostItColor.YELLOW.hexColor)) {
                         color = PostItColor.randomColorNotYellow().hexColor;
                     }
                     if (!InteractionPostIt.STICKYPOLE_PREFIX_TEXT.isEmpty()) {

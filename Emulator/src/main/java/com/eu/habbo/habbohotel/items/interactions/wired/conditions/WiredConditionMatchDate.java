@@ -125,7 +125,14 @@ public class WiredConditionMatchDate extends InteractionWiredCondition {
         }
 
         if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            JsonData data;
+            try {
+                data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            } catch (RuntimeException exception) {
+                this.reset();
+                return;
+            }
+
             if (data == null) {
                 return;
             }
@@ -193,7 +200,7 @@ public class WiredConditionMatchDate extends InteractionWiredCondition {
         }
     }
 
-    private int normalizeMode(int value) {
+    int normalizeMode(int value) {
         if (value < MODE_SKIP || value > MODE_RANGE) {
             return MODE_SKIP;
         }
@@ -201,20 +208,20 @@ public class WiredConditionMatchDate extends InteractionWiredCondition {
         return value;
     }
 
-    private int normalizeDay(int value) {
+    int normalizeDay(int value) {
         return Math.max(1, Math.min(31, value));
     }
 
-    private int normalizeYear(int value) {
+    int normalizeYear(int value) {
         return Math.max(1, Math.min(9999, value));
     }
 
-    private int normalizeWeekdayMask(int value) {
+    int normalizeWeekdayMask(int value) {
         int normalized = value & ALL_WEEKDAYS_MASK;
         return (normalized == 0) ? ALL_WEEKDAYS_MASK : normalized;
     }
 
-    private int normalizeMonthMask(int value) {
+    int normalizeMonthMask(int value) {
         int normalized = value & ALL_MONTHS_MASK;
         return (normalized == 0) ? ALL_MONTHS_MASK : normalized;
     }

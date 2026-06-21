@@ -231,37 +231,40 @@ public class WiredEffectBotTeleport extends InteractionWiredEffect {
 
         String wiredData = set.getString("wired_data");
 
-        if(wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            this.setDelay(data.delay);
-            this.botName = data.bot_name;
-            this.furniSource = data.furniSource;
-            this.botSource = (data.botSource != null)
-                    ? WiredBotSourceUtil.normalizeBotSource(data.botSource)
+        JsonData jsonData = WiredEffectPayloadGuard.fromJson(wiredData, JsonData.class);
+        if(jsonData != null) {
+            this.setDelay(WiredEffectPayloadGuard.delay(jsonData.delay));
+            this.botName = WiredEffectPayloadGuard.text(jsonData.bot_name);
+            this.furniSource = WiredEffectPayloadGuard.furniSource(jsonData.furniSource);
+            this.botSource = (jsonData.botSource != null)
+                    ? WiredBotSourceUtil.normalizeBotSource(jsonData.botSource)
                     : WiredBotSourceUtil.SOURCE_BOT_NAME;
 
-            for(int itemId : data.items) {
-                HabboItem item = room.getHabboItem(itemId);
+            if (jsonData.items != null) {
+                for(int itemId : jsonData.items) {
+                    HabboItem item = room.getHabboItem(itemId);
 
-                if (item != null)
-                    this.items.add(item);
+                    if (item != null)
+                        this.items.add(item);
+                }
             }
             if (this.furniSource == WiredSourceUtil.SOURCE_TRIGGER && !this.items.isEmpty()) {
                 this.furniSource = WiredSourceUtil.SOURCE_SELECTED;
             }
         }
         else {
-            String[] wiredDataSplit = set.getString("wired_data").split("\t");
+            String[] wiredDataSplit = wiredData != null ? wiredData.split("\t") : new String[0];
 
             if (wiredDataSplit.length >= 2) {
-                this.setDelay(Integer.parseInt(wiredDataSplit[0]));
+                this.setDelay(WiredEffectPayloadGuard.parseDelay(wiredDataSplit[0]));
                 String[] data = wiredDataSplit[1].split(";");
 
                 if (data.length > 1) {
-                    this.botName = data[0];
+                    this.botName = WiredEffectPayloadGuard.text(data[0]);
 
                     for (int i = 1; i < data.length; i++) {
-                        HabboItem item = room.getHabboItem(Integer.parseInt(data[i]));
+                        int itemId = WiredEffectPayloadGuard.parseInt(data[i], 0);
+                        HabboItem item = itemId > 0 ? room.getHabboItem(itemId) : null;
 
                         if (item != null)
                             this.items.add(item);

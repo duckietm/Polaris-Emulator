@@ -9,7 +9,11 @@ public class FriendPrivateMessageEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         int userId = this.packet.readInt();
-        String message = this.packet.readString();
+        String message = FriendInputGuard.normalizeMessage(this.packet.readString());
+
+        if (message.isEmpty()) {
+            return;
+        }
 
         if (!this.client.getHabbo().getHabboStats().allowTalk()) {
             return;
@@ -24,8 +28,6 @@ public class FriendPrivateMessageEvent extends MessageHandler {
         MessengerBuddy buddy = this.client.getHabbo().getMessenger().getFriend(userId);
         if (buddy == null)
             return;
-
-        if (message.length() > 255) message = message.substring(0, 255);
 
         UserFriendChatEvent event = new UserFriendChatEvent(this.client.getHabbo(), buddy, message);
         if (Emulator.getPluginManager().fireEvent(event).isCancelled())

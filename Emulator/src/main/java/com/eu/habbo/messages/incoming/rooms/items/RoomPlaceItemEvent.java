@@ -18,9 +18,12 @@ public class RoomPlaceItemEvent extends MessageHandler {
     public void handle() throws Exception {
         String[] values = this.packet.readString().split(" ");
 
-        int itemId = -1;
+        if (values.length == 0)
+            return;
 
-        if (values.length != 0) itemId = Integer.parseInt(values[0]);
+        Integer itemId = RoomItemInputGuard.parseInt(values[0]);
+        if (itemId == null || !RoomItemInputGuard.isPositiveId(itemId))
+            return;
 
         if (!this.client.getHabbo().getRoomUnit().isInRoom()) {
             this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.NO_RIGHTS.errorCode));
@@ -56,9 +59,15 @@ public class RoomPlaceItemEvent extends MessageHandler {
         }
 
         if (item.getBaseItem().getType() == FurnitureType.FLOOR) {
-            short x = Short.parseShort(values[1]);
-            short y = Short.parseShort(values[2]);
-            int rotation = Integer.parseInt(values[3]);
+            if (values.length < 4)
+                return;
+
+            Short x = RoomItemInputGuard.parseShort(values[1]);
+            Short y = RoomItemInputGuard.parseShort(values[2]);
+            Integer rotation = RoomItemInputGuard.parseInt(values[3]);
+
+            if (x == null || y == null || rotation == null)
+                return;
 
             RoomTile tile = room.getLayout().getTile(x, y);
 
@@ -108,6 +117,9 @@ public class RoomPlaceItemEvent extends MessageHandler {
                 return;
             }
         } else {
+            if (values.length < 4)
+                return;
+
             FurnitureMovementError error = room.placeWallFurniAt(item, values[1] + " " + values[2] + " " + values[3], this.client.getHabbo());
             if (!error.equals(FurnitureMovementError.NONE)) {
                 this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, error.errorCode));

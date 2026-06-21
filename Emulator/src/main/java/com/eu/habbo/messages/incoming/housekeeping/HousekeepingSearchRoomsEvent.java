@@ -36,14 +36,11 @@ public class HousekeepingSearchRoomsEvent extends MessageHandler {
             return;
         }
 
-        String query = this.packet.readString();
+        String query = HousekeepingInputGuard.normalize(this.packet.readString());
         boolean exactMatch = this.packet.readBoolean();
         int limit = Math.min(Math.max(this.packet.readInt(), 1), HARD_LIMIT);
 
-        if (query == null) query = "";
-        query = query.trim();
-
-        if (query.isEmpty()) {
+        if (query.isEmpty() || !HousekeepingInputGuard.isWithinLimit(query, HousekeepingInputGuard.MAX_LOOKUP_LENGTH)) {
             this.client.sendResponse(new HousekeepingRoomListComposer(new ArrayList<>()));
             return;
         }

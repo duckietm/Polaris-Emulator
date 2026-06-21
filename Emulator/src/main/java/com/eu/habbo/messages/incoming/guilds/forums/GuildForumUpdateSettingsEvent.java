@@ -23,6 +23,15 @@ public class GuildForumUpdateSettingsEvent extends MessageHandler {
         int postThreads = packet.readInt();
         int modForum = packet.readInt();
 
+        if (!GuildForumInputGuard.isPositiveId(guildId) ||
+                !GuildForumInputGuard.isSettingsState(canRead) ||
+                !GuildForumInputGuard.isSettingsState(postMessages) ||
+                !GuildForumInputGuard.isSettingsState(postThreads) ||
+                !GuildForumInputGuard.isSettingsState(modForum)) {
+            this.client.sendResponse(new ConnectionErrorComposer(400));
+            return;
+        }
+
         Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
 
         if (guild == null) {

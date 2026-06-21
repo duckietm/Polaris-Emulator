@@ -17,7 +17,15 @@ public class ReportCommentEvent extends MessageHandler {
         int threadId = this.packet.readInt();
         int commentId = this.packet.readInt();
         int topicId = this.packet.readInt();
-        String message = this.packet.readString();
+        String message = ModToolReportInputGuard.normalize(this.packet.readString());
+
+        if (!ModToolReportInputGuard.isPositiveId(groupId) ||
+                !ModToolReportInputGuard.isPositiveId(threadId) ||
+                !ModToolReportInputGuard.isPositiveId(commentId) ||
+                !ModToolReportInputGuard.isPositiveId(topicId) ||
+                !ModToolReportInputGuard.isValidReportMessage(message)) {
+            return;
+        }
 
         CfhTopic topic = Emulator.getGameEnvironment().getModToolManager().getCfhTopic(topicId);
 

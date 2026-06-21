@@ -514,7 +514,7 @@ public class Outgoing {
     public final static int WiredOpenComposer = 1830;
     public final static int UnknownCatalogPageOfferComposer = 1889;
     public final static int NuxAlertComposer = 2023;
-    public final static int InClientLinkComposer = 2023;
+    public static int InClientLinkComposer = NuxAlertComposer;
     public final static int HotelViewExpiringCatalogPageCommposer = 2515;
     public final static int UnknownHabboWayQuizComposer = 2772;
     public final static int PetLevelUpdatedComposer = 2824;
@@ -607,6 +607,8 @@ public class Outgoing {
     public static final int WheelAdminPrizesComposer = 9404;
     public static final int SoundboardSettingsComposer = 9405;
     public static final int SoundboardPlayComposer = 9406;
+    public static final int EarningsCenterComposer = 9407;
+    public static final int EarningsClaimResultComposer = 9408;
     public static final int MentionReceivedComposer = 4801;
     public static final int MentionsListComposer = 4802;
 

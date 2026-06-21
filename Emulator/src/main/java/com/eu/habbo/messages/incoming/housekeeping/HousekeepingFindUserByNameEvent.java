@@ -20,9 +20,9 @@ public class HousekeepingFindUserByNameEvent extends MessageHandler {
             return;
         }
 
-        String username = this.packet.readString();
+        String username = HousekeepingInputGuard.normalize(this.packet.readString());
 
-        if (username == null || username.isEmpty()) {
+        if (username.isEmpty() || !HousekeepingInputGuard.isWithinLimit(username, HousekeepingInputGuard.MAX_LOOKUP_LENGTH)) {
             this.client.sendResponse(new HousekeepingUserDetailComposer(null));
             return;
         }

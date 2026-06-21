@@ -13,6 +13,11 @@ public class ModToolRequestUserChatlogEvent extends MessageHandler {
     public void handle() throws Exception {
         if (this.client.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL)) {
             int userId = this.packet.readInt();
+
+            if (!ModToolTicketGuard.isPositiveId(userId)) {
+                return;
+            }
+
             HabboInfo habboInfo = HabboManager.getOfflineHabboInfo(userId);
             if (habboInfo == null) {
                 return;

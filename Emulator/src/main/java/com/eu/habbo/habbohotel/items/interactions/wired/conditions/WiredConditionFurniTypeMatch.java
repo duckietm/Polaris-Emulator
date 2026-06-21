@@ -52,6 +52,10 @@ public class WiredConditionFurniTypeMatch extends InteractionWiredCondition {
 
     @Override
     public boolean evaluate(WiredContext ctx) {
+        if (ctx == null) {
+            return false;
+        }
+
         if (this.quantifier == QUANTIFIER_ANY) {
             return this.evaluateAnyMatches(ctx);
         }
@@ -158,7 +162,14 @@ public class WiredConditionFurniTypeMatch extends InteractionWiredCondition {
         }
 
         if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            JsonData data;
+            try {
+                data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            } catch (RuntimeException exception) {
+                this.onPickUp();
+                return;
+            }
+
             if (data == null) {
                 return;
             }
@@ -310,8 +321,8 @@ public class WiredConditionFurniTypeMatch extends InteractionWiredCondition {
         }
     }
 
-    private void loadItems(Room room, List<Integer> itemIds, THashSet<HabboItem> target) {
-        if (itemIds == null) {
+    void loadItems(Room room, List<Integer> itemIds, THashSet<HabboItem> target) {
+        if (room == null || itemIds == null || target == null) {
             return;
         }
 
@@ -335,7 +346,7 @@ public class WiredConditionFurniTypeMatch extends InteractionWiredCondition {
                 .collect(Collectors.joining(";"));
     }
 
-    private List<Integer> parseIds(String value) {
+    List<Integer> parseIds(String value) {
         List<Integer> result = new ArrayList<>();
         if (value == null || value.isEmpty()) {
             return result;

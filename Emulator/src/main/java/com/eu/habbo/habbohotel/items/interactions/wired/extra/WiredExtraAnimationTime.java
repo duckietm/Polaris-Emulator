@@ -80,7 +80,7 @@ public class WiredExtraAnimationTime extends InteractionWiredExtra {
         }
 
         if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            JsonData data = WiredExtraPayloadGuard.fromJson(wiredData, JsonData.class);
             this.durationMs = normalizeDuration((data != null) ? data.durationMs : WiredMovementsComposer.DEFAULT_DURATION);
             return;
         }

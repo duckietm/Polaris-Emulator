@@ -117,6 +117,37 @@
             <scope>compile</scope>
         </dependency>
 
+        <!-- Caffeine cache - high-performance local caching for hot emulator lookups -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <version>3.2.4</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- Resilience4j - rate limits and circuit breakers for RCON/HTTP/external integrations -->
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-ratelimiter</artifactId>
+            <version>2.4.0</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-circuitbreaker</artifactId>
+            <version>2.4.0</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- Hibernate Validator - Jakarta Bean Validation for packet/RCON/admin DTO guards -->
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+            <version>9.1.0.Final</version>
+            <scope>compile</scope>
+        </dependency>
+
         <!-- Apache Commons Lang -->
         <dependency>
             <groupId>org.apache.commons</groupId>

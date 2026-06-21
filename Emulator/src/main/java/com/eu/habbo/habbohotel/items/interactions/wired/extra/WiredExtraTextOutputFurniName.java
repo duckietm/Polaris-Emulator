@@ -131,7 +131,7 @@ public class WiredExtraTextOutputFurniName extends InteractionWiredExtra {
         }
 
         if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            JsonData data = WiredExtraPayloadGuard.fromJson(wiredData, JsonData.class);
 
             if (data != null) {
                 this.placeholderName = normalizePlaceholderName(data.placeholderName);

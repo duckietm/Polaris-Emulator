@@ -181,7 +181,7 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
         }
 
         if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            JsonData data = WiredExtraPayloadGuard.fromJson(wiredData, JsonData.class);
 
             if (data != null) {
                 this.targetType = normalizeTargetType(data.targetType);

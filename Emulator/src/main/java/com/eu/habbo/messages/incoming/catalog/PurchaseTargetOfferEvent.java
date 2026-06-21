@@ -31,14 +31,17 @@ public class PurchaseTargetOfferEvent extends MessageHandler {
             HabboOfferPurchase purchase = HabboOfferPurchase.getOrCreate(this.client.getHabbo(), offerId);
 
             if (purchase != null) {
-                amount = Math.min(offer.getPurchaseLimit() - purchase.getAmount(), amount);
+                amount = TargetOfferPurchaseGuard.purchasableAmount(amount, offer.getPurchaseLimit(), purchase.getAmount());
+                if (amount <= 0) return;
+
                 int now = Emulator.getIntUnixTimestamp();
                 if (offer.getExpirationTime() > now) {
-                    purchase.update(amount, now);
                     CatalogItem item = Emulator.getGameEnvironment().getCatalogManager().getCatalogItem(offer.getCatalogItem());
+                    if (item == null) return;
                     if (item.isLimited()) {
                         amount = 1;
                     }
+                    purchase.update(amount, now);
                     Emulator.getGameEnvironment().getCatalogManager().purchaseItem(null, item, this.client.getHabbo(), amount, "", false);
 
                 }

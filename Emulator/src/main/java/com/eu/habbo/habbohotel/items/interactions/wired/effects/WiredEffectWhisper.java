@@ -272,22 +272,23 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
         String wiredData = set.getString("wired_data");
 
-        if(wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            this.setDelay(data.delay);
-            this.message = data.message;
-            this.userSource = (data.userSource != null) ? data.userSource : WiredSourceUtil.SOURCE_TRIGGER;
-            this.visibilitySelection = (data.visibilitySelection != null && data.visibilitySelection == VISIBILITY_ALL_ROOM_USERS)
+        JsonData jsonData = WiredUtilityPayloadGuard.fromJson(wiredData, JsonData.class);
+        if(jsonData != null) {
+            this.setDelay(WiredUtilityPayloadGuard.delay(jsonData.delay));
+            this.message = WiredUtilityPayloadGuard.text(jsonData.message);
+            this.userSource = (jsonData.userSource != null) ? WiredUtilityPayloadGuard.userSource(jsonData.userSource) : WiredSourceUtil.SOURCE_TRIGGER;
+            this.visibilitySelection = (jsonData.visibilitySelection != null && jsonData.visibilitySelection == VISIBILITY_ALL_ROOM_USERS)
                     ? VISIBILITY_ALL_ROOM_USERS
                     : VISIBILITY_SOURCE_USERS;
-            this.bubbleStyle = (data.bubbleStyle != null) ? data.bubbleStyle : RoomChatMessageBubbles.WIRED.getType();
+            this.bubbleStyle = (jsonData.bubbleStyle != null) ? jsonData.bubbleStyle : RoomChatMessageBubbles.WIRED.getType();
         }
         else {
             this.message = "";
 
-            if (wiredData.split("\t").length >= 2) {
-                super.setDelay(Integer.parseInt(wiredData.split("\t")[0]));
-                this.message = wiredData.split("\t")[1];
+            String[] wiredDataSplit = wiredData != null ? wiredData.split("\t") : new String[0];
+            if (wiredDataSplit.length >= 2) {
+                super.setDelay(WiredUtilityPayloadGuard.parseDelay(wiredDataSplit[0]));
+                this.message = wiredDataSplit[1];
             }
 
             this.userSource = WiredSourceUtil.SOURCE_TRIGGER;

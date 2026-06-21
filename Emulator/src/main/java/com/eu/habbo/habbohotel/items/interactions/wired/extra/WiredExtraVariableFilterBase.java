@@ -215,7 +215,7 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
         String wiredData = set.getString("wired_data");
         if (wiredData == null || wiredData.isEmpty() || !wiredData.startsWith("{")) return;
 
-        JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+        JsonData data = WiredExtraPayloadGuard.fromJson(wiredData, JsonData.class);
         if (data == null) return;
 
         this.sortBy = normalizeSortBy(data.sortBy);

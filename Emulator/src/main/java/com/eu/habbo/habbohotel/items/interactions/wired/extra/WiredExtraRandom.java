@@ -92,7 +92,7 @@ public class WiredExtraRandom extends InteractionWiredExtra {
         }
 
         if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            JsonData data = WiredExtraPayloadGuard.fromJson(wiredData, JsonData.class);
             this.pickAmount = normalizePickAmount((data != null) ? data.pickAmount : DEFAULT_PICK_AMOUNT);
             this.skipExecutions = normalizeSkipExecutions((data != null) ? data.skipExecutions : DEFAULT_SKIP_EXECUTIONS);
             return;

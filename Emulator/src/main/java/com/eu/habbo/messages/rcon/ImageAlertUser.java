@@ -5,6 +5,10 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.google.gson.Gson;
 import gnu.trove.map.hash.THashMap;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 
 public class ImageAlertUser extends RCONMessage<ImageAlertUser.JSON> {
     public ImageAlertUser() {
@@ -51,27 +55,39 @@ public class ImageAlertUser extends RCONMessage<ImageAlertUser.JSON> {
 
     static class JSON {
 
+        @Positive(message = "invalid user")
         public int user_id;
 
 
+        @NotBlank(message = "invalid bubble")
+        @Size(max = 64, message = "invalid bubble")
+        @Pattern(regexp = "[A-Za-z0-9_.-]+", message = "invalid bubble")
         public String bubble_key = "";
 
 
+        @Size(max = 4096, message = "invalid message")
         public String message = "";
 
 
+        @Size(max = 2048, message = "invalid url")
+        @Pattern(regexp = "^$|https?://.+", message = "invalid url")
         public String url = "";
 
 
+        @Size(max = 256, message = "invalid url title")
         public String url_message = "";
 
 
+        @Size(max = 256, message = "invalid title")
         public String title = "";
 
 
+        @Size(max = 32, message = "invalid display")
+        @Pattern(regexp = "^$|[A-Za-z0-9_.-]+", message = "invalid display")
         public String display_type = "";
 
 
+        @Size(max = 2048, message = "invalid image")
         public String image = "";
     }
 }

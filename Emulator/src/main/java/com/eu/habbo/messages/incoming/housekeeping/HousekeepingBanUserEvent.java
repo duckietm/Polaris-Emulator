@@ -17,9 +17,6 @@ import java.util.List;
  */
 public class HousekeepingBanUserEvent extends MessageHandler {
     private static final String ACTION_KEY = "user.ban";
-    private static final int SECONDS_IN_HOUR = 3600;
-    // 100-year ceiling, matches ModToolSanctionBanEvent's permanent ban.
-    private static final int MAX_DURATION_SECONDS = 100 * 365 * 24 * 3600;
 
     @Override
     public int getRatelimit() {
@@ -33,19 +30,23 @@ public class HousekeepingBanUserEvent extends MessageHandler {
         }
 
         int userId = this.packet.readInt();
-        String reason = this.packet.readString();
+        String reason = HousekeepingInputGuard.normalize(this.packet.readString());
         int hours = this.packet.readInt();
 
-        if (userId <= 0 || hours <= 0) {
+        if (userId <= 0 || hours <= 0 || !HousekeepingInputGuard.isWithinLimit(reason, HousekeepingInputGuard.MAX_REASON_LENGTH)) {
             this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.invalid_input"));
             return;
         }
 
-        long durationLong = (long) hours * SECONDS_IN_HOUR;
-        int duration = durationLong > MAX_DURATION_SECONDS ? MAX_DURATION_SECONDS : (int) durationLong;
+        if (!HousekeepingTargetRankGuard.canTargetUser(this.client.getHabbo(), userId)) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
+            return;
+        }
+
+        int duration = HousekeepingSanctionDuration.secondsFromHours(hours);
 
         List<ModToolBan> bans = Emulator.getGameEnvironment().getModToolManager()
-                .ban(userId, this.client.getHabbo(), reason != null ? reason : "", duration, ModToolBanType.ACCOUNT, 0);
+                .ban(userId, this.client.getHabbo(), reason, duration, ModToolBanType.ACCOUNT, 0);
 
         if (bans == null || bans.isEmpty()) {
             this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.ban_failed"));
@@ -56,6 +57,11 @@ public class HousekeepingBanUserEvent extends MessageHandler {
         // object, so we return the target user id as the actionId — it's
         // the only stable handle the client can use until a dedicated
         // housekeeping_log row id supersedes it.
+        com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
+                this.client.getHabbo().getHabboInfo().getId(),
+                this.client.getHabbo().getHabboInfo().getUsername(),
+                ACTION_KEY, userId, "hours=" + hours + " reason=" + HousekeepingInputGuard.auditValue(reason),
+                this.client.getHabbo().getHabboInfo().getIpLogin());
         this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, userId, ""));
     }
 }

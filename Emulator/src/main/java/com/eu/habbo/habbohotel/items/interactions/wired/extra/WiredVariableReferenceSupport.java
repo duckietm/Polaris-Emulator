@@ -338,7 +338,7 @@ public final class WiredVariableReferenceSupport {
             return null;
         }
 
-        UserDefinitionData data = WiredManager.getGson().fromJson(wiredData, UserDefinitionData.class);
+        UserDefinitionData data = WiredExtraPayloadGuard.fromJson(wiredData, UserDefinitionData.class);
         if (data == null) {
             return null;
         }
@@ -352,7 +352,7 @@ public final class WiredVariableReferenceSupport {
             return null;
         }
 
-        RoomDefinitionData data = WiredManager.getGson().fromJson(wiredData, RoomDefinitionData.class);
+        RoomDefinitionData data = WiredExtraPayloadGuard.fromJson(wiredData, RoomDefinitionData.class);
         if (data == null) {
             return null;
         }

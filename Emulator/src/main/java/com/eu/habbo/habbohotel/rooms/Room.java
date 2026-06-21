@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.games.Game;
 import com.eu.habbo.habbohotel.guilds.Guild;
 import com.eu.habbo.habbohotel.guilds.GuildMember;
+import com.eu.habbo.habbohotel.guilds.GuildMembershipStatus;
 import com.eu.habbo.habbohotel.guilds.GuildRank;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
@@ -877,7 +878,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
       return;
     }
 
-    Habbo habbo = (picker != null && picker.getHabboInfo().getId() == item.getId() ? picker
+    Habbo habbo = (picker != null && picker.getHabboInfo().getId() == item.getUserId() ? picker
             : Emulator.getGameServer().getGameClientManager().getHabbo(item.getUserId()));
     if (!trackedBuildersClubItem && habbo != null) {
       habbo.getInventory().getItemsComponent().addItem(item);
@@ -2257,7 +2258,8 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         return RoomRightLevels.GUILD_ADMIN;
       }
 
-      if (guild.getRights()) {
+      if ((member != null) && member.getMembershipStatus() == GuildMembershipStatus.MEMBER
+          && guild.getRights()) {
         return RoomRightLevels.GUILD_RIGHTS;
       }
     }

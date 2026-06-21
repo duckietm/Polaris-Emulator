@@ -32,6 +32,12 @@ public class PetUseItemEvent extends MessageHandler {
         int petId = this.packet.readInt();
         Pet pet = this.client.getHabbo().getHabboInfo().getCurrentRoom().getPet(petId);
 
+        if (pet == null
+                || item.getUserId() != this.client.getHabbo().getHabboInfo().getId()
+                || pet.getUserId() != this.client.getHabbo().getHabboInfo().getId()) {
+            return;
+        }
+
         if (pet instanceof HorsePet) {
             if (item.getBaseItem().getName().toLowerCase().startsWith("horse_dye")) {
                 int race = Integer.parseInt(item.getBaseItem().getName().split("_")[2]);
@@ -89,11 +95,6 @@ public class PetUseItemEvent extends MessageHandler {
                 Emulator.getGameEnvironment().getItemManager().deleteItem(item);
             }
         } else if (pet instanceof MonsterplantPet) {
-            // Validate ownership - only owner can use items on their plant
-            if (pet.getUserId() != this.client.getHabbo().getHabboInfo().getId()) {
-                return;
-            }
-            
             MonsterplantPet monsterplant = (MonsterplantPet) pet;
             
             if (item.getBaseItem().getName().equalsIgnoreCase("mnstr_revival")) {

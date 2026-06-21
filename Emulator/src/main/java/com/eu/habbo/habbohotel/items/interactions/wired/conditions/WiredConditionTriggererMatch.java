@@ -33,6 +33,7 @@ public class WiredConditionTriggererMatch extends InteractionWiredCondition {
     protected static final int QUANTIFIER_ALL = 0;
     protected static final int QUANTIFIER_ANY = 1;
     protected static final int SOURCE_SPECIFIED_USERNAME = 101;
+    protected static final int MAX_USERNAME_LENGTH = 64;
 
     public static final WiredConditionType type = WiredConditionType.TRIGGERER_MATCH;
 
@@ -84,7 +85,14 @@ public class WiredConditionTriggererMatch extends InteractionWiredCondition {
             return;
         }
 
-        JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+        JsonData data;
+        try {
+            data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+        } catch (RuntimeException exception) {
+            this.resetSettings();
+            return;
+        }
+
         if (data == null) {
             return;
         }
@@ -284,7 +292,7 @@ public class WiredConditionTriggererMatch extends InteractionWiredCondition {
         return "";
     }
 
-    private int normalizeEntityType(int value) {
+    int normalizeEntityType(int value) {
         switch (value) {
             case ENTITY_HABBO:
             case ENTITY_PET:
@@ -295,19 +303,19 @@ public class WiredConditionTriggererMatch extends InteractionWiredCondition {
         }
     }
 
-    private int normalizeAvatarMode(int value) {
+    int normalizeAvatarMode(int value) {
         return (value == AVATAR_MODE_CERTAIN) ? AVATAR_MODE_CERTAIN : AVATAR_MODE_ANY;
     }
 
-    private int normalizeQuantifier(int value) {
+    int normalizeQuantifier(int value) {
         return (value == QUANTIFIER_ANY) ? QUANTIFIER_ANY : QUANTIFIER_ALL;
     }
 
-    private int normalizePrimaryUserSource(int value) {
+    int normalizePrimaryUserSource(int value) {
         return WiredSourceUtil.isDefaultUserSource(value) ? value : WiredSourceUtil.SOURCE_TRIGGER;
     }
 
-    private int normalizeCompareUserSource(int value) {
+    int normalizeCompareUserSource(int value) {
         switch (value) {
             case WiredSourceUtil.SOURCE_CLICKED_USER:
             case SOURCE_SPECIFIED_USERNAME:
@@ -317,8 +325,13 @@ public class WiredConditionTriggererMatch extends InteractionWiredCondition {
         }
     }
 
-    private String normalizeUsername(String value) {
-        return (value == null) ? "" : value.trim();
+    String normalizeUsername(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        String normalized = value.trim();
+        return normalized.length() <= MAX_USERNAME_LENGTH ? normalized : normalized.substring(0, MAX_USERNAME_LENGTH);
     }
 
     protected static class MatchResult {

@@ -78,7 +78,7 @@ public class WiredExtraFilterFurni extends InteractionWiredExtra {
         }
 
         if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            JsonData data = WiredExtraPayloadGuard.fromJson(wiredData, JsonData.class);
             this.amount = normalizeAmount((data != null) ? data.amount : 0);
             return;
         }

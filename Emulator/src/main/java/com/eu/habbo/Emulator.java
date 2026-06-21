@@ -18,6 +18,8 @@ import com.eu.habbo.plugin.events.emulator.EmulatorStartShutdownEvent;
 import com.eu.habbo.plugin.events.emulator.EmulatorStoppedEvent;
 import com.eu.habbo.threading.ThreadPooling;
 import com.eu.habbo.util.imager.badges.BadgeImager;
+import com.eu.habbo.util.logback.ConsoleStyle;
+import org.fusesource.jansi.AnsiConsole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +40,12 @@ public final class Emulator {
     private static final Logger LOGGER = LoggerFactory.getLogger(Emulator.class);
     private static final String OS_NAME = (System.getProperty("os.name") != null ? System.getProperty("os.name") : "Unknown");
     private static final String CLASS_PATH = (System.getProperty("java.class.path") != null ? System.getProperty("java.class.path") : "Unknown");
+    private static final String ANSI_RESET = "\u001B[0m";
+    private static final String ANSI_BOLD = "\u001B[1m";
+    private static final String ANSI_CYAN = "\u001B[36m";
+    private static final String ANSI_GREEN = "\u001B[32m";
+    private static final String ANSI_YELLOW = "\u001B[33m";
+    private static final String ANSI_DIM = "\u001B[2m";
 
     // Fallback version, only used when running outside a packaged jar (e.g. from
     // the IDE). In production the version comes from the jar manifest below.
@@ -65,7 +73,6 @@ public final class Emulator {
                     "██║ ╚═╝ ██║╚██████╔╝██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝███████║   ██║   ██║  ██║██║  ██║\n" +
                     "╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝\n" +
                     "Still Rocking in 2026.\n";
-
     public static String build = "";
     public static long buildTimestamp = -1L;
 
@@ -104,14 +111,12 @@ public final class Emulator {
 
     public static void main(String[] args) throws Exception {
         try {
-            if (OS_NAME.startsWith("Windows") && !CLASS_PATH.contains("idea_rt.jar")) {
-                ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-                ConsoleAppender<ILoggingEvent> appender = (ConsoleAppender<ILoggingEvent>) root.getAppender("Console");
-
-                appender.stop();
-                appender.setWithJansi(true);
-                appender.start();
-            }
+            boolean styledConsole = shouldStyleConsole(
+                    System.getenv(),
+                    System.console() != null,
+                    OS_NAME,
+                    System.getProperty("habbo.console.style", "auto"));
+            configureAnsiConsole(styledConsole);
 
             Locale.setDefault(Locale.of("en"));
             setBuild();
@@ -119,7 +124,7 @@ public final class Emulator {
             ConsoleCommand.load();
             Emulator.logging = new Logging();
 
-            System.out.println(logo);
+            System.out.println(startupHero(styledConsole));
 
             long startTime = System.nanoTime();
 
@@ -153,14 +158,21 @@ public final class Emulator {
             Emulator.config.register("camera.price.points.type", "5");
             Emulator.config.register("camera.render.delay", "5");
             Emulator.config.register("hotel.timezone", java.time.ZoneId.systemDefault().getId());
+            Emulator.config.register("gui.enabled", "0");
+            Emulator.config.register("gui.autostart.enabled", "0");
+            Emulator.config.register("rcon.rate_limit.enabled", "1");
+            Emulator.config.register("rcon.rate_limit.limit_for_period", "60");
+            Emulator.config.register("rcon.rate_limit.refresh_period_ms", "1000");
+            Emulator.config.register("rcon.rate_limit.timeout_ms", "0");
+            Emulator.config.register("rcon.execute_command.denied_permissions", "cmd_shutdown;cmd_give_rank");
+            Emulator.config.register("rcon.execute_command.allowed_permissions", "");
+            Emulator.config.register("rcon.max_payload_bytes", "65536");
+            Emulator.config.register("nitro.secure.api.max_payload_bytes", "65536");
+            Emulator.config.register("nitro.secure.config.max_file_bytes", "2097152");
+            Emulator.config.register("nitro.secure.gamedata.max_file_bytes", "16777216");
+            registerEarningsSettings();
             String hotelTimezoneId = Emulator.getConfig().getValue("hotel.timezone", java.time.ZoneId.systemDefault().getId());
-            System.out.println();
-            LOGGER.info("https://github.com/duckietm/Arcturus-Morningstar-Extended, ");
-            System.out.println();
-            LOGGER.info("This project is for educational purposes only. This Emulator is an open-source fork of Arcturus created by TheGeneral.");
-            LOGGER.info("Version: {}", version);
-            LOGGER.info("Build: {}", build);
-            LOGGER.info("Build Timestamp: {} [{}]", formatBuildTimestamp(buildTimestamp, hotelTimezoneId), hotelTimezoneId);
+            System.out.println(startupCard(hotelTimezoneId));
             Emulator.texts.register("camera.permission", "You don't have permission to use the camera!");
             Emulator.texts.register("camera.wait", "Please wait %seconds% seconds before making another picture.");
             Emulator.texts.register("camera.error.creation", "Failed to create your picture. *sadpanda*");
@@ -198,7 +210,7 @@ public final class Emulator {
             Emulator.isReady = true;
             Emulator.timeStarted = getIntUnixTimestamp();
 
-            if (Emulator.getConfig().getBoolean("gui.enabled", true)) {
+            if (shouldLaunchGui()) {
                 EmulatorDashboard.launch();
             }
 
@@ -310,6 +322,97 @@ public final class Emulator {
         return -1L;
     }
 
+    static String startupCard(String hotelTimezoneId) {
+        return "\n" +
+                "+----------------------------------------------------------------+\n" +
+                "| Arcturus Morningstar Extended                                  |\n" +
+                "| Source : github.com/duckietm/Arcturus-Morningstar-Extended     |\n" +
+                "| Scope  : Educational open-source fork by TheGeneral            |\n" +
+                "| Version: " + version + "\n" +
+                "| Build  : " + build + "\n" +
+                "| Time   : " + formatBuildTimestamp(buildTimestamp, hotelTimezoneId) + " [" + hotelTimezoneId + "]\n" +
+                "+----------------------------------------------------------------+\n";
+    }
+
+    static String startupHero() {
+        return startupHero(false);
+    }
+
+    static String startupHero(boolean styled) {
+        if (styled) {
+            return "\n" +
+                    ANSI_CYAN +
+                    "   __  __  ___  ____  _   _ ___ _   _  ____ ____ _____  _    ____  \n" +
+                    "  |  \\/  |/ _ \\|  _ \\| \\ | |_ _| \\ | |/ ___/ ___|_   _|/ \\  |  _ \\ \n" +
+                    "  | |\\/| | | | | |_) |  \\| || ||  \\| | |  _\\___ \\ | | / _ \\ | |_) |\n" +
+                    "  | |  | | |_| |  _ <| |\\  || || |\\  | |_| |___) || |/ ___ \\|  _ < \n" +
+                    "  |_|  |_|\\___/|_| \\_\\_| \\_|___|_| \\_|\\____|____/ |_/_/   \\_\\_| \\_\\\n" +
+                    ANSI_RESET +
+                    "\n" +
+                    ANSI_DIM + "+------------------------------------------------------------------------------+" + ANSI_RESET + "\n" +
+                    "| " + ANSI_BOLD + ANSI_GREEN + "[OK] MORNINGSTAR EXTENDED" + ANSI_RESET + fit("", 50) + " |\n" +
+                    "| " + ANSI_DIM + "Arcturus game server runtime" + ANSI_RESET + fit("", 48) + " |\n" +
+                    ANSI_DIM + "+------------------------------------------------------------------------------+" + ANSI_RESET + "\n" +
+                    "| " + ANSI_YELLOW + "[VER]" + ANSI_RESET + " Version : " + fit(version, 57) + " |\n" +
+                    "| " + ANSI_YELLOW + "[BLD]" + ANSI_RESET + " Build   : " + fit(build.isBlank() ? "UNKNOWN" : build, 57) + " |\n" +
+                    "| " + ANSI_YELLOW + "[JVM]" + ANSI_RESET + " Runtime : " + fit("Java " + System.getProperty("java.version", "unknown") + " / styled console output", 57) + " |\n" +
+                    ANSI_DIM + "+------------------------------------------------------------------------------+" + ANSI_RESET + "\n";
+        }
+
+        return "\n" +
+                "   __  __  ___  ____  _   _ ___ _   _  ____ ____ _____  _    ____  \n" +
+                "  |  \\/  |/ _ \\|  _ \\| \\ | |_ _| \\ | |/ ___/ ___|_   _|/ \\  |  _ \\ \n" +
+                "  | |\\/| | | | | |_) |  \\| || ||  \\| | |  _\\___ \\ | | / _ \\ | |_) |\n" +
+                "  | |  | | |_| |  _ <| |\\  || || |\\  | |_| |___) || |/ ___ \\|  _ < \n" +
+                "  |_|  |_|\\___/|_| \\_\\_| \\_|___|_| \\_|\\____|____/ |_/_/   \\_\\_| \\_\\\n" +
+                "\n" +
+                "+------------------------------------------------------------------------------+\n" +
+                "| MORNINGSTAR EXTENDED                                                         |\n" +
+                "| Arcturus game server runtime                                                  |\n" +
+                "+------------------------------------------------------------------------------+\n" +
+                "| Version : " + fit(version, 63) + " |\n" +
+                "| Build   : " + fit(build.isBlank() ? "UNKNOWN" : build, 63) + " |\n" +
+                "| Runtime : " + fit("Java " + System.getProperty("java.version", "unknown") + " / universal console output", 63) + " |\n" +
+                "+------------------------------------------------------------------------------+\n";
+    }
+
+    static boolean shouldStyleConsole(Map<String, String> environment, boolean interactiveConsole, String osName, String styleProperty) {
+        return ConsoleStyle.isEnabled(environment, interactiveConsole, osName, styleProperty);
+    }
+
+    static void configureAnsiConsole(boolean styledConsole) {
+        if (!styledConsole || !OS_NAME.startsWith("Windows") || CLASS_PATH.contains("idea_rt.jar")) {
+            return;
+        }
+
+        try {
+            AnsiConsole.systemInstall();
+
+            ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+            ConsoleAppender<ILoggingEvent> appender = (ConsoleAppender<ILoggingEvent>) root.getAppender("Console");
+            if (appender != null) {
+                appender.stop();
+                appender.setWithJansi(true);
+                appender.start();
+            }
+        } catch (Throwable e) {
+            LOGGER.debug("Unable to install Jansi console bridge; continuing with raw console output.", e);
+        }
+    }
+
+    static boolean shouldLaunchGui() {
+        return Emulator.getConfig() != null && Emulator.getConfig().getBoolean("gui.autostart.enabled", false);
+    }
+
+    private static String fit(String value, int width) {
+        String safe = value == null ? "" : value;
+        if (safe.length() > width) {
+            return safe.substring(0, Math.max(0, width - 3)) + "...";
+        }
+
+        return String.format("%-" + width + "s", safe);
+    }
+
     private static String formatBuildTimestamp(long buildTimestamp, String timezoneId) {
         if (buildTimestamp <= 0) {
             return "UNKNOWN";
@@ -388,6 +491,42 @@ public final class Emulator {
 
     public static GameServer getGameServer() {
         return gameServer;
+    }
+
+    private static void registerEarningsSettings() {
+        Emulator.config.register("earnings.enabled", "0");
+
+        String[] categories = {
+                "daily_gift",
+                "games",
+                "achievements",
+                "marketplace",
+                "hc_payday",
+                "level_progress",
+                "donations",
+                "bonus_bag",
+                "mystery_boxes",
+                "club_job"
+        };
+
+        for (String category : categories) {
+            String prefix = "earnings." + category + ".";
+            Emulator.config.register(prefix + "enabled", "1");
+            Emulator.config.register(prefix + "cooldown.seconds", "86400");
+            Emulator.config.register(prefix + "credits", "0");
+            Emulator.config.register(prefix + "pixels", "0");
+            Emulator.config.register(prefix + "points", "0");
+            Emulator.config.register(prefix + "points.type", "5");
+            Emulator.config.register(prefix + "badge", "");
+            Emulator.config.register(prefix + "item_id", "0");
+            Emulator.config.register(prefix + "item.quantity", "1");
+            Emulator.config.register(prefix + "hc.days", "0");
+            Emulator.config.register(prefix + "native.enabled", (category.equals("marketplace") || category.equals("hc_payday") || category.equals("achievements") || category.equals("level_progress")) ? "1" : "0");
+        }
+
+        Emulator.config.register("earnings.achievements.min_score", "1");
+        Emulator.config.register("earnings.achievements.score.step", "100");
+        Emulator.config.register("earnings.level_progress.min_level", "1");
     }
 
     public static RCONServer getRconServer() {

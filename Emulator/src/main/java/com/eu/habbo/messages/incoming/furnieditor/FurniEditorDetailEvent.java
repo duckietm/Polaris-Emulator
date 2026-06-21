@@ -75,8 +75,8 @@ public class FurniEditorDetailEvent extends MessageHandler {
                     "ci.page_id AS ci_page_id, COALESCE(cp.caption, '') AS page_caption " +
                     "FROM catalog_items ci " +
                     "LEFT JOIN catalog_pages cp ON ci.page_id = cp.id " +
-                    "WHERE ci.item_ids LIKE ?")) {
-                stmt.setString(1, "%" + itemId + "%");
+                    "WHERE " + FurniEditorHelper.catalogItemIdsTokenSql("ci.item_ids"))) {
+                stmt.setString(1, FurniEditorHelper.catalogItemIdsTokenPattern(itemId));
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
                         catalogItems.add(FurniEditorHelper.readCatalogRef(rs));

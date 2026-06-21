@@ -16,6 +16,7 @@ import java.sql.SQLException;
 
 public class WiredConditionHabboCount extends InteractionWiredCondition {
     public static final WiredConditionType type = WiredConditionType.USER_COUNT;
+    static final int MAX_USER_COUNT_LIMIT = 1000;
 
     private int lowerLimit = 0;
     private int upperLimit = 50;
@@ -31,6 +32,10 @@ public class WiredConditionHabboCount extends InteractionWiredCondition {
 
     @Override
     public boolean evaluate(WiredContext ctx) {
+        if (ctx == null || ctx.room() == null) {
+            return false;
+        }
+
         int count = (this.userSource == WiredSourceUtil.SOURCE_TRIGGER)
                 ? ctx.room().getUserCount()
                 : WiredSourceUtil.resolveUsers(ctx, this.userSource).size();
@@ -55,26 +60,29 @@ public class WiredConditionHabboCount extends InteractionWiredCondition {
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        this.onPickUp();
+
         String wiredData = set.getString("wired_data");
+        if (wiredData == null || wiredData.isEmpty()) {
+            return;
+        }
 
         if (wiredData.startsWith("{")) {
             JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            this.lowerLimit = data.lowerLimit;
-            this.upperLimit = data.upperLimit;
-            this.userSource = data.userSource;
+            this.applyLimits(data.lowerLimit, data.upperLimit);
+            this.userSource = WiredConditionInputGuard.normalizeUserSource(data.userSource);
         } else {
             String[] data = wiredData.split(":");
 
             if (data.length >= 2) {
                 try {
-                    this.lowerLimit = Integer.parseInt(data[0].trim());
-                    this.upperLimit = Integer.parseInt(data[1].trim());
+                    this.applyLimits(Integer.parseInt(data[0].trim()), Integer.parseInt(data[1].trim()));
                 } catch (NumberFormatException ignored) {
                     // malformed legacy data — keep the constructed defaults
                 }
             }
-            this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
         }
+        this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
     }
 
     @Override
@@ -110,12 +118,17 @@ public class WiredConditionHabboCount extends InteractionWiredCondition {
     @Override
     public boolean saveData(WiredSettings settings) {
         if(settings.getIntParams().length < 2) return false;
-        this.lowerLimit = settings.getIntParams()[0];
-        this.upperLimit = settings.getIntParams()[1];
         int[] params = settings.getIntParams();
-        this.userSource = (params.length > 2) ? params[2] : WiredSourceUtil.SOURCE_TRIGGER;
+        this.applyLimits(params[0], params[1]);
+        this.userSource = (params.length > 2) ? WiredConditionInputGuard.normalizeUserSource(params[2]) : WiredSourceUtil.SOURCE_TRIGGER;
 
         return true;
+    }
+
+    private void applyLimits(int lowerLimit, int upperLimit) {
+        int[] limits = WiredConditionInputGuard.normalizeUserCountRange(lowerLimit, upperLimit);
+        this.lowerLimit = limits[0];
+        this.upperLimit = limits[1];
     }
 
     static class JsonData {

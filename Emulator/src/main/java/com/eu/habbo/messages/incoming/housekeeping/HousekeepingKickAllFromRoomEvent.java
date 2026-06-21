@@ -34,8 +34,18 @@ public class HousekeepingKickAllFromRoomEvent extends MessageHandler {
             return;
         }
 
+        if (!HousekeepingRoomGuard.canManageRoom(this.client.getHabbo(), room)) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
+            return;
+        }
+
         room.ejectAll();
 
+        com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
+                this.client.getHabbo().getHabboInfo().getId(),
+                this.client.getHabbo().getHabboInfo().getUsername(),
+                ACTION_KEY, 0, "roomId=" + roomId,
+                this.client.getHabbo().getHabboInfo().getIpLogin());
         this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, roomId, ""));
     }
 }

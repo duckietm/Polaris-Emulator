@@ -12,6 +12,10 @@ public class ModToolRequestRoomVisitsEvent extends MessageHandler {
         if (this.client.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL)) {
             int userId = this.packet.readInt();
 
+            if (!ModToolTicketGuard.isPositiveId(userId)) {
+                return;
+            }
+
             HabboInfo habboInfo = Emulator.getGameEnvironment().getHabboManager().getHabboInfo(userId);
 
             if (habboInfo != null) {

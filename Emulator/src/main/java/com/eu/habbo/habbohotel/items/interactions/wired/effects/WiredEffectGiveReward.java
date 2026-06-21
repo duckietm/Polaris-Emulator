@@ -202,12 +202,15 @@ public class WiredEffectGiveReward extends InteractionWiredEffect {
 
             int i = 1;
             for (String s : items) {
-                String[] d = s.split(",");
+                String[] d = s.split(",", -1);
 
                 if (d.length == 3) {
                     if (!(d[1].contains(":") || d[1].contains(";"))) {
-                        this.rewardItems.add(new WiredGiveRewardItem(i, d[0].equalsIgnoreCase("0"), d[1], Integer.parseInt(d[2])));
-                        continue;
+                        try {
+                            this.rewardItems.add(new WiredGiveRewardItem(i, d[0].equalsIgnoreCase("0"), d[1], Integer.parseInt(d[2].trim())));
+                            continue;
+                        } catch (IllegalArgumentException ignored) {
+                        }
                     }
                 }
 

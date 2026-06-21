@@ -120,7 +120,7 @@ public class WiredExtraVariableReference extends InteractionWiredExtra {
             return;
         }
 
-        JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+        JsonData data = WiredExtraPayloadGuard.fromJson(wiredData, JsonData.class);
         if (data == null) {
             return;
         }
@@ -230,7 +230,7 @@ public class WiredExtraVariableReference extends InteractionWiredExtra {
             return new ConfigData();
         }
 
-        ConfigData config = WiredManager.getGson().fromJson(value, ConfigData.class);
+        ConfigData config = WiredExtraPayloadGuard.fromJson(value, ConfigData.class);
         return (config != null) ? config : new ConfigData();
     }
 

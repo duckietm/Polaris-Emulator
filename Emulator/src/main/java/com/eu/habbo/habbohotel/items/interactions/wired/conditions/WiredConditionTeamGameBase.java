@@ -29,6 +29,7 @@ abstract class WiredConditionTeamGameBase extends InteractionWiredCondition {
     protected static final int COMPARISON_EQUAL = 1;
     protected static final int COMPARISON_HIGHER = 2;
     protected static final int TEAM_TRIGGERER = 0;
+    protected static final int MAX_SCORE = 1_000_000;
 
     private static final GameTeamColors[] SUPPORTED_TEAM_COLORS = new GameTeamColors[] {
             GameTeamColors.RED,
@@ -96,7 +97,11 @@ abstract class WiredConditionTeamGameBase extends InteractionWiredCondition {
     }
 
     protected int normalizeScore(int value) {
-        return Math.max(0, value);
+        if (value < 0) {
+            return 0;
+        }
+
+        return Math.min(value, MAX_SCORE);
     }
 
     protected int normalizeExplicitTeamType(int value) {

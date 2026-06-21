@@ -222,7 +222,7 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
         String wiredData = set.getString("wired_data");
         if (wiredData == null || wiredData.isEmpty() || !wiredData.startsWith("{")) return;
 
-        JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+        JsonData data = WiredSelectorPayloadGuard.fromJson(wiredData, JsonData.class);
         if (data == null) return;
 
         this.selectByValue = data.selectByValue;

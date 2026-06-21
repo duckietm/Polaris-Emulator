@@ -15,10 +15,17 @@ public class ModToolPickTicketEvent extends MessageHandler {
     public void handle() throws Exception {
         if (this.client.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL)) {
             this.packet.readInt();
-            ModToolIssue issue = Emulator.getGameEnvironment().getModToolManager().getTicket(this.packet.readInt());
+            int ticketId = this.packet.readInt();
+
+            if (!ModToolTicketGuard.isPositiveId(ticketId)) {
+                this.client.getHabbo().alert(Emulator.getTexts().getValue("support.ticket.picked.failed"));
+                return;
+            }
+
+            ModToolIssue issue = Emulator.getGameEnvironment().getModToolManager().getTicket(ticketId);
 
             if (issue != null) {
-                if (issue.state == ModToolTicketState.PICKED) {
+                if (!ModToolTicketGuard.canPick(issue)) {
                     this.client.sendResponse(new ModToolIssueInfoComposer(issue));
                     this.client.getHabbo().alert(Emulator.getTexts().getValue("support.ticket.picked.failed"));
 

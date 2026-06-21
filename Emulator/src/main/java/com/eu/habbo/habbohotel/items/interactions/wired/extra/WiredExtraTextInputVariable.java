@@ -110,7 +110,7 @@ public class WiredExtraTextInputVariable extends InteractionWiredExtra {
         }
 
         if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            JsonData data = WiredExtraPayloadGuard.fromJson(wiredData, JsonData.class);
 
             if (data != null) {
                 this.variableToken = normalizeVariableToken((data.variableToken != null)

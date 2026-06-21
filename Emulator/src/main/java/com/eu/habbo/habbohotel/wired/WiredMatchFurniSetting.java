@@ -14,7 +14,7 @@ public class WiredMatchFurniSetting {
 
     public WiredMatchFurniSetting(int itemId, String state, int rotation, int x, int y, double z) {
         this.item_id = itemId;
-        this.state = state.replace("\t\t\t", " ");
+        this.state = state == null ? "" : state.replace("\t\t\t", " ");
         this.rotation = rotation;
         this.x = x;
         this.y = y;

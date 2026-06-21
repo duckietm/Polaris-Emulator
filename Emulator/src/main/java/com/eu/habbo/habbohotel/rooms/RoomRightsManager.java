@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.database.SqlQueries;
 import com.eu.habbo.habbohotel.guilds.Guild;
 import com.eu.habbo.habbohotel.guilds.GuildMember;
+import com.eu.habbo.habbohotel.guilds.GuildMembershipStatus;
 import com.eu.habbo.habbohotel.guilds.GuildRank;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -108,7 +109,8 @@ public class RoomRightsManager {
                 return RoomRightLevels.GUILD_ADMIN;
             }
 
-            if (guild.getRights()) {
+            if ((member != null) && member.getMembershipStatus() == GuildMembershipStatus.MEMBER
+                && guild.getRights()) {
                 return RoomRightLevels.GUILD_RIGHTS;
             }
         }

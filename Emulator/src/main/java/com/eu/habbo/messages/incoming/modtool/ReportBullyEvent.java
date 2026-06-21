@@ -14,7 +14,7 @@ import java.util.ArrayList;
 public class ReportBullyEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
-        if (this.client.getHabbo().getHabboStats().allowTalk()) {
+        if (!this.client.getHabbo().getHabboStats().allowTalk()) {
             this.client.sendResponse(new HelperRequestDisabledComposer());
             return;
         }
@@ -22,7 +22,9 @@ public class ReportBullyEvent extends MessageHandler {
         int userId = this.packet.readInt();
         int roomId = this.packet.readInt();
 
-        if (userId == this.client.getHabbo().getHabboInfo().getId()) {
+        if (!ModToolReportInputGuard.isPositiveId(userId) ||
+                !ModToolReportInputGuard.isPositiveId(roomId) ||
+                userId == this.client.getHabbo().getHabboInfo().getId()) {
             return;
         }
 

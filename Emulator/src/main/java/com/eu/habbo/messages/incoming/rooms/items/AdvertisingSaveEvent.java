@@ -18,7 +18,11 @@ public class AdvertisingSaveEvent extends MessageHandler {
         if (!room.hasRights(this.client.getHabbo()))
             return;
 
-        HabboItem item = room.getHabboItem(this.packet.readInt());
+        int itemId = this.packet.readInt();
+        if (!RoomItemInputGuard.isPositiveId(itemId))
+            return;
+
+        HabboItem item = room.getHabboItem(itemId);
         if (item == null)
             return;
 
@@ -29,9 +33,15 @@ public class AdvertisingSaveEvent extends MessageHandler {
         if (item instanceof InteractionCustomValues) {
             THashMap<String, String> oldValues = new THashMap<>(((InteractionCustomValues) item).values);
             int count = this.packet.readInt();
+            if (!RoomItemInputGuard.isValidCustomValueCount(count))
+                return;
+
             for (int i = 0; i < count / 2; i++) {
-                String key = this.packet.readString();
-                String value = this.packet.readString();
+                String key = RoomItemInputGuard.trimToMax(this.packet.readString(), RoomItemInputGuard.MAX_CUSTOM_KEY_LENGTH);
+                String value = RoomItemInputGuard.trimToMax(this.packet.readString(), RoomItemInputGuard.MAX_CUSTOM_VALUE_LENGTH);
+
+                if (key.isEmpty())
+                    continue;
 
                 if (!Emulator.getConfig().getBoolean("camera.use.https")) {
                     value = value.replace("https://", "http://");

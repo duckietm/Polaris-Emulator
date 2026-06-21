@@ -22,6 +22,10 @@ public class WiredConditionNotMatchStatePosition extends WiredConditionMatchStat
 
     @Override
     public boolean evaluate(WiredContext ctx) {
+        if (ctx == null || ctx.room() == null) {
+            return false;
+        }
+
         this.refresh();
 
         if (this.getMatchFurniSettings().isEmpty()) {

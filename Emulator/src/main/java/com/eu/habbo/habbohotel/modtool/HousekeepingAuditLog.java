@@ -11,9 +11,8 @@ import java.sql.Statement;
 
 /**
  * Append-only audit trail for privileged housekeeping/admin actions (rank grants,
- * currency grants, etc.). There was previously no record of which operator did
- * what to whom. Writes are dispatched off the calling thread; the backing table
- * is created on first use so no manual migration is required.
+ * currency grants, etc.). Writes are dispatched off the calling thread; the
+ * backing table is created on first use so no manual migration is required.
  */
 public final class HousekeepingAuditLog {
 
@@ -43,24 +42,26 @@ public final class HousekeepingAuditLog {
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                     "INSERT INTO housekeeping_log (operator_id, operator_name, action, target_user_id, detail, ip, timestamp) " +
-                             "VALUES (?, ?, ?, ?, ?, ?, ?)")) {
-            statement.setInt(1, operatorId);
-            statement.setString(2, operatorName != null ? operatorName : "");
-            statement.setString(3, action != null ? action : "");
+                     "INSERT INTO housekeeping_log (timestamp, actor_id, actor_name, target_type, target_id, target_label, action, detail, success) " +
+                             "VALUES (?, ?, ?, 'user', ?, '', ?, ?, 1)")) {
+            statement.setInt(1, Emulator.getIntUnixTimestamp());
+            statement.setInt(2, operatorId);
+            statement.setString(3, operatorName != null ? operatorName : "");
             statement.setInt(4, targetUserId);
-            statement.setString(5, truncate(detail));
-            statement.setString(6, ip != null ? ip : "");
-            statement.setInt(7, Emulator.getIntUnixTimestamp());
+            statement.setString(5, action != null ? action : "");
+            statement.setString(6, truncate(detail, ip));
             statement.execute();
         } catch (SQLException e) {
             LOGGER.error("Failed to write housekeeping audit log entry", e);
         }
     }
 
-    private static String truncate(String detail) {
-        if (detail == null) return "";
-        return detail.length() > 512 ? detail.substring(0, 512) : detail;
+    private static String truncate(String detail, String ip) {
+        String value = detail == null ? "" : detail;
+        if (ip != null && !ip.isEmpty()) {
+            value = value.isEmpty() ? "ip=" + ip : value + " ip=" + ip;
+        }
+        return value.length() > 500 ? value.substring(0, 500) : value;
     }
 
     private static void ensureTable() {
@@ -75,19 +76,19 @@ public final class HousekeepingAuditLog {
                  Statement statement = connection.createStatement()) {
                 statement.execute(
                         "CREATE TABLE IF NOT EXISTS housekeeping_log (" +
-                                "id INT UNSIGNED NOT NULL AUTO_INCREMENT, " +
-                                "operator_id INT NOT NULL, " +
-                                "operator_name VARCHAR(64) NOT NULL DEFAULT '', " +
-                                "action VARCHAR(64) NOT NULL, " +
-                                "target_user_id INT NOT NULL DEFAULT 0, " +
-                                "detail VARCHAR(512) NOT NULL DEFAULT '', " +
-                                "ip VARCHAR(64) NOT NULL DEFAULT '', " +
+                                "id INT NOT NULL AUTO_INCREMENT, " +
                                 "timestamp INT NOT NULL, " +
+                                "actor_id INT NOT NULL, " +
+                                "actor_name VARCHAR(64) NOT NULL DEFAULT '', " +
+                                "target_type VARCHAR(16) NOT NULL DEFAULT 'user', " +
+                                "target_id INT NOT NULL DEFAULT 0, " +
+                                "target_label VARCHAR(128) NOT NULL DEFAULT '', " +
+                                "action VARCHAR(64) NOT NULL DEFAULT '', " +
+                                "detail VARCHAR(500) NOT NULL DEFAULT '', " +
+                                "success TINYINT NOT NULL DEFAULT 1, " +
                                 "PRIMARY KEY (id), " +
-                                "KEY idx_operator (operator_id), " +
-                                "KEY idx_target (target_user_id), " +
-                                "KEY idx_timestamp (timestamp)" +
-                                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+                                "KEY timestamp (timestamp)" +
+                                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
                 tableReady = true;
             } catch (SQLException e) {
                 LOGGER.error("Failed to create housekeeping_log table", e);

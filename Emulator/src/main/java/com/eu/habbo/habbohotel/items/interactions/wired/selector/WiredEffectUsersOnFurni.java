@@ -142,7 +142,7 @@ public class WiredEffectUsersOnFurni extends InteractionWiredEffect {
             return;
         }
 
-        JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+        JsonData data = WiredSelectorPayloadGuard.fromJson(wiredData, JsonData.class);
         if (data == null) {
             return;
         }

@@ -260,14 +260,14 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect {
         }
 
         if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            JsonData data = WiredUtilityPayloadGuard.fromJson(wiredData, JsonData.class);
 
             if (data != null) {
                 this.variableItemId = Math.max(0, data.variableItemId);
                 this.targetType = normalizeTargetType(data.targetType);
                 this.userSource = normalizeUserSource(data.userSource);
                 this.furniSource = normalizeFurniSource(data.furniSource);
-                this.setDelay(Math.max(0, data.delay));
+                this.setDelay(WiredUtilityPayloadGuard.delay(data.delay));
 
                 if (room != null && data.selectedFurniIds != null) {
                     for (Integer itemId : data.selectedFurniIds) {

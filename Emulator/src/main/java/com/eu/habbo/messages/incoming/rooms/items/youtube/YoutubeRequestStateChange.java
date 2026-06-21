@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.messages.incoming.rooms.items.RoomItemInputGuard;
 import com.eu.habbo.messages.outgoing.rooms.items.youtube.YoutubeStateChangeComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.youtube.YoutubeVideoComposer;
 import com.eu.habbo.threading.runnables.YoutubeAdvanceVideo;
@@ -49,6 +50,9 @@ public class YoutubeRequestStateChange extends MessageHandler {
         int itemId = this.packet.readInt();
         YoutubeState state = YoutubeState.getByState(this.packet.readInt());
 
+        if (!RoomItemInputGuard.isPositiveId(itemId))
+            return;
+
         if (state == null) return;
 
         Habbo habbo = this.client.getHabbo();
@@ -62,7 +66,7 @@ public class YoutubeRequestStateChange extends MessageHandler {
         if (!room.isOwner(habbo) && !habbo.hasPermission(Permission.ACC_ANYROOMOWNER)) return;
 
 
-        HabboItem item = this.client.getHabbo().getHabboInfo().getCurrentRoom().getHabboItem(itemId);
+        HabboItem item = room.getHabboItem(itemId);
 
         if (!(item instanceof InteractionYoutubeTV)) return;
 

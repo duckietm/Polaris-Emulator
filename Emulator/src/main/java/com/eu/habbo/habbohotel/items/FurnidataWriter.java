@@ -56,6 +56,98 @@ public class FurnidataWriter {
         return true;
     }
 
+    /** Outcome of a {@link #create} attempt. */
+    public enum CreateResult { CREATED, ALREADY_EXISTS, ID_COLLISION, NO_TARGET, IO_ERROR }
+
+    /**
+     * Append a brand-new furnidata entry (upsert's "create" half). Refuses if the
+     * classname already exists (caller should edit instead) or if {@code id} is
+     * already used by a DIFFERENT classname (id collision would break the
+     * {@code roomItem.name.<id>} / typeId resolution on the renderer). The complete
+     * entry object is built by the caller (see FurnidataEntryBuilder) and inserted
+     * right after the opening '[' of the matching section's "furnitype" array.
+     *
+     * @param classname  new classname (must be absent from furnidata)
+     * @param id         furnidata id (= item sprite id); must not collide
+     * @param type       FLOOR -> roomitemtypes, WALL -> wallitemtypes
+     * @param entryJson5 the complete entry object as a single-line JSON5 string
+     * @param createTier split-tier only: the tier dir to write into (e.g. "custom"); ignored for single-file
+     */
+    public CreateResult create(String classname, int id, FurnitureType type, String entryJson5, String createTier) {
+        String cn = classname == null ? "" : classname.trim().toLowerCase(java.util.Locale.ROOT);
+        if (cn.isEmpty() || entryJson5 == null || entryJson5.isBlank()) return CreateResult.NO_TARGET;
+
+        // Guard: duplicate classname / id collision (scan the whole source).
+        for (FurnidataEntry e : new FurnidataReader(source, maxBytes).read()) {
+            String ecn = e.classname() == null ? "" : e.classname().trim().toLowerCase(java.util.Locale.ROOT);
+            if (ecn.equals(cn)) return CreateResult.ALREADY_EXISTS;
+            if (e.id() == id) return CreateResult.ID_COLLISION;
+        }
+
+        try {
+            Path target = resolveCreateTarget(createTier);
+            if (target == null) return CreateResult.NO_TARGET;
+
+            String raw = Files.readString(target, StandardCharsets.UTF_8);
+            String section = (type == FurnitureType.WALL) ? "wallitemtypes" : "roomitemtypes";
+            int open = furnitypeArrayOpenIndex(raw, section);
+            if (open < 0) return CreateResult.NO_TARGET; // section/array absent in target file
+
+            String edited = raw.substring(0, open) + "\n" + entryJson5 + "," + raw.substring(open);
+            backup(target);
+            atomicWrite(target, edited);
+            return CreateResult.CREATED;
+        } catch (IOException e) {
+            return CreateResult.IO_ERROR;
+        }
+    }
+
+    /** Single-file: the source. Split-tier: the create-tier file (created with a shell if absent). */
+    private Path resolveCreateTarget(String createTier) throws IOException {
+        if (!directory) return source;
+        String tier = (createTier == null || createTier.isBlank()) ? "custom" : createTier.trim();
+        Path base = source.toAbsolutePath().normalize();
+        Path tierDir = safeResolve(base, tier);
+        if (tierDir == null) return null;
+        if (!Files.isDirectory(tierDir)) Files.createDirectories(tierDir);
+        for (String fileName : manifestList(tierDir, "files", List.of())) {
+            Path f = safeResolve(base, tierDir.resolve(fileName).toString());
+            if (f != null && Files.isRegularFile(f)) return f;
+        }
+        Path def = tierDir.resolve("furnidata.json5");
+        if (!Files.exists(def)) {
+            Files.writeString(def,
+                "{\n  \"roomitemtypes\": { \"furnitype\": [\n] },\n  \"wallitemtypes\": { \"furnitype\": [\n] }\n}\n",
+                StandardCharsets.UTF_8);
+        }
+        return def;
+    }
+
+    /** Index just after the '[' that opens {@code <section>.furnitype}, or -1 if absent. String-aware. */
+    static int furnitypeArrayOpenIndex(String raw, String section) {
+        int s = indexOfKey(raw, section, 0);
+        if (s < 0) return -1;
+        int ft = indexOfKey(raw, "furnitype", s);
+        if (ft < 0) return -1;
+        boolean inStr = false; char q = 0;
+        for (int i = ft; i < raw.length(); i++) {
+            char c = raw.charAt(i);
+            if (inStr) { if (c == '\\') i++; else if (c == q) inStr = false; continue; }
+            if (c == '"' || c == '\'') { inStr = true; q = c; }
+            else if (c == '[') return i + 1;
+        }
+        return -1;
+    }
+
+    /** First occurrence of a quoted key ("key" or 'key') at/after {@code from}, or -1. */
+    private static int indexOfKey(String raw, String key, int from) {
+        int a = raw.indexOf("\"" + key + "\"", from);
+        int b = raw.indexOf("'" + key + "'", from);
+        if (a < 0) return b;
+        if (b < 0) return a;
+        return Math.min(a, b);
+    }
+
     /** For single-file just returns the file; for split-tier, the tier file that contains cn. */
     private Path locateFile(String cn) throws IOException {
         if (!directory) {

@@ -7,7 +7,7 @@ import com.eu.habbo.messages.outgoing.navigator.PrivateRoomsComposer;
 public class SearchRoomsByTagEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
-        String tag = this.packet.readString();
+        String tag = NavigatorInputGuard.normalizeSearch(this.packet.readString());
 
         this.client.sendResponse(new PrivateRoomsComposer(Emulator.getGameEnvironment().getRoomManager().getRoomsWithTag(tag)));
     }

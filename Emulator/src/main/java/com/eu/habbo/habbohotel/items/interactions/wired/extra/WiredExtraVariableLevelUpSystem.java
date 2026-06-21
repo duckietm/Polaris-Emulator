@@ -188,7 +188,7 @@ public class WiredExtraVariableLevelUpSystem extends InteractionWiredExtra {
 
         try {
             if (value.trim().startsWith("{")) {
-                JsonData data = WiredManager.getGson().fromJson(value, JsonData.class);
+                JsonData data = WiredExtraPayloadGuard.fromJson(value, JsonData.class);
                 return (data != null) ? data : new JsonData();
             }
         } catch (Exception ignored) {

@@ -21,10 +21,18 @@ public class CatalogAdminDeleteOfferEvent extends MessageHandler {
         int offerId = this.packet.readInt();
         CatalogPageType pageType = CatalogPageType.fromString(this.packet.readString());
 
+        if (offerId <= 0) {
+            this.client.sendResponse(new CatalogAdminResultComposer(false, "Invalid offer id"));
+            return;
+        }
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement((pageType == CatalogPageType.BUILDER) ? "DELETE FROM catalog_items_bc WHERE id = ?" : "DELETE FROM catalog_items WHERE id = ?")) {
             statement.setInt(1, offerId);
-            statement.execute();
+            if (statement.executeUpdate() == 0) {
+                this.client.sendResponse(new CatalogAdminResultComposer(false, "Offer not found: " + offerId));
+                return;
+            }
         }
 
         this.client.sendResponse(new CatalogAdminResultComposer(true, "Offer deleted"));

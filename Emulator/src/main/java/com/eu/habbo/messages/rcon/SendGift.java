@@ -3,19 +3,14 @@ package com.eu.habbo.messages.rcon;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.google.gson.Gson;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 
 public class SendGift extends RCONMessage<SendGift.SendGiftJSON> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SendGift.class);
+    private static final int DEFAULT_MAX_MESSAGE_LENGTH = 300;
 
     public SendGift() {
         super(SendGiftJSON.class);
@@ -23,13 +18,13 @@ public class SendGift extends RCONMessage<SendGift.SendGiftJSON> {
 
     @Override
     public void handle(Gson gson, SendGiftJSON json) {
-        if (json.user_id < 0) {
+        if (json.user_id <= 0) {
             this.status = RCONMessage.STATUS_ERROR;
             this.message = Emulator.getTexts().getValue("commands.error.cmd_gift.user_not_found").replace("%username%", json.user_id + "");
             return;
         }
 
-        if (json.itemid < 0) {
+        if (json.itemid <= 0) {
             this.status = RCONMessage.STATUS_ERROR;
             this.message = Emulator.getTexts().getValue("commands.error.cmd_gift.not_a_number");
             return;
@@ -42,48 +37,72 @@ public class SendGift extends RCONMessage<SendGift.SendGiftJSON> {
             return;
         }
 
-        boolean userFound;
-        Habbo habbo;
-
-        habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(json.user_id);
-
-        userFound = habbo != null;
-        String username = "";
-        if (!userFound) {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM users WHERE id = ? LIMIT 1")) {
-                statement.setInt(1, json.user_id);
-                try (ResultSet set = statement.executeQuery()) {
-                    if (set.next()) {
-                        username = set.getString("username");
-                        userFound = true;
-                    }
-                }
-            } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
-            }
-        } else {
-            username = habbo.getHabboInfo().getUsername();
+        if (!baseItem.allowGift()) {
+            this.status = RCONMessage.STATUS_ERROR;
+            this.message = Emulator.getTexts().getValue("commands.error.cmd_gift.not_found").replace("%itemid%", json.itemid + "");
+            return;
         }
 
-        if (!userFound) {
-            this.status = RCONMessage.STATUS_ERROR;
-            this.message = Emulator.getTexts().getValue("commands.error.cmd_gift.user_not_found").replace("%username%", username);
+        Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(json.user_id);
+        HabboInfo habboInfo = habbo != null ? habbo.getHabboInfo() : HabboManager.getOfflineHabboInfo(json.user_id);
+        if (habboInfo == null) {
+            this.status = RCONMessage.HABBO_NOT_FOUND;
+            this.message = Emulator.getTexts().getValue("commands.error.cmd_gift.user_not_found").replace("%username%", json.user_id + "");
             return;
         }
 
         HabboItem item = Emulator.getGameEnvironment().getItemManager().createItem(0, baseItem, 0, 0, "");
-        Item giftItem = Emulator.getGameEnvironment().getItemManager().getItem((Integer) Emulator.getGameEnvironment().getCatalogManager().giftFurnis.values().toArray()[Emulator.getRandom().nextInt(Emulator.getGameEnvironment().getCatalogManager().giftFurnis.size())]);
+        Item giftItem = this.randomGiftItem();
+        if (item == null || giftItem == null) {
+            this.status = RCONMessage.SYSTEM_ERROR;
+            this.message = "gift configuration unavailable";
+            return;
+        }
 
         String extraData = "1\t" + item.getId();
-        extraData += "\t0\t0\t0\t" + json.message + "\t0\t0";
+        extraData += "\t0\t0\t0\t" + sanitizeGiftMessage(json.message) + "\t0\t0";
 
-        Emulator.getGameEnvironment().getItemManager().createGift(username, giftItem, extraData, 0, 0);
+        if (Emulator.getGameEnvironment().getItemManager().createGift(habboInfo.getUsername(), giftItem, extraData, 0, 0) == null) {
+            this.status = RCONMessage.SYSTEM_ERROR;
+            this.message = "failed to create gift";
+            return;
+        }
 
-        this.message = Emulator.getTexts().getValue("commands.succes.cmd_gift").replace("%username%", username).replace("%itemname%", item.getBaseItem().getName());
+        this.message = Emulator.getTexts().getValue("commands.succes.cmd_gift").replace("%username%", habboInfo.getUsername()).replace("%itemname%", item.getBaseItem().getName());
 
         if (habbo != null) {
             habbo.getClient().sendResponse(new InventoryRefreshComposer());
         }
+    }
+
+    private Item randomGiftItem() {
+        synchronized (Emulator.getGameEnvironment().getCatalogManager().giftFurnis) {
+            int size = Emulator.getGameEnvironment().getCatalogManager().giftFurnis.size();
+            if (size == 0) {
+                return null;
+            }
+
+            Object[] giftIds = Emulator.getGameEnvironment().getCatalogManager().giftFurnis.values().toArray();
+            return Emulator.getGameEnvironment().getItemManager().getItem((Integer) giftIds[Emulator.getRandom().nextInt(size)]);
+        }
+    }
+
+    static String sanitizeGiftMessage(String message) {
+        int maxLength = Emulator.getConfig().getInt("hotel.gifts.length.max", DEFAULT_MAX_MESSAGE_LENGTH);
+        if (maxLength <= 0) {
+            maxLength = DEFAULT_MAX_MESSAGE_LENGTH;
+        }
+
+        if (message == null) {
+            return "";
+        }
+
+        String sanitized = message.replace('\t', ' ').replace('\r', ' ').replace('\n', ' ');
+        if (sanitized.length() > maxLength) {
+            return sanitized.substring(0, maxLength);
+        }
+
+        return sanitized;
     }
 
     static class SendGiftJSON {

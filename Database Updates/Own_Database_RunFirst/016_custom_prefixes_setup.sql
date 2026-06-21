@@ -301,6 +301,7 @@ INSERT IGNORE INTO `custom_prefixes_catalog`
 
 INSERT IGNORE INTO `emulator_texts` (`key`, `value`) VALUES
     -- GivePrefix command
+    ('commands.description.cmd_give_prefix', ':giveprefix <username> <text> <color> [icon] [effect]'),
     ('commands.keys.cmd_give_prefix', 'giveprefix'),
     ('commands.error.cmd_give_prefix.usage', 'Usage: :giveprefix <username> <text> <color> [icon] [effect]'),
     ('commands.error.cmd_give_prefix.invalid_color', 'Invalid color format. Use hex format (#FF0000).'),
@@ -308,12 +309,14 @@ INSERT IGNORE INTO `emulator_texts` (`key`, `value`) VALUES
     ('commands.error.cmd_give_prefix.user_not_found', 'User not found or not online.'),
     ('commands.succes.cmd_give_prefix', 'Prefix {%prefix%} successfully given to %user%!'),
     -- ListPrefixes command
+    ('commands.description.cmd_list_prefixes', ':listprefixes <username>'),
     ('commands.keys.cmd_list_prefixes', 'listprefixes'),
     ('commands.error.cmd_list_prefixes.usage', 'Usage: :listprefixes <username>'),
     ('commands.error.cmd_list_prefixes.user_not_found', 'User not found or not online.'),
     ('commands.succes.cmd_list_prefixes.header', 'Prefixes of %user%:'),
     ('commands.succes.cmd_list_prefixes.empty', '%user% has no prefixes.'),
     -- RemovePrefix command
+    ('commands.description.cmd_remove_prefix', ':removeprefix <username> <id|all>'),
     ('commands.keys.cmd_remove_prefix', 'removeprefix'),
     ('commands.error.cmd_remove_prefix.usage', 'Usage: :removeprefix <username> <id|all>'),
     ('commands.error.cmd_remove_prefix.user_not_found', 'User not found or not online.'),

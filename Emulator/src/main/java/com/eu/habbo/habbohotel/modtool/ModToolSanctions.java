@@ -128,6 +128,10 @@ public class ModToolSanctions {
     }
 
     public void run(int habboId, Habbo self, int sanctionLevel, int cfhTopic, String reason, int tradeLockedUntil, boolean isMuted, int muteDuration) {
+        if (!ModToolManager.canModerateTarget(self, habboId)) {
+            return;
+        }
+
         sanctionLevel++;
 
         ModToolSanctionLevelItem sanctionLevelItem = getSanctionLevelItem(sanctionLevel);

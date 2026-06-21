@@ -25,14 +25,16 @@ public class AcceptFriendRequestEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        int count = Math.min(this.packet.readInt(), 100);
+        int count = this.packet.readInt();
+        if (count <= 0 || count > 100) return;
+
         int userId;
 
         for (int i = 0; i < count; i++) {
             userId = this.packet.readInt();
 
-            if (userId == 0)
-                return;
+            if (userId <= 0)
+                continue;
 
             if (this.client.getHabbo().getMessenger().getFriends().containsKey(userId)) {
                 this.client.getHabbo().getMessenger().deleteFriendRequests(userId, this.client.getHabbo().getHabboInfo().getId());

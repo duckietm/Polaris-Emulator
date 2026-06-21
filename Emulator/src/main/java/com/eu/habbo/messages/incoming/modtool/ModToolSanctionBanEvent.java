@@ -30,12 +30,16 @@ public class ModToolSanctionBanEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         int userId = this.packet.readInt();
-        String message = this.packet.readString();
+        String message = ModToolInputGuard.normalize(this.packet.readString());
         int cfhTopic = this.packet.readInt();
         int banType = this.packet.readInt();
         this.packet.readBoolean();
 
         int duration = 0;
+
+        if (!ModToolTicketGuard.isPositiveId(userId) || !ModToolTicketGuard.isPositiveId(cfhTopic) || !ModToolInputGuard.isSafeMessage(message)) {
+            return;
+        }
 
         switch (banType) {
             case BAN_18_HOURS:

@@ -21,11 +21,19 @@ public class ReportFriendPrivateChatEvent extends MessageHandler {
             return;
         }
 
-        String message = this.packet.readString();
+        String message = ModToolReportInputGuard.normalize(this.packet.readString());
         int category = this.packet.readInt();
         int userId = this.packet.readInt();
         int count = this.packet.readInt();
         ArrayList<ModToolChatLog> chatLogs = new ArrayList<>();
+
+        if (!ModToolReportInputGuard.isValidReportMessage(message) ||
+                category <= 0 ||
+                !ModToolReportInputGuard.isPositiveId(userId) ||
+                userId == this.client.getHabbo().getHabboInfo().getId() ||
+                !ModToolReportInputGuard.isValidPrivateChatLogCount(count)) {
+            return;
+        }
 
         HabboInfo info;
         Habbo target = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
@@ -37,11 +45,17 @@ public class ReportFriendPrivateChatEvent extends MessageHandler {
 
         if (info == null) return;
 
-        for (int i = 0; i < Math.min(count, 100); i++) {
+        for (int i = 0; i < count; i++) {
             int chatUserId = this.packet.readInt();
             String username = this.packet.readInt() == info.getId() ? info.getUsername() : this.client.getHabbo().getHabboInfo().getUsername();
+            String chatMessage = ModToolReportInputGuard.normalize(this.packet.readString());
 
-            chatLogs.add(new ModToolChatLog(0, chatUserId, username, this.packet.readString()));
+            if (!ModToolReportInputGuard.isPositiveId(chatUserId) ||
+                    !ModToolReportInputGuard.isValidChatLogMessage(chatMessage)) {
+                return;
+            }
+
+            chatLogs.add(new ModToolChatLog(0, chatUserId, username, chatMessage));
         }
 
         ModToolIssue issue = new ModToolIssue(this.client.getHabbo().getHabboInfo().getId(), this.client.getHabbo().getHabboInfo().getUsername(), userId, info.getUsername(), 0, message, ModToolTicketType.IM);

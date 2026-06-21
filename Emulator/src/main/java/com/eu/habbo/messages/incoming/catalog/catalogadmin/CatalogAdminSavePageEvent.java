@@ -74,13 +74,13 @@ public class CatalogAdminSavePageEvent extends MessageHandler {
                 return;
             }
 
-            CatalogPage parent = Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(parentId);
+            CatalogPage parent = Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(parentId, pageType);
             if (parent == null) {
                 this.client.sendResponse(new CatalogAdminResultComposer(false, "Parent page not found: " + parentId));
                 return;
             }
 
-            if (this.wouldCreateCycle(pageId, parentId)) {
+            if (this.wouldCreateCycle(pageId, parentId, pageType)) {
                 this.client.sendResponse(new CatalogAdminResultComposer(false, "Refusing to re-parent: that would create a cycle"));
                 return;
             }
@@ -144,18 +144,21 @@ public class CatalogAdminSavePageEvent extends MessageHandler {
                 statement.setInt(15, pageId);
             }
 
-            statement.execute();
+            if (statement.executeUpdate() == 0) {
+                this.client.sendResponse(new CatalogAdminResultComposer(false, "Page not found: " + pageId));
+                return;
+            }
         }
 
         this.client.sendResponse(new CatalogAdminResultComposer(true, "Page saved"));
     }
 
-    private boolean wouldCreateCycle(int pageId, int parentId) {
+    private boolean wouldCreateCycle(int pageId, int parentId, CatalogPageType pageType) {
         int current = parentId;
         for (int hops = 0; hops < MAX_PARENT_WALK; hops++) {
             if (current == ROOT_PARENT_ID) return false;
             if (current == pageId) return true;
-            CatalogPage parent = Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(current);
+            CatalogPage parent = Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(current, pageType);
             if (parent == null) return false;
             current = parent.getParentId();
         }

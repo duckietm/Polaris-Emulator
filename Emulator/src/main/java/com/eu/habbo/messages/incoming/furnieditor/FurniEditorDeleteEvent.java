@@ -57,8 +57,8 @@ public class FurniEditorDeleteEvent extends MessageHandler {
             // Check catalog_items references
             int catalogCount = 0;
             try (PreparedStatement stmt = connection.prepareStatement(
-                    "SELECT COUNT(*) FROM catalog_items WHERE item_ids LIKE ?")) {
-                stmt.setString(1, "%" + id + "%");
+                    "SELECT COUNT(*) FROM catalog_items WHERE " + FurniEditorHelper.catalogItemIdsTokenSql("item_ids"))) {
+                stmt.setString(1, FurniEditorHelper.catalogItemIdsTokenPattern(id));
                 try (ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
                         catalogCount = rs.getInt(1);

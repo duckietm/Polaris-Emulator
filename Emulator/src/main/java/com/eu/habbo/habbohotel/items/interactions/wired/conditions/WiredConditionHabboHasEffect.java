@@ -18,6 +18,7 @@ import java.util.List;
 public class WiredConditionHabboHasEffect extends InteractionWiredCondition {
     protected static final int QUANTIFIER_ALL = 0;
     protected static final int QUANTIFIER_ANY = 1;
+    protected static final int MAX_EFFECT_ID = 10_000;
 
     public static final WiredConditionType type = WiredConditionType.ACTOR_WEARS_EFFECT;
 
@@ -86,15 +87,34 @@ public class WiredConditionHabboHasEffect extends InteractionWiredCondition {
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        this.onPickUp();
         String wiredData = set.getString("wired_data");
+        if (wiredData == null || wiredData.isEmpty()) {
+            this.onPickUp();
+            return;
+        }
 
         if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            this.effectId = data.effectId;
-            this.userSource = data.userSource;
+            JsonData data;
+            try {
+                data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            } catch (RuntimeException ignored) {
+                this.onPickUp();
+                return;
+            }
+            if (data == null) {
+                this.onPickUp();
+                return;
+            }
+            this.effectId = WiredUserConditionInputGuard.normalizeEffectId(data.effectId);
+            this.userSource = WiredUserConditionInputGuard.normalizeUserSource(data.userSource);
             this.quantifier = this.normalizeQuantifier(data.quantifier, QUANTIFIER_ANY);
         } else {
-            this.effectId = Integer.parseInt(wiredData);
+            try {
+                this.effectId = WiredUserConditionInputGuard.normalizeEffectId(Integer.parseInt(wiredData));
+            } catch (NumberFormatException ignored) {
+                this.effectId = 0;
+            }
             this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
             this.quantifier = QUANTIFIER_ANY;
         }
@@ -134,8 +154,8 @@ public class WiredConditionHabboHasEffect extends InteractionWiredCondition {
     public boolean saveData(WiredSettings settings) {
         if(settings.getIntParams().length < 1) return false;
         int[] params = settings.getIntParams();
-        this.effectId = params[0];
-        this.userSource = (params.length > 1) ? params[1] : WiredSourceUtil.SOURCE_TRIGGER;
+        this.effectId = WiredUserConditionInputGuard.normalizeEffectId(params[0]);
+        this.userSource = (params.length > 1) ? WiredUserConditionInputGuard.normalizeUserSource(params[1]) : WiredSourceUtil.SOURCE_TRIGGER;
         this.quantifier = (params.length > 2) ? this.normalizeQuantifier(params[2], QUANTIFIER_ANY) : QUANTIFIER_ANY;
 
         return true;
@@ -151,6 +171,14 @@ public class WiredConditionHabboHasEffect extends InteractionWiredCondition {
         }
 
         return (value == QUANTIFIER_ANY) ? QUANTIFIER_ANY : QUANTIFIER_ALL;
+    }
+
+    protected int normalizeEffectId(int value) {
+        return Math.max(0, Math.min(MAX_EFFECT_ID, value));
+    }
+
+    protected int normalizeUserSource(int value) {
+        return WiredSourceUtil.isDefaultUserSource(value) ? value : WiredSourceUtil.SOURCE_TRIGGER;
     }
 
     static class JsonData {

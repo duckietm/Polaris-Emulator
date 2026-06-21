@@ -525,35 +525,55 @@ public class WiredHandler {
         if (Emulator.getPluginManager().fireEvent(rewardReceived).isCancelled())
             return false;
 
-        if (rewardReceived.value.isEmpty())
+        String rewardType = rewardReceived.type == null ? "" : rewardReceived.type.trim();
+        String rewardValue = rewardReceived.value == null ? "" : rewardReceived.value.trim();
+
+        if (rewardValue.isEmpty())
             return false;
 
-        if (rewardReceived.type.equalsIgnoreCase("credits")) {
-            habbo.giveCredits(Integer.parseInt(rewardReceived.value));
+        if (rewardType.equalsIgnoreCase("credits")) {
+            Integer amount = parsePositiveRewardInteger(rewardValue);
+            if (amount == null) return false;
+
+            habbo.giveCredits(amount);
             completeReward(habbo, wiredBox, reward, WiredRewardAlertComposer.REWARD_RECEIVED_ITEM);
             return true;
-        } else if (rewardReceived.type.equalsIgnoreCase("diamonds") || rewardReceived.type.equalsIgnoreCase("diamond")) {
-            habbo.givePoints(5, Integer.parseInt(rewardReceived.value));
+        } else if (rewardType.equalsIgnoreCase("diamonds") || rewardType.equalsIgnoreCase("diamond")) {
+            Integer amount = parsePositiveRewardInteger(rewardValue);
+            if (amount == null) return false;
+
+            habbo.givePoints(5, amount);
             completeReward(habbo, wiredBox, reward, WiredRewardAlertComposer.REWARD_RECEIVED_ITEM);
             return true;
-        } else if (rewardReceived.type.equalsIgnoreCase("pixels")) {
-            habbo.givePixels(Integer.parseInt(rewardReceived.value));
+        } else if (rewardType.equalsIgnoreCase("pixels")) {
+            Integer amount = parsePositiveRewardInteger(rewardValue);
+            if (amount == null) return false;
+
+            habbo.givePixels(amount);
             completeReward(habbo, wiredBox, reward, WiredRewardAlertComposer.REWARD_RECEIVED_ITEM);
             return true;
-        } else if (rewardReceived.type.startsWith("points")) {
-            int points = Integer.parseInt(rewardReceived.value);
+        } else if (rewardType.startsWith("points")) {
+            Integer points = parsePositiveRewardInteger(rewardValue);
+            if (points == null) return false;
+
             int type = 5;
 
             try {
-                type = Integer.parseInt(rewardReceived.type.replace("points", ""));
-            } catch (Exception e) {
+                int parsedType = Integer.parseInt(rewardType.replace("points", "").trim());
+                if (parsedType > 0) {
+                    type = parsedType;
+                }
+            } catch (NumberFormatException ignored) {
             }
 
             habbo.givePoints(type, points);
             completeReward(habbo, wiredBox, reward, WiredRewardAlertComposer.REWARD_RECEIVED_ITEM);
             return true;
-        } else if (rewardReceived.type.equalsIgnoreCase("furni")) {
-            Item baseItem = Emulator.getGameEnvironment().getItemManager().getItem(Integer.parseInt(rewardReceived.value));
+        } else if (rewardType.equalsIgnoreCase("furni")) {
+            Integer itemId = parsePositiveRewardInteger(rewardValue);
+            if (itemId == null) return false;
+
+            Item baseItem = Emulator.getGameEnvironment().getItemManager().getItem(itemId);
             if (baseItem == null)
                 return false;
 
@@ -567,12 +587,18 @@ public class WiredHandler {
             habbo.getClient().sendResponse(new InventoryRefreshComposer());
             completeReward(habbo, wiredBox, reward, WiredRewardAlertComposer.REWARD_RECEIVED_ITEM);
             return true;
-        } else if (rewardReceived.type.equalsIgnoreCase("respect")) {
-            habbo.getHabboStats().respectPointsReceived += Integer.parseInt(rewardReceived.value);
+        } else if (rewardType.equalsIgnoreCase("respect")) {
+            Integer amount = parsePositiveRewardInteger(rewardValue);
+            if (amount == null) return false;
+
+            habbo.getHabboStats().respectPointsReceived += amount;
             completeReward(habbo, wiredBox, reward, WiredRewardAlertComposer.REWARD_RECEIVED_ITEM);
             return true;
-        } else if (rewardReceived.type.equalsIgnoreCase("cata")) {
-            CatalogItem item = Emulator.getGameEnvironment().getCatalogManager().getCatalogItem(Integer.parseInt(rewardReceived.value));
+        } else if (rewardType.equalsIgnoreCase("cata")) {
+            Integer catalogItemId = parsePositiveRewardInteger(rewardValue);
+            if (catalogItemId == null) return false;
+
+            CatalogItem item = Emulator.getGameEnvironment().getCatalogManager().getCatalogItem(catalogItemId);
 
             if (item == null)
                 return false;
@@ -583,6 +609,15 @@ public class WiredHandler {
         }
 
         return false;
+    }
+
+    private static Integer parsePositiveRewardInteger(String value) {
+        try {
+            int parsed = Integer.parseInt(value == null ? "" : value.trim());
+            return parsed > 0 ? parsed : null;
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 
     public static boolean getReward(Habbo habbo, WiredEffectGiveReward wiredBox) {

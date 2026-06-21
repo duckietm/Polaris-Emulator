@@ -101,7 +101,7 @@ public class WiredEffectUsersArea extends InteractionWiredEffect {
         String wiredData = set.getString("wired_data");
 
         if (wiredData != null && wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            JsonData data = WiredSelectorPayloadGuard.fromJson(wiredData, JsonData.class);
             this.rootX = data.rootX;
             this.rootY = data.rootY;
             this.areaWidth = data.width;

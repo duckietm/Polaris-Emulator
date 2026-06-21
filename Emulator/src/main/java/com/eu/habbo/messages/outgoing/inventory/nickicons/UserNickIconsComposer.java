@@ -88,7 +88,7 @@ public class UserNickIconsComposer extends MessageComposer {
         }
 
         UserCustomizationData customizationData = UserCustomizationData.fromHabbo(this.habbo);
-        this.response.appendString(customizationData.displayOrder);
+        this.response.appendString(customizationData.displayOrder());
         this.response.appendInt(this.getSettingInt("max_length", 15));
         this.response.appendInt(this.getSettingInt("price_credits", 5));
         this.response.appendInt(this.getSettingInt("price_points", 0));

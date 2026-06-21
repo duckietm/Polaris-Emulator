@@ -12,14 +12,14 @@ if red. The pom prerequisite (release=25) is already done.
 | 1 | `Math.clamp(v,min,max)` replaces nested `min(max(...))` | 5 (4 safe) | ✅ done (`7f1cef10`) — skipped SetStackHelperHeight (lo>hi risk) |
 | 10a | Virtual-thread executor: YouTube playlist HTTP loader | 1 | ✅ done (`7f1cef10`) |
 | 6 | Switch expressions (value-mapper / return-only) | ~30 | ✅ done — FurnitureType (`2e4176cd`) + SettingsState + wave 5 (`6b12b1e4`, 10 switches). Skipped CatalogFeaturedPage (heterogeneous append* calls) |
-| 2 | `Collectors.toList()/toSet()` → `Stream.toList()/toUnmodifiableSet()` | ~50 | ✅ done — wave 6 (`0d44e4d3`), 46 files. Two-stage **adversarial** workflow: stage-2 skeptic traced every result into callers/ctors/Gson; zero unsafe, escaping/unverifiable sites skipped |
-| 3 | Pattern matching for `instanceof` (test-then-cast) | ~445 | ✅ done — waves 1-4 (`f9e59fdb`, `611b7985`, `0be2381e` + items/interactions). ~340 conversions across the whole module; non-candidates (bool checks, `==`, OR-chains, cast-to-other-type) correctly skipped |
+| 2 | `Collectors.toList()/toSet()` → `Stream.toList()/toUnmodifiableSet()` | ~50 | ✅ done — wave 6 (`0d44e4d3`), 46 files. Two-stage **adversarial** workflow: stage-2 skeptic traced every result into callers/ctors/Gson; zero unsafe, escaping/unverifiable sites skipped. **Final sweep:** 3 stragglers (ModToolRequestIssueChatlogEvent ×2, TraxManager) — callers verified read-only — converted; non-wired `Collectors.toList()` count now 0 |
+| 3 | Pattern matching for `instanceof` (test-then-cast) | ~445 | ✅ done — waves 1-4 (`f9e59fdb`, `611b7985`, `0be2381e` + items/interactions). ~340 conversions across the whole module; non-candidates (bool checks, `==`, OR-chains, cast-to-other-type) correctly skipped. **Final sweep:** 10 remaining test-then-cast sites (RoomSpecialTypes ×8, FreezeHandleSnowballExplosion, UseRandomStateItemEvent) converted; non-wired test-then-cast count now 0 |
 | 4 | Pattern matching `instanceof` guarded-`&&` + negated early-exit | ~42 | ✅ done — folded into waves 1-4; compiler-verified definite-assignment for every binding |
 | 11 | `getFirst()/getLast()/removeLast()` (sequenced collections) | 56 surveyed | ✅ done — wave 7 (`bfa8edfd`), 12 guarded+typed sites. Unguarded / JsonArray / trove sites left as-is |
 | 7 | Fall-through / multi-label switch collapsing (`case A, B ->`) | ~8 | ◑ partial — the value-mapper ones folded into wave 5 (e.g. CatalogPageType `case A, B ->`). Remaining pure-statement fall-throughs are low-value; deferred |
-| 5 | **Seal** the 3 Wired base hierarchies (Condition/Effect/Trigger) | 112 subclasses | ⏸ **DEFERRED — needs human greenlight** (see below) |
-| 8 | Records for vetted immutable carriers | 12 classes | ⏸ **DEFERRED — needs human greenlight** (see below) |
-| 9 | `ScopedValue` for the wired request-scoped `ThreadLocal`s | 11 (not 5) | ⏸ **DEFERRED — needs human greenlight** (see below) |
+| 5 | **Seal** the 3 Wired base hierarchies (Condition/Effect/Trigger) | 112 subclasses | ⏸ **DEFERRED (wired — frozen by request)** (see below) |
+| 8 | Records for vetted immutable carriers | 12 classes | ✅ done — 8 carriers in batch 8 (`450ee70`) + final 2 **non-wired** candidates: `CatalogPurchaseLogEntry` (zero getters, only constructed) and `UserCustomizationData` (public-field → component accessor, 5-caller sweep, compact constructor keeps null/displayOrder normalization). Remaining 2 candidates (`WiredHighscoreDataEntry`, `WiredHighscoreRow`) are **wired → frozen** |
+| 9 | `ScopedValue` for the wired request-scoped `ThreadLocal`s | 11 (not 5) | ⏸ **DEFERRED (wired — frozen by request)** (see below) |
 
 ## Deferred structural batches — why, and what greenlight they need
 

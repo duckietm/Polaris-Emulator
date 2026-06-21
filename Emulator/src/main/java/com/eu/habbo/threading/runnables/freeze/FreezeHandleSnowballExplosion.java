@@ -78,8 +78,7 @@ class FreezeHandleSnowballExplosion implements Runnable {
                             habbos.addAll(this.thrownData.room.getHabbosAt(freezeTile.getX(), freezeTile.getY()));
 
                             for (Habbo habbo : habbos) {
-                                if (habbo.getHabboInfo().getGamePlayer() != null && habbo.getHabboInfo().getGamePlayer() instanceof FreezeGamePlayer) {
-                                    FreezeGamePlayer hPlayer = (FreezeGamePlayer) habbo.getHabboInfo().getGamePlayer();
+                                if (habbo.getHabboInfo().getGamePlayer() instanceof FreezeGamePlayer hPlayer) {
                                     if (!hPlayer.canGetFrozen())
                                         continue;
 
@@ -88,7 +87,7 @@ class FreezeHandleSnowballExplosion implements Runnable {
                                     else
                                         player.addScore(FreezeGame.FREEZE_LOOSE_POINTS);
 
-                                    ((FreezeGamePlayer) habbo.getHabboInfo().getGamePlayer()).freeze();
+                                    hPlayer.freeze();
 
                                     if (this.thrownData.habbo != habbo) {
                                         AchievementManager.progressAchievement(habbo, Emulator.getGameEnvironment().getAchievementManager().getAchievement("EsA"));

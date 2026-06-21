@@ -933,8 +933,8 @@ public class RoomSpecialTypes {
             THashMap<Integer, InteractionFreezeScoreboard> boards = new THashMap<>();
 
             for (Map.Entry<Integer, InteractionGameScoreboard> set : this.gameScoreboards.entrySet()) {
-                if (set.getValue() instanceof InteractionFreezeScoreboard) {
-                    boards.put(set.getValue().getId(), (InteractionFreezeScoreboard) set.getValue());
+                if (set.getValue() instanceof InteractionFreezeScoreboard board) {
+                    boards.put(board.getId(), board);
                 }
             }
 
@@ -947,9 +947,9 @@ public class RoomSpecialTypes {
             THashMap<Integer, InteractionFreezeScoreboard> boards = new THashMap<>();
 
             for (Map.Entry<Integer, InteractionGameScoreboard> set : this.gameScoreboards.entrySet()) {
-                if (set.getValue() instanceof InteractionFreezeScoreboard) {
-                    if (((InteractionFreezeScoreboard) set.getValue()).teamColor.equals(teamColor))
-                        boards.put(set.getValue().getId(), (InteractionFreezeScoreboard) set.getValue());
+                if (set.getValue() instanceof InteractionFreezeScoreboard board) {
+                    if (board.teamColor.equals(teamColor))
+                        boards.put(board.getId(), board);
                 }
             }
 
@@ -962,8 +962,8 @@ public class RoomSpecialTypes {
             THashMap<Integer, InteractionBattleBanzaiScoreboard> boards = new THashMap<>();
 
             for (Map.Entry<Integer, InteractionGameScoreboard> set : this.gameScoreboards.entrySet()) {
-                if (set.getValue() instanceof InteractionBattleBanzaiScoreboard) {
-                    boards.put(set.getValue().getId(), (InteractionBattleBanzaiScoreboard) set.getValue());
+                if (set.getValue() instanceof InteractionBattleBanzaiScoreboard board) {
+                    boards.put(board.getId(), board);
                 }
             }
 
@@ -976,9 +976,9 @@ public class RoomSpecialTypes {
             THashMap<Integer, InteractionBattleBanzaiScoreboard> boards = new THashMap<>();
 
             for (Map.Entry<Integer, InteractionGameScoreboard> set : this.gameScoreboards.entrySet()) {
-                if (set.getValue() instanceof InteractionBattleBanzaiScoreboard) {
-                    if (((InteractionBattleBanzaiScoreboard) set.getValue()).teamColor.equals(teamColor))
-                        boards.put(set.getValue().getId(), (InteractionBattleBanzaiScoreboard) set.getValue());
+                if (set.getValue() instanceof InteractionBattleBanzaiScoreboard board) {
+                    if (board.teamColor.equals(teamColor))
+                        boards.put(board.getId(), board);
                 }
             }
 
@@ -991,8 +991,8 @@ public class RoomSpecialTypes {
             THashMap<Integer, InteractionFootballScoreboard> boards = new THashMap<>();
 
             for (Map.Entry<Integer, InteractionGameScoreboard> set : this.gameScoreboards.entrySet()) {
-                if (set.getValue() instanceof InteractionFootballScoreboard) {
-                    boards.put(set.getValue().getId(), (InteractionFootballScoreboard) set.getValue());
+                if (set.getValue() instanceof InteractionFootballScoreboard board) {
+                    boards.put(board.getId(), board);
                 }
             }
 
@@ -1005,9 +1005,9 @@ public class RoomSpecialTypes {
             THashMap<Integer, InteractionFootballScoreboard> boards = new THashMap<>();
 
             for (Map.Entry<Integer, InteractionGameScoreboard> set : this.gameScoreboards.entrySet()) {
-                if (set.getValue() instanceof InteractionFootballScoreboard) {
-                    if (((InteractionFootballScoreboard) set.getValue()).teamColor.equals(teamColor))
-                        boards.put(set.getValue().getId(), (InteractionFootballScoreboard) set.getValue());
+                if (set.getValue() instanceof InteractionFootballScoreboard board) {
+                    if (board.teamColor.equals(teamColor))
+                        boards.put(board.getId(), board);
                 }
             }
 
@@ -1033,8 +1033,8 @@ public class RoomSpecialTypes {
             THashMap<Integer, InteractionFreezeGate> gates = new THashMap<>();
 
             for (Map.Entry<Integer, InteractionGameGate> set : this.gameGates.entrySet()) {
-                if (set.getValue() instanceof InteractionFreezeGate) {
-                    gates.put(set.getValue().getId(), (InteractionFreezeGate) set.getValue());
+                if (set.getValue() instanceof InteractionFreezeGate gate) {
+                    gates.put(gate.getId(), gate);
                 }
             }
 
@@ -1047,8 +1047,8 @@ public class RoomSpecialTypes {
             THashMap<Integer, InteractionBattleBanzaiGate> gates = new THashMap<>();
 
             for (Map.Entry<Integer, InteractionGameGate> set : this.gameGates.entrySet()) {
-                if (set.getValue() instanceof InteractionBattleBanzaiGate) {
-                    gates.put(set.getValue().getId(), (InteractionBattleBanzaiGate) set.getValue());
+                if (set.getValue() instanceof InteractionBattleBanzaiGate gate) {
+                    gates.put(gate.getId(), gate);
                 }
             }
 

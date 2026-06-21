@@ -26,7 +26,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class TraxManager implements Disposable {
     public static int NORMAL_JUKEBOX_LIMIT = 10;
@@ -369,7 +368,7 @@ public class TraxManager implements Disposable {
         return habbo.getInventory().getItemsComponent().getItems().valueCollection().stream()
                 .filter(i -> i instanceof InteractionMusicDisc && i.getRoomId() == 0)
                 .map(i -> (InteractionMusicDisc) i)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public InteractionMusicDisc getSong(int itemId) {

@@ -10,7 +10,6 @@ import com.eu.habbo.messages.outgoing.modtool.ModToolIssueChatlogComposer;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class ModToolRequestIssueChatlogEvent extends MessageHandler {
     @Override
@@ -38,7 +37,7 @@ public class ModToolRequestIssueChatlogEvent extends MessageHandler {
                         ForumThread thread = ForumThread.getById(issue.threadId);
 
                         if (thread != null) {
-                            chatlog = thread.getComments().stream().map(c -> new ModToolChatLog(c.getCreatedAt(), c.getHabbo().getHabboInfo().getId(), c.getHabbo().getHabboInfo().getUsername(), c.getMessage())).collect(Collectors.toList());
+                            chatlog = thread.getComments().stream().map(c -> new ModToolChatLog(c.getCreatedAt(), c.getHabbo().getHabboInfo().getId(), c.getHabbo().getHabboInfo().getUsername(), c.getMessage())).toList();
                         }
                     } else {
                         chatlogType = ModToolIssueChatlogType.FORUM_COMMENT;
@@ -46,7 +45,7 @@ public class ModToolRequestIssueChatlogEvent extends MessageHandler {
                         ForumThread thread = ForumThread.getById(issue.threadId);
 
                         if (thread != null) {
-                            chatlog = thread.getComments().stream().map(c -> new ModToolChatLog(c.getCreatedAt(), c.getHabbo().getHabboInfo().getId(), c.getHabbo().getHabboInfo().getUsername(), c.getMessage(), c.getCommentId() == issue.commentId)).collect(Collectors.toList());
+                            chatlog = thread.getComments().stream().map(c -> new ModToolChatLog(c.getCreatedAt(), c.getHabbo().getHabboInfo().getId(), c.getHabbo().getHabboInfo().getUsername(), c.getMessage(), c.getCommentId() == issue.commentId)).toList();
                         }
                     }
                 } else if (issue.type == ModToolTicketType.PHOTO) {

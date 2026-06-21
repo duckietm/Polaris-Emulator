@@ -10,25 +10,17 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class UserCustomizationData {
+public record UserCustomizationData(String nickIcon, String displayOrder, String prefixText, String prefixColor, String prefixIcon, String prefixEffect, String prefixFont) {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserCustomizationData.class);
 
-    public final String nickIcon;
-    public final String displayOrder;
-    public final String prefixText;
-    public final String prefixColor;
-    public final String prefixIcon;
-    public final String prefixEffect;
-    public final String prefixFont;
-
-    private UserCustomizationData(String nickIcon, String displayOrder, String prefixText, String prefixColor, String prefixIcon, String prefixEffect, String prefixFont) {
-        this.nickIcon = nickIcon != null ? nickIcon : "";
-        this.displayOrder = UserVisualSettingsComponent.sanitizeDisplayOrder(displayOrder);
-        this.prefixText = prefixText != null ? prefixText : "";
-        this.prefixColor = prefixColor != null ? prefixColor : "";
-        this.prefixIcon = prefixIcon != null ? prefixIcon : "";
-        this.prefixEffect = prefixEffect != null ? prefixEffect : "";
-        this.prefixFont = prefixFont != null ? prefixFont : "";
+    public UserCustomizationData {
+        nickIcon = nickIcon != null ? nickIcon : "";
+        displayOrder = UserVisualSettingsComponent.sanitizeDisplayOrder(displayOrder);
+        prefixText = prefixText != null ? prefixText : "";
+        prefixColor = prefixColor != null ? prefixColor : "";
+        prefixIcon = prefixIcon != null ? prefixIcon : "";
+        prefixEffect = prefixEffect != null ? prefixEffect : "";
+        prefixFont = prefixFont != null ? prefixFont : "";
     }
 
     public static UserCustomizationData fromHabbo(Habbo habbo) {

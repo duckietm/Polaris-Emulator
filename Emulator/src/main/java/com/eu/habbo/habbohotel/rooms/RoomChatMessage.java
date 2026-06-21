@@ -206,13 +206,13 @@ public class RoomChatMessage implements Runnable, ISerialize, DatabaseLoggable {
 
             // Custom prefix data
             UserCustomizationData customizationData = (this.habbo != null) ? UserCustomizationData.fromHabbo(this.habbo) : UserCustomizationData.empty();
-            message.appendString(customizationData.prefixText);
-            message.appendString(customizationData.prefixColor);
-            message.appendString(customizationData.prefixIcon);
-            message.appendString(customizationData.prefixEffect);
-            message.appendString(customizationData.prefixFont);
-            message.appendString(customizationData.nickIcon);
-            message.appendString(customizationData.displayOrder);
+            message.appendString(customizationData.prefixText());
+            message.appendString(customizationData.prefixColor());
+            message.appendString(customizationData.prefixIcon());
+            message.appendString(customizationData.prefixEffect());
+            message.appendString(customizationData.prefixFont());
+            message.appendString(customizationData.nickIcon());
+            message.appendString(customizationData.displayOrder());
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
         }

@@ -40,7 +40,7 @@ public class GameMessageHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (!(msg instanceof ClientMessage)) {
+        if (!(msg instanceof ClientMessage message)) {
             try {
                 if (Emulator.getConfig().getBoolean("debug.mode")) {
                     LOGGER.debug("Discarding non-game message {} from {}",
@@ -52,8 +52,6 @@ public class GameMessageHandler extends ChannelInboundHandlerAdapter {
             }
             return;
         }
-
-        ClientMessage message = (ClientMessage) msg;
 
         try {
             // This handler is registered on a dedicated EventExecutorGroup

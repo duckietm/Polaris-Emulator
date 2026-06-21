@@ -47,10 +47,10 @@ public class FurniEditorUpdateEvent extends MessageHandler {
              PreparedStatement stmt = connection.prepareStatement(sql)) {
             int idx = 1;
             for (Object value : payload.values) {
-                if (value instanceof Integer) {
-                    stmt.setInt(idx++, (Integer) value);
-                } else if (value instanceof Double) {
-                    stmt.setDouble(idx++, (Double) value);
+                if (value instanceof Integer integer) {
+                    stmt.setInt(idx++, integer);
+                } else if (value instanceof Double doubleValue) {
+                    stmt.setDouble(idx++, doubleValue);
                 } else {
                     stmt.setString(idx++, String.valueOf(value));
                 }

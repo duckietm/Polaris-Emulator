@@ -28,9 +28,9 @@ public class CompostMonsterplantEvent extends MessageHandler {
         Pet pet = room.getPet(petId);
 
         if (pet != null) {
-            if (pet instanceof MonsterplantPet) {
+            if (pet instanceof MonsterplantPet monsterplantPet) {
                 if (pet.getUserId() == this.client.getHabbo().getHabboInfo().getId()) {
-                    if (((MonsterplantPet) pet).isDead()) {
+                    if (monsterplantPet.isDead()) {
                         Item baseItem = Emulator.getGameEnvironment().getItemManager().getItem("mnstr_compost");
 
                         if (baseItem != null) {

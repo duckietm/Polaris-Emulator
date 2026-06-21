@@ -17,9 +17,9 @@ public class BotsCommand extends Command {
         StringBuilder data = new StringBuilder(Emulator.getTexts().getValue("total") + ": " + gameClient.getHabbo().getHabboInfo().getCurrentRoom().getCurrentBots().values().length);
 
         for (Object bot : gameClient.getHabbo().getHabboInfo().getCurrentRoom().getCurrentBots().values()) {
-            if (bot instanceof Bot) {
+            if (bot instanceof Bot botEntity) {
                 data.append("\r");
-                data.append("<b>").append(Emulator.getTexts().getValue("generic.bot.name")).append("</b>: ").append(((Bot) bot).getName()).append(" <b>").append(Emulator.getTexts().getValue("generic.bot.id")).append("</b>: ").append(((Bot) bot).getId());
+                data.append("<b>").append(Emulator.getTexts().getValue("generic.bot.name")).append("</b>: ").append(botEntity.getName()).append(" <b>").append(Emulator.getTexts().getValue("generic.bot.id")).append("</b>: ").append(botEntity.getId());
             }
         }
 

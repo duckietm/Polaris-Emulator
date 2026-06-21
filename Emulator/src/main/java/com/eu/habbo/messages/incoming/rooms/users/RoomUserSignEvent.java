@@ -34,8 +34,8 @@ public class RoomUserSignEvent extends MessageHandler {
 
             int userId = this.client.getHabbo().getHabboInfo().getId();
             for (HabboItem item : room.getRoomSpecialTypes().getItemsOfType(InteractionVoteCounter.class)) {
-                if (item instanceof InteractionVoteCounter) {
-                    ((InteractionVoteCounter)item).vote(room, userId, signId);
+                if (item instanceof InteractionVoteCounter voteCounter) {
+                    voteCounter.vote(room, userId, signId);
                 }
             }
         }

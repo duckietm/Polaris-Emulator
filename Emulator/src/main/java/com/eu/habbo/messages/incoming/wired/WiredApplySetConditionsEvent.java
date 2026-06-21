@@ -57,9 +57,7 @@ public class WiredApplySetConditionsEvent extends MessageHandler {
                     HabboItem wiredItem = item.get();
 
                     // The item should have settings to match furni state, position and rotation
-                    if (wiredItem instanceof InteractionWiredMatchFurniSettings) {
-
-                        InteractionWiredMatchFurniSettings wired = (InteractionWiredMatchFurniSettings) wiredItem;
+                    if (wiredItem instanceof InteractionWiredMatchFurniSettings wired) {
 
                         // Try to apply the set settings to each item
                         wired.getMatchFurniSettings().forEach(setting -> {

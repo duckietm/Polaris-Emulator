@@ -123,8 +123,8 @@ public class FurniEditorSearchEvent extends MessageHandler {
             try (PreparedStatement stmt = connection.prepareStatement(countSql)) {
                 int idx = 1;
                 for (Object param : params) {
-                    if (param instanceof Integer) {
-                        stmt.setInt(idx++, (Integer) param);
+                    if (param instanceof Integer integerParam) {
+                        stmt.setInt(idx++, integerParam);
                     } else {
                         stmt.setString(idx++, (String) param);
                     }
@@ -140,8 +140,8 @@ public class FurniEditorSearchEvent extends MessageHandler {
             try (PreparedStatement stmt = connection.prepareStatement(dataSql)) {
                 int idx = 1;
                 for (Object param : params) {
-                    if (param instanceof Integer) {
-                        stmt.setInt(idx++, (Integer) param);
+                    if (param instanceof Integer integerParam) {
+                        stmt.setInt(idx++, integerParam);
                     } else {
                         stmt.setString(idx++, (String) param);
                     }

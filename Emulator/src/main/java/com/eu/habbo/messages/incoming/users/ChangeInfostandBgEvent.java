@@ -27,7 +27,7 @@ public class ChangeInfostandBgEvent extends MessageHandler {
         if (stats != null) {
             long now = System.currentTimeMillis();
             Object last = stats.cache.get(COOLDOWN_KEY);
-            if (last instanceof Long && (now - (Long) last) < COOLDOWN_MS) {
+            if (last instanceof Long lastMs && (now - lastMs) < COOLDOWN_MS) {
                 return;
             }
             stats.cache.put(COOLDOWN_KEY, now);

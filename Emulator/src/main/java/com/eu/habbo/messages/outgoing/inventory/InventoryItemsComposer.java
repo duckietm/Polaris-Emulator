@@ -74,7 +74,7 @@ public class InventoryItemsComposer extends MessageComposer implements TIntObjec
             if (habboItem.getBaseItem().getName().equals("gnome_box"))
                 this.response.appendInt(13);
             else
-                this.response.appendInt(habboItem instanceof InteractionGift ? ((((InteractionGift) habboItem).getColorId() * 1000) + ((InteractionGift) habboItem).getRibbonId()) : 1);
+                this.response.appendInt(habboItem instanceof InteractionGift gift ? (((gift.getColorId() * 1000) + gift.getRibbonId())) : 1);
 
             habboItem.serializeExtradata(this.response);
         }
@@ -94,7 +94,7 @@ public class InventoryItemsComposer extends MessageComposer implements TIntObjec
                 this.response.appendInt(Integer.valueOf(extraDataAsList.get(extraDataAsList.size() - 1)));
                 return true;
             }
-            this.response.appendInt(habboItem instanceof InteractionGift ? ((((InteractionGift) habboItem).getColorId() * 1000) + ((InteractionGift) habboItem).getRibbonId()) : 1);
+            this.response.appendInt(habboItem instanceof InteractionGift gift ? (((gift.getColorId() * 1000) + gift.getRibbonId())) : 1);
         }
 
 

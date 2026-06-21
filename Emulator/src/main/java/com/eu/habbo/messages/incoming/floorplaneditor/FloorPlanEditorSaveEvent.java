@@ -250,7 +250,7 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
 
         RoomLayout layout = room.getLayout();
 
-        if (layout instanceof CustomRoomLayout) {
+        if (layout instanceof CustomRoomLayout customLayout) {
             layout.setDoorX((short) doorX);
             layout.setDoorY((short) doorY);
             layout.setDoorDirection(doorRotation);
@@ -259,12 +259,12 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
 
             if (layout.getDoorTile() == null) {
                 this.client.getHabbo().alert("Error");
-                ((CustomRoomLayout) layout).needsUpdate(false);
+                customLayout.needsUpdate(false);
                 Emulator.getGameEnvironment().getRoomManager().unloadRoom(room);
                 return;
             }
-            ((CustomRoomLayout) layout).needsUpdate(true);
-            Emulator.getThreading().run((CustomRoomLayout) layout);
+            customLayout.needsUpdate(true);
+            Emulator.getThreading().run(customLayout);
         } else {
             layout = Emulator.getGameEnvironment().getRoomManager().insertCustomLayout(room, map, doorX, doorY, doorRotation);
         }

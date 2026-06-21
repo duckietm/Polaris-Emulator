@@ -21,10 +21,8 @@ public class BreedMonsterplantsEvent extends MessageHandler {
                 return;
             }
 
-            if (petOne instanceof MonsterplantPet && petTwo instanceof MonsterplantPet) {
-                MonsterplantPet plantOne = (MonsterplantPet) petOne;
-                MonsterplantPet plantTwo = (MonsterplantPet) petTwo;
-                
+            if (petOne instanceof MonsterplantPet plantOne && petTwo instanceof MonsterplantPet plantTwo) {
+
                 // Validate both plants are breedable (fully grown, can breed, not dead)
                 if (!plantOne.breedable() || !plantTwo.breedable()) {
                     return;

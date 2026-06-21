@@ -76,24 +76,24 @@ public class WiredMovementsComposer extends MessageComposer {
 
     private static String movementKey(MovementData movement)
     {
-        if(movement instanceof FurniMovementData)
+        if(movement instanceof FurniMovementData furniMovement)
         {
-            return "furni:" + ((FurniMovementData) movement).id;
+            return "furni:" + furniMovement.id;
         }
 
-        if(movement instanceof UserMovementData)
+        if(movement instanceof UserMovementData userMovement)
         {
-            return "user:" + ((UserMovementData) movement).id;
+            return "user:" + userMovement.id;
         }
 
-        if(movement instanceof UserDirectionData)
+        if(movement instanceof UserDirectionData userDirection)
         {
-            return "userdir:" + ((UserDirectionData) movement).id;
+            return "userdir:" + userDirection.id;
         }
 
-        if(movement instanceof WallItemMovementData)
+        if(movement instanceof WallItemMovementData wallItemMovement)
         {
-            return "wall:" + ((WallItemMovementData) movement).id;
+            return "wall:" + wallItemMovement.id;
         }
 
         return null;
@@ -101,11 +101,8 @@ public class WiredMovementsComposer extends MessageComposer {
 
     private static MovementData mergeMovement(MovementData previous, MovementData current)
     {
-        if((previous instanceof FurniMovementData) && (current instanceof FurniMovementData))
+        if((previous instanceof FurniMovementData oldMovement) && (current instanceof FurniMovementData newMovement))
         {
-            final FurniMovementData oldMovement = (FurniMovementData) previous;
-            final FurniMovementData newMovement = (FurniMovementData) current;
-
             return furniMovement(
                 oldMovement.id,
                 oldMovement.fromX,
@@ -121,11 +118,8 @@ public class WiredMovementsComposer extends MessageComposer {
                 newMovement.anchorId);
         }
 
-        if((previous instanceof UserMovementData) && (current instanceof UserMovementData))
+        if((previous instanceof UserMovementData oldMovement) && (current instanceof UserMovementData newMovement))
         {
-            final UserMovementData oldMovement = (UserMovementData) previous;
-            final UserMovementData newMovement = (UserMovementData) current;
-
             return new UserMovementData(
                 oldMovement.id,
                 oldMovement.fromX,

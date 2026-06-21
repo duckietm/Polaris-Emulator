@@ -54,8 +54,7 @@ public class RequestDeleteRoomEvent extends MessageHandler {
 
                 List<Pet> pets = new ArrayList<>(room.getCurrentPets().valueCollection());
                 for (Pet pet : pets) {
-                    if (pet instanceof RideablePet) {
-                        RideablePet rideablePet = (RideablePet) pet;
+                    if (pet instanceof RideablePet rideablePet) {
                         if (rideablePet.getRider() != null) {
                             rideablePet.getRider().getHabboInfo().dismountPet(true);
                         }

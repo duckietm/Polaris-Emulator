@@ -68,9 +68,9 @@ class FreezeHandleSnowballExplosion implements Runnable {
                             distance = (int) Math.ceil(this.thrownData.room.getLayout().getTile(this.thrownData.targetTile.getX(), this.thrownData.targetTile.getY()).distance(roomTile));
                         }
 
-                        if (freezeTile instanceof InteractionFreezeTile) {
+                        if (freezeTile instanceof InteractionFreezeTile freezeTileItem) {
                             freezeTile.setExtradata("11" + String.format("%03d", distance * 100)); //TODO Investigate this further. Probably height dependent or something.
-                            freezeTiles.add((InteractionFreezeTile) freezeTile);
+                            freezeTiles.add(freezeTileItem);
                             this.thrownData.room.updateItem(freezeTile);
 
 
@@ -95,11 +95,11 @@ class FreezeHandleSnowballExplosion implements Runnable {
                                     }
                                 }
                             }
-                        } else if (freezeTile instanceof InteractionFreezeBlock) {
+                        } else if (freezeTile instanceof InteractionFreezeBlock freezeBlock) {
                             // Only process ONE block per tile to prevent stacking exploit
                             // Stacking many blocks and exploding them causes massive lag
                             if (!blockProcessedAtTile && freezeTile.getExtradata().equalsIgnoreCase("0")) {
-                                game.explodeBox((InteractionFreezeBlock) freezeTile, distance * 100);
+                                game.explodeBox(freezeBlock, distance * 100);
                                 player.addScore(FreezeGame.DESTROY_BLOCK_POINTS);
                                 blockProcessedAtTile = true;
                             }

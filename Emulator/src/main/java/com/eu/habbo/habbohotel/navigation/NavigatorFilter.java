@@ -21,8 +21,8 @@ public abstract class NavigatorFilter {
             return;
         }
 
-        if (value instanceof String) {
-            if (((String) value).isEmpty()) {
+        if (value instanceof String str) {
+            if (str.isEmpty()) {
                 return;
             }
         }
@@ -41,8 +41,8 @@ public abstract class NavigatorFilter {
             return;
         }
 
-        if (value instanceof String) {
-            if (((String) value).isEmpty()) {
+        if (value instanceof String str) {
+            if (str.isEmpty()) {
                 return;
             }
         }
@@ -54,18 +54,18 @@ public abstract class NavigatorFilter {
             for (Room room : result) {
                 Object o = method.invoke(room);
                 if (o.getClass() == value.getClass()) {
-                    if (o instanceof String) {
+                    if (o instanceof String str) {
                         NavigatorFilterComparator comparator = Emulator.getGameEnvironment().getNavigatorManager().comperatorForField(method);
 
                         if (comparator != null) {
-                            if (!this.applies(comparator, (String) o, (String) value)) {
+                            if (!this.applies(comparator, str, (String) value)) {
                                 toRemove.add(room);
                             }
                         } else {
                             toRemove.add(room);
                         }
-                    } else if (o instanceof String[]) {
-                        for (String s : (String[]) o) {
+                    } else if (o instanceof String[] strings) {
+                        for (String s : strings) {
                             NavigatorFilterComparator comparator = Emulator.getGameEnvironment().getNavigatorManager().comperatorForField(method);
 
                             if (comparator != null) {

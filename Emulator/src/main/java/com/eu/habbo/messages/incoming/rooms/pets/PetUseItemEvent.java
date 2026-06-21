@@ -38,7 +38,7 @@ public class PetUseItemEvent extends MessageHandler {
             return;
         }
 
-        if (pet instanceof HorsePet) {
+        if (pet instanceof HorsePet horsePet) {
             if (item.getBaseItem().getName().toLowerCase().startsWith("horse_dye")) {
                 int race = Integer.parseInt(item.getBaseItem().getName().split("_")[2]);
                 int raceType = (race * 4) - 2;
@@ -50,7 +50,7 @@ public class PetUseItemEvent extends MessageHandler {
                     raceType = 0;
 
                 pet.setRace(raceType);
-                ((HorsePet) pet).needsUpdate = true;
+                horsePet.needsUpdate = true;
             } else if (item.getBaseItem().getName().toLowerCase().startsWith("horse_hairdye")) {
                 int splittedHairdye = Integer.parseInt(item.getBaseItem().getName().toLowerCase().split("_")[2]);
                 int newHairdye = 48;
@@ -65,8 +65,8 @@ public class PetUseItemEvent extends MessageHandler {
                     newHairdye += splittedHairdye;
                 }
 
-                ((HorsePet) pet).setHairColor(newHairdye);
-                ((HorsePet) pet).needsUpdate = true;
+                horsePet.setHairColor(newHairdye);
+                horsePet.needsUpdate = true;
             } else if (item.getBaseItem().getName().toLowerCase().startsWith("horse_hairstyle")) {
                 int splittedHairstyle = Integer.parseInt(item.getBaseItem().getName().toLowerCase().split("_")[2]);
                 int newHairstyle = 100;
@@ -77,26 +77,24 @@ public class PetUseItemEvent extends MessageHandler {
                     newHairstyle += splittedHairstyle;
                 }
 
-                ((HorsePet) pet).setHairStyle(newHairstyle);
-                ((HorsePet) pet).needsUpdate = true;
+                horsePet.setHairStyle(newHairstyle);
+                horsePet.needsUpdate = true;
             } else if (item.getBaseItem().getName().toLowerCase().startsWith("horse_saddle")) {
-                ((HorsePet) pet).hasSaddle(true);
-                ((HorsePet) pet).setSaddleItemId(item.getBaseItem().getId());
-                ((HorsePet) pet).needsUpdate = true;
+                horsePet.hasSaddle(true);
+                horsePet.setSaddleItemId(item.getBaseItem().getId());
+                horsePet.needsUpdate = true;
             }
 
-            if (((HorsePet) pet).needsUpdate) {
+            if (horsePet.needsUpdate) {
                 Emulator.getThreading().run(pet);
-                this.client.getHabbo().getHabboInfo().getCurrentRoom().sendComposer(new RoomPetHorseFigureComposer((HorsePet) pet).compose());
+                this.client.getHabbo().getHabboInfo().getCurrentRoom().sendComposer(new RoomPetHorseFigureComposer(horsePet).compose());
 
                 room.removeHabboItem(item);
                 room.sendComposer(new RemoveFloorItemComposer(item, true).compose());
                 item.setRoomId(0);
                 Emulator.getGameEnvironment().getItemManager().deleteItem(item);
             }
-        } else if (pet instanceof MonsterplantPet) {
-            MonsterplantPet monsterplant = (MonsterplantPet) pet;
-            
+        } else if (pet instanceof MonsterplantPet monsterplant) {
             if (item.getBaseItem().getName().equalsIgnoreCase("mnstr_revival")) {
                 if (monsterplant.isDead()) {
                     // Use revive() method which properly resets hasDied flag and sets needsUpdate

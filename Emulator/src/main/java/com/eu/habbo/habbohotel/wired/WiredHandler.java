@@ -200,12 +200,12 @@ public class WiredHandler {
             boolean hasExtraExecuteInOrder = false;
 
             for (InteractionWiredExtra extra : extras) {
-                if (executionLimitExtra == null && extra instanceof WiredExtraExecutionLimit) {
-                    executionLimitExtra = (WiredExtraExecutionLimit) extra;
+                if (executionLimitExtra == null && extra instanceof WiredExtraExecutionLimit executionLimit) {
+                    executionLimitExtra = executionLimit;
                 }
 
-                if (randomExtra == null && extra instanceof WiredExtraRandom) {
-                    randomExtra = (WiredExtraRandom) extra;
+                if (randomExtra == null && extra instanceof WiredExtraRandom random) {
+                    randomExtra = random;
                 }
 
                 if (!hasExtraUnseen && extra instanceof WiredExtraUnseen) {
@@ -216,9 +216,9 @@ public class WiredHandler {
                     hasExtraExecuteInOrder = true;
                 }
 
-                if (extra instanceof WiredExtraOrEval) {
-                    conditionEvaluationMode = ((WiredExtraOrEval) extra).getEvaluationMode();
-                    conditionEvaluationValue = ((WiredExtraOrEval) extra).getCompareValue();
+                if (extra instanceof WiredExtraOrEval orEval) {
+                    conditionEvaluationMode = orEval.getEvaluationMode();
+                    conditionEvaluationValue = orEval.getCompareValue();
                 }
             }
 
@@ -258,9 +258,9 @@ public class WiredHandler {
 
             if (hasExtraUnseen) {
                 for (InteractionWiredExtra extra : extras) {
-                    if (extra instanceof WiredExtraUnseen) {
+                    if (extra instanceof WiredExtraUnseen unseen) {
                         extra.setExtradata(extra.getExtradata().equals("1") ? "0" : "1");
-                        InteractionWiredEffect effect = ((WiredExtraUnseen) extra).getUnseenEffect(effectList);
+                        InteractionWiredEffect effect = unseen.getUnseenEffect(effectList);
                         if (effect != null) {
                             executionPlan.effects.add(effect);
                         }
@@ -454,9 +454,9 @@ public class WiredHandler {
 
                 long millis = room.getCycleTimestamp();
                 for (final HabboItem item : items) {
-                    if (item instanceof InteractionWiredEffect && !(item instanceof WiredEffectTriggerStacks)) {
-                        triggerEffect((InteractionWiredEffect) item, roomUnit, room, stuff, millis);
-                        ((InteractionWiredEffect) item).setCooldown(millis);
+                    if (item instanceof InteractionWiredEffect wiredEffect && !(item instanceof WiredEffectTriggerStacks)) {
+                        triggerEffect(wiredEffect, roomUnit, room, stuff, millis);
+                        wiredEffect.setCooldown(millis);
                     }
                 }
             }

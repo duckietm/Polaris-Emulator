@@ -37,8 +37,8 @@ public class RoomPetComposer extends MessageComposer implements TIntObjectProced
         this.response.appendInt(0);
         this.response.appendInt(0);
         this.response.appendInt(0);
-        if (pet instanceof IPetLook) {
-            this.response.appendString(((IPetLook) pet).getLook());
+        if (pet instanceof IPetLook petLook) {
+            this.response.appendString(petLook.getLook());
         } else {
             this.response.appendString(pet.getPetData().getType() + " " + pet.getRace() + " " + pet.getColor() + " " + ((pet instanceof HorsePet ? (((HorsePet) pet).hasSaddle() ? "3" : "2") + " 2 " + ((HorsePet) pet).getHairStyle() + " " + ((HorsePet) pet).getHairColor() + " 3 " + ((HorsePet) pet).getHairStyle() + " " + ((HorsePet) pet).getHairColor() + (((HorsePet) pet).hasSaddle() ? " 4 9 0" : "") : pet instanceof MonsterplantPet ? (((MonsterplantPet) pet).look.isEmpty() ? "2 1 8 6 0 -1 -1" : ((MonsterplantPet) pet).look) : "2 2 -1 0 3 -1 0")));
         }
@@ -52,12 +52,12 @@ public class RoomPetComposer extends MessageComposer implements TIntObjectProced
         this.response.appendInt(pet.getUserId());
         this.response.appendString(pet.getRoom().getFurniOwnerNames().get(pet.getUserId()));
         this.response.appendInt(pet instanceof MonsterplantPet ? ((MonsterplantPet) pet).getRarity() : 1);
-        this.response.appendBoolean(pet instanceof RideablePet && ((RideablePet) pet).hasSaddle());
+        this.response.appendBoolean(pet instanceof RideablePet rideablePet && rideablePet.hasSaddle());
         this.response.appendBoolean(false);
-        this.response.appendBoolean((pet instanceof MonsterplantPet && ((MonsterplantPet) pet).canBreed())); //Has breeasasd//
-        this.response.appendBoolean(!(pet instanceof MonsterplantPet && ((MonsterplantPet) pet).isFullyGrown())); //unknown 1
-        this.response.appendBoolean(pet instanceof MonsterplantPet && ((MonsterplantPet) pet).isDead()); //Can revive
-        this.response.appendBoolean(pet instanceof MonsterplantPet && ((MonsterplantPet) pet).isPubliclyBreedable()); //Breedable checkbox //Toggle breeding permission
+        this.response.appendBoolean((pet instanceof MonsterplantPet monsterplantPet && monsterplantPet.canBreed())); //Has breeasasd//
+        this.response.appendBoolean(!(pet instanceof MonsterplantPet monsterplantPet && monsterplantPet.isFullyGrown())); //unknown 1
+        this.response.appendBoolean(pet instanceof MonsterplantPet monsterplantPet && monsterplantPet.isDead()); //Can revive
+        this.response.appendBoolean(pet instanceof MonsterplantPet monsterplantPet && monsterplantPet.isPubliclyBreedable()); //Breedable checkbox //Toggle breeding permission
         this.response.appendInt(pet instanceof MonsterplantPet ? ((MonsterplantPet) pet).getGrowthStage() : pet.getLevel());
         this.response.appendString("");
         this.response.appendString("unknown");

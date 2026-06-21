@@ -138,9 +138,9 @@ public class CommandHandler {
 
                                 for (PetCommand command : pet.getPetData().getPetCommands()) {
                                     if (command.key.equalsIgnoreCase(s.toString())) {
-                                        if (pet instanceof RideablePet && ((RideablePet) pet).getRider() != null) {
-                                            if (((RideablePet) pet).getRider().getHabboInfo().getId() == gameClient.getHabbo().getHabboInfo().getId()) {
-                                                ((RideablePet) pet).getRider().getHabboInfo().dismountPet();
+                                        if (pet instanceof RideablePet rideablePet && rideablePet.getRider() != null) {
+                                            if (rideablePet.getRider().getHabboInfo().getId() == gameClient.getHabbo().getHabboInfo().getId()) {
+                                                rideablePet.getRider().getHabboInfo().dismountPet();
                                             }
                                             break;
                                         }

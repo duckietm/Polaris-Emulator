@@ -28,14 +28,14 @@ public class OpenRecycleBoxEvent extends MessageHandler {
             if (item == null) return;
             if (item.getUserId() != this.client.getHabbo().getHabboInfo().getId()) return;
 
-            if (item instanceof InteractionGift) {
+            if (item instanceof InteractionGift gift) {
                 // The actual unwrap (OpenGift) runs async/delayed and only then
                 // removes the wrapper, so a second packet would otherwise pass
                 // the room/owner checks and double-process the gift. Claim it once.
-                if (!((InteractionGift) item).tryStartOpening()) return;
+                if (!gift.tryStartOpening()) return;
 
                 if (item.getBaseItem().getName().contains("present_wrap")) {
-                    ((InteractionGift) item).explode = true;
+                    gift.explode = true;
                     room.updateItem(item);
                 }
 

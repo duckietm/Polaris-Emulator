@@ -20,8 +20,8 @@ public class WebSocketHttpHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (msg instanceof HttpMessage) {
-            if (!handleHttpRequest(ctx, (HttpMessage) msg)) {
+        if (msg instanceof HttpMessage httpMessage) {
+            if (!handleHttpRequest(ctx, httpMessage)) {
                 ReferenceCountUtil.release(msg);
                 return;
             }

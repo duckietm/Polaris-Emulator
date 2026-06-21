@@ -69,12 +69,11 @@ public class WsHandshakeHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
-        if (!(msg instanceof ByteBuf)) {
+        if (!(msg instanceof ByteBuf in)) {
             ctx.fireChannelRead(msg);
             return;
         }
 
-        ByteBuf in = (ByteBuf) msg;
         try {
             if (in.readableBytes() < 7) {
                 LOGGER.warn("[ws-crypto] handshake frame too short ({} bytes) from {}", in.readableBytes(), clientAddress(ctx));

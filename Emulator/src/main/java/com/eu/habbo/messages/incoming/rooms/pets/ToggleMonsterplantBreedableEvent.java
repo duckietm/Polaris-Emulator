@@ -19,9 +19,7 @@ public class ToggleMonsterplantBreedableEvent extends MessageHandler {
 
         if (pet != null) {
             if (pet.getUserId() == this.client.getHabbo().getHabboInfo().getId()) {
-                if (pet instanceof MonsterplantPet) {
-                    MonsterplantPet monsterplant = (MonsterplantPet) pet;
-                    
+                if (pet instanceof MonsterplantPet monsterplant) {
                     // Only allow toggling if plant is breedable (fully grown, can breed, not dead)
                     if (monsterplant.breedable()) {
                         // Toggle the publicly breedable state (was previously setting to same value - bug fix)

@@ -84,7 +84,7 @@ public class CatalogBuyItemEvent extends MessageHandler {
                     page = null;
                 }
 
-                if (page instanceof RoomBundleLayout) {
+                if (page instanceof RoomBundleLayout roomBundleLayout) {
                     final CatalogItem[] item = new CatalogItem[1];
                     page.getCatalogItems().forEachValue(object -> {
                         item[0] = object;
@@ -104,7 +104,7 @@ public class CatalogBuyItemEvent extends MessageHandler {
                         this.client.sendResponse(new PurchaseOKComposer(null)); // Send this so the alert disappears, not sure if this is how it should be handled :S
                         return;
                     }
-                    ((RoomBundleLayout) page).buyRoom(this.client.getHabbo());
+                    roomBundleLayout.buyRoom(this.client.getHabbo());
                     if (!this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_CREDITS)) { //if the player has this perm disabled
                         this.client.getHabbo().giveCredits(-roomBundleItem.getCredits()); // takes their credits away
                     }

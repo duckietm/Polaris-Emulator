@@ -19,8 +19,8 @@ public class ConfirmPetBreedingEvent extends MessageHandler {
 
         HabboItem item = room.getHabboItem(itemId);
 
-        if (item instanceof InteractionPetBreedingNest) {
-            ((InteractionPetBreedingNest) item).breed(this.client.getHabbo(), name, petOneId, petTwoId);
+        if (item instanceof InteractionPetBreedingNest nest) {
+            nest.breed(this.client.getHabbo(), name, petOneId, petTwoId);
         }
     }
 }

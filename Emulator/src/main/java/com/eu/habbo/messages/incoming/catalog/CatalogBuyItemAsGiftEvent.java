@@ -415,13 +415,13 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                                             return;
                                         }
 
-                                        if (!(createdItem instanceof InteractionGuildFurni)) {
+                                        if (!(createdItem instanceof InteractionGuildFurni guildFurni)) {
                                             LOGGER.debug("created guild item has wrong class -> {}", createdItem.getClass().getName());
                                             this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
                                             return;
                                         }
 
-                                        InteractionGuildFurni habboItem = (InteractionGuildFurni) createdItem;
+                                        InteractionGuildFurni habboItem = guildFurni;
                                         habboItem.setExtradata("");
                                         habboItem.needsUpdate(true);
 

@@ -23,10 +23,8 @@ public class PetRideEvent extends MessageHandler {
 
         Pet pet = room.getPet(petId);
 
-        if (!(pet instanceof RideablePet))
+        if (!(pet instanceof RideablePet rideablePet))
             return;
-
-        RideablePet rideablePet = (RideablePet) pet;
 
         //dismount
         if (habbo.getHabboInfo().getRiding() != null) {

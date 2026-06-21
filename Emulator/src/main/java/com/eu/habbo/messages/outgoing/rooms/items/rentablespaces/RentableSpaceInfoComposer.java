@@ -39,16 +39,16 @@ public class RentableSpaceInfoComposer extends MessageComposer {
 
     @Override
     protected ServerMessage composeInternal() {
-        if (!(this.item instanceof InteractionRentableSpace))
+        if (!(this.item instanceof InteractionRentableSpace rentableSpace))
             return null;
 
         this.response.init(Outgoing.RentableSpaceInfoComposer);
-        this.response.appendBoolean(((InteractionRentableSpace) this.item).isRented()); //In Use
+        this.response.appendBoolean(rentableSpace.isRented()); //In Use
         this.response.appendInt(this.errorCode); //Error code.
-        this.response.appendInt(((InteractionRentableSpace) this.item).getRenterId()); //User ID
-        this.response.appendString(((InteractionRentableSpace) this.item).getRenterName()); //Current Owner
-        this.response.appendInt(((InteractionRentableSpace) this.item).getEndTimestamp() - Emulator.getIntUnixTimestamp()); //Seconds Remaining
-        this.response.appendInt(((InteractionRentableSpace) this.item).rentCost()); //Price
+        this.response.appendInt(rentableSpace.getRenterId()); //User ID
+        this.response.appendString(rentableSpace.getRenterName()); //Current Owner
+        this.response.appendInt(rentableSpace.getEndTimestamp() - Emulator.getIntUnixTimestamp()); //Seconds Remaining
+        this.response.appendInt(rentableSpace.rentCost()); //Price
         return this.response;
     }
 

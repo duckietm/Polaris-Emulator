@@ -16,10 +16,8 @@ public class PetRideSettingsEvent extends MessageHandler {
 
         Pet pet = this.client.getHabbo().getHabboInfo().getCurrentRoom().getPet(petId);
 
-        if (pet == null || pet.getUserId() != this.client.getHabbo().getHabboInfo().getId() || !(pet instanceof RideablePet))
+        if (pet == null || pet.getUserId() != this.client.getHabbo().getHabboInfo().getId() || !(pet instanceof RideablePet rideablePet))
             return;
-
-        RideablePet rideablePet = ((RideablePet) pet);
 
         rideablePet.setAnyoneCanRide(!rideablePet.anyoneCanRide());
         rideablePet.needsUpdate = true;
@@ -28,8 +26,8 @@ public class PetRideSettingsEvent extends MessageHandler {
             rideablePet.getRider().getHabboInfo().dismountPet();
         }
 
-        if (pet instanceof HorsePet) {
-            this.client.sendResponse(new RoomPetHorseFigureComposer((HorsePet) pet));
+        if (pet instanceof HorsePet horsePet) {
+            this.client.sendResponse(new RoomPetHorseFigureComposer(horsePet));
         }
     }
 }

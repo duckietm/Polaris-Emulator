@@ -22,8 +22,8 @@ public class GuardianVote implements Comparable<GuardianVote> {
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof GuardianVote) {
-            return ((GuardianVote) o).id == this.id && ((GuardianVote) o).guardian == this.guardian && ((GuardianVote) o).type == this.type;
+        if (o instanceof GuardianVote vote) {
+            return vote.id == this.id && vote.guardian == this.guardian && vote.type == this.type;
         }
 
         return false;

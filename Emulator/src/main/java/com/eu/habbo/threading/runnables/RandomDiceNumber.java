@@ -35,8 +35,8 @@ public class RandomDiceNumber implements Runnable {
         Emulator.getThreading().run(this.item);
 
         this.room.updateItem(this.item);
-        if (this.item instanceof InteractionColorWheel) {
-            ((InteractionColorWheel) this.item).clearRunnable();
+        if (this.item instanceof InteractionColorWheel colorWheel) {
+            colorWheel.clearRunnable();
         }
     }
 }

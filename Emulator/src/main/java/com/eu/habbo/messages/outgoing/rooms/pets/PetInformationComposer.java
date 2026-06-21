@@ -28,8 +28,8 @@ public class PetInformationComposer extends MessageComposer {
         this.response.init(Outgoing.PetInformationComposer);
         this.response.appendInt(this.pet.getId());
         this.response.appendString(this.pet.getName());
-        if (this.pet instanceof MonsterplantPet) {
-            this.response.appendInt(((MonsterplantPet) this.pet).getGrowthStage()); //This equal
+        if (this.pet instanceof MonsterplantPet monsterplantPet) {
+            this.response.appendInt(monsterplantPet.getGrowthStage()); //This equal
             this.response.appendInt(7);                                             //... to this means breedable
         } else {
             this.response.appendInt(this.pet.getLevel()); //level
@@ -54,8 +54,7 @@ public class PetInformationComposer extends MessageComposer {
         
         // Can ride: pet has saddle, no one riding or user owns pet, and (user owns pet or anyone can ride)
         boolean canRide = false;
-        if (this.pet instanceof RideablePet && this.requestingHabbo != null) {
-            RideablePet rideablePet = (RideablePet) this.pet;
+        if (this.pet instanceof RideablePet rideablePet && this.requestingHabbo != null) {
             boolean hasSaddle = rideablePet.hasSaddle();
             boolean noRider = rideablePet.getRider() == null;
             boolean isOwner = this.pet.getUserId() == this.requestingHabbo.getHabboInfo().getId();
@@ -64,17 +63,17 @@ public class PetInformationComposer extends MessageComposer {
         }
         this.response.appendBoolean(canRide);
         
-        this.response.appendBoolean(this.pet instanceof RideablePet && ((RideablePet) this.pet).getRider() != null && this.requestingHabbo != null && ((RideablePet) this.pet).getRider().getHabboInfo().getId() == this.requestingHabbo.getHabboInfo().getId()); // is current user riding
+        this.response.appendBoolean(this.pet instanceof RideablePet rideablePet && rideablePet.getRider() != null && this.requestingHabbo != null && rideablePet.getRider().getHabboInfo().getId() == this.requestingHabbo.getHabboInfo().getId()); // is current user riding
         this.response.appendInt(0);
-        this.response.appendInt(this.pet instanceof RideablePet && ((RideablePet) this.pet).anyoneCanRide() ? 1 : 0); // anyone can ride
-        this.response.appendBoolean(this.pet instanceof MonsterplantPet && ((MonsterplantPet) this.pet).canBreed()); //State Grown
-        this.response.appendBoolean(!(this.pet instanceof MonsterplantPet && ((MonsterplantPet) this.pet).isFullyGrown())); //unknown 1
-        this.response.appendBoolean(this.pet instanceof MonsterplantPet && ((MonsterplantPet) this.pet).isDead()); //Dead
+        this.response.appendInt(this.pet instanceof RideablePet rideablePet && rideablePet.anyoneCanRide() ? 1 : 0); // anyone can ride
+        this.response.appendBoolean(this.pet instanceof MonsterplantPet monsterplantPet && monsterplantPet.canBreed()); //State Grown
+        this.response.appendBoolean(!(this.pet instanceof MonsterplantPet monsterplantPet && monsterplantPet.isFullyGrown())); //unknown 1
+        this.response.appendBoolean(this.pet instanceof MonsterplantPet monsterplantPet && monsterplantPet.isDead()); //Dead
         this.response.appendInt(this.pet instanceof MonsterplantPet ? ((MonsterplantPet) this.pet).getRarity() : 0);
         this.response.appendInt(MonsterplantPet.timeToLive); //Maximum wellbeing
         this.response.appendInt(this.pet instanceof MonsterplantPet ? ((MonsterplantPet) this.pet).remainingTimeToLive() : 0); //Remaining Wellbeing
         this.response.appendInt(this.pet instanceof MonsterplantPet ? ((MonsterplantPet) this.pet).remainingGrowTime() : 0);
-        this.response.appendBoolean(this.pet instanceof MonsterplantPet && ((MonsterplantPet) this.pet).isPubliclyBreedable()); //Breedable checkbox
+        this.response.appendBoolean(this.pet instanceof MonsterplantPet monsterplantPet && monsterplantPet.isPubliclyBreedable()); //Breedable checkbox
 
 
         return this.response;

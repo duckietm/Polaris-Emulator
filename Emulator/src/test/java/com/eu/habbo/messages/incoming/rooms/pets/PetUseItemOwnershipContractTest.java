@@ -15,7 +15,9 @@ class PetUseItemOwnershipContractTest {
         int petLookup = source.indexOf("Pet pet = this.client.getHabbo().getHabboInfo().getCurrentRoom().getPet(petId)");
         int ownershipGuard = source.indexOf("item.getUserId() != this.client.getHabbo().getHabboInfo().getId()", petLookup);
         int petGuard = source.indexOf("pet.getUserId() != this.client.getHabbo().getHabboInfo().getId()", ownershipGuard);
-        int horseBranch = source.indexOf("if (pet instanceof HorsePet)", petGuard);
+        // Match the instanceof test without the trailing ")" so the ordering contract holds for both
+        // the classic `instanceof HorsePet)` and the Java 25 pattern-binding `instanceof HorsePet horsePet)` forms.
+        int horseBranch = source.indexOf("if (pet instanceof HorsePet", petGuard);
 
         assertTrue(petLookup > -1, "PetUseItemEvent should resolve the target pet");
         assertTrue(ownershipGuard > petLookup, "PetUseItemEvent must require ownership of the consumable item");

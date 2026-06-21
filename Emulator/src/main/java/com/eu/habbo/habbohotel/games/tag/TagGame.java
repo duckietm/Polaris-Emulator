@@ -68,7 +68,7 @@ public abstract class TagGame extends Game {
 
             if (game != null) {
                 for (HabboItem item : items) {
-                    if (item instanceof InteractionTagField && ((InteractionTagField) item).gameClazz == event.habbo.getHabboInfo().getCurrentGame()) {
+                    if (item instanceof InteractionTagField field && field.gameClazz == event.habbo.getHabboInfo().getCurrentGame()) {
                         if (game.taggers.isEmpty()) {
                             game.tagged(event.habbo.getHabboInfo().getCurrentRoom(), null, event.habbo);
                         }

@@ -53,8 +53,8 @@ public class RoomUserWalkEvent extends MessageHandler {
       Object windowObj = unit.getCacheable().get(WALK_FLOOD_WINDOW_KEY);
       Object countObj = unit.getCacheable().get(WALK_FLOOD_COUNT_KEY);
 
-      long windowStart = (windowObj instanceof Long) ? (Long) windowObj : 0L;
-      int count = (countObj instanceof Integer) ? (Integer) countObj : 0;
+      long windowStart = (windowObj instanceof Long windowLong) ? windowLong : 0L;
+      int count = (countObj instanceof Integer countInt) ? countInt : 0;
 
       if (now - windowStart > 1000) {
         // New 1-second window

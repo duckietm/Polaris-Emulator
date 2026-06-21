@@ -473,12 +473,12 @@ public final class WiredEvents {
         // Try to extract common data from stuff array
         if (stuff != null) {
             for (Object obj : stuff) {
-                if (obj instanceof HabboItem) {
-                    builder.sourceItem((HabboItem) obj);
-                } else if (obj instanceof RoomTile) {
-                    builder.tile((RoomTile) obj);
-                } else if (obj instanceof String) {
-                    builder.text((String) obj);
+                if (obj instanceof HabboItem habboItem) {
+                    builder.sourceItem(habboItem);
+                } else if (obj instanceof RoomTile roomTile) {
+                    builder.tile(roomTile);
+                } else if (obj instanceof String str) {
+                    builder.text(str);
                 }
             }
         }

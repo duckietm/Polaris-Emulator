@@ -7,8 +7,10 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.rooms.RoomUnitStatus;
+import com.eu.habbo.habbohotel.rooms.RoomUserRotation;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
@@ -49,14 +51,34 @@ public class WiredEffectLay extends InteractionWiredEffect {
 
         for (RoomUnit unit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
             Habbo habbo = room.getHabbo(unit);
-            if (habbo == null) continue;
-
-            if (!unit.canForcePosture()) {
+            if (habbo == null || !unit.canForcePosture()) {
                 continue;
             }
 
+            // Replicates LayCommand: lay, snap body rotation to a cardinal direction, and only lay
+            // when the 3 tiles in front are walkable (so the user doesn't lay into a wall).
             unit.cmdLay = true;
             room.updateHabbo(habbo);
+            unit.cmdSit = true;
+            unit.setBodyRotation(RoomUserRotation.values()[unit.getBodyRotation().getValue() - unit.getBodyRotation().getValue() % 2]);
+
+            RoomTile tile = unit.getCurrentLocation();
+            if (tile == null) {
+                continue;
+            }
+
+            boolean blocked = false;
+            for (int i = 0; i < 3; i++) {
+                RoomTile front = room.getLayout().getTileInFront(tile, unit.getBodyRotation().getValue(), i);
+                if (front == null || !front.isWalkable()) {
+                    blocked = true;
+                    break;
+                }
+            }
+            if (blocked) {
+                continue;
+            }
+
             unit.setStatus(RoomUnitStatus.LAY, 0.5 + "");
             room.sendComposer(new RoomUserStatusComposer(unit).compose());
         }

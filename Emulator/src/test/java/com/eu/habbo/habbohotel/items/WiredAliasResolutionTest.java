@@ -173,6 +173,8 @@ class WiredAliasResolutionTest {
         assertSame(WiredConditionNotFrozen.class, itemManager.getItemInteraction("wf_cnd_not_freeze").getType());
         assertSame(WiredConditionFurniInRange.class, itemManager.getItemInteraction("wf_cnd_furni_in_range").getType());
         assertSame(WiredConditionFurniNotInRange.class, itemManager.getItemInteraction("wf_cnd_furni_not_in_range").getType());
+        assertSame(WiredConditionSameHeight.class, itemManager.getItemInteraction("wf_cnd_has_same_height").getType());
+        assertSame(WiredConditionNotSameHeight.class, itemManager.getItemInteraction("wf_cnd_not_has_same_height").getType());
     }
 
     @Test

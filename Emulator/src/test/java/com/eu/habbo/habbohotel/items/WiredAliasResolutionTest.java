@@ -135,6 +135,14 @@ class WiredAliasResolutionTest {
     }
 
     @Test
+    void phaseCCurrencyEffectsResolve() {
+        // Phase C — new currency effects (reuse the SHOW_MESSAGE dialog code; no new client dialog).
+        assertSame(WiredEffectGiveCredits.class, itemManager.getItemInteraction("wf_act_give_credits").getType());
+        assertSame(WiredEffectGiveDuckets.class, itemManager.getItemInteraction("wf_act_give_duckets").getType());
+        assertSame(WiredEffectGiveDiamonds.class, itemManager.getItemInteraction("wf_act_give_diamonds").getType());
+    }
+
+    @Test
     void unknownTypeStillFallsBackToDefault() {
         // sanity: an unregistered name must still resolve to InteractionDefault (resolution unchanged)
         assertSame(InteractionDefault.class,

@@ -26,11 +26,14 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
+import io.netty.util.concurrent.DefaultEventExecutor;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.DefaultThreadFactory;
+import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.EventExecutorGroup;
 
 import javax.net.ssl.SSLEngine;
+import java.util.concurrent.ThreadFactory;
 
 public class WebSocketChannelInitializer extends ChannelInitializer<SocketChannel> {
     private static final int MAX_FRAME_SIZE = 500000;
@@ -57,13 +60,26 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
         return configured > 0 ? configured : fallback;
     }
 
+    // Opt-in (io.packet.handler.virtual=1): each channel gets its OWN virtual-thread
+    // serial executor instead of sharing the fixed N-thread group above. Per-channel
+    // packet order is still guaranteed (a single serial executor per channel), but a
+    // handler blocking on JDBC no longer head-of-line-blocks the other channels that
+    // shared its executor, and virtual threads scale to thousands of concurrently
+    // blocked handlers cheaply. Default OFF — behaviour is identical to the shared
+    // group unless this is enabled, so production is unaffected until you opt in.
+    private static final ThreadFactory VIRTUAL_HANDLER_FACTORY =
+            Thread.ofVirtual().name("GamePacketHandler-vt-", 0).factory();
+
     private final SslContext sslContext;
     private final boolean sslEnabled;
+    private final boolean useVirtualHandlerThreads;
     private final WebSocketServerProtocolConfig wsConfig;
 
     public WebSocketChannelInitializer() {
         this.sslContext = SSLCertificateLoader.getContext();
         this.sslEnabled = this.sslContext != null;
+        this.useVirtualHandlerThreads = Emulator.getConfig() != null
+                && Emulator.getConfig().getBoolean("io.packet.handler.virtual", false);
         this.wsConfig = WebSocketServerProtocolConfig.newBuilder()
                 .websocketPath("/")
                 .checkStartsWith(true)
@@ -107,7 +123,19 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
 
         ch.pipeline().addLast("idleEventHandler", new IdleTimeoutHandler(30, 60));
         ch.pipeline().addLast(new GameMessageRateLimit());
-        ch.pipeline().addLast(PACKET_HANDLER_GROUP, "gameMessageHandler", new GameMessageHandler());
+
+        if (this.useVirtualHandlerThreads) {
+            // One serial executor per channel, run on a virtual thread. Per-channel
+            // ordering is preserved (single serial executor); cross-channel head-of-
+            // line blocking on JDBC is removed. Shut it down on channel close so the
+            // executor and its virtual thread are released (no leak per connection).
+            EventExecutor channelExecutor = new DefaultEventExecutor(VIRTUAL_HANDLER_FACTORY);
+            ch.closeFuture().addListener(future -> channelExecutor.shutdownGracefully());
+            ch.pipeline().addLast(channelExecutor, "gameMessageHandler", new GameMessageHandler());
+        } else {
+            ch.pipeline().addLast(PACKET_HANDLER_GROUP, "gameMessageHandler", new GameMessageHandler());
+        }
+
         ch.pipeline().addLast("messageEncoder", new GameServerMessageEncoder());
 
         if (PacketManager.DEBUG_SHOW_PACKETS) {

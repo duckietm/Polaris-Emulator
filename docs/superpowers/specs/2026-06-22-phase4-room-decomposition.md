@@ -133,5 +133,34 @@ step that touches the `save()` SQL path, so the serialization was moved
 identically rather than rewritten. Pure god-class reduction (~25 lines + a static
 block out of `Room`).
 
+## Step 6 — consolidate word-quiz state + fix the poll-display bug
+
+`Room` carried public duplicate word-quiz fields (`wordQuiz`, `noVotes`,
+`yesVotes`, `wordQuizEnd`, and `userVotes`) alongside `RoomWordQuizManager`,
+which owns the live logic (`Room.handleWordQuiz/startWordQuiz/hasActiveWordQuiz/
+hasVotedInWordQuiz` all delegate to it; the live writers are `AnswerPollEvent`
+and `WordQuizCommand`). `Room`'s copies were only ever reset to ""/0, never given
+real values.
+
+**The bug.** `RoomManager`'s room-entry path showed the poll like this: the
+*guard* used the live manager (`room.hasActiveWordQuiz()` /
+`hasVotedInWordQuiz()`), but the *data* sent to the composers read `Room`'s
+**dead** fields — `room.wordQuizEnd` (0), `room.wordQuiz` (""), `room.noVotes`/
+`yesVotes` (0). So a user entering a room with an active word quiz saw an empty
+question, a bogus elapsed time (`now - 0`), and 0/0 vote counts.
+
+**The fix.** `RoomManager` now reads from `room.getWordQuizManager()`
+(`getWordQuiz()/getWordQuizEnd()/getNoVotes()/getYesVotes()`), the live source.
+Removed `Room`'s dead `wordQuiz/noVotes/yesVotes/wordQuizEnd` fields and the
+no-op resets in `dispose()`.
+
+Also removed `Room.userVotes` (`public final List<Integer>`): room *rating*
+votes are tracked via `habbo.getHabboStats().votedRooms` (see
+`RoomManager.hasVotedForRoom`), so this field was dead with zero readers.
+
+This is a higher-risk step than 1–5 because it changes an **external caller**
+(`RoomManager`, field-read → manager getter), accepted as part of the B-tier
+work. Word-quiz state now lives only in `RoomWordQuizManager`.
+
 ## Verification
 - `mvn test` green: 414 tests, 0 failures, JDK 25 (all steps).

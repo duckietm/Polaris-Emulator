@@ -107,7 +107,6 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   public static final int WIRED_ACCESS_DEFAULT_MODIFY_MASK = 0;
 
   public final Object roomUnitLock = new Object();
-  public final List<Integer> userVotes;
   private final TIntArrayList rights;
   public volatile double lastCycleCpuMs = 0.0;
   public volatile String lastCycleThread = "N/A";
@@ -118,10 +117,6 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   public volatile boolean preventUncaching = false;
   public Set<ServerMessage> scheduledComposers = ConcurrentHashMap.newKeySet();
   public final java.util.concurrent.ConcurrentLinkedQueue<Runnable> scheduledTasks = new java.util.concurrent.ConcurrentLinkedQueue<>();
-  public String wordQuiz = "";
-  public int noVotes = 0;
-  public int yesVotes = 0;
-  public int wordQuizEnd = 0;
   public ScheduledFuture<?> roomCycleTask;
   private int id;
   private int ownerId;
@@ -283,7 +278,6 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
 
     this.rights = new TIntArrayList();
-    this.userVotes = new ArrayList<>();
 
     // Initialize managers
     this.initializeManagers();
@@ -1049,9 +1043,6 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
       }
 
       try {
-        this.wordQuiz = "";
-        this.yesVotes = 0;
-        this.noVotes = 0;
         this.updateDatabaseUserCount();
         this.preLoaded = true;
         this.layout = null;

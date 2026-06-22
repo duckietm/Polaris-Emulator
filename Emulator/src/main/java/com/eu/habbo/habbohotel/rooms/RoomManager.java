@@ -999,10 +999,11 @@ public class RoomManager {
         }
 
         if (room.hasActiveWordQuiz()) {
-            habbo.getClient().sendResponse(new SimplePollStartComposer((Emulator.getIntUnixTimestamp() - room.wordQuizEnd) * 1000, room.wordQuiz));
+            RoomWordQuizManager wordQuiz = room.getWordQuizManager();
+            habbo.getClient().sendResponse(new SimplePollStartComposer((Emulator.getIntUnixTimestamp() - wordQuiz.getWordQuizEnd()) * 1000, wordQuiz.getWordQuiz()));
 
             if (room.hasVotedInWordQuiz(habbo)) {
-                habbo.getClient().sendResponse(new SimplePollAnswersComposer(room.noVotes, room.yesVotes));
+                habbo.getClient().sendResponse(new SimplePollAnswersComposer(wordQuiz.getNoVotes(), wordQuiz.getYesVotes()));
             }
         }
 

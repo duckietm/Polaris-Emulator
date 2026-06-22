@@ -220,5 +220,44 @@ a manager (habbos/bots/pets/items/queue → unit/item managers) or legitimately
 that produced steps 1–8 is exhausted; further decomposition would be genuine
 large extractions (room-settings + their save() SQL) or the `Emulator` god-class.
 
+## Step 9 — consolidate room promotion + fix the broken "buy promotion" feature
+
+The worst tangle: promotion state was split **three ways** — `Room.promoted`
+(boolean, from the `rooms.promoted` column), `Room.promotion` (object, loaded by
+an inline async loader in `Room`), and `RoomPromotionManager` (its own
+`promotion` + `promoted`, whose `loadPromotion` had **zero callers**). Routing was
+inconsistent: `getPromotion()`/`getPromotionDesc()` read `Room.promotion`, but
+`isPromoted()` and `createPromotion()` used the manager.
+
+**Confirmed user-facing bugs** (traced through `BuyRoomPromotionEvent`):
+- Buying a promotion: `isPromoted()` (manager, empty) → `createPromotion()` (sets
+  *manager*.promotion); then the success branch calls `room.getPromotion()`
+  (reads *Room*.promotion = **null**) → `new RoomPromotionMessageComposer(room,
+  null)` → NPE / broken. A **paid** feature.
+- After a restart, a room with an active DB promotion reports `isPromoted()=false`
+  (manager never loaded) → can't be extended, always re-created.
+- **Packet desync:** `RoomDataComposer` set the promotion bit from `isPromoted()`
+  (manager) but appended the promotion fields from `this.promoted` (column) —
+  two different conditions, so the client could read 3 fields the server didn't
+  send (or vice-versa).
+
+**The fix.** Single source = `RoomPromotionManager`:
+- `Room`'s load now calls `promotionManager.loadPromotion(this.promoted, conn)`
+  (a verbatim duplicate of the old inline loader) and mirrors
+  `this.promoted = promotionManager.isPromoted()` for the save column.
+- `getPromotion()`/`getPromotionDesc()` delegate to the manager; removed
+  `Room.promotion`.
+- `RoomDataComposer` now uses one consistent `showPromotion = isPromoted() &&
+  promotion != null` for **both** the bit and the appended fields (fixes the
+  desync, and the empty-fields case).
+
+`Room`'s public API is unchanged. Promotion state now lives only in
+`RoomPromotionManager`, loaded once and consulted everywhere.
+
+**Caveat.** Touches the room-info serialization and the async load; verified by
+code-reading + green build, applied with explicit go-ahead, not integration-
+tested. Live check: buy a promotion (no NPE, message shows), restart with an
+active promo (room still promoted, extend works).
+
 ## Verification
 - `mvn test` green: 414 tests, 0 failures, JDK 25 (all steps).

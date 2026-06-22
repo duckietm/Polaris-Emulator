@@ -162,7 +162,6 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   private boolean hideWired;
   private boolean buildersClubTrialLocked;
   private RoomState buildersClubOriginalState;
-  private RoomPromotion promotion;
   private volatile boolean needsUpdate;
   private volatile boolean loaded;
   private volatile boolean preLoaded;
@@ -525,18 +524,12 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
       if (this.promoted) {
         CompletableFuture.runAsync(() -> {
-          try (Connection promoConnection = Emulator.getDatabase().getDataSource().getConnection();
-               PreparedStatement stmt = promoConnection.prepareStatement(
-                       "SELECT * FROM room_promotions WHERE room_id = ? AND end_timestamp > ? LIMIT 1")) {
-            stmt.setInt(1, this.id);
-            stmt.setInt(2, Emulator.getIntUnixTimestamp());
-            try (ResultSet promoSet = stmt.executeQuery()) {
-              this.promoted = false;
-              if (promoSet.next()) {
-                this.promoted = true;
-                this.promotion = new RoomPromotion(this, promoSet);
-              }
-            }
+          try (Connection promoConnection = Emulator.getDatabase().getDataSource().getConnection()) {
+            // Load into the promotion manager (the single source consulted by
+            // isPromoted()/getPromotion()/createPromotion()), then mirror the
+            // flag back for the `promoted` save column.
+            this.promotionManager.loadPromotion(this.promoted, promoConnection);
+            this.promoted = this.promotionManager.isPromoted();
           } catch (Exception e) {
             LOGGER.error("Caught exception loading promotion", e);
           }
@@ -1089,7 +1082,12 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
       base = base | 2;
     }
 
-    if (this.isPromoted()) {
+    // The promotion bit and the promotion fields below must use one consistent
+    // condition or the packet desyncs (the client reads the fields iff this bit
+    // is set).
+    RoomPromotion promotion = this.promotionManager.getPromotion();
+    boolean showPromotion = this.isPromoted() && promotion != null;
+    if (showPromotion) {
       base = base | 4;
     }
 
@@ -1112,10 +1110,10 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
       }
     }
 
-    if (this.promoted) {
-      message.appendString(this.promotion.getTitle());
-      message.appendString(this.promotion.getDescription());
-      message.appendInt((this.promotion.getEndTimestamp() - Emulator.getIntUnixTimestamp()) / 60);
+    if (showPromotion) {
+      message.appendString(promotion.getTitle());
+      message.appendString(promotion.getDescription());
+      message.appendInt((promotion.getEndTimestamp() - Emulator.getIntUnixTimestamp()) / 60);
     }
 
   }
@@ -1685,15 +1683,11 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   }
 
   public RoomPromotion getPromotion() {
-    return this.promotion;
+    return this.promotionManager.getPromotion();
   }
 
   public String getPromotionDesc() {
-    if (this.promotion != null) {
-      return this.promotion.getDescription();
-    }
-
-    return "";
+    return this.promotionManager.getPromotionDesc();
   }
 
   public void createPromotion(String title, String description, int category) {

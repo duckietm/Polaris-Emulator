@@ -259,5 +259,15 @@ code-reading + green build, applied with explicit go-ahead, not integration-
 tested. Live check: buy a promotion (no NPE, message shows), restart with an
 active promo (room still promoted, extend works).
 
+## Step 10 — characterization test for the moodlight extraction
+
+The extractions/fixes above aren't exercised by the unit suite (they need a DB),
+but the new `RoomMoodlightManager` (step 5) is **pure logic** — so added
+`RoomMoodlightManagerTest` (4 tests) covering: empty column → 3 default presets;
+a parsed segment overriding a default; serialize emitting one segment per preset
+with ids renumbered 1..N; and an overridden preset surviving a serialize→parse
+round-trip. This locks in the exact `moodlight_data` column format that step 5
+moved verbatim. Suite is now 418 tests.
+
 ## Verification
-- `mvn test` green: 414 tests, 0 failures, JDK 25 (all steps).
+- `mvn test` green: 418 tests, 0 failures, JDK 25 (all steps).

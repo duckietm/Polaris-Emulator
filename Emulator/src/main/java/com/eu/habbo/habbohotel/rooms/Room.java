@@ -119,7 +119,6 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   public final List<Integer> userVotes;
   private final TIntArrayList rights;
   private final TIntIntHashMap mutedHabbos;
-  private final TIntObjectHashMap<RoomBan> bannedHabbos;
   private final Set<Game> games;
   private final TIntObjectMap<RoomMoodlightData> moodlightData;
   public volatile double lastCycleCpuMs = 0.0;
@@ -285,15 +284,6 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
       this.buildersClubOriginalState = RoomState.OPEN;
     }
 
-    this.bannedHabbos = new TIntObjectHashMap<>();
-
-    try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-      // Load bans eagerly (needed for entry check before loadData)
-      this.loadBans(connection);
-    } catch (SQLException e) {
-      LOGGER.error("Caught SQL exception", e);
-    }
-
     this.tradeMode = set.getInt("trade_mode");
     this.moveDiagonally = set.getString("move_diagonally").equals("1");
     this.allowUnderpass = set.getString("allow_underpass").equals("1");
@@ -316,6 +306,15 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
     // Initialize managers
     this.initializeManagers();
+
+    // Load bans eagerly into the rights manager — the single authoritative ban
+    // map consulted by isBanned()/getBannedHabbos() — so the entry check works
+    // before loadData(). The rights manager only exists after initializeManagers().
+    try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+      this.rightsManager.loadBans(connection);
+    } catch (SQLException e) {
+      LOGGER.error("Caught SQL exception", e);
+    }
   }
 
   /**
@@ -2231,27 +2230,6 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     }
   }
 
-  private void loadBans(Connection connection) {
-    this.bannedHabbos.clear();
-
-    try (PreparedStatement statement = connection.prepareStatement(
-            "SELECT users.username, users.id, room_bans.* FROM room_bans INNER JOIN users ON room_bans.user_id = users.id WHERE ends > ? AND room_bans.room_id = ?")) {
-      statement.setInt(1, Emulator.getIntUnixTimestamp());
-      statement.setInt(2, this.id);
-      try (ResultSet set = statement.executeQuery()) {
-        while (set.next()) {
-          if (this.bannedHabbos.containsKey(set.getInt("user_id"))) {
-            continue;
-          }
-
-          this.bannedHabbos.put(set.getInt("user_id"), new RoomBan(set));
-        }
-      }
-    } catch (SQLException e) {
-      LOGGER.error("Caught SQL exception", e);
-    }
-  }
-
   public RoomRightLevels getGuildRightLevel(Habbo habbo) {
     int guildId = this.getGuildId();
 
@@ -2428,7 +2406,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   }
 
   public TIntObjectHashMap<RoomBan> getBannedHabbos() {
-    return this.bannedHabbos;
+    return this.rightsManager.getBannedHabbos();
   }
 
   private void ensureWiredSettingsLoaded() {

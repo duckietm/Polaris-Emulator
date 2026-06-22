@@ -27,6 +27,10 @@ public class RoomMoodlightManager {
     public RoomMoodlightManager(String moodlightDataColumn) {
         this.moodlightData = new TIntObjectHashMap<>(defaultMoodData);
 
+        if (moodlightDataColumn == null) {
+            return; // NULL column -> keep the default presets
+        }
+
         for (String s : moodlightDataColumn.split(";")) {
             RoomMoodlightData data = RoomMoodlightData.fromString(s);
             this.moodlightData.put(data.getId(), data);

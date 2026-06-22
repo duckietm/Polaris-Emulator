@@ -33,6 +33,17 @@ class RoomMoodlightManagerTest {
     }
 
     @Test
+    void nullColumnKeepsDefaultsWithoutThrowing() {
+        RoomMoodlightManager manager = new RoomMoodlightManager(null);
+
+        assertEquals(3, manager.getMoodlightData().size());
+        for (RoomMoodlightData preset : manager.getMoodlightData().valueCollection()) {
+            assertEquals("#000000", preset.getColor());
+            assertEquals(255, preset.getIntensity());
+        }
+    }
+
+    @Test
     void parsedSegmentOverridesMatchingDefault() {
         // flags "1" -> false, color #FF0000, intensity 128, id 1
         RoomMoodlightManager manager = new RoomMoodlightManager("1,1,1,#FF0000,128");

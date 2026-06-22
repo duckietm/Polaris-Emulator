@@ -16,13 +16,22 @@ public class RoomMoodlightData {
     }
 
     public static RoomMoodlightData fromString(String s) {
-        String[] data = s.split(",");
+        if (s != null) {
+            String[] data = s.split(",");
 
-        if (data.length == 5) {
-            return new RoomMoodlightData(Integer.parseInt(data[1]), data[0].equalsIgnoreCase("2"), data[2].equalsIgnoreCase("2"), data[3], Integer.parseInt(data[4]));
-        } else {
-            return new RoomMoodlightData(1, true, true, "#000000", 255);
+            if (data.length == 5) {
+                try {
+                    return new RoomMoodlightData(Integer.parseInt(data[1]), data[0].equalsIgnoreCase("2"), data[2].equalsIgnoreCase("2"), data[3], Integer.parseInt(data[4]));
+                } catch (NumberFormatException ignored) {
+                    // Malformed (non-integer id/intensity) record: fall back to the
+                    // default preset rather than throwing. fromString is fed
+                    // DB-stored and client-supplied (moodlight extradata) values,
+                    // and a throw here would abort room load / a packet handler.
+                }
+            }
         }
+
+        return new RoomMoodlightData(1, true, true, "#000000", 255);
     }
 
     public int getId() {

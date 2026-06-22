@@ -35,8 +35,13 @@ class RoomMoodlightDataTest {
     }
 
     @Test
-    void wrongFieldCountFallsBackToDefaultPreset() {
-        for (String malformed : new String[]{"", "garbage", "1,2,3", "1,2,3,4", "1,2,3,4,5,6"}) {
+    void malformedRecordFallsBackToDefaultPresetWithoutThrowing() {
+        // wrong field count, null, and a 5-field record with non-integer
+        // id/intensity all fall back to the default preset (no exception) — a
+        // throw here would abort room load / a moodlight packet handler.
+        for (String malformed : new String[]{
+                "", "garbage", "1,2,3", "1,2,3,4", "1,2,3,4,5,6",
+                null, "2,X,2,#000000,255", "2,1,2,#000000,notanint"}) {
             RoomMoodlightData data = RoomMoodlightData.fromString(malformed);
 
             assertEquals(1, data.getId(), "default id for: '" + malformed + "'");

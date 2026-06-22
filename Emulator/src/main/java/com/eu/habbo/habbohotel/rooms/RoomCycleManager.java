@@ -89,6 +89,13 @@ public class RoomCycleManager {
 
                 final long millis = System.currentTimeMillis();
 
+                // Read these toggles once per cycle instead of once per habbo:
+                // getBoolean() does two synchronized Properties (Hashtable) lookups,
+                // and auto.idle was previously evaluated for every habbo every tick.
+                // Re-reading each cycle keeps runtime reconfiguration effective.
+                final boolean autoIdle = Emulator.getConfig().getBoolean("hotel.rooms.auto.idle");
+                final boolean ignoreWiredIdleWhenNotDancing = Emulator.getConfig().getBoolean("hotel.roomuser.idle.not_dancing.ignore.wired_idle");
+
                 // Process all habbos
                 for (Habbo habbo : this.room.getCurrentHabbos().values()) {
                     if (!foundRightHolder[0]) {
@@ -98,7 +105,7 @@ public class RoomCycleManager {
                     processHabboHandItem(habbo, millis);
                     processHabboEffect(habbo, millis);
                     processHabboKick(habbo);
-                    processHabboIdle(habbo, toKick);
+                    processHabboIdle(habbo, toKick, autoIdle, ignoreWiredIdleWhenNotDancing);
                     processHabboMute(habbo);
                     processHabboChatCounter(habbo);
 
@@ -238,8 +245,8 @@ public class RoomCycleManager {
     /**
      * Processes habbo idle status.
      */
-    private void processHabboIdle(Habbo habbo, ArrayList<Habbo> toKick) {
-        if (Emulator.getConfig().getBoolean("hotel.rooms.auto.idle")) {
+    private void processHabboIdle(Habbo habbo, ArrayList<Habbo> toKick, boolean autoIdle, boolean ignoreWiredIdleWhenNotDancing) {
+        if (autoIdle) {
             if (!habbo.getRoomUnit().isIdle()) {
                 habbo.getRoomUnit().increaseIdleTimer();
 
@@ -248,8 +255,7 @@ public class RoomCycleManager {
                     if (danceIsNone) {
                         this.room.sendComposer(new RoomUnitIdleComposer(habbo.getRoomUnit()).compose());
                     }
-                    if (danceIsNone && !Emulator.getConfig()
-                            .getBoolean("hotel.roomuser.idle.not_dancing.ignore.wired_idle")) {
+                    if (danceIsNone && !ignoreWiredIdleWhenNotDancing) {
                         WiredManager.triggerUserIdles(this.room, habbo.getRoomUnit());
                     }
                 }

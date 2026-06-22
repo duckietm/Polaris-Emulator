@@ -101,5 +101,24 @@ Behaviour preserved (lowercased keys ≡ `equalsIgnoreCase` for ASCII classnames
 This is an incremental win (infrequent callers) versus Rounds 1–2; it removes a
 latent O(n) scan — and an unsynchronized `items` iteration — from runtime paths.
 
+## Round 4 — runtime room tick: hoist per-habbo config reads out of the loop
+
+(Runtime hot path, not startup.) `RoomCycleManager.cycle()` runs every 500ms per
+room. Inside the per-habbo loop, `processHabboIdle()` called
+`Emulator.getConfig().getBoolean("hotel.rooms.auto.idle")` for **every habbo every
+tick**, plus a second `getBoolean(...)` on each idle transition.
+`ConfigurationManager.getBoolean()` does **two** `getValue()` calls, and the
+backing store is `java.util.Properties` (a `Hashtable`), so each lookup is a
+**synchronized** map access — contended across all room-tick threads hitting the
+same global config.
+
+**Change.** Read the two toggles once per `cycle()` into locals and pass them into
+`processHabboIdle(...)`. A room with N users now does 2 `getBoolean` calls per
+tick instead of ~N. Re-reading each cycle preserves runtime reconfiguration
+(takes effect within one 500ms tick, as before); behaviour is otherwise
+identical. The movement/sit/lay core of `cycleRoomUnit` was deliberately left
+untouched (correctness-sensitive). These were the only per-habbo config reads in
+the tick (the remaining `getConfig()` call is once-per-tick deco hosting).
+
 ## Verification
 - `mvn test` green: 414 tests, 0 failures, JDK 25 (all rounds).

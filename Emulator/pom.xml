@@ -6,7 +6,7 @@
 
     <groupId>com.eu.habbo</groupId>
     <artifactId>Habbo</artifactId>
-    <version>4.2.45</version>
+    <version>4.2.46</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -38,6 +38,14 @@
                             <mainClass>com.eu.habbo.Emulator</mainClass>
                             <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                         </manifest>
+                        <manifestEntries>
+                            <!-- jansi loads a native lib via System::load for ANSI console
+                                 colours; on Java 25 the unnamed module must declare native
+                                 access or the JVM prints a restricted-method warning (and
+                                 will hard-fail in a future release). Granting it here bakes
+                                 the grant into the executable jar, so `java -jar` is clean. -->
+                            <Enable-Native-Access>ALL-UNNAMED</Enable-Native-Access>
+                        </manifestEntries>
                     </archive>
                 </configuration>
                 <executions>

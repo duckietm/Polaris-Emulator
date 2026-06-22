@@ -1172,13 +1172,23 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
           // preventing wired desync issues
           this.cycle();
           this.lastCycleCpuMs = (System.nanoTime() - startTime) / 1000000.0;
-        } catch (Exception e) {
+        } catch (Throwable e) {
+          // This is a scheduleAtFixedRate task: ANY Throwable that escapes run()
+          // makes the executor cancel the periodic task, freezing the room
+          // forever. Catch Throwable (not just Exception) so a single bad
+          // tick/room can never silently kill its own cycle.
           LOGGER.error("Caught exception", e);
         }
       }
     }
 
-    this.save();
+    try {
+      this.save();
+    } catch (Throwable e) {
+      // save() runs outside loadLock and after the protected cycle; keep it
+      // from escaping run() for the same reason (silent task cancellation).
+      LOGGER.error("Caught exception while saving room {}", this.id, e);
+    }
   }
 
   public void save() {

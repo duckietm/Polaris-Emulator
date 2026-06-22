@@ -43,7 +43,6 @@ import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.THashMap;
-import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
@@ -118,7 +117,6 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   public final Object roomUnitLock = new Object();
   public final List<Integer> userVotes;
   private final TIntArrayList rights;
-  private final TIntIntHashMap mutedHabbos;
   private final Set<Game> games;
   private final TIntObjectMap<RoomMoodlightData> moodlightData;
   public volatile double lastCycleCpuMs = 0.0;
@@ -298,7 +296,6 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
       this.moodlightData.put(data.getId(), data);
     }
 
-    this.mutedHabbos = new TIntIntHashMap();
     this.games = ConcurrentHashMap.newKeySet();
 
     this.rights = new TIntArrayList();
@@ -986,10 +983,6 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
           }
           this.scheduledTasks.clear();
           this.scheduledComposers.clear();
-
-          synchronized (this.mutedHabbos) {
-            this.mutedHabbos.clear();
-          }
 
           for (InteractionGameTimer timer : this.getRoomSpecialTypes().getGameTimers().values()) {
             if (timer instanceof InteractionGameUpCounter upCounter) {

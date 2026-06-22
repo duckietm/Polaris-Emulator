@@ -50,5 +50,32 @@ verified by code-reading + green build, not integration. Recommend a quick live
 check (ban a user, restart, confirm they can't re-enter; ban/unban and confirm
 the list updates) when next on a DB-backed instance.
 
+## Step 2 — remove `Room`'s dead `mutedHabbos` map
+
+Mute handling was extracted to `RoomChatManager` (`Room.muteHabbo/unmuteHabbo/
+isMuted(Habbo)` all delegate to it; the live callers are `RoomUserMuteEvent`,
+wired mute effects, etc.). But `Room` kept a `mutedHabbos` field that was **never
+populated and never queried** — its only use was `this.mutedHabbos.clear()` in
+`Room.dispose()`, a no-op on a permanently empty map (and not exposed via any
+getter).
+
+Removed the field, its initializer, the now-unused `TIntIntHashMap` import, and
+the no-op clear in `dispose()`. Behavior-neutral (clearing an always-empty map
+observes nothing); pure god-class state reduction. `mvn test` green.
+
+(Note: the dispose-time clear's *intent* was "clear mutes on unload", but the
+live map lives in `RoomChatManager`. Mutes are in-memory and self-expiring by
+timestamp, and a disposed room is replaced by a fresh `Room`+`RoomChatManager` on
+reload, so not clearing the live map on dispose is not observable — redirecting
+the clear would also be a behavior change, so it was left out.)
+
+### Follow-up finding (not changed) — `RoomRightsManager` has a dead mute cluster
+`RoomRightsManager` also carries a full, **zero-caller** mute cluster
+(`mutedHabbos` field + `muteHabbo`/`isMuted`/`getMuteEndTime`/`getMutedHabbos`/
+`clearMutes`) — a second dead duplicate of the `RoomChatManager` logic. It was
+left in place this step because removing **public** manager methods (even dead
+ones) has a plugin-compat consideration; recommend a follow-up to delete it so
+mute state lives only in `RoomChatManager`.
+
 ## Verification
-- `mvn test` green: 414 tests, 0 failures, JDK 25.
+- `mvn test` green: 414 tests, 0 failures, JDK 25 (both steps).

@@ -117,7 +117,6 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   public final Object roomUnitLock = new Object();
   public final List<Integer> userVotes;
   private final TIntArrayList rights;
-  private final Set<Game> games;
   private final TIntObjectMap<RoomMoodlightData> moodlightData;
   public volatile double lastCycleCpuMs = 0.0;
   public volatile String lastCycleThread = "N/A";
@@ -296,7 +295,6 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
       this.moodlightData.put(data.getId(), data);
     }
 
-    this.games = ConcurrentHashMap.newKeySet();
 
     this.rights = new TIntArrayList();
     this.userVotes = new ArrayList<>();
@@ -992,10 +990,10 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
             }
           }
 
-          for (Game game : this.games) {
-            game.dispose();
-          }
-          this.games.clear();
+          // Dispose the live games (held by the game manager). The previous loop
+          // iterated Room's own — always empty — set (addGame delegates to the
+          // manager), so active games were never stopped/cleaned up on unload.
+          this.gameManager.dispose();
 
           removeAllPets(ownerId);
 

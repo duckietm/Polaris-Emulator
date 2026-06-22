@@ -84,5 +84,30 @@ been `Room.muteHabbo(...)`).
 
 **Result:** mute state now lives in exactly one place, `RoomChatManager`.
 
+## Step 4 — consolidate `games` + fix games never disposed on room unload
+
+Same shape as bans/mutes. Game handling was extracted to `RoomGameManager`
+(`Room.addGame/deleteGame/getGame/getGameOrCreate/getGames` all delegate to it),
+but `Room` kept its own `Set<Game> games` that — since `addGame` delegates — was
+**never populated**.
+
+**The latent bug.** `Room.dispose()` did `for (Game game : this.games)
+game.dispose(); this.games.clear();` over `Room`'s **empty** set, and
+`gameManager.dispose()` was **never called anywhere**. So active games were never
+torn down on room unload — and `Game.dispose()` has real side effects
+(`team.clearMembers()`, `teams.clear()`, `stop()`), so this orphaned game
+state/timers on every unload of a room with a running game.
+
+**The fix.** Replaced the no-op loop with `this.gameManager.dispose()` (which does
+exactly the intended per-game `dispose()` + clear, on the live set), and removed
+`Room`'s dead `games` field + initializer. `RoomGameManager.dispose()` had zero
+prior callers, so there is no double-dispose risk. Game state now lives only in
+`RoomGameManager`, and unload actually stops/cleans up running games.
+
+**Caveat.** Behavior change in the unload path (games now stopped on unload),
+verified by code-reading + green build; the suite doesn't exercise the game
+runtime. Worth a live check (start a game, unload the room, confirm no orphaned
+game timers) on a DB-backed instance.
+
 ## Verification
 - `mvn test` green: 414 tests, 0 failures, JDK 25 (all steps).

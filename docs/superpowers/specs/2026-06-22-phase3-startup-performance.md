@@ -45,11 +45,42 @@ parallel.
 Expected effect: removes most of the 2.0s from wall-clock boot (exact number
 needs a DB-backed run to confirm; not measurable in the unit sandbox).
 
-## Not done this round (need DB-backed profiling)
-`ItemManager` (1.65s, ~80k `items_base` rows + per-row interaction-class
-reflection) and `CatalogManager` (0.60s) are the next targets but require a real
-DB to profile/verify safely — deferred to a measured follow-up rather than
-changed blind.
+## Round 2 — ItemManager: O(1) interaction lookup instead of a per-item scan
+
+`loadItems()` builds one `Item` per `items_base` row (~80k on the baseline DB).
+Each `Item` resolves its interaction by calling
+`ItemManager.getItemInteraction(String)`, which **linearly scanned**
+`interactionsList` — a `THashSet` of ~200 `ItemInteraction`s — doing
+`equalsIgnoreCase` until a match. That is ~80k × ~200 ≈ **16M case-insensitive
+string compares** on the boot critical path, which is the bulk of the 1.65s.
+
+**Observation.** `interactionsList` is populated only in `loadItemInteractions()`
+(no public add API; `ItemInteraction` has identity equality and no external
+registrant), so it is effectively immutable after load — ideal to index once.
+
+**Change.** Added two volatile lookup maps (`name → ItemInteraction`,
+`Class → ItemInteraction`) built by `rebuildInteractionIndex()`, triggered lazily
+by `ensureInteractionIndex()` only when `interactionsList.size()` differs from the
+last indexed size (so: built once during `loadItems()`, then a single
+volatile-int compare per lookup; self-healing if the list ever changes).
+`getItemInteraction(String)` / `getItemInteraction(Class)` now do an O(1) map
+lookup. Boot-time interaction resolution goes from O(items × interactions) to
+O(items).
+
+**Behaviour preserved**
+- `name` keys are `toLowerCase(Locale.ROOT)` and looked up the same way —
+  equivalent to the old `equalsIgnoreCase` for the ASCII interaction-type tokens.
+- `putIfAbsent` keeps "first registered wins", matching the old first-match scan;
+  for the duplicate *classes* in the list the old scan order was already
+  nondeterministic (`THashSet`), so the result set is unchanged in practice.
+- Miss → default interaction (whose name is `"default"`), so `Item`'s
+  `"default".equals(interactionType.getName())` `wf_` fallback path is unchanged.
+- `synchronized` rebuild + volatile publication keep concurrent runtime lookups
+  safe; in steady state no rebuild and no allocation occur.
+
+`CatalogManager` (0.60s) was reviewed (`loadFurnitureValues` and the load
+queries) and shows no equivalent algorithmic hot spot — it is DB-fetch + object
+construction. Left for a DB-backed profiling pass rather than changed blind.
 
 ## Verification
-- `mvn test` green: 414 tests, 0 failures, JDK 25.
+- `mvn test` green: 414 tests, 0 failures, JDK 25 (both rounds).

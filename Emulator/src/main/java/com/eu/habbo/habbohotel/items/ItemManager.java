@@ -106,6 +106,14 @@ public class ItemManager {
     private final TIntObjectMap<Item> items;
     private final TIntObjectHashMap<CrackableReward> crackableRewards;
     private final THashSet<ItemInteraction> interactionsList;
+    // O(1) lookup indexes over interactionsList, rebuilt only when the list size
+    // changes (in practice: once, after loadItemInteractions()). Replaces the
+    // former per-item linear scan, which at boot was ~80k items x ~200
+    // interactions of equalsIgnoreCase. Self-healing: any future add/remove that
+    // changes the size triggers a rebuild on the next lookup.
+    private volatile Map<String, ItemInteraction> interactionsByName = Collections.emptyMap();
+    private volatile Map<Class<? extends HabboItem>, ItemInteraction> interactionsByType = Collections.emptyMap();
+    private volatile int interactionsIndexedSize = -1;
     private final THashMap<String, SoundTrack> soundTracks;
     private final YoutubeManager youtubeManager;
     private final WiredHighscoreManager highscoreManager;
@@ -624,22 +632,49 @@ public class ItemManager {
     }
 
 
-    public ItemInteraction getItemInteraction(Class<? extends HabboItem> type) {
+    /**
+     * Lazily (re)build the name/type lookup indexes. A rebuild happens only when
+     * the backing {@link #interactionsList} size differs from what was last
+     * indexed — so in steady state (after {@code loadItemInteractions()}) this is
+     * a single volatile-int compare with no allocation. {@code synchronized} keeps
+     * concurrent runtime lookups from racing a rebuild; it is idempotent.
+     */
+    private synchronized void rebuildInteractionIndex() {
+        Map<String, ItemInteraction> byName = new HashMap<>(Math.max(16, this.interactionsList.size() * 2));
+        Map<Class<? extends HabboItem>, ItemInteraction> byType = new HashMap<>(Math.max(16, this.interactionsList.size() * 2));
         for (ItemInteraction interaction : this.interactionsList) {
-            if (interaction.getType() == type)
-                return interaction;
+            // putIfAbsent preserves "first registered wins" for duplicate keys,
+            // matching the previous first-match-in-scan behaviour.
+            byName.putIfAbsent(interaction.getName().toLowerCase(Locale.ROOT), interaction);
+            byType.putIfAbsent(interaction.getType(), interaction);
         }
+        this.interactionsByName = byName;
+        this.interactionsByType = byType;
+        this.interactionsIndexedSize = this.interactionsList.size();
+    }
+
+    private void ensureInteractionIndex() {
+        if (this.interactionsIndexedSize != this.interactionsList.size()) {
+            rebuildInteractionIndex();
+        }
+    }
+
+    public ItemInteraction getItemInteraction(Class<? extends HabboItem> type) {
+        ensureInteractionIndex();
+        ItemInteraction found = this.interactionsByType.get(type);
+        if (found != null)
+            return found;
 
         LOGGER.debug("Can't find interaction class: {}", type.getName());
-        return this.getItemInteraction(InteractionDefault.class);
+        return this.interactionsByType.get(InteractionDefault.class);
     }
 
 
     public ItemInteraction getItemInteraction(String type) {
-        for (ItemInteraction interaction : this.interactionsList) {
-            if (interaction.getName().equalsIgnoreCase(type))
-                return interaction;
-        }
+        ensureInteractionIndex();
+        ItemInteraction found = (type != null) ? this.interactionsByName.get(type.toLowerCase(Locale.ROOT)) : null;
+        if (found != null)
+            return found;
 
         return this.getItemInteraction(InteractionDefault.class);
     }

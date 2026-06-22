@@ -104,6 +104,12 @@ public class ItemManager {
     public static boolean RECYCLER_ENABLED = true;
 
     private final TIntObjectMap<Item> items;
+    // O(1) classname lookup over `items`, rebuilt only when the item count
+    // changes (items_base is loaded once at startup; Item.name is set in the
+    // constructor and never reassigned by update(), so the index stays valid
+    // across item updates). Replaces getItem(String)'s ~80k-entry linear scan.
+    private volatile Map<String, Item> itemsByName = Collections.emptyMap();
+    private volatile int itemsByNameIndexedSize = -1;
     private final TIntObjectHashMap<CrackableReward> crackableRewards;
     private final THashSet<ItemInteraction> interactionsList;
     // O(1) lookup indexes over interactionsList, rebuilt only when the list size
@@ -1080,25 +1086,39 @@ public class ItemManager {
         return this.items;
     }
 
+    private void ensureItemsByNameIndex() {
+        if (this.itemsByNameIndexedSize != this.items.size()) {
+            rebuildItemsByNameIndex();
+        }
+    }
+
+    private synchronized void rebuildItemsByNameIndex() {
+        Map<String, Item> byName;
+        // `items` is a synchronizedMap; its iterator needs the map's monitor.
+        synchronized (this.items) {
+            byName = new HashMap<>(Math.max(16, this.items.size() * 2));
+            TIntObjectIterator<Item> it = this.items.iterator();
+            for (int i = this.items.size(); i-- > 0; ) {
+                it.advance();
+                Item item = it.value();
+                if (item != null && item.getName() != null) {
+                    // putIfAbsent preserves first-seen-wins for duplicate names,
+                    // matching the previous first-match-in-scan behaviour.
+                    byName.putIfAbsent(item.getName().toLowerCase(Locale.ROOT), item);
+                }
+            }
+            this.itemsByNameIndexedSize = this.items.size();
+        }
+        this.itemsByName = byName;
+    }
+
     public Item getItem(String itemName) {
         if (itemName == null || itemName.isBlank()) {
             return null;
         }
 
-        TIntObjectIterator<Item> item = this.items.iterator();
-
-        for (int i = this.items.size(); i-- > 0; ) {
-            try {
-                item.advance();
-                if (item.value() != null && item.value().getName() != null && item.value().getName().equalsIgnoreCase(itemName)) {
-                    return item.value();
-                }
-            } catch (NoSuchElementException e) {
-                break;
-            }
-        }
-
-        return null;
+        ensureItemsByNameIndex();
+        return this.itemsByName.get(itemName.toLowerCase(Locale.ROOT));
     }
 
     public YoutubeManager getYoutubeManager() {

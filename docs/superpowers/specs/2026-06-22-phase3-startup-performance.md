@@ -82,5 +82,24 @@ O(items).
 queries) and shows no equivalent algorithmic hot spot — it is DB-fetch + object
 construction. Left for a DB-backed profiling pass rather than changed blind.
 
+## Round 3 — ItemManager.getItem(String): O(1) classname lookup
+
+Smaller, same-pattern follow-up. `getItem(String classname)` linearly scanned all
+~80k `items` with `equalsIgnoreCase`. It has 4 callers, all runtime player-action
+paths (compost monsterplant, build-area / mute-area effect refresh) plus one
+startup call — several invoke it with a constant classname (e.g.
+`"mutearea_sign2"`) on every interaction, so each was an ~80k-entry scan.
+
+`Item.name` is assigned only in the constructor (never by `update()`), and `items`
+is only ever `put`/`update`d (never removed) — so a classname index stays valid
+and the same lazy size-invalidation approach as Round 2 applies: `itemsByName` is
+rebuilt only when `items.size()` changes (the rebuild iterates under the
+synchronizedMap's monitor). `getItem(String)` is now an O(1) map lookup.
+Behaviour preserved (lowercased keys ≡ `equalsIgnoreCase` for ASCII classnames;
+`putIfAbsent` ≡ old first-match; null/blank still returns null).
+
+This is an incremental win (infrequent callers) versus Rounds 1–2; it removes a
+latent O(n) scan — and an unsynchronized `items` iteration — from runtime paths.
+
 ## Verification
-- `mvn test` green: 414 tests, 0 failures, JDK 25 (both rounds).
+- `mvn test` green: 414 tests, 0 failures, JDK 25 (all rounds).

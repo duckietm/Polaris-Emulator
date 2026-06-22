@@ -44,5 +44,35 @@ Other periodic tasks audited: `EmulatorDashboard.updateMetrics` (already
 `try/catch(Exception)`, non-critical — left as-is); no `java.util.Timer`/
 `TimerTask` anywhere (the worst "one task kills the thread" vector is absent).
 
+## Minor remainders — observability of silent failures (round 2)
+
+Two paths could fail **silently** (no log), which is its own stability hazard —
+an operator can't fix what they can't see:
+
+1. **`GameMessageHandler.exceptionCaught`** logged *every* case only when
+   `debug.mode` was on, then closed the channel. In production (`debug.mode`
+   off) a genuinely unexpected server-side exception that disconnects a client
+   left **no trace**. Fix: the known TLS/plaintext/scanner-noise cases stay
+   gated behind `debug.mode` (they'd spam a public port), but the final
+   `else` — an unexpected failure — now **always** logs at ERROR. Messages and
+   channel-close behaviour are otherwise unchanged.
+
+2. **`HabboExecutorService.afterExecute`** only saw `t` for `execute()` tasks;
+   work submitted via `submit()`/`schedule()` captures its failure inside the
+   `Future`, so a throwing background/scheduled task died silently. Two direct
+   callers bypass `ThreadPooling.run`'s try/catch wrapper and were exposed:
+   `SessionEndpoints` (SMTP forgot-password send) and `PetBreedingSession`
+   (breeding timeout). Fix: when the completed `Runnable` is a `Future`, pull
+   the result (`isDone()` guarded so pending periodic tasks don't block;
+   `CancellationException` treated as normal) and log any captured cause. Also
+   surfaces `Error`s that escape the `ThreadPooling.run` `catch (Exception)`.
+
+**Deliberately not changed:** the packet-dispatch `catch (Exception)`
+(`PacketManager.handlePacket` / `GameMessageHandler.channelRead`) was **not**
+broadened to `Throwable`. On an `Error` (e.g. a deep-recursion `StackOverflowError`
+from a malicious packet) the current behaviour drops the connection via
+`exceptionCaught`, which is the security-correct response; catching it inline
+would keep an abusive client connected to retry.
+
 ## Verification
-- `mvn test` green: 414 tests, 0 failures, JDK 25.
+- `mvn test` green: 414 tests, 0 failures, JDK 25 (both rounds).

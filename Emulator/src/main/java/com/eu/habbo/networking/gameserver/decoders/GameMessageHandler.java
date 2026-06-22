@@ -77,35 +77,36 @@ public class GameMessageHandler extends ChannelInboundHandlerAdapter {
             ctx.channel().close();
             return;
         }
-        if (Emulator.getConfig().getBoolean("debug.mode")) {
-            if (cause instanceof NotSslRecordException) {
-                LOGGER.error("Plaintext received instead of ssl, closing channel");
-            }
-            else if (cause instanceof DecoderException) {
-                LOGGER.error("Plaintext received instead of ssl, closing channel");
-            }
-            else if (cause instanceof TooLongFrameException) {
-                LOGGER.error("Disconnecting client, reason {}", cause.getMessage());
-            }
-            else if (cause instanceof SSLHandshakeException) {
-                LOGGER.error("URL Request error from source {}", ctx.channel().remoteAddress());
-            }
-            else if (cause instanceof NoSuchAlgorithmException) {
-                LOGGER.error("Invalid SSL algorithm, only TLSv1.2 supported in the request");
-            }
-            else if (cause instanceof KeyManagementException) {
-                LOGGER.error("Invalid SSL algorithm, only TLSv1.2 supported in the request");
-            }
-            else if (cause instanceof UnsupportedMessageTypeException) {
-                LOGGER.error("There was an illegal SSL request from (X-forwarded-for/CF-Connecting-IP has not being injected yet!) {}", ctx.channel().remoteAddress());
-            }
-            else if (cause instanceof SSLException) {
-                LOGGER.error("SSL Problem: {}{}", cause.getMessage(), cause);
-            }
-            else {
-                LOGGER.error("Disconnecting client, exception in GameMessageHandler.", cause);
-            }
+
+        // Known TLS/plaintext/scanner noise is expected on a public port and would
+        // spam production logs, so it stays gated behind debug.mode. Anything that
+        // falls through to the final 'else' is a genuinely unexpected server-side
+        // failure that is about to silently disconnect a client — that must always
+        // be surfaced, regardless of debug.mode.
+        boolean debug = Emulator.getConfig().getBoolean("debug.mode");
+
+        if (cause instanceof NotSslRecordException || cause instanceof DecoderException) {
+            if (debug) LOGGER.error("Plaintext received instead of ssl, closing channel");
         }
+        else if (cause instanceof TooLongFrameException) {
+            if (debug) LOGGER.error("Disconnecting client, reason {}", cause.getMessage());
+        }
+        else if (cause instanceof SSLHandshakeException) {
+            if (debug) LOGGER.error("URL Request error from source {}", ctx.channel().remoteAddress());
+        }
+        else if (cause instanceof NoSuchAlgorithmException || cause instanceof KeyManagementException) {
+            if (debug) LOGGER.error("Invalid SSL algorithm, only TLSv1.2 supported in the request");
+        }
+        else if (cause instanceof UnsupportedMessageTypeException) {
+            if (debug) LOGGER.error("There was an illegal SSL request from (X-forwarded-for/CF-Connecting-IP has not being injected yet!) {}", ctx.channel().remoteAddress());
+        }
+        else if (cause instanceof SSLException) {
+            if (debug) LOGGER.error("SSL Problem: {}{}", cause.getMessage(), cause);
+        }
+        else {
+            LOGGER.error("Disconnecting client, unexpected exception in GameMessageHandler.", cause);
+        }
+
         ctx.channel().close();
     }
 }

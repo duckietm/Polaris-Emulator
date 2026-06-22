@@ -42,7 +42,6 @@ import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.THashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
@@ -207,10 +206,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     this.youtubePlaylist.clear();
   }
 
-  public final THashMap<String, Object> cache;
-
   public Room(ResultSet set) throws SQLException {
-    this.cache = new THashMap<>(1000);
     this.id = set.getInt("id");
     this.ownerId = set.getInt("owner_id");
     this.ownerName = set.getString("owner_name");

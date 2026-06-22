@@ -200,5 +200,25 @@ code-reading + green build, applied with explicit go-ahead. Needs a live check
 (persist a right in `room_rights`, restart, confirm the user gets flat controls
 on entry; then give/remove rights in-session and confirm both still work).
 
+## Step 8 — remove `Room`'s dead `cache` field
+
+`Room` had `public final THashMap<String, Object> cache` allocated as
+`new THashMap<>(1000)` in the constructor and **never read or written** anywhere
+(the `*.cache` references in the codebase are all `HabboStats.cache`, a different
+field; the one other `cache` mention in `Room` is a comment about wired engine
+caches). So every room allocated an unused 1000-capacity map — small per room but
+multiplied across every loaded room.
+
+Removed the field, its initializer, and the now-unused `THashMap` import.
+Behaviour-neutral. (It was `public`, so a plugin could in theory have used it as
+scratch space — same low plugin-compat consideration as the dead mute cluster;
+it is undocumented and unused by the emulator.)
+
+After this, the collection state still in `Room` is either properly delegated to
+a manager (habbos/bots/pets/items/queue → unit/item managers) or legitimately
+`Room`'s own (config scalars, the scheduling queues). The stranded-duplicate seam
+that produced steps 1–8 is exhausted; further decomposition would be genuine
+large extractions (room-settings + their save() SQL) or the `Emulator` god-class.
+
 ## Verification
 - `mvn test` green: 414 tests, 0 failures, JDK 25 (all steps).

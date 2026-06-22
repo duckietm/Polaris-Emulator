@@ -109,5 +109,29 @@ verified by code-reading + green build; the suite doesn't exercise the game
 runtime. Worth a live check (start a game, unload the room, confirm no orphaned
 game timers) on a DB-backed instance.
 
+## Step 5 — extract moodlight into a new `RoomMoodlightManager`
+
+Unlike steps 1–4 (consolidating into an existing manager / removing dead state),
+this is a genuine **extract-class**: there was no moodlight manager and no
+duplicate. `Room` held the static `defaultMoodData` presets, the
+`moodlightData` map, its parse from the `moodlight_data` DB column (constructor),
+its serialization back (in `save()`, including the id 1..N renumbering), and the
+`getMoodlightData()` getter.
+
+Moved all of it **verbatim** into a new `RoomMoodlightManager`
+(`new RoomMoodlightManager(columnString)` parses; `serialize()` rebuilds the
+column string with the same id renumbering; `getMoodlightData()` returns the
+map). `Room` now constructs the manager from `set.getString("moodlight_data")`,
+`save()` writes `this.moodlightManager.serialize()`, and `getMoodlightData()`
+delegates. Because the logic is moved byte-for-byte (same default presets, same
+parse, same serialization with the `data.setId(id)` side effect), behaviour —
+including the exact `moodlight_data` column format — is preserved.
+
+`Room`'s public API is unchanged → external moodlight callers
+(`MoodLight*Event`, `MoodLightDataComposer`) are untouched. This is the first
+step that touches the `save()` SQL path, so the serialization was moved
+identically rather than rewritten. Pure god-class reduction (~25 lines + a static
+block out of `Room`).
+
 ## Verification
 - `mvn test` green: 414 tests, 0 failures, JDK 25 (all steps).

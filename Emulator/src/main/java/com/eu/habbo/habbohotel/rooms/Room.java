@@ -80,10 +80,10 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   private RoomUserVariableManager userVariableManager;
   private RoomFurniVariableManager furniVariableManager;
   private RoomVariableManager roomVariableManager;
+  private RoomMoodlightManager moodlightManager;
 
   public static final Comparator<Room> SORT_SCORE = (o1, o2) -> o2.getScore() - o1.getScore();
   public static final Comparator<Room> SORT_ID = (o1, o2) -> o2.getId() - o1.getId();
-  private static final TIntObjectHashMap<RoomMoodlightData> defaultMoodData = new TIntObjectHashMap<>();
   //Configuration. Loaded from database & updated accordingly.
   public static boolean HABBO_CHAT_DELAY = false;
   public static int MAXIMUM_BOTS = 10;
@@ -106,18 +106,9 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   public static final int WIRED_ACCESS_DEFAULT_INSPECT_MASK = 0;
   public static final int WIRED_ACCESS_DEFAULT_MODIFY_MASK = 0;
 
-  static {
-    for (int i = 1; i <= 3; i++) {
-      RoomMoodlightData data = RoomMoodlightData.fromString("");
-      data.setId(i);
-      defaultMoodData.put(i, data);
-    }
-  }
-
   public final Object roomUnitLock = new Object();
   public final List<Integer> userVotes;
   private final TIntArrayList rights;
-  private final TIntObjectMap<RoomMoodlightData> moodlightData;
   public volatile double lastCycleCpuMs = 0.0;
   public volatile String lastCycleThread = "N/A";
 
@@ -288,12 +279,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     this.preLoaded = true;
     this.allowBotsWalk = true;
     this.allowEffects = true;
-    this.moodlightData = new TIntObjectHashMap<>(defaultMoodData);
-
-    for (String s : set.getString("moodlight_data").split(";")) {
-      RoomMoodlightData data = RoomMoodlightData.fromString(s);
-      this.moodlightData.put(data.getId(), data);
-    }
+    this.moodlightManager = new RoomMoodlightManager(set.getString("moodlight_data"));
 
 
     this.rights = new TIntArrayList();
@@ -1199,16 +1185,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         statement.setInt(11, this.wallSize);
         statement.setInt(12, this.wallHeight);
         statement.setInt(13, this.floorSize);
-        StringBuilder moodLightData = new StringBuilder();
-
-        int id = 1;
-        for (RoomMoodlightData data : this.moodlightData.valueCollection()) {
-          data.setId(id);
-          moodLightData.append(data.toString()).append(";");
-          id++;
-        }
-
-        statement.setString(14, moodLightData.toString());
+        statement.setString(14, this.moodlightManager.serialize());
         statement.setString(15, this.tags);
         statement.setString(16, this.allowPets ? "1" : "0");
         statement.setString(17, this.allowPetsEat ? "1" : "0");
@@ -1788,7 +1765,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   }
 
   public TIntObjectMap<RoomMoodlightData> getMoodlightData() {
-    return this.moodlightData;
+    return this.moodlightManager.getMoodlightData();
   }
 
   public int getLastTimerReset() {

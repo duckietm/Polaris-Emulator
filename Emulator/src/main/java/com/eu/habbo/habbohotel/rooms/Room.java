@@ -107,7 +107,6 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   public static final int WIRED_ACCESS_DEFAULT_MODIFY_MASK = 0;
 
   public final Object roomUnitLock = new Object();
-  private final TIntArrayList rights;
   public volatile double lastCycleCpuMs = 0.0;
   public volatile String lastCycleThread = "N/A";
 
@@ -276,8 +275,6 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     this.allowEffects = true;
     this.moodlightManager = new RoomMoodlightManager(set.getString("moodlight_data"));
 
-
-    this.rights = new TIntArrayList();
 
     // Initialize managers
     this.initializeManagers();
@@ -560,7 +557,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
       CompletableFuture<Void> rightsFuture = CompletableFuture.runAsync(() -> {
         try (Connection rightsConnection = Emulator.getDatabase().getDataSource().getConnection()) {
-          this.loadRights(rightsConnection);
+          this.rightsManager.loadRights(rightsConnection);
         } catch (Exception e) {
           LOGGER.error("Caught exception loading rights", e);
         }
@@ -1819,7 +1816,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   }
 
   public TIntArrayList getRights() {
-    return this.rights;
+    return this.rightsManager.getRights();
   }
 
   public boolean isMuted() {
@@ -2174,21 +2171,6 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     this.messagingManager.botChat(message);
   }
 
-  private void loadRights(Connection connection) {
-    this.rights.clear();
-    try (PreparedStatement statement = connection.prepareStatement(
-            "SELECT user_id FROM room_rights WHERE room_id = ?")) {
-      statement.setInt(1, this.id);
-      try (ResultSet set = statement.executeQuery()) {
-        while (set.next()) {
-          this.rights.add(set.getInt("user_id"));
-        }
-      }
-    } catch (SQLException e) {
-      LOGGER.error("Caught SQL exception", e);
-    }
-  }
-
   public RoomRightLevels getGuildRightLevel(Habbo habbo) {
     int guildId = this.getGuildId();
 
@@ -2231,7 +2213,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   }
 
   public boolean hasExplicitRights(Habbo habbo) {
-    return habbo != null && this.rights.contains(habbo.getHabboInfo().getId());
+    return habbo != null && this.rightsManager.getRights().contains(habbo.getHabboInfo().getId());
   }
 
   public int getWiredInspectMask() {
@@ -2324,23 +2306,16 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
   public void giveRights(int userId) {
     this.rightsManager.giveRights(userId);
-
-    if (!this.rights.contains(userId)) {
-      this.rights.add(userId);
-    }
-
     this.pushWiredSettingsToCurrentHabbos();
   }
 
   public void removeRights(int userId) {
     this.rightsManager.removeRights(userId);
-    this.rights.remove(userId);
     this.pushWiredSettingsToCurrentHabbos();
   }
 
   public void removeAllRights() {
     this.rightsManager.removeAllRights();
-    this.rights.clear();
     this.pushWiredSettingsToCurrentHabbos();
   }
 

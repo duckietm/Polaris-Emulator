@@ -162,5 +162,43 @@ This is a higher-risk step than 1–5 because it changes an **external caller**
 (`RoomManager`, field-read → manager getter), accepted as part of the B-tier
 work. Word-quiz state now lives only in `RoomWordQuizManager`.
 
+## Step 7 — consolidate room rights + fix DB rights not granted on entry (permission-critical)
+
+The fourth and worst instance of the split-state pattern. `Room` and
+`RoomRightsManager` each had their own `rights` `TIntArrayList`. The runtime
+mutators kept both in sync (`Room.giveRights/removeRights/removeAllRights` updated
+both lists), so that part was merely redundant — **but the load was not**:
+
+- `Room`'s async `loadData` called **`Room.loadRights`**, filling **`Room.rights`**.
+- `RoomRightsManager.loadRights` was **never called** (zero callers), so the
+  manager's list started **empty**.
+- `hasRights()` (and thus `refreshRightsForHabbo()`, run on room entry from
+  `RoomManager`) checks **`rightsManager.rights`** — empty after load. On entry a
+  habbo's cached `rightsLevel` is `NONE`, so the fallback clause doesn't help.
+
+**Result:** users with explicit room rights persisted in `room_rights` were **not
+granted flat controls on entry** — they only worked if re-granted live in-session
+(which writes both lists). Same family as the bans bug, but on room control
+rights.
+
+**The fix.** Single authoritative rights list in `RoomRightsManager`:
+1. `loadData` now calls `this.rightsManager.loadRights(...)` instead of
+   `Room.loadRights(...)`.
+2. Removed `Room.rights` (field + init), the dead `Room.loadRights`, and the
+   now-redundant `this.rights` updates in `giveRights/removeRights/removeAllRights`
+   (the manager already maintains the list + DB).
+3. `Room.getRights()` and `hasExplicitRights()` now read
+   `rightsManager.getRights()`.
+
+`Room`'s public API is unchanged (`getRights/hasRights/hasExplicitRights/
+giveRights/removeRights/removeAllRights/getUsersWithRights`), so external callers
+(`RoomRemoveAllRightsEvent`, etc.) are untouched. Rights state now lives only in
+`RoomRightsManager`, loaded once, consulted everywhere.
+
+**Caveat.** Permission-critical and not exercised by the unit suite; verified by
+code-reading + green build, applied with explicit go-ahead. Needs a live check
+(persist a right in `room_rights`, restart, confirm the user gets flat controls
+on entry; then give/remove rights in-session and confirm both still work).
+
 ## Verification
 - `mvn test` green: 414 tests, 0 failures, JDK 25 (all steps).

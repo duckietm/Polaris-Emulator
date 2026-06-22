@@ -18,7 +18,6 @@ import com.eu.habbo.habbohotel.messenger.MessengerBuddy;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.plugin.events.users.UserRightsTakenEvent;
 import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,13 +39,11 @@ public class RoomRightsManager {
     private final Room room;
     private final TIntArrayList rights;
     private final TIntObjectHashMap<RoomBan> bannedHabbos;
-    private final TIntIntHashMap mutedHabbos;
 
     public RoomRightsManager(Room room) {
         this.room = room;
         this.rights = new TIntArrayList();
         this.bannedHabbos = new TIntObjectHashMap<>();
-        this.mutedHabbos = new TIntIntHashMap();
     }
 
     /**
@@ -362,65 +359,10 @@ public class RoomRightsManager {
     }
 
     /**
-     * Mutes a habbo for a specified number of minutes.
-     */
-    public void muteHabbo(Habbo habbo, int minutes) {
-        synchronized (this.mutedHabbos) {
-            this.mutedHabbos.put(habbo.getHabboInfo().getId(),
-                Emulator.getIntUnixTimestamp() + (minutes * 60));
-        }
-    }
-
-    /**
-     * Checks if a habbo is muted.
-     */
-    public boolean isMuted(Habbo habbo) {
-        if (this.isOwner(habbo) || this.hasRights(habbo)) {
-            return false;
-        }
-
-        if (this.mutedHabbos.containsKey(habbo.getHabboInfo().getId())) {
-            boolean time =
-                this.mutedHabbos.get(habbo.getHabboInfo().getId()) > Emulator.getIntUnixTimestamp();
-
-            if (!time) {
-                this.mutedHabbos.remove(habbo.getHabboInfo().getId());
-            }
-
-            return time;
-        }
-
-        return false;
-    }
-
-    /**
-     * Gets the mute end time for a habbo.
-     */
-    public int getMuteEndTime(int habboId) {
-        return this.mutedHabbos.get(habboId);
-    }
-
-    /**
      * Gets the rights list.
      */
     public TIntArrayList getRights() {
         return this.rights;
-    }
-
-    /**
-     * Gets the muted habbos map.
-     */
-    public TIntIntHashMap getMutedHabbos() {
-        return this.mutedHabbos;
-    }
-
-    /**
-     * Clears all mutes.
-     */
-    public void clearMutes() {
-        synchronized (this.mutedHabbos) {
-            this.mutedHabbos.clear();
-        }
     }
 
     /**

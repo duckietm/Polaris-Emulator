@@ -69,13 +69,20 @@ timestamp, and a disposed room is replaced by a fresh `Room`+`RoomChatManager` o
 reload, so not clearing the live map on dispose is not observable — redirecting
 the clear would also be a behavior change, so it was left out.)
 
-### Follow-up finding (not changed) — `RoomRightsManager` has a dead mute cluster
-`RoomRightsManager` also carries a full, **zero-caller** mute cluster
-(`mutedHabbos` field + `muteHabbo`/`isMuted`/`getMuteEndTime`/`getMutedHabbos`/
-`clearMutes`) — a second dead duplicate of the `RoomChatManager` logic. It was
-left in place this step because removing **public** manager methods (even dead
-ones) has a plugin-compat consideration; recommend a follow-up to delete it so
-mute state lives only in `RoomChatManager`.
+## Step 3 — remove `RoomRightsManager`'s dead mute cluster
+
+`RoomRightsManager` carried a full, **zero-caller** mute cluster — `mutedHabbos`
+field + `muteHabbo`/`isMuted`/`getMuteEndTime`/`getMutedHabbos`/`clearMutes` — a
+second dead duplicate of the `RoomChatManager` logic. Verified zero callers for
+every method (the live path is `Room.muteHabbo/isMuted` → `RoomChatManager`).
+Removed the field, its initializer, all five methods (keeping the unrelated
+`getRights()` that sat among them), and the now-unused `TIntIntHashMap` import.
+`getMutedHabbos()` had no callers anywhere, so dropping these public methods is
+safe for the emulator (only a theoretical plugin that reached into
+`getRightsManager().muteHabbo(...)` would notice — and the real API has always
+been `Room.muteHabbo(...)`).
+
+**Result:** mute state now lives in exactly one place, `RoomChatManager`.
 
 ## Verification
-- `mvn test` green: 414 tests, 0 failures, JDK 25 (both steps).
+- `mvn test` green: 414 tests, 0 failures, JDK 25 (all steps).

@@ -79,10 +79,22 @@ public class GameEnvironment {
         this.permissionsManager = new PermissionsManager();
         this.habboManager = new HabboManager();
         this.hotelViewManager = new HotelViewManager();
+
+        // The furnidata names parse (~2s for tens of thousands of entries) reads
+        // files off disk and is independent of the DB-backed managers. Nothing
+        // during load() needs the index — it is read lazily by Item.getDisplayName()
+        // (non-memoizing, graceful public_name fallback) and the runtime FurniEditor
+        // events — so run it on a background thread and join before load() returns.
+        // This overlaps the parse with itemManager.load() and the rest of the boot,
+        // taking it off the startup critical path while still guaranteeing the index
+        // is ready before the environment is announced (and before clients connect).
+        this.furnitureTextProvider = new FurnitureTextProvider();
+        Thread furnitureTextInit = new Thread(this.furnitureTextProvider::init, "FurnitureTextProvider-init");
+        furnitureTextInit.setDaemon(true);
+        furnitureTextInit.start();
+
         this.itemManager = new ItemManager();
         this.itemManager.load();
-        this.furnitureTextProvider = new FurnitureTextProvider();
-        this.furnitureTextProvider.init();
         this.botManager = new BotManager();
         this.petManager = new PetManager();
         this.guildManager = new GuildManager();
@@ -124,6 +136,11 @@ public class GameEnvironment {
 
         this.subscriptionScheduler = new SubscriptionScheduler();
         Emulator.getThreading().run(this.subscriptionScheduler);
+
+        // Ensure the background furnidata names index finished before the
+        // environment is announced ready (it almost always completes during the
+        // managers above; this only blocks if it somehow ran long).
+        furnitureTextInit.join();
 
         LOGGER.info("GameEnvironment -> Loaded!");
     }

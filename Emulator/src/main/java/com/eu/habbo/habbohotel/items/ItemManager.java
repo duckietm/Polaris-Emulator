@@ -592,6 +592,18 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_trg_anti_afk", WiredTriggerHabboUnidles.class));
         this.interactionsList.add(new ItemInteraction("wf_xtra_condition_change", WiredExtraOrEval.class));
 
+        // --- Group B (batch 2): faithful aliases (reuse existing client dialog) + new minimal classes
+        // that reuse an existing getType() code (no new Nitro dialog). Verified per-type against the
+        // engine + real APIs. (exec_delay, bot_start/stop_dance, give_points_type need a NEW client
+        // dialog and are intentionally left out.) ---
+        this.interactionsList.add(new ItemInteraction("wf_act_send_bubble", WiredEffectMakeUserSay.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_double_click", WiredEffectToggleFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_give_enable", WiredEffectGiveEffect.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_forward_user_to_room", WiredEffectForwardUserToRoom.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_user_in_range", WiredConditionUserInRange.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_user_not_in_range", WiredConditionUserNotInRange.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_username_as_trigger", WiredTriggerUsernameAsTrigger.class));
+
 
         this.interactionsList.add(new ItemInteraction("wf_highscore", InteractionWiredHighscore.class));
 

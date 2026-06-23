@@ -13,6 +13,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHab
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboStartsDancing;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboStopsDancing;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboUnidles;
+import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerUsernameAsTrigger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -248,5 +249,17 @@ class WiredAliasResolutionTest {
         assertSame(WiredTriggerHabboClicksFurni.class, itemManager.getItemInteraction("wf_trg_double_click_furni").getType());
         assertSame(WiredTriggerHabboUnidles.class, itemManager.getItemInteraction("wf_trg_anti_afk").getType());
         assertSame(WiredExtraOrEval.class, itemManager.getItemInteraction("wf_xtra_condition_change").getType());
+    }
+
+    @Test
+    void groupBBatch2ReuseAndNewClassesResolve() {
+        // Group B batch 2 — faithful aliases + new minimal classes reusing an existing client dialog code.
+        assertSame(WiredEffectMakeUserSay.class, itemManager.getItemInteraction("wf_act_send_bubble").getType());
+        assertSame(WiredEffectToggleFurni.class, itemManager.getItemInteraction("wf_act_double_click").getType());
+        assertSame(WiredEffectGiveEffect.class, itemManager.getItemInteraction("wf_act_give_enable").getType());
+        assertSame(WiredEffectForwardUserToRoom.class, itemManager.getItemInteraction("wf_act_forward_user_to_room").getType());
+        assertSame(WiredConditionUserInRange.class, itemManager.getItemInteraction("wf_cnd_user_in_range").getType());
+        assertSame(WiredConditionUserNotInRange.class, itemManager.getItemInteraction("wf_cnd_user_not_in_range").getType());
+        assertSame(WiredTriggerUsernameAsTrigger.class, itemManager.getItemInteraction("wf_trg_username_as_trigger").getType());
     }
 }

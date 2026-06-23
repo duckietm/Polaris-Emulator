@@ -66,8 +66,10 @@ public enum WiredEffectType {
     // constants so WiredEngine.isNegativeConditionEffect runs them only when conditions FAIL.
     NEG_SHOW_MESSAGE(7),
     NEG_LOG(7),
-    // New client dialog (single signed int). Requires the matching Nitro WiredActionLayoutCode.
-    SET_ROLLER_SPEED(88);
+    // New client dialogs — each requires the matching Nitro WiredActionLayoutCode value.
+    SET_ROLLER_SPEED(88),
+    BOT_DANCE(89),
+    GIVE_POINTS_TYPE(90);
 
     public final int code;
 

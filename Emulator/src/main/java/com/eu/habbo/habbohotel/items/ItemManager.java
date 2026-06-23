@@ -607,6 +607,11 @@ public class ItemManager {
         // --- Group B (Nitro dialogs): types that needed a NEW client dialog. Each pairs a new server
         // WiredEffectType/Condition/Trigger code with a matching Nitro WiredXxxLayoutCode + component. ---
         this.interactionsList.add(new ItemInteraction("wf_act_roller_speed", WiredEffectSetRollerSpeed.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_bot_start_dance", WiredEffectBotDance.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_bot_stop_dance", WiredEffectBotDance.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_give_points_type", WiredEffectGivePointsType.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_not_battlebanzai", WiredConditionNoBattleBanzaiRunning.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_not_battlebz", WiredConditionNoBattleBanzaiRunning.class));
 
 
         this.interactionsList.add(new ItemInteraction("wf_highscore", InteractionWiredHighscore.class));

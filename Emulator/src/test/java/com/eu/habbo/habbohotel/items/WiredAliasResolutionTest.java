@@ -267,5 +267,10 @@ class WiredAliasResolutionTest {
     void groupBNitroDialogTypesResolve() {
         // Group B — types that needed a NEW Nitro dialog (new server code + matching client LayoutCode).
         assertSame(WiredEffectSetRollerSpeed.class, itemManager.getItemInteraction("wf_act_roller_speed").getType());
+        assertSame(WiredEffectBotDance.class, itemManager.getItemInteraction("wf_act_bot_start_dance").getType());
+        assertSame(WiredEffectBotDance.class, itemManager.getItemInteraction("wf_act_bot_stop_dance").getType());
+        assertSame(WiredEffectGivePointsType.class, itemManager.getItemInteraction("wf_act_give_points_type").getType());
+        assertSame(WiredConditionNoBattleBanzaiRunning.class, itemManager.getItemInteraction("wf_cnd_not_battlebanzai").getType());
+        assertSame(WiredConditionNoBattleBanzaiRunning.class, itemManager.getItemInteraction("wf_cnd_not_battlebz").getType());
     }
 }

@@ -121,6 +121,9 @@ public final class WiredEvent {
         /** Signal received from a Send Signal effect */
         SIGNAL_RECEIVED(WiredTriggerType.RECEIVE_SIGNAL),
 
+        /** User receives a hand item */
+        USER_GETS_HANDITEM(WiredTriggerType.USER_GETS_HANDITEM),
+
         /** Custom trigger type for plugins */
         CUSTOM(WiredTriggerType.CUSTOM);
 

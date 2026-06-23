@@ -452,6 +452,16 @@ public final class WiredEvents {
                 .build();
     }
 
+    /**
+     * Create an event for when a user receives a hand item.
+     */
+    public static WiredEvent userGetsHandItem(Room room, RoomUnit user) {
+        return WiredEvent.builder(WiredEvent.Type.USER_GETS_HANDITEM, room)
+                .actor(user)
+                .tile(user.getCurrentLocation())
+                .build();
+    }
+
     // ========== Legacy Compatibility ==========
 
     /**

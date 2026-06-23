@@ -29,7 +29,9 @@ public enum WiredTriggerType {
     CUSTOM(13),
     STARTS_DANCING(11),
     STOPS_DANCING(11),
-    RECEIVE_SIGNAL(15);
+    RECEIVE_SIGNAL(15),
+    // New client dialog. Requires the matching Nitro WiredTriggerLayoutCode value.
+    USER_GETS_HANDITEM(25);
 
     public final int code;
 

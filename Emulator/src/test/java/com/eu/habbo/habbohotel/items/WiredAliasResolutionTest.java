@@ -204,4 +204,24 @@ class WiredAliasResolutionTest {
         assertSame(WiredEffectFreeze.class, itemManager.getItemInteraction("wf_act_freeze").getType());
         assertSame(WiredConditionGroupMember.class, itemManager.getItemInteraction("wf_cnd_actor_in_group").getType());
     }
+
+    @Test
+    void groupAPreviouslyInertWiredNowResolve() {
+        // Group A — wired furni that loaded as InteractionDefault are now functional via faithful
+        // aliases or minimal condition subclasses (no new client dialog required).
+        assertSame(WiredEffectMoveFurniAway.class, itemManager.getItemInteraction("wf_act_dont_chase").getType());
+        assertSame(WiredEffectMoveFurniAway.class, itemManager.getItemInteraction("wf_act_dont_chase_top").getType());
+        assertSame(WiredEffectGiveScore.class, itemManager.getItemInteraction("wf_act_give_score_room").getType());
+        assertSame(WiredEffectGiveScore.class, itemManager.getItemInteraction("wf_act_give_score_pp").getType());
+        assertSame(WiredEffectBotGiveHandItem.class, itemManager.getItemInteraction("wf_act_bot_give_handitem_or_effect").getType());
+        assertSame(WiredEffectTeleport.class, itemManager.getItemInteraction("wf_act_teleport_all").getType());
+        assertSame(WiredEffectTeleport.class, itemManager.getItemInteraction("wf_act_teleport_red").getType());
+        assertSame(WiredEffectTeleport.class, itemManager.getItemInteraction("wf_act_teleport_green").getType());
+        assertSame(WiredEffectTeleport.class, itemManager.getItemInteraction("wf_act_teleport_blue").getType());
+        assertSame(WiredEffectTeleport.class, itemManager.getItemInteraction("wf_act_teleport_yellow").getType());
+        assertSame(WiredConditionHabboIsMale.class, itemManager.getItemInteraction("wf_cnd_habbo_is_male").getType());
+        assertSame(WiredConditionHabboIsFemale.class, itemManager.getItemInteraction("wf_cnd_habbo_is_female").getType());
+        assertSame(WiredConditionHabboHasRights.class, itemManager.getItemInteraction("wf_cnd_habbo_has_rights").getType());
+        assertSame(WiredConditionHabboNotHasRights.class, itemManager.getItemInteraction("wf_cnd_not_habbo_has_rights").getType());
+    }
 }

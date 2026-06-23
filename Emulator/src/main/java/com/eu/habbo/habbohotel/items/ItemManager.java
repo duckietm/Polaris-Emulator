@@ -552,6 +552,25 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_trg_user_collides_other", WiredTriggerCollision.class));
         this.interactionsList.add(new ItemInteraction("wf_xtra_one_condition", WiredExtraOrEval.class));
 
+        // --- Group A: previously-inert wired furni made functional with NO new client dialog, by
+        // reusing an existing class+dialog (faithful aliases) or a minimal condition subclass. ---
+        this.interactionsList.add(new ItemInteraction("wf_act_dont_chase", WiredEffectMoveFurniAway.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_dont_chase_top", WiredEffectMoveFurniAway.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_give_score_room", WiredEffectGiveScore.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_give_score_pp", WiredEffectGiveScore.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_bot_give_handitem_or_effect", WiredEffectBotGiveHandItem.class));
+        // teleport_all/red/green/blue/yellow reuse the teleport-to-furni effect (pick the destination in
+        // the dialog; pair with a "users by team" selector for the colour-specific behaviour).
+        this.interactionsList.add(new ItemInteraction("wf_act_teleport_all", WiredEffectTeleport.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_teleport_red", WiredEffectTeleport.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_teleport_green", WiredEffectTeleport.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_teleport_blue", WiredEffectTeleport.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_teleport_yellow", WiredEffectTeleport.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_habbo_is_male", WiredConditionHabboIsMale.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_habbo_is_female", WiredConditionHabboIsFemale.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_habbo_has_rights", WiredConditionHabboHasRights.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_not_habbo_has_rights", WiredConditionHabboNotHasRights.class));
+
 
         this.interactionsList.add(new ItemInteraction("wf_highscore", InteractionWiredHighscore.class));
 

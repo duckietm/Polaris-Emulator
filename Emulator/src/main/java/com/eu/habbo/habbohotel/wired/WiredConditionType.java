@@ -44,7 +44,9 @@ public enum WiredConditionType {
     VAR_VAL_MATCH(42),
     VAR_AGE_MATCH(43),
     // New client dialog (no-input condition). Requires the matching Nitro WiredConditionLayoutCode.
-    NO_BATTLEBANZAI(44);
+    NO_BATTLEBANZAI(44),
+    USER_ON_FURNI_WITH_STATE(45),
+    TRG_FURNI_ADJACENT_STATE(46);
 
     public final int code;
 

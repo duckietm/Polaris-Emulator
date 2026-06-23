@@ -272,5 +272,11 @@ class WiredAliasResolutionTest {
         assertSame(WiredEffectGivePointsType.class, itemManager.getItemInteraction("wf_act_give_points_type").getType());
         assertSame(WiredConditionNoBattleBanzaiRunning.class, itemManager.getItemInteraction("wf_cnd_not_battlebanzai").getType());
         assertSame(WiredConditionNoBattleBanzaiRunning.class, itemManager.getItemInteraction("wf_cnd_not_battlebz").getType());
+        assertSame(WiredEffectGiveOrTakeFurni.class, itemManager.getItemInteraction("wf_act_give_or_take_furni").getType());
+        assertSame(WiredEffectPlayYoutube.class, itemManager.getItemInteraction("wf_act_play_youtube_sound").getType());
+        assertSame(WiredEffectQuickBopper.class, itemManager.getItemInteraction("wf_act_quick_bopper").getType());
+        assertSame(WiredEffectSetRoomAd.class, itemManager.getItemInteraction("wf_act_set_room_ad").getType());
+        assertSame(WiredConditionUserOnFurniWithState.class, itemManager.getItemInteraction("wf_cnd_user_on_furni_with_state").getType());
+        assertSame(WiredConditionTriggerFurniAdjacentState.class, itemManager.getItemInteraction("wf_cnd_trg_frn_adjacent_state").getType());
     }
 }

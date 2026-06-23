@@ -262,4 +262,10 @@ class WiredAliasResolutionTest {
         assertSame(WiredConditionUserNotInRange.class, itemManager.getItemInteraction("wf_cnd_user_not_in_range").getType());
         assertSame(WiredTriggerUsernameAsTrigger.class, itemManager.getItemInteraction("wf_trg_username_as_trigger").getType());
     }
+
+    @Test
+    void groupBNitroDialogTypesResolve() {
+        // Group B — types that needed a NEW Nitro dialog (new server code + matching client LayoutCode).
+        assertSame(WiredEffectSetRollerSpeed.class, itemManager.getItemInteraction("wf_act_roller_speed").getType());
+    }
 }

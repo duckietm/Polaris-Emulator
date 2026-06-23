@@ -604,6 +604,10 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_cnd_user_not_in_range", WiredConditionUserNotInRange.class));
         this.interactionsList.add(new ItemInteraction("wf_trg_username_as_trigger", WiredTriggerUsernameAsTrigger.class));
 
+        // --- Group B (Nitro dialogs): types that needed a NEW client dialog. Each pairs a new server
+        // WiredEffectType/Condition/Trigger code with a matching Nitro WiredXxxLayoutCode + component. ---
+        this.interactionsList.add(new ItemInteraction("wf_act_roller_speed", WiredEffectSetRollerSpeed.class));
+
 
         this.interactionsList.add(new ItemInteraction("wf_highscore", InteractionWiredHighscore.class));
 

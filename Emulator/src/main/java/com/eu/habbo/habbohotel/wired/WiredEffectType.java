@@ -65,7 +65,9 @@ public enum WiredEffectType {
     // Negative-branch effects that reuse the SHOW_MESSAGE(7) client dialog (text). Distinct enum
     // constants so WiredEngine.isNegativeConditionEffect runs them only when conditions FAIL.
     NEG_SHOW_MESSAGE(7),
-    NEG_LOG(7);
+    NEG_LOG(7),
+    // New client dialog (single signed int). Requires the matching Nitro WiredActionLayoutCode.
+    SET_ROLLER_SPEED(88);
 
     public final int code;
 

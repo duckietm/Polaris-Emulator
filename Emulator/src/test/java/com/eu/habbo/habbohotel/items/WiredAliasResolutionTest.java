@@ -15,6 +15,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHab
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboUnidles;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerUsernameAsTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerUserGetsHandItem;
+import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerDiceRolled;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -280,5 +281,6 @@ class WiredAliasResolutionTest {
         assertSame(WiredConditionUserOnFurniWithState.class, itemManager.getItemInteraction("wf_cnd_user_on_furni_with_state").getType());
         assertSame(WiredConditionTriggerFurniAdjacentState.class, itemManager.getItemInteraction("wf_cnd_trg_frn_adjacent_state").getType());
         assertSame(WiredTriggerUserGetsHandItem.class, itemManager.getItemInteraction("wf_trg_user_gets_handitem").getType());
+        assertSame(WiredTriggerDiceRolled.class, itemManager.getItemInteraction("wf_trg_dice_rolled").getType());
     }
 }

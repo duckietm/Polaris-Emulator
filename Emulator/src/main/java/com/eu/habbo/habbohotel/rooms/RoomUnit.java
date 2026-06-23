@@ -376,7 +376,7 @@ public class RoomUnit {
             .getBoolean("hotel.room.public.doortile.kick");
         boolean invalidated = topItem != null && topItem.invalidatesToRoomKick();
 
-        if (this.canLeaveRoomByDoor && isAtDoor && publicRoomKicks && !invalidated) {
+        if (this.canLeaveRoomByDoor && isAtDoor && publicRoomKicks && !invalidated && !RoomDoorkickDisableSupport.isDoorkickDisabled(room)) {
           Emulator.getThreading().run(new RoomUnitKick(habbo, room, false), 500);
         }
       }

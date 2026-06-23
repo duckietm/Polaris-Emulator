@@ -889,10 +889,12 @@ public class RoomManager {
                 }
             }
 
+            final boolean hideWiredControllerActive = RoomHideWiredSupport.isActive(room);
+
             allFloorItems.forEach(new TObjectProcedure<HabboItem>() {
                 @Override
                 public boolean execute(HabboItem object) {
-                    if (room.isHideWired() && object instanceof InteractionWired)
+                    if ((room.isHideWired() || hideWiredControllerActive) && object instanceof InteractionWired)
                         return true;
 
                     floorItems.add(object);

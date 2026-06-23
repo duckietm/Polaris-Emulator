@@ -45,6 +45,9 @@ public class InteractionDice extends HabboItem {
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
         super.onClick(client, room, objects);
 
+        if (com.eu.habbo.habbohotel.rooms.RoomDiceDisableSupport.isActive(room))
+            return;
+
         if (client != null) {
             if (RoomLayout.tilesAdjecent(room.getLayout().getTile(this.getX(), this.getY()), client.getHabbo().getRoomUnit().getCurrentLocation())) {
                 if (!this.getExtradata().equalsIgnoreCase("-1")) {

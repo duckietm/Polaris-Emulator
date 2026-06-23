@@ -5,6 +5,8 @@ import com.eu.habbo.habbohotel.items.interactions.wired.conditions.*;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.*;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraOrEval;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerCollision;
+import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboClicksFurni;
+import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboClicksUser;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboIdles;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboLeavesRoom;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboSaysKeyword;
@@ -223,5 +225,28 @@ class WiredAliasResolutionTest {
         assertSame(WiredConditionHabboIsFemale.class, itemManager.getItemInteraction("wf_cnd_habbo_is_female").getType());
         assertSame(WiredConditionHabboHasRights.class, itemManager.getItemInteraction("wf_cnd_habbo_has_rights").getType());
         assertSame(WiredConditionHabboNotHasRights.class, itemManager.getItemInteraction("wf_cnd_not_habbo_has_rights").getType());
+    }
+
+    @Test
+    void groupBBatch1ReuseExistingClientDialogResolve() {
+        // Group B batch 1 — inert furni made functional by reusing an existing client dialog
+        // (faithful aliases to existing wired classes; no new Nitro dialog required).
+        assertSame(WiredEffectMatchFurni.class, itemManager.getItemInteraction("wf_act_set_state").getType());
+        assertSame(WiredEffectMatchFurni.class, itemManager.getItemInteraction("wf_act_set_trg_state").getType());
+        assertSame(WiredEffectMatchFurni.class, itemManager.getItemInteraction("wf_act_open_gates").getType());
+        assertSame(WiredEffectToggleFurni.class, itemManager.getItemInteraction("wf_act_close_dice").getType());
+        assertSame(WiredEffectToggleFurni.class, itemManager.getItemInteraction("wf_act_close_gates").getType());
+        assertSame(WiredEffectToggleFurni.class, itemManager.getItemInteraction("wf_act_color_furni").getType());
+        assertSame(WiredEffectMoveRotateFurni.class, itemManager.getItemInteraction("wf_act_move_furni_from_stack").getType());
+        assertSame(WiredEffectMoveRotateFurni.class, itemManager.getItemInteraction("wf_act_move_rotate_no_under").getType());
+        assertSame(WiredEffectChangeFurniDirection.class, itemManager.getItemInteraction("wf_act_allign_furni_stack").getType());
+        assertSame(WiredEffectTriggerStacks.class, itemManager.getItemInteraction("wf_act_execute_for_users").getType());
+        assertSame(WiredConditionTriggererMatch.class, itemManager.getItemInteraction("wf_cnd_trg_by_user").getType());
+        assertSame(WiredConditionNotTriggererMatch.class, itemManager.getItemInteraction("wf_cnd_not_trg_by_user").getType());
+        assertSame(WiredConditionNotUserPerformsAction.class, itemManager.getItemInteraction("wf_cnd_not_bot_is_dancing").getType());
+        assertSame(WiredTriggerHabboClicksUser.class, itemManager.getItemInteraction("wf_trg_click_bot").getType());
+        assertSame(WiredTriggerHabboClicksFurni.class, itemManager.getItemInteraction("wf_trg_double_click_furni").getType());
+        assertSame(WiredTriggerHabboUnidles.class, itemManager.getItemInteraction("wf_trg_anti_afk").getType());
+        assertSame(WiredExtraOrEval.class, itemManager.getItemInteraction("wf_xtra_condition_change").getType());
     }
 }

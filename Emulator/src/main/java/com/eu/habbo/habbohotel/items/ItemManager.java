@@ -571,6 +571,27 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_cnd_habbo_has_rights", WiredConditionHabboHasRights.class));
         this.interactionsList.add(new ItemInteraction("wf_cnd_not_habbo_has_rights", WiredConditionHabboNotHasRights.class));
 
+        // --- Group B (batch 1): inert wired furni made functional by reusing an existing client dialog
+        // (the Nitro LayoutView already has a dialog for the reused class's getType().code). Faithful
+        // aliases only; behaviour matches the reused class. ---
+        this.interactionsList.add(new ItemInteraction("wf_act_set_state", WiredEffectMatchFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_set_trg_state", WiredEffectMatchFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_open_gates", WiredEffectMatchFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_close_dice", WiredEffectToggleFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_close_gates", WiredEffectToggleFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_color_furni", WiredEffectToggleFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_move_furni_from_stack", WiredEffectMoveRotateFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_move_rotate_no_under", WiredEffectMoveRotateFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_allign_furni_stack", WiredEffectChangeFurniDirection.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_execute_for_users", WiredEffectTriggerStacks.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_trg_by_user", WiredConditionTriggererMatch.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_not_trg_by_user", WiredConditionNotTriggererMatch.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_not_bot_is_dancing", WiredConditionNotUserPerformsAction.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_click_bot", WiredTriggerHabboClicksUser.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_double_click_furni", WiredTriggerHabboClicksFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_anti_afk", WiredTriggerHabboUnidles.class));
+        this.interactionsList.add(new ItemInteraction("wf_xtra_condition_change", WiredExtraOrEval.class));
+
 
         this.interactionsList.add(new ItemInteraction("wf_highscore", InteractionWiredHighscore.class));
 

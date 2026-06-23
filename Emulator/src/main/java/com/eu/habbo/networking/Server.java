@@ -95,10 +95,19 @@ public abstract class Server {
     public void stop() {
         LOGGER.info("Stopping {}", this.name);
         try {
-            this.workerGroup.shutdownGracefully(0, 0, TimeUnit.MILLISECONDS).sync();
-            this.bossGroup.shutdownGracefully(0, 0, TimeUnit.MILLISECONDS).sync();
+            // A short quiet period keeps the IO event loops alive long enough for
+            // in-flight channel pipeline teardown to finish. Channels close on the
+            // packet-handler executor (virtual threads) and DefaultChannelPipeline
+            // hops back onto the worker group to remove the IO handlers; with the
+            // old shutdownGracefully(0, 0) the worker group terminated instantly and
+            // that hop was rejected with "event executor terminated" (a harmless but
+            // noisy WARN on every stop). Boss first so no new connections are
+            // accepted while the worker drains; the 2s timeout bounds the wait.
+            this.bossGroup.shutdownGracefully(100, 2000, TimeUnit.MILLISECONDS).sync();
+            this.workerGroup.shutdownGracefully(100, 2000, TimeUnit.MILLISECONDS).sync();
         } catch(InterruptedException e) {
             LOGGER.error("Exception during {} shutdown... HARD STOP", this.name, e);
+            Thread.currentThread().interrupt();
         }
         LOGGER.info("Stopped {}", this.name);
     }

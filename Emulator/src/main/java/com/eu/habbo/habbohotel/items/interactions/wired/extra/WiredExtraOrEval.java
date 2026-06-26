@@ -220,38 +220,22 @@ public class WiredExtraOrEval extends InteractionWiredExtra {
             return true;
         }
 
-        switch (normalizeEvaluationMode(evaluationMode)) {
-            case MODE_AT_LEAST_ONE:
-                return matchedRequirements > 0;
-            case MODE_NOT_ALL:
-                return matchedRequirements > 0 && matchedRequirements < totalRequirements;
-            case MODE_NONE:
-                return matchedRequirements == 0;
-            case MODE_LESS_THAN:
-                return matchedRequirements < normalizeCompareValue(compareValue);
-            case MODE_EXACTLY:
-                return matchedRequirements == normalizeCompareValue(compareValue);
-            case MODE_MORE_THAN:
-                return matchedRequirements > normalizeCompareValue(compareValue);
-            case MODE_ALL:
-            default:
-                return matchedRequirements >= totalRequirements;
-        }
+        return switch (normalizeEvaluationMode(evaluationMode)) {
+            case MODE_AT_LEAST_ONE -> matchedRequirements > 0;
+            case MODE_NOT_ALL -> matchedRequirements > 0 && matchedRequirements < totalRequirements;
+            case MODE_NONE -> matchedRequirements == 0;
+            case MODE_LESS_THAN -> matchedRequirements < normalizeCompareValue(compareValue);
+            case MODE_EXACTLY -> matchedRequirements == normalizeCompareValue(compareValue);
+            case MODE_MORE_THAN -> matchedRequirements > normalizeCompareValue(compareValue);
+            default -> matchedRequirements >= totalRequirements;
+        };
     }
 
     private static int normalizeEvaluationMode(int value) {
-        switch (value) {
-            case MODE_ALL:
-            case MODE_AT_LEAST_ONE:
-            case MODE_NOT_ALL:
-            case MODE_NONE:
-            case MODE_LESS_THAN:
-            case MODE_EXACTLY:
-            case MODE_MORE_THAN:
-                return value;
-            default:
-                return MODE_ALL;
-        }
+        return switch (value) {
+            case MODE_ALL, MODE_AT_LEAST_ONE, MODE_NOT_ALL, MODE_NONE, MODE_LESS_THAN, MODE_EXACTLY, MODE_MORE_THAN -> value;
+            default -> MODE_ALL;
+        };
     }
 
     private static int normalizeCompareValue(int value) {
@@ -259,15 +243,10 @@ public class WiredExtraOrEval extends InteractionWiredExtra {
     }
 
     private static int normalizeFurniSource(int value) {
-        switch (value) {
-            case WiredSourceUtil.SOURCE_SELECTED:
-            case WiredSourceUtil.SOURCE_SELECTOR:
-            case WiredSourceUtil.SOURCE_SIGNAL:
-            case WiredSourceUtil.SOURCE_TRIGGER:
-                return value;
-            default:
-                return WiredSourceUtil.SOURCE_TRIGGER;
-        }
+        return switch (value) {
+            case WiredSourceUtil.SOURCE_SELECTED, WiredSourceUtil.SOURCE_SELECTOR, WiredSourceUtil.SOURCE_SIGNAL, WiredSourceUtil.SOURCE_TRIGGER -> value;
+            default -> WiredSourceUtil.SOURCE_TRIGGER;
+        };
     }
 
     private static boolean isSelectableConditionOrExtra(HabboItem item) {

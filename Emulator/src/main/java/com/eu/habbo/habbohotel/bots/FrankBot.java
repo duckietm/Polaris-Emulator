@@ -114,17 +114,10 @@ public class FrankBot extends ButlerBot {
                 String firstKey = keysRaw.split(";", 2)[0].trim();
                 if (firstKey.startsWith("__")) {
                     switch (firstKey) {
-                        case KEY_DOOR_LINES:
-                            doorLines = new CopyOnWriteArrayList<>(responses);
-                            break;
-                        case KEY_BUSY_WHISPER:
-                            busyWhisper = responses.get(0);
-                            break;
-                        case KEY_DOOR_TRIGGERS:
-                            doorTriggerPattern = buildDoorTriggerPattern(responses);
-                            break;
-                        default:
-                            LOGGER.warn("FrankBot: unknown system key '{}', ignored", firstKey);
+                        case KEY_DOOR_LINES -> doorLines = new CopyOnWriteArrayList<>(responses);
+                        case KEY_BUSY_WHISPER -> busyWhisper = responses.get(0);
+                        case KEY_DOOR_TRIGGERS -> doorTriggerPattern = buildDoorTriggerPattern(responses);
+                        default -> LOGGER.warn("FrankBot: unknown system key '{}', ignored", firstKey);
                     }
                     continue;
                 }

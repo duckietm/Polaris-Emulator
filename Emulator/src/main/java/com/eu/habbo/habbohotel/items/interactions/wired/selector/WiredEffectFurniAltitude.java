@@ -172,14 +172,11 @@ public class WiredEffectFurniAltitude extends InteractionWiredEffect {
 
         double normalizedAltitude = this.normalizeAltitude(item.getZ());
 
-        switch (this.comparison) {
-            case COMPARISON_LESS:
-                return normalizedAltitude < this.altitude;
-            case COMPARISON_GREATER:
-                return normalizedAltitude > this.altitude;
-            default:
-                return BigDecimal.valueOf(normalizedAltitude).compareTo(BigDecimal.valueOf(this.altitude)) == 0;
-        }
+        return switch (this.comparison) {
+            case COMPARISON_LESS -> normalizedAltitude < this.altitude;
+            case COMPARISON_GREATER -> normalizedAltitude > this.altitude;
+            default -> BigDecimal.valueOf(normalizedAltitude).compareTo(BigDecimal.valueOf(this.altitude)) == 0;
+        };
     }
 
     private int normalizeComparison(int value) {

@@ -69,15 +69,10 @@ public final class WiredSourceUtil {
     }
 
     public static boolean isDefaultUserSource(int value) {
-        switch (value) {
-            case SOURCE_TRIGGER:
-            case SOURCE_CLICKED_USER:
-            case SOURCE_SELECTOR:
-            case SOURCE_SIGNAL:
-                return true;
-            default:
-                return false;
-        }
+        return switch (value) {
+            case SOURCE_TRIGGER, SOURCE_CLICKED_USER, SOURCE_SELECTOR, SOURCE_SIGNAL -> true;
+            default -> false;
+        };
     }
 
     public static boolean isSelectableUserSource(int value) {
@@ -229,22 +224,27 @@ public final class WiredSourceUtil {
         }
 
         switch (sourceType) {
-            case SOURCE_TRIGGER:
+            case SOURCE_TRIGGER -> {
                 return resolveTriggerItems(ctx, allowTriggerItemFallback);
-            case SOURCE_SELECTED:
+            }
+            case SOURCE_SELECTED -> {
                 return (selectedItems != null) ? new ArrayList<>(selectedItems) : Collections.emptyList();
-            case SOURCE_SELECTOR:
+            }
+            case SOURCE_SELECTOR -> {
                 WiredTargets itemTargets = getSelectorTargets(ctx);
                 return itemTargets.isItemsModifiedBySelector()
                         ? new ArrayList<>(itemTargets.items())
                         : Collections.emptyList();
-            case SOURCE_SIGNAL:
+            }
+            case SOURCE_SIGNAL -> {
                 if (ctx.eventType() == WiredEvent.Type.SIGNAL_RECEIVED) {
                     return ctx.sourceItem().map(Collections::singletonList).orElse(Collections.emptyList());
                 }
                 return Collections.emptyList();
-            default:
+            }
+            default -> {
                 return resolveTriggerItems(ctx, allowTriggerItemFallback);
+            }
         }
     }
 
@@ -254,27 +254,33 @@ public final class WiredSourceUtil {
         }
 
         switch (sourceType) {
-            case SOURCE_TRIGGER:
+            case SOURCE_TRIGGER -> {
                 return ctx.actor().map(Collections::singletonList).orElse(Collections.emptyList());
-            case SOURCE_CLICKED_USER:
+            }
+            case SOURCE_CLICKED_USER -> {
                 if (ctx.eventType() == WiredEvent.Type.USER_CLICKS_USER) {
                     return ctx.event().getTargetUnit().map(Collections::singletonList).orElse(Collections.emptyList());
                 }
                 return Collections.emptyList();
-            case SOURCE_SELECTED:
+            }
+            case SOURCE_SELECTED -> {
                 return (selectedUsers != null) ? new ArrayList<>(selectedUsers) : Collections.emptyList();
-            case SOURCE_SELECTOR:
+            }
+            case SOURCE_SELECTOR -> {
                 WiredTargets userTargets = getSelectorTargets(ctx);
                 return userTargets.isUsersModifiedBySelector()
                         ? new ArrayList<>(userTargets.users())
                         : Collections.emptyList();
-            case SOURCE_SIGNAL:
+            }
+            case SOURCE_SIGNAL -> {
                 if (ctx.eventType() == WiredEvent.Type.SIGNAL_RECEIVED) {
                     return ctx.actor().map(Collections::singletonList).orElse(Collections.emptyList());
                 }
                 return Collections.emptyList();
-            default:
+            }
+            default -> {
                 return ctx.actor().map(Collections::singletonList).orElse(Collections.emptyList());
+            }
         }
     }
 

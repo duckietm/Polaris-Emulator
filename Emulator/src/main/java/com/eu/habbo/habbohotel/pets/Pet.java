@@ -462,25 +462,11 @@ public class Pet implements ISerialize, Runnable {
             return true;
 
         switch (this.task) {
-            case DOWN:
-            case FLAT:
-            case HERE:
-            case SIT:
-            case BEG:
-            case PLAY:
-            case PLAY_FOOTBALL:
-            case PLAY_DEAD:
-            case FOLLOW:
-            case FOLLOW_LEFT:
-            case FOLLOW_RIGHT:
-            case JUMP:
-            case STAND:
-            case NEST:
-            case RIDE:
-            case STAY:
+            case DOWN, FLAT, HERE, SIT, BEG, PLAY, PLAY_FOOTBALL, PLAY_DEAD, FOLLOW, FOLLOW_LEFT, FOLLOW_RIGHT, JUMP, STAND, NEST, RIDE, STAY -> {
                 return false;
-            default:
-                break;
+            }
+            default -> {
+            }
         }
 
         return true;

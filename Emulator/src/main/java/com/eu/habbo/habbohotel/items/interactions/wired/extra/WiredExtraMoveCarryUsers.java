@@ -134,15 +134,10 @@ public class WiredExtraMoveCarryUsers extends InteractionWiredExtra {
     }
 
     private int normalizeUserSource(int value) {
-        switch (value) {
-            case SOURCE_ALL_ROOM_USERS:
-            case WiredSourceUtil.SOURCE_SELECTOR:
-            case WiredSourceUtil.SOURCE_SIGNAL:
-            case WiredSourceUtil.SOURCE_TRIGGER:
-                return value;
-            default:
-                return WiredSourceUtil.SOURCE_TRIGGER;
-        }
+        return switch (value) {
+            case SOURCE_ALL_ROOM_USERS, WiredSourceUtil.SOURCE_SELECTOR, WiredSourceUtil.SOURCE_SIGNAL, WiredSourceUtil.SOURCE_TRIGGER -> value;
+            default -> WiredSourceUtil.SOURCE_TRIGGER;
+        };
     }
 
     static class JsonData {

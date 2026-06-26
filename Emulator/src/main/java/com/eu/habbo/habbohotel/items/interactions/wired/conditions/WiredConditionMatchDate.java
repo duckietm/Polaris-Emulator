@@ -190,14 +190,11 @@ public class WiredConditionMatchDate extends InteractionWiredCondition {
     }
 
     private boolean matchesDatePart(int currentValue, int mode, int fromValue, int toValue) {
-        switch (mode) {
-            case MODE_EXACT:
-                return currentValue == fromValue;
-            case MODE_RANGE:
-                return currentValue >= Math.min(fromValue, toValue) && currentValue <= Math.max(fromValue, toValue);
-            default:
-                return true;
-        }
+        return switch (mode) {
+            case MODE_EXACT -> currentValue == fromValue;
+            case MODE_RANGE -> currentValue >= Math.min(fromValue, toValue) && currentValue <= Math.max(fromValue, toValue);
+            default -> true;
+        };
     }
 
     int normalizeMode(int value) {

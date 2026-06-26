@@ -31,15 +31,9 @@ public class CatalogFeaturedPage implements ISerialize {
         message.appendString(this.image);
         message.appendInt(this.type.type);
         switch (this.type) {
-            case PAGE_NAME:
-                message.appendString(this.pageName);
-                break;
-            case PAGE_ID:
-                message.appendInt(this.pageId);
-                break;
-            case PRODUCT_NAME:
-                message.appendString(this.productName);
-                break;
+            case PAGE_NAME -> message.appendString(this.pageName);
+            case PAGE_ID -> message.appendInt(this.pageId);
+            case PRODUCT_NAME -> message.appendString(this.productName);
         }
         message.appendInt(Emulator.getIntUnixTimestamp() - this.expireTimestamp);
     }

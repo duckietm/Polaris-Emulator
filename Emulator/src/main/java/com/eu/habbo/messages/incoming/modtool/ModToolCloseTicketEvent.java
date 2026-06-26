@@ -27,17 +27,9 @@ public class ModToolCloseTicketEvent extends MessageHandler {
             Habbo sender = Emulator.getGameEnvironment().getHabboManager().getHabbo(issue.senderId);
 
             switch (state) {
-                case 1:
-                    Emulator.getGameEnvironment().getModToolManager().closeTicketAsUseless(issue, sender);
-                    break;
-
-                case 2:
-                    Emulator.getGameEnvironment().getModToolManager().closeTicketAsAbusive(issue, sender);
-                    break;
-
-                case 3:
-                    Emulator.getGameEnvironment().getModToolManager().closeTicketAsHandled(issue, sender);
-                    break;
+                case 1 -> Emulator.getGameEnvironment().getModToolManager().closeTicketAsUseless(issue, sender);
+                case 2 -> Emulator.getGameEnvironment().getModToolManager().closeTicketAsAbusive(issue, sender);
+                case 3 -> Emulator.getGameEnvironment().getModToolManager().closeTicketAsHandled(issue, sender);
             }
         } else {
             ScripterManager.scripterDetected(this.client, Emulator.getTexts().getValue("scripter.warning.modtools.ticket.close").replace("%username%", this.client.getHabbo().getHabboInfo().getUsername()));

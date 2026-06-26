@@ -712,15 +712,12 @@ public final class WiredMoveCarryHelper {
                     continue;
                 }
 
-                switch (roomUnit.getRoomUnitType()) {
-                    case BOT:
-                        return FurnitureMovementError.TILE_HAS_BOTS;
-                    case PET:
-                        return FurnitureMovementError.TILE_HAS_PETS;
-                    case USER:
-                    default:
-                        return FurnitureMovementError.TILE_HAS_HABBOS;
-                }
+                return switch (roomUnit.getRoomUnitType()) {
+                    case BOT -> FurnitureMovementError.TILE_HAS_BOTS;
+                    case PET -> FurnitureMovementError.TILE_HAS_PETS;
+                    case USER -> FurnitureMovementError.TILE_HAS_HABBOS;
+                    default -> FurnitureMovementError.TILE_HAS_HABBOS;
+                };
             }
         }
 

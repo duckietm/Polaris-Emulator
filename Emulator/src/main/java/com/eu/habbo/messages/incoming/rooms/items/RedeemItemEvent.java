@@ -110,21 +110,10 @@ public class RedeemItemEvent extends MessageHandler {
                     Emulator.getThreading().run(new QueryDeleteHabboItem(item.getId()));
 
                     switch (furniRedeemEvent.currencyID) {
-                        case FurnitureRedeemedEvent.CREDITS:
-                            this.client.getHabbo().giveCredits(furniRedeemEvent.amount);
-                            break;
-
-                        case FurnitureRedeemedEvent.DIAMONDS:
-                            this.client.getHabbo().givePoints(furniRedeemEvent.amount);
-                            break;
-
-                        case FurnitureRedeemedEvent.PIXELS:
-                            this.client.getHabbo().givePixels(furniRedeemEvent.amount);
-                            break;
-
-                        default:
-                            this.client.getHabbo().givePoints(furniRedeemEvent.currencyID, furniRedeemEvent.amount);
-                            break;
+                        case FurnitureRedeemedEvent.CREDITS -> this.client.getHabbo().giveCredits(furniRedeemEvent.amount);
+                        case FurnitureRedeemedEvent.DIAMONDS -> this.client.getHabbo().givePoints(furniRedeemEvent.amount);
+                        case FurnitureRedeemedEvent.PIXELS -> this.client.getHabbo().givePixels(furniRedeemEvent.amount);
+                        default -> this.client.getHabbo().givePoints(furniRedeemEvent.currencyID, furniRedeemEvent.amount);
                     }
                 }
             }

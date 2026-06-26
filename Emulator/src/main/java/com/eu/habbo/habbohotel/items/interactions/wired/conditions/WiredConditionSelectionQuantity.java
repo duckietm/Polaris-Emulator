@@ -127,14 +127,11 @@ public class WiredConditionSelectionQuantity extends InteractionWiredCondition {
     public boolean evaluate(WiredContext ctx) {
         int count = this.resolveCount(ctx);
 
-        switch (this.comparison) {
-            case COMPARISON_LESS_THAN:
-                return count < this.quantity;
-            case COMPARISON_GREATER_THAN:
-                return count > this.quantity;
-            default:
-                return count == this.quantity;
-        }
+        return switch (this.comparison) {
+            case COMPARISON_LESS_THAN -> count < this.quantity;
+            case COMPARISON_GREATER_THAN -> count > this.quantity;
+            default -> count == this.quantity;
+        };
     }
 
     @Deprecated
@@ -222,13 +219,10 @@ public class WiredConditionSelectionQuantity extends InteractionWiredCondition {
     }
 
     private int normalizeComparison(int value) {
-        switch (value) {
-            case COMPARISON_LESS_THAN:
-            case COMPARISON_GREATER_THAN:
-                return value;
-            default:
-                return COMPARISON_EQUAL;
-        }
+        return switch (value) {
+            case COMPARISON_LESS_THAN, COMPARISON_GREATER_THAN -> value;
+            default -> COMPARISON_EQUAL;
+        };
     }
 
     private int normalizeQuantity(int value) {
@@ -241,75 +235,60 @@ public class WiredConditionSelectionQuantity extends InteractionWiredCondition {
 
     private int normalizeSourceType(int group, int value) {
         if (group == SOURCE_GROUP_USERS) {
-            switch (value) {
-                case WiredSourceUtil.SOURCE_CLICKED_USER:
-                case WiredSourceUtil.SOURCE_SIGNAL:
-                case WiredSourceUtil.SOURCE_SELECTOR:
-                    return value;
-                default:
-                    return WiredSourceUtil.SOURCE_TRIGGER;
-            }
+            return switch (value) {
+                case WiredSourceUtil.SOURCE_CLICKED_USER, WiredSourceUtil.SOURCE_SIGNAL, WiredSourceUtil.SOURCE_SELECTOR -> value;
+                default -> WiredSourceUtil.SOURCE_TRIGGER;
+            };
         }
 
-        switch (value) {
-            case WiredSourceUtil.SOURCE_SELECTED:
-            case WiredSourceUtil.SOURCE_SELECTOR:
-            case WiredSourceUtil.SOURCE_SIGNAL:
-            case WiredSourceUtil.SOURCE_TRIGGER:
-                return value;
-            default:
-                return WiredSourceUtil.SOURCE_TRIGGER;
-        }
+        return switch (value) {
+            case WiredSourceUtil.SOURCE_SELECTED, WiredSourceUtil.SOURCE_SELECTOR, WiredSourceUtil.SOURCE_SIGNAL, WiredSourceUtil.SOURCE_TRIGGER -> value;
+            default -> WiredSourceUtil.SOURCE_TRIGGER;
+        };
     }
 
     private int getSourceSelection() {
         if (this.sourceGroup == SOURCE_GROUP_FURNI) {
-            switch (this.sourceType) {
-                case WiredSourceUtil.SOURCE_SELECTED:
-                    return SOURCE_FURNI_PICKED;
-                case WiredSourceUtil.SOURCE_SIGNAL:
-                    return SOURCE_FURNI_SIGNAL;
-                default:
-                    return SOURCE_FURNI_TRIGGER;
-            }
+            return switch (this.sourceType) {
+                case WiredSourceUtil.SOURCE_SELECTED -> SOURCE_FURNI_PICKED;
+                case WiredSourceUtil.SOURCE_SIGNAL -> SOURCE_FURNI_SIGNAL;
+                default -> SOURCE_FURNI_TRIGGER;
+            };
         }
 
-        switch (this.sourceType) {
-            case WiredSourceUtil.SOURCE_CLICKED_USER:
-                return SOURCE_USER_CLICKED;
-            case WiredSourceUtil.SOURCE_SIGNAL:
-                return SOURCE_USER_SIGNAL;
-            default:
-                return SOURCE_USER_TRIGGER;
-        }
+        return switch (this.sourceType) {
+            case WiredSourceUtil.SOURCE_CLICKED_USER -> SOURCE_USER_CLICKED;
+            case WiredSourceUtil.SOURCE_SIGNAL -> SOURCE_USER_SIGNAL;
+            default -> SOURCE_USER_TRIGGER;
+        };
     }
 
     private void setSourceSelection(int value) {
         switch (value) {
-            case SOURCE_USER_SIGNAL:
+            case SOURCE_USER_SIGNAL -> {
                 this.sourceGroup = SOURCE_GROUP_USERS;
                 this.sourceType = WiredSourceUtil.SOURCE_SIGNAL;
-                break;
-            case SOURCE_USER_CLICKED:
+            }
+            case SOURCE_USER_CLICKED -> {
                 this.sourceGroup = SOURCE_GROUP_USERS;
                 this.sourceType = WiredSourceUtil.SOURCE_CLICKED_USER;
-                break;
-            case SOURCE_FURNI_TRIGGER:
+            }
+            case SOURCE_FURNI_TRIGGER -> {
                 this.sourceGroup = SOURCE_GROUP_FURNI;
                 this.sourceType = WiredSourceUtil.SOURCE_TRIGGER;
-                break;
-            case SOURCE_FURNI_PICKED:
+            }
+            case SOURCE_FURNI_PICKED -> {
                 this.sourceGroup = SOURCE_GROUP_FURNI;
                 this.sourceType = WiredSourceUtil.SOURCE_SELECTED;
-                break;
-            case SOURCE_FURNI_SIGNAL:
+            }
+            case SOURCE_FURNI_SIGNAL -> {
                 this.sourceGroup = SOURCE_GROUP_FURNI;
                 this.sourceType = WiredSourceUtil.SOURCE_SIGNAL;
-                break;
-            default:
+            }
+            default -> {
                 this.sourceGroup = SOURCE_GROUP_USERS;
                 this.sourceType = WiredSourceUtil.SOURCE_TRIGGER;
-                break;
+            }
         }
     }
 

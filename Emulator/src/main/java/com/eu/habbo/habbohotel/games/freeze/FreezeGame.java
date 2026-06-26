@@ -159,37 +159,21 @@ public class FreezeGame extends Game {
         player.addScore(FreezeGame.POWER_UP_POINTS);
 
         switch (powerUpId) {
-            case 2: {
-                player.increaseExplosion();
-                break;
-            }
+            case 2 -> player.increaseExplosion();
 
-            case 3: {
-                player.addSnowball();
-                break;
-            }
+            case 3 -> player.addSnowball();
 
-            case 4: {
-                player.nextDiagonal = true;
-                break;
-            }
+            case 4 -> player.nextDiagonal = true;
 
-            case 5: {
+            case 5 -> {
                 player.nextHorizontal = true;
                 player.nextDiagonal = true;
                 player.tempMassiveExplosion = true;
-                break;
             }
 
-            case 6: {
-                player.addLife();
-                break;
-            }
+            case 6 -> player.addLife();
 
-            case 7: {
-                player.addProtection();
-                break;
-            }
+            case 7 -> player.addProtection();
         }
     }
 

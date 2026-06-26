@@ -53,21 +53,11 @@ public class InventoryItemsComposer extends MessageComposer implements TIntObjec
 
         if (habboItem.getBaseItem().getName().equals("floor") || habboItem.getBaseItem().getName().equals("landscape") || habboItem.getBaseItem().getName().equals("song_disk") || habboItem.getBaseItem().getName().equals("wallpaper") || habboItem.getBaseItem().getName().equals("poster")) {
             switch (habboItem.getBaseItem().getName()) {
-                case "landscape":
-                    this.response.appendInt(4);
-                    break;
-                case "floor":
-                    this.response.appendInt(3);
-                    break;
-                case "wallpaper":
-                    this.response.appendInt(2);
-                    break;
-                case "poster":
-                    this.response.appendInt(6);
-                    break;
-                case "song_disk":
-                    this.response.appendInt(8);
-                    break;
+                case "landscape" -> this.response.appendInt(4);
+                case "floor" -> this.response.appendInt(3);
+                case "wallpaper" -> this.response.appendInt(2);
+                case "poster" -> this.response.appendInt(6);
+                case "song_disk" -> this.response.appendInt(8);
             }
             this.addExtraDataToResponse(habboItem);
         } else {

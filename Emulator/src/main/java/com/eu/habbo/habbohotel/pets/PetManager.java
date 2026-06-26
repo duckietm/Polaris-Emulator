@@ -418,39 +418,26 @@ public class PetManager {
     }
 
     private static String getFallbackPetName(int type) {
-        switch (type) {
-            case 0:
-                return "Dog";
-            case 1:
-                return "Cat";
-            case 2:
-                return "Crocodile";
-            case 3:
-                return "Terrier";
-            case 4:
-                return "Bear";
-            case 5:
-                return "Pig";
-            default:
-                return "pet_type_" + type;
-        }
+        return switch (type) {
+            case 0 -> "Dog";
+            case 1 -> "Cat";
+            case 2 -> "Crocodile";
+            case 3 -> "Terrier";
+            case 4 -> "Bear";
+            case 5 -> "Pig";
+            default -> "pet_type_" + type;
+        };
     }
 
     private static int getFallbackOffspringType(int type) {
-        switch (type) {
-            case 0:
-                return 29;
-            case 1:
-                return 28;
-            case 3:
-                return 25;
-            case 4:
-                return 24;
-            case 5:
-                return 30;
-            default:
-                return -1;
-        }
+        return switch (type) {
+            case 0 -> 29;
+            case 1 -> 28;
+            case 3 -> 25;
+            case 4 -> 24;
+            case 5 -> 30;
+            default -> -1;
+        };
     }
 
     public Pet createPet(Item item, String name, String race, String color, GameClient client) {

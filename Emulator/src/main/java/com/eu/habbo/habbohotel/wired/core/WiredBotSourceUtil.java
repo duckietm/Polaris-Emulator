@@ -19,15 +19,10 @@ public final class WiredBotSourceUtil {
     }
 
     public static int normalizeBotSource(int value, int fallback) {
-        switch (value) {
-            case WiredSourceUtil.SOURCE_TRIGGER:
-            case SOURCE_BOT_NAME:
-            case WiredSourceUtil.SOURCE_SELECTOR:
-            case WiredSourceUtil.SOURCE_SIGNAL:
-                return value;
-            default:
-                return fallback;
-        }
+        return switch (value) {
+            case WiredSourceUtil.SOURCE_TRIGGER, SOURCE_BOT_NAME, WiredSourceUtil.SOURCE_SELECTOR, WiredSourceUtil.SOURCE_SIGNAL -> value;
+            default -> fallback;
+        };
     }
 
     public static List<Bot> resolveBots(WiredContext ctx, Room room, int botSource, String botName) {

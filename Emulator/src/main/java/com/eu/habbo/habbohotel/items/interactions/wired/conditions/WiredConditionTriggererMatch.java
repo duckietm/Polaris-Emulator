@@ -293,14 +293,10 @@ public class WiredConditionTriggererMatch extends InteractionWiredCondition {
     }
 
     int normalizeEntityType(int value) {
-        switch (value) {
-            case ENTITY_HABBO:
-            case ENTITY_PET:
-            case ENTITY_BOT:
-                return value;
-            default:
-                return ENTITY_HABBO;
-        }
+        return switch (value) {
+            case ENTITY_HABBO, ENTITY_PET, ENTITY_BOT -> value;
+            default -> ENTITY_HABBO;
+        };
     }
 
     int normalizeAvatarMode(int value) {
@@ -316,13 +312,10 @@ public class WiredConditionTriggererMatch extends InteractionWiredCondition {
     }
 
     int normalizeCompareUserSource(int value) {
-        switch (value) {
-            case WiredSourceUtil.SOURCE_CLICKED_USER:
-            case SOURCE_SPECIFIED_USERNAME:
-                return value;
-            default:
-                return WiredSourceUtil.isDefaultUserSource(value) ? value : WiredSourceUtil.SOURCE_TRIGGER;
-        }
+        return switch (value) {
+            case WiredSourceUtil.SOURCE_CLICKED_USER, SOURCE_SPECIFIED_USERNAME -> value;
+            default -> WiredSourceUtil.isDefaultUserSource(value) ? value : WiredSourceUtil.SOURCE_TRIGGER;
+        };
     }
 
     String normalizeUsername(String value) {

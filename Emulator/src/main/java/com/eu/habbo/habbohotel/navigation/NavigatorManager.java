@@ -131,38 +131,19 @@ public class NavigatorManager {
         List<Room> rooms = new ArrayList<>();
 
         switch (category) {
-            case "my":
-                rooms = Emulator.getGameEnvironment().getRoomManager().getRoomsForHabbo(habbo);
-                break;
-            case "favorites":
-                rooms = Emulator.getGameEnvironment().getRoomManager().getRoomsFavourite(habbo);
-                break;
-            case "history_freq":
-                rooms = Emulator.getGameEnvironment().getRoomManager().getRoomsVisited(habbo, false, 10);
-                break;
-            case "my_groups":
-                rooms = Emulator.getGameEnvironment().getRoomManager().getGroupRooms(habbo, 25);
-                break;
-            case "with_rights":
-                rooms = Emulator.getGameEnvironment().getRoomManager().getRoomsWithRights(habbo);
-                break;
-            case "official-root":
-                rooms = Emulator.getGameEnvironment().getRoomManager().getPublicRooms();
-                break;
-            case "popular":
-                rooms = Emulator.getGameEnvironment().getRoomManager().getPopularRooms(Emulator.getConfig().getInt("hotel.navigator.popular.amount"));
-                break;
-            case "categories":
-                rooms = Emulator.getGameEnvironment().getRoomManager().getRoomsPromoted();
-                break;
-            case "with_friends":
-                rooms = Emulator.getGameEnvironment().getRoomManager().getRoomsWithFriendsIn(habbo, 25);
-                break;
-            case "highest_score":
-                rooms = Emulator.getGameEnvironment().getRoomManager().getTopRatedRooms(25);
-                break;
-            default:
+            case "my" -> rooms = Emulator.getGameEnvironment().getRoomManager().getRoomsForHabbo(habbo);
+            case "favorites" -> rooms = Emulator.getGameEnvironment().getRoomManager().getRoomsFavourite(habbo);
+            case "history_freq" -> rooms = Emulator.getGameEnvironment().getRoomManager().getRoomsVisited(habbo, false, 10);
+            case "my_groups" -> rooms = Emulator.getGameEnvironment().getRoomManager().getGroupRooms(habbo, 25);
+            case "with_rights" -> rooms = Emulator.getGameEnvironment().getRoomManager().getRoomsWithRights(habbo);
+            case "official-root" -> rooms = Emulator.getGameEnvironment().getRoomManager().getPublicRooms();
+            case "popular" -> rooms = Emulator.getGameEnvironment().getRoomManager().getPopularRooms(Emulator.getConfig().getInt("hotel.navigator.popular.amount"));
+            case "categories" -> rooms = Emulator.getGameEnvironment().getRoomManager().getRoomsPromoted();
+            case "with_friends" -> rooms = Emulator.getGameEnvironment().getRoomManager().getRoomsWithFriendsIn(habbo, 25);
+            case "highest_score" -> rooms = Emulator.getGameEnvironment().getRoomManager().getTopRatedRooms(25);
+            default -> {
                 return null;
+            }
         }
 
         Collections.sort(rooms);

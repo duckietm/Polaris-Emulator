@@ -217,20 +217,12 @@ public class WiredEffectSetAltitude extends InteractionWiredEffect {
     }
 
     private double computeAltitude(double currentAltitude) {
-        double nextAltitude;
-
-        switch (this.operator) {
-            case OPERATOR_INCREASE:
-                nextAltitude = currentAltitude + this.altitude;
-                break;
-            case OPERATOR_DECREASE:
-                nextAltitude = currentAltitude - this.altitude;
-                break;
-            case OPERATOR_SET:
-            default:
-                nextAltitude = this.altitude;
-                break;
-        }
+        double nextAltitude = switch (this.operator) {
+            case OPERATOR_INCREASE -> currentAltitude + this.altitude;
+            case OPERATOR_DECREASE -> currentAltitude - this.altitude;
+            case OPERATOR_SET -> this.altitude;
+            default -> this.altitude;
+        };
 
         return this.normalizeAltitude(nextAltitude);
     }

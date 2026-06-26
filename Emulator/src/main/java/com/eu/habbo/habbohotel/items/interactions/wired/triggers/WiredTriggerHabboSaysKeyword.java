@@ -157,15 +157,11 @@ public class WiredTriggerHabboSaysKeyword extends InteractionWiredTrigger {
         String normalizedText = text.toLowerCase().trim();
         String normalizedKey = this.key.toLowerCase().trim();
 
-        switch (this.matchMode) {
-            case MATCH_EXACT:
-                return normalizedText.equals(normalizedKey);
-            case MATCH_ALL_WORDS:
-                return !normalizedText.isEmpty();
-            case MATCH_CONTAINS:
-            default:
-                return normalizedText.contains(normalizedKey);
-        }
+        return switch (this.matchMode) {
+            case MATCH_EXACT -> normalizedText.equals(normalizedKey);
+            case MATCH_ALL_WORDS -> !normalizedText.isEmpty();
+            default -> normalizedText.contains(normalizedKey);
+        };
     }
 
     private int normalizeMatchMode(int value) {

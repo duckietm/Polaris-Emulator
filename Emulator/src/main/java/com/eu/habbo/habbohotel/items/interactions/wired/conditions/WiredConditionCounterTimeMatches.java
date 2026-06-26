@@ -260,14 +260,11 @@ public class WiredConditionCounterTimeMatches extends InteractionWiredCondition 
     private boolean matchesCounter(InteractionGameUpCounter counter, int targetTimeInMs) {
         int currentTimeInMs = counter.getCurrentTimeInMs();
 
-        switch (this.comparison) {
-            case COMPARISON_LESS:
-                return currentTimeInMs < targetTimeInMs;
-            case COMPARISON_GREATER:
-                return currentTimeInMs > targetTimeInMs;
-            default:
-                return currentTimeInMs == targetTimeInMs;
-        }
+        return switch (this.comparison) {
+            case COMPARISON_LESS -> currentTimeInMs < targetTimeInMs;
+            case COMPARISON_GREATER -> currentTimeInMs > targetTimeInMs;
+            default -> currentTimeInMs == targetTimeInMs;
+        };
     }
 
     int normalizeComparison(int value) {
@@ -291,15 +288,10 @@ public class WiredConditionCounterTimeMatches extends InteractionWiredCondition 
     }
 
     int normalizeFurniSource(int value) {
-        switch (value) {
-            case WiredSourceUtil.SOURCE_SELECTED:
-            case WiredSourceUtil.SOURCE_SELECTOR:
-            case WiredSourceUtil.SOURCE_SIGNAL:
-            case WiredSourceUtil.SOURCE_TRIGGER:
-                return value;
-            default:
-                return WiredSourceUtil.SOURCE_TRIGGER;
-        }
+        return switch (value) {
+            case WiredSourceUtil.SOURCE_SELECTED, WiredSourceUtil.SOURCE_SELECTOR, WiredSourceUtil.SOURCE_SIGNAL, WiredSourceUtil.SOURCE_TRIGGER -> value;
+            default -> WiredSourceUtil.SOURCE_TRIGGER;
+        };
     }
 
     static class JsonData {

@@ -75,13 +75,10 @@ abstract class WiredConditionTeamGameBase extends InteractionWiredCondition {
     }
 
     protected int normalizeComparison(int value) {
-        switch (value) {
-            case COMPARISON_LOWER:
-            case COMPARISON_HIGHER:
-                return value;
-            default:
-                return COMPARISON_EQUAL;
-        }
+        return switch (value) {
+            case COMPARISON_LOWER, COMPARISON_HIGHER -> value;
+            default -> COMPARISON_EQUAL;
+        };
     }
 
     protected int normalizeUserSource(int value) {
@@ -124,14 +121,11 @@ abstract class WiredConditionTeamGameBase extends InteractionWiredCondition {
     }
 
     protected boolean compareValue(int actual, int expected, int comparison) {
-        switch (comparison) {
-            case COMPARISON_LOWER:
-                return actual < expected;
-            case COMPARISON_HIGHER:
-                return actual > expected;
-            default:
-                return actual == expected;
-        }
+        return switch (comparison) {
+            case COMPARISON_LOWER -> actual < expected;
+            case COMPARISON_HIGHER -> actual > expected;
+            default -> actual == expected;
+        };
     }
 
     protected UserGameContext resolveUserGameContext(Room room, RoomUnit roomUnit) {

@@ -158,14 +158,18 @@ public class WiredHighscoreManager {
 
     private boolean timeMatchesEntry(WiredHighscoreDataEntry entry, WiredHighscoreClearType timeType) {
         switch (timeType) {
-            case DAILY:
+            case DAILY -> {
                 return entry.getTimestamp() > this.getTodayStartTimestamp() && entry.getTimestamp() < this.getTodayEndTimestamp();
-            case WEEKLY:
+            }
+            case WEEKLY -> {
                 return entry.getTimestamp() > this.getWeekStartTimestamp() && entry.getTimestamp() < this.getWeekEndTimestamp();
-            case MONTHLY:
+            }
+            case MONTHLY -> {
                 return entry.getTimestamp() > this.getMonthStartTimestamp() && entry.getTimestamp() < this.getMonthEndTimestamp();
-            case ALLTIME:
+            }
+            case ALLTIME -> {
                 return true;
+            }
         }
 
         return false;

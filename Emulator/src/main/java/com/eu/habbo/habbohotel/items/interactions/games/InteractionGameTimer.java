@@ -235,7 +235,7 @@ public class InteractionGameTimer extends HabboItem {
             }
 
             switch (state) {
-                case START_STOP:
+                case START_STOP -> {
                     if (this.isRunning) { // a game has been started
                         this.isPaused = !this.isPaused;
                         if (this.isPaused) {
@@ -260,10 +260,9 @@ public class InteractionGameTimer extends HabboItem {
                             this.scheduleTimerRunnable(this.getTimerStartDelayMs());
                         }
                     }
+                }
 
-                    break;
-
-                case INCREASE_TIME:
+                case INCREASE_TIME -> {
                     if (!this.isRunning) {
                         this.increaseTimer(room);
                     } else if (this.isPaused) {
@@ -271,8 +270,7 @@ public class InteractionGameTimer extends HabboItem {
                         this.increaseTimer(room);
                         WiredManager.triggerGameEnds(room);
                     }
-
-                    break;
+                }
             }
         }
 

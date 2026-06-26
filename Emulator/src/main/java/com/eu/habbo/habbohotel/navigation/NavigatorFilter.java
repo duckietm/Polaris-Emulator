@@ -96,23 +96,22 @@ public abstract class NavigatorFilter {
 
     private boolean applies(NavigatorFilterComparator comparator, String o, String value) {
         switch (comparator) {
-            case CONTAINS:
+            case CONTAINS -> {
                 if (StringUtils.containsIgnoreCase(o,
                         value)) {
                     return true;
                 }
-                break;
-
-            case EQUALS:
+            }
+            case EQUALS -> {
                 if (o.equals(value)) {
                     return true;
                 }
-                break;
-
-            case EQUALS_IGNORE_CASE:
+            }
+            case EQUALS_IGNORE_CASE -> {
                 if (o.equalsIgnoreCase(value)) {
                     return true;
                 }
+            }
         }
 
         return false;

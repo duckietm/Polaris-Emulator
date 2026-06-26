@@ -349,23 +349,16 @@ public class WiredEffectChangeFurniDirection extends InteractionWiredEffect {
     }
 
     private RoomUserRotation nextRotation(RoomUserRotation currentRotation) {
-        switch (this.blockedAction) {
-            case ACTION_TURN_BACK:
-                return RoomUserRotation.fromValue(currentRotation.getValue()).getOpposite();
-            case ACTION_TURN_LEFT_45:
-                return RoomUserRotation.counterClockwise(currentRotation);
-            case ACTION_TURN_LEFT_90:
-                return RoomUserRotation.counterClockwise(RoomUserRotation.counterClockwise(currentRotation));
-            case ACTION_TURN_RIGHT_45:
-                return RoomUserRotation.clockwise(currentRotation);
-            case ACTION_TURN_RIGHT_90:
-                return RoomUserRotation.clockwise(RoomUserRotation.clockwise(currentRotation));
-            case ACTION_TURN_RANDOM:
-                return RoomUserRotation.fromValue(Emulator.getRandom().nextInt(8));
-            case ACTION_WAIT:
-            default:
-                return currentRotation;
-        }
+        return switch (this.blockedAction) {
+            case ACTION_TURN_BACK -> RoomUserRotation.fromValue(currentRotation.getValue()).getOpposite();
+            case ACTION_TURN_LEFT_45 -> RoomUserRotation.counterClockwise(currentRotation);
+            case ACTION_TURN_LEFT_90 -> RoomUserRotation.counterClockwise(RoomUserRotation.counterClockwise(currentRotation));
+            case ACTION_TURN_RIGHT_45 -> RoomUserRotation.clockwise(currentRotation);
+            case ACTION_TURN_RIGHT_90 -> RoomUserRotation.clockwise(RoomUserRotation.clockwise(currentRotation));
+            case ACTION_TURN_RANDOM -> RoomUserRotation.fromValue(Emulator.getRandom().nextInt(8));
+            case ACTION_WAIT -> currentRotation;
+            default -> currentRotation;
+        };
     }
 
     @Override

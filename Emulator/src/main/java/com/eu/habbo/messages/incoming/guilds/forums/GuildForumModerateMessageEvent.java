@@ -83,13 +83,9 @@ public class GuildForumModerateMessageEvent extends MessageHandler {
         Emulator.getThreading().run(comment);
 
         switch (state) {
-            case 10:
-            case 20:
-                this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FORUMS_MESSAGE_HIDDEN.key).compose());
-                break;
-            case 1:
-                this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FORUMS_MESSAGE_RESTORED.key).compose());
-                break;
+            case 10, 20 -> this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FORUMS_MESSAGE_HIDDEN.key).compose());
+            case 1 -> this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FORUMS_MESSAGE_RESTORED.key).compose());
+            default -> { }
         }
 
     }

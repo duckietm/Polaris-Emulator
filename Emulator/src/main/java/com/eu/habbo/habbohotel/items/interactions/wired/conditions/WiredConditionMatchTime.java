@@ -188,18 +188,17 @@ public class WiredConditionMatchTime extends InteractionWiredCondition {
     }
 
     private boolean matchesTimePart(int currentValue, int mode, int fromValue, int toValue) {
-        switch (mode) {
-            case MODE_EXACT:
-                return currentValue == fromValue;
-            case MODE_RANGE:
+        return switch (mode) {
+            case MODE_EXACT -> currentValue == fromValue;
+            case MODE_RANGE -> {
                 if (fromValue <= toValue) {
-                    return currentValue >= fromValue && currentValue <= toValue;
+                    yield currentValue >= fromValue && currentValue <= toValue;
                 }
 
-                return currentValue >= fromValue || currentValue <= toValue;
-            default:
-                return true;
-        }
+                yield currentValue >= fromValue || currentValue <= toValue;
+            }
+            default -> true;
+        };
     }
 
     int normalizeMode(int value) {

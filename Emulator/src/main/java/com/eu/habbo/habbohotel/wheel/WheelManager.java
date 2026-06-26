@@ -206,27 +206,26 @@ public class WheelManager {
         int amount = Math.max(0, Math.min(prize.amount, MAX_PRIZE_AMOUNT));
 
         switch (prize.type) {
-            case "credits":
+            case "credits" -> {
                 if (amount > 0) habbo.giveCredits(amount);
-                break;
-            case "points":
+            }
+            case "points" -> {
                 if (amount > 0) habbo.givePoints(prize.pointsType, amount);
-                break;
-            case "spin":
+            }
+            case "spin" -> {
                 int room = Math.max(0, MAX_EXTRA_SPINS - state.extraSpins);
                 state.extraSpins += Math.min(amount, room);
-                break;
-            case "item":
-                this.giveItem(habbo, prize, Math.min(amount, MAX_ITEM_QUANTITY));
-                break;
-            case "badge":
+            }
+            case "item" -> this.giveItem(habbo, prize, Math.min(amount, MAX_ITEM_QUANTITY));
+            case "badge" -> {
                 if (prize.value != null && !prize.value.isEmpty()) {
                     habbo.addBadge(prize.value, "Fortune Wheel");
                 }
-                break;
-            case "nothing":
-            default:
-                break;
+            }
+            case "nothing" -> {
+            }
+            default -> {
+            }
         }
     }
 

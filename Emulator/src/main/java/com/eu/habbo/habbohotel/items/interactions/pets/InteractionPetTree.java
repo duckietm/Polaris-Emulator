@@ -70,15 +70,11 @@ public class InteractionPetTree extends InteractionDefault {
 
             RoomUnitStatus task = RoomUnitStatus.HANG;
             switch (pet.getTask()) {
-                case RING_OF_FIRE:
-                    task = RoomUnitStatus.RINGOFFIRE;
-                    break;
-                case SWING:
-                    task = RoomUnitStatus.SWING;
-                    break;
-                default:
+                case RING_OF_FIRE -> task = RoomUnitStatus.RINGOFFIRE;
+                case SWING -> task = RoomUnitStatus.SWING;
+                default -> {
                     // Default to HANG for all other tasks
-                    break;
+                }
             }
 
             // Pet arrived at tree - set hang status

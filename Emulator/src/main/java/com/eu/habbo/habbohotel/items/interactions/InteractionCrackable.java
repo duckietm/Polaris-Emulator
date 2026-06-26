@@ -123,12 +123,8 @@ public class InteractionCrackable extends HabboItem {
                     if (rewardData.subscriptionType != null && rewardData.subscriptionDuration > 0) {
                         // subscriptions are given immediately upon cracking
                         switch (rewardData.subscriptionType) {
-                            case HABBO_CLUB:
-                                habbo.getHabboStats().createSubscription(SubscriptionHabboClub.HABBO_CLUB, rewardData.subscriptionDuration * 86400);
-                                break;
-                            case BUILDERS_CLUB:
-                                habbo.getHabboStats().createSubscription("BUILDERS_CLUB", rewardData.subscriptionDuration * 86400);
-                                break;
+                            case HABBO_CLUB -> habbo.getHabboStats().createSubscription(SubscriptionHabboClub.HABBO_CLUB, rewardData.subscriptionDuration * 86400);
+                            case BUILDERS_CLUB -> habbo.getHabboStats().createSubscription("BUILDERS_CLUB", rewardData.subscriptionDuration * 86400);
                         }
                     }
                 }

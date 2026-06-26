@@ -189,16 +189,9 @@ public class InteractionGameUpCounter extends InteractionGameTimer {
         int nextTimeMs = this.getCurrentTimeInMs();
 
         switch (operator) {
-            case 0:
-                nextTimeMs += deltaMs;
-                break;
-            case 1:
-                nextTimeMs -= deltaMs;
-                break;
-            case 2:
-            default:
-                nextTimeMs = deltaMs;
-                break;
+            case 0 -> nextTimeMs += deltaMs;
+            case 1 -> nextTimeMs -= deltaMs;
+            default -> nextTimeMs = deltaMs;
         }
 
         this.setCurrentTimeInMs(nextTimeMs);

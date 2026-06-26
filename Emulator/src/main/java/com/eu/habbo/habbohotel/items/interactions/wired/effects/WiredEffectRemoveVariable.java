@@ -56,17 +56,11 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect {
         }
 
         switch (this.targetType) {
-            case TARGET_USER:
-                this.executeUserVariables(ctx, room);
-                return;
-            case TARGET_FURNI:
-                this.executeFurniVariables(ctx, room);
-                return;
-            case TARGET_CONTEXT:
-                this.executeContextVariables(ctx, room);
-                return;
-            default:
-                return;
+            case TARGET_USER -> this.executeUserVariables(ctx, room);
+            case TARGET_FURNI -> this.executeFurniVariables(ctx, room);
+            case TARGET_CONTEXT -> this.executeContextVariables(ctx, room);
+            default -> {
+            }
         }
     }
 
@@ -184,26 +178,25 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect {
         }
 
         switch (nextTargetType) {
-            case TARGET_USER:
+            case TARGET_USER -> {
                 WiredVariableDefinitionInfo userDefinition = room.getUserVariableManager().getDefinitionInfo(nextVariableItemId);
                 if (userDefinition == null || userDefinition.isReadOnly()) {
                     throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
                 }
-                break;
-            case TARGET_FURNI:
+            }
+            case TARGET_FURNI -> {
                 WiredVariableDefinitionInfo furniDefinition = room.getFurniVariableManager().getDefinitionInfo(nextVariableItemId);
                 if (furniDefinition == null || furniDefinition.isReadOnly()) {
                     throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
                 }
-                break;
-            case TARGET_CONTEXT:
+            }
+            case TARGET_CONTEXT -> {
                 WiredVariableDefinitionInfo contextDefinition = WiredContextVariableSupport.getDefinitionInfo(room, nextVariableItemId);
                 if (contextDefinition == null || contextDefinition.isReadOnly()) {
                     throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
                 }
-                break;
-            default:
-                throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
+            }
+            default -> throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
         }
 
         this.selectedFurni.clear();
@@ -315,11 +308,12 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect {
 
     private static int normalizeTargetType(int value) {
         switch (value) {
-            case TARGET_FURNI:
-            case TARGET_CONTEXT:
+            case TARGET_FURNI, TARGET_CONTEXT -> {
                 return value;
-            default:
+            }
+            default -> {
                 return TARGET_USER;
+            }
         }
     }
 
@@ -329,12 +323,12 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect {
 
     private static int normalizeFurniSource(int value) {
         switch (value) {
-            case WiredSourceUtil.SOURCE_SELECTED:
-            case WiredSourceUtil.SOURCE_SELECTOR:
-            case WiredSourceUtil.SOURCE_SIGNAL:
+            case WiredSourceUtil.SOURCE_SELECTED, WiredSourceUtil.SOURCE_SELECTOR, WiredSourceUtil.SOURCE_SIGNAL -> {
                 return value;
-            default:
+            }
+            default -> {
                 return WiredSourceUtil.SOURCE_TRIGGER;
+            }
         }
     }
 

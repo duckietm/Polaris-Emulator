@@ -22,18 +22,10 @@ public class InventoryUpdateItemComposer extends MessageComposer {
         this.response.appendInt(this.habboItem.getBaseItem().getSpriteId());
 
         switch (this.habboItem.getBaseItem().getName()) {
-            case "landscape":
-                this.response.appendInt(4);
-                break;
-            case "floor":
-                this.response.appendInt(3);
-                break;
-            case "wallpaper":
-                this.response.appendInt(2);
-                break;
-            case "poster":
-                this.response.appendInt(6);
-                break;
+            case "landscape" -> this.response.appendInt(4);
+            case "floor" -> this.response.appendInt(3);
+            case "wallpaper" -> this.response.appendInt(2);
+            case "poster" -> this.response.appendInt(6);
         }
 
         if (this.habboItem.isLimited()) {

@@ -217,15 +217,10 @@ public class WiredEffectBotGiveHandItem extends InteractionWiredEffect {
     }
 
     private int normalizeBotSource(int value) {
-        switch (value) {
-            case WiredSourceUtil.SOURCE_TRIGGER:
-            case BOT_SOURCE_NAME:
-            case WiredSourceUtil.SOURCE_SELECTOR:
-            case WiredSourceUtil.SOURCE_SIGNAL:
-                return value;
-            default:
-                return BOT_SOURCE_NAME;
-        }
+        return switch (value) {
+            case WiredSourceUtil.SOURCE_TRIGGER, BOT_SOURCE_NAME, WiredSourceUtil.SOURCE_SELECTOR, WiredSourceUtil.SOURCE_SIGNAL -> value;
+            default -> BOT_SOURCE_NAME;
+        };
     }
 
     private Bot resolveBot(WiredContext ctx, Room room) {

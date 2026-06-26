@@ -207,14 +207,11 @@ public class WiredEffectJoinTeam extends InteractionWiredEffect {
     }
 
     private Class<? extends Game> resolveGameType() {
-        switch (this.teamType) {
-            case TEAM_TYPE_BANZAI:
-                return BattleBanzaiGame.class;
-            case TEAM_TYPE_FREEZE:
-                return FreezeGame.class;
-            default:
-                return WiredGame.class;
-        }
+        return switch (this.teamType) {
+            case TEAM_TYPE_BANZAI -> BattleBanzaiGame.class;
+            case TEAM_TYPE_FREEZE -> FreezeGame.class;
+            default -> WiredGame.class;
+        };
     }
 
     static class JsonData {

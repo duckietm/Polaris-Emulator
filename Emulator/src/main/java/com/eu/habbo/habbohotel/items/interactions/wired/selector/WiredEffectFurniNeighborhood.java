@@ -148,35 +148,35 @@ public class WiredEffectFurniNeighborhood extends InteractionWiredEffect {
     }
 
     private List<int[]> resolveSourcePositions(WiredContext ctx, Room room) {
-        switch (sourceType) {
-            case SOURCE_USER_TRIGGER: {
+        return switch (sourceType) {
+            case SOURCE_USER_TRIGGER -> {
                 Optional<RoomUnit> actor = ctx.actor();
                 if (actor.isPresent()) {
-                    return Collections.singletonList(new int[]{ actor.get().getX(), actor.get().getY() });
+                    yield Collections.singletonList(new int[]{ actor.get().getX(), actor.get().getY() });
                 }
 
-                return ctx.tile()
+                yield ctx.tile()
                         .map(tile -> Collections.singletonList(new int[]{ tile.x, tile.y }))
                         .orElse(Collections.emptyList());
             }
-            case SOURCE_USER_SIGNAL: {
+            case SOURCE_USER_SIGNAL -> {
                 List<int[]> positions = ctx.targets().users().stream()
                         .map(user -> new int[]{ user.getX(), user.getY() })
                         .toList();
 
                 if (!positions.isEmpty()) {
-                    return positions;
+                    yield positions;
                 }
 
-                return ctx.actor()
+                yield ctx.actor()
                         .map(actor -> Collections.singletonList(new int[]{ actor.getX(), actor.getY() }))
                         .orElse(Collections.emptyList());
             }
-            case SOURCE_USER_CLICKED: {
+            case SOURCE_USER_CLICKED -> {
                 if (ctx.event().getTargetUnit().isPresent()) {
                     RoomUnit targetUnit = ctx.event().getTargetUnit().get();
 
-                    return Collections.singletonList(new int[]{ targetUnit.getX(), targetUnit.getY() });
+                    yield Collections.singletonList(new int[]{ targetUnit.getX(), targetUnit.getY() });
                 }
 
                 List<int[]> positions = ctx.targets().users().stream()
@@ -184,39 +184,34 @@ public class WiredEffectFurniNeighborhood extends InteractionWiredEffect {
                         .toList();
 
                 if (!positions.isEmpty()) {
-                    return positions;
+                    yield positions;
                 }
 
-                return Collections.emptyList();
+                yield Collections.emptyList();
             }
-            case SOURCE_FURNI_TRIGGER: {
-                return ctx.sourceItem()
-                        .map(i -> Collections.singletonList(new int[]{ i.getX(), i.getY() }))
-                        .orElse(Collections.emptyList());
-            }
-            case SOURCE_FURNI_PICKED: {
-                return pickedFurniIds.stream()
-                        .map(room::getHabboItem)
-                        .filter(Objects::nonNull)
-                        .map(i -> new int[]{ i.getX(), i.getY() })
-                        .toList();
-            }
-            case SOURCE_FURNI_SIGNAL: {
+            case SOURCE_FURNI_TRIGGER -> ctx.sourceItem()
+                    .map(i -> Collections.singletonList(new int[]{ i.getX(), i.getY() }))
+                    .orElse(Collections.emptyList());
+            case SOURCE_FURNI_PICKED -> pickedFurniIds.stream()
+                    .map(room::getHabboItem)
+                    .filter(Objects::nonNull)
+                    .map(i -> new int[]{ i.getX(), i.getY() })
+                    .toList();
+            case SOURCE_FURNI_SIGNAL -> {
                 List<int[]> positions = ctx.targets().items().stream()
                         .map(i -> new int[]{ i.getX(), i.getY() })
                         .toList();
 
                 if (!positions.isEmpty()) {
-                    return positions;
+                    yield positions;
                 }
 
-                return ctx.sourceItem()
+                yield ctx.sourceItem()
                         .map(item -> Collections.singletonList(new int[]{ item.getX(), item.getY() }))
                         .orElse(Collections.emptyList());
             }
-            default:
-                return Collections.emptyList();
-        }
+            default -> Collections.emptyList();
+        };
     }
 
     @Override

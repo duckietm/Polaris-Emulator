@@ -86,12 +86,8 @@ public class GuildForumModerateThreadEvent extends MessageHandler {
         thread.run();
 
         switch (state) {
-            case 10:
-                this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FORUMS_THREAD_HIDDEN.key).compose());
-                break;
-            case 1:
-                this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FORUMS_THREAD_RESTORED.key).compose());
-                break;
+            case 10 -> this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FORUMS_THREAD_HIDDEN.key).compose());
+            case 1 -> this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FORUMS_THREAD_RESTORED.key).compose());
         }
 
         this.client.sendResponse(new GuildForumThreadMessagesComposer(thread));

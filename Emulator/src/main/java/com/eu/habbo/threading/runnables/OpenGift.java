@@ -65,38 +65,36 @@ public class OpenGift implements Runnable {
 
             for (HabboItem item : items) {
                 switch (item.getBaseItem().getType()) {
-                    case WALL:
-                    case FLOOR:
+                    case WALL, FLOOR -> {
                         if (!unseenItems.containsKey(AddHabboItemComposer.AddHabboItemCategory.OWNED_FURNI))
                             unseenItems.put(AddHabboItemComposer.AddHabboItemCategory.OWNED_FURNI, new ArrayList<>());
 
                         unseenItems.get(AddHabboItemComposer.AddHabboItemCategory.OWNED_FURNI).add(item.getGiftAdjustedId());
+                    }
 
-                        break;
-
-                    case BADGE:
+                    case BADGE -> {
                         if (!unseenItems.containsKey(AddHabboItemComposer.AddHabboItemCategory.BADGE))
                             unseenItems.put(AddHabboItemComposer.AddHabboItemCategory.BADGE, new ArrayList<>());
 
                         unseenItems.get(AddHabboItemComposer.AddHabboItemCategory.BADGE).add(item.getId()); // badges cannot be placed so no need for gift adjusted ID
-                        break;
+                    }
 
-                    case PET:
+                    case PET -> {
                         if (!unseenItems.containsKey(AddHabboItemComposer.AddHabboItemCategory.PET))
                             unseenItems.put(AddHabboItemComposer.AddHabboItemCategory.PET, new ArrayList<>());
 
                         unseenItems.get(AddHabboItemComposer.AddHabboItemCategory.PET).add(item.getGiftAdjustedId());
-                        break;
+                    }
 
-                    case ROBOT:
+                    case ROBOT -> {
                         if (!unseenItems.containsKey(AddHabboItemComposer.AddHabboItemCategory.BOT))
                             unseenItems.put(AddHabboItemComposer.AddHabboItemCategory.BOT, new ArrayList<>());
 
                         unseenItems.get(AddHabboItemComposer.AddHabboItemCategory.BOT).add(item.getGiftAdjustedId());
-                        break;
+                    }
 
-                    default:
-                        break;
+                    default -> {
+                    }
                 }
             }
 

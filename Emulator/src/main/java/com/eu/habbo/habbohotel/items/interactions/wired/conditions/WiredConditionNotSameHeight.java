@@ -221,15 +221,13 @@ public class WiredConditionNotSameHeight extends InteractionWiredCondition {
     }
 
     int normalizeFurniSource(int value) {
-        switch (value) {
-            case WiredSourceUtil.SOURCE_SELECTED:
-            case WiredSourceUtil.SOURCE_SELECTOR:
-            case WiredSourceUtil.SOURCE_SIGNAL:
-            case WiredSourceUtil.SOURCE_TRIGGER:
-                return value;
-            default:
-                return WiredSourceUtil.SOURCE_TRIGGER;
-        }
+        return switch (value) {
+            case WiredSourceUtil.SOURCE_SELECTED,
+                 WiredSourceUtil.SOURCE_SELECTOR,
+                 WiredSourceUtil.SOURCE_SIGNAL,
+                 WiredSourceUtil.SOURCE_TRIGGER -> value;
+            default -> WiredSourceUtil.SOURCE_TRIGGER;
+        };
     }
 
     static class JsonData {

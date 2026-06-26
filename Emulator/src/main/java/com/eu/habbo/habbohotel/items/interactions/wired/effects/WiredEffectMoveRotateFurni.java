@@ -360,32 +360,20 @@ public class WiredEffectMoveRotateFurni extends InteractionWiredEffect implement
      * @return direction
      */
     private RoomUserRotation getMovementDirection() {
-        switch (this.direction) {
-            case 1:
-                return RoomUserRotation.values()[Emulator.getRandom().nextInt(RoomUserRotation.values().length / 2) * 2];
-            case 2:
-                return Emulator.getRandom().nextInt(2) == 1 ? RoomUserRotation.EAST : RoomUserRotation.WEST;
-            case 3:
-                return Emulator.getRandom().nextInt(2) == 1 ? RoomUserRotation.NORTH : RoomUserRotation.SOUTH;
-            case 4:
-                return RoomUserRotation.SOUTH;
-            case 5:
-                return RoomUserRotation.EAST;
-            case 6:
-                return RoomUserRotation.NORTH;
-            case 7:
-                return RoomUserRotation.WEST;
-            case 8:
-                return RoomUserRotation.NORTH_EAST;
-            case 9:
-                return RoomUserRotation.SOUTH_EAST;
-            case 10:
-                return RoomUserRotation.SOUTH_WEST;
-            case 11:
-                return RoomUserRotation.NORTH_WEST;
-            default:
-                return RoomUserRotation.NORTH;
-        }
+        return switch (this.direction) {
+            case 1 -> RoomUserRotation.values()[Emulator.getRandom().nextInt(RoomUserRotation.values().length / 2) * 2];
+            case 2 -> Emulator.getRandom().nextInt(2) == 1 ? RoomUserRotation.EAST : RoomUserRotation.WEST;
+            case 3 -> Emulator.getRandom().nextInt(2) == 1 ? RoomUserRotation.NORTH : RoomUserRotation.SOUTH;
+            case 4 -> RoomUserRotation.SOUTH;
+            case 5 -> RoomUserRotation.EAST;
+            case 6 -> RoomUserRotation.NORTH;
+            case 7 -> RoomUserRotation.WEST;
+            case 8 -> RoomUserRotation.NORTH_EAST;
+            case 9 -> RoomUserRotation.SOUTH_EAST;
+            case 10 -> RoomUserRotation.SOUTH_WEST;
+            case 11 -> RoomUserRotation.NORTH_WEST;
+            default -> RoomUserRotation.NORTH;
+        };
     }
 
     @Override

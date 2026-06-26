@@ -341,34 +341,26 @@ public class RoomLayout {
 
     rotation = rotation % 8;
     switch (rotation) {
-      case 0:
-        offsetY--;
-        break;
-      case 1:
+      case 0 -> offsetY--;
+      case 1 -> {
         offsetX++;
         offsetY--;
-        break;
-      case 2:
-        offsetX++;
-        break;
-      case 3:
+      }
+      case 2 -> offsetX++;
+      case 3 -> {
         offsetX++;
         offsetY++;
-        break;
-      case 4:
-        offsetY++;
-        break;
-      case 5:
+      }
+      case 4 -> offsetY++;
+      case 5 -> {
         offsetX--;
         offsetY++;
-        break;
-      case 6:
-        offsetX--;
-        break;
-      case 7:
+      }
+      case 6 -> offsetX--;
+      case 7 -> {
         offsetX--;
         offsetY--;
-        break;
+      }
     }
 
     short x = tile.x;

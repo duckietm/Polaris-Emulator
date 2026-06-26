@@ -234,34 +234,26 @@ public class WiredEffectMoveRotateUser extends InteractionWiredEffect {
         int deltaY = 0;
 
         switch (RoomUserRotation.fromValue(direction)) {
-            case NORTH:
-                deltaY = 1;
-                break;
-            case NORTH_EAST:
+            case NORTH -> deltaY = 1;
+            case NORTH_EAST -> {
                 deltaX = 1;
                 deltaY = 1;
-                break;
-            case EAST:
-                deltaX = 1;
-                break;
-            case SOUTH_EAST:
+            }
+            case EAST -> deltaX = 1;
+            case SOUTH_EAST -> {
                 deltaX = 1;
                 deltaY = -1;
-                break;
-            case SOUTH:
-                deltaY = -1;
-                break;
-            case SOUTH_WEST:
+            }
+            case SOUTH -> deltaY = -1;
+            case SOUTH_WEST -> {
                 deltaX = -1;
                 deltaY = -1;
-                break;
-            case WEST:
-                deltaX = -1;
-                break;
-            case NORTH_WEST:
+            }
+            case WEST -> deltaX = -1;
+            case NORTH_WEST -> {
                 deltaX = -1;
                 deltaY = 1;
-                break;
+            }
         }
 
         return room.getLayout().getTile((short) (currentTile.x + deltaX), (short) (currentTile.y + deltaY));

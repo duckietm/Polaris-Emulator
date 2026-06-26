@@ -152,17 +152,10 @@ public class MentionManager {
             Set<Integer> seen = new HashSet<>();
 
             switch (broadcastScope) {
-                case EVERYONE:
-                    this.collectEveryoneTargets(senderId, targets, seen, maxTargets);
-                    break;
-                case FRIENDS:
-                    this.collectFriendsTargets(sender, senderId, targets, seen, maxTargets);
-                    break;
-                case ROOM:
-                    this.collectRoomTargets(room, senderId, targets, seen, maxTargets, true);
-                    break;
-                case NONE:
-                default:
+                case EVERYONE -> this.collectEveryoneTargets(senderId, targets, seen, maxTargets);
+                case FRIENDS -> this.collectFriendsTargets(sender, senderId, targets, seen, maxTargets);
+                case ROOM -> this.collectRoomTargets(room, senderId, targets, seen, maxTargets, true);
+                default -> {
                     int processed = 0;
                     for (String token : directTokens) {
                         if (processed++ >= maxDirectTokens) break;
@@ -180,7 +173,7 @@ public class MentionManager {
                             break;
                         }
                     }
-                    break;
+                }
             }
 
             if (targets.isEmpty()) {

@@ -98,16 +98,15 @@ public class FurniEditorSearchEvent extends MessageHandler {
 
         // Resolve a SAFE ORDER BY from the whitelisted sort field/direction
         // (column names are never taken from raw user input — injection-proof).
-        String orderColumn;
-        switch (sortField == null ? "" : sortField) {
-            case "spriteId":        orderColumn = "sprite_id"; break;
-            case "itemName":        orderColumn = "item_name"; break;
-            case "publicName":      orderColumn = "public_name"; break;
-            case "type":            orderColumn = "type"; break;
-            case "interactionType": orderColumn = "interaction_type"; break;
-            case "id":
-            default:                orderColumn = "id"; break;
-        }
+        String orderColumn = switch (sortField == null ? "" : sortField) {
+            case "spriteId" -> "sprite_id";
+            case "itemName" -> "item_name";
+            case "publicName" -> "public_name";
+            case "type" -> "type";
+            case "interactionType" -> "interaction_type";
+            case "id" -> "id";
+            default -> "id";
+        };
         String orderDir = "desc".equalsIgnoreCase(sortDir) ? "DESC" : "ASC";
 
         // Count total

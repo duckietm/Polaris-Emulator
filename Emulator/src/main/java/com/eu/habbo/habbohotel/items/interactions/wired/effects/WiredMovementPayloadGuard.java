@@ -34,15 +34,13 @@ final class WiredMovementPayloadGuard {
     }
 
     static int furniSource(int value) {
-        switch (value) {
-            case WiredSourceUtil.SOURCE_TRIGGER:
-            case WiredSourceUtil.SOURCE_SELECTED:
-            case WiredSourceUtil.SOURCE_SELECTOR:
-            case WiredSourceUtil.SOURCE_SIGNAL:
-                return value;
-            default:
-                return WiredSourceUtil.SOURCE_TRIGGER;
-        }
+        return switch (value) {
+            case WiredSourceUtil.SOURCE_TRIGGER,
+                 WiredSourceUtil.SOURCE_SELECTED,
+                 WiredSourceUtil.SOURCE_SELECTOR,
+                 WiredSourceUtil.SOURCE_SIGNAL -> value;
+            default -> WiredSourceUtil.SOURCE_TRIGGER;
+        };
     }
 
     static int userSource(int value) {

@@ -165,22 +165,20 @@ public class WiredTriggerHabboPerformsAction extends InteractionWiredTrigger {
     }
 
     private int normalizeAction(int action) {
-        switch (action) {
-            case WiredUserActionType.WAVE:
-            case WiredUserActionType.BLOW_KISS:
-            case WiredUserActionType.LAUGH:
-            case WiredUserActionType.AWAKE:
-            case WiredUserActionType.RELAX:
-            case WiredUserActionType.SIT:
-            case WiredUserActionType.STAND:
-            case WiredUserActionType.LAY:
-            case WiredUserActionType.SIGN:
-            case WiredUserActionType.DANCE:
-            case WiredUserActionType.THUMB_UP:
-                return action;
-            default:
-                return DEFAULT_ACTION;
-        }
+        return switch (action) {
+            case WiredUserActionType.WAVE,
+                 WiredUserActionType.BLOW_KISS,
+                 WiredUserActionType.LAUGH,
+                 WiredUserActionType.AWAKE,
+                 WiredUserActionType.RELAX,
+                 WiredUserActionType.SIT,
+                 WiredUserActionType.STAND,
+                 WiredUserActionType.LAY,
+                 WiredUserActionType.SIGN,
+                 WiredUserActionType.DANCE,
+                 WiredUserActionType.THUMB_UP -> action;
+            default -> DEFAULT_ACTION;
+        };
     }
 
     private int normalizeSignId(int signId) {

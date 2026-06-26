@@ -211,14 +211,11 @@ public class WiredConditionHasAltitude extends InteractionWiredCondition {
 
         double normalizedAltitude = this.normalizeAltitude(item.getZ());
 
-        switch (this.comparison) {
-            case COMPARISON_LESS:
-                return normalizedAltitude < this.altitude;
-            case COMPARISON_GREATER:
-                return normalizedAltitude > this.altitude;
-            default:
-                return BigDecimal.valueOf(normalizedAltitude).compareTo(BigDecimal.valueOf(this.altitude)) == 0;
-        }
+        return switch (this.comparison) {
+            case COMPARISON_LESS -> normalizedAltitude < this.altitude;
+            case COMPARISON_GREATER -> normalizedAltitude > this.altitude;
+            default -> BigDecimal.valueOf(normalizedAltitude).compareTo(BigDecimal.valueOf(this.altitude)) == 0;
+        };
     }
 
     private void refresh(Room room) {
@@ -248,15 +245,10 @@ public class WiredConditionHasAltitude extends InteractionWiredCondition {
     }
 
     int normalizeFurniSource(int value) {
-        switch (value) {
-            case WiredSourceUtil.SOURCE_SELECTED:
-            case WiredSourceUtil.SOURCE_SELECTOR:
-            case WiredSourceUtil.SOURCE_SIGNAL:
-            case WiredSourceUtil.SOURCE_TRIGGER:
-                return value;
-            default:
-                return WiredSourceUtil.SOURCE_TRIGGER;
-        }
+        return switch (value) {
+            case WiredSourceUtil.SOURCE_SELECTED, WiredSourceUtil.SOURCE_SELECTOR, WiredSourceUtil.SOURCE_SIGNAL, WiredSourceUtil.SOURCE_TRIGGER -> value;
+            default -> WiredSourceUtil.SOURCE_TRIGGER;
+        };
     }
 
     double normalizeAltitude(double value) {

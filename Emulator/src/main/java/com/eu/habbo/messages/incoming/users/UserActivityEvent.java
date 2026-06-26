@@ -23,33 +23,26 @@ public class UserActivityEvent extends MessageHandler {
         }
 
         switch (action) {
-            case "forum.can.read.seen":
+            case "forum.can.read.seen" ->
                 AchievementManager.progressAchievement(this.client.getHabbo(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("SelfModForumCanReadSeen"));
-                break;
-            case "forum.can.post.seen":
+            case "forum.can.post.seen" ->
                 AchievementManager.progressAchievement(this.client.getHabbo(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("SelfModForumCanPostSeen"));
-                break;
-            case "forum.can.start.thread.seen":
+            case "forum.can.start.thread.seen" ->
                 AchievementManager.progressAchievement(this.client.getHabbo(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("SelfModForumCanPostThrdSeen"));
-                break;
-            case "forum.can.moderate.seen":
+            case "forum.can.moderate.seen" ->
                 AchievementManager.progressAchievement(this.client.getHabbo(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("SelfModForumCanModerateSeen"));
-                break;
-            case "room.settings.doormode.seen":
+            case "room.settings.doormode.seen" ->
                 AchievementManager.progressAchievement(this.client.getHabbo(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("SelfModDoorModeSeen"));
-                break;
-            case "room.settings.walkthrough.seen":
+            case "room.settings.walkthrough.seen" ->
                 AchievementManager.progressAchievement(this.client.getHabbo(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("SelfModWalkthroughSeen"));
-                break;
-            case "room.settings.chat.scrollspeed.seen":
+            case "room.settings.chat.scrollspeed.seen" ->
                 AchievementManager.progressAchievement(this.client.getHabbo(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("SelfModChatScrollSpeedSeen"));
-                break;
-            case "room.settings.chat.hearrange.seen":
+            case "room.settings.chat.hearrange.seen" ->
                 AchievementManager.progressAchievement(this.client.getHabbo(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("SelfModChatHearRangeSeen"));
-                break;
-            case "room.settings.chat.floodfilter.seen":
+            case "room.settings.chat.floodfilter.seen" ->
                 AchievementManager.progressAchievement(this.client.getHabbo(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("SelfModChatFloodFilterSeen"));
-                break;
+            default -> {
+            }
         }
     }
 }

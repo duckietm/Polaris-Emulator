@@ -42,19 +42,10 @@ public class ModToolSanctionBanEvent extends MessageHandler {
         }
 
         switch (banType) {
-            case BAN_18_HOURS:
-                duration = 18 * 60 * 60;
-                break;
-            case BAN_7_DAYS:
-                duration = 7 * this.DAY_IN_SECONDS;
-                break;
-            case BAN_30_DAYS_STEP_1:
-            case BAN_30_DAYS_STEP_2:
-                duration = 30 * this.DAY_IN_SECONDS;
-                break;
-            case BAN_100_YEARS:
-            case BAN_AVATAR_ONLY_100_YEARS:
-                duration = Emulator.getIntUnixTimestamp();
+            case BAN_18_HOURS -> duration = 18 * 60 * 60;
+            case BAN_7_DAYS -> duration = 7 * this.DAY_IN_SECONDS;
+            case BAN_30_DAYS_STEP_1, BAN_30_DAYS_STEP_2 -> duration = 30 * this.DAY_IN_SECONDS;
+            case BAN_100_YEARS, BAN_AVATAR_ONLY_100_YEARS -> duration = Emulator.getIntUnixTimestamp();
         }
         if (this.client.getHabbo().hasPermission(Permission.ACC_SUPPORTTOOL)) {
             ModToolSanctions modToolSanctions = Emulator.getGameEnvironment().getModToolSanctions();

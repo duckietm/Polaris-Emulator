@@ -187,13 +187,12 @@ public class RebugKickBallAction implements Runnable {
     }
 
     private long getDelayForMomentum(int momentum) {
-        switch (momentum) {
-            case 55: return 100L;
-            case 44: return 100L;
-            case 33: return 200L;
-            case 22: return 250L;
-            case 11: return 500L;
-            default: return 0L;
-        }
+        return switch (momentum) {
+            case 55, 44 -> 100L;
+            case 33 -> 200L;
+            case 22 -> 250L;
+            case 11 -> 500L;
+            default -> 0L;
+        };
     }
 }

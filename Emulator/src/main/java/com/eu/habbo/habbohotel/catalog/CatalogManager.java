@@ -649,13 +649,8 @@ public class CatalogManager {
                 try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery("SELECT * FROM gift_wrappers ORDER BY sprite_id DESC")) {
                     while (set.next()) {
                         switch (set.getString("type")) {
-                            case "wrapper":
-                                this.giftWrappers.put(set.getInt("sprite_id"), set.getInt("item_id"));
-                                break;
-
-                            case "gift":
-                                this.giftFurnis.put(set.getInt("sprite_id"), set.getInt("item_id"));
-                                break;
+                            case "wrapper" -> this.giftWrappers.put(set.getInt("sprite_id"), set.getInt("item_id"));
+                            case "gift" -> this.giftFurnis.put(set.getInt("sprite_id"), set.getInt("item_id"));
                         }
                     }
                 } catch (SQLException e) {
@@ -713,18 +708,20 @@ public class CatalogManager {
 
         Voucher.ClaimResult claimResult = voucher.claimForUser(habbo.getHabboInfo().getId());
         switch (claimResult) {
-            case CLAIMED:
-                break;
-            case EXHAUSTED:
+            case CLAIMED -> {
+            }
+            case EXHAUSTED -> {
                 client.sendResponse(new RedeemVoucherErrorComposer(Emulator.getGameEnvironment().getCatalogManager().deleteVoucher(voucher) ? RedeemVoucherErrorComposer.INVALID_CODE : RedeemVoucherErrorComposer.TECHNICAL_ERROR));
                 return;
-            case USER_LIMIT:
+            }
+            case USER_LIMIT -> {
                 client.sendResponse(new ModToolIssueHandledComposer("You have exceeded the limit for redeeming this voucher."));
                 return;
-            case FAILED:
-            default:
+            }
+            default -> {
                 client.sendResponse(new RedeemVoucherErrorComposer(RedeemVoucherErrorComposer.TECHNICAL_ERROR));
                 return;
+            }
         }
 
         if (voucher.points > 0) {

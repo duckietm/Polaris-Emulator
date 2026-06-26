@@ -196,15 +196,10 @@ public class WiredExtraMovePhysics extends InteractionWiredExtra {
     }
 
     private static int normalizeSource(int value) {
-        switch (value) {
-            case SOURCE_ALL_ROOM:
-            case WiredSourceUtil.SOURCE_TRIGGER:
-            case WiredSourceUtil.SOURCE_SELECTOR:
-            case WiredSourceUtil.SOURCE_SIGNAL:
-                return value;
-            default:
-                return WiredSourceUtil.SOURCE_TRIGGER;
-        }
+        return switch (value) {
+            case SOURCE_ALL_ROOM, WiredSourceUtil.SOURCE_TRIGGER, WiredSourceUtil.SOURCE_SELECTOR, WiredSourceUtil.SOURCE_SIGNAL -> value;
+            default -> WiredSourceUtil.SOURCE_TRIGGER;
+        };
     }
 
     static class JsonData {

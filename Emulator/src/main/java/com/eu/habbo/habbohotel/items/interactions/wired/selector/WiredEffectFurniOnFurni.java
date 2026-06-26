@@ -270,17 +270,12 @@ public class WiredEffectFurniOnFurni extends InteractionWiredEffect {
         double matchedBase = this.normalizeAltitude(matchedItem.getZ());
         double matchedTop = this.normalizeAltitude(matchedItem.getZ() + Item.getCurrentHeight(matchedItem));
 
-        switch (this.selectionType) {
-            case SELECT_FURNI_BELOW:
-                return matchedTop <= (sourceBase + EPSILON);
-            case SELECT_FURNI_SAME_HEIGHT:
-                return BigDecimal.valueOf(matchedBase).compareTo(BigDecimal.valueOf(sourceBase)) == 0;
-            case SELECT_ALL_FURNI_ON_TILE:
-                return true;
-            case SELECT_FURNI_ABOVE:
-            default:
-                return matchedBase >= (sourceTop - EPSILON);
-        }
+        return switch (this.selectionType) {
+            case SELECT_FURNI_BELOW -> matchedTop <= (sourceBase + EPSILON);
+            case SELECT_FURNI_SAME_HEIGHT -> BigDecimal.valueOf(matchedBase).compareTo(BigDecimal.valueOf(sourceBase)) == 0;
+            case SELECT_ALL_FURNI_ON_TILE -> true;
+            default -> matchedBase >= (sourceTop - EPSILON);
+        };
     }
 
     private void refresh(Room room) {
@@ -308,15 +303,10 @@ public class WiredEffectFurniOnFurni extends InteractionWiredEffect {
     }
 
     private int normalizeFurniSource(int value) {
-        switch (value) {
-            case WiredSourceUtil.SOURCE_SELECTED:
-            case WiredSourceUtil.SOURCE_SELECTOR:
-            case WiredSourceUtil.SOURCE_SIGNAL:
-            case WiredSourceUtil.SOURCE_TRIGGER:
-                return value;
-            default:
-                return WiredSourceUtil.SOURCE_TRIGGER;
-        }
+        return switch (value) {
+            case WiredSourceUtil.SOURCE_SELECTED, WiredSourceUtil.SOURCE_SELECTOR, WiredSourceUtil.SOURCE_SIGNAL, WiredSourceUtil.SOURCE_TRIGGER -> value;
+            default -> WiredSourceUtil.SOURCE_TRIGGER;
+        };
     }
 
     private double normalizeAltitude(double value) {

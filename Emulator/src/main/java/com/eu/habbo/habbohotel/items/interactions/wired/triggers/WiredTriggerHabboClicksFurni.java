@@ -215,15 +215,11 @@ public class WiredTriggerHabboClicksFurni extends InteractionWiredTrigger {
     }
 
     private Iterable<HabboItem> resolveCandidateItems(HabboItem triggerItem, WiredEvent event) {
-        switch (this.furniSource) {
-            case WiredSourceUtil.SOURCE_SELECTED:
-                return this.items;
-            case WiredSourceUtil.SOURCE_SELECTOR:
-                return WiredTriggerSourceUtil.resolveItems(this, event, WiredSourceUtil.SOURCE_SELECTOR, this.items);
-            case WiredSourceUtil.SOURCE_TRIGGER:
-            default:
-                return (triggerItem != null) ? java.util.Collections.singletonList(triggerItem) : java.util.Collections.emptyList();
-        }
+        return switch (this.furniSource) {
+            case WiredSourceUtil.SOURCE_SELECTED -> this.items;
+            case WiredSourceUtil.SOURCE_SELECTOR -> WiredTriggerSourceUtil.resolveItems(this, event, WiredSourceUtil.SOURCE_SELECTOR, this.items);
+            default -> (triggerItem != null) ? java.util.Collections.singletonList(triggerItem) : java.util.Collections.emptyList();
+        };
     }
 
     private boolean matchesSourceItem(Iterable<HabboItem> candidateItems, HabboItem sourceItem) {

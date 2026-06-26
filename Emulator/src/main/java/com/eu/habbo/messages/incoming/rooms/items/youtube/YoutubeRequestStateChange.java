@@ -30,18 +30,13 @@ public class YoutubeRequestStateChange extends MessageHandler {
         }
 
         public static YoutubeState getByState(int state) {
-            switch (state) {
-                case 0:
-                    return PREVIOUS;
-                case 1:
-                    return NEXT;
-                case 2:
-                    return PAUSE;
-                case 3:
-                    return RESUME;
-                default:
-                    return null;
-            }
+            return switch (state) {
+                case 0 -> PREVIOUS;
+                case 1 -> NEXT;
+                case 2 -> PAUSE;
+                case 3 -> RESUME;
+                default -> null;
+            };
         }
     }
 

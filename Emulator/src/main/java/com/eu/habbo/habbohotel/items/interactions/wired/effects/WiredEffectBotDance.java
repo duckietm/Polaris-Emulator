@@ -116,18 +116,13 @@ public class WiredEffectBotDance extends InteractionWiredEffect {
     }
 
     private static DanceType danceFromInt(int value) {
-        switch (clampDance(value)) {
-            case 1:
-                return DanceType.HAB_HOP;
-            case 2:
-                return DanceType.POGO_MOGO;
-            case 3:
-                return DanceType.DUCK_FUNK;
-            case 4:
-                return DanceType.THE_ROLLIE;
-            default:
-                return DanceType.NONE;
-        }
+        return switch (clampDance(value)) {
+            case 1 -> DanceType.HAB_HOP;
+            case 2 -> DanceType.POGO_MOGO;
+            case 3 -> DanceType.DUCK_FUNK;
+            case 4 -> DanceType.THE_ROLLIE;
+            default -> DanceType.NONE;
+        };
     }
 
     @Override

@@ -139,21 +139,23 @@ public class FurniEditorUpdateFurnidataEvent extends MessageHandler {
                 FurnidataWriter.CreateResult cr =
                     writer.create(item.getName(), item.getSpriteId(), item.getType(), entry, createTier);
                 switch (cr) {
-                    case CREATED:
+                    case CREATED -> {
                         created = true;
                         written = true;
-                        break;
-                    case ALREADY_EXISTS:
+                    }
+                    case ALREADY_EXISTS -> {
                         // entry already present (race / no-op edit) — apply the edit and treat as success
                         writer.write(classname, safeName, safeDesc);
                         written = true;
-                        break;
-                    case ID_COLLISION:
+                    }
+                    case ID_COLLISION -> {
                         this.client.sendResponse(new FurniEditorResultComposer(false, "Sprite id already used by another classname"));
                         return;
-                    default:
+                    }
+                    default -> {
                         this.client.sendResponse(new FurniEditorResultComposer(false, "Failed to create furnidata entry"));
                         return;
+                    }
                 }
             }
 

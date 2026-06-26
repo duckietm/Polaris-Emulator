@@ -58,17 +58,11 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect {
         }
 
         switch (this.targetType) {
-            case TARGET_USER:
-                this.executeUserVariables(ctx, room);
-                return;
-            case TARGET_FURNI:
-                this.executeFurniVariables(ctx, room);
-                return;
-            case TARGET_CONTEXT:
-                this.executeContextVariables(ctx, room);
-                return;
-            default:
-                return;
+            case TARGET_USER -> this.executeUserVariables(ctx, room);
+            case TARGET_FURNI -> this.executeFurniVariables(ctx, room);
+            case TARGET_CONTEXT -> this.executeContextVariables(ctx, room);
+            default -> {
+            }
         }
     }
 
@@ -374,13 +368,10 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect {
     }
 
     private static int normalizeTargetType(int value) {
-        switch (value) {
-            case TARGET_FURNI:
-            case TARGET_CONTEXT:
-                return value;
-            default:
-                return TARGET_USER;
-        }
+        return switch (value) {
+            case TARGET_FURNI, TARGET_CONTEXT -> value;
+            default -> TARGET_USER;
+        };
     }
 
     private static int normalizeUserSource(int value) {
@@ -388,14 +379,10 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect {
     }
 
     private static int normalizeFurniSource(int value) {
-        switch (value) {
-            case WiredSourceUtil.SOURCE_SELECTED:
-            case WiredSourceUtil.SOURCE_SELECTOR:
-            case WiredSourceUtil.SOURCE_SIGNAL:
-                return value;
-            default:
-                return WiredSourceUtil.SOURCE_TRIGGER;
-        }
+        return switch (value) {
+            case WiredSourceUtil.SOURCE_SELECTED, WiredSourceUtil.SOURCE_SELECTOR, WiredSourceUtil.SOURCE_SIGNAL -> value;
+            default -> WiredSourceUtil.SOURCE_TRIGGER;
+        };
     }
 
     private static int parseVariableItemId(String value) {

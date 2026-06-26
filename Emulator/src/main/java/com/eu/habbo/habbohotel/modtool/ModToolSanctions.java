@@ -163,10 +163,10 @@ public class ModToolSanctions {
         }
 
         switch (sanctionLevelItem.sanctionType) {
-            case "ALERT": habbo.alert(reason); break;
-            case "BAN": Emulator.getGameEnvironment().getModToolManager().ban(habboId, self, reason, sanctionLevelItem.sanctionHourLength, ModToolBanType.ACCOUNT, cfhTopic); break;
-            case "MUTE": habbo.mute(muteDurationSeconds == 0 ? 3600 : muteDurationSeconds, false); break;
-            default: break;
+            case "ALERT" -> habbo.alert(reason);
+            case "BAN" -> Emulator.getGameEnvironment().getModToolManager().ban(habboId, self, reason, sanctionLevelItem.sanctionHourLength, ModToolBanType.ACCOUNT, cfhTopic);
+            case "MUTE" -> habbo.mute(muteDurationSeconds == 0 ? 3600 : muteDurationSeconds, false);
+            default -> { }
         }
     }
 

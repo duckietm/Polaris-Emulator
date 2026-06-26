@@ -138,13 +138,10 @@ public class WiredEffectUsersByType extends InteractionWiredEffect {
     }
 
     private int normalizeEntityType(int value) {
-        switch (value) {
-            case ENTITY_PET:
-            case ENTITY_BOT:
-                return value;
-            default:
-                return ENTITY_HABBO;
-        }
+        return switch (value) {
+            case ENTITY_PET, ENTITY_BOT -> value;
+            default -> ENTITY_HABBO;
+        };
     }
 
     private boolean matchesType(RoomUnit roomUnit) {

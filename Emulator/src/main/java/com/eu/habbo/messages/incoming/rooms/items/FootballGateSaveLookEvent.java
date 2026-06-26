@@ -28,15 +28,14 @@ public class FootballGateSaveLookEvent extends MessageHandler {
             return;
 
         switch (gender.toLowerCase()) {
-            case "m":
+            case "m" -> {
                 gate.setFigureM(look);
                 room.updateItem(item);
-                break;
-
-            case "f":
+            }
+            case "f" -> {
                 gate.setFigureF(look);
                 room.updateItem(item);
-                break;
+            }
         }
     }
 }

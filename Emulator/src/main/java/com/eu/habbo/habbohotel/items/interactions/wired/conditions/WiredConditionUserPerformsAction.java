@@ -168,22 +168,20 @@ public class WiredConditionUserPerformsAction extends InteractionWiredCondition 
     }
 
     protected int normalizeAction(int action) {
-        switch (action) {
-            case WiredUserActionType.WAVE:
-            case WiredUserActionType.BLOW_KISS:
-            case WiredUserActionType.LAUGH:
-            case WiredUserActionType.AWAKE:
-            case WiredUserActionType.RELAX:
-            case WiredUserActionType.SIT:
-            case WiredUserActionType.STAND:
-            case WiredUserActionType.LAY:
-            case WiredUserActionType.SIGN:
-            case WiredUserActionType.DANCE:
-            case WiredUserActionType.THUMB_UP:
-                return action;
-            default:
-                return DEFAULT_ACTION;
-        }
+        return switch (action) {
+            case WiredUserActionType.WAVE,
+                 WiredUserActionType.BLOW_KISS,
+                 WiredUserActionType.LAUGH,
+                 WiredUserActionType.AWAKE,
+                 WiredUserActionType.RELAX,
+                 WiredUserActionType.SIT,
+                 WiredUserActionType.STAND,
+                 WiredUserActionType.LAY,
+                 WiredUserActionType.SIGN,
+                 WiredUserActionType.DANCE,
+                 WiredUserActionType.THUMB_UP -> action;
+            default -> DEFAULT_ACTION;
+        };
     }
 
     protected int normalizeQuantifier(int value) {
@@ -233,20 +231,14 @@ public class WiredConditionUserPerformsAction extends InteractionWiredCondition 
     }
 
     protected boolean matchesCurrentState(RoomUnit roomUnit) {
-        switch (this.selectedAction) {
-            case WiredUserActionType.SIT:
-                return roomUnit.hasStatus(RoomUnitStatus.SIT);
-            case WiredUserActionType.LAY:
-                return roomUnit.hasStatus(RoomUnitStatus.LAY);
-            case WiredUserActionType.RELAX:
-                return roomUnit.isIdle();
-            case WiredUserActionType.SIGN:
-                return this.matchesSignState(roomUnit);
-            case WiredUserActionType.DANCE:
-                return this.matchesDanceState(roomUnit);
-            default:
-                return false;
-        }
+        return switch (this.selectedAction) {
+            case WiredUserActionType.SIT -> roomUnit.hasStatus(RoomUnitStatus.SIT);
+            case WiredUserActionType.LAY -> roomUnit.hasStatus(RoomUnitStatus.LAY);
+            case WiredUserActionType.RELAX -> roomUnit.isIdle();
+            case WiredUserActionType.SIGN -> this.matchesSignState(roomUnit);
+            case WiredUserActionType.DANCE -> this.matchesDanceState(roomUnit);
+            default -> false;
+        };
     }
 
     protected boolean matchesRecentAction(RoomUnit roomUnit) {

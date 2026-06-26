@@ -105,50 +105,53 @@ public class InteractionFootball extends InteractionPushable {
     @Override
     public RoomUserRotation getBounceDirection(Room room, RoomUserRotation currentDirection) {
         switch (currentDirection) {
-            default:
-            case NORTH:
+            case NORTH -> {
                 return RoomUserRotation.SOUTH;
-
-            case NORTH_EAST:
+            }
+            case NORTH_EAST -> {
                 if (this.validMove(room, room.getLayout().getTile(this.getX(), this.getY()), room.getLayout().getTileInFront(room.getLayout().getTile(this.getX(), this.getY()), RoomUserRotation.NORTH_WEST.getValue())))
                     return RoomUserRotation.NORTH_WEST;
                 else if (this.validMove(room, room.getLayout().getTile(this.getX(), this.getY()), room.getLayout().getTileInFront(room.getLayout().getTile(this.getX(), this.getY()), RoomUserRotation.SOUTH_EAST.getValue())))
                     return RoomUserRotation.SOUTH_EAST;
                 else
                     return RoomUserRotation.SOUTH_WEST;
-
-            case EAST:
+            }
+            case EAST -> {
                 return RoomUserRotation.WEST;
-
-            case SOUTH_EAST:
+            }
+            case SOUTH_EAST -> {
                 if (this.validMove(room, room.getLayout().getTile(this.getX(), this.getY()), room.getLayout().getTileInFront(room.getLayout().getTile(this.getX(), this.getY()), RoomUserRotation.SOUTH_WEST.getValue())))
                     return RoomUserRotation.SOUTH_WEST;
                 else if (this.validMove(room, room.getLayout().getTile(this.getX(), this.getY()), room.getLayout().getTileInFront(room.getLayout().getTile(this.getX(), this.getY()), RoomUserRotation.NORTH_EAST.getValue())))
                     return RoomUserRotation.NORTH_EAST;
                 else
                     return RoomUserRotation.NORTH_WEST;
-
-            case SOUTH:
+            }
+            case SOUTH -> {
                 return RoomUserRotation.NORTH;
-
-            case SOUTH_WEST:
+            }
+            case SOUTH_WEST -> {
                 if (this.validMove(room, room.getLayout().getTile(this.getX(), this.getY()), room.getLayout().getTileInFront(room.getLayout().getTile(this.getX(), this.getY()), RoomUserRotation.SOUTH_EAST.getValue())))
                     return RoomUserRotation.SOUTH_EAST;
                 else if (this.validMove(room, room.getLayout().getTile(this.getX(), this.getY()), room.getLayout().getTileInFront(room.getLayout().getTile(this.getX(), this.getY()), RoomUserRotation.NORTH_WEST.getValue())))
                     return RoomUserRotation.NORTH_WEST;
                 else
                     return RoomUserRotation.NORTH_EAST;
-
-            case WEST:
+            }
+            case WEST -> {
                 return RoomUserRotation.EAST;
-
-            case NORTH_WEST:
+            }
+            case NORTH_WEST -> {
                 if (this.validMove(room, room.getLayout().getTile(this.getX(), this.getY()), room.getLayout().getTileInFront(room.getLayout().getTile(this.getX(), this.getY()), RoomUserRotation.NORTH_EAST.getValue())))
                     return RoomUserRotation.NORTH_EAST;
                 else if (this.validMove(room, room.getLayout().getTile(this.getX(), this.getY()), room.getLayout().getTileInFront(room.getLayout().getTile(this.getX(), this.getY()), RoomUserRotation.SOUTH_WEST.getValue())))
                     return RoomUserRotation.SOUTH_WEST;
                 else
                     return RoomUserRotation.SOUTH_EAST;
+            }
+            default -> {
+                return RoomUserRotation.SOUTH;
+            }
         }
     }
 
@@ -183,14 +186,18 @@ public class InteractionFootball extends InteractionPushable {
             int goalRotation = topItem.getRotation();
 
             switch (goalRotation) {
-                case 0:
+                case 0 -> {
                     return ballDirection > 2 && ballDirection < 6;
-                case 2:
+                }
+                case 2 -> {
                     return ballDirection > 4;
-                case 4:
+                }
+                case 4 -> {
                     return ballDirection > 6 || ballDirection < 2;
-                case 6:
+                }
+                case 6 -> {
                     return ballDirection > 0 && ballDirection < 4;
+                }
             }
         }
 

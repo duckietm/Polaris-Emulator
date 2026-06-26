@@ -799,14 +799,12 @@ public class ModToolManager {
      */
     public static void bumpUserSettingCounter(int userId, String column) {
         switch (column) {
-            case "cfh_warnings":
-            case "cfh_bans":
-            case "cfh_abusive":
-            case "tradelock_amount":
-                break;
-            default:
+            case "cfh_warnings", "cfh_bans", "cfh_abusive", "tradelock_amount" -> {
+            }
+            default -> {
                 LOGGER.warn("Refusing to bump unrecognized user_settings column: {}", column);
                 return;
+            }
         }
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();

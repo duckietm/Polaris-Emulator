@@ -2413,17 +2413,20 @@ public class RoomItemManager {
             }
 
             switch (roomUnit.getRoomUnitType()) {
-                case BOT:
+                case BOT -> {
                     return FurnitureMovementError.TILE_HAS_BOTS;
-                case PET:
+                }
+                case PET -> {
                     return FurnitureMovementError.TILE_HAS_PETS;
-                case USER:
+                }
+                case USER -> {
                     if (physics == null || !physics.shouldIgnoreUser(roomUnit)) {
                         return FurnitureMovementError.TILE_HAS_HABBOS;
                     }
-                    break;
-                default:
+                }
+                default -> {
                     return FurnitureMovementError.TILE_HAS_HABBOS;
+                }
             }
         }
 

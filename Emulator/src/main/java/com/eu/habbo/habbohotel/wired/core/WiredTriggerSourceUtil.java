@@ -25,42 +25,44 @@ public final class WiredTriggerSourceUtil {
                                                WiredEvent event,
                                                int sourceType,
                                                Collection<HabboItem> selectedItems) {
-        switch (sourceType) {
-            case WiredSourceUtil.SOURCE_TRIGGER:
-                return event.getSourceItem().map(Collections::singletonList).orElse(Collections.emptyList());
-            case WiredSourceUtil.SOURCE_SELECTED:
-                return (selectedItems != null) ? new ArrayList<>(selectedItems) : Collections.emptyList();
-            case WiredSourceUtil.SOURCE_SELECTOR:
-                return resolveSelectorItems(trigger, event);
-            case WiredSourceUtil.SOURCE_SIGNAL:
+        return switch (sourceType) {
+            case WiredSourceUtil.SOURCE_TRIGGER ->
+                event.getSourceItem().map(Collections::singletonList).orElse(Collections.emptyList());
+            case WiredSourceUtil.SOURCE_SELECTED ->
+                (selectedItems != null) ? new ArrayList<>(selectedItems) : Collections.emptyList();
+            case WiredSourceUtil.SOURCE_SELECTOR ->
+                resolveSelectorItems(trigger, event);
+            case WiredSourceUtil.SOURCE_SIGNAL -> {
                 if (event.getType() == WiredEvent.Type.SIGNAL_RECEIVED) {
-                    return event.getSourceItem().map(Collections::singletonList).orElse(Collections.emptyList());
+                    yield event.getSourceItem().map(Collections::singletonList).orElse(Collections.emptyList());
                 }
-                return Collections.emptyList();
-            default:
-                return event.getSourceItem().map(Collections::singletonList).orElse(Collections.emptyList());
-        }
+                yield Collections.emptyList();
+            }
+            default ->
+                event.getSourceItem().map(Collections::singletonList).orElse(Collections.emptyList());
+        };
     }
 
     public static List<RoomUnit> resolveUsers(InteractionWiredTrigger trigger,
                                               WiredEvent event,
                                               int sourceType,
                                               Collection<RoomUnit> selectedUsers) {
-        switch (sourceType) {
-            case WiredSourceUtil.SOURCE_TRIGGER:
-                return event.getActor().map(Collections::singletonList).orElse(Collections.emptyList());
-            case WiredSourceUtil.SOURCE_SELECTED:
-                return (selectedUsers != null) ? new ArrayList<>(selectedUsers) : Collections.emptyList();
-            case WiredSourceUtil.SOURCE_SELECTOR:
-                return resolveSelectorUsers(trigger, event);
-            case WiredSourceUtil.SOURCE_SIGNAL:
+        return switch (sourceType) {
+            case WiredSourceUtil.SOURCE_TRIGGER ->
+                event.getActor().map(Collections::singletonList).orElse(Collections.emptyList());
+            case WiredSourceUtil.SOURCE_SELECTED ->
+                (selectedUsers != null) ? new ArrayList<>(selectedUsers) : Collections.emptyList();
+            case WiredSourceUtil.SOURCE_SELECTOR ->
+                resolveSelectorUsers(trigger, event);
+            case WiredSourceUtil.SOURCE_SIGNAL -> {
                 if (event.getType() == WiredEvent.Type.SIGNAL_RECEIVED) {
-                    return event.getActor().map(Collections::singletonList).orElse(Collections.emptyList());
+                    yield event.getActor().map(Collections::singletonList).orElse(Collections.emptyList());
                 }
-                return Collections.emptyList();
-            default:
-                return event.getActor().map(Collections::singletonList).orElse(Collections.emptyList());
-        }
+                yield Collections.emptyList();
+            }
+            default ->
+                event.getActor().map(Collections::singletonList).orElse(Collections.emptyList());
+        };
     }
 
     public static boolean containsItemOrTile(Room room, Collection<HabboItem> items, HabboItem sourceItem) {

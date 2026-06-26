@@ -75,41 +75,21 @@ public class WiredEffectControlClock extends InteractionWiredEffect {
 
     private void controlUpCounter(InteractionGameUpCounter counter, Room room) {
         switch (this.action) {
-            case ACTION_START:
-                counter.restartFromZero(room);
-                break;
-            case ACTION_STOP:
-                counter.stopCounter(room);
-                break;
-            case ACTION_RESET:
-                counter.resetCounter(room);
-                break;
-            case ACTION_PAUSE:
-                counter.pauseCounter(room);
-                break;
-            case ACTION_RESUME:
-                counter.resumeCounter(room);
-                break;
+            case ACTION_START -> counter.restartFromZero(room);
+            case ACTION_STOP -> counter.stopCounter(room);
+            case ACTION_RESET -> counter.resetCounter(room);
+            case ACTION_PAUSE -> counter.pauseCounter(room);
+            case ACTION_RESUME -> counter.resumeCounter(room);
         }
     }
 
     private void controlGameTimer(InteractionGameTimer timer, Room room) {
         switch (this.action) {
-            case ACTION_START:
-                timer.startTimer(room);
-                break;
-            case ACTION_STOP:
-                this.stopGameTimer(timer, room, false);
-                break;
-            case ACTION_RESET:
-                this.stopGameTimer(timer, room, true);
-                break;
-            case ACTION_PAUSE:
-                timer.pauseTimer(room);
-                break;
-            case ACTION_RESUME:
-                timer.resumeTimer(room);
-                break;
+            case ACTION_START -> timer.startTimer(room);
+            case ACTION_STOP -> this.stopGameTimer(timer, room, false);
+            case ACTION_RESET -> this.stopGameTimer(timer, room, true);
+            case ACTION_PAUSE -> timer.pauseTimer(room);
+            case ACTION_RESUME -> timer.resumeTimer(room);
         }
     }
 

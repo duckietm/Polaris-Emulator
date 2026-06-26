@@ -35,7 +35,7 @@ public class WiredUserVariableManageEvent extends MessageHandler {
         int value = this.packet.readInt();
 
         switch (targetType) {
-            case com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveVariable.TARGET_FURNI:
+            case com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveVariable.TARGET_FURNI -> {
                 if (action == ACTION_REMOVE) {
                     room.getFurniVariableManager().removeVariable(targetId, definitionItemId);
                 } else {
@@ -44,15 +44,15 @@ public class WiredUserVariableManageEvent extends MessageHandler {
                         room.getFurniVariableManager().assignVariable(furni, definitionItemId, value, true);
                     }
                 }
-                break;
-            case TARGET_ROOM:
+            }
+            case TARGET_ROOM -> {
                 if (action == ACTION_REMOVE) {
                     room.getRoomVariableManager().removeVariable(definitionItemId);
                 } else {
                     room.getRoomVariableManager().updateVariableValue(definitionItemId, value);
                 }
-                break;
-            default:
+            }
+            default -> {
                 if (action == ACTION_REMOVE) {
                     room.getUserVariableManager().removeVariable(targetId, definitionItemId);
                 } else {
@@ -61,7 +61,7 @@ public class WiredUserVariableManageEvent extends MessageHandler {
                         room.getUserVariableManager().assignVariable(habbo, definitionItemId, value, true);
                     }
                 }
-                break;
+            }
         }
 
         room.getRoomVariableManager().sendSnapshot(this.client.getHabbo());

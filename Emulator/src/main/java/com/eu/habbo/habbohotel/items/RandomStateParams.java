@@ -18,15 +18,9 @@ public class RandomStateParams {
             if (keyValue.length != 2) return;
 
             switch (keyValue[0]) {
-                case "states":
-                    this.states = Integer.parseInt(keyValue[1]);
-                    break;
-                case "delay":
-                    this.delay = Integer.parseInt(keyValue[1]);
-                    break;
-                default:
-                    LOGGER.warn("RandomStateParams: unknown key: {}", keyValue[0]);
-                    break;
+                case "states" -> this.states = Integer.parseInt(keyValue[1]);
+                case "delay" -> this.delay = Integer.parseInt(keyValue[1]);
+                default -> LOGGER.warn("RandomStateParams: unknown key: {}", keyValue[0]);
             }
         });
 

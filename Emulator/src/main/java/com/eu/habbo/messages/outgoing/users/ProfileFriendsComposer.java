@@ -38,15 +38,9 @@ public class ProfileFriendsComposer extends MessageComposer {
                     continue;
 
                 switch (map.getValue().getRelation()) {
-                    case 1:
-                        this.lovers.add(map.getValue());
-                        break;
-                    case 2:
-                        this.friends.add(map.getValue());
-                        break;
-                    case 3:
-                        this.haters.add(map.getValue());
-                        break;
+                    case 1 -> this.lovers.add(map.getValue());
+                    case 2 -> this.friends.add(map.getValue());
+                    case 3 -> this.haters.add(map.getValue());
                 }
             }
         } catch (Exception e) {

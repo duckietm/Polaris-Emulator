@@ -371,28 +371,16 @@ public class SubscriptionHabboClub extends Subscription {
 
         int pointCurrency;
         switch(currency.toLowerCase()) {
-            case "credits":
-            case "coins":
-            case "credit":
-            case "coin":
-                habbo.getClient().getHabbo().giveCredits(amount);
-                break;
-
-            case "diamonds":
-            case "diamond":
+            case "credits", "coins", "credit", "coin" -> habbo.getClient().getHabbo().giveCredits(amount);
+            case "diamonds", "diamond" -> {
                 pointCurrency = 5;
                 habbo.getClient().getHabbo().givePoints(pointCurrency, amount);
-                break;
-
-            case "duckets":
-            case "ducket":
-            case "pixels":
-            case "pixel":
+            }
+            case "duckets", "ducket", "pixels", "pixel" -> {
                 pointCurrency = 0;
                 habbo.getClient().getHabbo().givePoints(pointCurrency, amount);
-                break;
-
-            default:
+            }
+            default -> {
                 pointCurrency = -1;
                 try {
                     pointCurrency = Integer.parseInt(currency);
@@ -404,7 +392,7 @@ public class SubscriptionHabboClub extends Subscription {
                 if (pointCurrency >= 0) {
                     habbo.getClient().getHabbo().givePoints(pointCurrency, amount);
                 }
-                break;
+            }
         }
 
         habbo.alert(Emulator.getTexts().getValue("subscriptions.hc.payday.message", "Woohoo HC Payday has arrived! You have received %amount% credits to your purse. Enjoy!").replace("%amount%", "" + amount));

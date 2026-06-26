@@ -76,22 +76,15 @@ public class WiredEffectFurniByType extends InteractionWiredEffect {
     }
 
     private List<HabboItem> resolveSourceFurni(WiredContext ctx, Room room) {
-        switch (sourceType) {
-            case SOURCE_FURNI_PICKED: {
-                return pickedFurniIds.stream()
+        return switch (sourceType) {
+            case SOURCE_FURNI_PICKED -> pickedFurniIds.stream()
                     .map(room::getHabboItem)
                     .filter(Objects::nonNull)
                     .toList();
-            }
-            case SOURCE_FURNI_SIGNAL: {
-                return WiredSourceUtil.resolveItemsRaw(ctx, WiredSourceUtil.SOURCE_SIGNAL, null);
-            }
-            case SOURCE_FURNI_TRIGGER: {
-                return WiredSourceUtil.resolveItemsRaw(ctx, WiredSourceUtil.SOURCE_TRIGGER, null);
-            }
-            default:
-                return Collections.emptyList();
-        }
+            case SOURCE_FURNI_SIGNAL -> WiredSourceUtil.resolveItemsRaw(ctx, WiredSourceUtil.SOURCE_SIGNAL, null);
+            case SOURCE_FURNI_TRIGGER -> WiredSourceUtil.resolveItemsRaw(ctx, WiredSourceUtil.SOURCE_TRIGGER, null);
+            default -> Collections.emptyList();
+        };
     }
 
     @Override
@@ -193,14 +186,10 @@ public class WiredEffectFurniByType extends InteractionWiredEffect {
     public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) { return false; }
 
     private int normalizeSourceType(int value) {
-        switch (value) {
-            case SOURCE_FURNI_SIGNAL:
-            case SOURCE_FURNI_TRIGGER:
-            case SOURCE_FURNI_PICKED:
-                return value;
-            default:
-                return SOURCE_FURNI_PICKED;
-        }
+        return switch (value) {
+            case SOURCE_FURNI_SIGNAL, SOURCE_FURNI_TRIGGER, SOURCE_FURNI_PICKED -> value;
+            default -> SOURCE_FURNI_PICKED;
+        };
     }
 
     static class JsonData {

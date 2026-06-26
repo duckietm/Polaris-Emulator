@@ -52,17 +52,12 @@ public class GuildForumListEvent extends MessageHandler {
 
         Set<Guild> guilds = null;
         switch (mode) {
-            case 0: // most active
+            case 0 -> // most active
                 guilds = getActiveForums();
-                break;
-
-            case 1: // most viewed
+            case 1 -> // most viewed
                 guilds = Emulator.getGameEnvironment().getGuildManager().getMostViewed();
-                break;
-
-            case 2: // my groups
+            case 2 -> // my groups
                 guilds = getMyForums(this.client.getHabbo().getHabboInfo().getId());
-                break;
         }
 
         if (guilds != null) {

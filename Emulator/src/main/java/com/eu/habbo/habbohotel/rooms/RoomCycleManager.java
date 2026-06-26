@@ -197,8 +197,12 @@ public class RoomCycleManager {
             } else {
                 this.idleHostingCycles = 0;
 
-                int amount = (int) this.room.getCurrentHabbos().values().stream()
-                        .filter(habbo -> habbo.getHabboInfo().getId() != this.room.getOwnerId()).count();
+                int amount = 0;
+                for (Habbo habbo : this.room.getCurrentHabbos().values()) {
+                    if (habbo.getHabboInfo().getId() != this.room.getOwnerId()) {
+                        amount++;
+                    }
+                }
                 if (amount > 0) {
                     AchievementManager.progressAchievement(this.room.getOwnerId(),
                             Emulator.getGameEnvironment().getAchievementManager()

@@ -342,9 +342,10 @@ public class RoomItemManager {
      * Gets items at a position above a minimum Z height.
      */
     public THashSet<HabboItem> getItemsAt(int x, int y, double minZ) {
-        var items = new THashSet<HabboItem>();
+        var source = this.getItemsAt(x, y);
+        var items = new THashSet<HabboItem>(source.size());
 
-        for (HabboItem item : this.getItemsAt(x, y)) {
+        for (HabboItem item : source) {
             if (item.getZ() < minZ) {
                 continue;
             }
@@ -358,9 +359,10 @@ public class RoomItemManager {
      * Gets items of a specific type at a position.
      */
     public THashSet<HabboItem> getItemsAt(Class<? extends HabboItem> type, int x, int y) {
-        var items = new THashSet<HabboItem>();
+        var source = this.getItemsAt(x, y);
+        var items = new THashSet<HabboItem>(source.size());
 
-        for (HabboItem item : this.getItemsAt(x, y)) {
+        for (HabboItem item : source) {
             if (!item.getClass().equals(type)) {
                 continue;
             }

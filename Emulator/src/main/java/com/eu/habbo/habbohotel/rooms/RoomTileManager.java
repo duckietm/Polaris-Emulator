@@ -148,8 +148,11 @@ public class RoomTileManager {
             result = overriddenState;
         }
 
-        if (this.room.getItemManager().getItemsAt(tile).stream().anyMatch(i -> i instanceof InteractionTileWalkMagic || i instanceof InteractionStackWalkHelper)) {
-            result = RoomTileState.OPEN;
+        for (HabboItem i : this.room.getItemManager().getItemsAt(tile)) {
+            if (i instanceof InteractionTileWalkMagic || i instanceof InteractionStackWalkHelper) {
+                result = RoomTileState.OPEN;
+                break;
+            }
         }
 
         return result;
@@ -437,8 +440,12 @@ public class RoomTileManager {
         HabboItem topItem = null;
         boolean canWalk = true;
         THashSet<HabboItem> items = this.room.getItemManager().getItemsAt(roomTile);
-        if (items != null && items.stream().anyMatch(item -> item instanceof InteractionTileWalkMagic || item instanceof InteractionStackWalkHelper)) {
-            return true;
+        if (items != null) {
+            for (HabboItem item : items) {
+                if (item instanceof InteractionTileWalkMagic || item instanceof InteractionStackWalkHelper) {
+                    return true;
+                }
+            }
         }
 
         if (items != null) {

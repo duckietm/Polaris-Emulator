@@ -53,6 +53,10 @@ public class RoomUnitManager {
 
     // Unit collections - these are the actual data stores
     private final ConcurrentHashMap<Integer, Habbo> currentHabbos = new ConcurrentHashMap<>(3);
+    // Reverse index roomUnitId -> Habbo, kept in sync with currentHabbos at every add/remove/clear
+    // so getHabboByRoomUnit(Id) is O(1) instead of an O(n) scan (the room cycle resolves the owning
+    // Habbo of a unit several times per walking unit per 500ms tick -> previously O(n^2) per tick).
+    private final ConcurrentHashMap<Integer, Habbo> habbosByRoomUnitId = new ConcurrentHashMap<>(3);
     private final TIntObjectMap<Habbo> habboQueue = TCollections.synchronizedMap(new TIntObjectHashMap<>(0));
     private final TIntObjectMap<Bot> currentBots = TCollections.synchronizedMap(new TIntObjectHashMap<>(0));
     private final TIntObjectMap<Pet> currentPets = TCollections.synchronizedMap(new TIntObjectHashMap<>(0));
@@ -91,6 +95,7 @@ public class RoomUnitManager {
             }
             this.unitCounter = 0;
             this.currentHabbos.clear();
+            this.habbosByRoomUnitId.clear();
             this.currentPets.clear();
             this.currentBots.clear();
         }
@@ -164,24 +169,21 @@ public class RoomUnitManager {
      * Gets a Habbo by their RoomUnit.
      */
     public Habbo getHabboByRoomUnit(RoomUnit roomUnit) {
-        for (Habbo habbo : this.currentHabbos.values()) {
-            if (habbo.getRoomUnit() == roomUnit) {
-                return habbo;
-            }
+        if (roomUnit == null) {
+            return null;
         }
-        return null;
+        // O(1) via the reverse index; the identity guard preserves the exact previous semantics
+        // (return only the Habbo that actually owns THIS unit) and is safe against a stale entry.
+        Habbo habbo = this.habbosByRoomUnitId.get(roomUnit.getId());
+        return (habbo != null && habbo.getRoomUnit() == roomUnit) ? habbo : null;
     }
 
     /**
      * Gets a Habbo by their RoomUnit ID.
      */
     public Habbo getHabboByRoomUnitId(int roomUnitId) {
-        for (Habbo habbo : this.currentHabbos.values()) {
-            if (habbo.getRoomUnit().getId() == roomUnitId) {
-                return habbo;
-            }
-        }
-        return null;
+        Habbo habbo = this.habbosByRoomUnitId.get(roomUnitId);
+        return (habbo != null && habbo.getRoomUnit() != null && habbo.getRoomUnit().getId() == roomUnitId) ? habbo : null;
     }
 
     /**
@@ -219,6 +221,7 @@ public class RoomUnitManager {
         synchronized (this.room.roomUnitLock) {
             habbo.getRoomUnit().setId(this.unitCounter);
             this.currentHabbos.put(habbo.getHabboInfo().getId(), habbo);
+            this.habbosByRoomUnitId.put(habbo.getRoomUnit().getId(), habbo);
             this.unitCounter++;
             this.room.updateDatabaseUserCount();
         }
@@ -254,6 +257,9 @@ public class RoomUnitManager {
 
           synchronized (this.room.roomUnitLock) {
               this.currentHabbos.remove(habbo.getHabboInfo().getId());
+              if (habbo.getRoomUnit() != null) {
+                  this.habbosByRoomUnitId.remove(habbo.getRoomUnit().getId());
+              }
           }
 
           this.room.getUserVariableManager().clearAssignmentsForUser(habbo.getHabboInfo().getId());
@@ -1510,6 +1516,7 @@ public class RoomUnitManager {
             }
         }
         this.currentHabbos.clear();
+        this.habbosByRoomUnitId.clear();
         this.currentBots.clear();
         this.currentPets.clear();
         this.habboQueue.clear();

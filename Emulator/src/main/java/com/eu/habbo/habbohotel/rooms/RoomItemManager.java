@@ -1403,13 +1403,16 @@ public class RoomItemManager {
 
         THashSet<RoomTile> occupiedTiles = layout.getTilesAt(tile, item.getBaseItem().getWidth(),
                 item.getBaseItem().getLength(), rotation);
+        // Hoist the loop-invariant config + item flags out of the per-tile loop (the config getter is a
+        // synchronized Properties lookup). Equivalent to the old per-tile "!X || (X && ...)" condition.
+        final boolean wiredPlaceUnder = Emulator.getConfig().getBoolean("wired.place.under", false);
+        final boolean blockTileForUnits = !wiredPlaceUnder
+                || (!item.isWalkable() && !item.getBaseItem().allowSit() && !item.getBaseItem().allowLay());
         for (RoomTile t : occupiedTiles) {
             if (t.state == RoomTileState.INVALID) {
                 return FurnitureMovementError.INVALID_MOVE;
             }
-            if (!Emulator.getConfig().getBoolean("wired.place.under", false) || (
-                    Emulator.getConfig().getBoolean("wired.place.under", false) && !item.isWalkable()
-                            && !item.getBaseItem().allowSit() && !item.getBaseItem().allowLay())) {
+            if (blockTileForUnits) {
                 if (checkForUnits && this.room.hasHabbosAt(t.x, t.y)) {
                     return FurnitureMovementError.TILE_HAS_HABBOS;
                 }

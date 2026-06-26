@@ -209,9 +209,16 @@ public class RoomTileManager {
         double height = layout.getHeightAtSquare(x, y);
         boolean canStack = true;
 
-        THashSet<HabboItem> stackHelpers = this.room.getItemManager().getItemsAt(InteractionStackHelper.class, x, y);
-        stackHelpers.addAll(this.room.getItemManager().getItemsAt(InteractionStackWalkHelper.class, x, y));
-        stackHelpers.addAll(this.room.getItemManager().getItemsAt(InteractionTileWalkMagic.class, x, y));
+        // Single pass over the (cached) tile items instead of 3 getItemsAt(Class,..) calls that each
+        // re-iterate the tile and allocate a THashSet. Exact-class match preserves the previous
+        // getClass().equals(type) semantics (subclasses are NOT matched).
+        THashSet<HabboItem> stackHelpers = new THashSet<>();
+        for (HabboItem helperItem : this.room.getItemManager().getItemsAt(x, y)) {
+            Class<? extends HabboItem> c = helperItem.getClass();
+            if (c == InteractionStackHelper.class || c == InteractionStackWalkHelper.class || c == InteractionTileWalkMagic.class) {
+                stackHelpers.add(helperItem);
+            }
+        }
 
         if (stackHelpers.size() > 0) {
             double helperHeight = Double.NEGATIVE_INFINITY;

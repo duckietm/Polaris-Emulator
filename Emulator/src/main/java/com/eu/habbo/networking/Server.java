@@ -81,8 +81,7 @@ public abstract class Server {
     public void connect() {
         ChannelFuture channelFuture = this.serverBootstrap.bind(this.host, this.port);
 
-        while (!channelFuture.isDone()) {
-        }
+        channelFuture.awaitUninterruptibly();
 
         if (!channelFuture.isSuccess()) {
             LOGGER.info("Failed to start {} on {}:{}", this.name, this.host, this.port);

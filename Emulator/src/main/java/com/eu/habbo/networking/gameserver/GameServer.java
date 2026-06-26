@@ -89,8 +89,7 @@ public class GameServer extends Server {
 
         ChannelFuture wsFuture = this.webSocketBootstrap.bind(wsHost, wsPort);
 
-        while (!wsFuture.isDone()) {
-        }
+        wsFuture.awaitUninterruptibly();
 
         if (!wsFuture.isSuccess()) {
             LOGGER.error("Failed to start WebSocket server on {}:{}", wsHost, wsPort);

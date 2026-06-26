@@ -1208,9 +1208,17 @@ public class RoomUnitManager {
      * Gets room units at a specific tile as a collection.
      */
     public Collection<RoomUnit> getRoomUnitsAt(RoomTile tile) {
+        // Plain loop instead of stream().filter().collect(): this is called once per adjacent tile
+        // during A* pathfinding (TileValidator.hasBlockingUnits), so the stream pipeline + collector
+        // allocation was a per-node hot-path cost. Callers only size()/iterate/addAll the result.
         THashSet<RoomUnit> roomUnits = getRoomUnits();
-        return roomUnits.stream().filter(unit -> unit.getCurrentLocation().equals(tile))
-                .collect(Collectors.toUnmodifiableSet());
+        java.util.List<RoomUnit> unitsAt = new java.util.ArrayList<>();
+        for (RoomUnit unit : roomUnits) {
+            if (unit.getCurrentLocation().equals(tile)) {
+                unitsAt.add(unit);
+            }
+        }
+        return unitsAt;
     }
 
     // ==================== EFFECTS AND HAND ITEMS ====================

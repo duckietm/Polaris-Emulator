@@ -333,10 +333,11 @@ public class RoomUnit {
         zHeight += room.getLayout().getHeightAtSquare(next.x, next.y);
       }
 
-      Optional<HabboItem> stackHelper = room.getItemsAt(next).stream()
-          .filter(i -> i instanceof InteractionTileWalkMagic || i instanceof InteractionStackWalkHelper).findAny();
-      if (stackHelper.isPresent()) {
-        zHeight = stackHelper.get().getZ();
+      for (HabboItem helper : room.getItemsAt(next)) {
+        if (helper instanceof InteractionTileWalkMagic || helper instanceof InteractionStackWalkHelper) {
+          zHeight = helper.getZ();
+          break;
+        }
       }
 
       this.setPreviousLocation(this.getCurrentLocation());
@@ -805,8 +806,10 @@ public class RoomUnit {
       return false;
     }
 
-    if (room.getItemsAt(tile).stream().anyMatch(i -> i.canOverrideTile(this, room, tile))) {
-      return true;
+    for (HabboItem i : room.getItemsAt(tile)) {
+      if (i.canOverrideTile(this, room, tile)) {
+        return true;
+      }
     }
 
     int tileIndex = (tile.x & 0xFF) | (tile.y << 12);

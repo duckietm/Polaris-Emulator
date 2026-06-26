@@ -25,7 +25,7 @@ import java.util.UUID;
  */
 public final class WiredState {
     
-    private final UUID runId;
+    private UUID runId;
     private final int maxSteps;
     private int steps = 0;
     private long startTimeMs;
@@ -37,7 +37,6 @@ public final class WiredState {
      * @param maxSteps maximum number of steps allowed (triggers, conditions, effects)
      */
     public WiredState(int maxSteps) {
-        this.runId = UUID.randomUUID();
         this.maxSteps = maxSteps;
         this.startTimeMs = System.currentTimeMillis();
     }
@@ -48,7 +47,13 @@ public final class WiredState {
      * @return the run UUID
      */
     public UUID runId() {
-        return runId;
+        // Lazily created: randomUUID() (SecureRandom) is only needed for diagnostics (the limit
+        // exception message / toString), never on the normal wired-execution path. Per-execution
+        // state used by a single thread, so no synchronization is needed.
+        if (this.runId == null) {
+            this.runId = UUID.randomUUID();
+        }
+        return this.runId;
     }
 
     /**
@@ -114,7 +119,7 @@ public final class WiredState {
         if (steps > maxSteps) {
             throw new WiredLimitException(
                     "Wired execution exceeded max steps: " + maxSteps + 
-                    " (runId: " + runId + ")");
+                    " (runId: " + runId() + ")");
         }
     }
 
@@ -158,7 +163,7 @@ public final class WiredState {
     @Override
     public String toString() {
         return "WiredState{" +
-                "runId=" + runId +
+                "runId=" + runId() +
                 ", steps=" + steps + "/" + maxSteps +
                 ", elapsed=" + elapsedMs() + "ms" +
                 (aborted ? ", ABORTED: " + abortReason : "") +

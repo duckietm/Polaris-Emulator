@@ -37,6 +37,9 @@ public class UpdateStackHeightComposer extends MessageComposer {
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.UpdateStackHeightComposer);
 
+        // Read the synchronized Properties config once instead of once per tile in the loops below.
+        final boolean customStacking = Emulator.getConfig().getBoolean("custom.stacking.enabled");
+
         if (this.updateTiles != null) {
             List<RoomTile> tilesCopy = new ArrayList<>(this.updateTiles);
             tilesCopy.removeIf(Objects::isNull);
@@ -47,7 +50,7 @@ public class UpdateStackHeightComposer extends MessageComposer {
                     RoomTile t = tilesCopy.get(i);
                     this.response.appendByte((int) t.x);
                     this.response.appendByte((int) t.y);
-                    if (Emulator.getConfig().getBoolean("custom.stacking.enabled")) {
+                    if (customStacking) {
                         this.response.appendShort((short) (t.z * 256.0));
                     } else {
                         this.response.appendShort(t.relativeHeight());
@@ -66,7 +69,7 @@ public class UpdateStackHeightComposer extends MessageComposer {
             for (RoomTile t : tilesCopy) {
                 this.response.appendByte((int) t.x);
                 this.response.appendByte((int) t.y);
-                if (Emulator.getConfig().getBoolean("custom.stacking.enabled")) {
+                if (customStacking) {
                     this.response.appendShort((short) (t.z * 256.0));
                 } else {
                     this.response.appendShort(t.relativeHeight());
@@ -76,7 +79,7 @@ public class UpdateStackHeightComposer extends MessageComposer {
             this.response.appendByte(1);
             this.response.appendByte(this.x);
             this.response.appendByte(this.y);
-            if (Emulator.getConfig().getBoolean("custom.stacking.enabled")) {
+            if (customStacking) {
                 this.response.appendShort((short) (this.z * 256.0));
             } else {
                 this.response.appendShort((int) (this.height));

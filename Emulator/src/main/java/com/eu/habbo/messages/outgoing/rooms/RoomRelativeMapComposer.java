@@ -17,14 +17,18 @@ public class RoomRelativeMapComposer extends MessageComposer {
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.RoomRelativeMapComposer);
-        this.response.appendInt(this.room.getLayout().getMapSize() / this.room.getLayout().getMapSizeY());
-        this.response.appendInt(this.room.getLayout().getMapSize());
-        for (short y = 0; y < this.room.getLayout().getMapSizeY(); y++) {
-            for (short x = 0; x < this.room.getLayout().getMapSizeX(); x++) {
-                RoomTile t = this.room.getLayout().getTile(x, y);
+        // Hoist the layout + the synchronized Properties config read out of the mapSizeX*mapSizeY loop
+        // (config can't change mid-compose, so emitted bytes are identical).
+        final com.eu.habbo.habbohotel.rooms.RoomLayout layout = this.room.getLayout();
+        final boolean customStacking = Emulator.getConfig().getBoolean("custom.stacking.enabled");
+        this.response.appendInt(layout.getMapSize() / layout.getMapSizeY());
+        this.response.appendInt(layout.getMapSize());
+        for (short y = 0; y < layout.getMapSizeY(); y++) {
+            for (short x = 0; x < layout.getMapSizeX(); x++) {
+                RoomTile t = layout.getTile(x, y);
 
                 if (t != null) {
-                    if(Emulator.getConfig().getBoolean("custom.stacking.enabled")) {
+                    if (customStacking) {
                         this.response.appendShort((short) (t.z * 256.0));
                     }
                     else {

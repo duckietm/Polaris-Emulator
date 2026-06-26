@@ -102,7 +102,7 @@ public class WiredEffectMoveFurniTo extends InteractionWiredEffect {
         Object[] stuff = ctx.legacySettings();
         if (stuff != null && stuff.length > 0) {
             for (Object object : stuff) {
-                if (object instanceof HabboItem) {
+                if (object instanceof HabboItem movingItem) {
                     HabboItem targetItem = effectiveItems.get(Emulator.getRandom().nextInt(effectiveItems.size()));
 
                     if (targetItem != null) {
@@ -126,7 +126,6 @@ public class WiredEffectMoveFurniTo extends InteractionWiredEffect {
                                 continue;
                             }
 
-                            HabboItem movingItem = (HabboItem) object;
                             RoomTile oldLocation = room.getLayout().getTile(movingItem.getX(), movingItem.getY());
                             if (oldLocation == null) {
                                 continue;
@@ -162,9 +161,7 @@ public class WiredEffectMoveFurniTo extends InteractionWiredEffect {
         
         List<HabboItem> effectiveItems = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items);
         for (Object object : stuff) {
-            if (object instanceof HabboItem) {
-                HabboItem item = (HabboItem) object;
-                
+            if (object instanceof HabboItem item) {
                 if (effectiveItems.isEmpty()) continue;
                 HabboItem targetItem = effectiveItems.get(0);
                 if (targetItem == null) continue;

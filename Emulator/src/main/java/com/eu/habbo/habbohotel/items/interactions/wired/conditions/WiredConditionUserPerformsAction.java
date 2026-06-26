@@ -254,16 +254,15 @@ public class WiredConditionUserPerformsAction extends InteractionWiredCondition 
         Object parameterValue = roomUnit.getCacheable().get(CACHE_LAST_ACTION_PARAMETER);
         Object timestampValue = roomUnit.getCacheable().get(CACHE_LAST_ACTION_TIMESTAMP);
 
-        if (!(actionValue instanceof Integer) || !(timestampValue instanceof Long)) {
+        if (!(actionValue instanceof Integer actionIdValue) || !(timestampValue instanceof Long timestamp)) {
             return false;
         }
 
-        long timestamp = (Long) timestampValue;
         if (!WiredUserActionInputGuard.isRecentTimestamp(timestamp, System.currentTimeMillis(), TRANSIENT_ACTION_WINDOW_MS)) {
             return false;
         }
 
-        int actionId = (Integer) actionValue;
+        int actionId = actionIdValue;
         int parameter = (parameterValue instanceof Integer) ? (Integer) parameterValue : -1;
 
         return this.matchesConfiguredAction(actionId, parameter);

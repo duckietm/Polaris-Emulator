@@ -61,11 +61,11 @@ public class WiredEffectAdjustClock extends InteractionWiredEffect {
         }
 
         for (HabboItem item : effectiveItems) {
-            if (!(item instanceof InteractionGameUpCounter)) {
+            if (!(item instanceof InteractionGameUpCounter counter)) {
                 continue;
             }
 
-            ((InteractionGameUpCounter) item).adjustCounter(room, this.operator, this.minutes, this.halfSecondSteps);
+            counter.adjustCounter(room, this.operator, this.minutes, this.halfSecondSteps);
         }
     }
 

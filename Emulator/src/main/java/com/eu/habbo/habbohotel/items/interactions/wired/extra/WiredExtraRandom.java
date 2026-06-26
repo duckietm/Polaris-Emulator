@@ -128,8 +128,8 @@ public class WiredExtraRandom extends InteractionWiredExtra {
 
     public List<IWiredEffect> selectWiredEffects(List<IWiredEffect> effects) {
         return this.selectRandomEffects(effects, effect -> {
-            if (effect instanceof InteractionWiredEffect) {
-                return ((InteractionWiredEffect) effect).getId();
+            if (effect instanceof InteractionWiredEffect wiredEffect) {
+                return wiredEffect.getId();
             }
 
             return System.identityHashCode(effect);

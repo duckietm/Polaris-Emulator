@@ -303,11 +303,10 @@ public class WiredTriggerFurniStateToggled extends InteractionWiredTrigger {
                 return true;
             }
 
-            if (!(object instanceof StateSnapshot)) {
+            if (!(object instanceof StateSnapshot that)) {
                 return false;
             }
 
-            StateSnapshot that = (StateSnapshot) object;
             return this.itemId == that.itemId;
         }
     }

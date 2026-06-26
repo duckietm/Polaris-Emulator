@@ -443,11 +443,10 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
         }
 
         InteractionWiredExtra extra = room.getRoomSpecialTypes().getExtra(variableItemId);
-        if (!(extra instanceof WiredExtraVariableEcho)) {
+        if (!(extra instanceof WiredExtraVariableEcho echo)) {
             return false;
         }
 
-        WiredExtraVariableEcho echo = (WiredExtraVariableEcho) extra;
         return createsCycle(room, currentItemId, echo.getSourceTargetType(), echo.getSourceVariableToken(), echo.getSourceVariableItemId());
     }
 

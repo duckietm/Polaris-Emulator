@@ -60,16 +60,16 @@ public class WiredEffectControlClock extends InteractionWiredEffect {
         }
 
         for (HabboItem item : effectiveItems) {
-            if (!(item instanceof InteractionGameTimer)) {
+            if (!(item instanceof InteractionGameTimer timer)) {
                 continue;
             }
 
-            if (item instanceof InteractionGameUpCounter) {
-                this.controlUpCounter((InteractionGameUpCounter) item, room);
+            if (item instanceof InteractionGameUpCounter upCounter) {
+                this.controlUpCounter(upCounter, room);
                 continue;
             }
 
-            this.controlGameTimer((InteractionGameTimer) item, room);
+            this.controlGameTimer(timer, room);
         }
     }
 

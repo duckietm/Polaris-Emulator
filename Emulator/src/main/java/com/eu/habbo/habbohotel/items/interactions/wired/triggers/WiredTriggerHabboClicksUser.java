@@ -150,12 +150,12 @@ public class WiredTriggerHabboClicksUser extends InteractionWiredTrigger {
 
         Object value = roomUnit.getCacheable().get(CACHE_IGNORE_LOOK_UNTIL);
 
-        if (!(value instanceof Long)) {
+        if (!(value instanceof Long expiresAtValue)) {
             roomUnit.getCacheable().remove(CACHE_IGNORE_LOOK_UNTIL);
             return false;
         }
 
-        long expiresAt = (Long) value;
+        long expiresAt = expiresAtValue;
         roomUnit.getCacheable().remove(CACHE_IGNORE_LOOK_UNTIL);
 
         return System.currentTimeMillis() <= expiresAt;
@@ -168,11 +168,11 @@ public class WiredTriggerHabboClicksUser extends InteractionWiredTrigger {
 
         Object value = roomUnit.getCacheable().get(CACHE_IGNORE_LOOK_UNTIL);
 
-        if (!(value instanceof Long)) {
+        if (!(value instanceof Long expiresAt)) {
             return false;
         }
 
-        return System.currentTimeMillis() <= (Long) value;
+        return System.currentTimeMillis() <= expiresAt;
     }
 
     static class JsonData {

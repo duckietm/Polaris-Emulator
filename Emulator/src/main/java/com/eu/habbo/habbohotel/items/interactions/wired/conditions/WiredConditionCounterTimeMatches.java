@@ -65,11 +65,11 @@ public class WiredConditionCounterTimeMatches extends InteractionWiredCondition 
 
         if (this.quantifier == QUANTIFIER_ANY) {
             for (HabboItem item : targets) {
-                if (!(item instanceof InteractionGameUpCounter)) {
+                if (!(item instanceof InteractionGameUpCounter counter)) {
                     continue;
                 }
 
-                if (this.matchesCounter((InteractionGameUpCounter) item, targetTimeInMs)) {
+                if (this.matchesCounter(counter, targetTimeInMs)) {
                     return true;
                 }
             }
@@ -78,11 +78,11 @@ public class WiredConditionCounterTimeMatches extends InteractionWiredCondition 
         }
 
         for (HabboItem item : targets) {
-            if (!(item instanceof InteractionGameUpCounter)) {
+            if (!(item instanceof InteractionGameUpCounter counter)) {
                 return false;
             }
 
-            if (!this.matchesCounter((InteractionGameUpCounter) item, targetTimeInMs)) {
+            if (!this.matchesCounter(counter, targetTimeInMs)) {
                 return false;
             }
         }

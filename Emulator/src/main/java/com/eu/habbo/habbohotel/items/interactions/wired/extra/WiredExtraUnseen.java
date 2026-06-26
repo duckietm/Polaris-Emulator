@@ -135,8 +135,8 @@ public class WiredExtraUnseen extends InteractionWiredExtra {
             List<IWiredEffect> unseenEffects = new ArrayList<>();
 
             for (IWiredEffect effect : effects) {
-                if ((effect instanceof InteractionWiredEffect)
-                        && !this.seenList.contains(((InteractionWiredEffect) effect).getId())) {
+                if ((effect instanceof InteractionWiredEffect wiredEffect)
+                        && !this.seenList.contains(wiredEffect.getId())) {
                     unseenEffects.add(effect);
                 }
             }
@@ -152,13 +152,13 @@ public class WiredExtraUnseen extends InteractionWiredExtra {
                 }
             }
 
-            if (effect instanceof InteractionWiredEffect) {
+            if (effect instanceof InteractionWiredEffect wiredEffect) {
                 if (this.seenList.size() >= MAX_SEEN_LIST_SIZE) {
                     Integer oldest = this.seenList.iterator().next();
                     this.seenList.remove(oldest);
                 }
 
-                this.seenList.add(((InteractionWiredEffect) effect).getId());
+                this.seenList.add(wiredEffect.getId());
             }
 
             if (effect == null) {

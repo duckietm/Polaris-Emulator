@@ -147,11 +147,11 @@ public final class WiredUserMovementHelper {
 
         Object value = roomUnit.getCacheable().remove(SUPPRESS_NEXT_WALK_CACHE_KEY);
 
-        if (!(value instanceof Long)) {
+        if (!(value instanceof Long longValue)) {
             return false;
         }
 
-        return ((Long) value) >= System.currentTimeMillis();
+        return longValue >= System.currentTimeMillis();
     }
 
     private static boolean moveUserInstant(Room room, RoomUnit roomUnit, RoomTile oldLocation, RoomTile targetTile, double oldZ, double targetZ,

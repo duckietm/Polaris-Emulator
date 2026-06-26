@@ -47,11 +47,11 @@ public class WiredTriggerClockCounter extends InteractionWiredTrigger {
     public boolean matches(HabboItem triggerItem, WiredEvent event) {
         HabboItem sourceItem = event.getSourceItem().orElse(null);
 
-        if (!(sourceItem instanceof InteractionGameUpCounter)) {
+        if (!(sourceItem instanceof InteractionGameUpCounter upCounter)) {
             return false;
         }
 
-        if (((InteractionGameUpCounter) sourceItem).getCurrentTimeInMs() != this.getTargetTimeInMs()) {
+        if (upCounter.getCurrentTimeInMs() != this.getTargetTimeInMs()) {
             return false;
         }
 

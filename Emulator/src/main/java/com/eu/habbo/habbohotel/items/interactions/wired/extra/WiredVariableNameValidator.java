@@ -82,28 +82,28 @@ final class WiredVariableNameValidator {
     }
 
     private static String getDefinitionName(InteractionWiredExtra extra) {
-        if (extra instanceof WiredExtraUserVariable) {
-            return ((WiredExtraUserVariable) extra).getVariableName();
+        if (extra instanceof WiredExtraUserVariable userVariable) {
+            return userVariable.getVariableName();
         }
 
-        if (extra instanceof WiredExtraFurniVariable) {
-            return ((WiredExtraFurniVariable) extra).getVariableName();
+        if (extra instanceof WiredExtraFurniVariable furniVariable) {
+            return furniVariable.getVariableName();
         }
 
-        if (extra instanceof WiredExtraRoomVariable) {
-            return ((WiredExtraRoomVariable) extra).getVariableName();
+        if (extra instanceof WiredExtraRoomVariable roomVariable) {
+            return roomVariable.getVariableName();
         }
 
-        if (extra instanceof WiredExtraContextVariable) {
-            return ((WiredExtraContextVariable) extra).getVariableName();
+        if (extra instanceof WiredExtraContextVariable contextVariable) {
+            return contextVariable.getVariableName();
         }
 
-        if (extra instanceof WiredExtraVariableReference) {
-            return ((WiredExtraVariableReference) extra).getVariableName();
+        if (extra instanceof WiredExtraVariableReference variableReference) {
+            return variableReference.getVariableName();
         }
 
-        if (extra instanceof WiredExtraVariableEcho) {
-            return ((WiredExtraVariableEcho) extra).getVariableName();
+        if (extra instanceof WiredExtraVariableEcho variableEcho) {
+            return variableEcho.getVariableName();
         }
 
         return null;

@@ -1466,19 +1466,19 @@ public final class WiredEngine {
     private WiredExtraRandom getRandomExtra(Room room, WiredStack stack) {
         InteractionWiredExtra extra = getStackExtra(room, stack, WiredExtraRandom.class);
 
-        return (extra instanceof WiredExtraRandom) ? (WiredExtraRandom) extra : null;
+        return (extra instanceof WiredExtraRandom randomExtra) ? randomExtra : null;
     }
 
     private WiredExtraUnseen getUnseenExtra(Room room, WiredStack stack) {
         InteractionWiredExtra extra = getStackExtra(room, stack, WiredExtraUnseen.class);
 
-        return (extra instanceof WiredExtraUnseen) ? (WiredExtraUnseen) extra : null;
+        return (extra instanceof WiredExtraUnseen unseenExtra) ? unseenExtra : null;
     }
 
     private WiredExtraExecutionLimit getExecutionLimitExtra(Room room, WiredStack stack) {
         InteractionWiredExtra extra = getStackExtra(room, stack, WiredExtraExecutionLimit.class);
 
-        return (extra instanceof WiredExtraExecutionLimit) ? (WiredExtraExecutionLimit) extra : null;
+        return (extra instanceof WiredExtraExecutionLimit executionLimitExtra) ? executionLimitExtra : null;
     }
 
     private <T extends InteractionWiredExtra> InteractionWiredExtra getStackExtra(Room room, WiredStack stack, Class<T> extraClass) {

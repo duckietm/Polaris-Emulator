@@ -139,16 +139,14 @@ public class ForumThread implements Runnable, ISerialize {
 
         guildThreadsCache.put(guildId, threads);
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT A.*, B.`id` AS `last_comment_id` " +
-                "FROM guilds_forums_threads A " +
-                "LEFT JOIN (" +
-                "SELECT `thread_id`, MAX(`id`) AS `id`, MAX(`created_at`) AS `created_at` " +
-                "FROM `guilds_forums_comments` " +
-                "GROUP BY `thread_id`" +
-                ") B ON A.`id` = B.`thread_id` " +
-                "WHERE A.`guild_id` = ? " +
-                "ORDER BY A.`pinned` DESC, B.`created_at` DESC "
-        )) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("""
+                SELECT A.*, B.`id` AS `last_comment_id`
+                FROM guilds_forums_threads A
+                LEFT JOIN (SELECT `thread_id`, MAX(`id`) AS `id`, MAX(`created_at`) AS `created_at`
+                FROM `guilds_forums_comments`
+                GROUP BY `thread_id`) B ON A.`id` = B.`thread_id`
+                WHERE A.`guild_id` = ?
+                ORDER BY A.`pinned` DESC, B.`created_at` DESC""")) {
             statement.setInt(1, guildId);
 
             try (ResultSet set = statement.executeQuery()) {
@@ -173,18 +171,15 @@ public class ForumThread implements Runnable, ISerialize {
         if (foundThread != null)
             return foundThread;
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement(
-                "SELECT A.*, B.`id` AS `last_comment_id` " +
-                        "FROM guilds_forums_threads A " +
-                        "LEFT JOIN (" +
-                        "SELECT `thread_id`, MAX(`id`) AS `id`, MAX(`created_at`) AS `created_at` " +
-                        "FROM `guilds_forums_comments` " +
-                        "GROUP BY `thread_id`" +
-                        ") B ON A.`id` = B.`thread_id` " +
-                        "WHERE A.`id` = ? " +
-                        "ORDER BY A.`pinned` DESC, B.`created_at` DESC " +
-                        "LIMIT 1"
-        )) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("""
+                SELECT A.*, B.`id` AS `last_comment_id`
+                FROM guilds_forums_threads A
+                LEFT JOIN (SELECT `thread_id`, MAX(`id`) AS `id`, MAX(`created_at`) AS `created_at`
+                FROM `guilds_forums_comments`
+                GROUP BY `thread_id`) B ON A.`id` = B.`thread_id`
+                WHERE A.`id` = ?
+                ORDER BY A.`pinned` DESC, B.`created_at` DESC
+                LIMIT 1""")) {
             statement.setInt(1, threadId);
 
             try (ResultSet set = statement.executeQuery()) {

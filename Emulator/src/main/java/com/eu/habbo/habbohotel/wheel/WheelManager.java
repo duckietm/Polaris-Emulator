@@ -144,9 +144,9 @@ public class WheelManager {
 
     private void persistUserState(int userId, WheelUserState state) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "INSERT INTO wheel_user_state (user_id, free_spins, extra_spins, last_reset) VALUES (?, ?, ?, ?) " +
-                             "ON DUPLICATE KEY UPDATE free_spins = VALUES(free_spins), extra_spins = VALUES(extra_spins), last_reset = VALUES(last_reset)")) {
+             PreparedStatement statement = connection.prepareStatement("""
+                     INSERT INTO wheel_user_state (user_id, free_spins, extra_spins, last_reset) VALUES (?, ?, ?, ?)
+                     ON DUPLICATE KEY UPDATE free_spins = VALUES(free_spins), extra_spins = VALUES(extra_spins), last_reset = VALUES(last_reset)""")) {
             statement.setInt(1, userId);
             statement.setInt(2, state.freeSpins);
             statement.setInt(3, state.extraSpins);

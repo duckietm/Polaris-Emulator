@@ -56,11 +56,12 @@ public class ModToolManager {
             return;
 
         String query = Emulator.getGameEnvironment().getPermissionsManager().isNormalizedSchemaEnabled()
-            ? "SELECT users.*, users_settings.*, permission_ranks.rank_name, permission_ranks.id AS rank_id " +
-                "FROM users " +
-                "INNER JOIN users_settings ON users.id = users_settings.user_id " +
-                "INNER JOIN permission_ranks ON permission_ranks.id = users.rank " +
-                "WHERE users.id = ? LIMIT 1"
+            ? """
+                SELECT users.*, users_settings.*, permission_ranks.rank_name, permission_ranks.id AS rank_id
+                FROM users
+                INNER JOIN users_settings ON users.id = users_settings.user_id
+                INNER JOIN permission_ranks ON permission_ranks.id = users.rank
+                WHERE users.id = ? LIMIT 1"""
             : "SELECT users.*, users_settings.*, permissions.rank_name, permissions.acc_hide_mail AS hide_mail, permissions.id AS rank_id FROM users INNER JOIN users_settings ON users.id = users_settings.user_id INNER JOIN permissions ON permissions.id = users.rank WHERE users.id = ? LIMIT 1";
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement(query)) {
@@ -143,18 +144,18 @@ public class ModToolManager {
     }
 
     private void loadCfhCategories(Connection connection) {
-        try (Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery("SELECT " +
-                "support_cfh_topics.id, " +
-                "support_cfh_topics.category_id, " +
-                "support_cfh_topics.name_internal, " +
-                "support_cfh_topics.action, " +
-                "support_cfh_topics.auto_reply," +
-                "support_cfh_topics.ignore_target, " +
-                "support_cfh_categories.name_internal AS category_name_internal, " +
-                "support_cfh_categories.id AS support_cfh_category_id, " +
-                "support_cfh_topics.default_sanction AS default_sanction " +
-                "FROM support_cfh_topics " +
-                "LEFT JOIN support_cfh_categories ON support_cfh_categories.id = support_cfh_topics.category_id")) {
+        try (Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery("""
+                SELECT
+                support_cfh_topics.id,
+                support_cfh_topics.category_id,
+                support_cfh_topics.name_internal,
+                support_cfh_topics.action,
+                support_cfh_topics.auto_reply,support_cfh_topics.ignore_target,
+                support_cfh_categories.name_internal AS category_name_internal,
+                support_cfh_categories.id AS support_cfh_category_id,
+                support_cfh_topics.default_sanction AS default_sanction
+                FROM support_cfh_topics
+                LEFT JOIN support_cfh_categories ON support_cfh_categories.id = support_cfh_topics.category_id""")) {
             while (set.next()) {
                 if (!this.cfhCategories.containsKey(set.getInt("support_cfh_category_id"))) {
                     this.cfhCategories.put(set.getInt("support_cfh_category_id"), new CfhCategory(set.getInt("id"), set.getString("category_name_internal")));

@@ -50,10 +50,10 @@ final class StaticContentEndpoints {
     static void handleRoomTemplates(ChannelHandlerContext ctx, FullHttpRequest req) {
         JsonArray templates = new JsonArray();
         try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement stmt = conn.prepareStatement(
-                     "SELECT template_id, title, description, thumbnail " +
-                             "FROM room_templates WHERE enabled = '1' " +
-                             "ORDER BY sort_order ASC, template_id ASC")) {
+             PreparedStatement stmt = conn.prepareStatement("""
+                     SELECT template_id, title, description, thumbnail
+                     FROM room_templates WHERE enabled = '1'
+                     ORDER BY sort_order ASC, template_id ASC""")) {
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     JsonObject t = new JsonObject();
@@ -82,10 +82,10 @@ final class StaticContentEndpoints {
             JsonArray items = new JsonArray();
             int limit = Math.max(1, Math.min(20, Emulator.getConfig().getInt("login.news.limit", 5)));
             try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(
-                         "SELECT id, title, body, image, link_text, link_url " +
-                                 "FROM ui_news WHERE enabled = 1 " +
-                                 "ORDER BY sort_order ASC, id DESC LIMIT ?")) {
+                 PreparedStatement stmt = conn.prepareStatement("""
+                         SELECT id, title, body, image, link_text, link_url
+                         FROM ui_news WHERE enabled = 1
+                         ORDER BY sort_order ASC, id DESC LIMIT ?""")) {
                 stmt.setInt(1, limit);
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {

@@ -88,9 +88,10 @@ public class GuildForumDataComposer extends MessageComposer {
 
         int newComments = 0;
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement(
-                "SELECT COUNT(*) FROM `guilds_forums_comments` " +
-                        "JOIN `guilds_forums_threads` ON `guilds_forums_threads`.`id` = `guilds_forums_comments`.`thread_id` " +
-                        "WHERE `guilds_forums_threads`.`guild_id` = ? AND `guilds_forums_comments`.`created_at` > ?"
+                """
+                SELECT COUNT(*) FROM `guilds_forums_comments` \
+                JOIN `guilds_forums_threads` ON `guilds_forums_threads`.`id` = `guilds_forums_comments`.`thread_id` \
+                WHERE `guilds_forums_threads`.`guild_id` = ? AND `guilds_forums_comments`.`created_at` > ?"""
         )) {
             statement.setInt(1, guildId);
             statement.setInt(2, lastSeenAt);

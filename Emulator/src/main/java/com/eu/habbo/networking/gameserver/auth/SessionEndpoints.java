@@ -362,10 +362,11 @@ final class SessionEndpoints {
 
             int newUserId = 0;
             try (PreparedStatement ins = conn.prepareStatement(
-                    "INSERT INTO users (username, password, mail, account_created, " +
-                            "ip_register, ip_current, last_online, last_login, motto, look, gender, " +
-                            "credits, `rank`, home_room, machine_id, auth_ticket, online) " +
-                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, '', '', '0')",
+                    """
+                    INSERT INTO users (username, password, mail, account_created, \
+                    ip_register, ip_current, last_online, last_login, motto, look, gender, \
+                    credits, `rank`, home_room, machine_id, auth_ticket, online) \
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, '', '', '0')""",
                     Statement.RETURN_GENERATED_KEYS)) {
                 ins.setString(1, username);
                 ins.setString(2, hashed);
@@ -433,9 +434,10 @@ final class SessionEndpoints {
                     long expiresAt = Instant.now().getEpochSecond() + 60L * 60L; // 1h
 
                     try (PreparedStatement ins = conn.prepareStatement(
-                            "INSERT INTO password_resets (user_id, token, expires_at, created_ip) " +
-                                    "VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE " +
-                                    "token = VALUES(token), expires_at = VALUES(expires_at), created_ip = VALUES(created_ip)")) {
+                            """
+                            INSERT INTO password_resets (user_id, token, expires_at, created_ip) \
+                            VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE \
+                            token = VALUES(token), expires_at = VALUES(expires_at), created_ip = VALUES(created_ip)""")) {
                         ins.setInt(1, userId);
                         ins.setString(2, token);
                         ins.setTimestamp(3, Timestamp.from(Instant.ofEpochSecond(expiresAt)));

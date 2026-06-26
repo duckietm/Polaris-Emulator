@@ -79,12 +79,13 @@ public class GuildForumListEvent extends MessageHandler {
 
         THashSet<Guild> guilds = new THashSet<Guild>();
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT `guilds`.`id`, SUM(`guilds_forums_threads`.`posts_count`) AS `post_count` " +
-                "FROM `guilds_forums_threads` " +
-                "LEFT JOIN `guilds` ON `guilds`.`id` = `guilds_forums_threads`.`guild_id` " +
-                "WHERE `guilds`.`forum` = '1' AND `guilds_forums_threads`.`created_at` > ? " +
-                "GROUP BY `guilds`.`id` " +
-                "ORDER BY `post_count` DESC LIMIT 100")) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("""
+                SELECT `guilds`.`id`, SUM(`guilds_forums_threads`.`posts_count`) AS `post_count`
+                FROM `guilds_forums_threads`
+                LEFT JOIN `guilds` ON `guilds`.`id` = `guilds_forums_threads`.`guild_id`
+                WHERE `guilds`.`forum` = '1' AND `guilds_forums_threads`.`created_at` > ?
+                GROUP BY `guilds`.`id`
+                ORDER BY `post_count` DESC LIMIT 100""")) {
             statement.setInt(1, Emulator.getIntUnixTimestamp() - 7 * 24 * 60 * 60);
             ResultSet set = statement.executeQuery();
 
@@ -117,9 +118,10 @@ public class GuildForumListEvent extends MessageHandler {
 
         THashSet<Guild> guilds = new THashSet<Guild>();
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT `guilds`.`id` FROM `guilds_members` " +
-                "LEFT JOIN `guilds` ON `guilds`.`id` = `guilds_members`.`guild_id` " +
-                "WHERE `guilds_members`.`user_id` = ? AND `guilds`.`forum` = '1'")) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("""
+                SELECT `guilds`.`id` FROM `guilds_members`
+                LEFT JOIN `guilds` ON `guilds`.`id` = `guilds_members`.`guild_id`
+                WHERE `guilds_members`.`user_id` = ? AND `guilds`.`forum` = '1'""")) {
             statement.setInt(1, userId);
             ResultSet set = statement.executeQuery();
 

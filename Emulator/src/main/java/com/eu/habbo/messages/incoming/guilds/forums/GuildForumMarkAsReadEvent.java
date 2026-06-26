@@ -52,8 +52,9 @@ public class GuildForumMarkAsReadEvent extends MessageHandler {
             }
 
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO `guild_forum_views` (`user_id`, `guild_id`, `timestamp`) VALUES (?, ?, ?) " +
-                            "ON DUPLICATE KEY UPDATE `timestamp` = ?"
+                    """
+                    INSERT INTO `guild_forum_views` (`user_id`, `guild_id`, `timestamp`) VALUES (?, ?, ?) \
+                    ON DUPLICATE KEY UPDATE `timestamp` = ?"""
             )) {
                 statement.setInt(1, userId);
                 statement.setInt(2, guildId);

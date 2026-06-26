@@ -64,13 +64,13 @@ public final class WiredVariableReferenceSupport {
         Map<Integer, RoomOption> optionsByRoomId = new LinkedHashMap<>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                 "SELECT rooms.id AS room_id, rooms.name AS room_name, items.id AS item_id, items.wired_data, items_base.interaction_type " +
-                     "FROM rooms " +
-                     "INNER JOIN items ON rooms.id = items.room_id " +
-                     "INNER JOIN items_base ON items.item_id = items_base.id " +
-                     "WHERE rooms.owner_id = ? AND rooms.id <> ? AND items_base.interaction_type IN ('wf_var_user', 'wf_var_room') " +
-                     "ORDER BY rooms.name ASC, items.id ASC")) {
+             PreparedStatement statement = connection.prepareStatement("""
+                 SELECT rooms.id AS room_id, rooms.name AS room_name, items.id AS item_id, items.wired_data, items_base.interaction_type
+                 FROM rooms
+                 INNER JOIN items ON rooms.id = items.room_id
+                 INNER JOIN items_base ON items.item_id = items_base.id
+                 WHERE rooms.owner_id = ? AND rooms.id <> ? AND items_base.interaction_type IN ('wf_var_user', 'wf_var_room')
+                 ORDER BY rooms.name ASC, items.id ASC""")) {
             statement.setInt(1, room.getOwnerId());
             statement.setInt(2, room.getId());
 
@@ -367,10 +367,10 @@ public final class WiredVariableReferenceSupport {
         }
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                 "SELECT items.wired_data, items_base.interaction_type " +
-                     "FROM items INNER JOIN items_base ON items.item_id = items_base.id " +
-                     "WHERE items.id = ? AND items.room_id = ? LIMIT 1")) {
+             PreparedStatement statement = connection.prepareStatement("""
+                 SELECT items.wired_data, items_base.interaction_type
+                 FROM items INNER JOIN items_base ON items.item_id = items_base.id
+                 WHERE items.id = ? AND items.room_id = ? LIMIT 1""")) {
             statement.setInt(1, reference.getSourceVariableItemId());
             statement.setInt(2, reference.getSourceRoomId());
 

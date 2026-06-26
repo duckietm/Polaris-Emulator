@@ -195,14 +195,15 @@ public class Messenger {
 
     public void loadFriends(Habbo habbo) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT " +
-                     "users.id, " +
-                     "users.username, " +
-                     "users.gender, " +
-                     "users.online, " +
-                     "users.look, " +
-                     "users.motto, " +
-                     "messenger_friendships.* FROM messenger_friendships INNER JOIN users ON messenger_friendships.user_two_id = users.id WHERE user_one_id = ?")) {
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT
+                     users.id,
+                     users.username,
+                     users.gender,
+                     users.online,
+                     users.look,
+                     users.motto,
+                     messenger_friendships.* FROM messenger_friendships INNER JOIN users ON messenger_friendships.user_two_id = users.id WHERE user_one_id = ?""")) {
             statement.setInt(1, habbo.getHabboInfo().getId());
 
             try (ResultSet set = statement.executeQuery()) {
@@ -227,14 +228,15 @@ public class Messenger {
 
     public MessengerBuddy loadFriend(Habbo habbo, int userId) {
         MessengerBuddy buddy = null;
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT " +
-                "users.id, " +
-                "users.username, " +
-                "users.gender, " +
-                "users.online, " +
-                "users.look, " +
-                "users.motto, " +
-                "messenger_friendships.* FROM messenger_friendships INNER JOIN users ON messenger_friendships.user_two_id = users.id WHERE user_one_id = ? AND user_two_id = ? LIMIT 1")) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("""
+                SELECT
+                users.id,
+                users.username,
+                users.gender,
+                users.online,
+                users.look,
+                users.motto,
+                messenger_friendships.* FROM messenger_friendships INNER JOIN users ON messenger_friendships.user_two_id = users.id WHERE user_one_id = ? AND user_two_id = ? LIMIT 1""")) {
             statement.setInt(1, habbo.getHabboInfo().getId());
             statement.setInt(2, userId);
 

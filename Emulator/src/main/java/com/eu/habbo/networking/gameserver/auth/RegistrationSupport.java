@@ -20,9 +20,9 @@ final class RegistrationSupport {
         String overrideModel = "0";
         String heightmap = "";
         int doorX = 0, doorY = 0, doorDir = 2;
-        try (PreparedStatement sel = conn.prepareStatement(
-                "SELECT override_model, heightmap, door_x, door_y, door_dir " +
-                        "FROM room_templates WHERE template_id = ? LIMIT 1")) {
+        try (PreparedStatement sel = conn.prepareStatement("""
+                SELECT override_model, heightmap, door_x, door_y, door_dir
+                FROM room_templates WHERE template_id = ? LIMIT 1""")) {
             sel.setInt(1, templateId);
             try (ResultSet rs = sel.executeQuery()) {
                 if (rs.next()) {
@@ -44,11 +44,11 @@ final class RegistrationSupport {
 
         String customName = "custom_" + newRoomId;
 
-        try (PreparedStatement ins = conn.prepareStatement(
-                "INSERT INTO room_models_custom (id, name, door_x, door_y, door_dir, heightmap) " +
-                        "VALUES (?, ?, ?, ?, ?, ?) " +
-                        "ON DUPLICATE KEY UPDATE name = VALUES(name), door_x = VALUES(door_x), " +
-                        "door_y = VALUES(door_y), door_dir = VALUES(door_dir), heightmap = VALUES(heightmap)")) {
+        try (PreparedStatement ins = conn.prepareStatement("""
+                INSERT INTO room_models_custom (id, name, door_x, door_y, door_dir, heightmap)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE name = VALUES(name), door_x = VALUES(door_x),
+                door_y = VALUES(door_y), door_dir = VALUES(door_dir), heightmap = VALUES(heightmap)""")) {
             ins.setInt(1, newRoomId);
             ins.setString(2, customName);
             ins.setInt(3, doorX);
@@ -74,9 +74,9 @@ final class RegistrationSupport {
     }
 
     static void seedUserCurrencies(Connection conn, int userId, int duckets, int diamonds) {
-        try (PreparedStatement ins = conn.prepareStatement(
-                "INSERT INTO users_currency (user_id, type, amount) VALUES (?, ?, ?) " +
-                        "ON DUPLICATE KEY UPDATE amount = VALUES(amount)")) {
+        try (PreparedStatement ins = conn.prepareStatement("""
+                INSERT INTO users_currency (user_id, type, amount) VALUES (?, ?, ?)
+                ON DUPLICATE KEY UPDATE amount = VALUES(amount)""")) {
             if (duckets > 0) {
                 ins.setInt(1, userId);
                 ins.setInt(2, 0);
@@ -115,14 +115,14 @@ final class RegistrationSupport {
 
         int newRoomId = 0;
         int roomsInserted = 0;
-        try (PreparedStatement ins = conn.prepareStatement(
-                "INSERT INTO rooms (owner_id, owner_name, name, description, model, password, state, " +
-                        "users_max, category, paper_floor, paper_wall, paper_landscape, thickness_wall, " +
-                        "thickness_floor, moodlight_data, override_model, trade_mode) " +
-                        "(SELECT ?, ?, name, room_description, model, password, state, " +
-                        "users_max, category, paper_floor, paper_wall, paper_landscape, thickness_wall, " +
-                        "thickness_floor, moodlight_data, override_model, trade_mode " +
-                        "FROM room_templates WHERE template_id = ?)",
+        try (PreparedStatement ins = conn.prepareStatement("""
+                INSERT INTO rooms (owner_id, owner_name, name, description, model, password, state,
+                users_max, category, paper_floor, paper_wall, paper_landscape, thickness_wall,
+                thickness_floor, moodlight_data, override_model, trade_mode)
+                (SELECT ?, ?, name, room_description, model, password, state,
+                users_max, category, paper_floor, paper_wall, paper_landscape, thickness_wall,
+                thickness_floor, moodlight_data, override_model, trade_mode
+                FROM room_templates WHERE template_id = ?)""",
                 Statement.RETURN_GENERATED_KEYS)) {
             ins.setInt(1, userId);
             ins.setString(2, userName);
@@ -146,11 +146,11 @@ final class RegistrationSupport {
         materializeCustomLayout(conn, templateId, newRoomId);
 
         int itemsInserted = 0;
-        try (PreparedStatement ins = conn.prepareStatement(
-                "INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot, " +
-                        "extra_data, wired_data, limited_data, guild_id) " +
-                        "(SELECT ?, ?, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, '0:0', 0 " +
-                        "FROM room_templates_items WHERE template_id = ?)")) {
+        try (PreparedStatement ins = conn.prepareStatement("""
+                INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot,
+                extra_data, wired_data, limited_data, guild_id)
+                (SELECT ?, ?, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, '0:0', 0
+                FROM room_templates_items WHERE template_id = ?)""")) {
             ins.setInt(1, userId);
             ins.setInt(2, newRoomId);
             ins.setInt(3, templateId);

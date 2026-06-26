@@ -55,9 +55,9 @@ public class HousekeepingListActionLogEvent extends MessageHandler {
         List<HousekeepingActionLogComposer.Row> rows = new ArrayList<>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "SELECT id, timestamp, actor_id, actor_name, target_type, target_id, target_label, action, detail, success " +
-                     "FROM housekeeping_log ORDER BY id DESC LIMIT ?")) {
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT id, timestamp, actor_id, actor_name, target_type, target_id, target_label, action, detail, success
+                     FROM housekeeping_log ORDER BY id DESC LIMIT ?""")) {
             statement.setInt(1, limit);
 
             try (ResultSet rs = statement.executeQuery()) {

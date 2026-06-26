@@ -49,9 +49,9 @@ public class AchievementManager {
                 progressAchievement(habbo, achievement, amount);
             } else {
                 try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                     PreparedStatement statement = connection.prepareStatement("" +
-                             "INSERT INTO users_achievements_queue (user_id, achievement_id, amount) VALUES (?, ?, ?) " +
-                             "ON DUPLICATE KEY UPDATE amount = amount + ?")) {
+                     PreparedStatement statement = connection.prepareStatement("""
+                             INSERT INTO users_achievements_queue (user_id, achievement_id, amount) VALUES (?, ?, ?) \
+                             ON DUPLICATE KEY UPDATE amount = amount + ?""")) {
                     statement.setInt(1, habboId);
                     statement.setInt(2, achievement.id);
                     statement.setInt(3, amount);

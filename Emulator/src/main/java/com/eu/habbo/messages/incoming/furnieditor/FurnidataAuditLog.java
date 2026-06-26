@@ -13,9 +13,9 @@ public final class FurnidataAuditLog {
     public static void record(int userId, String classname, String action,
                               String oldName, String newName, String oldDesc, String newDesc) {
         try (Connection c = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement st = c.prepareStatement(
-                 "INSERT INTO furnidata_edit_log (user_id, classname, action, old_name, new_name, old_description, new_description, timestamp) " +
-                 "VALUES (?,?,?,?,?,?,?,?)")) {
+             PreparedStatement st = c.prepareStatement("""
+                 INSERT INTO furnidata_edit_log (user_id, classname, action, old_name, new_name, old_description, new_description, timestamp) \
+                 VALUES (?,?,?,?,?,?,?,?)""")) {
             st.setInt(1, userId);
             st.setString(2, classname);
             st.setString(3, action);

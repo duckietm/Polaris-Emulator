@@ -188,8 +188,9 @@ public class BadgeLeaderboardHttpHandler extends ChannelInboundHandlerAdapter {
 
     private void loadBadgeStats(Connection connection, JsonArray badgeStats) throws Exception {
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT badge_code, COUNT(DISTINCT user_id) AS owner_count " +
-                        "FROM users_badges GROUP BY badge_code ORDER BY owner_count ASC, badge_code ASC")) {
+                """
+                SELECT badge_code, COUNT(DISTINCT user_id) AS owner_count \
+                FROM users_badges GROUP BY badge_code ORDER BY owner_count ASC, badge_code ASC""")) {
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
                     String badgeCode = set.getString("badge_code");
@@ -207,18 +208,19 @@ public class BadgeLeaderboardHttpHandler extends ChannelInboundHandlerAdapter {
 
     private void loadBadgeUsers(Connection connection, List<UserBadgeAggregate> badgeUsers) throws Exception {
         String sql =
-                "SELECT u.id AS user_id, u.username, u.look, " +
-                        "COUNT(DISTINCT ub.badge_code) AS total_badges, " +
-                        "COUNT(DISTINCT CASE WHEN counts.owner_count > 50 THEN ub.badge_code END) AS common_count, " +
-                        "COUNT(DISTINCT CASE WHEN counts.owner_count > 10 AND counts.owner_count <= 50 THEN ub.badge_code END) AS rare_count, " +
-                        "COUNT(DISTINCT CASE WHEN counts.owner_count > 6 AND counts.owner_count <= 10 THEN ub.badge_code END) AS epic_count, " +
-                        "COUNT(DISTINCT CASE WHEN counts.owner_count > 3 AND counts.owner_count <= 6 THEN ub.badge_code END) AS legendary_count, " +
-                        "COUNT(DISTINCT CASE WHEN counts.owner_count > 1 AND counts.owner_count <= 3 THEN ub.badge_code END) AS mythical_count, " +
-                        "COUNT(DISTINCT CASE WHEN counts.owner_count = 1 THEN ub.badge_code END) AS unique_count " +
-                        "FROM users_badges ub " +
-                        "INNER JOIN users u ON u.id = ub.user_id " +
-                        "INNER JOIN (SELECT badge_code, COUNT(DISTINCT user_id) AS owner_count FROM users_badges GROUP BY badge_code) counts ON counts.badge_code = ub.badge_code " +
-                        "GROUP BY u.id, u.username, u.look";
+                """
+                SELECT u.id AS user_id, u.username, u.look, \
+                COUNT(DISTINCT ub.badge_code) AS total_badges, \
+                COUNT(DISTINCT CASE WHEN counts.owner_count > 50 THEN ub.badge_code END) AS common_count, \
+                COUNT(DISTINCT CASE WHEN counts.owner_count > 10 AND counts.owner_count <= 50 THEN ub.badge_code END) AS rare_count, \
+                COUNT(DISTINCT CASE WHEN counts.owner_count > 6 AND counts.owner_count <= 10 THEN ub.badge_code END) AS epic_count, \
+                COUNT(DISTINCT CASE WHEN counts.owner_count > 3 AND counts.owner_count <= 6 THEN ub.badge_code END) AS legendary_count, \
+                COUNT(DISTINCT CASE WHEN counts.owner_count > 1 AND counts.owner_count <= 3 THEN ub.badge_code END) AS mythical_count, \
+                COUNT(DISTINCT CASE WHEN counts.owner_count = 1 THEN ub.badge_code END) AS unique_count \
+                FROM users_badges ub \
+                INNER JOIN users u ON u.id = ub.user_id \
+                INNER JOIN (SELECT badge_code, COUNT(DISTINCT user_id) AS owner_count FROM users_badges GROUP BY badge_code) counts ON counts.badge_code = ub.badge_code \
+                GROUP BY u.id, u.username, u.look""";
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             try (ResultSet set = statement.executeQuery()) {
@@ -245,9 +247,10 @@ public class BadgeLeaderboardHttpHandler extends ChannelInboundHandlerAdapter {
 
     private void loadAchievementUsers(Connection connection, List<UserAchievementAggregate> achievementUsers) throws Exception {
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT u.id AS user_id, u.username, u.look, COALESCE(us.achievement_score, 0) AS achievement_score " +
-                        "FROM users u INNER JOIN users_settings us ON us.user_id = u.id " +
-                        "WHERE COALESCE(us.achievement_score, 0) > 0")) {
+                """
+                SELECT u.id AS user_id, u.username, u.look, COALESCE(us.achievement_score, 0) AS achievement_score \
+                FROM users u INNER JOIN users_settings us ON us.user_id = u.id \
+                WHERE COALESCE(us.achievement_score, 0) > 0""")) {
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
                     achievementUsers.add(new UserAchievementAggregate(

@@ -214,10 +214,10 @@ public final class AuthHttpUtil {
     }
 
     static BanInfo lookupAccountBan(Connection conn, int userId) throws SQLException {
-        try (PreparedStatement stmt = conn.prepareStatement(
-                "SELECT ban_expire, ban_reason, type FROM bans " +
-                        "WHERE user_id = ? AND ban_expire >= ? AND (type = 'account' OR type = 'super') " +
-                        "ORDER BY ban_expire DESC LIMIT 1")) {
+        try (PreparedStatement stmt = conn.prepareStatement("""
+                SELECT ban_expire, ban_reason, type FROM bans \
+                WHERE user_id = ? AND ban_expire >= ? AND (type = 'account' OR type = 'super') \
+                ORDER BY ban_expire DESC LIMIT 1""")) {
             stmt.setInt(1, userId);
             stmt.setInt(2, Emulator.getIntUnixTimestamp());
             try (ResultSet rs = stmt.executeQuery()) {
@@ -230,10 +230,10 @@ public final class AuthHttpUtil {
     }
 
     static BanInfo lookupIpBan(Connection conn, String ip) throws SQLException {
-        try (PreparedStatement stmt = conn.prepareStatement(
-                "SELECT ban_expire, ban_reason, type FROM bans " +
-                        "WHERE ip = ? AND ban_expire >= ? AND (type = 'ip' OR type = 'super') " +
-                        "ORDER BY ban_expire DESC LIMIT 1")) {
+        try (PreparedStatement stmt = conn.prepareStatement("""
+                SELECT ban_expire, ban_reason, type FROM bans \
+                WHERE ip = ? AND ban_expire >= ? AND (type = 'ip' OR type = 'super') \
+                ORDER BY ban_expire DESC LIMIT 1""")) {
             stmt.setString(1, ip);
             stmt.setInt(2, Emulator.getIntUnixTimestamp());
             try (ResultSet rs = stmt.executeQuery()) {

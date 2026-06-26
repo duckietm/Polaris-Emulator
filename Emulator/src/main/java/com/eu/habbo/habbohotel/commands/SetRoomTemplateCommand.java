@@ -42,15 +42,16 @@ public class SetRoomTemplateCommand extends Command {
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
             try (PreparedStatement insTemplate = connection.prepareStatement(
-                    "INSERT INTO room_templates (title, description, thumbnail, sort_order, enabled, " +
-                            "name, room_description, model, password, state, users_max, category, " +
-                            "paper_floor, paper_wall, paper_landscape, thickness_wall, thickness_floor, " +
-                            "moodlight_data, override_model, trade_mode) " +
-                            "(SELECT name, description, '', 0, '1', " +
-                            "name, description, model, password, state, users_max, category, " +
-                            "paper_floor, paper_wall, paper_landscape, thickness_wall, thickness_floor, " +
-                            "moodlight_data, override_model, trade_mode " +
-                            "FROM rooms WHERE id = ?)",
+                    """
+                    INSERT INTO room_templates (title, description, thumbnail, sort_order, enabled, \
+                    name, room_description, model, password, state, users_max, category, \
+                    paper_floor, paper_wall, paper_landscape, thickness_wall, thickness_floor, \
+                    moodlight_data, override_model, trade_mode) \
+                    (SELECT name, description, '', 0, '1', \
+                    name, description, model, password, state, users_max, category, \
+                    paper_floor, paper_wall, paper_landscape, thickness_wall, thickness_floor, \
+                    moodlight_data, override_model, trade_mode \
+                    FROM rooms WHERE id = ?)""",
                     Statement.RETURN_GENERATED_KEYS)) {
                 insTemplate.setInt(1, room.getId());
                 insTemplate.executeUpdate();
@@ -68,11 +69,12 @@ public class SetRoomTemplateCommand extends Command {
 
             if (room.hasCustomLayout()) {
                 try (PreparedStatement updLayout = connection.prepareStatement(
-                        "UPDATE room_templates t " +
-                                "JOIN room_models_custom c ON c.id = ? " +
-                                "SET t.heightmap = c.heightmap, t.door_x = c.door_x, " +
-                                "    t.door_y = c.door_y, t.door_dir = c.door_dir " +
-                                "WHERE t.template_id = ?")) {
+                        """
+                        UPDATE room_templates t \
+                        JOIN room_models_custom c ON c.id = ? \
+                        SET t.heightmap = c.heightmap, t.door_x = c.door_x, \
+                            t.door_y = c.door_y, t.door_dir = c.door_dir \
+                        WHERE t.template_id = ?""")) {
                     updLayout.setInt(1, room.getId());
                     updLayout.setInt(2, newTemplateId);
                     updLayout.executeUpdate();
@@ -80,10 +82,11 @@ public class SetRoomTemplateCommand extends Command {
             }
 
             try (PreparedStatement insItems = connection.prepareStatement(
-                    "INSERT INTO room_templates_items (template_id, item_id, wall_pos, x, y, z, rot, extra_data, wired_data) " +
-                            "SELECT ?, i.item_id, i.wall_pos, i.x, i.y, i.z, i.rot, i.extra_data, i.wired_data " +
-                            "FROM items i JOIN items_base ib ON ib.id = i.item_id " +
-                            "WHERE i.room_id = ?")) {
+                    """
+                    INSERT INTO room_templates_items (template_id, item_id, wall_pos, x, y, z, rot, extra_data, wired_data) \
+                    SELECT ?, i.item_id, i.wall_pos, i.x, i.y, i.z, i.rot, i.extra_data, i.wired_data \
+                    FROM items i JOIN items_base ib ON ib.id = i.item_id \
+                    WHERE i.room_id = ?""")) {
                 insItems.setInt(1, newTemplateId);
                 insItems.setInt(2, room.getId());
                 itemsCopied = insItems.executeUpdate();

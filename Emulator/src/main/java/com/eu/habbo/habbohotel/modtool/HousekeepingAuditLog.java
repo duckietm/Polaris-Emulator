@@ -41,9 +41,9 @@ public final class HousekeepingAuditLog {
         ensureTable();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "INSERT INTO housekeeping_log (timestamp, actor_id, actor_name, target_type, target_id, target_label, action, detail, success) " +
-                             "VALUES (?, ?, ?, 'user', ?, '', ?, ?, 1)")) {
+             PreparedStatement statement = connection.prepareStatement("""
+                     INSERT INTO housekeeping_log (timestamp, actor_id, actor_name, target_type, target_id, target_label, action, detail, success)
+                     VALUES (?, ?, ?, 'user', ?, '', ?, ?, 1)""")) {
             statement.setInt(1, Emulator.getIntUnixTimestamp());
             statement.setInt(2, operatorId);
             statement.setString(3, operatorName != null ? operatorName : "");
@@ -74,21 +74,19 @@ public final class HousekeepingAuditLog {
             }
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                  Statement statement = connection.createStatement()) {
-                statement.execute(
-                        "CREATE TABLE IF NOT EXISTS housekeeping_log (" +
-                                "id INT NOT NULL AUTO_INCREMENT, " +
-                                "timestamp INT NOT NULL, " +
-                                "actor_id INT NOT NULL, " +
-                                "actor_name VARCHAR(64) NOT NULL DEFAULT '', " +
-                                "target_type VARCHAR(16) NOT NULL DEFAULT 'user', " +
-                                "target_id INT NOT NULL DEFAULT 0, " +
-                                "target_label VARCHAR(128) NOT NULL DEFAULT '', " +
-                                "action VARCHAR(64) NOT NULL DEFAULT '', " +
-                                "detail VARCHAR(500) NOT NULL DEFAULT '', " +
-                                "success TINYINT NOT NULL DEFAULT 1, " +
-                                "PRIMARY KEY (id), " +
-                                "KEY timestamp (timestamp)" +
-                                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+                statement.execute("""
+                        CREATE TABLE IF NOT EXISTS housekeeping_log (id INT NOT NULL AUTO_INCREMENT,
+                        timestamp INT NOT NULL,
+                        actor_id INT NOT NULL,
+                        actor_name VARCHAR(64) NOT NULL DEFAULT '',
+                        target_type VARCHAR(16) NOT NULL DEFAULT 'user',
+                        target_id INT NOT NULL DEFAULT 0,
+                        target_label VARCHAR(128) NOT NULL DEFAULT '',
+                        action VARCHAR(64) NOT NULL DEFAULT '',
+                        detail VARCHAR(500) NOT NULL DEFAULT '',
+                        success TINYINT NOT NULL DEFAULT 1,
+                        PRIMARY KEY (id),
+                        KEY timestamp (timestamp)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""");
                 tableReady = true;
             } catch (SQLException e) {
                 LOGGER.error("Failed to create housekeeping_log table", e);

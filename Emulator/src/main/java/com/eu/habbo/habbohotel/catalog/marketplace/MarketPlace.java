@@ -332,16 +332,17 @@ public class MarketPlace {
 
 
     public static void sendErrorMessage(GameClient client, int baseItemId, int offerId) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT marketplace_items.*, COUNT( * ) AS count\n" +
-                "FROM marketplace_items\n" +
-                "INNER JOIN items ON marketplace_items.item_id = items.id\n" +
-                "INNER JOIN items_base ON items.item_id = items_base.id\n" +
-                "WHERE items_base.sprite_id = ( \n" +
-                "SELECT items_base.sprite_id\n" +
-                "FROM items_base\n" +
-                "WHERE items_base.id = ? LIMIT 1)\n" +
-                "ORDER BY price ASC\n" +
-                "LIMIT 1", ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("""
+                SELECT marketplace_items.*, COUNT( * ) AS count
+                FROM marketplace_items
+                INNER JOIN items ON marketplace_items.item_id = items.id
+                INNER JOIN items_base ON items.item_id = items_base.id
+                WHERE items_base.sprite_id = (
+                SELECT items_base.sprite_id
+                FROM items_base
+                WHERE items_base.id = ? LIMIT 1)
+                ORDER BY price ASC
+                LIMIT 1""", ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
             statement.setInt(1, baseItemId);
             try (ResultSet countSet = statement.executeQuery()) {
                 countSet.last();

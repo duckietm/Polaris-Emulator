@@ -68,9 +68,9 @@ public class HousekeepingGiveCurrencyEvent extends MessageHandler {
         }
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "INSERT INTO users_currency (user_id, type, amount) VALUES (?, ?, ?) " +
-                     "ON DUPLICATE KEY UPDATE amount = amount + VALUES(amount)")) {
+             PreparedStatement statement = connection.prepareStatement("""
+                     INSERT INTO users_currency (user_id, type, amount) VALUES (?, ?, ?) \
+                     ON DUPLICATE KEY UPDATE amount = amount + VALUES(amount)""")) {
             statement.setInt(1, userId);
             statement.setInt(2, currencyType);
             statement.setInt(3, amount);

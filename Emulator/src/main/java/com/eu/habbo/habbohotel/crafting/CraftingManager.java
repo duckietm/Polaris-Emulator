@@ -26,10 +26,11 @@ public class CraftingManager {
     public void reload() {
         this.dispose();
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM crafting_altars_recipes " +
-                "INNER JOIN crafting_recipes ON crafting_altars_recipes.recipe_id = crafting_recipes.id " +
-                "INNER JOIN crafting_recipes_ingredients ON crafting_recipes.id = crafting_recipes_ingredients.recipe_id " +
-                "WHERE crafting_recipes.enabled = ? ORDER BY altar_id ASC")) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("""
+                SELECT * FROM crafting_altars_recipes
+                INNER JOIN crafting_recipes ON crafting_altars_recipes.recipe_id = crafting_recipes.id
+                INNER JOIN crafting_recipes_ingredients ON crafting_recipes.id = crafting_recipes_ingredients.recipe_id
+                WHERE crafting_recipes.enabled = ? ORDER BY altar_id ASC""")) {
             statement.setString(1, "1");
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {

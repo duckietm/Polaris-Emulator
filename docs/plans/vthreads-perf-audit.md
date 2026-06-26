@@ -50,3 +50,12 @@ This is recon + a risk-ranked plan. Nothing applied yet — pick what to do.
 - **Safest immediate wins (low risk, do anytime):** H6 (spin→sync), HS1 (reverse index), HS4, HS5.
 - **Needs measurement/load-test:** H1, H2, HS2, HS3, HikariCP resize.
 - **Leave alone:** WiredTickService shards (H3), the wired ThreadLocals (H4 — correct as-is).
+
+## Status — applied (build 4.2.62 → 4.2.64, branch java25-migration)
+- ✅ **HS1** — O(1) `getHabboByRoomUnit(Id)` reverse index (4.2.62, `96950f4b`).
+- ✅ **H6** — bind spin-loops → `awaitUninterruptibly()` (4.2.63, `5f8d1a27`).
+- ✅ **HS4** — `getStackHeight` single pass over cached tile items (4.2.63).
+- ✅ **HS5** — `furnitureFitsAt` hoisted the synchronized config read out of the per-tile loop (4.2.63).
+- ✅ **HS2 (the safe half)** — `OutgoingPacketEvent` now only built+fired when a plugin is registered (4.2.64). NOTE: the recon's "single flush per broadcast" does NOT apply — each recipient is a *separate channel*, so the per-channel flush is inherent; `sendResponse` already used `voidPromise`.
+- ⏸️ **HS3** (`ServerMessage.get()` `copy()` → `retainedDuplicate()`) — **NOT done**: changes the ByteBuf refcount lifecycle (who releases the shared buffer after N broadcasts), not covered by the test suite. Needs a deliberate refcount analysis + in-room/load smoke test before applying.
+- ⏸️ **Virtual threads (H1/H2 + HikariCP)** — structural, needs a thread dump + load test; not started.

@@ -108,15 +108,20 @@ public class GameClient {
                 return;
             }
 
-            OutgoingPacketEvent event = new OutgoingPacketEvent(this.habbo, response.getComposer(), response);
-            Emulator.getPluginManager().fireEvent(event);
+            // Only build + fire the per-packet event when a plugin actually listens; otherwise this
+            // allocated an OutgoingPacketEvent and ran fireEvent for every packet to every recipient
+            // for nothing (the event could neither cancel nor rewrite the packet without a subscriber).
+            if (Emulator.getPluginManager().isRegistered(OutgoingPacketEvent.class, true)) {
+                OutgoingPacketEvent event = new OutgoingPacketEvent(this.habbo, response.getComposer(), response);
+                Emulator.getPluginManager().fireEvent(event);
 
-            if (event.isCancelled()) {
-                return;
-            }
+                if (event.isCancelled()) {
+                    return;
+                }
 
-            if (event.hasCustomMessage()) {
-                response = event.getCustomMessage();
+                if (event.hasCustomMessage()) {
+                    response = event.getCustomMessage();
+                }
             }
 
             this.channel.write(response, this.channel.voidPromise());
@@ -126,23 +131,26 @@ public class GameClient {
 
     public void sendResponses(ArrayList<ServerMessage> responses) {
         if (this.channel.isOpen()) {
+            final boolean eventRegistered = Emulator.getPluginManager().isRegistered(OutgoingPacketEvent.class, true);
             for (ServerMessage response : responses) {
                 if (response == null || response.getHeader() <= 0) {
                     return;
                 }
 
-                OutgoingPacketEvent event = new OutgoingPacketEvent(this.habbo, response.getComposer(), response);
-                Emulator.getPluginManager().fireEvent(event);
+                if (eventRegistered) {
+                    OutgoingPacketEvent event = new OutgoingPacketEvent(this.habbo, response.getComposer(), response);
+                    Emulator.getPluginManager().fireEvent(event);
 
-                if (event.isCancelled()) {
-                    continue;
+                    if (event.isCancelled()) {
+                        continue;
+                    }
+
+                    if (event.hasCustomMessage()) {
+                        response = event.getCustomMessage();
+                    }
                 }
 
-                if (event.hasCustomMessage()) {
-                    response = event.getCustomMessage();
-                }
-
-                this.channel.write(response);
+                this.channel.write(response, this.channel.voidPromise());
             }
 
             this.channel.flush();

@@ -17,6 +17,9 @@ public class ServerMessage {
     private ByteBufOutputStream stream;
     private ByteBuf channelBuffer;
     private MessageComposer composer;
+    // Set once on the first get() so the 4-byte length prefix is written exactly once and safely
+    // published; after that the buffer content is immutable and can be shared across recipients.
+    private volatile boolean lengthFinalized;
 
     public ServerMessage() {
 
@@ -178,9 +181,21 @@ public class ServerMessage {
     }
 
     public ByteBuf get() {
-        this.channelBuffer.setInt(0, this.channelBuffer.writerIndex() - 4);
+        // Finalize the length prefix exactly once (double-checked) so concurrent broadcasts don't
+        // race-write the shared buffer; after this the message content is immutable.
+        if (!this.lengthFinalized) {
+            synchronized (this) {
+                if (!this.lengthFinalized) {
+                    this.channelBuffer.setInt(0, this.channelBuffer.writerIndex() - 4);
+                    this.lengthFinalized = true;
+                }
+            }
+        }
 
-        return this.channelBuffer.copy();
+        // Share the immutable backing buffer instead of deep-copying it per recipient. retainedDuplicate()
+        // gives each send an independent reader view + (+1) refcount; the encoder release()s it after
+        // writing, so the net refcount is unchanged and the Unpooled original stays at refcount 1 (GC'd).
+        return this.channelBuffer.retainedDuplicate();
     }
 
     public MessageComposer getComposer() {

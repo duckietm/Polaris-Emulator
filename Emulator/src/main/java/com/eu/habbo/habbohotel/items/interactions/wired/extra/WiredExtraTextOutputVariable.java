@@ -293,7 +293,7 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
     }
 
     public void refresh(Room room) {
-        THashSet<HabboItem> remove = new THashSet<>();
+        var remove = new THashSet<HabboItem>();
 
         for (HabboItem item : this.items) {
             if (room == null || room.getHabboItem(item.getId()) == null) {

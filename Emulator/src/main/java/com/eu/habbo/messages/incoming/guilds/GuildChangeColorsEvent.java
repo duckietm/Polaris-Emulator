@@ -27,7 +27,7 @@ public class GuildChangeColorsEvent extends MessageHandler {
                 if (!Emulator.getGameEnvironment().getGuildManager().symbolColor(colorOne) || !Emulator.getGameEnvironment().getGuildManager().backgroundColor(colorTwo))
                     return;
 
-                GuildChangedColorsEvent colorsEvent = new GuildChangedColorsEvent(guild, colorOne, colorTwo);
+                var colorsEvent = new GuildChangedColorsEvent(guild, colorOne, colorTwo);
                 Emulator.getPluginManager().fireEvent(colorsEvent);
 
                 if (colorsEvent.isCancelled())

@@ -13,8 +13,8 @@ public class SSLCertificateLoader {
 
     public static SslContext getContext() {
         try {
-            File certFile = new File(SSL_PATH + File.separator + "cert.pem");
-            File keyFile = new File(SSL_PATH + File.separator + "privkey.pem");
+            var certFile = new File(SSL_PATH + File.separator + "cert.pem");
+            var keyFile = new File(SSL_PATH + File.separator + "privkey.pem");
 
             if (!certFile.exists() || !keyFile.exists()) {
                 LOGGER.debug("SSL certificates not found in '{}' directory, WSS disabled", SSL_PATH);

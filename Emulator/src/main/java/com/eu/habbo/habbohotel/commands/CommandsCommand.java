@@ -12,7 +12,7 @@ public class CommandsCommand extends Command {
 
     @Override
     public boolean handle(GameClient gameClient, String[] params) throws Exception {
-        StringBuilder message = new StringBuilder(Emulator.getTexts().getValue("commands.generic.cmd_commands.text"));
+        var message = new StringBuilder(Emulator.getTexts().getValue("commands.generic.cmd_commands.text"));
         List<Command> commands = Emulator.getGameEnvironment().getCommandHandler().getCommandsForRank(gameClient.getHabbo().getHabboInfo().getRank().getId());
         message.append("(").append(commands.size()).append("):\r\n");
 

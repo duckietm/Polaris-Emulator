@@ -184,7 +184,7 @@ public class SecureLoginEvent extends MessageHandler {
                     }
                 }
 
-                ArrayList<ServerMessage> messages = new ArrayList<>();
+                var messages = new ArrayList<ServerMessage>();
 
                 messages.add(new SecureLoginOKComposer().compose());
 
@@ -294,7 +294,7 @@ public class SecureLoginEvent extends MessageHandler {
                             modToolSanctions.updateMuteDuration(item.id, 0);
                             habbo.unMute();
                         } else if (item.isMuted && item.muteDuration > Emulator.getIntUnixTimestamp()) {
-                            Date muteDuration = new Date((long) item.muteDuration * 1000);
+                            var muteDuration = new Date((long) item.muteDuration * 1000);
                             long diff = muteDuration.getTime() - Emulator.getDate().getTime();
                             habbo.mute(Math.toIntExact(diff), false);
                         }
@@ -303,7 +303,7 @@ public class SecureLoginEvent extends MessageHandler {
 
                 // Skip login-only events on session resume (welcome alerts, login events, etc.)
                 if (!isSessionResume) {
-                    UserLoginEvent userLoginEvent = new UserLoginEvent(habbo, this.client.getHabbo().getHabboInfo().getIpLogin());
+                    var userLoginEvent = new UserLoginEvent(habbo, this.client.getHabbo().getHabboInfo().getIpLogin());
                     Emulator.getPluginManager().fireEvent(userLoginEvent);
 
                     if(userLoginEvent.isCancelled()) {

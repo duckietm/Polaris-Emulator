@@ -31,7 +31,7 @@ public class CraftingAltar {
     }
 
     public Map<CraftingRecipe, Boolean> matchRecipes(Map<Item, Integer> amountMap) {
-        THashMap<CraftingRecipe, Boolean> foundRecepies = new THashMap<>(Math.max(1, this.recipes.size() / 3));
+        var foundRecepies = new THashMap<CraftingRecipe, Boolean>(Math.max(1, this.recipes.size() / 3));
 
         for (Map.Entry<Integer, CraftingRecipe> set : this.recipes.entrySet()) {
             boolean contains = true;

@@ -78,7 +78,7 @@ public class WiredConditionTriggerFurniAdjacentState extends InteractionWiredCon
         }
 
         // Resolve the set of base-item ids the picker scopes the check to (empty == any furni).
-        THashSet<Integer> allowedBaseItems = new THashSet<>();
+        var allowedBaseItems = new THashSet<Integer>();
         for (int itemId : this.selectedFurni) {
             HabboItem selected = room.getHabboItem(itemId);
             if (selected != null) {
@@ -224,7 +224,7 @@ public class WiredConditionTriggerFurniAdjacentState extends InteractionWiredCon
             return;
         }
 
-        THashSet<Integer> remove = new THashSet<>();
+        var remove = new THashSet<Integer>();
         for (int itemId : this.selectedFurni) {
             if (room.getHabboItem(itemId) == null) {
                 remove.add(itemId);

@@ -375,7 +375,7 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
     }
 
     protected void refresh() {
-        THashSet<HabboItem> staleItems = new THashSet<>();
+        var staleItems = new THashSet<HabboItem>();
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
 
         if (room == null) {

@@ -369,7 +369,7 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
     }
 
     private ReferenceSnapshot userReferences(WiredContext ctx, Room room) {
-        ReferenceSnapshot snapshot = new ReferenceSnapshot(TARGET_USER);
+        var snapshot = new ReferenceSnapshot(TARGET_USER);
 
         if (isInternalVariableToken(this.referenceVariableToken)) {
             String key = getInternalVariableKey(this.referenceVariableToken);
@@ -402,7 +402,7 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
         int source = (this.referenceFurniSource == SOURCE_SECONDARY_SELECTED) ? WiredSourceUtil.SOURCE_SELECTED : this.referenceFurniSource;
         if (source == WiredSourceUtil.SOURCE_SELECTED) this.validateItems(this.referenceSelectedFurni);
 
-        ReferenceSnapshot snapshot = new ReferenceSnapshot(TARGET_FURNI);
+        var snapshot = new ReferenceSnapshot(TARGET_FURNI);
 
         if (isInternalVariableToken(this.referenceVariableToken)) {
             String key = getInternalVariableKey(this.referenceVariableToken);
@@ -429,7 +429,7 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
     }
 
     private ReferenceSnapshot roomReferences(Room room) {
-        ReferenceSnapshot snapshot = new ReferenceSnapshot(TARGET_ROOM);
+        var snapshot = new ReferenceSnapshot(TARGET_ROOM);
 
         if (isInternalVariableToken(this.referenceVariableToken)) {
             String key = getInternalVariableKey(this.referenceVariableToken);
@@ -450,7 +450,7 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
     }
 
     private ReferenceSnapshot contextReferences(WiredContext ctx, Room room) {
-        ReferenceSnapshot snapshot = new ReferenceSnapshot(TARGET_CONTEXT);
+        var snapshot = new ReferenceSnapshot(TARGET_CONTEXT);
 
         if (isInternalVariableToken(this.referenceVariableToken)) {
             String key = getInternalVariableKey(this.referenceVariableToken);
@@ -762,7 +762,7 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
     }
 
     private String serializeIds(List<HabboItem> items) {
-        StringBuilder builder = new StringBuilder();
+        var builder = new StringBuilder();
 
         for (HabboItem item : items) {
             if (item == null) continue;

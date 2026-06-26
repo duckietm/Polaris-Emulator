@@ -140,7 +140,7 @@ public class InteractionGift extends HabboItem {
     }
 
     public THashSet<HabboItem> loadItems() {
-        THashSet<HabboItem> items = new THashSet<>();
+        var items = new THashSet<HabboItem>();
         for (int anItemId : this.itemId) {
             if (anItemId == 0)
                 continue;

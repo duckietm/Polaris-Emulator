@@ -46,7 +46,7 @@ public class SubscriptionCommand extends Command {
                 String subscription = params[2].toUpperCase();
                 String action = params[3];
 
-                StringBuilder message = new StringBuilder();
+                var message = new StringBuilder();
                 if (params.length > 4) {
                     for (int i = 4; i < params.length; i++) {
                         message.append(params[i]).append(" ");

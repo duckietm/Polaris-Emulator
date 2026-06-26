@@ -154,7 +154,7 @@ public class WiredExtraRandom extends InteractionWiredExtra {
 
         int desiredAmount = Math.min(this.pickAmount, shuffledEffects.size());
         Set<Integer> recentEffectIds = this.getRecentEffectIds();
-        LinkedHashSet<T> selectedEffects = new LinkedHashSet<>();
+        var selectedEffects = new LinkedHashSet<T>();
 
         for (T effect : shuffledEffects) {
             if (recentEffectIds.contains(idResolver.applyAsInt(effect))) {
@@ -185,7 +185,7 @@ public class WiredExtraRandom extends InteractionWiredExtra {
     }
 
     private Set<Integer> getRecentEffectIds() {
-        LinkedHashSet<Integer> ids = new LinkedHashSet<>();
+        var ids = new LinkedHashSet<Integer>();
 
         if (this.skipExecutions <= 0) {
             return ids;

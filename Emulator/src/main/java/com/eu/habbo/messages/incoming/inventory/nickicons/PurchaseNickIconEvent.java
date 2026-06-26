@@ -67,7 +67,7 @@ public class PurchaseNickIconEvent extends MessageHandler {
                     this.client.sendResponse(new UserCurrencyComposer(habbo));
                 }
 
-                UserNickIcon nickIcon = new UserNickIcon(habbo.getHabboInfo().getId(), requestedIconKey);
+                var nickIcon = new UserNickIcon(habbo.getHabboInfo().getId(), requestedIconKey);
                 nickIcon.run();
                 habbo.getInventory().getNickIconsComponent().addNickIcon(nickIcon);
 

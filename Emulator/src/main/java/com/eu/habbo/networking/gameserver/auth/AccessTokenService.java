@@ -45,11 +45,11 @@ public final class AccessTokenService {
         long now = Emulator.getIntUnixTimestamp();
         long exp = now + ttlSeconds();
 
-        JsonObject header = new JsonObject();
+        var header = new JsonObject();
         header.addProperty("alg", "HS256");
         header.addProperty("typ", "JWT");
 
-        JsonObject payload = new JsonObject();
+        var payload = new JsonObject();
         payload.addProperty("sub", userId);
         payload.addProperty("iat", now);
         payload.addProperty("exp", exp);

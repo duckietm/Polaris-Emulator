@@ -278,7 +278,7 @@ public class PetManager {
     }
 
     private void loadPetCommands(Connection connection) {
-        THashMap<Integer, PetCommand> commandsList = new THashMap<>();
+        var commandsList = new THashMap<Integer, PetCommand>();
         try (Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery("SELECT * FROM pet_commands_data")) {
             while (set.next()) {
                 commandsList.put(set.getInt("command_id"), new PetCommand(set, this.petActions.get(set.getInt("command_id"))));
@@ -311,7 +311,7 @@ public class PetManager {
 
         try (Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery("SELECT * FROM pet_breeding_races")) {
             while (set.next()) {
-                PetBreedingReward reward = new PetBreedingReward(set);
+                var reward = new PetBreedingReward(set);
                 if (!this.breedingReward.containsKey(reward.petType)) {
                     this.breedingReward.put(reward.petType, new TIntObjectHashMap<>());
                 }
@@ -385,7 +385,7 @@ public class PetManager {
                         statement.setInt(1, type);
                         try (ResultSet set = statement.executeQuery()) {
                             if (set.next()) {
-                                PetData petData = new PetData(set);
+                                var petData = new PetData(set);
                                 this.petData.put(type, petData);
                                 LOGGER.error("Missing petdata for type {} added to the database!", type);
                                 return petData;
@@ -470,7 +470,7 @@ public class PetManager {
 
     public Pet createPet(int type, int race, String name, GameClient client) {
         if (this.petData.containsKey(type)) {
-            Pet pet = new Pet(type, race, "FFFFFF", name, client.getHabbo().getHabboInfo().getId());
+            var pet = new Pet(type, race, "FFFFFF", name, client.getHabbo().getHabboInfo().getId());
             pet.needsUpdate = true;
             pet.run();
             return pet;
@@ -479,7 +479,7 @@ public class PetManager {
     }
 
     public MonsterplantPet createMonsterplant(Room room, Habbo habbo, boolean rare, RoomTile t, int minimumRarity) {
-        MonsterplantPet pet = new MonsterplantPet(
+        var pet = new MonsterplantPet(
                 habbo.getHabboInfo().getId(),   //Owner ID
                 randomBody(minimumRarity, rare),
                 randomColor(minimumRarity, rare),

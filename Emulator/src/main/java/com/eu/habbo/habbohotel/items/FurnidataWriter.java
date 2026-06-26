@@ -227,7 +227,7 @@ public class FurnidataWriter {
     }
 
     private static String jsonEscape(String v) {
-        StringBuilder b = new StringBuilder(v.length() + 8);
+        var b = new StringBuilder(v.length() + 8);
         for (int i = 0; i < v.length(); i++) {
             char c = v.charAt(i);
             if (c == '"' || c == '\\') b.append('\\').append(c);

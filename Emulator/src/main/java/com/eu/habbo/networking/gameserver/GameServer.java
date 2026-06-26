@@ -74,7 +74,7 @@ public class GameServer extends Server {
         String wsHost = Emulator.getConfig().getValue("ws.host", "0.0.0.0");
         int wsPort = Emulator.getConfig().getInt("ws.port", 2096);
 
-        WebSocketChannelInitializer wsInitializer = new WebSocketChannelInitializer();
+        var wsInitializer = new WebSocketChannelInitializer();
 
         this.webSocketBootstrap = new ServerBootstrap();
         this.webSocketBootstrap.group(this.getBossGroup(), this.getWorkerGroup());

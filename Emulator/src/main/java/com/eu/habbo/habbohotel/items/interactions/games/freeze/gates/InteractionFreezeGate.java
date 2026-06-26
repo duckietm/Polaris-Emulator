@@ -45,7 +45,7 @@ public class InteractionFreezeGate extends InteractionGameGate {
 
     @Override
     public void onWalkOn(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-        FreezeGame game = (FreezeGame) room.getGame(FreezeGame.class);
+        var game = (FreezeGame) room.getGame(FreezeGame.class);
 
         if (game == null) {
             game = FreezeGame.class.getDeclaredConstructor(Room.class).newInstance(room);

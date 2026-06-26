@@ -114,9 +114,9 @@ public class PathfinderImpl implements Pathfinder {
     long startTime = CACHED_TIMEOUT_ENABLED ? System.nanoTime() : 0;
     int iterationCount = 0;
 
-    PriorityQueue<RoomTile> openList = new PriorityQueue<>(
+    var openList = new PriorityQueue<RoomTile>(
         Comparator.comparingInt(RoomTile::getfCosts));
-    HashSet<RoomTile> closedList = new HashSet<>();
+    var closedList = new HashSet<RoomTile>();
 
     openList.add(oldTile.copy());
     PathfinderContext context = PathfinderContext.buildContext(this.room, newTile, goalLocation,
@@ -175,7 +175,7 @@ public class PathfinderImpl implements Pathfinder {
    */
   private boolean findPathAroundAdjacentTile(PathfinderContext context, RoomTile currentAdj,
       RoomTile current, double height) {
-    PriorityQueue<RoomTile> adjacentTiles = new PriorityQueue<>(Comparator.comparingDouble(
+    var adjacentTiles = new PriorityQueue<RoomTile>(Comparator.comparingDouble(
         tile -> Math.abs(tile.getStackHeight() - current.getStackHeight())));
 
     adjacentTiles.addAll(AdjacentTileFinder.getAdjacent(context, current, context.getNewTile(),

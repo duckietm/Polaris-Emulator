@@ -28,7 +28,7 @@ public class RoomBadgeCommand extends Command {
             badge = params[1];
 
             if (!badge.isEmpty()) {
-                THashMap<String, String> keys = new THashMap<>();
+                var keys = new THashMap<String, String>();
                 keys.put("display", "BUBBLE");
                 keys.put("image", "${image.library.url}album1584/" + badge + ".gif");
                 keys.put("message", Emulator.getTexts().getValue("commands.generic.cmd_badge.received"));

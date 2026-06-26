@@ -31,7 +31,7 @@ public class AdvertisingSaveEvent extends MessageHandler {
             return;
         }
         if (item instanceof InteractionCustomValues customValues) {
-            THashMap<String, String> oldValues = new THashMap<>(customValues.values);
+            var oldValues = new THashMap<String, String>(customValues.values);
             int count = this.packet.readInt();
             if (!RoomItemInputGuard.isValidCustomValueCount(count))
                 return;

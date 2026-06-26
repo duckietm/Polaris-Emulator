@@ -103,7 +103,7 @@ public final class WiredUserMovementHelper {
             roomUnit.resetIdleTimer();
 
             if (habbo != null) {
-                THashSet<Habbo> movedHabbos = new THashSet<>();
+                var movedHabbos = new THashSet<Habbo>();
                 movedHabbos.add(habbo);
                 room.updateHabbosAt(targetTile.x, targetTile.y, movedHabbos);
             }
@@ -171,7 +171,7 @@ public final class WiredUserMovementHelper {
         roomUnit.statusUpdate(true);
 
         if (habbo != null) {
-            THashSet<Habbo> movedHabbos = new THashSet<>();
+            var movedHabbos = new THashSet<Habbo>();
             movedHabbos.add(habbo);
             room.updateHabbosAt(targetTile.x, targetTile.y, movedHabbos);
         } else {

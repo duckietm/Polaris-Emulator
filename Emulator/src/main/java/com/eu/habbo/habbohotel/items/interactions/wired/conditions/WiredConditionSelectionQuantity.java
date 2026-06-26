@@ -313,7 +313,7 @@ public class WiredConditionSelectionQuantity extends InteractionWiredCondition {
             return;
         }
 
-        THashSet<HabboItem> itemsToRemove = new THashSet<>();
+        var itemsToRemove = new THashSet<HabboItem>();
 
         for (HabboItem item : this.items) {
             if (item == null || room.getHabboItem(item.getId()) == null) {

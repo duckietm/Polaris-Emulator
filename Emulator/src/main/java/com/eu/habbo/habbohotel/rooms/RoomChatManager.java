@@ -433,7 +433,7 @@ public class RoomChatManager {
             return;
         }
 
-        RoomChatMessage staffChatMessage = new RoomChatMessage(roomChatMessage);
+        var staffChatMessage = new RoomChatMessage(roomChatMessage);
         staffChatMessage.setMessage(
             "To " + staffChatMessage.getTargetHabbo().getHabboInfo().getUsername() + ": "
                 + staffChatMessage.getMessage());
@@ -576,7 +576,7 @@ public class RoomChatManager {
         if (receivingHabbo != null && receivingHabbo.hasPermission(Permission.ACC_SEE_TENTCHAT)
             && tentRectangle != null && !RoomLayout.tileInSquare(tentRectangle,
             receivingHabbo.getRoomUnit().getCurrentLocation())) {
-            RoomChatMessage staffChatMessage = new RoomChatMessage(roomChatMessage);
+            var staffChatMessage = new RoomChatMessage(roomChatMessage);
             staffChatMessage.setMessage(
                 "[" + Emulator.getTexts().getValue("hotel.room.tent.prefix") + "] "
                     + staffChatMessage.getMessage());

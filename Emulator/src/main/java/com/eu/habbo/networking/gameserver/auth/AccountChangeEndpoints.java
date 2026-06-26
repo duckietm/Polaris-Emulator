@@ -105,7 +105,7 @@ final class AccountChangeEndpoints {
             AuthRateLimiter.recordSuccess(ip);
             LOGGER.info("[auth/change-password] password updated for user id={} username='{}' ip='{}'", userId, username, ip);
 
-            JsonObject ok = new JsonObject();
+            var ok = new JsonObject();
             ok.addProperty("message", "Password updated successfully.");
             sendJson(ctx, req, HttpResponseStatus.OK, ok);
         } catch (Exception e) {
@@ -201,7 +201,7 @@ final class AccountChangeEndpoints {
             AuthRateLimiter.recordSuccess(ip);
             LOGGER.info("[auth/change-email] email updated for user id={} username='{}' ip='{}'", userId, username, ip);
 
-            JsonObject ok = new JsonObject();
+            var ok = new JsonObject();
             ok.addProperty("message", "Email updated successfully.");
             ok.addProperty("email", newEmail);
             sendJson(ctx, req, HttpResponseStatus.OK, ok);
@@ -474,7 +474,7 @@ final class AccountChangeEndpoints {
             LOGGER.info("[auth/change-username] '{}' -> '{}' (user id={}, ip='{}')",
                     currentUsername, newUsername, userId, ip);
 
-            JsonObject ok = new JsonObject();
+            var ok = new JsonObject();
             ok.addProperty("message", "Username updated. Please log in again with your new name.");
             ok.addProperty("username", newUsername);
             ok.addProperty("relogin", true);

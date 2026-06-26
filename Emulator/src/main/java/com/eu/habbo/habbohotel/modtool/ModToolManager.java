@@ -197,14 +197,14 @@ public class ModToolManager {
     }
 
     public void quickTicket(Habbo reported, String reason, String message) {
-        ModToolIssue issue = new ModToolIssue(0, reason, reported.getHabboInfo().getId(), reported.getHabboInfo().getUsername(), 0, message, ModToolTicketType.AUTOMATIC);
+        var issue = new ModToolIssue(0, reason, reported.getHabboInfo().getId(), reported.getHabboInfo().getUsername(), 0, message, ModToolTicketType.AUTOMATIC);
 
         Emulator.getGameEnvironment().getModToolManager().addTicket(issue);
         Emulator.getGameEnvironment().getModToolManager().updateTicketToMods(issue);
     }
 
     public ArrayList<ModToolChatLog> getRoomChatlog(int roomId) {
-        ArrayList<ModToolChatLog> chatlogs = new ArrayList<>();
+        var chatlogs = new ArrayList<ModToolChatLog>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT users.username, users.id, chatlogs_room.* FROM chatlogs_room INNER JOIN users ON users.id = chatlogs_room.user_from_id WHERE room_id = ? ORDER BY timestamp DESC LIMIT 150")) {
             statement.setInt(1, roomId);
@@ -221,7 +221,7 @@ public class ModToolManager {
     }
 
     public ArrayList<ModToolChatLog> getUserChatlog(int userId) {
-        ArrayList<ModToolChatLog> chatlogs = new ArrayList<>();
+        var chatlogs = new ArrayList<ModToolChatLog>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT users.username, users.id, chatlogs_room.* FROM chatlogs_room INNER JOIN users ON users.id = chatlogs_room.user_from_id WHERE user_from_id = ? ORDER BY chatlogs_room.timestamp DESC LIMIT 150")) {
             statement.setInt(1, userId);
@@ -238,7 +238,7 @@ public class ModToolManager {
     }
 
     public ArrayList<ModToolChatLog> getMessengerChatlog(int userOneId, int userTwoId) {
-        ArrayList<ModToolChatLog> chatLogs = new ArrayList<>();
+        var chatLogs = new ArrayList<ModToolChatLog>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT users.username, chatlogs_private.* FROM chatlogs_private INNER JOIN users ON users.id = user_from_id WHERE (user_from_id = ? AND user_to_id = ?) OR (user_from_id = ? AND user_to_id = ?) ORDER BY chatlogs_private.timestamp DESC LIMIT 50")) {
             statement.setInt(1, userOneId);
@@ -258,7 +258,7 @@ public class ModToolManager {
     }
 
     public ArrayList<ModToolRoomVisit> getUserRoomVisitsAndChatlogs(int userId) {
-        ArrayList<ModToolRoomVisit> chatlogs = new ArrayList<>();
+        var chatlogs = new ArrayList<ModToolRoomVisit>();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT rooms.name, users.username, room_enter_log.timestamp AS enter_timestamp, room_enter_log.exit_timestamp, chatlogs_room.* FROM room_enter_log INNER JOIN rooms ON room_enter_log.room_id = rooms.id INNER JOIN users ON room_enter_log.user_id = users.id LEFT JOIN chatlogs_room ON room_enter_log.user_id = chatlogs_room.user_from_id AND room_enter_log.room_id = chatlogs_room.room_id AND chatlogs_room.timestamp >= room_enter_log.timestamp AND chatlogs_room.timestamp < room_enter_log.exit_timestamp WHERE chatlogs_room.user_from_id = ? ORDER BY room_enter_log.timestamp DESC LIMIT 500")) {
             statement.setInt(1, userId);
             try (ResultSet set = statement.executeQuery()) {
@@ -295,7 +295,7 @@ public class ModToolManager {
     }
 
     public THashSet<ModToolRoomVisit> getUserRoomVisits(int userId) {
-        THashSet<ModToolRoomVisit> roomVisits = new THashSet<>();
+        var roomVisits = new THashSet<ModToolRoomVisit>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT rooms.name, room_enter_log.* FROM room_enter_log INNER JOIN rooms ON rooms.id = room_enter_log.room_id WHERE user_id = ? ORDER BY timestamp DESC LIMIT 50")) {
             statement.setInt(1, userId);
@@ -317,7 +317,7 @@ public class ModToolManager {
     }
 
     public THashSet<ModToolRoomVisit> getVisitsForRoom(Room room, int amount, boolean groupUser, int fromTimestamp, int toTimestamp, String excludeUsername) {
-        THashSet<ModToolRoomVisit> roomVisits = new THashSet<>();
+        var roomVisits = new THashSet<ModToolRoomVisit>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM (" +
                 "SELECT " +
@@ -463,7 +463,7 @@ public class ModToolManager {
             type = ModToolBanType.ACCOUNT;
         }
 
-        ModToolBan ban = new ModToolBan(targetUserId, offlineInfo != null ? offlineInfo.getIpLogin() : "offline", offlineInfo != null ? offlineInfo.getMachineID() : "offline", moderator.getHabboInfo().getId(), Emulator.getIntUnixTimestamp() + duration, reason, type, cfhTopic);
+        var ban = new ModToolBan(targetUserId, offlineInfo != null ? offlineInfo.getIpLogin() : "offline", offlineInfo != null ? offlineInfo.getMachineID() : "offline", moderator.getHabboInfo().getId(), Emulator.getIntUnixTimestamp() + duration, reason, type, cfhTopic);
         Emulator.getPluginManager().fireEvent(new SupportUserBannedEvent(moderator, target, ban));
         Emulator.getThreading().run(ban);
         bans.add(ban);

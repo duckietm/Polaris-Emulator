@@ -237,7 +237,7 @@ public abstract class Game implements Runnable {
         if (this.room == null)
             return;
 
-        THashMap<GameTeamColors, GameTeam> teamsCopy = new THashMap<>();
+        var teamsCopy = new THashMap<GameTeamColors, GameTeam>();
         teamsCopy.putAll(this.teams);
 
         for (Map.Entry<GameTeamColors, GameTeam> teamEntry : teamsCopy.entrySet()) {

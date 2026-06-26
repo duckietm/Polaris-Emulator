@@ -502,7 +502,7 @@ public class RoomFurniVariableManager {
         List<WiredExtraVariableEcho> furniEchoes = this.getFurniEchoes();
 
         for (WiredVariableDefinitionInfo definition : this.getAllDefinitionInfos()) {
-            DefinitionEntry entry = new DefinitionEntry(definition.getItemId(), definition.getName(), definition.hasValue(), definition.getAvailability(), definition.isTextConnected(), definition.isReadOnly());
+            var entry = new DefinitionEntry(definition.getItemId(), definition.getName(), definition.hasValue(), definition.getAvailability(), definition.isTextConnected(), definition.isReadOnly());
             definitions.add(entry);
             definitionsById.put(entry.getItemId(), entry);
 
@@ -512,7 +512,7 @@ public class RoomFurniVariableManager {
         }
 
         List<FurniAssignmentsEntry> furnis = new ArrayList<>();
-        THashSet<Integer> furniIds = new THashSet<>();
+        var furniIds = new THashSet<Integer>();
         furniIds.addAll(this.activeAssignmentsByFurniId.keySet());
 
         for (HabboItem item : this.room.getFloorItems()) {

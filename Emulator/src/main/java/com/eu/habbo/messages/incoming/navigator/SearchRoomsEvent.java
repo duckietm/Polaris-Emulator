@@ -83,7 +83,7 @@ public class SearchRoomsEvent extends MessageHandler {
             map.put(cacheKey, message);
             cachedResults.put(this.client.getHabbo().getHabboInfo().getRank(), map);
 
-            NavigatorSearchResultEvent event = new NavigatorSearchResultEvent(this.client.getHabbo(), prefix, query, rooms);
+            var event = new NavigatorSearchResultEvent(this.client.getHabbo(), prefix, query, rooms);
             if (Emulator.getPluginManager().fireEvent(event).isCancelled()) {
                 return;
             }

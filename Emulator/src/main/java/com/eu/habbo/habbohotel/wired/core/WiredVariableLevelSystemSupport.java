@@ -376,7 +376,7 @@ public final class WiredVariableLevelSystemSupport {
             return Collections.singletonList(new LevelEntry(1, 0));
         }
 
-        LinkedHashMap<Integer, Integer> result = new LinkedHashMap<>();
+        var result = new LinkedHashMap<Integer, Integer>();
 
         for (int index = 0; index < sortedAnchors.size(); index++) {
             Map.Entry<Integer, Integer> current = sortedAnchors.get(index);
@@ -414,7 +414,7 @@ public final class WiredVariableLevelSystemSupport {
     }
 
     private static LinkedHashMap<Integer, Integer> parseAnchors(String interpolationText) {
-        LinkedHashMap<Integer, Integer> result = new LinkedHashMap<>();
+        var result = new LinkedHashMap<Integer, Integer>();
         if (interpolationText == null || interpolationText.trim().isEmpty()) {
             return result;
         }

@@ -18,8 +18,8 @@ public class UserWearBadgeEvent extends MessageHandler {
     public void handle() throws Exception {
         BadgesComponent.resetSlots(this.client.getHabbo());
 
-        ArrayList<HabboBadge> updatedBadges = new ArrayList<>();
-        ArrayList<Integer> usedSlots = new ArrayList<>();
+        var updatedBadges = new ArrayList<HabboBadge>();
+        var usedSlots = new ArrayList<Integer>();
         for (int i = 0; i < 5; i++) {
             int slot = this.packet.readInt();
             if (slot < 1 || slot > 5)

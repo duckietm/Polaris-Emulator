@@ -38,7 +38,7 @@ public class RoomTrashing implements Runnable {
         if (INSTANCE.habbo == event.habbo) {
             if (event.habbo.getHabboInfo().getCurrentRoom() != null) {
                 if (event.habbo.getHabboInfo().getCurrentRoom().equals(INSTANCE.room)) {
-                    THashSet<ServerMessage> messages = new THashSet<>();
+                    var messages = new THashSet<ServerMessage>();
 
                     THashSet<HabboItem> items = INSTANCE.room.getItemsAt(event.toLocation);
 

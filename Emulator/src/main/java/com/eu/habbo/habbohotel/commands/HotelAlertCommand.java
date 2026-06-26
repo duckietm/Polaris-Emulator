@@ -18,7 +18,7 @@ public class HotelAlertCommand extends Command {
     @Override
     public boolean handle(GameClient gameClient, String[] params) {
         if (params.length > 1) {
-            StringBuilder message = new StringBuilder();
+            var message = new StringBuilder();
             for (int i = 1; i < params.length; i++) {
                 message.append(params[i]).append(" ");
             }

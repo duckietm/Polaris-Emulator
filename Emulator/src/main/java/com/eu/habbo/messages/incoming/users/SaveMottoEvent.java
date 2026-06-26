@@ -10,7 +10,7 @@ public class SaveMottoEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         String motto = UserInputGuard.normalizeText(Emulator.getGameEnvironment().getWordFilter().filter(this.packet.readString(), this.client.getHabbo()));
-        UserSavedMottoEvent event = new UserSavedMottoEvent(this.client.getHabbo(), this.client.getHabbo().getHabboInfo().getMotto(), motto);
+        var event = new UserSavedMottoEvent(this.client.getHabbo(), this.client.getHabbo().getHabboInfo().getMotto(), motto);
         Emulator.getPluginManager().fireEvent(event);
         motto = UserInputGuard.normalizeText(event.newMotto);
 

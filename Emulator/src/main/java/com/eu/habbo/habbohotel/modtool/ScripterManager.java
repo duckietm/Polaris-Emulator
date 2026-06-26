@@ -5,7 +5,7 @@ import com.eu.habbo.habbohotel.gameclients.GameClient;
 
 public class ScripterManager {
     public static void scripterDetected(GameClient client, String reason) {
-        ScripterEvent scripterEvent = new ScripterEvent(client.getHabbo(), reason);
+        var scripterEvent = new ScripterEvent(client.getHabbo(), reason);
         Emulator.getPluginManager().fireEvent(scripterEvent);
 
         if (scripterEvent.isCancelled()) return;

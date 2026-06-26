@@ -23,7 +23,7 @@ public class AlertCommand extends Command {
         }
 
         String targetUsername = params[1];
-        StringBuilder message = new StringBuilder();
+        var message = new StringBuilder();
 
         for (int i = 2; i < params.length; i++) {
             message.append(params[i]).append(" ");

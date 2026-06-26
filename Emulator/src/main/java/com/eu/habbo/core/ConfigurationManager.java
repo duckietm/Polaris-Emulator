@@ -51,7 +51,7 @@ public class ConfigurationManager {
 
         if (!useEnvVarsForDbConnection) {
             try {
-                File f = new File(this.configurationPath);
+                var f = new File(this.configurationPath);
                 input = new FileInputStream(f);
                 this.properties.load(input);
 

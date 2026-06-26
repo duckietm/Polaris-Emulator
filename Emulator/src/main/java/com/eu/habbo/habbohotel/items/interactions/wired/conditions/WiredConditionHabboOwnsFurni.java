@@ -76,7 +76,7 @@ public class WiredConditionHabboOwnsFurni extends InteractionWiredCondition {
     }
 
     protected THashSet<Integer> resolveTypeIds(WiredContext ctx) {
-        THashSet<Integer> typeIds = new THashSet<>();
+        var typeIds = new THashSet<Integer>();
         for (HabboItem item : WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items)) {
             if (item != null && item.getBaseItem() != null) {
                 typeIds.add(item.getBaseItem().getId());
@@ -90,7 +90,7 @@ public class WiredConditionHabboOwnsFurni extends InteractionWiredCondition {
             return false;
         }
 
-        THashSet<Integer> owned = new THashSet<>();
+        var owned = new THashSet<Integer>();
         for (HabboItem item : habbo.getInventory().getItemsComponent().getItems().valueCollection()) {
             if (item != null && item.getBaseItem() != null) {
                 owned.add(item.getBaseItem().getId());
@@ -238,7 +238,7 @@ public class WiredConditionHabboOwnsFurni extends InteractionWiredCondition {
     }
 
     protected void refresh(Room room) {
-        THashSet<HabboItem> remove = new THashSet<>();
+        var remove = new THashSet<HabboItem>();
 
         for (HabboItem item : this.items) {
             if (room.getHabboItem(item.getId()) == null) {

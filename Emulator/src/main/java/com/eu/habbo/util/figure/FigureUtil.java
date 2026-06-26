@@ -8,7 +8,7 @@ import java.util.Set;
 
 public class FigureUtil {
     public static THashMap<String, String> getFigureBits(String looks) {
-        THashMap<String, String> bits = new THashMap<>();
+        var bits = new THashMap<String, String>();
         String[] sets = looks.split("\\.");
 
         for (String set : sets) {
@@ -48,7 +48,7 @@ public class FigureUtil {
         THashMap<String, String> figureBits1 = getFigureBits(figure1);
         THashMap<String, String> figureBits2 = getFigureBits(figure2);
 
-        StringBuilder finalLook = new StringBuilder();
+        var finalLook = new StringBuilder();
 
         for (Map.Entry<String, String> keys : figureBits1.entrySet()) {
             if (limitFigure1 == null || ArrayUtils.contains(limitFigure1, keys.getKey())) {

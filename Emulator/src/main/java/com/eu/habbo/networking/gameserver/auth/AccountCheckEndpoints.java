@@ -58,7 +58,7 @@ final class AccountCheckEndpoints {
             AvailabilityCache.storeEmail(email, !taken);
         }
 
-        JsonObject res = new JsonObject();
+        var res = new JsonObject();
         res.addProperty("available", !taken);
         if (taken) res.addProperty("error", "This email is already in use.");
         sendJson(ctx, req, HttpResponseStatus.OK, res);
@@ -98,7 +98,7 @@ final class AccountCheckEndpoints {
             AvailabilityCache.storeUsername(username, !taken);
         }
 
-        JsonObject res = new JsonObject();
+        var res = new JsonObject();
         res.addProperty("available", !taken);
         if (taken) res.addProperty("error", "This Habbo name is already taken.");
         sendJson(ctx, req, HttpResponseStatus.OK, res);

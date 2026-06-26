@@ -242,7 +242,7 @@ public final class EmulatorStatsService {
         NetworkMetrics networkMetrics = collectNetworkMetrics(now);
         GarbageCollectorMetrics garbageCollectorMetrics = collectGarbageCollectorMetrics(now);
 
-        Overview overview = new Overview(
+        var overview = new Overview(
                 Emulator.getOnlineTime(),
                 now,
                 cpuLoadPercent >= 80D ? "Attention needed" : "Healthy",

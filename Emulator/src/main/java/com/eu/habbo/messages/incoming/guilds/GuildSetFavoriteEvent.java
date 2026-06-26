@@ -21,7 +21,7 @@ public class GuildSetFavoriteEvent extends MessageHandler {
         Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
 
         if (this.client.getHabbo().getHabboStats().hasGuild(guildId)) {
-            GuildFavoriteSetEvent favoriteSetEvent = new GuildFavoriteSetEvent(guild, this.client.getHabbo());
+            var favoriteSetEvent = new GuildFavoriteSetEvent(guild, this.client.getHabbo());
             Emulator.getPluginManager().fireEvent(favoriteSetEvent);
 
             if (favoriteSetEvent.isCancelled())

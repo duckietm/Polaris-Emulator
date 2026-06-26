@@ -303,7 +303,7 @@ public class BattleBanzaiGame extends Game {
             final int y = item.getY();
 
             final List<List<RoomTile>> filledAreas = new ArrayList<>();
-            final THashSet<HabboItem> lockedTiles = new THashSet<>(this.lockedTiles.get(teamColor));
+            final var lockedTiles = new THashSet<HabboItem>(this.lockedTiles.get(teamColor));
 
             try {
                 executor.execute(() -> {
@@ -423,7 +423,7 @@ public class BattleBanzaiGame extends Game {
 
     private void refreshGates() {
         Collection<InteractionBattleBanzaiGate> gates = this.room.getRoomSpecialTypes().getBattleBanzaiGates().values();
-        THashSet<RoomTile> tilesToUpdate = new THashSet<>(gates.size());
+        var tilesToUpdate = new THashSet<RoomTile>(gates.size());
         for (HabboItem item : gates) {
             tilesToUpdate.add(this.room.getLayout().getTile(item.getX(), item.getY()));
         }

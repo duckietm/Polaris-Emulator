@@ -194,7 +194,7 @@ public class WiredExtraVariableLevelUpSystem extends InteractionWiredExtra {
         } catch (Exception ignored) {
         }
 
-        JsonData fallback = new JsonData();
+        var fallback = new JsonData();
         fallback.interpolationText = normalizeInterpolationText(value);
         fallback.mode = MODE_MANUAL;
         return fallback;

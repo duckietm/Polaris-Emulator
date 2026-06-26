@@ -7,10 +7,10 @@ public class ZIP {
     public static byte[] inflate(byte[] data) {
         try {
             byte[] buffer = new byte[data.length * 5];
-            Inflater inflater = new Inflater();
+            var inflater = new Inflater();
             inflater.setInput(data);
 
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream(data.length);
+            var outputStream = new ByteArrayOutputStream(data.length);
             while (!inflater.finished()) {
                 int count = inflater.inflate(buffer);
                 outputStream.write(buffer, 0, count);

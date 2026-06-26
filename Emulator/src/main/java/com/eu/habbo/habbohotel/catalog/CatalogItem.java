@@ -207,7 +207,7 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
     }
 
     public THashSet<Item> getBaseItems() {
-        THashSet<Item> items = new THashSet<>();
+        var items = new THashSet<Item>();
 
         if (!this.itemId.isEmpty()) {
             String[] itemIds = this.itemId.split(";");

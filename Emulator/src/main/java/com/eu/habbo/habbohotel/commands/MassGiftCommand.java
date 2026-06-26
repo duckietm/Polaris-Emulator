@@ -43,7 +43,7 @@ public class MassGiftCommand extends Command {
                 return true;
             }
 
-            StringBuilder message = new StringBuilder();
+            var message = new StringBuilder();
 
             if (params.length > 2) {
                 for (int i = 2; i < params.length; i++) {
@@ -53,7 +53,7 @@ public class MassGiftCommand extends Command {
 
             final String finalMessage = message.toString();
 
-            THashMap<String, String> keys = new THashMap<>();
+            var keys = new THashMap<String, String>();
             keys.put("display", "BUBBLE");
             keys.put("image", "${image.library.url}notifications/gift.gif");
             keys.put("message", Emulator.getTexts().getValue("generic.gift.received.anonymous"));

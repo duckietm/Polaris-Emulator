@@ -77,7 +77,7 @@ public class RoomSettingsSaveEvent extends MessageHandler {
                 }
 
                 int categoryId = this.packet.readInt();
-                StringBuilder tags = new StringBuilder();
+                var tags = new StringBuilder();
                 Set<String> uniqueTags = new HashSet<>();
                 int count = this.packet.readInt();
                 if (count < 0 || count > MAX_TAGS) {

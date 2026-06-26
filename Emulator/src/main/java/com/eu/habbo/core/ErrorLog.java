@@ -29,8 +29,8 @@ public class ErrorLog implements DatabaseLoggable {
         this.timeStamp = Emulator.getIntUnixTimestamp();
         this.type = type;
 
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
+        var sw = new StringWriter();
+        var pw = new PrintWriter(sw);
         e.printStackTrace(pw);
         this.stackTrace = sw.toString();
 

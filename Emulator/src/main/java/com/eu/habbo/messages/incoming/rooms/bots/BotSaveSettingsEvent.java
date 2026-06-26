@@ -47,7 +47,7 @@ public class BotSaveSettingsEvent extends MessageHandler {
 
             switch (settingId) {
                 case 1:
-                    BotSavedLookEvent lookEvent = new BotSavedLookEvent(bot,
+                    var lookEvent = new BotSavedLookEvent(bot,
                             this.client.getHabbo().getHabboInfo().getGender(),
                             this.client.getHabbo().getHabboInfo().getLook(),
                             this.client.getHabbo().getRoomUnit().getEffectId());
@@ -70,7 +70,7 @@ public class BotSaveSettingsEvent extends MessageHandler {
 
                     String[] data = messageString.split(";#;");
 
-                    ArrayList<String> chat = new ArrayList<>();
+                    var chat = new ArrayList<String>();
                     int totalChatLength = 0;
                     for (int i = 0; i < data.length - 3 && totalChatLength <= 120; i++) {
                         for (String s : data[i].split("\r")) {
@@ -111,7 +111,7 @@ public class BotSaveSettingsEvent extends MessageHandler {
                         //Invalid chatspeed. Use 7.
                     }
 
-                    BotSavedChatEvent chatEvent = new BotSavedChatEvent(bot, Boolean.parseBoolean(data[data.length - 3]), Boolean.parseBoolean(data[data.length - 1]), chatSpeed, chat);
+                    var chatEvent = new BotSavedChatEvent(bot, Boolean.parseBoolean(data[data.length - 3]), Boolean.parseBoolean(data[data.length - 1]), chatSpeed, chat);
                     Emulator.getPluginManager().fireEvent(chatEvent);
 
                     if (chatEvent.isCancelled())
@@ -143,7 +143,7 @@ public class BotSaveSettingsEvent extends MessageHandler {
                         String filteredName = Emulator.getGameEnvironment().getWordFilter().filter(name, null);
                         invalidName = !name.equalsIgnoreCase(filteredName);
                         if (!invalidName) {
-                            BotSavedNameEvent nameEvent = new BotSavedNameEvent(bot, name);
+                            var nameEvent = new BotSavedNameEvent(bot, name);
 
                             Emulator.getPluginManager().fireEvent(nameEvent);
 

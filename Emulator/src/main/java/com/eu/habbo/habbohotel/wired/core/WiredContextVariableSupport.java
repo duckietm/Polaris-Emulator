@@ -135,7 +135,7 @@ public final class WiredContextVariableSupport {
             return;
         }
 
-        WiredUserVariablesDataComposer composer = new WiredUserVariablesDataComposer(
+        var composer = new WiredUserVariablesDataComposer(
                 room.getUserVariableManager().createSnapshot(),
                 room.getFurniVariableManager().createSnapshot(),
                 room.getRoomVariableManager().createSnapshot());

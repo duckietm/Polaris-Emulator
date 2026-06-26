@@ -29,7 +29,7 @@ public class FriendPrivateMessageEvent extends MessageHandler {
         if (buddy == null)
             return;
 
-        UserFriendChatEvent event = new UserFriendChatEvent(this.client.getHabbo(), buddy, message);
+        var event = new UserFriendChatEvent(this.client.getHabbo(), buddy, message);
         if (Emulator.getPluginManager().fireEvent(event).isCancelled())
             return;
 

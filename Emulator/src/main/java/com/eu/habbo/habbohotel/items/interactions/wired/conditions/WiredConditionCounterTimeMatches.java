@@ -239,7 +239,7 @@ public class WiredConditionCounterTimeMatches extends InteractionWiredCondition 
     }
 
     private void refresh(Room room) {
-        THashSet<HabboItem> remove = new THashSet<>();
+        var remove = new THashSet<HabboItem>();
 
         for (HabboItem item : this.items) {
             HabboItem roomItem = room.getHabboItem(item.getId());

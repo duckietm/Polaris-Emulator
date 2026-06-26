@@ -51,7 +51,7 @@ public class Messenger {
     }
 
     public static THashSet<MessengerBuddy> searchUsers(String username) {
-        THashSet<MessengerBuddy> users = new THashSet<>();
+        var users = new THashSet<MessengerBuddy>();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM users WHERE username LIKE ? ORDER BY username ASC LIMIT " + Emulator.getConfig().getInt("hotel.messenger.search.maxresults"))) {
             statement.setString(1, com.eu.habbo.util.SqlLikeEscaper.escape(username) + "%");
             try (ResultSet set = statement.executeQuery()) {
@@ -150,7 +150,7 @@ public class Messenger {
     }
 
     public static THashMap<Integer, THashSet<MessengerBuddy>> getFriends(int userId) {
-        THashMap<Integer, THashSet<MessengerBuddy>> map = new THashMap<>();
+        var map = new THashMap<Integer, THashSet<MessengerBuddy>>();
         map.put(1, new THashSet<>());
         map.put(2, new THashSet<>());
         map.put(3, new THashSet<>());
@@ -162,7 +162,7 @@ public class Messenger {
                     if (set.getInt("relation") == 0)
                         continue;
 
-                    MessengerBuddy buddy = new MessengerBuddy(set.getInt("id"), set.getString("username"), set.getString("look"), (short) set.getInt("relation"), userId);
+                    var buddy = new MessengerBuddy(set.getInt("id"), set.getString("username"), set.getString("look"), (short) set.getInt("relation"), userId);
                     map.get((int) buddy.getRelation()).add(buddy);
                 }
             }
@@ -208,7 +208,7 @@ public class Messenger {
 
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
-                    MessengerBuddy buddy = new MessengerBuddy(set);
+                    var buddy = new MessengerBuddy(set);
 
                     if (buddy.getId() == habbo.getHabboInfo().getId()) {
                         continue;
@@ -279,7 +279,7 @@ public class Messenger {
     }
 
     public THashSet<MessengerBuddy> getFriends(String username) {
-        THashSet<MessengerBuddy> users = new THashSet<>();
+        var users = new THashSet<MessengerBuddy>();
 
         for (Map.Entry<Integer, MessengerBuddy> map : this.friends.entrySet()) {
             if (StringUtils.containsIgnoreCase(map.getValue().getUsername(), username)) {
@@ -362,8 +362,8 @@ public class Messenger {
             Habbo habboFrom = Emulator.getGameServer().getGameClientManager().getHabbo(userFrom);
 
             if (habboTo != null && habboFrom != null) {
-                MessengerBuddy to = new MessengerBuddy(habboFrom, habboTo.getHabboInfo().getId());
-                MessengerBuddy from = new MessengerBuddy(habboTo, habboFrom.getHabboInfo().getId());
+                var to = new MessengerBuddy(habboFrom, habboTo.getHabboInfo().getId());
+                var from = new MessengerBuddy(habboTo, habboFrom.getHabboInfo().getId());
 
 
                 habboTo.getMessenger().friends.putIfAbsent(habboFrom.getHabboInfo().getId(), to);

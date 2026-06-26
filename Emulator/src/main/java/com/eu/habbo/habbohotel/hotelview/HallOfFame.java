@@ -31,7 +31,7 @@ public class HallOfFame {
         synchronized (this.winners) {
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery(Emulator.getConfig().getValue("hotelview.halloffame.query"))) {
                 while (set.next()) {
-                    HallOfFameWinner winner = new HallOfFameWinner(set);
+                    var winner = new HallOfFameWinner(set);
                     this.winners.put(winner.getId(), winner);
                 }
             } catch (SQLException e) {

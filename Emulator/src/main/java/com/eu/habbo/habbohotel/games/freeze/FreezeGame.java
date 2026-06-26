@@ -104,7 +104,7 @@ public class FreezeGame extends Game {
     }
 
     public THashSet<RoomTile> affectedTilesByExplosion(short x, short y, int radius) {
-        THashSet<RoomTile> tiles = new THashSet<>();
+        var tiles = new THashSet<RoomTile>();
 
         RoomTile t = this.room.getLayout().getTile(x, y);
 
@@ -124,7 +124,7 @@ public class FreezeGame extends Game {
     }
 
     public THashSet<RoomTile> affectedTilesByExplosionDiagonal(short x, short y, int radius) {
-        THashSet<RoomTile> tiles = new THashSet<>();
+        var tiles = new THashSet<RoomTile>();
 
         for (int rotation = 1; rotation < 9; rotation += 2) {
             RoomTile t = this.room.getLayout().getTile(x, y);
@@ -266,7 +266,7 @@ public class FreezeGame extends Game {
         }
 
         for (GameTeam team : this.teams.values()) {
-            THashSet<GamePlayer> players = new THashSet<>();
+            var players = new THashSet<GamePlayer>();
 
             players.addAll(team.getMembers());
 
@@ -314,7 +314,7 @@ public class FreezeGame extends Game {
     }
 
     private void refreshGates() {
-        THashSet<RoomTile> tilesToUpdate = new THashSet<>();
+        var tilesToUpdate = new THashSet<RoomTile>();
         for (HabboItem item : this.room.getRoomSpecialTypes().getFreezeGates().values()) {
             tilesToUpdate.add(this.room.getLayout().getTile(item.getX(), item.getY()));
         }

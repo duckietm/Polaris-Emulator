@@ -13,7 +13,7 @@ public class GuideUserMessageEvent extends MessageHandler {
         GuideTour tour = Emulator.getGameEnvironment().getGuideManager().getGuideTourByHabbo(this.client.getHabbo());
 
         if (tour != null) {
-            GuideChatMessage chatMessage = new GuideChatMessage(this.client.getHabbo().getHabboInfo().getId(), this.packet.readString(), Emulator.getIntUnixTimestamp());
+            var chatMessage = new GuideChatMessage(this.client.getHabbo().getHabboInfo().getId(), this.packet.readString(), Emulator.getIntUnixTimestamp());
             tour.addMessage(chatMessage);
             ServerMessage serverMessage = new GuideSessionMessageComposer(chatMessage).compose();
             tour.getHelper().getClient().sendResponse(serverMessage);

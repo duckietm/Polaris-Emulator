@@ -116,9 +116,9 @@ public class InteractionFootballGate extends HabboItem {
         Habbo habbo = room.getHabbo(roomUnit);
         if (habbo != null) {
             if (habbo.getHabboStats().cache.containsKey(CACHE_KEY)) {
-                String oldlook = (String) habbo.getHabboStats().cache.get(CACHE_KEY);
+                var oldlook = (String) habbo.getHabboStats().cache.get(CACHE_KEY);
 
-                UserSavedLookEvent lookEvent = new UserSavedLookEvent(habbo, habbo.getHabboInfo().getGender(), oldlook);
+                var lookEvent = new UserSavedLookEvent(habbo, habbo.getHabboInfo().getGender(), oldlook);
                 Emulator.getPluginManager().fireEvent(lookEvent);
                 if (!lookEvent.isCancelled()) {
                     habbo.getHabboInfo().setLook(ClothingValidationManager.VALIDATE_ON_FBALLGATE ? ClothingValidationManager.validateLook(habbo, lookEvent.newLook, lookEvent.gender.name()) : lookEvent.newLook);
@@ -131,7 +131,7 @@ public class InteractionFootballGate extends HabboItem {
             } else {
                 String finalLook = FigureUtil.mergeFigures(habbo.getHabboInfo().getLook(), habbo.getHabboInfo().getGender() == HabboGender.F ? this.figureF : this.figureM, new String[]{"hd", "hr", "ha", "he", "ea", "fa"}, new String[]{"ch", "ca", "cc", "cp", "lg", "wa", "sh"});
 
-                UserSavedLookEvent lookEvent = new UserSavedLookEvent(habbo, habbo.getHabboInfo().getGender(), finalLook);
+                var lookEvent = new UserSavedLookEvent(habbo, habbo.getHabboInfo().getGender(), finalLook);
                 Emulator.getPluginManager().fireEvent(lookEvent);
                 if (!lookEvent.isCancelled()) {
                     habbo.getHabboStats().cache.put(CACHE_KEY, habbo.getHabboInfo().getLook());

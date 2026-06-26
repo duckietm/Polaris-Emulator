@@ -30,7 +30,7 @@ public class RoomUserDanceEvent extends MessageHandler {
                     }
                 }
 
-                UserIdleEvent event = new UserIdleEvent(this.client.getHabbo(), UserIdleEvent.IdleReason.DANCE, false);
+                var event = new UserIdleEvent(this.client.getHabbo(), UserIdleEvent.IdleReason.DANCE, false);
                 Emulator.getPluginManager().fireEvent(event);
 
                 if (!event.isCancelled()) {

@@ -31,7 +31,7 @@ public class ModToolRoomChatlogComposer extends MessageComposer {
         this.response.appendByte(1);
         this.response.appendInt(this.room.getId());
 
-        SimpleDateFormat formatDate = new SimpleDateFormat("HH:mm");
+        var formatDate = new SimpleDateFormat("HH:mm");
 
         this.response.appendShort(this.chatlog.size());
         for (ModToolChatLog line : this.chatlog) {

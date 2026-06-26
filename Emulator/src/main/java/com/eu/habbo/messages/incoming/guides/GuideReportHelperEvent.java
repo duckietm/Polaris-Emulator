@@ -24,7 +24,7 @@ public class GuideReportHelperEvent extends MessageHandler {
                 reported = tour.getNoob();
             }
 
-            ModToolIssue issue = new ModToolIssue(this.client.getHabbo().getHabboInfo().getId(),
+            var issue = new ModToolIssue(this.client.getHabbo().getHabboInfo().getId(),
                     this.client.getHabbo().getHabboInfo().getUsername(),
                     reported.getHabboInfo().getId(),
                     reported.getHabboInfo().getUsername(),

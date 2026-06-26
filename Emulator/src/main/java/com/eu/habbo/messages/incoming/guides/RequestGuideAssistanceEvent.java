@@ -18,7 +18,7 @@ public class RequestGuideAssistanceEvent extends MessageHandler {
             return;
         }
 
-        GuideTour tour = new GuideTour(this.client.getHabbo(), message);
+        var tour = new GuideTour(this.client.getHabbo(), message);
         tour.setStartTime(Emulator.getIntUnixTimestamp());
 
         Emulator.getGameEnvironment().getGuideManager().findHelper(tour);

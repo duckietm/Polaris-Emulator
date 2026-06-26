@@ -26,7 +26,7 @@ public class RoomUserSignEvent extends MessageHandler {
         if (room == null)
             return;
 
-        UserSignEvent event = new UserSignEvent(this.client.getHabbo(), signId);
+        var event = new UserSignEvent(this.client.getHabbo(), signId);
         if (!Emulator.getPluginManager().fireEvent(event).isCancelled()) {
             this.client.getHabbo().getRoomUnit().setStatus(RoomUnitStatus.SIGN, event.sign + "");
             this.client.getHabbo().getHabboInfo().getCurrentRoom().unIdle(this.client.getHabbo());

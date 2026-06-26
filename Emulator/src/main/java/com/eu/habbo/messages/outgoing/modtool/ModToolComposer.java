@@ -27,7 +27,7 @@ public class ModToolComposer extends MessageComposer implements TObjectProcedure
         this.response.init(Outgoing.ModToolComposer);
 
         if (this.habbo.hasPermission(Permission.ACC_MODTOOL_TICKET_Q)) {
-            THashSet<ModToolIssue> openTickets = new THashSet<>();
+            var openTickets = new THashSet<ModToolIssue>();
 
             THashMap<Integer, ModToolIssue> tickets = Emulator.getGameEnvironment().getModToolManager().getTickets();
 

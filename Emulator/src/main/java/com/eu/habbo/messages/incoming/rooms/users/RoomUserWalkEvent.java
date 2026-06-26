@@ -200,7 +200,7 @@ public class RoomUserWalkEvent extends MessageHandler {
     HabboItem bed = room.getTopItemAt(tile.x, tile.y);
 
     if (bed != null && bed.getBaseItem().allowLay()) {
-      BedProfile profile = new BedProfile(bed);
+      var profile = new BedProfile(bed);
       RoomTile pillow = profile.getPillow(room, x, y, bed);
 
       // If pillow position is occupied, try the other side (double beds only)
@@ -217,7 +217,7 @@ public class RoomUserWalkEvent extends MessageHandler {
   }
 
   private static void fireIdleEvent(Habbo habbo, RoomUnit roomUnit) {
-    UserIdleEvent event = new UserIdleEvent(habbo, UserIdleEvent.IdleReason.WALKED, false);
+    var event = new UserIdleEvent(habbo, UserIdleEvent.IdleReason.WALKED, false);
     Emulator.getPluginManager().fireEvent(event);
 
     if (!event.isCancelled() && !event.idle) {

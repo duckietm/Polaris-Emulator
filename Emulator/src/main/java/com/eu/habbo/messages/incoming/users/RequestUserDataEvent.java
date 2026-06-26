@@ -35,7 +35,7 @@ public class RequestUserDataEvent extends MessageHandler {
 
             //
 
-            ArrayList<ServerMessage> messages = new ArrayList<>();
+            var messages = new ArrayList<ServerMessage>();
 
 
             messages.add(new UserDataComposer(this.client.getHabbo()).compose());

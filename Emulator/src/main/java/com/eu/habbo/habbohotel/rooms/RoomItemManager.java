@@ -166,7 +166,7 @@ public class RoomItemManager {
      * Gets all floor items.
      */
     public THashSet<HabboItem> getFloorItems() {
-        THashSet<HabboItem> items = new THashSet<>();
+        var items = new THashSet<HabboItem>();
         // roomItems is a TCollections.synchronizedMap; its iterator is not safe
         // against concurrent put/remove (item place/pickup), so hold the map
         // monitor for the whole traversal, matching the mutation sites.
@@ -193,7 +193,7 @@ public class RoomItemManager {
      * Gets all wall items.
      */
     public THashSet<HabboItem> getWallItems() {
-        THashSet<HabboItem> items = new THashSet<>();
+        var items = new THashSet<HabboItem>();
         synchronized (this.roomItems) {
             TIntObjectIterator<HabboItem> iterator = this.roomItems.iterator();
 
@@ -217,7 +217,7 @@ public class RoomItemManager {
      * Gets all post-it notes.
      */
     public THashSet<HabboItem> getPostItNotes() {
-        THashSet<HabboItem> items = new THashSet<>();
+        var items = new THashSet<HabboItem>();
         synchronized (this.roomItems) {
             TIntObjectIterator<HabboItem> iterator = this.roomItems.iterator();
 
@@ -272,7 +272,7 @@ public class RoomItemManager {
      * Gets items at a tile with option to return on first match.
      */
     public THashSet<HabboItem> getItemsAt(RoomTile tile, boolean returnOnFirst) {
-        THashSet<HabboItem> items = new THashSet<>(0);
+        var items = new THashSet<HabboItem>(0);
 
         if (tile == null) {
             return items;
@@ -342,7 +342,7 @@ public class RoomItemManager {
      * Gets items at a position above a minimum Z height.
      */
     public THashSet<HabboItem> getItemsAt(int x, int y, double minZ) {
-        THashSet<HabboItem> items = new THashSet<>();
+        var items = new THashSet<HabboItem>();
 
         for (HabboItem item : this.getItemsAt(x, y)) {
             if (item.getZ() < minZ) {
@@ -358,7 +358,7 @@ public class RoomItemManager {
      * Gets items of a specific type at a position.
      */
     public THashSet<HabboItem> getItemsAt(Class<? extends HabboItem> type, int x, int y) {
-        THashSet<HabboItem> items = new THashSet<>();
+        var items = new THashSet<HabboItem>();
 
         for (HabboItem item : this.getItemsAt(x, y)) {
             if (!item.getClass().equals(type)) {
@@ -967,7 +967,7 @@ public class RoomItemManager {
      * Gets the unique furniture count for a user.
      */
     public int getUserUniqueFurniCount(int userId) {
-        THashSet<Item> items = new THashSet<>();
+        var items = new THashSet<Item>();
 
         synchronized (this.roomItems) {
             for (HabboItem item : this.roomItems.valueCollection()) {
@@ -1048,8 +1048,8 @@ public class RoomItemManager {
      * Ejects all furniture belonging to a user.
      */
     public void ejectUserFurni(int userId) {
-        THashSet<HabboItem> items = new THashSet<>();
-        THashSet<HabboItem> inventoryItems = new THashSet<>();
+        var items = new THashSet<HabboItem>();
+        var inventoryItems = new THashSet<HabboItem>();
 
         TIntObjectIterator<HabboItem> iterator = this.roomItems.iterator();
 
@@ -1102,7 +1102,7 @@ public class RoomItemManager {
      * Ejects all items from the room except those belonging to the specified Habbo.
      */
     public void ejectAll(Habbo habbo) {
-        THashMap<Integer, THashSet<HabboItem>> userItemsMap = new THashMap<>();
+        var userItemsMap = new THashMap<Integer, THashSet<HabboItem>>();
 
         synchronized (this.roomItems) {
             TIntObjectIterator<HabboItem> iterator = this.roomItems.iterator();
@@ -1128,7 +1128,7 @@ public class RoomItemManager {
         }
 
         for (Map.Entry<Integer, THashSet<HabboItem>> entrySet : userItemsMap.entrySet()) {
-            THashSet<HabboItem> inventoryItems = new THashSet<>();
+            var inventoryItems = new THashSet<HabboItem>();
 
             for (HabboItem item : entrySet.getValue()) {
                 if (!BuildersClubRoomSupport.isTrackedItem(item.getId())) {
@@ -1156,7 +1156,7 @@ public class RoomItemManager {
      * Gets all tiles that are locked by furniture.
      */
     public THashSet<RoomTile> getLockedTiles() {
-        THashSet<RoomTile> lockedTiles = new THashSet<>();
+        var lockedTiles = new THashSet<RoomTile>();
 
         TIntObjectIterator<HabboItem> iterator = this.roomItems.iterator();
 
@@ -2454,7 +2454,7 @@ public class RoomItemManager {
     }
 
     private THashSet<HabboItem> getPhysicsItemsAt(RoomTile tile, HabboItem exclude, WiredMovementPhysics physics) {
-        THashSet<HabboItem> items = new THashSet<>();
+        var items = new THashSet<HabboItem>();
 
         for (HabboItem item : this.getItemsAt(tile)) {
             if (item == null || item == exclude) {

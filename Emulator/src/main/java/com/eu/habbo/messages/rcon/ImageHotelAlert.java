@@ -19,7 +19,7 @@ public class ImageHotelAlert extends RCONMessage<ImageHotelAlert.JSON> {
 
     @Override
     public void handle(Gson gson, JSON json) {
-        THashMap<String, String> keys = new THashMap<>();
+        var keys = new THashMap<String, String>();
 
         if (!json.message.isEmpty()) {
             keys.put("message", json.message);

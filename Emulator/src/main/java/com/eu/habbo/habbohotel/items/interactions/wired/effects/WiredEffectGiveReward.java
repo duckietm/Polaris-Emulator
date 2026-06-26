@@ -72,7 +72,7 @@ public class WiredEffectGiveReward extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        ArrayList<WiredGiveRewardItem> rewards = new ArrayList<>(this.rewardItems);
+        var rewards = new ArrayList<WiredGiveRewardItem>(this.rewardItems);
         return WiredManager.getGson().toJson(new JsonData(this.limit, this.given.get(), this.rewardTime, this.uniqueRewards, this.limitationInterval, rewards, this.getDelay(), this.userSource));
     }
 

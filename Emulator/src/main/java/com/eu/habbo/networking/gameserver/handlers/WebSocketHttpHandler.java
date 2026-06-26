@@ -91,7 +91,7 @@ public class WebSocketHttpHandler extends ChannelInboundHandlerAdapter {
     }
 
     private static String getDomainNameFromUrl(String url) throws Exception {
-        URI uri = new URI(url);
+        var uri = new URI(url);
         String domain = uri.getHost();
         if (domain == null) return "error";
         return domain.startsWith("www.") ? domain.substring(4) : domain;

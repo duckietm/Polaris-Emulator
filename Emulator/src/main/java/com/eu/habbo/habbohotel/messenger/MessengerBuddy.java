@@ -167,7 +167,7 @@ public class MessengerBuddy implements Runnable, ISerialize {
         if (habbo == null)
             return;
 
-        Message chatMessage = new Message(from.getHabboInfo().getId(), this.id, message);
+        var chatMessage = new Message(from.getHabboInfo().getId(), this.id, message);
         Emulator.getThreading().run(chatMessage);
 
         if (WordFilter.ENABLED_FRIENDCHAT) {

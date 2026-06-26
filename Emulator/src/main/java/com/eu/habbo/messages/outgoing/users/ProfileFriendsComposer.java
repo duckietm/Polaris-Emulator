@@ -69,7 +69,7 @@ public class ProfileFriendsComposer extends MessageComposer {
 
             this.response.appendInt(total);
 
-            Random random = new Random();
+            var random = new Random();
 
             if (!this.lovers.isEmpty()) {
                 int loversIndex = random.nextInt(this.lovers.size());

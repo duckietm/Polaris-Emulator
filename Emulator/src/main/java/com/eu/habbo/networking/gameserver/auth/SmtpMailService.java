@@ -63,7 +63,7 @@ public final class SmtpMailService {
                 }
             }
 
-            Properties props = new Properties();
+            var props = new Properties();
             props.put("mail.smtp.host", host);
             props.put("mail.smtp.port", String.valueOf(port));
             props.put("mail.smtp.auth", String.valueOf(!username.isEmpty()));
@@ -85,7 +85,7 @@ public final class SmtpMailService {
                         }
                     });
 
-            MimeMessage message = new MimeMessage(session);
+            var message = new MimeMessage(session);
             message.setFrom(new InternetAddress(fromAddr, fromName, "UTF-8"));
             message.addRecipient(Message.RecipientType.TO, new InternetAddress(toAddress));
             message.setSubject(subject, "UTF-8");

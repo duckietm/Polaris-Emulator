@@ -204,11 +204,11 @@ public final class RememberJwtService {
     }
 
     private static String buildJwt(int userId, String familyId, int version, long iat, long exp) {
-        JsonObject header = new JsonObject();
+        var header = new JsonObject();
         header.addProperty("alg", "HS256");
         header.addProperty("typ", "JWT");
 
-        JsonObject payload = new JsonObject();
+        var payload = new JsonObject();
         payload.addProperty("sub", userId);
         payload.addProperty("fid", familyId);
         payload.addProperty("v",   version);

@@ -48,7 +48,7 @@ public class CameraPublishToWebEvent extends MessageHandler {
             int wait = CAMERA_PUBLISH_DELAY - timeSinceLastPublish;
             this.client.sendResponse(new CameraPublishWaitMessageComposer(false, wait, habboInfo.getPhotoURL()));
         } else {
-            UserPublishPictureEvent publishPictureEvent = new UserPublishPictureEvent(habbo, habboInfo.getPhotoURL(), currentTimestamp, habboInfo.getPhotoRoomId());
+            var publishPictureEvent = new UserPublishPictureEvent(habbo, habboInfo.getPhotoURL(), currentTimestamp, habboInfo.getPhotoRoomId());
 
             if (!Emulator.getPluginManager().fireEvent(publishPictureEvent).isCancelled()) {
                 try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();

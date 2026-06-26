@@ -55,14 +55,14 @@ public class HabboRSACrypto {
     }
 
     private byte[] DoEncrypt(byte[] data, boolean isPublic, int padType) throws HabboCryptoException {
-        try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
+        try (var dst = new ByteArrayOutputStream()) {
             int bl = this.blockSize;
             int end = data.length;
-            MutableInt pos = new MutableInt(0);
+            var pos = new MutableInt(0);
 
             while (pos.intValue() < end) {
                 byte[] padded = Pkcs1Pad(data, pos, end, bl, padType);
-                BigInteger block = new BigInteger(padded);
+                var block = new BigInteger(padded);
                 BigInteger chunk = isPublic ? DoPublic(block) : DoPrivate(block);
 
                 for (int b = (int) (bl - Math.ceil(chunk.bitLength() / 8.0)); b > 0; --b) {
@@ -83,7 +83,7 @@ public class HabboRSACrypto {
             throw new HabboCryptoException("Decryption data was not in blocks of " + this.blockSize + " bytes, total " + data.length + ".");
         }
 
-        try (ByteArrayOutputStream dst = new ByteArrayOutputStream()) {
+        try (var dst = new ByteArrayOutputStream()) {
             int end = data.length;
             int pos = 0;
 
@@ -91,7 +91,7 @@ public class HabboRSACrypto {
                 byte[] blockData = new byte[this.blockSize];
                 System.arraycopy(data, pos, blockData, 0, this.blockSize);
 
-                BigInteger block = new BigInteger(1, blockData);
+                var block = new BigInteger(1, blockData);
                 BigInteger chunk = isPublic ? DoPublic(block) : DoPrivate(block);
                 byte[] unpadded = Pkcs1Unpad(chunk.toByteArray(), this.blockSize, padType);
 

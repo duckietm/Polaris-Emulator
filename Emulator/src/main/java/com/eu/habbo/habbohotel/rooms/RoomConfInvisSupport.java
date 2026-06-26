@@ -30,7 +30,7 @@ public final class RoomConfInvisSupport {
     }
 
     public static TIntArrayList collectHiddenFloorItemIds(Room room) {
-        TIntArrayList hiddenItemIds = new TIntArrayList();
+        var hiddenItemIds = new TIntArrayList();
 
         if (room == null) {
             return hiddenItemIds;

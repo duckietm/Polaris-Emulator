@@ -30,7 +30,7 @@ public class GuildRemoveAdminEvent extends MessageHandler {
                 Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(guild.getRoomId());
                 Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
 
-                GuildRemovedAdminEvent removedAdminEvent = new GuildRemovedAdminEvent(guild, userId, habbo);
+                var removedAdminEvent = new GuildRemovedAdminEvent(guild, userId, habbo);
                 Emulator.getPluginManager().fireEvent(removedAdminEvent);
 
                 if (removedAdminEvent.isCancelled())

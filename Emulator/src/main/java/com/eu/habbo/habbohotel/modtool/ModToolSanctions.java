@@ -157,7 +157,7 @@ public class ModToolSanctions {
         int muteDurationSeconds = 0;
 
         if (muteDuration > 0) {
-            Date muteDurationDate = new Date((long) muteDuration * 1000);
+            var muteDurationDate = new Date((long) muteDuration * 1000);
             long diff = muteDurationDate.getTime() - Emulator.getDate().getTime();
             muteDurationSeconds = Math.toIntExact(diff / 1000);
         }

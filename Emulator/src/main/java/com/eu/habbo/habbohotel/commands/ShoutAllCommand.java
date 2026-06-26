@@ -17,7 +17,7 @@ public class ShoutAllCommand extends Command {
             return true;
         }
 
-        StringBuilder message = new StringBuilder();
+        var message = new StringBuilder();
         for (int i = 1; i < params.length; i++) {
             message.append(params[i]).append(" ");
         }

@@ -50,7 +50,7 @@ public class GiftCommand extends Command {
                 return true;
             }
 
-            StringBuilder message = new StringBuilder();
+            var message = new StringBuilder();
 
             if (params.length > 3) {
                 for (int i = 3; i < params.length; i++) {
@@ -76,7 +76,7 @@ public class GiftCommand extends Command {
             if (habbo != null) {
                 habbo.getClient().sendResponse(new InventoryRefreshComposer());
 
-                THashMap<String, String> keys = new THashMap<>();
+                var keys = new THashMap<String, String>();
                 keys.put("display", "BUBBLE");
                 keys.put("image", "${image.library.url}notifications/gift.gif");
                 keys.put("message", Emulator.getTexts().getValue("generic.gift.received.anonymous"));

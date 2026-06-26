@@ -359,7 +359,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
     }
 
     private ReferenceSnapshot userReferences(WiredContext ctx, Room room) {
-        ReferenceSnapshot snapshot = new ReferenceSnapshot(TARGET_USER);
+        var snapshot = new ReferenceSnapshot(TARGET_USER);
 
         if (isInternalVariableToken(this.referenceVariableToken)) {
             String key = getInternalVariableKey(this.referenceVariableToken);
@@ -390,7 +390,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
         int source = (this.referenceFurniSource == SOURCE_SECONDARY_SELECTED) ? WiredSourceUtil.SOURCE_SELECTED : this.referenceFurniSource;
         if (source == WiredSourceUtil.SOURCE_SELECTED) this.refreshReferenceItems();
 
-        ReferenceSnapshot snapshot = new ReferenceSnapshot(TARGET_FURNI);
+        var snapshot = new ReferenceSnapshot(TARGET_FURNI);
 
         if (isInternalVariableToken(this.referenceVariableToken)) {
             String key = getInternalVariableKey(this.referenceVariableToken);
@@ -415,7 +415,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
     }
 
     private ReferenceSnapshot roomReferences(Room room) {
-        ReferenceSnapshot snapshot = new ReferenceSnapshot(TARGET_ROOM);
+        var snapshot = new ReferenceSnapshot(TARGET_ROOM);
 
         if (isInternalVariableToken(this.referenceVariableToken)) {
             String key = getInternalVariableKey(this.referenceVariableToken);
@@ -436,7 +436,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
     }
 
     private ReferenceSnapshot contextReferences(WiredContext ctx, Room room) {
-        ReferenceSnapshot snapshot = new ReferenceSnapshot(TARGET_CONTEXT);
+        var snapshot = new ReferenceSnapshot(TARGET_CONTEXT);
 
         if (isInternalVariableToken(this.referenceVariableToken)) {
             String key = getInternalVariableKey(this.referenceVariableToken);
@@ -680,7 +680,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
     }
 
     private void refreshReferenceItems() {
-        THashSet<HabboItem> staleItems = new THashSet<>();
+        var staleItems = new THashSet<HabboItem>();
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
 
         if (room == null) {
@@ -713,7 +713,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
     }
 
     private String serializeIds(THashSet<HabboItem> items) {
-        StringBuilder builder = new StringBuilder();
+        var builder = new StringBuilder();
 
         for (HabboItem item : items) {
             if (item == null) continue;

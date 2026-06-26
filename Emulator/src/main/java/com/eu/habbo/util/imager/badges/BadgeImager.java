@@ -52,7 +52,7 @@ public class BadgeImager {
                 if ((pixel >> 24) == 0x00)
                     continue;
 
-                Color color = new Color(pixel);
+                var color = new Color(pixel);
 
                 float alpha = (color.getAlpha() / 255.0F) * (maskColor.getAlpha() / 255.0F);
                 float red = (color.getRed() / 255.0F) * (maskColor.getRed() / 255.0F);
@@ -110,13 +110,13 @@ public class BadgeImager {
     }
 
     public static BufferedImage convert32(BufferedImage src) {
-        BufferedImage dest = new BufferedImage(src.getWidth(), src.getHeight(), BufferedImage.TYPE_INT_ARGB);
-        ColorConvertOp cco = new ColorConvertOp(src.getColorModel().getColorSpace(), dest.getColorModel().getColorSpace(), null);
+        var dest = new BufferedImage(src.getWidth(), src.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        var cco = new ColorConvertOp(src.getColorModel().getColorSpace(), dest.getColorModel().getColorSpace(), null);
         return cco.filter(src, dest);
     }
 
     public synchronized boolean reload() {
-        File file = new File(Emulator.getConfig().getValue("imager.location.badgeparts"));
+        var file = new File(Emulator.getConfig().getValue("imager.location.badgeparts"));
         if (!file.exists()) {
             LOGGER.error("BadgeImager output folder: {} does not exist!", Emulator.getConfig().getValue("imager.location.badgeparts"));
             return false;
@@ -180,7 +180,7 @@ public class BadgeImager {
         }
 
 
-        BufferedImage image = new BufferedImage(39, 39, BufferedImage.TYPE_INT_ARGB);
+        var image = new BufferedImage(39, 39, BufferedImage.TYPE_INT_ARGB);
         Graphics graphics = image.getGraphics();
 
         for (String s : parts) {

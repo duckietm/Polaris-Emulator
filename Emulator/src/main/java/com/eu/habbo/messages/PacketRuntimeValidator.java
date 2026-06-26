@@ -13,7 +13,7 @@ public final class PacketRuntimeValidator {
     }
 
     public static RuntimeValidationReport validatePacketNameClass(String direction, Class<?> packetClass) {
-        RuntimeValidationReport report = new RuntimeValidationReport();
+        var report = new RuntimeValidationReport();
         Map<Integer, String> packetNames = new HashMap<>();
 
         for (Field field : packetClass.getFields()) {
@@ -44,7 +44,7 @@ public final class PacketRuntimeValidator {
     }
 
     public static RuntimeValidationReport validateHandlers(Map<Integer, Class<? extends MessageHandler>> handlers) {
-        RuntimeValidationReport report = new RuntimeValidationReport();
+        var report = new RuntimeValidationReport();
 
         for (Map.Entry<Integer, Class<? extends MessageHandler>> entry : handlers.entrySet()) {
             Integer packetId = entry.getKey();

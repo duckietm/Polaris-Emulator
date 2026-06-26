@@ -27,7 +27,7 @@ public class GameClientManager {
 
 
     public boolean addClient(ChannelHandlerContext ctx) {
-        GameClient client = new GameClient(ctx.channel());
+        var client = new GameClient(ctx.channel());
         ctx.channel().closeFuture().addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture channelFuture) throws Exception {

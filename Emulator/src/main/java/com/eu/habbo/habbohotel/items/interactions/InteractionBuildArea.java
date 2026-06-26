@@ -68,8 +68,8 @@ public class InteractionBuildArea extends InteractionCustomValues {
     public void onPickUp(Room room) {
         super.onPickUp(room);
 
-        ArrayList<String> builderNames = new ArrayList<>(Arrays.asList(this.values.get("builders").split(";")));
-        THashSet<Integer> canBuild = new THashSet<>();
+        var builderNames = new ArrayList<String>(Arrays.asList(this.values.get("builders").split(";")));
+        var canBuild = new THashSet<Integer>();
 
         for (String builderName : builderNames) {
             Habbo builder = Emulator.getGameEnvironment().getHabboManager().getHabbo(builderName);
@@ -102,8 +102,8 @@ public class InteractionBuildArea extends InteractionCustomValues {
     public void onMove(Room room, RoomTile oldLocation, RoomTile newLocation) {
         super.onMove(room, oldLocation, newLocation);
 
-        ArrayList<String> builderNames = new ArrayList<>(Arrays.asList(this.values.get("builders").split(";")));
-        THashSet<Integer> canBuild = new THashSet<>();
+        var builderNames = new ArrayList<String>(Arrays.asList(this.values.get("builders").split(";")));
+        var canBuild = new THashSet<Integer>();
 
         for (String builderName : builderNames) {
             Habbo builder = Emulator.getGameEnvironment().getHabboManager().getHabbo(builderName);
@@ -119,7 +119,7 @@ public class InteractionBuildArea extends InteractionCustomValues {
         }
 
         THashSet<RoomTile> oldTiles = this.tiles;
-        THashSet<RoomTile> newTiles = new THashSet<>();
+        var newTiles = new THashSet<RoomTile>();
 
         int minX = Math.max(0, newLocation.x - Integer.parseInt(this.values.get("tilesBack")));
         int minY = Math.max(0, newLocation.y - Integer.parseInt(this.values.get("tilesRight")));
@@ -179,8 +179,8 @@ public class InteractionBuildArea extends InteractionCustomValues {
     @Override
     public void onCustomValuesSaved(Room room, GameClient client, THashMap<String, String> oldValues) {
         regenAffectedTiles(room);
-        ArrayList<String> builderNames = new ArrayList<>(Arrays.asList(this.values.get("builders").split(";")));
-        THashSet<Integer> canBuild = new THashSet<>();
+        var builderNames = new ArrayList<String>(Arrays.asList(this.values.get("builders").split(";")));
+        var canBuild = new THashSet<Integer>();
 
         for (String builderName : builderNames) {
             Habbo builder = Emulator.getGameEnvironment().getHabboManager().getHabbo(builderName);
@@ -195,7 +195,7 @@ public class InteractionBuildArea extends InteractionCustomValues {
             }
         }
 
-        THashSet<RoomTile> oldTiles = new THashSet<>();
+        var oldTiles = new THashSet<RoomTile>();
 
         int minX = Math.max(0, this.getX() - Integer.parseInt(oldValues.get("tilesBack")));
         int minY = Math.max(0, this.getY() - Integer.parseInt(oldValues.get("tilesRight")));
@@ -226,7 +226,7 @@ public class InteractionBuildArea extends InteractionCustomValues {
         if(effectItem != null) {
             TIntObjectMap<String> ownerNames = TCollections.synchronizedMap(new TIntObjectHashMap<>(0));
             ownerNames.put(-1, "System");
-            THashSet<HabboItem> items = new THashSet<>();
+            var items = new THashSet<HabboItem>();
 
             int id = 0;
             for(RoomTile tile : this.tiles) {

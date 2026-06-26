@@ -19,7 +19,7 @@ public class GuildRemoveFavoriteEvent extends MessageHandler {
 
         if (this.client.getHabbo().getHabboStats().hasGuild(guildId)) {
             Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
-            GuildRemovedFavoriteEvent favoriteEvent = new GuildRemovedFavoriteEvent(guild, this.client.getHabbo());
+            var favoriteEvent = new GuildRemovedFavoriteEvent(guild, this.client.getHabbo());
             Emulator.getPluginManager().fireEvent(favoriteEvent);
             if (favoriteEvent.isCancelled())
                 return;

@@ -16,7 +16,7 @@ public class TradeOfferMultipleItemsEvent extends MessageHandler {
         if (trade == null)
             return;
 
-        THashSet<HabboItem> items = new THashSet<>();
+        var items = new THashSet<HabboItem>();
 
         int count = this.packet.readInt();
         if (count <= 0 || count > RoomTrade.MAX_OFFERED_ITEMS)

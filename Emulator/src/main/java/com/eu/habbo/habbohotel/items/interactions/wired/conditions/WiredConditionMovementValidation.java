@@ -59,7 +59,7 @@ public class WiredConditionMovementValidation extends InteractionWiredCondition 
             return true;
         }
         
-        WiredSimulation simulation = new WiredSimulation(ctx.room());
+        var simulation = new WiredSimulation(ctx.room());
         
         for (IWiredEffect effect : stack.effects()) {
             if (effect.requiresActor() && !ctx.hasActor()) {

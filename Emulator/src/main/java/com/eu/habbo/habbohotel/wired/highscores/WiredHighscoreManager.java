@@ -64,7 +64,7 @@ public class WiredHighscoreManager {
             statement.setFetchSize(1000);
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
-                    WiredHighscoreDataEntry entry = new WiredHighscoreDataEntry(set);
+                    var entry = new WiredHighscoreDataEntry(set);
 
                     this.data.computeIfAbsent(entry.getItemId(), k -> Collections.synchronizedList(new ArrayList<>())).add(entry);
                 }

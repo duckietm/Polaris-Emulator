@@ -8,7 +8,7 @@ public final class PluginRuntimeValidator {
     }
 
     public static RuntimeValidationReport validateConfiguration(String jarName, HabboPluginConfiguration configuration) {
-        RuntimeValidationReport report = new RuntimeValidationReport();
+        var report = new RuntimeValidationReport();
 
         if (configuration == null) {
             report.addError("Plugin " + jarName + " has an invalid plugin.json");

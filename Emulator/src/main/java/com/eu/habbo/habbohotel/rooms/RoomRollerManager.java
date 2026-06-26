@@ -46,9 +46,9 @@ public class RoomRollerManager {
         // Do not add a second gate here — it would cause rollers to fire at
         // speed^2 intervals instead of the intended speed.
 
-        THashSet<MessageComposer> messages = new THashSet<>();
-        THashSet<Integer> rollerFurniIds = new THashSet<>();
-        THashSet<Integer> rolledUnitIds = new THashSet<>();
+        var messages = new THashSet<MessageComposer>();
+        var rollerFurniIds = new THashSet<Integer>();
+        var rolledUnitIds = new THashSet<Integer>();
 
         this.room.getRoomSpecialTypes().getRollers().forEachValue(roller -> {
             processRoller(roller, messages, rollerFurniIds, rolledUnitIds, updatedUnit);
@@ -83,7 +83,7 @@ public class RoomRollerManager {
             return;
         }
 
-        THashSet<HabboItem> itemsOnRoller = new THashSet<>();
+        var itemsOnRoller = new THashSet<HabboItem>();
         for (HabboItem item : this.room.getItemsAt(rollerTile)) {
             if (item.getZ() >= roller.getZ() + Item.getCurrentHeight(roller)) {
                 itemsOnRoller.add(item);
@@ -149,7 +149,7 @@ public class RoomRollerManager {
             return;
         }
 
-        THashSet<HabboItem> itemsNewTile = new THashSet<>();
+        var itemsNewTile = new THashSet<HabboItem>();
         itemsNewTile.addAll(this.room.getItemsAt(tileInFront));
         itemsNewTile.removeAll(itemsOnRoller);
 
@@ -255,7 +255,7 @@ public class RoomRollerManager {
             roomUserRolledEvent = new UserRolledEvent(null, null, null);
         }
 
-        ArrayList<RoomUnit> unitsOnTile = new ArrayList<>(rollerTile.getUnits());
+        var unitsOnTile = new ArrayList<RoomUnit>(rollerTile.getUnits());
 
         for (RoomUnit unit : rollerTile.getUnits()) {
             if (unit.getRoomUnitType() == RoomUnitType.PET) {
@@ -270,7 +270,7 @@ public class RoomRollerManager {
 
         this.room.getTallestChair(tileInFront);
 
-        THashSet<Integer> usersRolledThisTile = new THashSet<>();
+        var usersRolledThisTile = new THashSet<Integer>();
 
         for (RoomUnit unit : unitsOnTile) {
             if (rolledUnitIds.contains(unit.getId())) {
@@ -321,7 +321,7 @@ public class RoomRollerManager {
                         updatedUnit.remove(ridingUnit);
 
                         // Compose and send pet roller message first
-                        RoomUnitOnRollerComposer petRollerComposer = new RoomUnitOnRollerComposer(
+                        var petRollerComposer = new RoomUnitOnRollerComposer(
                                 ridingUnit, roller, ridingUnit.getCurrentLocation(), petOldZ,
                                 tileInFront, petNewZ, this.room);
                         messages.add(petRollerComposer);

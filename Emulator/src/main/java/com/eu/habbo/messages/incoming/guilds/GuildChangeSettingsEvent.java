@@ -45,7 +45,7 @@ public class GuildChangeSettingsEvent extends MessageHandler {
                 if (state < 0 || state >= GuildState.values().length)
                     return;
 
-                GuildChangedSettingsEvent settingsEvent = new GuildChangedSettingsEvent(guild, state, this.packet.readInt() == 0);
+                var settingsEvent = new GuildChangedSettingsEvent(guild, state, this.packet.readInt() == 0);
                 Emulator.getPluginManager().fireEvent(settingsEvent);
 
                 if (settingsEvent.isCancelled())

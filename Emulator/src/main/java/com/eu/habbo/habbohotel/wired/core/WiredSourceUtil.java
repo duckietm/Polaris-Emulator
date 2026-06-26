@@ -135,7 +135,7 @@ public final class WiredSourceUtil {
             return null;
         }
 
-        WiredContext selectorCtx = new WiredContext(
+        var selectorCtx = new WiredContext(
                 originalCtx.event(),
                 triggerItem,
                 originalCtx.stack(),
@@ -177,7 +177,7 @@ public final class WiredSourceUtil {
             return null;
         }
 
-        WiredContext selectorCtx = new WiredContext(
+        var selectorCtx = new WiredContext(
                 originalCtx.event(),
                 originalCtx.triggerItem(),
                 originalCtx.stack(),

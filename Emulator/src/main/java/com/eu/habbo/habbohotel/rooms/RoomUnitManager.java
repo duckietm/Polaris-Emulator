@@ -335,7 +335,7 @@ public class RoomUnitManager {
      * Gets all Habbos at a specific tile.
      */
     public THashSet<Habbo> getHabbosAt(RoomTile tile) {
-        THashSet<Habbo> habbos = new THashSet<>();
+        var habbos = new THashSet<Habbo>();
 
         for (Habbo habbo : this.getHabbos()) {
             if (habbo.getRoomUnit().getCurrentLocation().equals(tile)) {
@@ -350,7 +350,7 @@ public class RoomUnitManager {
      * Gets all Habbos on a specific item.
      */
     public THashSet<Habbo> getHabbosOnItem(HabboItem item) {
-        THashSet<Habbo> habbos = new THashSet<>();
+        var habbos = new THashSet<Habbo>();
         for (short x = item.getX(); x < item.getX() + item.getBaseItem().getLength(); x++) {
             for (short y = item.getY(); y < item.getY() + item.getBaseItem().getWidth(); y++) {
                 habbos.addAll(this.getHabbosAt(x, y));
@@ -413,7 +413,7 @@ public class RoomUnitManager {
                     habbo.getRoomUnit().setPreviousLocationZ(z);
                 }
             } else if (topItem != null && topItem.getBaseItem().allowLay()) {
-                BedProfile bedProfile = new BedProfile(topItem);
+                var bedProfile = new BedProfile(topItem);
 
                 // Snap user to the correct pillow tile for the current bed rotation
                 RoomTile pillowTile = bedProfile.snapToLay(this.room, topItem, habbo.getRoomUnit().getX(), habbo.getRoomUnit().getY());
@@ -459,7 +459,7 @@ public class RoomUnitManager {
         }
 
         if (!habbos.isEmpty()) {
-            THashSet<RoomUnit> roomUnits = new THashSet<>();
+            var roomUnits = new THashSet<RoomUnit>();
             for (Habbo habbo : habbos) {
                 if (habbo.getRoomUnit() == null
                         || WiredMoveCarryHelper.shouldSuppressStatusUpdate(habbo.getRoomUnit())
@@ -716,7 +716,7 @@ public class RoomUnitManager {
      * Gets all Bots at a specific tile.
      */
     public THashSet<Bot> getBotsAt(RoomTile tile) {
-        THashSet<Bot> bots = new THashSet<>();
+        var bots = new THashSet<Bot>();
         synchronized (this.currentBots) {
             TIntObjectIterator<Bot> botIterator = this.currentBots.iterator();
 
@@ -740,7 +740,7 @@ public class RoomUnitManager {
      * Gets all Bots on a specific item.
      */
     public THashSet<Bot> getBotsOnItem(HabboItem item) {
-        THashSet<Bot> bots = new THashSet<>();
+        var bots = new THashSet<Bot>();
         for (short x = item.getX(); x < item.getX() + item.getBaseItem().getLength(); x++) {
             for (short y = item.getY(); y < item.getY() + item.getBaseItem().getWidth(); y++) {
                 bots.addAll(this.getBotsAt(this.room.getLayout().getTile(x, y)));
@@ -779,7 +779,7 @@ public class RoomUnitManager {
             } else if (topItem != null && topItem.getBaseItem().allowLay()) {
                 bot.getRoomUnit().setZ(topItem.getZ());
                 bot.getRoomUnit().setPreviousLocationZ(topItem.getZ());
-                BedProfile botBedProfile = new BedProfile(topItem);
+                var botBedProfile = new BedProfile(topItem);
                 double botLayHeight = Item.getCurrentHeight(topItem) + botBedProfile.getLayZOffset();
                 bot.getRoomUnit().setStatus(RoomUnitStatus.LAY, botLayHeight + ";" + botBedProfile.getLayXOffset() + ";" + botBedProfile.getLayYOffset());
             } else {
@@ -980,7 +980,7 @@ public class RoomUnitManager {
      * Gets all Pets at a specific tile.
      */
     public THashSet<Pet> getPetsAt(RoomTile tile) {
-        THashSet<Pet> pets = new THashSet<>();
+        var pets = new THashSet<Pet>();
         synchronized (this.currentPets) {
             TIntObjectIterator<Pet> petIterator = this.currentPets.iterator();
 
@@ -1045,7 +1045,7 @@ public class RoomUnitManager {
      * Picks up all pets belonging to a Habbo.
      */
     public void pickupPetsForHabbo(Habbo habbo) {
-        THashSet<Pet> pets = new THashSet<>();
+        var pets = new THashSet<Pet>();
 
         synchronized (this.currentPets) {
             TIntObjectIterator<Pet> petIterator = this.currentPets.iterator();
@@ -1092,7 +1092,7 @@ public class RoomUnitManager {
      * @param excludeUserId User ID whose pets should NOT be removed, -1 to remove all
      */
     public void removeAllPets(int excludeUserId) {
-        THashSet<Pet> toRemove = new THashSet<>();
+        var toRemove = new THashSet<Pet>();
 
         synchronized (this.currentPets) {
             TIntObjectIterator<Pet> petIterator = this.currentPets.iterator();
@@ -1145,7 +1145,7 @@ public class RoomUnitManager {
      * Gets all Habbos and Bots at a tile.
      */
     public THashSet<RoomUnit> getHabbosAndBotsAt(RoomTile tile) {
-        THashSet<RoomUnit> list = new THashSet<>();
+        var list = new THashSet<RoomUnit>();
 
         for (Bot bot : this.getBotsAt(tile)) {
             list.add(bot.getRoomUnit());
@@ -1169,7 +1169,7 @@ public class RoomUnitManager {
      * Gets all room units at a specific tile.
      */
     public THashSet<RoomUnit> getRoomUnits(RoomTile atTile) {
-        THashSet<RoomUnit> units = new THashSet<>();
+        var units = new THashSet<RoomUnit>();
 
         for (Habbo habbo : this.currentHabbos.values()) {
             if (habbo != null && habbo.getRoomUnit() != null && habbo.getRoomUnit().getRoom() != null
@@ -1237,7 +1237,7 @@ public class RoomUnitManager {
     public void checkBedLoveEffect(HabboItem bed) {
         if (bed == null || !bed.getBaseItem().allowLay()) return;
 
-        BedProfile bedProfile = new BedProfile(bed);
+        var bedProfile = new BedProfile(bed);
         if (!bedProfile.isDouble()) return;
 
         THashSet<Habbo> habbosOnBed = this.getHabbosOnItem(bed);

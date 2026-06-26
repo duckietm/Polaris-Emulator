@@ -21,7 +21,7 @@ public class ActionDip extends PetAction {
         if (waterItems.isEmpty())
             return false;
 
-        HabboItem waterPatch = (HabboItem) waterItems.toArray()[Emulator.getRandom().nextInt(waterItems.size())];
+        var waterPatch = (HabboItem) waterItems.toArray()[Emulator.getRandom().nextInt(waterItems.size())];
 
         pet.getRoomUnit().setGoalLocation(pet.getRoom().getLayout().getTile(waterPatch.getX(), waterPatch.getY()));
         

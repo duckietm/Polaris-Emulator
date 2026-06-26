@@ -132,8 +132,8 @@ public class Pet implements ISerialize, Runnable {
 
     protected void say(String message) {
         if (this.roomUnit != null && this.room != null && !message.isEmpty()) {
-            RoomChatMessage chatMessage = new RoomChatMessage(message, this.roomUnit, RoomChatMessageBubbles.NORMAL);
-            PetTalkEvent talkEvent = new PetTalkEvent(this, chatMessage);
+            var chatMessage = new RoomChatMessage(message, this.roomUnit, RoomChatMessageBubbles.NORMAL);
+            var talkEvent = new PetTalkEvent(this, chatMessage);
             if (!Emulator.getPluginManager().fireEvent(talkEvent).isCancelled()) {
                 this.room.petChat(new RoomUserTalkComposer(chatMessage).compose());
             }
@@ -473,7 +473,7 @@ public class Pet implements ISerialize, Runnable {
     }
 
     public void clearPosture() {
-        THashMap<RoomUnitStatus, String> keys = new THashMap<>();
+        var keys = new THashMap<RoomUnitStatus, String>();
 
         if (this.roomUnit.hasStatus(RoomUnitStatus.MOVE))
             keys.put(RoomUnitStatus.MOVE, this.roomUnit.getStatus(RoomUnitStatus.MOVE));

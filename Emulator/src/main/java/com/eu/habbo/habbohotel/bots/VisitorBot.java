@@ -36,7 +36,7 @@ public class VisitorBot extends Bot {
 
                 String visitMessage = Emulator.getTexts().getValue("bots.visitor.list").replace("%count%", this.visits.size() + "");
 
-                StringBuilder list = new StringBuilder();
+                var list = new StringBuilder();
                 for (ModToolRoomVisit visit : this.visits) {
                     list.append("\r");
                     list.append(visit.roomName).append(" ");

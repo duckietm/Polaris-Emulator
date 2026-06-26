@@ -15,7 +15,7 @@ public class ShutdownCommand extends Command {
 
     @Override
     public boolean handle(GameClient gameClient, String[] params) throws Exception {
-        StringBuilder reason = new StringBuilder("-");
+        var reason = new StringBuilder("-");
         int minutes = 0;
         if (params.length > 2) {
             reason = new StringBuilder();

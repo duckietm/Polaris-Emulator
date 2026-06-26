@@ -165,7 +165,7 @@ public class PurchasePrefixEvent extends MessageHandler {
         int storedPoints = totalPricePointsSameType;
         int storedPointsType = (storedPoints > 0) ? pointsType : ((!font.isEmpty() && fontPricePoints > 0) ? fontPointsType : pointsType);
 
-        UserPrefix prefix = new UserPrefix(habbo.getHabboInfo().getId(), text, color, icon, effect, font, 0, text, storedPoints, storedPointsType, true);
+        var prefix = new UserPrefix(habbo.getHabboInfo().getId(), text, color, icon, effect, font, 0, text, storedPoints, storedPointsType, true);
         prefix.run(); // Insert into DB synchronously to get the ID
         habbo.getInventory().getPrefixesComponent().addPrefix(prefix);
         habbo.getInventory().getPrefixesComponent().setActive(prefix.getId());

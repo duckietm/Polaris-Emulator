@@ -125,7 +125,7 @@ public class RoomSpecialTypes {
 
     public THashSet<InteractionBattleBanzaiTeleporter> getBanzaiTeleporters() {
         synchronized (this.banzaiTeleporters) {
-            THashSet<InteractionBattleBanzaiTeleporter> battleBanzaiTeleporters = new THashSet<>();
+            var battleBanzaiTeleporters = new THashSet<InteractionBattleBanzaiTeleporter>();
             battleBanzaiTeleporters.addAll(this.banzaiTeleporters.values());
 
             return battleBanzaiTeleporters;
@@ -173,7 +173,7 @@ public class RoomSpecialTypes {
 
     public THashSet<InteractionNest> getNests() {
         synchronized (this.nests) {
-            THashSet<InteractionNest> nests = new THashSet<>();
+            var nests = new THashSet<InteractionNest>();
             nests.addAll(this.nests.values());
 
             return nests;
@@ -203,7 +203,7 @@ public class RoomSpecialTypes {
 
     public THashSet<InteractionPetDrink> getPetDrinks() {
         synchronized (this.petDrinks) {
-            THashSet<InteractionPetDrink> petDrinks = new THashSet<>();
+            var petDrinks = new THashSet<InteractionPetDrink>();
             petDrinks.addAll(this.petDrinks.values());
 
             return petDrinks;
@@ -233,7 +233,7 @@ public class RoomSpecialTypes {
 
     public THashSet<InteractionPetFood> getPetFoods() {
         synchronized (this.petFoods) {
-            THashSet<InteractionPetFood> petFoods = new THashSet<>();
+            var petFoods = new THashSet<InteractionPetFood>();
             petFoods.addAll(this.petFoods.values());
 
             return petFoods;
@@ -263,7 +263,7 @@ public class RoomSpecialTypes {
 
     public THashSet<InteractionPetToy> getPetToys() {
         synchronized (this.petToys) {
-            THashSet<InteractionPetToy> petToys = new THashSet<>();
+            var petToys = new THashSet<InteractionPetToy>();
             petToys.addAll(this.petToys.values());
 
             return petToys;
@@ -293,7 +293,7 @@ public class RoomSpecialTypes {
 
     public THashSet<InteractionPetTree> getPetTrees() {
         synchronized (this.petTrees) {
-            THashSet<InteractionPetTree> petTrees = new THashSet<>();
+            var petTrees = new THashSet<InteractionPetTree>();
             petTrees.addAll(this.petTrees.values());
 
             return petTrees;
@@ -347,7 +347,7 @@ public class RoomSpecialTypes {
      * @return A new set containing all triggers (safe for iteration)
      */
     public THashSet<InteractionWiredTrigger> getTriggers() {
-        THashSet<InteractionWiredTrigger> result = new THashSet<>();
+        var result = new THashSet<InteractionWiredTrigger>();
         for (Set<InteractionWiredTrigger> triggers : this.wiredTriggers.values()) {
             result.addAll(triggers);
         }
@@ -587,7 +587,7 @@ public class RoomSpecialTypes {
      * @return A new set containing all effects (safe for iteration)
      */
     public THashSet<InteractionWiredEffect> getEffects() {
-        THashSet<InteractionWiredEffect> result = new THashSet<>();
+        var result = new THashSet<InteractionWiredEffect>();
         for (Set<InteractionWiredEffect> effects : this.wiredEffects.values()) {
             result.addAll(effects);
         }
@@ -707,7 +707,7 @@ public class RoomSpecialTypes {
      * @return A new set containing all conditions (safe for iteration)
      */
     public THashSet<InteractionWiredCondition> getConditions() {
-        THashSet<InteractionWiredCondition> result = new THashSet<>();
+        var result = new THashSet<InteractionWiredCondition>();
         for (Set<InteractionWiredCondition> conditions : this.wiredConditions.values()) {
             result.addAll(conditions);
         }
@@ -811,7 +811,7 @@ public class RoomSpecialTypes {
      * @return A new set containing all extras (safe for iteration)
      */
     public THashSet<InteractionWiredExtra> getExtras() {
-        THashSet<InteractionWiredExtra> result = new THashSet<>();
+        var result = new THashSet<InteractionWiredExtra>();
         result.addAll(this.wiredExtras.values());
         return result;
     }
@@ -930,7 +930,7 @@ public class RoomSpecialTypes {
 
     public THashMap<Integer, InteractionFreezeScoreboard> getFreezeScoreboards() {
         synchronized (this.gameScoreboards) {
-            THashMap<Integer, InteractionFreezeScoreboard> boards = new THashMap<>();
+            var boards = new THashMap<Integer, InteractionFreezeScoreboard>();
 
             for (Map.Entry<Integer, InteractionGameScoreboard> set : this.gameScoreboards.entrySet()) {
                 if (set.getValue() instanceof InteractionFreezeScoreboard board) {
@@ -944,7 +944,7 @@ public class RoomSpecialTypes {
 
     public THashMap<Integer, InteractionFreezeScoreboard> getFreezeScoreboards(GameTeamColors teamColor) {
         synchronized (this.gameScoreboards) {
-            THashMap<Integer, InteractionFreezeScoreboard> boards = new THashMap<>();
+            var boards = new THashMap<Integer, InteractionFreezeScoreboard>();
 
             for (Map.Entry<Integer, InteractionGameScoreboard> set : this.gameScoreboards.entrySet()) {
                 if (set.getValue() instanceof InteractionFreezeScoreboard board) {
@@ -959,7 +959,7 @@ public class RoomSpecialTypes {
 
     public THashMap<Integer, InteractionBattleBanzaiScoreboard> getBattleBanzaiScoreboards() {
         synchronized (this.gameScoreboards) {
-            THashMap<Integer, InteractionBattleBanzaiScoreboard> boards = new THashMap<>();
+            var boards = new THashMap<Integer, InteractionBattleBanzaiScoreboard>();
 
             for (Map.Entry<Integer, InteractionGameScoreboard> set : this.gameScoreboards.entrySet()) {
                 if (set.getValue() instanceof InteractionBattleBanzaiScoreboard board) {
@@ -973,7 +973,7 @@ public class RoomSpecialTypes {
 
     public THashMap<Integer, InteractionBattleBanzaiScoreboard> getBattleBanzaiScoreboards(GameTeamColors teamColor) {
         synchronized (this.gameScoreboards) {
-            THashMap<Integer, InteractionBattleBanzaiScoreboard> boards = new THashMap<>();
+            var boards = new THashMap<Integer, InteractionBattleBanzaiScoreboard>();
 
             for (Map.Entry<Integer, InteractionGameScoreboard> set : this.gameScoreboards.entrySet()) {
                 if (set.getValue() instanceof InteractionBattleBanzaiScoreboard board) {
@@ -988,7 +988,7 @@ public class RoomSpecialTypes {
 
     public THashMap<Integer, InteractionFootballScoreboard> getFootballScoreboards() {
         synchronized (this.gameScoreboards) {
-            THashMap<Integer, InteractionFootballScoreboard> boards = new THashMap<>();
+            var boards = new THashMap<Integer, InteractionFootballScoreboard>();
 
             for (Map.Entry<Integer, InteractionGameScoreboard> set : this.gameScoreboards.entrySet()) {
                 if (set.getValue() instanceof InteractionFootballScoreboard board) {
@@ -1002,7 +1002,7 @@ public class RoomSpecialTypes {
 
     public THashMap<Integer, InteractionFootballScoreboard> getFootballScoreboards(GameTeamColors teamColor) {
         synchronized (this.gameScoreboards) {
-            THashMap<Integer, InteractionFootballScoreboard> boards = new THashMap<>();
+            var boards = new THashMap<Integer, InteractionFootballScoreboard>();
 
             for (Map.Entry<Integer, InteractionGameScoreboard> set : this.gameScoreboards.entrySet()) {
                 if (set.getValue() instanceof InteractionFootballScoreboard board) {
@@ -1030,7 +1030,7 @@ public class RoomSpecialTypes {
 
     public THashMap<Integer, InteractionFreezeGate> getFreezeGates() {
         synchronized (this.gameGates) {
-            THashMap<Integer, InteractionFreezeGate> gates = new THashMap<>();
+            var gates = new THashMap<Integer, InteractionFreezeGate>();
 
             for (Map.Entry<Integer, InteractionGameGate> set : this.gameGates.entrySet()) {
                 if (set.getValue() instanceof InteractionFreezeGate gate) {
@@ -1044,7 +1044,7 @@ public class RoomSpecialTypes {
 
     public THashMap<Integer, InteractionBattleBanzaiGate> getBattleBanzaiGates() {
         synchronized (this.gameGates) {
-            THashMap<Integer, InteractionBattleBanzaiGate> gates = new THashMap<>();
+            var gates = new THashMap<Integer, InteractionBattleBanzaiGate>();
 
             for (Map.Entry<Integer, InteractionGameGate> set : this.gameGates.entrySet()) {
                 if (set.getValue() instanceof InteractionBattleBanzaiGate gate) {
@@ -1114,8 +1114,8 @@ public class RoomSpecialTypes {
     }
 
     public THashSet<HabboItem> getItemsOfType(Class<? extends HabboItem> type) {
-        THashSet<HabboItem> items = new THashSet<>();
-        
+        var items = new THashSet<HabboItem>();
+
         // Check pet trees collection for InteractionPetTree type
         if (type == InteractionPetTree.class) {
             synchronized (this.petTrees) {

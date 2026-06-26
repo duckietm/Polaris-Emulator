@@ -151,7 +151,7 @@ public class ForumThread implements Runnable, ISerialize {
 
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
-                    ForumThread thread = new ForumThread(set);
+                    var thread = new ForumThread(set);
                     synchronized (threads) {
                         threads.add(thread);
                     }
@@ -337,7 +337,7 @@ public class ForumThread implements Runnable, ISerialize {
                 ResultSet set = statement.executeQuery();
 
                 while (set.next()) {
-                    ForumThreadComment comment = new ForumThreadComment(set);
+                    var comment = new ForumThreadComment(set);
                     addComment(comment);
                 }
             } catch (SQLException e) {
@@ -367,7 +367,7 @@ public class ForumThread implements Runnable, ISerialize {
         }
 
         synchronized (this.comments) {
-            ArrayList<ForumThreadComment> limitedComments = new ArrayList<>();
+            var limitedComments = new ArrayList<ForumThreadComment>();
 
             List<ForumThreadComment> comments = new ArrayList<>(this.comments.values());
             comments.sort(Comparator.comparingInt(ForumThreadComment::getIndex));

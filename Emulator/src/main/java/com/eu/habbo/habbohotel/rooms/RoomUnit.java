@@ -226,7 +226,7 @@ public class RoomUnit {
 
       if (habbo != null) {
         if (this.isIdle()) {
-          UserIdleEvent event = new UserIdleEvent(habbo, UserIdleEvent.IdleReason.WALKED, false);
+          var event = new UserIdleEvent(habbo, UserIdleEvent.IdleReason.WALKED, false);
           Emulator.getPluginManager().fireEvent(event);
 
           if (!event.isCancelled()) {

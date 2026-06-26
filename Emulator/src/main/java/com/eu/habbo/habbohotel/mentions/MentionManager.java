@@ -105,7 +105,7 @@ public class MentionManager {
             Set<String> everyoneAliases = this.everyoneAliases();
 
             BroadcastScope broadcastScope = BroadcastScope.NONE;
-            LinkedHashSet<String> directTokens = new LinkedHashSet<>();
+            var directTokens = new LinkedHashSet<String>();
 
             for (String token : message.split("\\s+")) {
                 if (token.length() < 2 || token.charAt(0) != '@') {

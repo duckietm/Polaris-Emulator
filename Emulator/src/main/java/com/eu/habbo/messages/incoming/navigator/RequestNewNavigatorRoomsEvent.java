@@ -120,8 +120,8 @@ public class RequestNewNavigatorRoomsEvent extends MessageHandler {
     }
 
     private ArrayList<SearchResultList> toQueryResults(List<SearchResultList> resultLists) {
-        ArrayList<SearchResultList> nList = new ArrayList<>();
-        THashMap<Integer, Room> searchRooms = new THashMap<>();
+        var nList = new ArrayList<SearchResultList>();
+        var searchRooms = new THashMap<Integer, Room>();
 
         for (SearchResultList li : resultLists) {
             for (Room room : li.rooms) {

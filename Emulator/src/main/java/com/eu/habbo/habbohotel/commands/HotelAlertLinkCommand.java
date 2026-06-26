@@ -16,7 +16,7 @@ public class HotelAlertLinkCommand extends Command {
         }
 
         String url = params[1];
-        StringBuilder message = new StringBuilder();
+        var message = new StringBuilder();
         for (int i = 2; i < params.length; i++) {
             message.append(params[i]);
             message.append(" ");

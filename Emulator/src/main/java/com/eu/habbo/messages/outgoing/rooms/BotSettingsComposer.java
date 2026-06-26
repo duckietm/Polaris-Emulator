@@ -23,7 +23,7 @@ public class BotSettingsComposer extends MessageComposer {
         switch (this.settingId) {
             case 1 -> this.response.appendString("");
             case 2 -> {
-                StringBuilder data = new StringBuilder();
+                var data = new StringBuilder();
 
                 if (this.bot.hasChat()) {
                     for (String s : this.bot.getChatLines()) {

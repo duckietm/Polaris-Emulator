@@ -141,7 +141,7 @@ public final class WiredVariableReferenceSupport {
                 }
 
                 int createdAt = normalizeTimestamp(set.getInt("created_at"), 0);
-                SharedUserAssignment assignment = new SharedUserAssignment(
+                var assignment = new SharedUserAssignment(
                     value,
                     createdAt,
                     normalizeTimestamp(set.getInt("updated_at"), createdAt)
@@ -193,7 +193,7 @@ public final class WiredVariableReferenceSupport {
             return false;
         }
 
-        SharedUserAssignment nextAssignment = new SharedUserAssignment(value, existingAssignment.getCreatedAt(), Emulator.getIntUnixTimestamp());
+        var nextAssignment = new SharedUserAssignment(value, existingAssignment.getCreatedAt(), Emulator.getIntUnixTimestamp());
         upsertSharedUserAssignment(reference.getSourceRoomId(), reference.getSourceVariableItemId(), userId, nextAssignment);
         USER_ASSIGNMENT_CACHE.put(createUserCacheKey(reference.getSourceRoomId(), reference.getSourceVariableItemId(), userId), CachedUserAssignment.present(nextAssignment));
         return true;
@@ -262,7 +262,7 @@ public final class WiredVariableReferenceSupport {
                     return null;
                 }
 
-                SharedRoomAssignment assignment = new SharedRoomAssignment(set.getInt("value"), normalizeTimestamp(set.getInt("updated_at"), 0));
+                var assignment = new SharedRoomAssignment(set.getInt("value"), normalizeTimestamp(set.getInt("updated_at"), 0));
                 ROOM_ASSIGNMENT_CACHE.put(cacheKey, CachedRoomAssignment.present(assignment));
                 return assignment;
             }
@@ -282,7 +282,7 @@ public final class WiredVariableReferenceSupport {
             return false;
         }
 
-        SharedRoomAssignment nextAssignment = new SharedRoomAssignment(value, Emulator.getIntUnixTimestamp());
+        var nextAssignment = new SharedRoomAssignment(value, Emulator.getIntUnixTimestamp());
         upsertSharedRoomAssignment(reference.getSourceRoomId(), reference.getSourceVariableItemId(), nextAssignment);
         ROOM_ASSIGNMENT_CACHE.put(createRoomCacheKey(reference.getSourceRoomId(), reference.getSourceVariableItemId()), CachedRoomAssignment.present(nextAssignment));
         return true;

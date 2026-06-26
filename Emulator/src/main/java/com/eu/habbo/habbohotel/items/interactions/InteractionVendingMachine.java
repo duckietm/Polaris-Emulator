@@ -33,7 +33,7 @@ public class InteractionVendingMachine extends HabboItem {
     }
     
     public THashSet<RoomTile> getActivatorTiles(Room room) {
-        THashSet<RoomTile> tiles = new THashSet<>();
+        var tiles = new THashSet<RoomTile>();
         RoomTile tileInFront = getSquareInFront(room.getLayout(), this);
 
         if (tileInFront != null)

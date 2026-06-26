@@ -46,7 +46,7 @@ public abstract class RCONMessage<T> {
     public static class RCONMessageSerializer implements JsonSerializer<RCONMessage> {
         @Override
         public JsonElement serialize(final RCONMessage rconMessage, final Type type, final JsonSerializationContext context) {
-            JsonObject result = new JsonObject();
+            var result = new JsonObject();
             result.add("status", new JsonPrimitive(rconMessage.status));
             result.add("message", new JsonPrimitive(rconMessage.message));
             return result;

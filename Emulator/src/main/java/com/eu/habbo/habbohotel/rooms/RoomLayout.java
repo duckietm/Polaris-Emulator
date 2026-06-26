@@ -469,7 +469,7 @@ public class RoomLayout {
   }
 
   public THashSet<RoomTile> getTilesAt(RoomTile tile, int width, int length, int rotation) {
-    THashSet<RoomTile> pointList = new THashSet<>(width * length, 0.1f);
+    var pointList = new THashSet<RoomTile>(width * length, 0.1f);
 
     if (tile != null) {
       if (rotation == 0 || rotation == 4) {

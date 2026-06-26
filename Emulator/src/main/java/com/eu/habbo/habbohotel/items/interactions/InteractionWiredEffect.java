@@ -228,7 +228,7 @@ public abstract class InteractionWiredEffect extends InteractionWired implements
     }
 
     protected LinkedHashSet<HabboItem> getSelectableFloorItems(Room room, WiredContext ctx) {
-        LinkedHashSet<HabboItem> result = new LinkedHashSet<>();
+        var result = new LinkedHashSet<HabboItem>();
         if (room == null) {
             return result;
         }
@@ -249,7 +249,7 @@ public abstract class InteractionWiredEffect extends InteractionWired implements
     }
 
     protected <T> LinkedHashSet<T> toLinkedHashSet(Iterable<T> values) {
-        LinkedHashSet<T> result = new LinkedHashSet<>();
+        var result = new LinkedHashSet<T>();
         if (values == null) {
             return result;
         }

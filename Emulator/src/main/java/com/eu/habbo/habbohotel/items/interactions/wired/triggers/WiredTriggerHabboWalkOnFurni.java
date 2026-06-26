@@ -59,7 +59,7 @@ public class WiredTriggerHabboWalkOnFurni extends InteractionWiredTrigger {
 
     @Override
     public void serializeWiredData(ServerMessage message, Room room) {
-        THashSet<HabboItem> items = new THashSet<>();
+        var items = new THashSet<HabboItem>();
 
         if (Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId()) == null) {
             items.addAll(this.items);

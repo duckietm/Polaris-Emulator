@@ -41,7 +41,7 @@ public class RoomUserKickEvent extends MessageHandler {
         if (room.hasRights(this.client.getHabbo()) || this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER) || this.client.getHabbo().hasPermission(Permission.ACC_AMBASSADOR)) {
             if (target.hasPermission(Permission.ACC_UNKICKABLE)) return;
 
-            UserKickEvent event = new UserKickEvent(this.client.getHabbo(), target);
+            var event = new UserKickEvent(this.client.getHabbo(), target);
             Emulator.getPluginManager().fireEvent(event);
 
             if (event.isCancelled())

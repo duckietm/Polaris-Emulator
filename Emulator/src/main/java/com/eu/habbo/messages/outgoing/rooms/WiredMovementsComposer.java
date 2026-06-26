@@ -46,7 +46,7 @@ public class WiredMovementsComposer extends MessageComposer {
     {
         if((source == null) || source.isEmpty()) return new ArrayList<>();
 
-        final LinkedHashMap<String, MovementData> normalized = new LinkedHashMap<>();
+        final var normalized = new LinkedHashMap<String, MovementData>();
 
         for(final MovementData movement : source)
         {

@@ -31,7 +31,7 @@ public class ShoutCommand extends Command {
             }
         }
 
-        StringBuilder message = new StringBuilder();
+        var message = new StringBuilder();
         if (params.length > 2) {
             for (int i = 2; i < params.length; i++) {
                 message.append(params[i]).append(" ");

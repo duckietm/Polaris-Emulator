@@ -77,7 +77,7 @@ public class GuildManager {
     }
 
     public Guild createGuild(Habbo habbo, int roomId, String roomName, String name, String description, String badge, int colorOne, int colorTwo) {
-        Guild guild = new Guild(habbo.getHabboInfo().getId(), habbo.getHabboInfo().getUsername(), roomId, roomName, name, description, colorOne, colorTwo, badge);
+        var guild = new Guild(habbo.getHabboInfo().getId(), habbo.getHabboInfo().getUsername(), roomId, roomName, name, description, colorOne, colorTwo, badge);
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement("INSERT INTO guilds (name, description, room_id, user_id, color_one, color_two, badge, date_created) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
@@ -400,7 +400,7 @@ public class GuildManager {
 
 
     THashSet<GuildMember> getGuildMembers(Guild guild) {
-        THashSet<GuildMember> guildMembers = new THashSet<GuildMember>();
+        var guildMembers = new THashSet<GuildMember>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT users.username, users.look, guilds_members.* FROM guilds_members INNER JOIN users ON guilds_members.user_id = users.id WHERE guilds_members.guild_id = ?")) {
             statement.setInt(1, guild.getId());
@@ -418,7 +418,7 @@ public class GuildManager {
 
 
     public ArrayList<GuildMember> getGuildMembers(Guild guild, int page, int levelId, String query) {
-        ArrayList<GuildMember> guildMembers = new ArrayList<GuildMember>();
+        var guildMembers = new ArrayList<GuildMember>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT users.username, users.look, guilds_members.* FROM guilds_members INNER JOIN users ON guilds_members.user_id = users.id WHERE guilds_members.guild_id = ?  " + (rankQuery(levelId)) + " AND users.username LIKE ? ORDER BY level_id, member_since ASC LIMIT ?, ?")) {
             statement.setInt(1, guild.getId());
@@ -457,7 +457,7 @@ public class GuildManager {
 
 
     public THashMap<Integer, GuildMember> getOnlyAdmins(Guild guild) {
-        THashMap<Integer, GuildMember> guildAdmins = new THashMap<Integer, GuildMember>();
+        var guildAdmins = new THashMap<Integer, GuildMember>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT users.username, users.look, guilds_members.* FROM guilds_members INNER JOIN users ON guilds_members.user_id = users.id WHERE guilds_members.guild_id = ?  " + (rankQuery(1)))) {
             statement.setInt(1, guild.getId());
@@ -668,7 +668,7 @@ public class GuildManager {
     }
 
     public void addView(int userId, int guildId) {
-        ForumView view = new ForumView(userId, guildId, Emulator.getIntUnixTimestamp());
+        var view = new ForumView(userId, guildId, Emulator.getIntUnixTimestamp());
 
         this.views.add(view);
 

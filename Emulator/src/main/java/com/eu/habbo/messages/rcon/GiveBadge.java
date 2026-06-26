@@ -49,7 +49,7 @@ public class GiveBadge extends RCONMessage<GiveBadge.GiveBadgeJSON> {
                     continue;
                 }
 
-                HabboBadge badge = new HabboBadge(0, badgeCode, 0, habbo);
+                var badge = new HabboBadge(0, badgeCode, 0, habbo);
 
                 badge.run();
 

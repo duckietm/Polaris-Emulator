@@ -241,7 +241,7 @@ public class WiredConditionFurniInRange extends InteractionWiredCondition {
     }
 
     private void refresh(Room room) {
-        THashSet<HabboItem> remove = new THashSet<>();
+        var remove = new THashSet<HabboItem>();
 
         for (HabboItem item : this.items) {
             if (room.getHabboItem(item.getId()) == null) {

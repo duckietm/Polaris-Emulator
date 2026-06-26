@@ -13,7 +13,7 @@ public class RoomAlertCommand extends Command {
 
     @Override
     public boolean handle(GameClient gameClient, String[] params) throws Exception {
-        StringBuilder message = new StringBuilder();
+        var message = new StringBuilder();
 
         if (params.length >= 2) {
             for (int i = 1; i < params.length; i++) {

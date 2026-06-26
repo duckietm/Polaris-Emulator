@@ -24,7 +24,7 @@ public class AmbassadorAlertCommandEvent extends MessageHandler {
         if (habbo == null)
             return;
 
-        SupportUserAlertedEvent alertedEvent = new SupportUserAlertedEvent(client.getHabbo(), habbo, "${notification.ambassador.alert.warning.message}", SupportUserAlertedReason.AMBASSADOR);
+        var alertedEvent = new SupportUserAlertedEvent(client.getHabbo(), habbo, "${notification.ambassador.alert.warning.message}", SupportUserAlertedReason.AMBASSADOR);
 
         if (Emulator.getPluginManager().fireEvent(alertedEvent).isCancelled())
             return;

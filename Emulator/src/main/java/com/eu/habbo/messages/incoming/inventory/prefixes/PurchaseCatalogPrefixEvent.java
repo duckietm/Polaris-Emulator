@@ -61,7 +61,7 @@ public class PurchaseCatalogPrefixEvent extends MessageHandler {
                     this.client.sendResponse(new UserCurrencyComposer(habbo));
                 }
 
-                UserPrefix prefix = new UserPrefix(
+                var prefix = new UserPrefix(
                     habbo.getHabboInfo().getId(),
                     set.getString("text"),
                     set.getString("color"),

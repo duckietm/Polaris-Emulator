@@ -66,7 +66,7 @@ public class BanCommand extends Command {
         }
 
 
-        StringBuilder reason = new StringBuilder();
+        var reason = new StringBuilder();
 
         if (params.length > 3) {
             for (int i = 3; i < params.length; i++) {

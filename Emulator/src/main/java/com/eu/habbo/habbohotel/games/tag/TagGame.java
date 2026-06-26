@@ -39,7 +39,7 @@ public abstract class TagGame extends Game {
             if (habbo != null) {
                 if (habbo.getHabboInfo().getCurrentGame() != null) {
                     if (TagGame.class.isAssignableFrom(habbo.getHabboInfo().getCurrentGame())) {
-                        TagGame game = (TagGame) event.room.getGame(habbo.getHabboInfo().getCurrentGame());
+                        var game = (TagGame) event.room.getGame(habbo.getHabboInfo().getCurrentGame());
 
                         if (game != null) {
                             if (game.isTagger(habbo)) {
@@ -64,7 +64,7 @@ public abstract class TagGame extends Game {
         if (event.habbo.getHabboInfo().getCurrentGame() != null && TagGame.class.isAssignableFrom(event.habbo.getHabboInfo().getCurrentGame())) {
             THashSet<HabboItem> items = event.habbo.getHabboInfo().getCurrentRoom().getItemsAt(event.toLocation);
 
-            TagGame game = (TagGame) event.habbo.getHabboInfo().getCurrentRoom().getGame(event.habbo.getHabboInfo().getCurrentGame());
+            var game = (TagGame) event.habbo.getHabboInfo().getCurrentRoom().getGame(event.habbo.getHabboInfo().getCurrentGame());
 
             if (game != null) {
                 for (HabboItem item : items) {

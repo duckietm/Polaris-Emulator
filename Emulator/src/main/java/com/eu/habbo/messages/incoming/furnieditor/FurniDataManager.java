@@ -105,7 +105,7 @@ public class FurniDataManager {
             return new LookupResult("{}", diagnostic(source, itemId, classname, reason));
         } catch (Exception e) {
             LOGGER.warn("Failed to read FurnitureData for item " + itemId, e);
-            FurnidataSourceResolver.Source errorSource = new FurnidataSourceResolver.Source(source.path(), source.directory(), FurnidataSourceResolver.Status.ERROR, e.getMessage());
+            var errorSource = new FurnidataSourceResolver.Source(source.path(), source.directory(), FurnidataSourceResolver.Status.ERROR, e.getMessage());
             return new LookupResult("{}", diagnostic(errorSource, itemId, classname, "error"));
         }
     }
@@ -200,7 +200,7 @@ public class FurniDataManager {
     }
 
     private static String diagnostic(FurnidataSourceResolver.Source source, int itemId, String classname, String reason) {
-        JsonObject obj = new JsonObject();
+        var obj = new JsonObject();
         obj.addProperty("reason", reason);
         obj.addProperty("itemId", itemId);
         obj.addProperty("classname", classname != null ? classname : "");

@@ -255,7 +255,7 @@ public class PluginManager {
     public void loadPlugins() {
         this.disposePlugins();
 
-        File loc = new File("plugins");
+        var loc = new File("plugins");
 
         if (!loc.exists()) {
             if (loc.mkdirs()) {
@@ -279,7 +279,7 @@ public class PluginManager {
                 byte[] content = new byte[stream.available()];
 
                 if (stream.read(content) > 0) {
-                    String body = new String(content, java.nio.charset.StandardCharsets.UTF_8);
+                    var body = new String(content, java.nio.charset.StandardCharsets.UTF_8);
 
                     HabboPluginConfiguration pluginConfigurtion = PLUGIN_GSON.fromJson(body, HabboPluginConfiguration.class);
                     RuntimeValidationReport validationReport = PluginRuntimeValidator.validatePluginClass(file.getName(), pluginConfigurtion, urlClassLoader);

@@ -127,10 +127,10 @@ public class WiredEffectFurniNeighborhood extends InteractionWiredEffect {
     private LinkedHashSet<HabboItem> applyNeighborhoodModifiers(Set<HabboItem> matchedTargets,
                                                                 Set<HabboItem> neighborhoodTargets,
                                                                 Collection<HabboItem> existingTargets) {
-        LinkedHashSet<HabboItem> matched = new LinkedHashSet<>(matchedTargets);
+        var matched = new LinkedHashSet<HabboItem>(matchedTargets);
 
         if (this.invert) {
-            LinkedHashSet<HabboItem> base = new LinkedHashSet<>(neighborhoodTargets);
+            var base = new LinkedHashSet<HabboItem>(neighborhoodTargets);
             base.removeAll(matched);
 
             if (this.filterExisting) {

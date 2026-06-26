@@ -74,7 +74,7 @@ public final class AuthHttpUtil {
     }
 
     static JsonObject errorPayload(String message) {
-        JsonObject obj = new JsonObject();
+        var obj = new JsonObject();
         obj.addProperty("error", message);
         return obj;
     }
@@ -251,13 +251,13 @@ public final class AuthHttpUtil {
                 ? "Your account has been permanently banned."
                 : "Your account is temporarily banned.";
 
-        JsonObject details = new JsonObject();
+        var details = new JsonObject();
         details.addProperty("type", ban.type);
         details.addProperty("reason", ban.reason);
         details.addProperty("permanent", permanent);
         if (!permanent) details.addProperty("expiresAt", ban.expiresAt);
 
-        JsonObject obj = new JsonObject();
+        var obj = new JsonObject();
         obj.addProperty("error", message);
         obj.add("ban", details);
         return obj;

@@ -135,7 +135,7 @@ public class InteractionMuteArea extends InteractionCustomValues {
         if(effectItem != null) {
             TIntObjectMap<String> ownerNames = TCollections.synchronizedMap(new TIntObjectHashMap<>(0));
             ownerNames.put(-1, "System");
-            THashSet<HabboItem> items = new THashSet<>();
+            var items = new THashSet<HabboItem>();
 
             int id = 0;
             for(RoomTile tile : this.tiles) {

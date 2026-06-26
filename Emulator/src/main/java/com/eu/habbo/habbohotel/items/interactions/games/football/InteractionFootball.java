@@ -245,7 +245,7 @@ public class InteractionFootball extends InteractionPushable {
 
     @Override
     public void onMove(Room room, RoomTile from, RoomTile to, RoomUserRotation direction, RoomUnit kicker, int nextRoll, int currentStep, int totalSteps) {
-        FootballGame game = (FootballGame) room.getGame(FootballGame.class);
+        var game = (FootballGame) room.getGame(FootballGame.class);
         if (game == null) {
             try {
                 game = FootballGame.class.getDeclaredConstructor(new Class[]{Room.class}).newInstance(room);

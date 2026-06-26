@@ -61,7 +61,7 @@ public class CatalogSelectClubGiftEvent extends MessageHandler {
             return;
         }
 
-        THashSet<Item> itemsGiven = new THashSet<>();
+        var itemsGiven = new THashSet<Item>();
         for(Item item : catalogItem.getBaseItems()) {
             if(Emulator.getGameEnvironment().getItemManager().createGift(this.client.getHabbo().getHabboInfo().getId(), item, "", 0, 0) != null) {
                 itemsGiven.add(item);

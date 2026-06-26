@@ -34,7 +34,7 @@ public class EmptyBotsInventoryCommand extends Command {
             Habbo habbo = (params.length == 3 && gameClient.getHabbo().hasPermission(Permission.ACC_EMPTY_OTHERS)) ? Emulator.getGameEnvironment().getHabboManager().getHabbo(params[2]) : gameClient.getHabbo();
 
             if (habbo != null) {
-                TIntObjectHashMap<Bot> bots = new TIntObjectHashMap<>();
+                var bots = new TIntObjectHashMap<Bot>();
                 bots.putAll(habbo.getInventory().getBotsComponent().getBots());
                 habbo.getInventory().getBotsComponent().getBots().clear();
                 bots.forEachValue(object -> {

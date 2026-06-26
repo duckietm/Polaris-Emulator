@@ -22,7 +22,7 @@ public class PacketNames {
     }
 
     public void initialize() {
-        RuntimeValidationReport report = new RuntimeValidationReport();
+        var report = new RuntimeValidationReport();
         report.merge(PacketRuntimeValidator.validatePacketNameClass("Incoming", Incoming.class));
         report.merge(PacketRuntimeValidator.validatePacketNameClass("Outgoing", Outgoing.class));
         report.logErrors(LOGGER, "Packet name validation");

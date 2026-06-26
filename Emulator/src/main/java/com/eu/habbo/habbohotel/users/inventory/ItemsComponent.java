@@ -37,7 +37,7 @@ public class ItemsComponent {
     }
 
     public static THashMap<Integer, HabboItem> loadItems(Habbo habbo) {
-        THashMap<Integer, HabboItem> itemsList = new THashMap<>();
+        var itemsList = new THashMap<Integer, HabboItem>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT items.* FROM items LEFT JOIN builders_club_items ON builders_club_items.item_id = items.id WHERE items.room_id = ? AND items.user_id = ? AND builders_club_items.item_id IS NULL")) {
             statement.setInt(1, 0);
@@ -69,7 +69,7 @@ public class ItemsComponent {
             return;
         }
 
-        InventoryItemAddedEvent event = new InventoryItemAddedEvent(this.inventory, item);
+        var event = new InventoryItemAddedEvent(this.inventory, item);
         if (Emulator.getPluginManager().fireEvent(event).isCancelled()) {
             return;
         }
@@ -80,7 +80,7 @@ public class ItemsComponent {
     }
 
     public void addItems(THashSet<HabboItem> items) {
-        InventoryItemsAddedEvent event = new InventoryItemsAddedEvent(this.inventory, items);
+        var event = new InventoryItemsAddedEvent(this.inventory, items);
         if (Emulator.getPluginManager().fireEvent(event).isCancelled()) {
             return;
         }
@@ -124,7 +124,7 @@ public class ItemsComponent {
     }
 
     public void removeHabboItem(HabboItem item) {
-        InventoryItemRemovedEvent event = new InventoryItemRemovedEvent(this.inventory, item);
+        var event = new InventoryItemRemovedEvent(this.inventory, item);
         if (Emulator.getPluginManager().fireEvent(event).isCancelled()) {
             return;
         }
@@ -139,7 +139,7 @@ public class ItemsComponent {
     }
 
     public THashSet<HabboItem> getItemsAsValueCollection() {
-        THashSet<HabboItem> items = new THashSet<>();
+        var items = new THashSet<HabboItem>();
         items.addAll(this.items.valueCollection());
 
         return items;

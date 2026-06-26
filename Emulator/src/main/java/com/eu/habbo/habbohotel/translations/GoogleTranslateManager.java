@@ -55,7 +55,7 @@ public class GoogleTranslateManager {
             return SupportedLanguagesResponse.success(new ArrayList<>(cachedLanguages.languages));
         }
 
-        ArrayList<SupportedLanguage> supportedLanguages = new ArrayList<>(FREE_SUPPORTED_LANGUAGES);
+        var supportedLanguages = new ArrayList<SupportedLanguage>(FREE_SUPPORTED_LANGUAGES);
         this.languagesCache.put(normalizedDisplayLanguage, new CachedLanguages(supportedLanguages));
         return SupportedLanguagesResponse.success(supportedLanguages);
     }
@@ -94,7 +94,7 @@ public class GoogleTranslateManager {
             JsonArray translatedParts = response.size() > 0 && response.get(0).isJsonArray()
                     ? response.get(0).getAsJsonArray()
                     : new JsonArray();
-            StringBuilder translatedText = new StringBuilder();
+            var translatedText = new StringBuilder();
 
             for (int index = 0; index < translatedParts.size(); index++) {
                 if (!translatedParts.get(index).isJsonArray()) {
@@ -135,7 +135,7 @@ public class GoogleTranslateManager {
     }
 
     private HttpsURLConnection openGet(String requestUrl) throws IOException {
-        HttpsURLConnection connection = (HttpsURLConnection) URI.create(requestUrl).toURL().openConnection();
+        var connection = (HttpsURLConnection) URI.create(requestUrl).toURL().openConnection();
         connection.setRequestMethod("GET");
         connection.setConnectTimeout(this.getTimeoutMs());
         connection.setReadTimeout(this.getTimeoutMs());
@@ -144,15 +144,15 @@ public class GoogleTranslateManager {
     }
 
     private JsonObject readJson(InputStream inputStream) throws IOException {
-        try (InputStreamReader inputStreamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
-             BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
+        try (var inputStreamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+             var bufferedReader = new BufferedReader(inputStreamReader)) {
             return JsonParser.parseReader(bufferedReader).getAsJsonObject();
         }
     }
 
     private JsonArray readJsonArray(InputStream inputStream) throws IOException {
-        try (InputStreamReader inputStreamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
-             BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
+        try (var inputStreamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+             var bufferedReader = new BufferedReader(inputStreamReader)) {
             return JsonParser.parseReader(bufferedReader).getAsJsonArray();
         }
     }
@@ -176,9 +176,9 @@ public class GoogleTranslateManager {
                     }
                 }
             } catch (Exception ignored) {
-                try (InputStreamReader inputStreamReader = new InputStreamReader(errorStream, StandardCharsets.UTF_8);
-                     BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
-                    StringBuilder responseText = new StringBuilder();
+                try (var inputStreamReader = new InputStreamReader(errorStream, StandardCharsets.UTF_8);
+                     var bufferedReader = new BufferedReader(inputStreamReader)) {
+                    var responseText = new StringBuilder();
                     String line;
 
                     while ((line = bufferedReader.readLine()) != null) {
@@ -221,7 +221,7 @@ public class GoogleTranslateManager {
     }
 
     private static List<SupportedLanguage> buildFreeSupportedLanguages() {
-        ArrayList<SupportedLanguage> languages = new ArrayList<>();
+        var languages = new ArrayList<SupportedLanguage>();
         addLanguage(languages, "af", "Afrikaans");
         addLanguage(languages, "sq", "Albanian");
         addLanguage(languages, "am", "Amharic");

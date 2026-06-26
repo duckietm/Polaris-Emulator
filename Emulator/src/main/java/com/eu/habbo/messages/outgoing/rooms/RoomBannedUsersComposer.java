@@ -22,7 +22,7 @@ public class RoomBannedUsersComposer extends MessageComposer {
     protected ServerMessage composeInternal() {
         int timeStamp = Emulator.getIntUnixTimestamp();
 
-        THashSet<RoomBan> roomBans = new THashSet<>();
+        var roomBans = new THashSet<RoomBan>();
 
         TIntObjectIterator<RoomBan> iterator = this.room.getBannedHabbos().iterator();
 

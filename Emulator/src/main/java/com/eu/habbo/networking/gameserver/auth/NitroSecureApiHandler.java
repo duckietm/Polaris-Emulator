@@ -71,7 +71,7 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
             }
 
             SecretKey sessionKey = NitroSecureAssetHandler.deriveSessionKey(java.util.Base64.getDecoder().decode(clientKey));
-            SecureApiContext secureContext = new SecureApiContext(
+            var secureContext = new SecureApiContext(
                     NitroSecureAssetHandler.getServerKeyFingerprint(),
                     NitroSecureAssetHandler.fingerprint(sessionKey.getEncoded()),
                     sessionKey

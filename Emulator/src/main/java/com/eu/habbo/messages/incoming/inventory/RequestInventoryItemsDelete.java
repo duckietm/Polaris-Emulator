@@ -36,7 +36,7 @@ public class RequestInventoryItemsDelete extends MessageHandler {
         final Habbo habbo = this.client.getHabbo();
         if (habbo == null)
             return;
-        TIntObjectHashMap<HabboItem> toRemove = new TIntObjectHashMap<>();
+        var toRemove = new TIntObjectHashMap<HabboItem>();
         for (int i = 0; i < amount; i++) {
             HabboItem habboInventoryItem = habbo.getInventory().getItemsComponent().getAndRemoveHabboItem(item);
             if (habboInventoryItem != null)

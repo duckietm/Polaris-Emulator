@@ -320,8 +320,8 @@ public class CatalogManager {
     private synchronized void loadLimitedNumbers() {
         this.limitedNumbers.clear();
 
-        THashMap<Integer, LinkedList<Integer>> limiteds = new THashMap<>();
-        TIntIntHashMap totals = new TIntIntHashMap();
+        var limiteds = new THashMap<Integer, LinkedList<Integer>>();
+        var totals = new TIntIntHashMap();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM catalog_items_limited")) {
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
@@ -349,7 +349,7 @@ public class CatalogManager {
     private synchronized void loadCatalogPages() {
         this.catalogPages.clear();
 
-        final THashMap<Integer, CatalogPage> pages = new THashMap<>();
+        final var pages = new THashMap<Integer, CatalogPage>();
         pages.put(-1, new CatalogRootLayout());
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM catalog_pages ORDER BY parent_id, id")) {
             try (ResultSet set = statement.executeQuery()) {
@@ -396,7 +396,7 @@ public class CatalogManager {
     private synchronized void loadBuildersClubCatalogPages() {
         this.buildersClubCatalogPages.clear();
 
-        final THashMap<Integer, CatalogPage> pages = new THashMap<>();
+        final var pages = new THashMap<Integer, CatalogPage>();
         pages.put(-1, new CatalogRootLayout());
 
         String query = "SELECT id, parent_id, caption, caption AS caption_save, page_layout, icon_color, icon_image, 1 AS min_rank, order_num, visible, enabled, '0' AS club_only, 'BUILDERS_CLUB' AS catalog_mode, page_headline, page_teaser, page_special, page_text1, page_text2, page_text_details, page_text_teaser, '' AS includes FROM catalog_pages_bc ORDER BY parent_id, id";
@@ -1079,7 +1079,7 @@ public class CatalogManager {
                     }
                 }
 
-                THashSet<HabboItem> itemsList = new THashSet<>();
+                var itemsList = new THashSet<HabboItem>();
 
 
                 if (amount > 1 && !CatalogItem.haveOffer(item)) {
@@ -1133,7 +1133,7 @@ public class CatalogManager {
                                     }
                                 }
 
-                                THashMap<String, String> data = new THashMap<>();
+                                var data = new THashMap<String, String>();
 
                                 for (String s : item.getExtradata().split(";")) {
                                     if (s.contains(":")) {
@@ -1253,7 +1253,7 @@ public class CatalogManager {
                                             return;
                                         }
 
-                                        InteractionGuildFurni habboItem = (InteractionGuildFurni) Emulator.getGameEnvironment().getItemManager().createItem(habbo.getClient().getHabbo().getHabboInfo().getId(), baseItem, limitedStack, limitedNumber, extradata);
+                                        var habboItem = (InteractionGuildFurni) Emulator.getGameEnvironment().getItemManager().createItem(habbo.getClient().getHabbo().getHabboInfo().getId(), baseItem, limitedStack, limitedNumber, extradata);
                                         habboItem.setExtradata("");
                                         habboItem.needsUpdate(true);
 
@@ -1275,7 +1275,7 @@ public class CatalogManager {
                                         return;
                                     }
 
-                                    InteractionMusicDisc habboItem = (InteractionMusicDisc) Emulator.getGameEnvironment().getItemManager().createItem(habbo.getClient().getHabbo().getHabboInfo().getId(), baseItem, limitedStack, limitedNumber, habbo.getClient().getHabbo().getHabboInfo().getUsername() + "\n" + Calendar.getInstance().get(Calendar.DAY_OF_MONTH) + "\n" + (Calendar.getInstance().get(Calendar.MONTH) + 1) + "\n" + Calendar.getInstance().get(Calendar.YEAR) + "\n" + track.getLength() + "\n" + track.getName() + "\n" + track.getId());
+                                    var habboItem = (InteractionMusicDisc) Emulator.getGameEnvironment().getItemManager().createItem(habbo.getClient().getHabbo().getHabboInfo().getId(), baseItem, limitedStack, limitedNumber, habbo.getClient().getHabbo().getHabboInfo().getUsername() + "\n" + Calendar.getInstance().get(Calendar.DAY_OF_MONTH) + "\n" + (Calendar.getInstance().get(Calendar.MONTH) + 1) + "\n" + Calendar.getInstance().get(Calendar.YEAR) + "\n" + track.getLength() + "\n" + track.getName() + "\n" + track.getId());
                                     habboItem.needsUpdate(true);
 
                                     Emulator.getThreading().run(habboItem);
@@ -1329,11 +1329,11 @@ public class CatalogManager {
                 }
 
                 for (String b : purchasedEvent.badges) {
-                    HabboBadge badge = new HabboBadge(0, b, 0, habbo);
+                    var badge = new HabboBadge(0, b, 0, habbo);
                     Emulator.getThreading().run(badge);
                     habbo.getInventory().getBadgesComponent().addBadge(badge);
                     habbo.getClient().sendResponse(new AddUserBadgeComposer(badge));
-                    THashMap<String, String> keys = new THashMap<>();
+                    var keys = new THashMap<String, String>();
                     keys.put("display", "BUBBLE");
                     keys.put("image", "${image.library.url}album1584/" + badge.getCode() + ".gif");
                     keys.put("message", Emulator.getTexts().getValue("commands.generic.cmd_badge.received"));
@@ -1347,7 +1347,7 @@ public class CatalogManager {
                 habbo.getClient().sendResponse(new PurchaseOKComposer(purchasedEvent.catalogItem));
                 habbo.getClient().sendResponse(new InventoryRefreshComposer());
 
-                THashSet<String> itemIds = new THashSet<>();
+                var itemIds = new THashSet<String>();
 
                 for(HabboItem ix : purchasedEvent.itemsList) {
                     itemIds.add(ix.getId() + "");

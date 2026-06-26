@@ -102,7 +102,7 @@ public class CameraRoomThumbnailEvent extends MessageHandler {
         }
 
         BufferedImage theImage;
-        try (ByteBufInputStream in = new ByteBufInputStream(this.image)) {
+        try (var in = new ByteBufInputStream(this.image)) {
             theImage = ImageIO.read(in);
         } catch (IOException e) {
             LOGGER.error("Failed to decode thumbnail from user {}", habboInfo.getUsername(), e);
@@ -123,7 +123,7 @@ public class CameraRoomThumbnailEvent extends MessageHandler {
             return;
         }
 
-        File imageFile = new File(Emulator.getConfig().getValue("imager.location.output.thumbnail") + room.getId() + ".png");
+        var imageFile = new File(Emulator.getConfig().getValue("imager.location.output.thumbnail") + room.getId() + ".png");
         try {
             ImageIO.write(theImage, "png", imageFile);
         } catch (IOException e) {
@@ -147,7 +147,7 @@ public class CameraRoomThumbnailEvent extends MessageHandler {
      * This prevents decompression bomb attacks by checking dimensions before allocation.
      */
     private int[] readPNGDimensions(ByteBuf buf) throws IOException {
-        try (ByteBufInputStream in = new ByteBufInputStream(buf.duplicate())) {
+        try (var in = new ByteBufInputStream(buf.duplicate())) {
             try (ImageInputStream iis = ImageIO.createImageInputStream(in)) {
                 Iterator<ImageReader> readers = ImageIO.getImageReaders(iis);
                 if (!readers.hasNext()) return null;

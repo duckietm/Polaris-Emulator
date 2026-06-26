@@ -112,7 +112,7 @@ public class WiredTriggerHabboWalkOffFurni extends InteractionWiredTrigger {
 
     @Override
     public void serializeWiredData(ServerMessage message, Room room) {
-        THashSet<HabboItem> items = new THashSet<>();
+        var items = new THashSet<HabboItem>();
 
         if (room == null) {
             items.addAll(this.items);

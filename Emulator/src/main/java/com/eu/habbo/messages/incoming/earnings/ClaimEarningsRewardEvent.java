@@ -13,7 +13,7 @@ public class ClaimEarningsRewardEvent extends MessageHandler {
     @Override
     public void handle() {
         String categoryKey = this.packet.readString();
-        EarningsCenterManager manager = new EarningsCenterManager();
+        var manager = new EarningsCenterManager();
         this.client.sendResponse(new EarningsClaimResultComposer(manager.claim(this.client.getHabbo(), categoryKey)));
     }
 }

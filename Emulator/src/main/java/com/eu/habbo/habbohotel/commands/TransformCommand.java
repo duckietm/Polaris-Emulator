@@ -20,10 +20,10 @@ public class TransformCommand extends Command {
     @Override
     public boolean handle(GameClient gameClient, String[] params) throws Exception {
         if (params.length == 1) {
-            StringBuilder petNames = new StringBuilder();
+            var petNames = new StringBuilder();
             petNames.append(Emulator.getTexts().getValue("commands.generic.cmd_transform.title"));
             petNames.append("\r------------------------------------------------------------------------------\r");
-            ArrayList<PetData> petData = new ArrayList<>(Emulator.getGameEnvironment().getPetManager().getPetData());
+            var petData = new ArrayList<PetData>(Emulator.getGameEnvironment().getPetManager().getPetData());
             Collections.sort(petData);
             String line = Emulator.getTexts().getValue("commands.generic.cmd_transform.line");
             for (PetData p : petData) {

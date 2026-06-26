@@ -401,7 +401,7 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
 
         if (room != null) {
-            THashSet<WiredMatchFurniSetting> remove = new THashSet<>();
+            var remove = new THashSet<WiredMatchFurniSetting>();
 
             for (WiredMatchFurniSetting setting : this.settings) {
                 HabboItem item = room.getHabboItem(setting.item_id);

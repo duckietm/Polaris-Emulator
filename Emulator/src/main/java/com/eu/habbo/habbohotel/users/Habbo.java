@@ -252,7 +252,7 @@ public class Habbo implements Runnable {
         if (credits == 0)
             return;
 
-        UserCreditsEvent event = new UserCreditsEvent(this, credits);
+        var event = new UserCreditsEvent(this, credits);
         if (Emulator.getPluginManager().fireEvent(event).isCancelled())
             return;
 
@@ -267,7 +267,7 @@ public class Habbo implements Runnable {
             return;
 
 
-        UserPointsEvent event = new UserPointsEvent(this, pixels, 0);
+        var event = new UserPointsEvent(this, pixels, 0);
         if (Emulator.getPluginManager().fireEvent(event).isCancelled())
             return;
 
@@ -285,7 +285,7 @@ public class Habbo implements Runnable {
         if (points == 0)
             return;
 
-        UserPointsEvent event = new UserPointsEvent(this, points, type);
+        var event = new UserPointsEvent(this, points, type);
         if (Emulator.getPluginManager().fireEvent(event).isCancelled())
             return;
 
@@ -417,7 +417,7 @@ public class Habbo implements Runnable {
             this.client.sendResponse(new AddUserBadgeComposer(badge, senderName));
             this.client.sendResponse(new AddHabboItemComposer(badge.getId(), AddHabboItemComposer.AddHabboItemCategory.BADGE));
 
-            THashMap<String, String> keys = new THashMap<>();
+            var keys = new THashMap<String, String>();
             keys.put("display", "BUBBLE");
             keys.put("image", "${image.library.url}album1584/" + badge.getCode() + ".gif");
             keys.put("message", Emulator.getTexts().getValue("commands.generic.cmd_badge.received"));
@@ -475,7 +475,7 @@ public class Habbo implements Runnable {
         int currentTimestamp = Emulator.getIntUnixTimestamp();
         int twentyFourHoursInSeconds = 24 * 60 * 60; // 24 hours in seconds
 
-        THashMap<Integer, List<Integer>> newLog = new THashMap<>();
+        var newLog = new THashMap<Integer, List<Integer>>();
 
         for (Map.Entry<Integer, List<Integer>> ltdLog : this.habboStats.ltdPurchaseLog.entrySet()) {
             List<Integer> filteredTimestamps = new ArrayList<>();

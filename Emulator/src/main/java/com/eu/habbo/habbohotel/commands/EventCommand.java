@@ -18,14 +18,14 @@ public class EventCommand extends Command {
     public boolean handle(GameClient gameClient, String[] params) throws Exception {
         if (gameClient.getHabbo().getHabboInfo().getCurrentRoom() != null) {
             if (params.length >= 2) {
-                StringBuilder message = new StringBuilder();
+                var message = new StringBuilder();
 
                 for (int i = 1; i < params.length; i++) {
                     message.append(params[i]);
                     message.append(" ");
                 }
 
-                THashMap<String, String> codes = new THashMap<>();
+                var codes = new THashMap<String, String>();
                 codes.put("ROOMNAME", gameClient.getHabbo().getHabboInfo().getCurrentRoom().getName());
                 codes.put("ROOMID", gameClient.getHabbo().getHabboInfo().getCurrentRoom().getId() + "");
                 codes.put("USERNAME", gameClient.getHabbo().getHabboInfo().getUsername());

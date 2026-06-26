@@ -45,7 +45,7 @@ public class InteractionFreezeBlock extends HabboItem {
         }
 
         if (item != null) {
-            FreezeGame game = (FreezeGame) room.getGame(FreezeGame.class);
+            var game = (FreezeGame) room.getGame(FreezeGame.class);
 
             if (game == null)
                 return;
@@ -87,7 +87,7 @@ public class InteractionFreezeBlock extends HabboItem {
         if (this.getExtradata().isEmpty() || this.getExtradata().equalsIgnoreCase("0"))
             return;
 
-        FreezeGame game = (FreezeGame) room.getGame(FreezeGame.class);
+        var game = (FreezeGame) room.getGame(FreezeGame.class);
         if (game == null || !game.state.equals(GameState.RUNNING))
             return;
 
@@ -96,7 +96,7 @@ public class InteractionFreezeBlock extends HabboItem {
         if (habbo == null || habbo.getHabboInfo().getCurrentGame() != FreezeGame.class)
             return;
 
-        FreezeGamePlayer player = (FreezeGamePlayer) habbo.getHabboInfo().getGamePlayer();
+        var player = (FreezeGamePlayer) habbo.getHabboInfo().getGamePlayer();
 
         if (player == null)
             return;

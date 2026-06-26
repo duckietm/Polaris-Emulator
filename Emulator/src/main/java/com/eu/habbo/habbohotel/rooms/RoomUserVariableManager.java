@@ -48,7 +48,7 @@ public class RoomUserVariableManager {
         }
 
         int userId = habbo.getHabboInfo().getId();
-        ConcurrentHashMap<Integer, VariableAssignment> restoredAssignments = new ConcurrentHashMap<>();
+        var restoredAssignments = new ConcurrentHashMap<Integer, VariableAssignment>();
         List<Integer> staleDefinitionIds = new ArrayList<>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
@@ -170,7 +170,7 @@ public class RoomUserVariableManager {
             existingAssignment.setValue(normalizedValue, Emulator.getIntUnixTimestamp());
         }
 
-        WiredExtraUserVariable definition = (WiredExtraUserVariable) extra;
+        var definition = (WiredExtraUserVariable) extra;
 
         if (definition.isPermanentAvailability()) {
             this.upsertPersistentAssignment(userId, definitionItemId, assignments.get(definitionItemId));
@@ -271,7 +271,7 @@ public class RoomUserVariableManager {
 
         assignment.setValue(normalizedValue, Emulator.getIntUnixTimestamp());
 
-        WiredExtraUserVariable definition = (WiredExtraUserVariable) extra;
+        var definition = (WiredExtraUserVariable) extra;
 
         if (definition.isPermanentAvailability()) {
             this.upsertPersistentAssignment(userId, definitionItemId, assignment);
@@ -558,7 +558,7 @@ public class RoomUserVariableManager {
         List<Integer> derivedDefinitionIds = new ArrayList<>();
 
         for (WiredVariableDefinitionInfo definition : this.getAllDefinitionInfos()) {
-            DefinitionEntry entry = new DefinitionEntry(definition.getItemId(), definition.getName(), definition.hasValue(), definition.getAvailability(), definition.isTextConnected(), definition.isReadOnly());
+            var entry = new DefinitionEntry(definition.getItemId(), definition.getName(), definition.hasValue(), definition.getAvailability(), definition.isTextConnected(), definition.isReadOnly());
             definitions.add(entry);
             definitionsById.put(entry.getItemId(), entry);
 
@@ -570,7 +570,7 @@ public class RoomUserVariableManager {
         List<UserAssignmentsEntry> users = new ArrayList<>();
         List<WiredExtraVariableReference> userReferences = this.getUserReferences();
         List<WiredExtraVariableEcho> userEchoes = this.getUserEchoes();
-        THashSet<Integer> userIds = new THashSet<>();
+        var userIds = new THashSet<Integer>();
         userIds.addAll(this.activeAssignmentsByUserId.keySet());
 
         for (Habbo habbo : this.room.getCurrentHabbos().values()) {

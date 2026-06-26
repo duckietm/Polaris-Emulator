@@ -84,8 +84,8 @@ public class RoomCycleManager {
             if (!this.room.getCurrentHabbos().isEmpty()) {
                 this.idleCycles = 0;
 
-                THashSet<RoomUnit> updatedUnit = new THashSet<>();
-                ArrayList<Habbo> toKick = new ArrayList<>();
+                var updatedUnit = new THashSet<RoomUnit>();
+                var toKick = new ArrayList<Habbo>();
 
                 final long millis = System.currentTimeMillis();
 
@@ -136,7 +136,7 @@ public class RoomCycleManager {
                     ServerMessage wiredMovementsComposer = WiredMoveCarryHelper.finishMovementCollection();
 
                     if (wiredMovementsComposer != null) {
-                        ArrayList<ServerMessage> batchedMessages = new ArrayList<>(2);
+                        var batchedMessages = new ArrayList<ServerMessage>(2);
                         batchedMessages.add(statusComposer);
                         batchedMessages.add(wiredMovementsComposer);
                         this.room.sendComposers(batchedMessages);
@@ -494,7 +494,7 @@ public class RoomCycleManager {
                 }
             } else {
                 if (!unit.hasStatus(RoomUnitStatus.LAY)) {
-                    BedProfile bedProfile = new BedProfile(topItem);
+                    var bedProfile = new BedProfile(topItem);
                     double layHeight = Item.getCurrentHeight(topItem) * 1.0D + bedProfile.getLayZOffset();
                     LOGGER.debug("[BedProfile] item={} stackHeight={} isFlat={} isDouble={} X={} Y={} Z={}",
                             topItem.getBaseItem().getName(), topItem.getBaseItem().getHeight(),

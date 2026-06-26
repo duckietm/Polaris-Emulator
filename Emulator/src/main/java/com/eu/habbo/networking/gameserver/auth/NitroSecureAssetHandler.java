@@ -93,7 +93,7 @@ public class NitroSecureAssetHandler extends ChannelInboundHandlerAdapter {
                 return;
             }
 
-            JsonObject response = new JsonObject();
+            var response = new JsonObject();
             response.addProperty("key", Base64.getEncoder().encodeToString(SERVER_KEYPAIR.getPublic().getEncoded()));
             sendText(ctx, req, HttpResponseStatus.OK, response.toString(), "application/json; charset=utf-8");
         } catch (Exception e) {
@@ -108,7 +108,7 @@ public class NitroSecureAssetHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
-        QueryStringDecoder query = new QueryStringDecoder(req.uri());
+        var query = new QueryStringDecoder(req.uri());
         String clientKey = headerOrQuery(req, query, "X-Nitro-Key", "key");
         if (clientKey == null || clientKey.isEmpty()) {
             sendText(ctx, req, HttpResponseStatus.UNAUTHORIZED, "Missing key.", "text/plain; charset=utf-8");
@@ -337,7 +337,7 @@ public class NitroSecureAssetHandler extends ChannelInboundHandlerAdapter {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(bytes);
-            StringBuilder builder = new StringBuilder();
+            var builder = new StringBuilder();
             for (int i = 0; i < 8 && i < hash.length; i++) {
                 builder.append(String.format("%02x", hash[i]));
             }
@@ -352,7 +352,7 @@ public class NitroSecureAssetHandler extends ChannelInboundHandlerAdapter {
     }
 
     static String toHex(byte[] bytes) {
-        StringBuilder builder = new StringBuilder(bytes.length * 2);
+        var builder = new StringBuilder(bytes.length * 2);
         for (byte value : bytes) {
             builder.append(String.format("%02x", value & 0xff));
         }

@@ -70,7 +70,7 @@ public class WiredBlob extends InteractionDefault {
             if (player != null) {
                 player.addScore(this.POINTS_REWARD, true);
 
-                BattleBanzaiGame battleBanzaiGame = (BattleBanzaiGame) room.getGame(BattleBanzaiGame.class);
+                var battleBanzaiGame = (BattleBanzaiGame) room.getGame(BattleBanzaiGame.class);
 
                 if (battleBanzaiGame != null && battleBanzaiGame.getState() != GameState.IDLE) {
                     battleBanzaiGame.refreshCounters(habbo.getHabboInfo().getGamePlayer().getTeamColor());

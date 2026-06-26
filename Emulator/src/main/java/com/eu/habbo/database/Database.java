@@ -63,7 +63,7 @@ public class Database {
     public static PreparedStatement preparedStatementWithParams(Connection connection,
                                                                 String query,
                                                                 Map<String, Object> queryParams) throws SQLException {
-        StringBuilder positional = new StringBuilder(query.length());
+        var positional = new StringBuilder(query.length());
         List<Object> bindValues = new ArrayList<>();
 
         int i = 0;

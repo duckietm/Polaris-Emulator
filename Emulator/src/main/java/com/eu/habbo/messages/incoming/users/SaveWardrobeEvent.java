@@ -29,7 +29,7 @@ public class SaveWardrobeEvent extends MessageHandler {
             this.client.getHabbo().getInventory().getWardrobeComponent().getLooks().put(slotId, wardrobeItem);
         }
 
-        UserSavedWardrobeEvent wardrobeEvent = new UserSavedWardrobeEvent(this.client.getHabbo(), wardrobeItem);
+        var wardrobeEvent = new UserSavedWardrobeEvent(this.client.getHabbo(), wardrobeItem);
         Emulator.getPluginManager().fireEvent(wardrobeEvent);
 
         Emulator.getThreading().run(wardrobeItem);

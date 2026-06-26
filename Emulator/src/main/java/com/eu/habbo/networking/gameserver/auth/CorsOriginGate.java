@@ -21,7 +21,7 @@ public final class CorsOriginGate {
 
         String host;
         try {
-            URI uri = new URI(origin);
+            var uri = new URI(origin);
             host = uri.getHost();
         } catch (Exception ignored) {
             return false;

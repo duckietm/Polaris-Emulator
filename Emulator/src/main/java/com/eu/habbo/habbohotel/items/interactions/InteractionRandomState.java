@@ -27,7 +27,7 @@ public class InteractionRandomState extends InteractionDefault {
     }
 
     public void onRandomStateClick(GameClient client, Room room) throws Exception {
-        RandomStateParams params = new RandomStateParams(this.getBaseItem().getCustomParams());
+        var params = new RandomStateParams(this.getBaseItem().getCustomParams());
 
         this.setExtradata("");
         room.updateItemState(this);

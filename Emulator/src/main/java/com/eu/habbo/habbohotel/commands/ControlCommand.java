@@ -26,7 +26,7 @@ public class ControlCommand extends Command {
                     return true;
                 }
 
-                Habbo oldHabbo = (Habbo) gameClient.getHabbo().getRoomUnit().getCacheable().remove("control");
+                var oldHabbo = (Habbo) gameClient.getHabbo().getRoomUnit().getCacheable().remove("control");
 
                 if (oldHabbo != null) {
                     oldHabbo.getRoomUnit().getCacheable().remove("controller");

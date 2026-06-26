@@ -35,7 +35,7 @@ public class ReportThreadEvent extends MessageHandler {
 
         Habbo opener = Emulator.getGameEnvironment().getHabboManager().getHabbo(thread.getOpenerId());
 
-        ModToolIssue issue = new ModToolIssue(this.client.getHabbo().getHabboInfo().getId(), this.client.getHabbo().getHabboInfo().getUsername(), thread.getOpenerId(), opener == null ? "" : opener.getHabboInfo().getUsername(), 0, message, ModToolTicketType.DISCUSSION);
+        var issue = new ModToolIssue(this.client.getHabbo().getHabboInfo().getId(), this.client.getHabbo().getHabboInfo().getUsername(), thread.getOpenerId(), opener == null ? "" : opener.getHabboInfo().getUsername(), 0, message, ModToolTicketType.DISCUSSION);
         issue.category = topicId;
         issue.groupId = groupId;
         issue.threadId = threadId;

@@ -290,7 +290,7 @@ public class BuildersClubRoomSupport {
             return;
         }
 
-        THashSet<Integer> updatedUsers = new THashSet<>();
+        var updatedUsers = new THashSet<Integer>();
 
         if (room != null) {
             for (Habbo habbo : room.getHabbos()) {
@@ -484,7 +484,7 @@ public class BuildersClubRoomSupport {
     }
 
     public static void sendVisitDeniedOwnerBubble(int ownerId, String username) {
-        THashMap<String, String> keys = new THashMap<>();
+        var keys = new THashMap<String, String>();
         keys.put("USERNAME", username);
 
         sendBubbleNotification(ownerId, BubbleAlertKeys.BUILDERS_CLUB_VISIT_DENIED_OWNER, keys);

@@ -131,14 +131,14 @@ public class BadgeHttpHandler extends ChannelInboundHandlerAdapter {
         JsonObject ok = cachedTextsResponse;
         if (ok == null || cachedTextsVersion != version) {
             java.util.Map<String, CustomBadgeManager.BadgeText> cache = manager.getTextCache();
-            JsonObject texts = new JsonObject();
+            var texts = new JsonObject();
             for (java.util.Map.Entry<String, CustomBadgeManager.BadgeText> entry : cache.entrySet()) {
                 String badgeId = entry.getKey();
                 CustomBadgeManager.BadgeText value = entry.getValue();
                 texts.addProperty("badge_name_" + badgeId, value.name);
                 texts.addProperty("badge_desc_" + badgeId, value.description);
             }
-            JsonObject built = new JsonObject();
+            var built = new JsonObject();
             built.add("texts", texts);
             built.addProperty("count", cache.size());
             built.addProperty("version", version);
@@ -153,10 +153,10 @@ public class BadgeHttpHandler extends ChannelInboundHandlerAdapter {
         CustomBadgeManager manager = Emulator.getGameEnvironment().getCustomBadgeManager();
         List<CustomBadge> badges = manager.listForUser(userId);
 
-        JsonArray arr = new JsonArray();
+        var arr = new JsonArray();
         for (CustomBadge b : badges) arr.add(toJson(b, manager));
 
-        JsonObject ok = new JsonObject();
+        var ok = new JsonObject();
         ok.add("badges", arr);
         ok.addProperty("max", CustomBadgeManager.MAX_PER_USER);
         ok.addProperty("badgeWidth", CustomBadgeManager.BADGE_WIDTH);
@@ -223,7 +223,7 @@ public class BadgeHttpHandler extends ChannelInboundHandlerAdapter {
         CustomBadgeManager manager = Emulator.getGameEnvironment().getCustomBadgeManager();
         try {
             manager.delete(userId, badgeId);
-            JsonObject ok = new JsonObject();
+            var ok = new JsonObject();
             ok.addProperty("deleted", badgeId);
             sendJson(ctx, req, HttpResponseStatus.OK, ok);
         } catch (CustomBadgeException e) {
@@ -282,7 +282,7 @@ public class BadgeHttpHandler extends ChannelInboundHandlerAdapter {
     }
 
     private static JsonObject toJson(CustomBadge badge, CustomBadgeManager manager) {
-        JsonObject obj = new JsonObject();
+        var obj = new JsonObject();
         obj.addProperty("badgeId", badge.getBadgeId());
         obj.addProperty("badgeCode", badge.getBadgeId());
         obj.addProperty("name", badge.getBadgeName());
@@ -298,7 +298,7 @@ public class BadgeHttpHandler extends ChannelInboundHandlerAdapter {
     }
 
     private static JsonObject error(String message, String code) {
-        JsonObject obj = new JsonObject();
+        var obj = new JsonObject();
         obj.addProperty("error", message);
         if (code != null) obj.addProperty("code", code);
         return obj;

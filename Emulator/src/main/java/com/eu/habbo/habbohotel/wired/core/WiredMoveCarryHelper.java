@@ -610,14 +610,14 @@ public final class WiredMoveCarryHelper {
         }
 
         List<CarriedRoomUnit> carriedUnits = new ArrayList<>();
-        HashSet<Integer> carriedIds = new HashSet<>();
+        var carriedIds = new HashSet<Integer>();
 
         for (RoomUnit roomUnit : targetUsers) {
             if (!isEligibleUser(room, movingItem, roomUnit, occupiedTiles, extra.getCarryMode())) {
                 continue;
             }
 
-            CarriedRoomUnit carriedRoomUnit = new CarriedRoomUnit(
+            var carriedRoomUnit = new CarriedRoomUnit(
                     roomUnit,
                     roomUnit.getCurrentLocation(),
                     roomUnit.getZ(),
@@ -781,7 +781,7 @@ public final class WiredMoveCarryHelper {
 
             Habbo habbo = room.getHabbo(carriedMove.roomUnit);
             if (habbo != null && shouldRefreshPostureWithTileUpdate(carriedMove.roomUnit)) {
-                THashSet<Habbo> movedHabbos = new THashSet<>();
+                var movedHabbos = new THashSet<Habbo>();
                 movedHabbos.add(habbo);
                 room.updateHabbosAt(carriedMove.destinationTile.x, carriedMove.destinationTile.y, movedHabbos);
             }
@@ -934,9 +934,9 @@ public final class WiredMoveCarryHelper {
             return WiredMovementPhysics.NONE;
         }
 
-        HashSet<Integer> passThroughFurniIds = new HashSet<>();
-        HashSet<Integer> passThroughUserIds = new HashSet<>();
-        HashSet<Integer> blockingFurniIds = new HashSet<>();
+        var passThroughFurniIds = new HashSet<Integer>();
+        var passThroughUserIds = new HashSet<Integer>();
+        var blockingFurniIds = new HashSet<Integer>();
 
         if (extra.isMoveThroughFurni()) {
             for (HabboItem item : resolveFurniSources(room, ctx, extra.getMoveThroughFurniSource())) {

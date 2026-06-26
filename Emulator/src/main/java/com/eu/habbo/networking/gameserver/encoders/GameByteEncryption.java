@@ -13,7 +13,7 @@ public class GameByteEncryption extends ChannelOutboundHandlerAdapter {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         // convert to Bytebuf
-        ByteBuf in = (ByteBuf) msg;
+        var in = (ByteBuf) msg;
 
         // Copy the readable region into a plain array (respects readerIndex /
         // arrayOffset, so this is correct for pooled buffers too — buf.array()

@@ -97,22 +97,22 @@ public class EmulatorDashboard extends JFrame {
         UIManager.put("ScrollBar.thumb", COLOR_SURFACE_HOVER);
 
         // Sidebar
-        JPanel sidebar = new JPanel();
+        var sidebar = new JPanel();
         sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
         sidebar.setBackground(COLOR_SURFACE);
         sidebar.setPreferredSize(new Dimension(220, 0));
         sidebar.setBorder(new MatteBorder(0, 0, 0, 1, COLOR_BORDER));
 
         // Sidebar Header
-        JPanel brandPanel = new JPanel(new BorderLayout());
+        var brandPanel = new JPanel(new BorderLayout());
         brandPanel.setBackground(COLOR_SURFACE);
         brandPanel.setBorder(new EmptyBorder(20, 20, 30, 20));
-        
-        JLabel brandTitle = new JLabel("Arcturus");
+
+        var brandTitle = new JLabel("Arcturus");
         brandTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
         brandTitle.setForeground(COLOR_TEXT);
-        
-        JLabel brandSub = new JLabel("v" + Emulator.version);
+
+        var brandSub = new JLabel("v" + Emulator.version);
         brandSub.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         brandSub.setForeground(COLOR_PRIMARY);
 
@@ -170,14 +170,14 @@ public class EmulatorDashboard extends JFrame {
     }
 
     private JPanel createNavButton(String text, String cardName) {
-        JPanel btn = new JPanel(new BorderLayout());
+        var btn = new JPanel(new BorderLayout());
         btn.setBackground(COLOR_SURFACE);
         btn.setMaximumSize(new Dimension(220, 45));
         btn.setBorder(new EmptyBorder(0, 18, 0, 0));
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         navButtons.put(cardName, btn);
 
-        JLabel lbl = new JLabel(text);
+        var lbl = new JLabel(text);
         lbl.setFont(new Font("Segoe UI", Font.BOLD, 14));
         lbl.setForeground(COLOR_TEXT_MUTED);
         btn.add(lbl, BorderLayout.CENTER);
@@ -203,22 +203,22 @@ public class EmulatorDashboard extends JFrame {
     }
 
     private JPanel createOverviewTab() {
-        JPanel wrapper = new JPanel(new BorderLayout());
+        var wrapper = new JPanel(new BorderLayout());
         wrapper.setBackground(COLOR_BG);
         wrapper.setBorder(new EmptyBorder(30, 30, 30, 30));
 
-        JPanel header = new JPanel(new BorderLayout(0, 14));
+        var header = new JPanel(new BorderLayout(0, 14));
         header.setOpaque(false);
 
-        JLabel title = new JLabel("Dashboard Overview");
+        var title = new JLabel("Dashboard Overview");
         title.setFont(FONT_TITLE);
         title.setForeground(COLOR_TEXT);
 
-        JLabel subtitle = new JLabel("Operational view of emulator health, activity and wired performance.");
+        var subtitle = new JLabel("Operational view of emulator health, activity and wired performance.");
         subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         subtitle.setForeground(COLOR_TEXT_MUTED);
 
-        JPanel titleBlock = new JPanel();
+        var titleBlock = new JPanel();
         titleBlock.setOpaque(false);
         titleBlock.setLayout(new BoxLayout(titleBlock, BoxLayout.Y_AXIS));
         titleBlock.add(title);
@@ -229,12 +229,12 @@ public class EmulatorDashboard extends JFrame {
         header.add(createOverviewMetaPanel(), BorderLayout.SOUTH);
         wrapper.add(header, BorderLayout.NORTH);
 
-        JPanel content = new JPanel(new GridLayout(1, 2, 20, 20));
+        var content = new JPanel(new GridLayout(1, 2, 20, 20));
         content.setOpaque(false);
         content.setBorder(new EmptyBorder(20, 0, 0, 0));
 
         // Left Stats
-        JPanel statsPanel = new JPanel(new GridLayout(3, 2, 12, 12));
+        var statsPanel = new JPanel(new GridLayout(3, 2, 12, 12));
         statsPanel.setOpaque(false);
         statsPanel.add(createMetricCard("Memory Allocation", memLabel));
         statsPanel.add(createMetricCard("CPU Load", cpuLabel));
@@ -245,14 +245,14 @@ public class EmulatorDashboard extends JFrame {
         content.add(statsPanel);
 
         // Right Graph
-        JPanel graphContainer = new JPanel(new BorderLayout());
+        var graphContainer = new JPanel(new BorderLayout());
         graphContainer.setBackground(COLOR_SURFACE);
         graphContainer.setBorder(BorderFactory.createCompoundBorder(
                 new MatteBorder(1, 1, 1, 1, COLOR_BORDER),
                 new EmptyBorder(15, 15, 15, 15)
         ));
-        
-        JLabel gTitle = new JLabel("Realtime Memory Usage");
+
+        var gTitle = new JLabel("Realtime Memory Usage");
         gTitle.setFont(FONT_SECTION);
         gTitle.setForeground(COLOR_TEXT_MUTED);
         gTitle.setBorder(new EmptyBorder(0, 0, 15, 0));
@@ -265,14 +265,14 @@ public class EmulatorDashboard extends JFrame {
     }
 
     private JPanel createMetricCard(String title, JLabel valueLabel) {
-        JPanel card = new JPanel(new BorderLayout());
+        var card = new JPanel(new BorderLayout());
         card.setBackground(COLOR_SURFACE);
         card.setBorder(BorderFactory.createCompoundBorder(
                 new MatteBorder(1, 1, 1, 1, COLOR_BORDER),
                 new EmptyBorder(15, 20, 15, 20)
         ));
 
-        JLabel tLabel = new JLabel(title);
+        var tLabel = new JLabel(title);
         tLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
         tLabel.setForeground(COLOR_TEXT_MUTED);
         
@@ -282,14 +282,14 @@ public class EmulatorDashboard extends JFrame {
     }
 
     private JLabel createMetricLabel() {
-        JLabel label = new JLabel("-");
+        var label = new JLabel("-");
         label.setFont(new Font("Segoe UI", Font.BOLD, 28));
         label.setForeground(COLOR_TEXT);
         return label;
     }
 
     private JPanel createOverviewMetaPanel() {
-        JPanel panel = new JPanel(new GridLayout(1, 3, 12, 12));
+        var panel = new JPanel(new GridLayout(1, 3, 12, 12));
         panel.setOpaque(false);
         panel.add(createStatusCard("Uptime", uptimeLabel, COLOR_PRIMARY));
         panel.add(createStatusCard("Last Refresh", lastUpdatedLabel, COLOR_SUCCESS));
@@ -298,22 +298,22 @@ public class EmulatorDashboard extends JFrame {
     }
 
     private JPanel createStatusCard(String title, JLabel valueLabel, Color accent) {
-        JPanel panel = new JPanel(new BorderLayout());
+        var panel = new JPanel(new BorderLayout());
         panel.setBackground(COLOR_SURFACE);
         panel.setBorder(BorderFactory.createCompoundBorder(
                 new MatteBorder(1, 1, 1, 1, COLOR_BORDER),
                 new EmptyBorder(12, 14, 12, 14)
         ));
 
-        JPanel accentBar = new JPanel();
+        var accentBar = new JPanel();
         accentBar.setBackground(accent);
         accentBar.setPreferredSize(new Dimension(6, 0));
 
-        JPanel content = new JPanel();
+        var content = new JPanel();
         content.setOpaque(false);
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
 
-        JLabel label = new JLabel(title);
+        var label = new JLabel(title);
         label.setFont(FONT_SMALL);
         label.setForeground(COLOR_TEXT_MUTED);
 
@@ -327,21 +327,21 @@ public class EmulatorDashboard extends JFrame {
     }
 
     private JLabel createStatusValueLabel() {
-        JLabel label = new JLabel("-");
+        var label = new JLabel("-");
         label.setFont(new Font("Segoe UI", Font.BOLD, 16));
         label.setForeground(COLOR_TEXT);
         return label;
     }
 
     private JLabel createCountLabel() {
-        JLabel label = new JLabel("0 rows");
+        var label = new JLabel("0 rows");
         label.setFont(FONT_SMALL);
         label.setForeground(COLOR_TEXT_MUTED);
         return label;
     }
 
     private JTable createDashboardTable(DefaultTableModel model) {
-        JTable table = new JTable(model);
+        var table = new JTable(model);
         table.setBackground(COLOR_SURFACE);
         table.setForeground(COLOR_TEXT);
         table.setGridColor(COLOR_BORDER);
@@ -366,7 +366,7 @@ public class EmulatorDashboard extends JFrame {
         table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-                JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                var label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 label.setBorder(new EmptyBorder(0, 10, 0, 10));
                 label.setForeground(isSelected ? Color.WHITE : COLOR_TEXT);
                 label.setBackground(isSelected ? COLOR_PRIMARY : ((row % 2 == 0) ? COLOR_SURFACE : new Color(35, 35, 35)));
@@ -378,23 +378,23 @@ public class EmulatorDashboard extends JFrame {
     }
 
     private JPanel createTableTab(String title, String subtitle, JTable table, JLabel countLabel) {
-        JPanel wrapper = new JPanel(new BorderLayout());
+        var wrapper = new JPanel(new BorderLayout());
         wrapper.setBackground(COLOR_BG);
         wrapper.setBorder(new EmptyBorder(30, 30, 30, 30));
 
-        JPanel titlePanel = new JPanel(new BorderLayout());
+        var titlePanel = new JPanel(new BorderLayout());
         titlePanel.setOpaque(false);
 
-        JLabel titleLbl = new JLabel(title);
+        var titleLbl = new JLabel(title);
         titleLbl.setFont(FONT_TITLE);
         titleLbl.setForeground(COLOR_TEXT);
 
-        JLabel subtitleLbl = new JLabel(subtitle);
+        var subtitleLbl = new JLabel(subtitle);
         subtitleLbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         subtitleLbl.setForeground(COLOR_TEXT_MUTED);
         subtitleLbl.setBorder(new EmptyBorder(6, 0, 0, 0));
 
-        JPanel textPanel = new JPanel();
+        var textPanel = new JPanel();
         textPanel.setOpaque(false);
         textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
         textPanel.add(titleLbl);
@@ -404,7 +404,7 @@ public class EmulatorDashboard extends JFrame {
         titlePanel.add(countLabel, BorderLayout.EAST);
         wrapper.add(titlePanel, BorderLayout.NORTH);
 
-        JScrollPane scrollPane = new JScrollPane(table);
+        var scrollPane = new JScrollPane(table);
         scrollPane.getViewport().setBackground(COLOR_SURFACE);
         scrollPane.setBorder(new MatteBorder(1, 1, 1, 1, COLOR_BORDER));
         scrollPane.setBorder(new CompoundBorder(
@@ -417,18 +417,18 @@ public class EmulatorDashboard extends JFrame {
     }
 
     private JPanel createStatusBar() {
-        JPanel statusBar = new JPanel(new BorderLayout());
+        var statusBar = new JPanel(new BorderLayout());
         statusBar.setBackground(COLOR_SURFACE);
         statusBar.setBorder(new CompoundBorder(
                 new MatteBorder(1, 0, 0, 0, COLOR_BORDER),
                 new EmptyBorder(8, 14, 8, 14)
         ));
 
-        JLabel left = new JLabel("Dashboard running locally");
+        var left = new JLabel("Dashboard running locally");
         left.setFont(FONT_SMALL);
         left.setForeground(COLOR_TEXT_SUBTLE);
 
-        JLabel right = new JLabel("Tip: table columns are sortable");
+        var right = new JLabel("Tip: table columns are sortable");
         right.setFont(FONT_SMALL);
         right.setForeground(COLOR_TEXT_SUBTLE);
 
@@ -441,7 +441,7 @@ public class EmulatorDashboard extends JFrame {
         selectedCardName = cardName;
         cardLayout.show(cardsPanel, cardName);
         navButtons.forEach((name, button) -> {
-            JLabel label = (JLabel) button.getComponent(0);
+            var label = (JLabel) button.getComponent(0);
             updateNavButtonStyle(name, button, label);
         });
     }
@@ -457,13 +457,13 @@ public class EmulatorDashboard extends JFrame {
             EmulatorStatsService.Snapshot snapshot = EmulatorStatsService.collectSnapshot();
             EmulatorStatsService.Overview overview = snapshot.overview;
 
-            Object[][] usersData = new Object[snapshot.users.size()][5];
+            var usersData = new Object[snapshot.users.size()][5];
             for (int i = 0; i < snapshot.users.size(); i++) {
                 EmulatorStatsService.OnlineUserRow user = snapshot.users.get(i);
                 usersData[i] = new Object[]{user.id, user.username, user.rank, user.credits, user.roomId};
             }
 
-            Object[][] roomsData = new Object[snapshot.rooms.size()][8];
+            var roomsData = new Object[snapshot.rooms.size()][8];
             for (int i = 0; i < snapshot.rooms.size(); i++) {
                 EmulatorStatsService.ActiveRoomRow room = snapshot.rooms.get(i);
                 roomsData[i] = new Object[]{
@@ -478,7 +478,7 @@ public class EmulatorDashboard extends JFrame {
                 };
             }
 
-            Object[][] wiredData = new Object[snapshot.wired.size()][7];
+            var wiredData = new Object[snapshot.wired.size()][7];
             for (int i = 0; i < snapshot.wired.size(); i++) {
                 EmulatorStatsService.WiredRoomRow wiredRoom = snapshot.wired.get(i);
                 wiredData[i] = new Object[]{
@@ -545,7 +545,7 @@ public class EmulatorDashboard extends JFrame {
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
-            Graphics2D g2 = (Graphics2D) g;
+            var g2 = (Graphics2D) g;
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
             int width = getWidth();
@@ -596,7 +596,7 @@ public class EmulatorDashboard extends JFrame {
             path.lineTo((MAX_POINTS - history.size()) * dx, height);
             path.closePath();
             
-            GradientPaint fillPaint = new GradientPaint(
+            var fillPaint = new GradientPaint(
                 0, 0, new Color(COLOR_PRIMARY.getRed(), COLOR_PRIMARY.getGreen(), COLOR_PRIMARY.getBlue(), 120),
                 0, height, new Color(COLOR_PRIMARY.getRed(), COLOR_PRIMARY.getGreen(), COLOR_PRIMARY.getBlue(), 10)
             );

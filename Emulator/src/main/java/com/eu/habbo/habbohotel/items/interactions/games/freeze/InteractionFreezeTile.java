@@ -42,7 +42,7 @@ public class InteractionFreezeTile extends HabboItem {
             return;
 
         if (client.getHabbo().getRoomUnit().getCurrentLocation().x == this.getX() && client.getHabbo().getRoomUnit().getCurrentLocation().y == this.getY()) {
-            FreezeGame game = (FreezeGame) room.getGame(FreezeGame.class);
+            var game = (FreezeGame) room.getGame(FreezeGame.class);
 
             if (game != null)
                 game.throwBall(client.getHabbo(), this);

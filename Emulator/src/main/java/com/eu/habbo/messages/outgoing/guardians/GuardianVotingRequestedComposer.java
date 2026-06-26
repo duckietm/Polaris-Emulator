@@ -18,13 +18,13 @@ public class GuardianVotingRequestedComposer extends MessageComposer {
 
     @Override
     protected ServerMessage composeInternal() {
-        TIntIntHashMap mappedUsers = new TIntIntHashMap();
+        var mappedUsers = new TIntIntHashMap();
         mappedUsers.put(this.ticket.getReported().getHabboInfo().getId(), 0);
 
         Calendar c = Calendar.getInstance();
         c.setTime(this.ticket.getDate());
 
-        StringBuilder fullMessage = new StringBuilder(c.get(Calendar.YEAR) + " ");
+        var fullMessage = new StringBuilder(c.get(Calendar.YEAR) + " ");
         fullMessage.append(c.get(Calendar.MONTH)).append(" ");
         fullMessage.append(c.get(Calendar.DAY_OF_MONTH)).append(" ");
         fullMessage.append(c.get(Calendar.MINUTE)).append(" ");

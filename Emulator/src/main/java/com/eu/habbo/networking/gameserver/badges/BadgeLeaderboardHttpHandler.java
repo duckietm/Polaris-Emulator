@@ -137,16 +137,16 @@ public class BadgeLeaderboardHttpHandler extends ChannelInboundHandlerAdapter {
             int viewerUserId = authenticateOptional(req);
             ViewerProfile viewerProfile = loadViewerProfile(viewerUserId);
 
-            JsonObject payload = new JsonObject();
+            var payload = new JsonObject();
             payload.addProperty("viewerUserId", viewerUserId);
             payload.add("badgeStats", cloneArray(snapshot.badgeStats));
             payload.add("thresholds", buildThresholdsPayload());
 
-            JsonObject boards = new JsonObject();
+            var boards = new JsonObject();
             boards.add("totalBadges", buildBadgeBoard(snapshot.badgeUsers, viewerUserId, viewerProfile, null));
             boards.add("achievementLevel", buildAchievementBoard(snapshot.achievementUsers, viewerUserId, viewerProfile));
 
-            JsonObject rarityBoards = new JsonObject();
+            var rarityBoards = new JsonObject();
             for (Rarity rarity : Rarity.values()) {
                 rarityBoards.add(rarity.key, buildBadgeBoard(snapshot.badgeUsers, viewerUserId, viewerProfile, rarity));
             }
@@ -170,7 +170,7 @@ public class BadgeLeaderboardHttpHandler extends ChannelInboundHandlerAdapter {
             current = cache;
             if (current != null && current.expiresAt >= now) return current;
 
-            JsonArray badgeStats = new JsonArray();
+            var badgeStats = new JsonArray();
             List<UserBadgeAggregate> badgeUsers = new ArrayList<>();
             List<UserAchievementAggregate> achievementUsers = new ArrayList<>();
 
@@ -180,7 +180,7 @@ public class BadgeLeaderboardHttpHandler extends ChannelInboundHandlerAdapter {
                 loadAchievementUsers(connection, achievementUsers);
             }
 
-            Snapshot built = new Snapshot(badgeUsers, achievementUsers, badgeStats, now + CACHE_TTL_MS);
+            var built = new Snapshot(badgeUsers, achievementUsers, badgeStats, now + CACHE_TTL_MS);
             cache = built;
             return built;
         }
@@ -196,7 +196,7 @@ public class BadgeLeaderboardHttpHandler extends ChannelInboundHandlerAdapter {
                     String badgeCode = set.getString("badge_code");
                     int ownerCount = set.getInt("owner_count");
 
-                    JsonObject entry = new JsonObject();
+                    var entry = new JsonObject();
                     entry.addProperty("badgeCode", badgeCode);
                     entry.addProperty("ownerCount", ownerCount);
                     entry.addProperty("rarity", classify(ownerCount).key);
@@ -225,7 +225,7 @@ public class BadgeLeaderboardHttpHandler extends ChannelInboundHandlerAdapter {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
-                    EnumMap<Rarity, Integer> counts = new EnumMap<>(Rarity.class);
+                    var counts = new EnumMap<Rarity, Integer>(Rarity.class);
                     counts.put(Rarity.COMMON, set.getInt("common_count"));
                     counts.put(Rarity.RARE, set.getInt("rare_count"));
                     counts.put(Rarity.EPIC, set.getInt("epic_count"));
@@ -320,7 +320,7 @@ public class BadgeLeaderboardHttpHandler extends ChannelInboundHandlerAdapter {
     }
 
     private JsonObject finalizeBoard(List<JsonObject> ranked, int viewerUserId, ViewerProfile viewerProfile) {
-        JsonArray entries = new JsonArray();
+        var entries = new JsonArray();
         JsonObject viewerEntry = null;
 
         int cappedSize = Math.min(ranked.size(), MAX_BOARD_USERS);
@@ -351,7 +351,7 @@ public class BadgeLeaderboardHttpHandler extends ChannelInboundHandlerAdapter {
             viewerEntry.addProperty("rank", 0);
         }
 
-        JsonObject board = new JsonObject();
+        var board = new JsonObject();
         board.add("entries", entries);
         board.addProperty("totalPlayers", cappedSize);
         board.add("viewerEntry", viewerEntry != null ? viewerEntry : new JsonObject());
@@ -359,7 +359,7 @@ public class BadgeLeaderboardHttpHandler extends ChannelInboundHandlerAdapter {
     }
 
     private JsonObject toEntry(int userId, String username, String figure, int score) {
-        JsonObject entry = new JsonObject();
+        var entry = new JsonObject();
         entry.addProperty("userId", userId);
         entry.addProperty("username", username);
         entry.addProperty("figure", figure);
@@ -368,7 +368,7 @@ public class BadgeLeaderboardHttpHandler extends ChannelInboundHandlerAdapter {
     }
 
     private JsonObject buildThresholdsPayload() {
-        JsonObject thresholds = new JsonObject();
+        var thresholds = new JsonObject();
         thresholds.addProperty("commonMinOwners", 51);
         thresholds.addProperty("rareMinOwners", 11);
         thresholds.addProperty("epicMinOwners", 7);
@@ -397,7 +397,7 @@ public class BadgeLeaderboardHttpHandler extends ChannelInboundHandlerAdapter {
     }
 
     private static JsonArray cloneArray(JsonArray source) {
-        JsonArray copy = new JsonArray();
+        var copy = new JsonArray();
         source.forEach(element -> copy.add(element.deepCopy()));
         return copy;
     }
@@ -407,7 +407,7 @@ public class BadgeLeaderboardHttpHandler extends ChannelInboundHandlerAdapter {
     }
 
     private static JsonObject error(String message) {
-        JsonObject obj = new JsonObject();
+        var obj = new JsonObject();
         obj.addProperty("error", message);
         return obj;
     }

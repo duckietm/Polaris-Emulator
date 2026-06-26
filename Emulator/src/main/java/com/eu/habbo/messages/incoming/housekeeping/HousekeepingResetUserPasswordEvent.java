@@ -88,7 +88,7 @@ public class HousekeepingResetUserPasswordEvent extends MessageHandler {
     }
 
     private static String randomPassword() {
-        StringBuilder sb = new StringBuilder(PASSWORD_LENGTH);
+        var sb = new StringBuilder(PASSWORD_LENGTH);
 
         for (int i = 0; i < PASSWORD_LENGTH; i++) {
             sb.append(PASSWORD_ALPHABET.charAt(RNG.nextInt(PASSWORD_ALPHABET.length())));

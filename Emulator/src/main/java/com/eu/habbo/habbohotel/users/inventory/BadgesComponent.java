@@ -26,14 +26,14 @@ public class BadgesComponent {
     }
 
     private static THashSet<HabboBadge> loadBadges(Habbo habbo) {
-        THashSet<HabboBadge> badgesList = new THashSet<>();
+        var badgesList = new THashSet<HabboBadge>();
         Set<String> staffBadges = Emulator.getGameEnvironment().getPermissionsManager().getStaffBadges();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM users_badges WHERE user_id = ?")) {
             statement.setInt(1, habbo.getHabboInfo().getId());
 
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
-                    HabboBadge badge = new HabboBadge(set, habbo);
+                    var badge = new HabboBadge(set, habbo);
 
                     if (staffBadges.contains(badge.getCode())) {
                         boolean delete = true;
@@ -73,7 +73,7 @@ public class BadgesComponent {
     }
 
     public static ArrayList<HabboBadge> getBadgesOfflineHabbo(int userId) {
-        ArrayList<HabboBadge> badgesList = new ArrayList<>();
+        var badgesList = new ArrayList<HabboBadge>();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM users_badges WHERE slot_id > 0 AND user_id = ? ORDER BY slot_id ASC")) {
             statement.setInt(1, userId);
             try (ResultSet set = statement.executeQuery()) {
@@ -88,7 +88,7 @@ public class BadgesComponent {
     }
 
     public static HabboBadge createBadge(String code, Habbo habbo) {
-        HabboBadge badge = new HabboBadge(0, code, 0, habbo);
+        var badge = new HabboBadge(0, code, 0, habbo);
         badge.run();
         habbo.getInventory().getBadgesComponent().addBadge(badge);
         return badge;
@@ -106,7 +106,7 @@ public class BadgesComponent {
 
     public ArrayList<HabboBadge> getWearingBadges() {
         synchronized (this.badges) {
-            ArrayList<HabboBadge> badgesList = new ArrayList<>();
+            var badgesList = new ArrayList<HabboBadge>();
             for (HabboBadge badge : this.badges) {
                 if (badge.getSlot() == 0)
                     continue;

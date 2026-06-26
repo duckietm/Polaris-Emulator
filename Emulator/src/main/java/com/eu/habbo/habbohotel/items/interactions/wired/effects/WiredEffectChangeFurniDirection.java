@@ -60,7 +60,7 @@ public class WiredEffectChangeFurniDirection extends InteractionWiredEffect {
 
         if (this.furniSource == WiredSourceUtil.SOURCE_SELECTED) {
             this.runtimeItems.clear();
-            THashSet<HabboItem> toRemove = new THashSet<>();
+            var toRemove = new THashSet<HabboItem>();
             for (HabboItem item : this.items.keySet()) {
                 if (item == null || Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId()).getHabboItem(item.getId()) == null)
                     toRemove.add(item);
@@ -158,7 +158,7 @@ public class WiredEffectChangeFurniDirection extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        ArrayList<WiredChangeDirectionSetting> settings = new ArrayList<>(this.items.values());
+        var settings = new ArrayList<WiredChangeDirectionSetting>(this.items.values());
         return WiredManager.getGson().toJson(new JsonData(this.startRotation, this.blockedAction, settings, this.getDelay(), this.furniSource, this.blockOnUserCollision));
     }
 
@@ -294,7 +294,7 @@ public class WiredEffectChangeFurniDirection extends InteractionWiredEffect {
             this.furniSource = WiredSourceUtil.SOURCE_SELECTED;
         }
 
-        THashMap<HabboItem, WiredChangeDirectionSetting> newItems = new THashMap<>();
+        var newItems = new THashMap<HabboItem, WiredChangeDirectionSetting>();
 
         for (int i = 0; i < itemsCount; i++) {
             int itemId = settings.getFurniIds()[i];

@@ -39,7 +39,7 @@ public class ListPrefixesCommand extends Command {
             return true;
         }
 
-        StringBuilder sb = new StringBuilder();
+        var sb = new StringBuilder();
         sb.append(Emulator.getTexts().getValue("commands.succes.cmd_list_prefixes.header").replace("%user%", targetName)).append("\r");
 
         for (UserPrefix prefix : prefixes) {

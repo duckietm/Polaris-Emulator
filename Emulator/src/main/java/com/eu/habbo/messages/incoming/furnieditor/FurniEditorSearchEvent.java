@@ -40,7 +40,7 @@ public class FurniEditorSearchEvent extends MessageHandler {
         int offset = (page - 1) * PAGE_SIZE;
 
         // Build WHERE clause
-        StringBuilder whereClause = new StringBuilder("WHERE 1=1");
+        var whereClause = new StringBuilder("WHERE 1=1");
         List<Object> params = new ArrayList<>();
 
         if (!query.isEmpty()) {
@@ -78,7 +78,7 @@ public class FurniEditorSearchEvent extends MessageHandler {
                     .findClassnamesByName(query);
             if (!furniCns.isEmpty()) {
                 // Build: OR (LOWER(item_name) IN (?,?,...) [AND type = ?])
-                StringBuilder orBranch = new StringBuilder(" OR (LOWER(item_name) IN (");
+                var orBranch = new StringBuilder(" OR (LOWER(item_name) IN (");
                 for (int i = 0; i < furniCns.size(); i++) {
                     if (i > 0) orBranch.append(", ");
                     orBranch.append('?');

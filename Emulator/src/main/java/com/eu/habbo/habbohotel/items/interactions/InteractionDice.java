@@ -51,7 +51,7 @@ public class InteractionDice extends HabboItem {
         if (client != null) {
             if (RoomLayout.tilesAdjecent(room.getLayout().getTile(this.getX(), this.getY()), client.getHabbo().getRoomUnit().getCurrentLocation())) {
                 if (!this.getExtradata().equalsIgnoreCase("-1")) {
-                    FurnitureDiceRolledEvent event = (FurnitureDiceRolledEvent) Emulator.getPluginManager().fireEvent(new FurnitureDiceRolledEvent(this, client.getHabbo(), -1));
+                    var event = (FurnitureDiceRolledEvent) Emulator.getPluginManager().fireEvent(new FurnitureDiceRolledEvent(this, client.getHabbo(), -1));
 
                     if (event.isCancelled())
                         return;

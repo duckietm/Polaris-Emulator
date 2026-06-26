@@ -34,7 +34,7 @@ public class AdventCalendarDataComposer extends MessageComposer {
         this.response.appendInt(this.totalDays);
         this.response.appendInt(this.unlocked.size());
 
-        TIntArrayList expired = new TIntArrayList();
+        var expired = new TIntArrayList();
         if (this.lockExpired) { for (int i = 0; i < this.totalDays; i++) {
             expired.add(i);
         }

@@ -153,7 +153,7 @@ public class Bot implements Runnable {
                 statement.setInt(10, localRoomUnit == null ? 0 : localRoomUnit.getBodyRotation().getValue());
                 statement.setInt(11, localRoomUnit == null ? 0 : localRoomUnit.getDanceType().getType());
                 statement.setString(12, this.canWalk ? "1" : "0");
-                StringBuilder text = new StringBuilder();
+                var text = new StringBuilder();
                 for (String s : this.chatLines) {
                     text.append(s).append("\r");
                 }
@@ -257,7 +257,7 @@ public class Bot implements Runnable {
 
     public void whisper(String message, Habbo habbo) {
         if (this.room != null && habbo != null) {
-            BotWhisperEvent event = new BotWhisperEvent(this, message, habbo);
+            var event = new BotWhisperEvent(this, message, habbo);
             if (Emulator.getPluginManager().fireEvent(event).isCancelled())
                 return;
 
@@ -515,7 +515,7 @@ public class Bot implements Runnable {
             statement.setInt(10, this.roomUnit == null ? 0 : this.roomUnit.getBodyRotation().getValue());
             statement.setInt(11, this.roomUnit == null ? 0 : this.roomUnit.getDanceType().getType());
             statement.setString(12, this.canWalk ? "1" : "0");
-            StringBuilder text = new StringBuilder();
+            var text = new StringBuilder();
             for (String s : this.chatLines) {
                 text.append(s).append("\r");
             }

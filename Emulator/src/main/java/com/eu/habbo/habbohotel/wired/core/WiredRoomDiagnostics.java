@@ -403,7 +403,7 @@ public final class WiredRoomDiagnostics {
 
         for (Type type : Type.values()) {
             LogEntry source = this.logs.get(type);
-            LogEntry copy = new LogEntry(source.getType(), source.getSeverity());
+            var copy = new LogEntry(source.getType(), source.getSeverity());
 
             copy.count = source.getCount();
             copy.firstOccurredAtMs = source.getFirstOccurredAtMs();

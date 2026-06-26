@@ -28,7 +28,7 @@ public class GuildSetAdminEvent extends MessageHandler {
 
                 Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
 
-                GuildGivenAdminEvent adminEvent = new GuildGivenAdminEvent(guild, userId, habbo, this.client.getHabbo());
+                var adminEvent = new GuildGivenAdminEvent(guild, userId, habbo, this.client.getHabbo());
                 Emulator.getPluginManager().fireEvent(adminEvent);
 
                 if (adminEvent.isCancelled())

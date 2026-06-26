@@ -63,7 +63,7 @@ public class EffectsComponent {
     }
 
     public HabboEffect createRankEffect(int effectId) {
-        HabboEffect rankEffect = new HabboEffect(effectId, habbo.getHabboInfo().getId());
+        var rankEffect = new HabboEffect(effectId, habbo.getHabboInfo().getId());
         rankEffect.duration = 0;
         rankEffect.isRankEnable = true;
         rankEffect.activationTimestamp = Emulator.getIntUnixTimestamp();

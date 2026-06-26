@@ -49,7 +49,7 @@ public class PollManager {
                             Poll poll = this.getPoll(set.getInt("poll_id"));
 
                             if (poll != null) {
-                                PollQuestion question = new PollQuestion(set);
+                                var question = new PollQuestion(set);
 
                                 if (set.getInt("parent_id") <= 0) {
                                     poll.addQuestion(question);

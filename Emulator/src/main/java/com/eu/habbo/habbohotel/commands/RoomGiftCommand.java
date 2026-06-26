@@ -38,7 +38,7 @@ public class RoomGiftCommand extends Command {
                 return true;
             }
 
-            StringBuilder message = new StringBuilder();
+            var message = new StringBuilder();
 
             if (params.length > 2) {
                 for (int i = 2; i < params.length; i++) {

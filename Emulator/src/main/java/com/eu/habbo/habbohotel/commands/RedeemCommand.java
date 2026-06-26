@@ -22,7 +22,7 @@ public class RedeemCommand extends Command {
     public boolean handle(final GameClient gameClient, String[] params) throws Exception {
         if (gameClient.getHabbo().getHabboInfo().getCurrentRoom().getActiveTradeForHabbo(gameClient.getHabbo()) != null)
             return false;
-        ArrayList<HabboItem> items = new ArrayList<>();
+        var items = new ArrayList<HabboItem>();
 
         int credits = 0;
         int pixels = 0;
@@ -75,7 +75,7 @@ public class RedeemCommand extends Command {
             }
         }
 
-        TIntObjectHashMap<HabboItem> deleted = new TIntObjectHashMap<>();
+        var deleted = new TIntObjectHashMap<HabboItem>();
         for (HabboItem item : items) {
             gameClient.getHabbo().getInventory().getItemsComponent().removeHabboItem(item);
             deleted.put(item.getId(), item);

@@ -544,7 +544,7 @@ public class RoomTileManager {
             }
 
             // Collect unique tiles occupied by items (handles rotation)
-            THashSet<RoomTile> tilesToUpdate = new THashSet<>();
+            var tilesToUpdate = new THashSet<RoomTile>();
             for (HabboItem item : floorItems) {
                 RoomTile baseTile = layout.getTile(item.getX(), item.getY());
                 if (baseTile != null) {

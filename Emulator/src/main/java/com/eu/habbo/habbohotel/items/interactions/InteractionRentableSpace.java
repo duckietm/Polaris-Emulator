@@ -166,7 +166,7 @@ public class InteractionRentableSpace extends HabboItem {
 
         Rectangle rect = RoomLayout.getRectangle(this.getX(), this.getY(), this.getBaseItem().getWidth(), this.getBaseItem().getLength(), this.getRotation());
 
-        THashSet<HabboItem> items = new THashSet<>();
+        var items = new THashSet<HabboItem>();
         for (int i = rect.x; i < rect.x + rect.getWidth(); i++) {
             for (int j = rect.y; j < rect.y + rect.getHeight(); j++) {
                 items.addAll(room.getItemsAt(i, j, this.getZ()));

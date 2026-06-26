@@ -53,7 +53,7 @@ public class FurnidataWatcher {
     public void start() {
         if (this.running || this.watchDir == null) return;
         this.running = true;
-        Thread t = new Thread(this::run, "FurnidataWatcher");
+        var t = new Thread(this::run, "FurnidataWatcher");
         t.setDaemon(true);
         t.start();
     }

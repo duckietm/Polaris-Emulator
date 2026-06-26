@@ -390,7 +390,7 @@ public class EarningsCenterManager {
                 return;
             }
 
-            HabboBadge badge = new HabboBadge(0, badgeCode, 0, habbo);
+            var badge = new HabboBadge(0, badgeCode, 0, habbo);
             badge.run();
             habbo.getInventory().getBadgesComponent().addBadge(badge);
             if (habbo.getClient() != null) {

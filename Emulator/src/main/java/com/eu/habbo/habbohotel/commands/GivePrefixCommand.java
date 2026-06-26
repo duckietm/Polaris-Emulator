@@ -52,7 +52,7 @@ public class GivePrefixCommand extends Command {
             return true;
         }
 
-        UserPrefix prefix = new UserPrefix(target.getHabboInfo().getId(), text, color, icon, effect);
+        var prefix = new UserPrefix(target.getHabboInfo().getId(), text, color, icon, effect);
         prefix.run();
         target.getInventory().getPrefixesComponent().addPrefix(prefix);
 

@@ -20,7 +20,7 @@ public class ClearRentedSpace implements Runnable {
 
     @Override
     public void run() {
-        THashSet<HabboItem> items = new THashSet<>();
+        var items = new THashSet<HabboItem>();
 
         for (RoomTile t : this.room.getLayout().getTilesAt(this.room.getLayout().getTile(this.item.getX(), this.item.getY()), this.item.getBaseItem().getWidth(), this.item.getBaseItem().getLength(), this.item.getRotation())) {
             for (HabboItem i : this.room.getItemsAt(t)) {

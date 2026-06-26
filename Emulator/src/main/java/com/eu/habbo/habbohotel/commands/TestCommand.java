@@ -17,7 +17,7 @@ public class TestCommand extends Command {
 
         int header = Integer.parseInt(params[1]);
 
-        ServerMessage message = new ServerMessage(header);
+        var message = new ServerMessage(header);
 
         for (int i = 1; i < params.length; i++) {
             String[] data = params[i].split(":");

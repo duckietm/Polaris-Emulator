@@ -21,7 +21,7 @@ public class RoomUserShoutEvent extends MessageHandler {
             return;
 
 
-        RoomChatMessage message = new RoomChatMessage(this);
+        var message = new RoomChatMessage(this);
 
         if (message.getMessage().length() <= RoomChatMessage.MAXIMUM_LENGTH) {
             if (Emulator.getPluginManager().fireEvent(new UserTalkEvent(this.client.getHabbo(), message, RoomChatType.SHOUT)).isCancelled()) {

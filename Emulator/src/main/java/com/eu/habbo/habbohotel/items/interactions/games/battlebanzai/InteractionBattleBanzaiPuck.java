@@ -153,7 +153,7 @@ public class InteractionBattleBanzaiPuck extends InteractionPushable {
         Habbo habbo = room.getHabbo(kicker);
 
         if (habbo != null) {
-            BattleBanzaiGame game = (BattleBanzaiGame) room.getGame(BattleBanzaiGame.class);
+            var game = (BattleBanzaiGame) room.getGame(BattleBanzaiGame.class);
             if (game != null) {
                 GameTeam team = game.getTeamForHabbo(habbo);
                 if (team != null) {

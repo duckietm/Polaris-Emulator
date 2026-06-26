@@ -20,7 +20,7 @@ public class InteractionNoSidesVendingMachine extends InteractionVendingMachine 
     @Override
     public THashSet<RoomTile> getActivatorTiles(Room room) {
 
-        THashSet<RoomTile> tiles = new THashSet<RoomTile>();
+        var tiles = new THashSet<RoomTile>();
         for(int x = -1; x <= 1; x++) {
             for(int y = -1; y <= 1; y++) {
                 RoomTile tile = room.getLayout().getTile((short)(this.getX() + x), (short)(this.getY() + y));

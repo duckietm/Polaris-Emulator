@@ -43,7 +43,7 @@ public class Figuredata {
         Element rootElement = document.getDocumentElement();
 
         if(!rootElement.getTagName().equalsIgnoreCase("figuredata") || document.getElementsByTagName("colors") == null || document.getElementsByTagName("sets") == null) {
-            StringWriter writer = new StringWriter();
+            var writer = new StringWriter();
             TransformerFactory.newInstance().newTransformer().transform(new DOMSource(document), new StreamResult(writer));
             String documentString = writer.getBuffer().toString();
             throw new Exception("The passed file is not in figuredata format. Received " + documentString.substring(0, Math.min(documentString.length(), 200)));
@@ -58,15 +58,15 @@ public class Figuredata {
         for(int i = 0; i < palettesList.getLength(); i++) {
             Node nNode = palettesList.item(i);
             if(nNode.getNodeType() == Node.ELEMENT_NODE) {
-                Element element = (Element) nNode;
+                var element = (Element) nNode;
                 int paletteId = Integer.parseInt(element.getAttribute("id"));
-                FiguredataPalette palette = new FiguredataPalette(paletteId);
+                var palette = new FiguredataPalette(paletteId);
 
                 NodeList colorsList = nNode.getChildNodes();
                 for (int ii = 0; ii < colorsList.getLength(); ii++) {
                     if(colorsList.item(ii).getNodeType() == Node.ELEMENT_NODE) {
-                        Element colorElement = (Element) colorsList.item(ii);
-                        FiguredataPaletteColor color = new FiguredataPaletteColor(
+                        var colorElement = (Element) colorsList.item(ii);
+                        var color = new FiguredataPaletteColor(
                                 Integer.parseInt(colorElement.getAttribute("id")),
                                 Integer.parseInt(colorElement.getAttribute("index")),
                                 !colorElement.getAttribute("club").equals("0"),
@@ -85,7 +85,7 @@ public class Figuredata {
             Node nNode = settypesList.item(i);
 
             if(nNode.getNodeType() == Node.ELEMENT_NODE) {
-                Element element = (Element) nNode;
+                var element = (Element) nNode;
 
                 String type = element.getAttribute("type");
                 int paletteId = Integer.parseInt(element.getAttribute("paletteid"));
@@ -94,13 +94,13 @@ public class Figuredata {
                 boolean mandM1 = element.getAttribute("mand_m_1").equals("1");
                 boolean mandF1 = element.getAttribute("mand_f_1").equals("1");
 
-                FiguredataSettype settype = new FiguredataSettype(type, paletteId, mandM0, mandF0, mandM1, mandF1);
+                var settype = new FiguredataSettype(type, paletteId, mandM0, mandF0, mandM1, mandF1);
 
                 NodeList setsList = nNode.getChildNodes();
                 for (int ii = 0; ii < setsList.getLength(); ii++) {
                     if(setsList.item(ii).getNodeType() == Node.ELEMENT_NODE) {
-                        Element setElement = (Element) setsList.item(ii);
-                        FiguredataSettypeSet set = new FiguredataSettypeSet(
+                        var setElement = (Element) setsList.item(ii);
+                        var set = new FiguredataSettypeSet(
                                 Integer.parseInt(setElement.getAttribute("id")),
                                 setElement.getAttribute("gender"),
                                 !setElement.getAttribute("club").equals("0"),

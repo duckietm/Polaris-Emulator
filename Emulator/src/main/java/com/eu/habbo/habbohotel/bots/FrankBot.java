@@ -156,7 +156,7 @@ public class FrankBot extends ButlerBot {
     }
 
     private static Pattern buildDoorTriggerPattern(List<String> triggers) {
-        StringBuilder sb = new StringBuilder("\\b(");
+        var sb = new StringBuilder("\\b(");
         boolean first = true;
         int count = 0;
         for (String trigger : triggers) {
@@ -251,7 +251,7 @@ public class FrankBot extends ButlerBot {
         Long last = lastBusyWhisperAt.get(userId);
         if (last != null && (now - last) < BUSY_WHISPER_COOLDOWN_MS) return;
         lastBusyWhisperAt.put(userId, now);
-        RoomChatMessage msg = new RoomChatMessage(text, this.getRoomUnit(), RoomChatMessageBubbles.BOT);
+        var msg = new RoomChatMessage(text, this.getRoomUnit(), RoomChatMessageBubbles.BOT);
         target.getClient().sendResponse(new RoomUserWhisperComposer(msg));
     }
 
@@ -276,7 +276,7 @@ public class FrankBot extends ButlerBot {
 
         final int targetId = target.getHabboInfo().getId();
         final int roomId = room.getId();
-        final AtomicBoolean fired = new AtomicBoolean(false);
+        final var fired = new AtomicBoolean(false);
 
         final Runnable kickThenReturn = () -> {
             if (!fired.compareAndSet(false, true)) return;

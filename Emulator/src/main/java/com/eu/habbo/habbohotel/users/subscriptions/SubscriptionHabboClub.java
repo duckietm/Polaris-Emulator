@@ -284,12 +284,12 @@ public class SubscriptionHabboClub extends Subscription {
                 }
             }
 
-            Date date = new java.util.Date(HC_PAYDAY_NEXT_DATE * 1000L);
+            var date = new java.util.Date(HC_PAYDAY_NEXT_DATE * 1000L);
             date = Emulator.modifyDate(date, HC_PAYDAY_INTERVAL);
             HC_PAYDAY_NEXT_DATE = (int) (date.getTime() / 1000L);
 
             try (PreparedStatement stm2 = connection.prepareStatement("UPDATE `emulator_settings` SET `value` = ? WHERE `key` = ?")) {
-                SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                var sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 stm2.setString(1, sdf.format(date));
                 stm2.setString(2, "subscriptions.hc.payday.next_date");
                 stm2.execute();

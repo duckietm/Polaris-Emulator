@@ -102,7 +102,7 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
         }
 
         if (this.getVariableTargetType() == TARGET_FURNI) {
-            LinkedHashSet<HabboItem> matchedItems = new LinkedHashSet<>();
+            var matchedItems = new LinkedHashSet<HabboItem>();
 
             for (HabboItem item : this.getSelectableFloorItems(room, ctx)) {
                 if (item == null) continue;
@@ -116,7 +116,7 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
             return;
         }
 
-        LinkedHashSet<RoomUnit> matchedUsers = new LinkedHashSet<>();
+        var matchedUsers = new LinkedHashSet<RoomUnit>();
 
         for (RoomUnit roomUnit : room.getRoomUnits()) {
             if (roomUnit == null) continue;
@@ -372,7 +372,7 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
     }
 
     private ReferenceSnapshot userReferences(WiredContext ctx, Room room) {
-        ReferenceSnapshot snapshot = new ReferenceSnapshot(TARGET_USER);
+        var snapshot = new ReferenceSnapshot(TARGET_USER);
 
         if (isInternalVariableToken(this.referenceVariableToken)) {
             String key = getInternalVariableKey(this.referenceVariableToken);
@@ -403,7 +403,7 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
         int source = (this.referenceFurniSource == SOURCE_SECONDARY_SELECTED) ? WiredSourceUtil.SOURCE_SELECTED : this.referenceFurniSource;
         if (source == WiredSourceUtil.SOURCE_SELECTED) this.refreshReferenceItems();
 
-        ReferenceSnapshot snapshot = new ReferenceSnapshot(TARGET_FURNI);
+        var snapshot = new ReferenceSnapshot(TARGET_FURNI);
 
         if (isInternalVariableToken(this.referenceVariableToken)) {
             String key = getInternalVariableKey(this.referenceVariableToken);
@@ -428,7 +428,7 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
     }
 
     private ReferenceSnapshot roomReferences(Room room) {
-        ReferenceSnapshot snapshot = new ReferenceSnapshot(TARGET_ROOM);
+        var snapshot = new ReferenceSnapshot(TARGET_ROOM);
 
         if (isInternalVariableToken(this.referenceVariableToken)) {
             String key = getInternalVariableKey(this.referenceVariableToken);
@@ -449,7 +449,7 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
     }
 
     private ReferenceSnapshot contextReferences(WiredContext ctx, Room room) {
-        ReferenceSnapshot snapshot = new ReferenceSnapshot(TARGET_CONTEXT);
+        var snapshot = new ReferenceSnapshot(TARGET_CONTEXT);
 
         if (isInternalVariableToken(this.referenceVariableToken)) {
             String key = getInternalVariableKey(this.referenceVariableToken);
@@ -663,7 +663,7 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
     }
 
     private void refreshReferenceItems() {
-        THashSet<HabboItem> staleItems = new THashSet<>();
+        var staleItems = new THashSet<HabboItem>();
         Room room = this.getRoom();
 
         if (room == null) {

@@ -60,7 +60,7 @@ public final class WsSessionCrypto {
         int n = (outLen + hashLen - 1) / hashLen;
         if (n > 255) throw new GeneralSecurityException("HKDF output too long");
 
-        ByteArrayOutputStream okm = new ByteArrayOutputStream();
+        var okm = new ByteArrayOutputStream();
         byte[] t = new byte[0];
 
         for (int i = 1; i <= n; i++) {

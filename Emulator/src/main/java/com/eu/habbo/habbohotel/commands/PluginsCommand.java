@@ -14,7 +14,7 @@ public class PluginsCommand extends Command {
 
     @Override
     public boolean handle(GameClient gameClient, String[] params) throws Exception {
-        StringBuilder message = new StringBuilder("Plugins (" + Emulator.getPluginManager().getPlugins().size() + ")\r");
+        var message = new StringBuilder("Plugins (" + Emulator.getPluginManager().getPlugins().size() + ")\r");
 
         for (HabboPlugin plugin : Emulator.getPluginManager().getPlugins()) {
             message.append("\r").append(plugin.configuration.name).append(" By ").append(plugin.configuration.author);

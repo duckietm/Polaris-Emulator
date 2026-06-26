@@ -118,7 +118,7 @@ public class WiredEffectMakeUserSay extends InteractionWiredEffect {
         String normalized = value.replace("\r\n", "\n").replace('\r', '\n');
         String[] lines = normalized.split("\n", -1);
 
-        StringBuilder builder = new StringBuilder();
+        var builder = new StringBuilder();
         int linesToWrite = Math.min(lines.length, safeMaxLines);
 
         for (int index = 0; index < linesToWrite; index++) {

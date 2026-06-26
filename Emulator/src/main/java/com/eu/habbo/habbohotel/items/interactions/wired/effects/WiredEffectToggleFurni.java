@@ -209,7 +209,7 @@ public class WiredEffectToggleFurni extends InteractionWiredEffect {
         // THashSet access (serializeWiredData can modify items from the network thread).
         List<HabboItem> effectiveItems = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items);
 
-        THashSet<HabboItem> itemsToRemove = new THashSet<>();
+        var itemsToRemove = new THashSet<HabboItem>();
         for (HabboItem item : effectiveItems) {
             if (item == null || item.getRoomId() == 0 || FORBIDDEN_TYPES.stream().anyMatch(a -> a.isAssignableFrom(item.getClass()))) {
                 itemsToRemove.add(item);

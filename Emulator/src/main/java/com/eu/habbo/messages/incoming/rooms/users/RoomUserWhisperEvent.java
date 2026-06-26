@@ -17,7 +17,7 @@ public class RoomUserWhisperEvent extends MessageHandler {
         if (this.client.getHabbo().getHabboInfo().getCurrentRoom() == null)
             return;
 
-        RoomChatMessage chatMessage = new RoomChatMessage(this);
+        var chatMessage = new RoomChatMessage(this);
 
         if (chatMessage.getMessage().length() <= RoomChatMessage.MAXIMUM_LENGTH) {
             if (!this.client.getHabbo().getHabboStats().allowTalk() || chatMessage.getTargetHabbo() == null)

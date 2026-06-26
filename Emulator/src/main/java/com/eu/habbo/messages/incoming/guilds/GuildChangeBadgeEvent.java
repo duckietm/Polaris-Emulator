@@ -34,7 +34,7 @@ public class GuildChangeBadgeEvent extends MessageHandler {
                 if (guild.getBadge().equalsIgnoreCase(badge))
                     return;
 
-                GuildChangedBadgeEvent badgeEvent = new GuildChangedBadgeEvent(guild, badge);
+                var badgeEvent = new GuildChangedBadgeEvent(guild, badge);
                 Emulator.getPluginManager().fireEvent(badgeEvent);
 
                 if (badgeEvent.isCancelled())

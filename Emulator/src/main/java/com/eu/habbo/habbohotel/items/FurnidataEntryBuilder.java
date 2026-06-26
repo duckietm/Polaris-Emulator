@@ -19,7 +19,7 @@ public final class FurnidataEntryBuilder {
         String safeDesc = description != null ? description : "";
         String customParams = item.getCustomParams() != null ? item.getCustomParams() : "";
 
-        StringBuilder b = new StringBuilder(256);
+        var b = new StringBuilder(256);
         b.append("{\"id\":").append(item.getSpriteId());
         b.append(",\"classname\":\"").append(esc(classname)).append('"');
         b.append(",\"revision\":0,\"category\":\"unknown\",\"defaultdir\":0");
@@ -40,7 +40,7 @@ public final class FurnidataEntryBuilder {
 
     /** Escape for a JSON string value; collapse control chars to spaces. */
     private static String esc(String v) {
-        StringBuilder b = new StringBuilder(v.length() + 8);
+        var b = new StringBuilder(v.length() + 8);
         for (int i = 0; i < v.length(); i++) {
             char c = v.charAt(i);
             if (c == '"' || c == '\\') b.append('\\').append(c);

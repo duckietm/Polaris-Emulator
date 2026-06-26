@@ -46,7 +46,7 @@ public class InteractionBattleBanzaiGate extends InteractionGameGate {
 
     @Override
     public void onWalkOn(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-        BattleBanzaiGame game = (BattleBanzaiGame) room.getGame(BattleBanzaiGame.class);
+        var game = (BattleBanzaiGame) room.getGame(BattleBanzaiGame.class);
 
         if (game == null) {
             game = BattleBanzaiGame.class.getDeclaredConstructor(Room.class).newInstance(room);

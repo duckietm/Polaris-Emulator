@@ -95,7 +95,7 @@ public class WordFilter {
         TObjectHashIterator<WordFilterWord> iterator = this.autoReportWords.iterator();
 
         while (iterator.hasNext()) {
-            WordFilterWord word = (WordFilterWord) iterator.next();
+            var word = (WordFilterWord) iterator.next();
 
             if (message.contains(word.key)) {
                 Emulator.getGameEnvironment().getModToolManager().quickTicket(roomChatMessage.getHabbo(), "Automatic WordFilter", roomChatMessage.getMessage());
@@ -116,7 +116,7 @@ public class WordFilter {
         TObjectHashIterator<WordFilterWord> iterator = this.hideMessageWords.iterator();
 
         while (iterator.hasNext()) {
-            WordFilterWord word = (WordFilterWord) iterator.next();
+            var word = (WordFilterWord) iterator.next();
 
             if (message.contains(word.key)) {
                 return true;
@@ -145,7 +145,7 @@ public class WordFilter {
         boolean foundShit = false;
 
         while (iterator.hasNext()) {
-            WordFilterWord word = (WordFilterWord) iterator.next();
+            var word = (WordFilterWord) iterator.next();
 
             if (word.prefixOnly) continue;
 
@@ -180,7 +180,7 @@ public class WordFilter {
         TObjectHashIterator<WordFilterWord> iterator = this.words.iterator();
 
         while (iterator.hasNext()) {
-            WordFilterWord word = (WordFilterWord) iterator.next();
+            var word = (WordFilterWord) iterator.next();
 
             if (word.prefixOnly) continue;
 

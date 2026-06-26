@@ -30,7 +30,7 @@ public final class WiredTextInputCaptureSupport {
             return CaptureResult.noMatch();
         }
 
-        WiredTriggerHabboSaysKeyword trigger = (WiredTriggerHabboSaysKeyword) stack.triggerItem();
+        var trigger = (WiredTriggerHabboSaysKeyword) stack.triggerItem();
         Room room = event.getRoom();
         RoomUnit actor = event.getActor().orElse(null);
         String text = event.getText().orElse(null);
@@ -51,7 +51,7 @@ public final class WiredTextInputCaptureSupport {
             }
         }
 
-        LinkedHashMap<String, WiredExtraTextInputVariable> capturersByName = new LinkedHashMap<>();
+        var capturersByName = new LinkedHashMap<String, WiredExtraTextInputVariable>();
         for (WiredExtraTextInputVariable capturer : capturers) {
             if (capturer == null || capturer.getCapturerName() == null || capturer.getCapturerName().trim().isEmpty()) {
                 continue;
@@ -78,7 +78,7 @@ public final class WiredTextInputCaptureSupport {
             return CaptureResult.noMatch();
         }
 
-        LinkedHashMap<Integer, Integer> capturedValues = new LinkedHashMap<>();
+        var capturedValues = new LinkedHashMap<Integer, Integer>();
         for (Map.Entry<String, String> capture : matchResult.captures.entrySet()) {
             WiredExtraTextInputVariable capturer = capturersByName.get(capture.getKey());
             if (capturer == null) {
@@ -144,7 +144,7 @@ public final class WiredTextInputCaptureSupport {
             }
 
             String placeholderName = capturersByName.keySet().iterator().next();
-            LinkedHashMap<String, String> captures = new LinkedHashMap<>();
+            var captures = new LinkedHashMap<String, String>();
             captures.put(placeholderName, text);
             return MatchResult.matched(captures);
         }
@@ -172,7 +172,7 @@ public final class WiredTextInputCaptureSupport {
             return MatchResult.noMatch();
         }
 
-        LinkedHashMap<String, String> captures = new LinkedHashMap<>();
+        var captures = new LinkedHashMap<String, String>();
         for (int index = 0; index < pattern.placeholderNames.size(); index++) {
             String placeholderName = pattern.placeholderNames.get(index);
             if (!capturersByName.containsKey(placeholderName)) {
@@ -274,7 +274,7 @@ public final class WiredTextInputCaptureSupport {
             return MatchResult.noMatch();
         }
 
-        LinkedHashMap<String, String> captures = new LinkedHashMap<>();
+        var captures = new LinkedHashMap<String, String>();
         int backtrackTextIndex = resultEndIndex;
         for (int placeholderIndex = placeholderCount; placeholderIndex > 0; placeholderIndex--) {
             String placeholderName = placeholderNames.get(placeholderIndex - 1);
@@ -316,7 +316,7 @@ public final class WiredTextInputCaptureSupport {
         }
 
         Matcher matcher = PLACEHOLDER_PATTERN.matcher(template);
-        StringBuilder regex = new StringBuilder();
+        var regex = new StringBuilder();
         List<String> placeholderNames = new ArrayList<>();
         int cursor = 0;
 

@@ -61,7 +61,7 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
             return;
         }
 
-        StringJoiner errors = new StringJoiner("<br />");
+        var errors = new StringJoiner("<br />");
         String map = this.packet.readString();
 
         if (map == null || map.length() > MAXIMUM_FLOORPLAN_SIZE) {
@@ -144,8 +144,8 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
         }
 
         THashSet<RoomTile> locked_tileList = room.getLockedTiles();
-        THashSet<RoomTile> new_tileList = new THashSet<>();
-        THashSet<HabboItem> itemsToPickup = new THashSet<>();
+        var new_tileList = new THashSet<RoomTile>();
+        var itemsToPickup = new THashSet<HabboItem>();
         int blockedX = -1;
         int blockedY = -1;
         blockingRoomItemScan:

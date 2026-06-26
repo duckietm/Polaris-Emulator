@@ -28,7 +28,7 @@ public class UsernameEvent extends MessageHandler {
             long daysBetween = DAYS.between(new Date((long) this.client.getHabbo().getHabboInfo().getLastOnline() * 1000L).toInstant(), new Date().toInstant());
 
 
-            Date lastLogin = new Date(this.client.getHabbo().getHabboInfo().getLastOnline());
+            var lastLogin = new Date(this.client.getHabbo().getHabboInfo().getLastOnline());
             Calendar c1 = Calendar.getInstance();
             c1.add(Calendar.DAY_OF_YEAR, -1);
 

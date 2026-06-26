@@ -43,7 +43,7 @@ public class WiredEffectTriggerStacks extends InteractionWiredEffect {
     @Override
     public void serializeWiredData(ServerMessage message, Room room) {
         List<HabboItem> itemsSnapshot = new ArrayList<>(this.items);
-        THashSet<HabboItem> items = new THashSet<>();
+        var items = new THashSet<HabboItem>();
 
         for (HabboItem item : itemsSnapshot) {
             if (item.getRoomId() != this.getRoomId() || Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId()).getHabboItem(item.getId()) == null)
@@ -236,7 +236,7 @@ public class WiredEffectTriggerStacks extends InteractionWiredEffect {
     }
 
     protected THashSet<RoomTile> collectTargetTiles(Room room, WiredContext ctx) {
-        THashSet<RoomTile> usedTiles = new THashSet<>();
+        var usedTiles = new THashSet<RoomTile>();
 
         if (room == null || room.getLayout() == null) {
             return usedTiles;

@@ -192,7 +192,7 @@ public class WiredConditionNotFurniHaveFurni extends InteractionWiredCondition {
     }
 
     private void refresh() {
-        THashSet<HabboItem> items = new THashSet<>();
+        var items = new THashSet<HabboItem>();
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
         if (room == null) {

@@ -39,7 +39,7 @@ public class MarketPlace {
 
 
     public static THashSet<MarketPlaceOffer> getOwnOffers(Habbo habbo) {
-        THashSet<MarketPlaceOffer> offers = new THashSet<>();
+        var offers = new THashSet<MarketPlaceOffer>();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT items_base.type AS type, items.item_id AS base_item_id, items.limited_data AS ltd_data, marketplace_items.* FROM marketplace_items INNER JOIN items ON marketplace_items.item_id = items.id INNER JOIN items_base ON items.item_id = items_base.id WHERE marketplace_items.user_id = ?")) {
             statement.setInt(1, habbo.getHabboInfo().getId());
             try (ResultSet set = statement.executeQuery()) {
@@ -397,7 +397,7 @@ public class MarketPlace {
     public static void getCredits(GameClient client) {
         int credits = 0;
 
-        THashSet<MarketPlaceOffer> offers = new THashSet<>();
+        var offers = new THashSet<MarketPlaceOffer>();
         offers.addAll(client.getHabbo().getInventory().getMarketplaceItems());
 
         synchronized (client.getHabbo().getInventory()) {

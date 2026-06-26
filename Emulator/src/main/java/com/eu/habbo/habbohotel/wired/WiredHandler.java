@@ -90,14 +90,14 @@ public class WiredHandler {
         long millis = System.currentTimeMillis();
         List<LegacyExecutionPlan> executionPlans = new ArrayList<>();
 
-        LinkedHashSet<Long> triggeredTiles = new LinkedHashSet<>();
+        var triggeredTiles = new LinkedHashSet<Long>();
         for (InteractionWiredTrigger trigger : triggers) {
             long coordinateKey = toTileCoordinateKey(trigger.getX(), trigger.getY());
 
             if (!triggeredTiles.add(coordinateKey))
                 continue;
 
-            LegacyExecutionPlan executionPlan = new LegacyExecutionPlan();
+            var executionPlan = new LegacyExecutionPlan();
 
             if (handle(trigger, roomUnit, room, stuff, executionPlan)) {
                 executionPlans.add(executionPlan);
@@ -138,7 +138,7 @@ public class WiredHandler {
         long millis = System.currentTimeMillis();
         List<LegacyExecutionPlan> executionPlans = new ArrayList<>();
 
-        LinkedHashSet<Long> triggeredTiles = new LinkedHashSet<>();
+        var triggeredTiles = new LinkedHashSet<Long>();
         for (InteractionWiredTrigger trigger : triggers) {
             if (trigger.getClass() != triggerType) continue;
 
@@ -147,7 +147,7 @@ public class WiredHandler {
             if (!triggeredTiles.add(coordinateKey))
                 continue;
 
-            LegacyExecutionPlan executionPlan = new LegacyExecutionPlan();
+            var executionPlan = new LegacyExecutionPlan();
 
             if (handle(trigger, roomUnit, room, stuff, executionPlan)) {
                 executionPlans.add(executionPlan);
@@ -163,7 +163,7 @@ public class WiredHandler {
 
     public static boolean handle(InteractionWiredTrigger trigger, final RoomUnit roomUnit, final Room room, final Object[] stuff) {
         long millis = System.currentTimeMillis();
-        LegacyExecutionPlan executionPlan = new LegacyExecutionPlan();
+        var executionPlan = new LegacyExecutionPlan();
 
         if (RoomWiredDisableSupport.isWiredDisabled(room))
             return false;
@@ -365,7 +365,7 @@ public class WiredHandler {
             return;
         }
 
-        LinkedHashSet<InteractionWiredEffect> queueableEffects = new LinkedHashSet<>();
+        var queueableEffects = new LinkedHashSet<InteractionWiredEffect>();
 
         for (InteractionWiredEffect effect : effects) {
             if (canQueueEffect(effect, roomUnit, millis)) {
@@ -496,7 +496,7 @@ public class WiredHandler {
 
     private static boolean giveReward(Habbo habbo, WiredEffectGiveReward wiredBox, WiredGiveRewardItem reward) {
         if (reward.badge) {
-            UserWiredRewardReceived rewardReceived = new UserWiredRewardReceived(habbo, wiredBox, "badge", reward.data);
+            var rewardReceived = new UserWiredRewardReceived(habbo, wiredBox, "badge", reward.data);
             if (Emulator.getPluginManager().fireEvent(rewardReceived).isCancelled())
                 return false;
 
@@ -508,7 +508,7 @@ public class WiredHandler {
                 return false;
             }
 
-            HabboBadge badge = new HabboBadge(0, rewardReceived.value, 0, habbo);
+            var badge = new HabboBadge(0, rewardReceived.value, 0, habbo);
             Emulator.getThreading().run(badge);
             habbo.getInventory().getBadgesComponent().addBadge(badge);
             habbo.getClient().sendResponse(new AddUserBadgeComposer(badge));
@@ -521,7 +521,7 @@ public class WiredHandler {
         if (data.length != 2)
             return false;
 
-        UserWiredRewardReceived rewardReceived = new UserWiredRewardReceived(habbo, wiredBox, data[0], data[1]);
+        var rewardReceived = new UserWiredRewardReceived(habbo, wiredBox, data[0], data[1]);
         if (Emulator.getPluginManager().fireEvent(rewardReceived).isCancelled())
             return false;
 

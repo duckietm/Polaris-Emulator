@@ -57,7 +57,7 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
 
             byte[] d = new byte[readableBytes];
             data.getBytes(0, d);
-            String message = new String(d, java.nio.charset.StandardCharsets.UTF_8);
+            var message = new String(d, java.nio.charset.StandardCharsets.UTF_8);
             Gson gson = GSON;
             String response = "ERROR";
             String key = "";

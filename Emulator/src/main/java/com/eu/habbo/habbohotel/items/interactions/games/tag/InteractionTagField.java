@@ -54,7 +54,7 @@ public abstract class InteractionTagField extends HabboItem {
 
         if (habbo != null) {
             if (habbo.getHabboInfo().getCurrentGame() == null) {
-                TagGame game = (TagGame) room.getGame(this.gameClazz);
+                var game = (TagGame) room.getGame(this.gameClazz);
 
                 if (game == null) {
                     game = (TagGame) this.gameClazz.getDeclaredConstructor(Room.class).newInstance(room);

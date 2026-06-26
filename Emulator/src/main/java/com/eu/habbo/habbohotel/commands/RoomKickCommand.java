@@ -17,7 +17,7 @@ public class RoomKickCommand extends Command {
         final Room room = gameClient.getHabbo().getHabboInfo().getCurrentRoom();
         if (room != null) {
             if (params.length > 1) {
-                StringBuilder message = new StringBuilder();
+                var message = new StringBuilder();
                 for (int i = 1; i < params.length; i++) {
                     message.append(params[i]).append(" ");
                 }

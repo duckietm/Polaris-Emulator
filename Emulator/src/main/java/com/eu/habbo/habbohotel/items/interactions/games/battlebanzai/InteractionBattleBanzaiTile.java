@@ -71,7 +71,7 @@ public class InteractionBattleBanzaiTile extends HabboItem {
             return;
 
         if (habbo.getHabboInfo().getCurrentGame() != null && habbo.getHabboInfo().getCurrentGame().equals(BattleBanzaiGame.class)) {
-            BattleBanzaiGame game = ((BattleBanzaiGame) room.getGame(BattleBanzaiGame.class));
+            var game = ((BattleBanzaiGame) room.getGame(BattleBanzaiGame.class));
 
             if (game == null)
                 return;
@@ -112,7 +112,7 @@ public class InteractionBattleBanzaiTile extends HabboItem {
     public void onPlace(Room room) {
         super.onPlace(room);
 
-        BattleBanzaiGame game = (BattleBanzaiGame) room.getGame(BattleBanzaiGame.class);
+        var game = (BattleBanzaiGame) room.getGame(BattleBanzaiGame.class);
 
         if (game != null && game.getState() != GameState.IDLE) {
             this.setExtradata("1");

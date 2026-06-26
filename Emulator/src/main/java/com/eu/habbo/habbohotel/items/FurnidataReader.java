@@ -144,7 +144,7 @@ public class FurnidataReader {
      */
     static String stripJson5(String content) {
         if (content == null || content.isEmpty()) return content;
-        StringBuilder out = new StringBuilder(content.length());
+        var out = new StringBuilder(content.length());
         int i = 0, len = content.length();
         boolean inString = false, escape = false;
         char stringChar = 0;

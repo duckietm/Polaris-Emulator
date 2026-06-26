@@ -58,10 +58,10 @@ public class FriendsComposer extends MessageComposer {
     }
 
     public static ArrayList<ServerMessage> getMessagesForBuddyList(Collection<MessengerBuddy> buddies) {
-        ArrayList<ServerMessage> messages = new ArrayList<ServerMessage>();
-        THashSet<MessengerBuddy> friends = new THashSet<MessengerBuddy>();
+        var messages = new ArrayList<ServerMessage>();
+        var friends = new THashSet<MessengerBuddy>();
 
-        int totalPages = (int)Math.ceil(buddies.size() / 750.0);
+        var totalPages = (int)Math.ceil(buddies.size() / 750.0);
         int page = 0;
 
         for(MessengerBuddy buddy : buddies) {

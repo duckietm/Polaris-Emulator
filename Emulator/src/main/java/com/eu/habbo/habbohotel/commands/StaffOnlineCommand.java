@@ -35,7 +35,7 @@ public class StaffOnlineCommand extends Command {
         }
 
         synchronized (Emulator.getGameEnvironment().getHabboManager().getOnlineHabbos()) {
-            ArrayList<Habbo> staffs = new ArrayList<>();
+            var staffs = new ArrayList<Habbo>();
 
             for (Map.Entry<Integer, Habbo> set : Emulator.getGameEnvironment().getHabboManager().getOnlineHabbos().entrySet()) {
                 if (set.getValue().getHabboInfo().getRank().getId() >= minRank) {
@@ -50,7 +50,7 @@ public class StaffOnlineCommand extends Command {
                 }
             });
 
-            StringBuilder message = new StringBuilder(Emulator.getTexts().getValue("commands.generic.cmd_staffonline.staffs"));
+            var message = new StringBuilder(Emulator.getTexts().getValue("commands.generic.cmd_staffonline.staffs"));
             message.append("\r\n");
 
             for (Habbo habbo : staffs) {

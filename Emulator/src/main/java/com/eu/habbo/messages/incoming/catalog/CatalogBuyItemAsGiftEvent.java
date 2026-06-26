@@ -277,7 +277,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                         this.client.getHabbo().getHabboStats().addLtdLog(item.getId(), Emulator.getIntUnixTimestamp());
                     }
 
-                    THashSet<HabboItem> itemsList = new THashSet<>();
+                    var itemsList = new THashSet<HabboItem>();
 
                     boolean badgeFound = false;
                     for (Item baseItem : item.getBaseItems()) {
@@ -330,7 +330,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                                 if (baseItem.getType() == FurnitureType.BADGE) {
                                     if (!badgeFound) {
                                         if (habbo != null) {
-                                            HabboBadge badge = new HabboBadge(0, baseItem.getName(), 0, habbo);
+                                            var badge = new HabboBadge(0, baseItem.getName(), 0, habbo);
                                             Emulator.getThreading().run(badge);
                                             habbo.getInventory().getBadgesComponent().addBadge(badge);
                                         } else {
@@ -464,7 +464,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                         return;
                     }
 
-                    StringBuilder giftData = new StringBuilder(itemsList.size() + "\t");
+                    var giftData = new StringBuilder(itemsList.size() + "\t");
 
                     for (HabboItem i : itemsList) {
                         if (i == null) {
@@ -545,7 +545,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                         habbo.getClient().getHabbo().getInventory().getItemsComponent().addItem(gift);
                         habbo.getClient().sendResponse(new InventoryRefreshComposer());
 
-                        THashMap<String, String> keys = new THashMap<>();
+                        var keys = new THashMap<String, String>();
                         keys.put("display", "BUBBLE");
                         keys.put("image", "${image.library.url}notifications/gift.gif");
                         keys.put("message", Emulator.getTexts().getValue("generic.gift.received.anonymous"));
@@ -697,7 +697,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
             String daysWord = Emulator.getTexts().getValue("generic.days", "days");
             String clubLabel = offer.isBuildersClubSubscription() ? "Builders Club" : "HC";
             String giftDescription = clubLabel + " (" + offer.getDays() + " " + daysWord + ")";
-            THashMap<String, String> keys = new THashMap<>();
+            var keys = new THashMap<String, String>();
             keys.put("display", "BUBBLE");
             keys.put("image", "${image.library.url}notifications/gift.gif");
             keys.put("message", prefix + " " + giftDescription);

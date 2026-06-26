@@ -8,7 +8,7 @@ public class HexUtils {
     private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 
     public static String toHex(byte[] bytes) {
-        char[] hexChars = new char[bytes.length * 2];
+        var hexChars = new char[bytes.length * 2];
         for (int j = 0; j < bytes.length; j++) {
             int v = bytes[j] & 0xFF;
             hexChars[j * 2] = HEX_ARRAY[v >>> 4];
@@ -19,7 +19,7 @@ public class HexUtils {
 
     public static byte[] toBytes(String hexString) {
         int len = hexString.length();
-        byte[] data = new byte[len / 2];
+        var data = new byte[len / 2];
         for (int i = 0; i < len; i += 2) {
             data[i / 2] = (byte) ((Character.digit(hexString.charAt(i), 16) << 4)
                     + Character.digit(hexString.charAt(i+1), 16));
@@ -29,7 +29,7 @@ public class HexUtils {
 
     public static String getRandom(int length){
         Random r = ThreadLocalRandom.current();
-        StringBuilder sb = new StringBuilder();
+        var sb = new StringBuilder();
 
         while(sb.length() < length){
             sb.append(Integer.toHexString(r.nextInt()));

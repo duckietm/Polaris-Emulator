@@ -404,8 +404,8 @@ public final class WiredEngine {
         }
 
         // Create execution context with stack reference
-        WiredState state = new WiredState(maxStepsPerStack);
-        WiredContext ctx = new WiredContext(event, stack.triggerItem(), stack, services, state, null);
+        var state = new WiredState(maxStepsPerStack);
+        var ctx = new WiredContext(event, stack.triggerItem(), stack, services, state, null);
         WiredTextInputCaptureSupport.applyToContext(ctx, room, captureResult);
         WiredRoomDiagnostics diagnostics = getDiagnostics(room.getId());
 
@@ -524,8 +524,8 @@ public final class WiredEngine {
 
         long currentTime = System.currentTimeMillis();
 
-        WiredState state = new WiredState(maxStepsPerStack);
-        WiredContext ctx = new WiredContext(event, stack.triggerItem(), stack, services, state, null);
+        var state = new WiredState(maxStepsPerStack);
+        var ctx = new WiredContext(event, stack.triggerItem(), stack, services, state, null);
         WiredRoomDiagnostics diagnostics = getDiagnostics(room.getId());
 
         state.step();
@@ -625,8 +625,8 @@ public final class WiredEngine {
             return false;
         }
 
-        WiredState state = new WiredState(maxStepsPerStack);
-        WiredContext ctx = new WiredContext(event, stack.triggerItem(), stack, services, state, null);
+        var state = new WiredState(maxStepsPerStack);
+        var ctx = new WiredContext(event, stack.triggerItem(), stack, services, state, null);
         state.step();
 
         List<InteractionWiredEffect> executedSelectors = Collections.emptyList();
@@ -660,8 +660,8 @@ public final class WiredEngine {
             return false;
         }
 
-        WiredState state = new WiredState(maxStepsPerStack);
-        WiredContext ctx = new WiredContext(event, stack.triggerItem(), stack, services, state, null);
+        var state = new WiredState(maxStepsPerStack);
+        var ctx = new WiredContext(event, stack.triggerItem(), stack, services, state, null);
         WiredTextInputCaptureSupport.applyToContext(ctx, room, captureResult);
 
         state.step();
@@ -1372,8 +1372,8 @@ public final class WiredEngine {
         // Build legacy collections for event
         if (stack.triggerItem() instanceof InteractionWiredTrigger trigger) {
             // This event is checked for cancellation
-            THashSet<InteractionWiredEffect> legacyEffects = new THashSet<>();
-            THashSet<InteractionWiredCondition> legacyConditions = new THashSet<>();
+            var legacyEffects = new THashSet<InteractionWiredEffect>();
+            var legacyConditions = new THashSet<InteractionWiredCondition>();
 
             // Extract effects (all effects should now implement both interfaces)
             for (IWiredEffect eff : stack.effects()) {
@@ -1387,7 +1387,7 @@ public final class WiredEngine {
                 }
             }
 
-            WiredStackTriggeredEvent triggeredEvent = new WiredStackTriggeredEvent(
+            var triggeredEvent = new WiredStackTriggeredEvent(
                     event.getRoom(),
                     event.getActor().orElse(null),
                     trigger,
@@ -1405,8 +1405,8 @@ public final class WiredEngine {
      */
     private void fireExecutedEvent(WiredStack stack, WiredEvent event) {
         if (stack.triggerItem() instanceof InteractionWiredTrigger trigger) {
-            THashSet<InteractionWiredEffect> legacyEffects = new THashSet<>();
-            THashSet<InteractionWiredCondition> legacyConditions = new THashSet<>();
+            var legacyEffects = new THashSet<InteractionWiredEffect>();
+            var legacyConditions = new THashSet<InteractionWiredCondition>();
 
             for (IWiredEffect eff : stack.effects()) {
                 if (eff instanceof InteractionWiredEffect wiredEffect) {
@@ -1700,7 +1700,7 @@ public final class WiredEngine {
             room.sendComposer(new GenericAlertComposer(roomAlertMessage).compose());
 
             // Send scripter bubble alert to staff with room link
-            THashMap<String, String> keys = new THashMap<>();
+            var keys = new THashMap<String, String>();
             keys.put("title", Emulator.getTexts().getValue("wired.abuse.staff.title"));
             keys.put("message", Emulator.getTexts().getValue("wired.abuse.staff.message")
                     .replace("%roomname%", room.getName())

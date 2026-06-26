@@ -58,7 +58,7 @@ public abstract class InteractionCustomValues extends HabboItem {
     }
 
     public String toExtraData() {
-        StringBuilder data = new StringBuilder();
+        var data = new StringBuilder();
         synchronized (this.values) {
             for (Map.Entry<String, String> set : this.values.entrySet()) {
                 data.append(set.getKey()).append("=").append(set.getValue()).append(";");

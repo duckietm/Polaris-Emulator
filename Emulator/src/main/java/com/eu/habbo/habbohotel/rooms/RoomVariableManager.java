@@ -230,7 +230,7 @@ public class RoomVariableManager {
             assignment.setValue(value, Emulator.getIntUnixTimestamp());
         }
 
-        WiredExtraRoomVariable definition = (WiredExtraRoomVariable) extra;
+        var definition = (WiredExtraRoomVariable) extra;
 
         if (definition.isPermanentAvailability()) {
             this.upsertPersistentAssignment(definitionItemId, assignment);
@@ -391,7 +391,7 @@ public class RoomVariableManager {
             }
 
             if (this.isReferenceDefinition(definition.getItemId())) {
-                WiredExtraVariableReference reference = (WiredExtraVariableReference) this.getDefinitionExtra(definition.getItemId());
+                var reference = (WiredExtraVariableReference) this.getDefinitionExtra(definition.getItemId());
                 WiredVariableReferenceSupport.SharedRoomAssignment assignment = WiredVariableReferenceSupport.getSharedRoomAssignment(reference);
                 assignments.add(new AssignmentEntry(definition.getItemId(), (assignment != null) ? assignment.getValue() : 0, 0, (assignment != null) ? assignment.getUpdatedAt() : 0));
                 continue;

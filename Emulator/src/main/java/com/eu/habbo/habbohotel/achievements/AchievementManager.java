@@ -274,7 +274,7 @@ public class AchievementManager {
 
                     try (Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery("SELECT * FROM achievements_talents ORDER BY level ASC")) {
                         while (set.next()) {
-                            TalentTrackLevel level = new TalentTrackLevel(set);
+                            var level = new TalentTrackLevel(set);
 
                             if (!this.talentTrackLevels.containsKey(level.type)) {
                                 this.talentTrackLevels.put(level.type, new LinkedHashMap<>());
@@ -364,7 +364,7 @@ public class AchievementManager {
                             for (String badge : level.badges) {
                                 if (!badge.isEmpty()) {
                                     if (!habbo.getInventory().getBadgesComponent().hasBadge(badge)) {
-                                        HabboBadge b = new HabboBadge(0, badge, 0, habbo);
+                                        var b = new HabboBadge(0, badge, 0, habbo);
                                         Emulator.getThreading().run(b);
                                         habbo.getInventory().getBadgesComponent().addBadge(b);
                                         habbo.getClient().sendResponse(new AddUserBadgeComposer(b));

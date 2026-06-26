@@ -96,9 +96,9 @@ public class ClothingValidationManager {
             return look;
 
         String[] newLookParts = look.split(Pattern.quote("."));
-        ArrayList<String> lookParts = new ArrayList<>();
+        var lookParts = new ArrayList<String>();
 
-        THashMap<String, String[]> parts = new THashMap<>();
+        var parts = new THashMap<String, String[]>();
 
         // add mandatory settypes
         for(String lookpart : newLookParts) {
@@ -168,7 +168,7 @@ public class ClothingValidationManager {
                         setId = set.id;
                     }
 
-                    ArrayList<String> dataParts = new ArrayList<>();
+                    var dataParts = new ArrayList<String>();
 
                     int color1 = -1;
                     int color2 = -1;

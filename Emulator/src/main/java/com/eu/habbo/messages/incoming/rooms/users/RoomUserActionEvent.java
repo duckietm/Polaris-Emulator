@@ -34,7 +34,7 @@ public class RoomUserActionEvent extends MessageHandler {
             int wiredAction = 0;
 
             if (action == 5) {
-                UserIdleEvent event = new UserIdleEvent(this.client.getHabbo(), UserIdleEvent.IdleReason.ACTION, true);
+                var event = new UserIdleEvent(this.client.getHabbo(), UserIdleEvent.IdleReason.ACTION, true);
                 Emulator.getPluginManager().fireEvent(event);
 
                 if (!event.isCancelled()) {
@@ -47,7 +47,7 @@ public class RoomUserActionEvent extends MessageHandler {
                     }
                 }
             } else {
-                UserIdleEvent event = new UserIdleEvent(this.client.getHabbo(), UserIdleEvent.IdleReason.ACTION, false);
+                var event = new UserIdleEvent(this.client.getHabbo(), UserIdleEvent.IdleReason.ACTION, false);
                 Emulator.getPluginManager().fireEvent(event);
 
                 if (!event.isCancelled()) {

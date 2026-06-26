@@ -30,7 +30,7 @@ public class StaffChatBuddy extends MessengerBuddy {
             return;
         }
 
-        Message chatMessage = new Message(from.getHabboInfo().getId(), BUDDY_ID, message);
+        var chatMessage = new Message(from.getHabboInfo().getId(), BUDDY_ID, message);
         Emulator.getGameServer().getGameClientManager().sendBroadcastResponse(
                 new FriendChatMessageComposer(chatMessage, BUDDY_ID, from.getHabboInfo().getId()).compose(),
                 PERMISSION_KEY,

@@ -149,7 +149,7 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
 
     protected List<Habbo> resolveRecipients(WiredContext ctx, List<RoomUnit> sourceUsers) {
         Room room = ctx.room();
-        LinkedHashMap<Integer, Habbo> recipients = new LinkedHashMap<>();
+        var recipients = new LinkedHashMap<Integer, Habbo>();
 
         if (room == null) {
             return Collections.emptyList();

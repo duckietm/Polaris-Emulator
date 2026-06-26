@@ -145,7 +145,7 @@ public final class WiredTickService {
         );
 
         this.coordinator = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "WiredTickCoordinator");
+            var t = new Thread(r, "WiredTickCoordinator");
             t.setDaemon(true);
             t.setPriority(threadPriority);
             return t;
@@ -159,7 +159,7 @@ public final class WiredTickService {
         for (int i = 0; i < workerCount; i++) {
             final int shardIndex = i;
             this.shardExecutors[i] = Executors.newSingleThreadExecutor(r -> {
-                Thread t = new Thread(r, "WiredTickShard-" + shardIndex);
+                var t = new Thread(r, "WiredTickShard-" + shardIndex);
                 t.setDaemon(true);
                 t.setPriority(threadPriority);
                 return t;

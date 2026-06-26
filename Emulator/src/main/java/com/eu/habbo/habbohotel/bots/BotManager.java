@@ -112,7 +112,7 @@ public class BotManager {
     }
 
     public void placeBot(Bot bot, Habbo habbo, Room room, RoomTile location) {
-        BotPlacedEvent event = new BotPlacedEvent(bot, location, habbo);
+        var event = new BotPlacedEvent(bot, location, habbo);
         Emulator.getPluginManager().fireEvent(event);
 
         if (event.isCancelled())
@@ -133,7 +133,7 @@ public class BotManager {
                     return;
                 }
 
-                RoomUnit roomUnit = new RoomUnit();
+                var roomUnit = new RoomUnit();
                 roomUnit.setRotation(RoomUserRotation.SOUTH);
                 roomUnit.setLocation(location);
 
@@ -186,7 +186,7 @@ public class BotManager {
                 return;
             }
 
-            BotPickUpEvent pickedUpEvent = new BotPickUpEvent(bot, habbo);
+            var pickedUpEvent = new BotPickUpEvent(bot, habbo);
             Emulator.getPluginManager().fireEvent(pickedUpEvent);
 
             if (pickedUpEvent.isCancelled())

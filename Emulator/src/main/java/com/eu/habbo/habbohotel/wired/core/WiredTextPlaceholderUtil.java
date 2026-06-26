@@ -229,7 +229,7 @@ public final class WiredTextPlaceholderUtil {
             return "";
         }
 
-        LinkedHashSet<Integer> seenUserIds = new LinkedHashSet<>();
+        var seenUserIds = new LinkedHashSet<Integer>();
         List<String> usernames = new ArrayList<>();
 
         for (RoomUnit unit : users) {
@@ -268,7 +268,7 @@ public final class WiredTextPlaceholderUtil {
             return "";
         }
 
-        LinkedHashSet<Integer> seenItemIds = new LinkedHashSet<>();
+        var seenItemIds = new LinkedHashSet<Integer>();
         List<String> furniNames = new ArrayList<>();
 
         for (HabboItem item : items) {
@@ -325,7 +325,7 @@ public final class WiredTextPlaceholderUtil {
             return List.of();
         }
 
-        LinkedHashSet<Integer> seenUserIds = new LinkedHashSet<>();
+        var seenUserIds = new LinkedHashSet<Integer>();
         List<String> values = new ArrayList<>();
 
         for (RoomUnit roomUnit : users) {
@@ -358,7 +358,7 @@ public final class WiredTextPlaceholderUtil {
             return List.of();
         }
 
-        LinkedHashSet<Integer> seenItemIds = new LinkedHashSet<>();
+        var seenItemIds = new LinkedHashSet<Integer>();
         List<String> values = new ArrayList<>();
 
         for (HabboItem item : items) {

@@ -154,14 +154,14 @@ public class CameraRoomPictureEvent extends MessageHandler {
         habboInfo.setPhotoRoomId(room.getId());
         habboInfo.setPhotoJSON(json);
 
-        File imageFile = new File(Emulator.getConfig().getValue("imager.location.output.camera") + URL);
-        File smallImageFile = new File(Emulator.getConfig().getValue("imager.location.output.camera") + URLsmall);
+        var imageFile = new File(Emulator.getConfig().getValue("imager.location.output.camera") + URL);
+        var smallImageFile = new File(Emulator.getConfig().getValue("imager.location.output.camera") + URLsmall);
 
         try {
             ImageIO.write(theImage, "png", imageFile);
             int smallWidth = theImage.getWidth(null) / 2;
             int smallHeight = theImage.getHeight(null) / 2;
-            BufferedImage bi = new BufferedImage(smallWidth, smallHeight, BufferedImage.TYPE_INT_ARGB);
+            var bi = new BufferedImage(smallWidth, smallHeight, BufferedImage.TYPE_INT_ARGB);
             Graphics2D graphics2D = bi.createGraphics();
             graphics2D.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
             graphics2D.drawImage(theImage, 0, 0, smallWidth, smallHeight, null);

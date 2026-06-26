@@ -164,7 +164,7 @@ public class RoomManager {
             statement.setString(2, "1");
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
-                    Room room = new Room(set);
+                    var room = new Room(set);
                     room.preventUncaching = true;
                     this.activeRooms.put(set.getInt("id"), room);
                     this.trackRoomOwner(room);
@@ -176,7 +176,7 @@ public class RoomManager {
     }
 
     public THashMap<Integer, List<Room>> findRooms(NavigatorFilterField filterField, String value, int category, boolean showInvisible) {
-        THashMap<Integer, List<Room>> rooms = new THashMap<>();
+        var rooms = new THashMap<Integer, List<Room>>();
         String query = filterField.databaseQuery + " AND rooms.state NOT LIKE " + (showInvisible ? "''" : "'invisible'") + (category >= 0 ? "AND rooms.category = '" + category + "'" : "") + "  ORDER BY rooms.users, rooms.id DESC LIMIT " + (page * NavigatorManager.MAXIMUM_RESULTS_PER_PAGE) + "" + ((page * NavigatorManager.MAXIMUM_RESULTS_PER_PAGE) + NavigatorManager.MAXIMUM_RESULTS_PER_PAGE);
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, (filterField.comparator == NavigatorFilterComparator.EQUALS ? value : "%" + value + "%"));
@@ -396,7 +396,7 @@ public class RoomManager {
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
                     if (!this.activeRooms.containsKey(set.getInt("id"))) {
-                        Room room = new Room(set);
+                        var room = new Room(set);
                         this.activeRooms.put(room.getId(), room);
                         this.trackRoomOwner(room);
                     }
@@ -426,7 +426,7 @@ public class RoomManager {
     }
 
     public void clearInactiveRooms() {
-        THashSet<Room> roomsToDispose = new THashSet<>();
+        var roomsToDispose = new THashSet<Room>();
         for (Map.Entry<Integer, Set<Integer>> entry : this.roomsByOwner.entrySet()) {
             int ownerId = entry.getKey();
             if (!Emulator.getGameServer().getGameClientManager().containsHabbo(ownerId)) {
@@ -488,7 +488,7 @@ public class RoomManager {
             if (this.hasVotedForRoom(habbo, room))
                 return;
 
-            UserVoteRoomEvent event = new UserVoteRoomEvent(room, habbo);
+            var event = new UserVoteRoomEvent(room, habbo);
             if (Emulator.getPluginManager().fireEvent(event).isCancelled()) return;
 
             room.setScore(room.getScore() + 1);
@@ -878,9 +878,9 @@ public class RoomManager {
 
         habbo.getClient().sendResponse(new RoomWallItemsComposer(room));
         {
-            final THashSet<HabboItem> floorItems = new THashSet<>();
+            final var floorItems = new THashSet<HabboItem>();
 
-            THashSet<HabboItem> allFloorItems = new THashSet<>(room.getFloorItems());
+            var allFloorItems = new THashSet<HabboItem>(room.getFloorItems());
 
             if (Emulator.getPluginManager().isRegistered(RoomFloorItemsLoadEvent.class, true)) {
                 RoomFloorItemsLoadEvent roomFloorItemsLoadEvent = Emulator.getPluginManager().fireEvent(new RoomFloorItemsLoadEvent(habbo, allFloorItems));
@@ -932,7 +932,7 @@ public class RoomManager {
             habbo.getHabboStats().mutedBubbleTracker = false;
         }
 
-        THashMap<Integer, String> guildBadges = new THashMap<>();
+        var guildBadges = new THashMap<Integer, String>();
         for (Habbo roomHabbo : habbos) {
             {
                 if (roomHabbo.getRoomUnit().getDanceType().getType() > 0) {
@@ -1079,7 +1079,7 @@ public class RoomManager {
     public void logExit(Habbo habbo) {
         Emulator.getPluginManager().fireEvent(new UserExitRoomEvent(habbo, UserExitRoomEvent.UserExitRoomReason.DOOR));
         if (habbo.getRoomUnit().getCacheable().containsKey("control")) {
-            Habbo control = (Habbo) habbo.getRoomUnit().getCacheable().remove("control");
+            var control = (Habbo) habbo.getRoomUnit().getCacheable().remove("control");
             control.getRoomUnit().getCacheable().remove("controller");
         }
 
@@ -1121,7 +1121,7 @@ public class RoomManager {
     }
 
     public ArrayList<Room> getPublicRooms() {
-        ArrayList<Room> rooms = new ArrayList<>();
+        var rooms = new ArrayList<Room>();
 
         for (Room room : this.activeRooms.values()) {
             if (room.isPublicRoom()) {
@@ -1133,7 +1133,7 @@ public class RoomManager {
     }
 
     public ArrayList<Room> getPopularRooms(int count) {
-        ArrayList<Room> rooms = new ArrayList<>();
+        var rooms = new ArrayList<Room>();
 
         for (Room room : this.activeRooms.values()) {
             if (room.getUserCount() > 0) {
@@ -1151,7 +1151,7 @@ public class RoomManager {
     }
 
     public ArrayList<Room> getPopularRooms(int count, int category) {
-        ArrayList<Room> rooms = new ArrayList<>();
+        var rooms = new ArrayList<Room>();
 
         for (Room room : this.activeRooms.values()) {
             if (!room.isPublicRoom() && room.getCategory() == category) {
@@ -1196,7 +1196,7 @@ public class RoomManager {
     }
 
     public ArrayList<Room> getRoomsWithName(String name) {
-        ArrayList<Room> rooms = new ArrayList<>();
+        var rooms = new ArrayList<Room>();
 
         for (Room room : this.activeRooms.values()) {
             if (room.getName().toLowerCase().contains(name.toLowerCase())) {
@@ -1214,7 +1214,7 @@ public class RoomManager {
     }
 
     private ArrayList<Room> getOfflineRoomsWithName(String name) {
-        ArrayList<Room> rooms = new ArrayList<>();
+        var rooms = new ArrayList<Room>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT users.username AS owner_name, rooms.* FROM rooms INNER JOIN users ON owner_id = users.id WHERE name LIKE ? ORDER BY id DESC LIMIT 25")) {
             statement.setString(1, "%" + name + "%");
@@ -1223,7 +1223,7 @@ public class RoomManager {
                     if (this.activeRooms.containsKey(set.getInt("id")))
                         continue;
 
-                    Room r = new Room(set);
+                    var r = new Room(set);
                     rooms.add(r);
                     this.activeRooms.put(r.getId(), r);
                     this.trackRoomOwner(r);
@@ -1237,7 +1237,7 @@ public class RoomManager {
     }
 
     public ArrayList<Room> getRoomsWithTag(String tag) {
-        ArrayList<Room> rooms = new ArrayList<>();
+        var rooms = new ArrayList<Room>();
 
         for (Room room : this.activeRooms.values()) {
             for (String s : room.getTags().split(";")) {
@@ -1254,7 +1254,7 @@ public class RoomManager {
     }
 
     public ArrayList<Room> getGroupRoomsWithName(String name) {
-        ArrayList<Room> rooms = new ArrayList<>();
+        var rooms = new ArrayList<Room>();
 
         for (Room room : this.activeRooms.values()) {
             if (room.getGuildId() == 0)
@@ -1274,7 +1274,7 @@ public class RoomManager {
     }
 
     private ArrayList<Room> getOfflineGroupRoomsWithName(String name) {
-        ArrayList<Room> rooms = new ArrayList<>();
+        var rooms = new ArrayList<Room>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT users.username AS owner_name, rooms.* FROM rooms INNER JOIN users ON rooms.owner_id = users.id WHERE name LIKE ? AND guild_id != 0 ORDER BY id DESC LIMIT 25")) {
             statement.setString(1, "%" + name + "%");
@@ -1283,7 +1283,7 @@ public class RoomManager {
                     if (this.activeRooms.containsKey(set.getInt("id")))
                         continue;
 
-                    Room r = new Room(set);
+                    var r = new Room(set);
                     rooms.add(r);
 
                     this.activeRooms.put(r.getId(), r);
@@ -1298,7 +1298,7 @@ public class RoomManager {
     }
 
     public ArrayList<Room> getRoomsFriendsNow(Habbo habbo) {
-        ArrayList<Room> rooms = new ArrayList<>();
+        var rooms = new ArrayList<Room>();
 
         for (MessengerBuddy buddy : habbo.getMessenger().getFriends().values()) {
             if (buddy.getOnline() == 0)
@@ -1317,7 +1317,7 @@ public class RoomManager {
     }
 
     public ArrayList<Room> getRoomsFriendsOwn(Habbo habbo) {
-        ArrayList<Room> rooms = new ArrayList<>();
+        var rooms = new ArrayList<Room>();
 
         for (MessengerBuddy buddy : habbo.getMessenger().getFriends().values()) {
             if (buddy.getOnline() == 0)
@@ -1337,7 +1337,7 @@ public class RoomManager {
     }
 
     public ArrayList<Room> getRoomsVisited(Habbo habbo, boolean includeSelf, int limit) {
-        ArrayList<Room> rooms = new ArrayList<>();
+        var rooms = new ArrayList<Room>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT rooms.* FROM room_enter_log INNER JOIN rooms ON room_enter_log.room_id = rooms.id WHERE user_id = ? AND timestamp >= ? AND rooms.owner_id != ? GROUP BY rooms.id ORDER BY MAX(timestamp) DESC LIMIT " + limit)) {
             statement.setInt(1, habbo.getHabboInfo().getId());
@@ -1367,7 +1367,7 @@ public class RoomManager {
     }
 
     public ArrayList<Room> getRoomsFavourite(Habbo habbo) {
-        final ArrayList<Room> rooms = new ArrayList<>();
+        final var rooms = new ArrayList<Room>();
 
         habbo.getHabboStats().getFavoriteRooms().forEach(new TIntProcedure() {
             @Override
@@ -1389,7 +1389,7 @@ public class RoomManager {
     }
 
     public List<Room> getGroupRooms(Habbo habbo, int limit) {
-        final ArrayList<Room> rooms = new ArrayList<>();
+        final var rooms = new ArrayList<Room>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement("SELECT rooms.* FROM rooms INNER JOIN guilds_members ON guilds_members.guild_id = rooms.guild_id WHERE guilds_members.user_id = ? AND level_id != 3")) {
@@ -1413,7 +1413,7 @@ public class RoomManager {
     }
 
     public ArrayList<Room> getRoomsWithRights(Habbo habbo) {
-        ArrayList<Room> rooms = new ArrayList<>();
+        var rooms = new ArrayList<Room>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT rooms.* FROM rooms INNER JOIN room_rights ON room_rights.room_id = rooms.id WHERE room_rights.user_id = ? ORDER BY rooms.id DESC LIMIT 30")) {
             statement.setInt(1, habbo.getHabboInfo().getId());
@@ -1434,7 +1434,7 @@ public class RoomManager {
     }
 
     public ArrayList<Room> getRoomsWithFriendsIn(Habbo habbo, int limit) {
-        final ArrayList<Room> rooms = new ArrayList<>();
+        final var rooms = new ArrayList<Room>();
 
         for (MessengerBuddy buddy : habbo.getMessenger().getFriends().values()) {
             Habbo friend = Emulator.getGameEnvironment().getHabboManager().getHabbo(buddy.getId());
@@ -1453,7 +1453,7 @@ public class RoomManager {
     }
 
     public List<Room> getTopRatedRooms(int limit) {
-        final ArrayList<Room> rooms = new ArrayList<>();
+        final var rooms = new ArrayList<Room>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement("SELECT * FROM rooms ORDER BY score DESC LIMIT ?")) {
@@ -1476,7 +1476,7 @@ public class RoomManager {
     }
 
     public ArrayList<Room> getRoomsWithAdminRights(Habbo habbo) {
-        ArrayList<Room> rooms = new ArrayList<>();
+        var rooms = new ArrayList<Room>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement("SELECT * FROM rooms INNER JOIN guilds_members ON guilds_members.guild_id = rooms.guild_id WHERE guilds_members.user_id = ? AND level_id = 0")) {
@@ -1502,7 +1502,7 @@ public class RoomManager {
     }
 
     public ArrayList<Room> getRoomsPromoted() {
-        ArrayList<Room> r = new ArrayList<>();
+        var r = new ArrayList<Room>();
 
         for (Room room : this.getActiveRooms()) {
             if (room.isPromoted()) {
@@ -1514,7 +1514,7 @@ public class RoomManager {
     }
 
     public ArrayList<Room> getRoomsStaffPromoted() {
-        ArrayList<Room> r = new ArrayList<>();
+        var r = new ArrayList<Room>();
 
         for (Room room : this.getActiveRooms()) {
             if (room.isStaffPromotedRoom()) {
@@ -1526,7 +1526,7 @@ public class RoomManager {
     }
 
     public List<Room> filterRoomsByOwner(List<Room> rooms, String filter) {
-        ArrayList<Room> r = new ArrayList<>();
+        var r = new ArrayList<Room>();
 
         for (Room room : rooms) {
             if (room.getOwnerName().equalsIgnoreCase(filter))
@@ -1537,7 +1537,7 @@ public class RoomManager {
     }
 
     public List<Room> filterRoomsByName(List<Room> rooms, String filter) {
-        ArrayList<Room> r = new ArrayList<>();
+        var r = new ArrayList<Room>();
 
         for (Room room : rooms) {
             if (room.getName().toLowerCase().contains(filter.toLowerCase()))
@@ -1548,7 +1548,7 @@ public class RoomManager {
     }
 
     public List<Room> filterRoomsByNameAndDescription(List<Room> rooms, String filter) {
-        ArrayList<Room> r = new ArrayList<>();
+        var r = new ArrayList<Room>();
 
         for (Room room : rooms) {
             if (room.getName().toLowerCase().contains(filter.toLowerCase()) || room.getDescription().toLowerCase().contains(filter.toLowerCase()))
@@ -1559,7 +1559,7 @@ public class RoomManager {
     }
 
     public List<Room> filterRoomsByTag(List<Room> rooms, String filter) {
-        ArrayList<Room> r = new ArrayList<>();
+        var r = new ArrayList<Room>();
 
         for (Room room : rooms) {
             if (room.getTags().split(";").length == 0)
@@ -1575,7 +1575,7 @@ public class RoomManager {
     }
 
     public List<Room> filterRoomsByGroup(List<Room> rooms, String filter) {
-        ArrayList<Room> r = new ArrayList<>();
+        var r = new ArrayList<Room>();
 
         for (Room room : rooms) {
             if (room.getGuildId() == 0)
@@ -1655,7 +1655,7 @@ public class RoomManager {
             return;
         }
 
-        RoomBan roomBan = new RoomBan(roomId, userId, name, Emulator.getIntUnixTimestamp() + length.duration);
+        var roomBan = new RoomBan(roomId, userId, name, Emulator.getIntUnixTimestamp() + length.duration);
         roomBan.insert();
 
         room.addRoomBan(roomBan);

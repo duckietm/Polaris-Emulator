@@ -25,7 +25,7 @@ public final class GuildBadgeBuilder {
             return null;
         }
 
-        StringBuilder badge = new StringBuilder(partCount * 6);
+        var badge = new StringBuilder(partCount * 6);
         for (int partIndex = 0; partIndex < partCount; partIndex++) {
             int id = packet.readInt();
             int color = packet.readInt();

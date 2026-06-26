@@ -13,7 +13,7 @@ public class RequestGuildBuyRoomsEvent extends MessageHandler {
     public void handle() throws Exception {
         List<Room> rooms = Emulator.getGameEnvironment().getRoomManager().getRoomsForHabbo(this.client.getHabbo());
 
-        THashSet<Room> roomList = new THashSet<Room>();
+        var roomList = new THashSet<Room>();
 
         for (Room room : rooms) {
             if (room.getGuildId() == 0)

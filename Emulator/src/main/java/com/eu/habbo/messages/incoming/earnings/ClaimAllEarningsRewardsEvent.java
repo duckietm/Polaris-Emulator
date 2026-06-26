@@ -12,7 +12,7 @@ public class ClaimAllEarningsRewardsEvent extends MessageHandler {
 
     @Override
     public void handle() {
-        EarningsCenterManager manager = new EarningsCenterManager();
+        var manager = new EarningsCenterManager();
         this.client.sendResponse(new EarningsClaimResultComposer(manager.claimAll(this.client.getHabbo())));
     }
 }

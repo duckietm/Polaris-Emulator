@@ -59,7 +59,7 @@ public class FreezeGamePlayer extends GamePlayer {
         if (this.lives == 0) {
             this.dead = true;
 
-            FreezeGame game = (FreezeGame) super.getHabbo().getHabboInfo().getCurrentRoom().getGame(FreezeGame.class);
+            var game = (FreezeGame) super.getHabbo().getHabboInfo().getCurrentRoom().getGame(FreezeGame.class);
 
             if (game != null) {
                 game.playerDies(this);

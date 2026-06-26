@@ -24,7 +24,7 @@ public class RecycleEvent extends MessageHandler {
         }
 
         if (Emulator.getGameEnvironment().getCatalogManager().ecotronItem != null && ItemManager.RECYCLER_ENABLED) {
-            THashSet<HabboItem> items = new THashSet<>();
+            var items = new THashSet<HabboItem>();
 
             int count = this.packet.readInt();
             if (count != Emulator.getConfig().getInt("recycler.value", 8)) return;

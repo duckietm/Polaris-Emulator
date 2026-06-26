@@ -189,7 +189,7 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
     }
 
     private static LinkedHashMap<Integer, String> parseMappings(String value) {
-        LinkedHashMap<Integer, String> result = new LinkedHashMap<>();
+        var result = new LinkedHashMap<Integer, String>();
         if (value == null || value.isEmpty()) {
             return result;
         }

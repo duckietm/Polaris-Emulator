@@ -111,7 +111,7 @@ public class WiredConditionFurniTypeMatch extends InteractionWiredCondition {
     protected THashSet<Integer> resolveCompareTypeIds(WiredContext ctx) {
         this.refresh();
 
-        THashSet<Integer> compareTypeIds = new THashSet<>();
+        var compareTypeIds = new THashSet<Integer>();
 
         for (HabboItem item : this.resolveConfiguredItems(ctx, this.compareFurniSource)) {
             if (item != null && item.getBaseItem() != null) {
@@ -303,7 +303,7 @@ public class WiredConditionFurniTypeMatch extends InteractionWiredCondition {
     }
 
     private void refreshSelection(THashSet<HabboItem> selection) {
-        THashSet<HabboItem> remove = new THashSet<>();
+        var remove = new THashSet<HabboItem>();
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
         if (room == null) {

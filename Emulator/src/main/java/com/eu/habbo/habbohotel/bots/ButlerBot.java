@@ -46,7 +46,7 @@ public class ButlerBot extends Bot {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery("SELECT * FROM bot_serves")) {
             while (set.next()) {
                 String[] keys = set.getString("keys").split(";");
-                THashSet<String> ks = new THashSet<>();
+                var ks = new THashSet<String>();
                 Collections.addAll(ks, keys);
                 serveItems.put(ks, set.getInt("item"));
 

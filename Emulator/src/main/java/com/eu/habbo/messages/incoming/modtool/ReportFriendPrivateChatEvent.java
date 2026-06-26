@@ -25,7 +25,7 @@ public class ReportFriendPrivateChatEvent extends MessageHandler {
         int category = this.packet.readInt();
         int userId = this.packet.readInt();
         int count = this.packet.readInt();
-        ArrayList<ModToolChatLog> chatLogs = new ArrayList<>();
+        var chatLogs = new ArrayList<ModToolChatLog>();
 
         if (!ModToolReportInputGuard.isValidReportMessage(message) ||
                 category <= 0 ||
@@ -58,7 +58,7 @@ public class ReportFriendPrivateChatEvent extends MessageHandler {
             chatLogs.add(new ModToolChatLog(0, chatUserId, username, chatMessage));
         }
 
-        ModToolIssue issue = new ModToolIssue(this.client.getHabbo().getHabboInfo().getId(), this.client.getHabbo().getHabboInfo().getUsername(), userId, info.getUsername(), 0, message, ModToolTicketType.IM);
+        var issue = new ModToolIssue(this.client.getHabbo().getHabboInfo().getId(), this.client.getHabbo().getHabboInfo().getUsername(), userId, info.getUsername(), 0, message, ModToolTicketType.IM);
         issue.category = category;
         issue.chatLogs = chatLogs;
         new InsertModToolIssue(issue).run();

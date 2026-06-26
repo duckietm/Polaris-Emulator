@@ -1024,7 +1024,7 @@ public final class WiredManager {
                                 .actor(roomUnit)
                                 .callStackDepth(callStackDepth)
                                 .build();
-                        WiredContext ctx = new WiredContext(event, effect, DefaultWiredServices.getInstance(), new WiredState(100));
+                        var ctx = new WiredContext(event, effect, DefaultWiredServices.getInstance(), new WiredState(100));
                         effect.execute(ctx);
                         effect.setCooldown(millis);
                     }
@@ -1155,7 +1155,7 @@ public final class WiredManager {
 
     private static boolean giveReward(Habbo habbo, WiredEffectGiveReward wiredBox, WiredGiveRewardItem reward) {
         if (reward.badge) {
-            UserWiredRewardReceived rewardReceived = new UserWiredRewardReceived(habbo, wiredBox, "badge", reward.data);
+            var rewardReceived = new UserWiredRewardReceived(habbo, wiredBox, "badge", reward.data);
             if (Emulator.getPluginManager().fireEvent(rewardReceived).isCancelled()) {
                 return false;
             }
@@ -1169,7 +1169,7 @@ public final class WiredManager {
                 return false;
             }
 
-            HabboBadge badge = new HabboBadge(0, rewardReceived.value, 0, habbo);
+            var badge = new HabboBadge(0, rewardReceived.value, 0, habbo);
             Emulator.getThreading().run(badge);
             habbo.getInventory().getBadgesComponent().addBadge(badge);
             habbo.getClient().sendResponse(new AddUserBadgeComposer(badge));
@@ -1183,7 +1183,7 @@ public final class WiredManager {
             return false;
         }
 
-        UserWiredRewardReceived rewardReceived = new UserWiredRewardReceived(habbo, wiredBox, data[0], data[1]);
+        var rewardReceived = new UserWiredRewardReceived(habbo, wiredBox, data[0], data[1]);
         if (Emulator.getPluginManager().fireEvent(rewardReceived).isCancelled()) {
             return false;
         }

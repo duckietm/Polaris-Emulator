@@ -35,7 +35,7 @@ class DatabasePool {
 
     public boolean getStoragePooling(ConfigurationManager config) {
         try {
-            HikariConfig databaseConfiguration = new HikariConfig();
+            var databaseConfiguration = new HikariConfig();
 
             // Pool sizing
             databaseConfiguration.setMaximumPoolSize(config.getInt(DB_POOL_MAX_SIZE, 50));

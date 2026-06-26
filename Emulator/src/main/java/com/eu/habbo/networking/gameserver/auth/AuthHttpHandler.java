@@ -147,7 +147,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
                 sendJson(ctx, req, HttpResponseStatus.METHOD_NOT_ALLOWED, errorPayload("Use GET."));
                 return;
             }
-            JsonObject ok = new JsonObject();
+            var ok = new JsonObject();
             ok.addProperty("status", "ok");
             sendJson(ctx, req, HttpResponseStatus.OK, ok);
             return;

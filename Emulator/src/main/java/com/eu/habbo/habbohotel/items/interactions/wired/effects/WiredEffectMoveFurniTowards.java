@@ -93,7 +93,7 @@ public class WiredEffectMoveFurniTowards extends InteractionWiredEffect {
 
         List<HabboItem> effectiveItems = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items);
         if (this.furniSource == WiredSourceUtil.SOURCE_SELECTED) {
-            THashSet<HabboItem> toRemove = new THashSet<>();
+            var toRemove = new THashSet<HabboItem>();
             for (HabboItem item : effectiveItems) {
                 if (item != null && Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId()).getHabboItem(item.getId()) == null) {
                     toRemove.add(item);
@@ -375,7 +375,7 @@ public class WiredEffectMoveFurniTowards extends InteractionWiredEffect {
     @Override
     public void serializeWiredData(ServerMessage message, Room room) {
         List<HabboItem> itemsSnapshot = new ArrayList<>(this.items);
-        THashSet<HabboItem> items = new THashSet<>();
+        var items = new THashSet<HabboItem>();
 
         for (HabboItem item : itemsSnapshot) {
             if (item.getRoomId() != this.getRoomId() || Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId()).getHabboItem(item.getId()) == null)

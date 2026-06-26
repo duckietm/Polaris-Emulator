@@ -53,7 +53,7 @@ public class GuildAcceptMembershipEvent extends MessageHandler {
 
         Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
 
-        GuildAcceptedMembershipEvent event = new GuildAcceptedMembershipEvent(guild, userId, habbo);
+        var event = new GuildAcceptedMembershipEvent(guild, userId, habbo);
         Emulator.getPluginManager().fireEvent(event);
 
         if (event.isCancelled()) {

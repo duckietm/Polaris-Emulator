@@ -75,7 +75,7 @@ public class CommandHandler {
                                 boolean succes = false;
                                 if (command.permission == null || gameClient.getHabbo().hasPermission(command.permission, gameClient.getHabbo().getHabboInfo().getCurrentRoom() != null && (gameClient.getHabbo().getHabboInfo().getCurrentRoom().hasRights(gameClient.getHabbo())) || gameClient.getHabbo().hasPermission(Permission.ACC_PLACEFURNI) || (gameClient.getHabbo().getHabboInfo().getCurrentRoom() != null && gameClient.getHabbo().getHabboInfo().getCurrentRoom().getGuildId() > 0 && gameClient.getHabbo().getHabboInfo().getCurrentRoom().getGuildRightLevel(gameClient.getHabbo()).isEqualOrGreaterThan(RoomRightLevels.GUILD_RIGHTS)))) {
                                     try {
-                                        UserExecuteCommandEvent userExecuteCommandEvent = new UserExecuteCommandEvent(gameClient.getHabbo(), command, parts);
+                                        var userExecuteCommandEvent = new UserExecuteCommandEvent(gameClient.getHabbo(), command, parts);
                                         Emulator.getPluginManager().fireEvent(userExecuteCommandEvent);
 
                                         if(userExecuteCommandEvent.isCancelled()) {
@@ -85,7 +85,7 @@ public class CommandHandler {
                                         if (gameClient.getHabbo().getHabboInfo().getCurrentRoom() != null)
                                             gameClient.getHabbo().getHabboInfo().getCurrentRoom().sendComposer(new RoomUserTypingComposer(gameClient.getHabbo().getRoomUnit(), false).compose());
 
-                                        UserCommandEvent event = new UserCommandEvent(gameClient.getHabbo(), parts, command.handle(gameClient, parts));
+                                        var event = new UserCommandEvent(gameClient.getHabbo(), parts, command.handle(gameClient, parts));
                                         Emulator.getPluginManager().fireEvent(event);
 
                                         succes = event.succes;
@@ -128,7 +128,7 @@ public class CommandHandler {
 
                         if (pet != null) {
                             if (pet.getName().equalsIgnoreCase(args[0])) {
-                                StringBuilder s = new StringBuilder();
+                                var s = new StringBuilder();
 
                                 for (int i = 1; i < args.length; i++) {
                                     s.append(args[i]).append(" ");

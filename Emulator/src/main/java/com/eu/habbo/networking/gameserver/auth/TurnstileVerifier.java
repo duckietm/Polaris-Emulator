@@ -40,7 +40,7 @@ public final class TurnstileVerifier {
             return false;
         }
 
-        StringBuilder form = new StringBuilder();
+        var form = new StringBuilder();
         form.append("secret=").append(URLEncoder.encode(secret, StandardCharsets.UTF_8));
         form.append("&response=").append(URLEncoder.encode(token, StandardCharsets.UTF_8));
         if (remoteIp != null && !remoteIp.isEmpty()) {

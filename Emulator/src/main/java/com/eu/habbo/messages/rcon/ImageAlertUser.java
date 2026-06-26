@@ -24,7 +24,7 @@ public class ImageAlertUser extends RCONMessage<ImageAlertUser.JSON> {
             return;
         }
 
-        THashMap<String, String> keys = new THashMap<>();
+        var keys = new THashMap<String, String>();
 
         if (!json.message.isEmpty()) {
             keys.put("message", json.message);

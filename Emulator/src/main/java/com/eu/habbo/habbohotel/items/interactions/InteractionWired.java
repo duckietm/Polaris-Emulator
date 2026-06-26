@@ -235,7 +235,7 @@ public abstract class InteractionWired extends InteractionDefault {
         String stringParam = WiredInputGuard.readStringParam(packet);
         int[] itemIds = WiredInputGuard.readFurniIds(packet);
 
-        WiredSettings settings = new WiredSettings(intParams, stringParam, itemIds, -1);
+        var settings = new WiredSettings(intParams, stringParam, itemIds, -1);
 
         if(isEffect)
         {

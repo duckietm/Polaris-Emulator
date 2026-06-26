@@ -140,10 +140,10 @@ public class WiredEffectUsersNeighborhood extends InteractionWiredEffect {
     private LinkedHashSet<RoomUnit> applyNeighborhoodModifiers(Collection<RoomUnit> matchedTargets,
                                                                Collection<RoomUnit> neighborhoodTargets,
                                                                Collection<RoomUnit> existingTargets) {
-        LinkedHashSet<RoomUnit> matched = new LinkedHashSet<>(matchedTargets);
+        var matched = new LinkedHashSet<RoomUnit>(matchedTargets);
 
         if (this.invert) {
-            LinkedHashSet<RoomUnit> base = new LinkedHashSet<>(neighborhoodTargets);
+            var base = new LinkedHashSet<RoomUnit>(neighborhoodTargets);
             base.removeAll(matched);
 
             if (this.filterExisting) {

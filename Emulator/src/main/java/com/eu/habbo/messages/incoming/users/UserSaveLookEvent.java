@@ -31,7 +31,7 @@ public class UserSaveLookEvent extends MessageHandler {
 
         String look = this.packet.readString();
 
-        UserSavedLookEvent lookEvent = new UserSavedLookEvent(this.client.getHabbo(), gender, look);
+        var lookEvent = new UserSavedLookEvent(this.client.getHabbo(), gender, look);
         Emulator.getPluginManager().fireEvent(lookEvent);
         if (lookEvent.isCancelled())
             return;

@@ -150,7 +150,7 @@ public class WiredTriggerFurniStateToggled extends InteractionWiredTrigger {
 
     @Override
     public void serializeWiredData(ServerMessage message, Room room) {
-        THashSet<StateSnapshot> snapshotsToRemove = new THashSet<>();
+        var snapshotsToRemove = new THashSet<StateSnapshot>();
 
         for (StateSnapshot snapshot : this.snapshots) {
             HabboItem item = room.getHabboItem(snapshot.itemId);

@@ -85,7 +85,7 @@ public class CatalogBuyItemEvent extends MessageHandler {
                 }
 
                 if (page instanceof RoomBundleLayout roomBundleLayout) {
-                    final CatalogItem[] item = new CatalogItem[1];
+                    final var item = new CatalogItem[1];
                     page.getCatalogItems().forEachValue(object -> {
                         item[0] = object;
                         return false;
@@ -115,11 +115,11 @@ public class CatalogBuyItemEvent extends MessageHandler {
 
                     item[0].getBaseItems().stream().filter(i -> i.getType() == FurnitureType.BADGE).forEach(i -> {
                         if (!this.client.getHabbo().getInventory().getBadgesComponent().hasBadge(i.getName())) {
-                            HabboBadge badge = new HabboBadge(0, i.getName(), 0, this.client.getHabbo());
+                            var badge = new HabboBadge(0, i.getName(), 0, this.client.getHabbo());
                             Emulator.getThreading().run(badge);
                             this.client.getHabbo().getInventory().getBadgesComponent().addBadge(badge);
                             this.client.sendResponse(new AddUserBadgeComposer(badge));
-                            THashMap<String, String> keys = new THashMap<>();
+                            var keys = new THashMap<String, String>();
                             keys.put("display", "BUBBLE");
                             keys.put("image", "${image.library.url}album1584/" + badge.getCode() + ".gif");
                             keys.put("message", Emulator.getTexts().getValue("commands.generic.cmd_badge.received"));

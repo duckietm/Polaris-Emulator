@@ -48,7 +48,7 @@ final class StaticContentEndpoints {
     }
 
     static void handleRoomTemplates(ChannelHandlerContext ctx, FullHttpRequest req) {
-        JsonArray templates = new JsonArray();
+        var templates = new JsonArray();
         try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();
              PreparedStatement stmt = conn.prepareStatement("""
                      SELECT template_id, title, description, thumbnail
@@ -56,7 +56,7 @@ final class StaticContentEndpoints {
                      ORDER BY sort_order ASC, template_id ASC""")) {
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    JsonObject t = new JsonObject();
+                    var t = new JsonObject();
                     t.addProperty("templateId", rs.getInt("template_id"));
                     t.addProperty("title", rs.getString("title"));
                     t.addProperty("description", rs.getString("description"));
@@ -69,7 +69,7 @@ final class StaticContentEndpoints {
             sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
             return;
         }
-        JsonObject res = new JsonObject();
+        var res = new JsonObject();
         res.add("templates", templates);
         sendJson(ctx, req, HttpResponseStatus.OK, res);
     }
@@ -79,7 +79,7 @@ final class StaticContentEndpoints {
         NewsCacheEntry cached = NEWS_CACHE;
 
         if (cached == null || cached.expiresAt < now) {
-            JsonArray items = new JsonArray();
+            var items = new JsonArray();
             int limit = Math.max(1, Math.min(20, Emulator.getConfig().getInt("login.news.limit", 5)));
             try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();
                  PreparedStatement stmt = conn.prepareStatement("""
@@ -90,7 +90,7 @@ final class StaticContentEndpoints {
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
                         int id = rs.getInt("id");
-                        JsonObject n = new JsonObject();
+                        var n = new JsonObject();
                         n.addProperty("id", id);
                         n.addProperty("title", rs.getString("title"));
                         n.addProperty("body", rs.getString("body"));
@@ -114,7 +114,7 @@ final class StaticContentEndpoints {
                 return;
             }
 
-            JsonObject res = new JsonObject();
+            var res = new JsonObject();
             res.add("news", items);
             byte[] bytes = res.toString().getBytes(StandardCharsets.UTF_8);
             cached = new NewsCacheEntry(bytes, now + NEWS_CACHE_TTL_MS);
@@ -136,7 +136,7 @@ final class StaticContentEndpoints {
 
     static void handleServerKey(ChannelHandlerContext ctx, FullHttpRequest req) {
         try {
-            JsonObject ok = new JsonObject();
+            var ok = new JsonObject();
             ok.addProperty("publicKey", com.eu.habbo.networking.gameserver.crypto.CryptoSigningKeyManager.publicKeyBase64());
             ok.addProperty("algorithm", "ECDSA-P256-SHA256");
             sendJson(ctx, req, HttpResponseStatus.OK, ok);

@@ -72,7 +72,7 @@ public class GuildForumListEvent extends MessageHandler {
             return activeForumsCache;
         }
 
-        THashSet<Guild> guilds = new THashSet<Guild>();
+        var guilds = new THashSet<Guild>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("""
                 SELECT `guilds`.`id`, SUM(`guilds_forums_threads`.`posts_count`) AS `post_count`
@@ -111,7 +111,7 @@ public class GuildForumListEvent extends MessageHandler {
             if (data != null) return data;
         }
 
-        THashSet<Guild> guilds = new THashSet<Guild>();
+        var guilds = new THashSet<Guild>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("""
                 SELECT `guilds`.`id` FROM `guilds_members`

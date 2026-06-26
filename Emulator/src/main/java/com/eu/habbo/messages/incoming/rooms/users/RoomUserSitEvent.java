@@ -20,7 +20,7 @@ public class RoomUserSitEvent extends MessageHandler {
                 this.client.getHabbo().getHabboInfo().getCurrentRoom().makeSit(this.client.getHabbo());
             }
 
-            UserIdleEvent event = new UserIdleEvent(this.client.getHabbo(), UserIdleEvent.IdleReason.WALKED, false);
+            var event = new UserIdleEvent(this.client.getHabbo(), UserIdleEvent.IdleReason.WALKED, false);
             Emulator.getPluginManager().fireEvent(event);
 
             if (!event.isCancelled()) {

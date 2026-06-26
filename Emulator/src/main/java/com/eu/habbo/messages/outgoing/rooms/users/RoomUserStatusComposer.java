@@ -65,7 +65,7 @@ public class RoomUserStatusComposer extends MessageComposer {
                 this.response.appendInt(roomUnit.getHeadRotation().getValue());
                 this.response.appendInt(roomUnit.getBodyRotation().getValue());
 
-                StringBuilder status = new StringBuilder("/");
+                var status = new StringBuilder("/");
                 for (Map.Entry<RoomUnitStatus, String> entry : roomUnit.getStatusMap().entrySet()) {
                     status.append(entry.getKey()).append(" ").append(entry.getValue()).append("/");
                 }
@@ -99,7 +99,7 @@ public class RoomUserStatusComposer extends MessageComposer {
                     this.response.appendInt(habbo.getRoomUnit().getHeadRotation().getValue());
                     this.response.appendInt(habbo.getRoomUnit().getBodyRotation().getValue());
 
-                    StringBuilder status = new StringBuilder("/");
+                    var status = new StringBuilder("/");
 
                     for (Map.Entry<RoomUnitStatus, String> entry : habbo.getRoomUnit().getStatusMap().entrySet()) {
                         status.append(entry.getKey()).append(" ").append(entry.getValue()).append("/");

@@ -207,7 +207,7 @@ public class GuardianTicket {
 
     public ArrayList<GuardianVote> getSortedVotes(Habbo guardian) {
         synchronized (this.votes) {
-            ArrayList<GuardianVote> votes = new ArrayList<>(this.votes.values());
+            var votes = new ArrayList<GuardianVote>(this.votes.values());
             Collections.sort(votes);
 
             GuardianVote v = null;

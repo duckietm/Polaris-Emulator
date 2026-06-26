@@ -57,7 +57,7 @@ public class SubscriptionManager {
     }
 
     public THashSet<Subscription> getSubscriptionsForUser(int userId) {
-        THashSet<Subscription> subscriptions = new THashSet<>();
+        var subscriptions = new THashSet<Subscription>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement("SELECT * FROM users_subscriptions WHERE user_id = ?")) {

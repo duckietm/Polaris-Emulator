@@ -14,7 +14,7 @@ public class ChangeRelationEvent extends MessageHandler {
 
         MessengerBuddy buddy = this.client.getHabbo().getMessenger().getFriends().get(userId);
         if (buddy != null && FriendInputGuard.isValidRelation(relationId)) {
-            UserRelationShipEvent event = new UserRelationShipEvent(this.client.getHabbo(), buddy, relationId);
+            var event = new UserRelationShipEvent(this.client.getHabbo(), buddy, relationId);
             if (Emulator.getPluginManager().fireEvent(event).isCancelled())
                 return;
 

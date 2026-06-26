@@ -41,7 +41,7 @@ final class SessionEndpoints {
     static void handleLogout(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body) {
         String ssoTicket = readString(body, "ssoTicket");
         String rememberToken = readString(body, "rememberToken").trim();
-        JsonObject ok = new JsonObject();
+        var ok = new JsonObject();
         ok.addProperty("message", "Logged out.");
 
         try (Connection conn = Emulator.getDatabase().getDataSource().getConnection()) {
@@ -107,7 +107,7 @@ final class SessionEndpoints {
                 upd.executeUpdate();
             }
 
-            JsonObject ok = new JsonObject();
+            var ok = new JsonObject();
             ok.addProperty("ssoTicket", ssoTicket);
             ok.addProperty("username", rot.username);
             ok.addProperty("rememberToken", rot.jwt);
@@ -147,7 +147,7 @@ final class SessionEndpoints {
                 AuthRateLimiter.recordSuccess(ip);
 
                 AccessTokenService.Issued access = AccessTokenService.issue(userId);
-                JsonObject ok = new JsonObject();
+                var ok = new JsonObject();
                 ok.addProperty("username", username);
                 ok.addProperty("accessToken", access.token);
                 ok.addProperty("accessTokenExpiresAt", access.expiresAt);
@@ -172,7 +172,7 @@ final class SessionEndpoints {
                 sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("Remember token invalid or expired."));
                 return;
             }
-            JsonObject ok = new JsonObject();
+            var ok = new JsonObject();
             ok.addProperty("rememberToken", rot.jwt);
             ok.addProperty("expiresAt", rot.expiresAt);
             ok.addProperty("rememberExpiresAt", rot.expiresAt);
@@ -266,7 +266,7 @@ final class SessionEndpoints {
 
                     AuthRateLimiter.recordSuccess(ip);
 
-                    JsonObject ok = new JsonObject();
+                    var ok = new JsonObject();
                     ok.addProperty("ssoTicket", ssoTicket);
                     ok.addProperty("username", rs.getString("username"));
                     if (rememberToken != null) ok.addProperty("rememberToken", rememberToken);
@@ -402,7 +402,7 @@ final class SessionEndpoints {
             AvailabilityCache.invalidateEmail(email);
             AvailabilityCache.invalidateUsername(username);
 
-            JsonObject ok = new JsonObject();
+            var ok = new JsonObject();
             ok.addProperty("message", "Welcome aboard, " + username + "! Your account is ready — log in below with the password you just chose.");
             sendJson(ctx, req, HttpResponseStatus.OK, ok);
         } catch (Exception e) {
@@ -419,7 +419,7 @@ final class SessionEndpoints {
             return;
         }
 
-        JsonObject ok = new JsonObject();
+        var ok = new JsonObject();
         ok.addProperty("message", "Email sent! If an account matches that address you'll find a reset link in your inbox shortly (check spam if it doesn't show up within a minute).");
 
         try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();

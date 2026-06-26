@@ -75,7 +75,7 @@ public class WiredTriggerReceiveSignal extends InteractionWiredTrigger {
         boolean changed = false;
 
         if (!this.items.isEmpty()) {
-            THashSet<HabboItem> itemsToRemove = new THashSet<>();
+            var itemsToRemove = new THashSet<HabboItem>();
 
             for (HabboItem item : this.items) {
                 if (item == null || item.getId() == antennaItemId) {
@@ -139,7 +139,7 @@ public class WiredTriggerReceiveSignal extends InteractionWiredTrigger {
         } catch (Exception e) {
         }
 
-        THashSet<HabboItem> itemsToRemove = new THashSet<>();
+        var itemsToRemove = new THashSet<HabboItem>();
         for (HabboItem item : this.items) {
             if (item.getRoomId() != this.getRoomId() || room.getHabboItem(item.getId()) == null) {
                 itemsToRemove.add(item);

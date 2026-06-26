@@ -150,7 +150,7 @@ public class FurnitureTextProvider {
      */
     public static String sanitize(String value) {
         if (value == null) return "";
-        StringBuilder sb = new StringBuilder(Math.min(value.length(), MAX_LEN));
+        var sb = new StringBuilder(Math.min(value.length(), MAX_LEN));
         for (int i = 0; i < value.length() && sb.length() < MAX_LEN; i++) {
             char c = value.charAt(i);
             if (c == '%') { sb.append('％'); continue; } // fullwidth percent — not a placeholder token

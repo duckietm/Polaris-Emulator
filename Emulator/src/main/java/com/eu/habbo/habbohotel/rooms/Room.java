@@ -808,7 +808,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     if (item.getBaseItem().getType() == FurnitureType.FLOOR) {
       this.sendComposer(new RemoveFloorItemComposer(item).compose());
 
-      THashSet<RoomTile> updatedTiles = new THashSet<>();
+      var updatedTiles = new THashSet<RoomTile>();
       Rectangle rectangle = RoomLayout.getRectangle(item.getX(), item.getY(),
               item.getBaseItem().getWidth(), item.getBaseItem().getLength(), item.getRotation());
 
@@ -1549,7 +1549,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   }
 
   public Color getBackgroundTonerColor() {
-    Color color = new Color(0, 0, 0);
+    var color = new Color(0, 0, 0);
     TIntObjectMap<HabboItem> items = this.itemManager.getRoomItems();
     TIntObjectIterator<HabboItem> iterator = items.iterator();
 

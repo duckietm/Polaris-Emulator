@@ -38,7 +38,7 @@ public class RoomMessagingManager {
             return;
         }
 
-        ArrayList<ServerMessage> responses = new ArrayList<>();
+        var responses = new ArrayList<ServerMessage>();
 
         for (ServerMessage message : messages) {
             if (message == null) {

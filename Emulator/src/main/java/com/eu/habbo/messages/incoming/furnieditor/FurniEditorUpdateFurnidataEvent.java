@@ -116,7 +116,7 @@ public class FurniEditorUpdateFurnidataEvent extends MessageHandler {
 
         FurnidataLock.LOCK.lock();
         try {
-            FurnidataWriter writer = new FurnidataWriter(
+            var writer = new FurnidataWriter(
                 provider.getSource(),
                 provider.isSourceDirectory(),
                 provider.getMaxBytes(),

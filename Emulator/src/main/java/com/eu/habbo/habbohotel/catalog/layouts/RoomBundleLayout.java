@@ -81,7 +81,7 @@ public class RoomBundleLayout extends SingleBundle {
         if (item[0] != null) {
             item[0].getBundle().clear();
 
-            THashMap<Item, Integer> items = new THashMap<>();
+            var items = new THashMap<Item, Integer>();
 
             for (HabboItem i : this.room.getFloorItems()) {
                 if (!items.contains(i.getBaseItem())) {
@@ -103,7 +103,7 @@ public class RoomBundleLayout extends SingleBundle {
                 items.put(Emulator.getGameEnvironment().getItemManager().getItem(Integer.parseInt(item[0].getExtradata())), 1);
             }
 
-            StringBuilder data = new StringBuilder();
+            var data = new StringBuilder();
 
             for (Map.Entry<Item, Integer> set : items.entrySet()) {
                 data.append(set.getKey().getId()).append(":").append(set.getValue()).append(";");
@@ -211,7 +211,7 @@ public class RoomBundleLayout extends SingleBundle {
                             statement.setInt(7, bot.getRoomUnit().getX());
                             statement.setInt(8, bot.getRoomUnit().getY());
                             statement.setDouble(9, bot.getRoomUnit().getZ());
-                            StringBuilder text = new StringBuilder();
+                            var text = new StringBuilder();
                             for (String s : bot.getChatLines()) {
                                 text.append(s).append("\r");
                             }
@@ -238,7 +238,7 @@ public class RoomBundleLayout extends SingleBundle {
         r.setFloorPaint(this.room.getFloorPaint());
         r.setScore(0);
         r.setNeedsUpdate(true);
-        THashMap<String, String> keys = new THashMap<>();
+        var keys = new THashMap<String, String>();
         keys.put("ROOMNAME", r.getName());
         keys.put("ROOMID", r.getId() + "");
         keys.put("OWNER", r.getOwnerName());

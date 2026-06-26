@@ -26,7 +26,7 @@ public class AboutCommand extends Command {
         long minute = TimeUnit.SECONDS.toMinutes(seconds) - (TimeUnit.SECONDS.toHours(seconds) * 60);
         long second = TimeUnit.SECONDS.toSeconds(seconds) - (TimeUnit.SECONDS.toMinutes(seconds) * 60);
 
-        StringBuilder message = new StringBuilder();
+        var message = new StringBuilder();
         message.append(NITRO_INFO_SENTINEL).append("\r");
         message.append("<b>").append(Emulator.version).append("</b>\r\n");
 

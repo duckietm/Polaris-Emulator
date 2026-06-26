@@ -27,7 +27,7 @@ public class GuildChangeNameDescEvent extends MessageHandler {
                 if (!GuildInputLimits.isValidGuildName(newName) || !GuildInputLimits.isValidGuildDescription(newDesc))
                     return;
 
-                GuildChangedNameEvent nameEvent = new GuildChangedNameEvent(guild, newName, newDesc);
+                var nameEvent = new GuildChangedNameEvent(guild, newName, newDesc);
                 Emulator.getPluginManager().fireEvent(nameEvent);
 
                 if (nameEvent.isCancelled())

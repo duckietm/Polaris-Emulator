@@ -203,7 +203,7 @@ public final class Emulator {
             // Check if console mode is true or false, default is true
             if (Emulator.getConfig().getBoolean("console.mode", true)) {
 
-                BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+                var reader = new BufferedReader(new InputStreamReader(System.in));
 
                 while (!isShuttingDown && isReady) {
                     try {
@@ -233,9 +233,9 @@ public final class Emulator {
             return;
         }
 
-        StringBuilder sb = new StringBuilder();
+        var sb = new StringBuilder();
         try {
-            File buildFile = new File(Emulator.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+            var buildFile = new File(Emulator.class.getProtectionDomain().getCodeSource().getLocation().toURI());
             buildTimestamp = resolveBuildTimestamp(buildFile);
 
             if (!buildFile.isFile()) {
@@ -245,7 +245,7 @@ public final class Emulator {
 
             String filepath = buildFile.getAbsolutePath();
             MessageDigest md = MessageDigest.getInstance("MD5");
-            try (FileInputStream fis = new FileInputStream(filepath)) {
+            try (var fis = new FileInputStream(filepath)) {
                 byte[] dataBytes = new byte[1024];
                 int nread = 0;
                 while ((nread = fis.read(dataBytes)) != -1)
@@ -422,7 +422,7 @@ public final class Emulator {
             return "UNKNOWN";
         }
 
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        var format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
         try {
             format.setTimeZone(TimeZone.getTimeZone(java.time.ZoneId.of(timezoneId)));
@@ -647,7 +647,7 @@ public final class Emulator {
     }
 
     public static Date stringToDate(String date) {
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        var format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         Date res = null;
         try {
             res = format.parse(date);

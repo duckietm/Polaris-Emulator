@@ -18,7 +18,7 @@ public class WordQuizCommand extends Command {
                 gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.description.cmd_word_quiz"), RoomChatMessageBubbles.ALERT);
                 return  true;
             }
-            StringBuilder question = new StringBuilder();
+            var question = new StringBuilder();
             int duration = 60;
 
             try {

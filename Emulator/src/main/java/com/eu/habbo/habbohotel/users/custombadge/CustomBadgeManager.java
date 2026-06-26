@@ -195,7 +195,7 @@ public class CustomBadgeManager {
         chargeForCreate(userId);
 
         String badgeId = generateBadgeId();
-        int now = (int) (System.currentTimeMillis() / 1000L);
+        var now = (int) (System.currentTimeMillis() / 1000L);
 
         try {
             writeBadgeFile(badgeId, image);
@@ -248,7 +248,7 @@ public class CustomBadgeManager {
         BufferedImage image = validatePng(pngBytes);
 
         String newBadgeId = generateBadgeId();
-        int now = (int) (System.currentTimeMillis() / 1000L);
+        var now = (int) (System.currentTimeMillis() / 1000L);
 
         writeBadgeFile(newBadgeId, image);
 
@@ -308,7 +308,7 @@ public class CustomBadgeManager {
     public String generateBadgeId() {
         long timestamp = System.currentTimeMillis() / 1000L;
         for (int attempt = 0; attempt < 8; attempt++) {
-            StringBuilder suffix = new StringBuilder(RANDOM_SUFFIX_LENGTH);
+            var suffix = new StringBuilder(RANDOM_SUFFIX_LENGTH);
             for (int i = 0; i < RANDOM_SUFFIX_LENGTH; i++) {
                 suffix.append(RANDOM_ALPHABET[this.random.nextInt(RANDOM_ALPHABET.length)]);
             }
@@ -550,8 +550,8 @@ public class CustomBadgeManager {
             i++;
         }
 
-        IndexColorModel colorModel = new IndexColorModel(8, n, r, g, b, 0);
-        BufferedImage out = new BufferedImage(w, h, BufferedImage.TYPE_BYTE_INDEXED, colorModel);
+        var colorModel = new IndexColorModel(8, n, r, g, b, 0);
+        var out = new BufferedImage(w, h, BufferedImage.TYPE_BYTE_INDEXED, colorModel);
 
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
@@ -569,7 +569,7 @@ public class CustomBadgeManager {
     private void deleteBadgeFileQuietly(String badgeId) {
         CustomBadgeSettings current = this.settings;
         if (current == null || current.getBadgePath() == null) return;
-        File file = new File(current.getBadgePath(), badgeId + ".gif");
+        var file = new File(current.getBadgePath(), badgeId + ".gif");
         if (file.exists() && !file.delete()) {
             LOGGER.warn("CustomBadgeManager -> Could not delete stale badge file: {}", file.getAbsolutePath());
         }
@@ -577,7 +577,7 @@ public class CustomBadgeManager {
 
     private static String sanitize(String value, int maxLength) {
         if (value == null) return "";
-        StringBuilder out = new StringBuilder(Math.min(value.length(), maxLength));
+        var out = new StringBuilder(Math.min(value.length(), maxLength));
         for (int i = 0; i < value.length() && out.length() < maxLength; i++) {
             char c = value.charAt(i);
             if (c < 0x20 || c == 0x7F) continue;

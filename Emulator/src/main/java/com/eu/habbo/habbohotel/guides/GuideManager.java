@@ -224,7 +224,7 @@ public class GuideManager {
         synchronized (this.activeGuardians) {
             int count = ticket.getVotedCount();
 
-            THashSet<Habbo> selectedGuardians = new THashSet<>();
+            var selectedGuardians = new THashSet<Habbo>();
 
             for (Map.Entry<Habbo, GuardianTicket> set : this.activeGuardians.entrySet()) {
                 if (count == 5)
@@ -326,7 +326,7 @@ public class GuideManager {
             this.closedTickets.add(ticket);
         }
 
-        THashSet<Habbo> toUpdate = new THashSet<>();
+        var toUpdate = new THashSet<Habbo>();
 
         synchronized (this.activeGuardians) {
             for (Map.Entry<Habbo, GuardianTicket> set : this.activeGuardians.entrySet()) {
@@ -359,7 +359,7 @@ public class GuideManager {
 
     public void cleanup() {
         synchronized (this.activeTours) {
-            THashSet<GuideTour> tours = new THashSet<>();
+            var tours = new THashSet<GuideTour>();
             for (GuideTour tour : this.activeTours) {
                 if (tour.isEnded() && (Emulator.getIntUnixTimestamp() - tour.getEndTime() > 300)) {
                     tours.add(tour);
@@ -372,7 +372,7 @@ public class GuideManager {
         }
 
         synchronized (this.activeTickets) {
-            THashSet<GuardianTicket> tickets = new THashSet<>();
+            var tickets = new THashSet<GuardianTicket>();
 
             for (GuardianTicket ticket : this.closedTickets) {
                 if (Emulator.getIntUnixTimestamp() - (ticket.getDate().getTime() / 1000) > 15 * 60) {

@@ -71,7 +71,7 @@ public class WheelManager {
              PreparedStatement statement = connection.prepareStatement("SELECT * FROM wheel_prizes WHERE enabled = 1 ORDER BY sort_order ASC, id ASC");
              ResultSet set = statement.executeQuery()) {
             while (set.next()) {
-                WheelPrize prize = new WheelPrize(set);
+                var prize = new WheelPrize(set);
                 this.prizes.add(prize);
                 this.totalWeight += prize.weight;
             }
@@ -109,7 +109,7 @@ public class WheelManager {
             return cached;
         }
 
-        WheelUserState state = new WheelUserState();
+        var state = new WheelUserState();
         boolean exists = false;
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
@@ -242,7 +242,7 @@ public class WheelManager {
         Item base = Emulator.getGameEnvironment().getItemManager().getItem(baseId);
         if (base == null) return;
 
-        THashSet<HabboItem> items = new THashSet<>();
+        var items = new THashSet<HabboItem>();
         for (int i = 0; i < quantity; i++) {
             HabboItem item = Emulator.getGameEnvironment().getItemManager().createItem(habbo.getHabboInfo().getId(), base, 0, 0, "");
             if (item != null) items.add(item);
@@ -254,7 +254,7 @@ public class WheelManager {
     }
 
     private void recordWin(Habbo habbo, WheelPrize prize) {
-        WheelRecentWin win = new WheelRecentWin(
+        var win = new WheelRecentWin(
                 habbo.getHabboInfo().getUsername(),
                 habbo.getHabboInfo().getLook(),
                 prize.label);
@@ -399,9 +399,9 @@ public class WheelManager {
     public void disablePrizesNotIn(Set<Integer> keptIds) {
         if (keptIds == null) return;
 
-        StringBuilder sql = new StringBuilder("UPDATE wheel_prizes SET enabled = 0 WHERE enabled = 1");
+        var sql = new StringBuilder("UPDATE wheel_prizes SET enabled = 0 WHERE enabled = 1");
         if (!keptIds.isEmpty()) {
-            StringJoiner ids = new StringJoiner(",", " AND id NOT IN (", ")");
+            var ids = new StringJoiner(",", " AND id NOT IN (", ")");
             for (Integer keptId : keptIds) {
                 ids.add(Integer.toString(keptId));
             }

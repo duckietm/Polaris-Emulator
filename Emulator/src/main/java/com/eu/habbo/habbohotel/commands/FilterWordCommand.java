@@ -46,7 +46,7 @@ public class FilterWordCommand extends Command {
             }
         }
 
-        WordFilterWord wordFilterWord = new WordFilterWord(word, replacement, prefixOnly);
+        var wordFilterWord = new WordFilterWord(word, replacement, prefixOnly);
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO wordfilter (`key`, `replacement`, `prefix_only`) VALUES (?, ?, ?)")) {
             statement.setString(1, word);

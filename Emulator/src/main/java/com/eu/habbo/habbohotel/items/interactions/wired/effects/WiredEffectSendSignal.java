@@ -109,7 +109,7 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
 
         List<RoomUnit> usersToSend;
         if (signalPerUser) {
-            LinkedHashMap<Integer, RoomUnit> mergedUsers = new LinkedHashMap<>();
+            var mergedUsers = new LinkedHashMap<Integer, RoomUnit>();
 
             if (triggeringUser != null) {
                 mergedUsers.put(triggeringUser.getId(), triggeringUser);

@@ -127,7 +127,7 @@ public final class WiredTriggerSourceUtil {
             return null;
         }
 
-        WiredContext ctx = new WiredContext(event, trigger, DefaultWiredServices.getInstance(), new WiredState(100));
+        var ctx = new WiredContext(event, trigger, DefaultWiredServices.getInstance(), new WiredState(100));
 
         for (InteractionWiredEffect effect : getOrderedSelectorEffects(room, trigger)) {
             if (effect.requiresActor() && !ctx.hasActor()) {

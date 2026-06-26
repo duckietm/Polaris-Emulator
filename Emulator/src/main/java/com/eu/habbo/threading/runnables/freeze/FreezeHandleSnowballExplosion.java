@@ -28,16 +28,16 @@ class FreezeHandleSnowballExplosion implements Runnable {
             if (this.thrownData == null || this.thrownData.habbo.getHabboInfo().getGamePlayer() == null)
                 return;
 
-            FreezeGamePlayer player = (FreezeGamePlayer) this.thrownData.habbo.getHabboInfo().getGamePlayer();
+            var player = (FreezeGamePlayer) this.thrownData.habbo.getHabboInfo().getGamePlayer();
 
             if (player == null)
                 return;
 
             player.addSnowball();
 
-            THashSet<RoomTile> tiles = new THashSet<>();
+            var tiles = new THashSet<RoomTile>();
 
-            FreezeGame game = ((FreezeGame) this.thrownData.room.getGame(FreezeGame.class));
+            var game = ((FreezeGame) this.thrownData.room.getGame(FreezeGame.class));
 
             if (game == null)
                 return;
@@ -51,7 +51,7 @@ class FreezeHandleSnowballExplosion implements Runnable {
                 player.nextDiagonal = false;
             }
 
-            THashSet<InteractionFreezeTile> freezeTiles = new THashSet<>();
+            var freezeTiles = new THashSet<InteractionFreezeTile>();
 
             for (RoomTile roomTile : tiles) {
                 THashSet<HabboItem> items = this.thrownData.room.getItemsAt(roomTile);
@@ -74,7 +74,7 @@ class FreezeHandleSnowballExplosion implements Runnable {
                             this.thrownData.room.updateItem(freezeTile);
 
 
-                            THashSet<Habbo> habbos = new THashSet<>();
+                            var habbos = new THashSet<Habbo>();
                             habbos.addAll(this.thrownData.room.getHabbosAt(freezeTile.getX(), freezeTile.getY()));
 
                             for (Habbo habbo : habbos) {

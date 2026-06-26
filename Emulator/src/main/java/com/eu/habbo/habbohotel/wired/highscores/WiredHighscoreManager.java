@@ -108,7 +108,7 @@ public class WiredHighscoreManager {
                 .map(entry -> new WiredHighscoreRow(
                         entry.getUserIds().stream()
                                 .map(id -> Emulator.getGameEnvironment().getHabboManager().getCachedUsername(id))
-                                .collect(Collectors.toList()),
+                                .toList(),
                         entry.getScore()
                 ));
 

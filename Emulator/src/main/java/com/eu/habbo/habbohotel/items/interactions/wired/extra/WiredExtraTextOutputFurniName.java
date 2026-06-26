@@ -17,7 +17,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class WiredExtraTextOutputFurniName extends InteractionWiredExtra {
     public static final int CODE = 68;
@@ -93,7 +92,7 @@ public class WiredExtraTextOutputFurniName extends InteractionWiredExtra {
                 this.placeholderType,
                 this.delimiter,
                 this.furniSource,
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList())
+                this.items.stream().map(HabboItem::getId).toList()
         ));
     }
 

@@ -24,7 +24,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 public class WiredTriggerReceiveSignal extends InteractionWiredTrigger {
     public static final WiredTriggerType type = WiredTriggerType.RECEIVE_SIGNAL;
@@ -54,7 +53,7 @@ public class WiredTriggerReceiveSignal extends InteractionWiredTrigger {
 
         List<HabboItem> resolvedAntennas = WiredTriggerSourceUtil.resolveItems(this, event, this.furniSource, this.items).stream()
                 .filter(this::isAntennaItem)
-                .collect(Collectors.toList());
+                .toList();
 
         if (!resolvedAntennas.isEmpty()) {
             return resolvedAntennas.stream()
@@ -240,7 +239,7 @@ public class WiredTriggerReceiveSignal extends InteractionWiredTrigger {
         return WiredManager.getGson().toJson(new JsonData(
                 channel,
                 furniSource,
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList())
+                this.items.stream().map(HabboItem::getId).toList()
         ));
     }
 

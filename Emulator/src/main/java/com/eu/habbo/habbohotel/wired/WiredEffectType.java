@@ -73,7 +73,9 @@ public enum WiredEffectType {
     GIVE_OR_TAKE_FURNI(91),
     PLAY_YOUTUBE(92),
     QUICK_BOPPER(93),
-    SET_ROOM_AD(94);
+    SET_ROOM_AD(94),
+    MOVE_FURNI_AS_GROUP(95),
+    REMOTE_SELECTOR(96);
 
     public final int code;
 

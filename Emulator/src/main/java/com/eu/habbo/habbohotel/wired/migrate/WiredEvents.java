@@ -473,6 +473,17 @@ public final class WiredEvents {
                 .build();
     }
 
+    /**
+     * Create an event for when a user presses a configured keybind key (key code on actionParameter).
+     */
+    public static WiredEvent pressKeybind(Room room, RoomUnit user, int keyCode) {
+        return WiredEvent.builder(WiredEvent.Type.PRESS_KEYBIND, room)
+                .actor(user)
+                .tile(user.getCurrentLocation())
+                .actionParameter(keyCode)
+                .build();
+    }
+
     // ========== Legacy Compatibility ==========
 
     /**

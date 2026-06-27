@@ -731,6 +731,19 @@ public final class WiredManager {
     }
 
     /**
+     * Trigger when a user presses a configured keybind key (raised by the client-&gt;server
+     * PressKeybindEvent packet). The pressed key code travels on the event's actionParameter.
+     */
+    public static boolean triggerKeybind(Room room, RoomUnit user, int keyCode) {
+        if (!isEnabled() || room == null || user == null) {
+            return false;
+        }
+
+        WiredEvent event = WiredEvents.pressKeybind(room, user, keyCode);
+        return handleEvent(event);
+    }
+
+    /**
      * Trigger when a team wins a game.
      */
     public static boolean triggerTeamWins(Room room, RoomUnit user) {

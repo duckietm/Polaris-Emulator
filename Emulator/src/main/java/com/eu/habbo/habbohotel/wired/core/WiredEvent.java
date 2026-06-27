@@ -127,6 +127,9 @@ public final class WiredEvent {
         /** A dice furni was rolled */
         DICE_ROLLED(WiredTriggerType.DICE_ROLLED),
 
+        /** A user pressed a configured keybind key */
+        PRESS_KEYBIND(WiredTriggerType.PRESS_KEYBIND),
+
         /** Custom trigger type for plugins */
         CUSTOM(WiredTriggerType.CUSTOM);
 

@@ -32,7 +32,8 @@ public enum WiredTriggerType {
     RECEIVE_SIGNAL(15),
     // New client dialogs. Each requires the matching Nitro WiredTriggerLayoutCode value.
     USER_GETS_HANDITEM(25),
-    DICE_ROLLED(24);
+    DICE_ROLLED(24),
+    PRESS_KEYBIND(26);
 
     public final int code;
 

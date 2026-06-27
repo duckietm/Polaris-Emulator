@@ -75,7 +75,9 @@ public enum WiredEffectType {
     QUICK_BOPPER(93),
     SET_ROOM_AD(94),
     MOVE_FURNI_AS_GROUP(95),
-    REMOTE_SELECTOR(96);
+    REMOTE_SELECTOR(96),
+    // Phase-2 chest/storage (97/98 are the movement-curve/time-util add-on client codes; 99 is the next free action code).
+    GIVE_CURRENCY_FROM_CHEST(99);
 
     public final int code;
 

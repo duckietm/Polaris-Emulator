@@ -46,7 +46,9 @@ public enum WiredConditionType {
     // New client dialog (no-input condition). Requires the matching Nitro WiredConditionLayoutCode.
     NO_BATTLEBANZAI(44),
     USER_ON_FURNI_WITH_STATE(45),
-    TRG_FURNI_ADJACENT_STATE(46);
+    TRG_FURNI_ADJACENT_STATE(46),
+    // Phase-2 chest/storage condition. Requires the matching Nitro WiredConditionLayoutCode.
+    CHEST_HAS_ITEMS(47);
 
     public final int code;
 

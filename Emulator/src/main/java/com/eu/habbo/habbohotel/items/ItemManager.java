@@ -62,6 +62,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraExecutio
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovePhysics;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraTimeUtilities;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestCurrency;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMoveNoAnimation;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraOrEval;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRandom;
@@ -473,6 +474,11 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_xtra_mov_physics", WiredExtraMovePhysics.class));
         this.interactionsList.add(new ItemInteraction("wf_xtra_mov_curve", WiredExtraMovementCurve.class));
         this.interactionsList.add(new ItemInteraction("wf_xtra_var_time_util", WiredExtraTimeUtilities.class));
+        // Phase-2 chest/storage (currency slice): Credit Chest + give-currency effect + chest-has-items condition.
+        this.interactionsList.add(new ItemInteraction("wf_storage_coins1", InteractionWiredChestCurrency.class));
+        this.interactionsList.add(new ItemInteraction("wf_storage_coins2", InteractionWiredChestCurrency.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_give_currency", WiredEffectGiveCurrencyFromChest.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_chest_has_items", WiredConditionChestHasItems.class));
         this.interactionsList.add(new ItemInteraction("wf_xtra_exec_in_order", WiredExtraExecuteInOrder.class));
         this.interactionsList.add(new ItemInteraction("wf_xtra_execution_limit", WiredExtraExecutionLimit.class));
         this.interactionsList.add(new ItemInteraction("wf_xtra_text_output_username", WiredExtraTextOutputUsername.class));

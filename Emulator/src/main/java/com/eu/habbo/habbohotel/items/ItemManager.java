@@ -486,6 +486,12 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_storage_furni_starter", InteractionWiredChestFurni.class));
         this.interactionsList.add(new ItemInteraction("wf_act_give_furni", WiredEffectGiveFurniFromChest.class));
         this.interactionsList.add(new ItemInteraction("wf_cnd_chest_has_item_type", WiredConditionChestHasItemType.class));
+        this.interactionsList.add(new ItemInteraction("wf_xtra_scan_chest_furni_by_type", WiredEffectScanChestFurniByType.class));
+        // Phase-2 transactions (v1 outcome-signal model): init/cancel effects fire complete/fail triggers.
+        this.interactionsList.add(new ItemInteraction("wf_act_init_transaction", WiredEffectInitTransaction.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_cancel_transaction", WiredEffectCancelTransaction.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_transaction_complete", WiredTriggerTransactionComplete.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_transaction_fail", WiredTriggerTransactionFail.class));
         this.interactionsList.add(new ItemInteraction("wf_xtra_exec_in_order", WiredExtraExecuteInOrder.class));
         this.interactionsList.add(new ItemInteraction("wf_xtra_execution_limit", WiredExtraExecutionLimit.class));
         this.interactionsList.add(new ItemInteraction("wf_xtra_text_output_username", WiredExtraTextOutputUsername.class));

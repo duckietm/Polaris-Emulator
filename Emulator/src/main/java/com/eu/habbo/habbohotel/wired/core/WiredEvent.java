@@ -130,6 +130,12 @@ public final class WiredEvent {
         /** A user pressed a configured keybind key */
         PRESS_KEYBIND(WiredTriggerType.PRESS_KEYBIND),
 
+        /** A wired transaction completed (fired by Initiate Transaction) */
+        TRANSACTION_COMPLETE(WiredTriggerType.TRANSACTION_COMPLETE),
+
+        /** A wired transaction failed / was cancelled (fired by Cancel Transaction) */
+        TRANSACTION_FAIL(WiredTriggerType.TRANSACTION_FAIL),
+
         /** Custom trigger type for plugins */
         CUSTOM(WiredTriggerType.CUSTOM);
 

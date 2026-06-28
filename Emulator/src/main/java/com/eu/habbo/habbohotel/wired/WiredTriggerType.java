@@ -33,7 +33,10 @@ public enum WiredTriggerType {
     // New client dialogs. Each requires the matching Nitro WiredTriggerLayoutCode value.
     USER_GETS_HANDITEM(25),
     DICE_ROLLED(24),
-    PRESS_KEYBIND(26);
+    PRESS_KEYBIND(26),
+    // Phase-2 transaction outcome triggers. Each requires the matching Nitro WiredTriggerLayoutCode value.
+    TRANSACTION_COMPLETE(27),
+    TRANSACTION_FAIL(28);
 
     public final int code;
 

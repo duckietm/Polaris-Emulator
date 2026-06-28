@@ -79,7 +79,10 @@ public enum WiredEffectType {
     // Phase-2 chest/storage (97/98 are the movement-curve/time-util add-on client codes; 99/102 are action codes,
     // 100/101 are the chest dialog codes).
     GIVE_CURRENCY_FROM_CHEST(99),
-    GIVE_FURNI_FROM_CHEST(102);
+    GIVE_FURNI_FROM_CHEST(102),
+    SCAN_CHEST_FURNI_BY_TYPE(103),
+    INIT_TRANSACTION(104),
+    CANCEL_TRANSACTION(105);
 
     public final int code;
 

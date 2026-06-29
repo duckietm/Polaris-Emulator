@@ -465,6 +465,13 @@ public class PacketManager {
         this.registerHandler(Incoming.AdvertisingSaveEvent, AdvertisingSaveEvent.class);
         this.registerHandler(Incoming.RequestRoomSettingsEvent, RequestRoomSettingsEvent.class);
         this.registerHandler(Incoming.MoodLightSettingsEvent, MoodLightSettingsEvent.class);
+        this.registerHandler(Incoming.ChestDepositEvent, ChestDepositEvent.class);
+        this.registerHandler(Incoming.ChestWithdrawEvent, ChestWithdrawEvent.class);
+        this.registerHandler(Incoming.ChestSaveSettingsEvent, ChestSaveSettingsEvent.class);
+        this.registerHandler(Incoming.ChestSaveNotificationsEvent, ChestSaveNotificationsEvent.class);
+        this.registerHandler(Incoming.ChestUpgradeCapacityEvent, ChestUpgradeCapacityEvent.class);
+        this.registerHandler(Incoming.ChestRequestLogEvent, ChestRequestLogEvent.class);
+        this.registerHandler(Incoming.ChestWithdrawFurniEvent, ChestWithdrawFurniEvent.class);
         this.registerHandler(Incoming.MoodLightTurnOnEvent, MoodLightTurnOnEvent.class);
         this.registerHandler(Incoming.RoomUserDropHandItemEvent, RoomUserDropHandItemEvent.class);
         this.registerHandler(Incoming.RoomUserLookAtPoint, RoomUserLookAtPoint.class);

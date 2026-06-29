@@ -112,6 +112,8 @@ public class Outgoing {
     public final static int BubbleAlertComposer = 1992; // PRODUCTION-201611291003-338511768
     public final static int ReloadRecyclerComposer = 3433; // PRODUCTION-201611291003-338511768
     public final static int MoodLightDataComposer = 2710; // PRODUCTION-201611291003-338511768
+    public final static int ChestDataComposer = 9312; // Player-facing wired chest (Scrigno) data push
+    public final static int ChestLogComposer = 9319; // Wired chest transaction log
     public final static int WiredRewardAlertComposer = 178; // PRODUCTION-201611291003-338511768
     public final static int CatalogPageComposer = 804; // PRODUCTION-201611291003-338511768
     public final static int CatalogModeComposer = 3828; // PRODUCTION-201611291003-338511768

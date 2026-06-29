@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.messages.ServerMessage;
+import com.eu.habbo.messages.outgoing.rooms.items.ChestDataComposer;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -27,6 +28,19 @@ public class InteractionWiredChestCurrency extends InteractionWiredChest {
 
     public InteractionWiredChestCurrency(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
+    }
+
+    /**
+     * Player-first: clicking the chest opens the player Scrigno UI (balance + deposit/withdraw) instead
+     * of the wired-config dialog. The contents stay a {@link ChestStorage} so contracts / give-from-chest
+     * keep working. Anyone can open; withdraw is gated to room rights server-side (see ChestWithdrawEvent).
+     */
+    @Override
+    public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
+        if (client == null || room == null) return;
+        // "Tutti possono aprire" toggle: anyone if accessOpen, otherwise room rights only.
+        if (!this.contents.isAccessOpen() && !room.hasRights(client.getHabbo())) return;
+        client.sendResponse(new ChestDataComposer(this));
     }
 
     @Override

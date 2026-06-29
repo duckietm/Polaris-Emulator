@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.messages.ServerMessage;
+import com.eu.habbo.messages.outgoing.rooms.items.ChestDataComposer;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -26,6 +27,18 @@ public class InteractionWiredChestFurni extends InteractionWiredChest {
 
     public InteractionWiredChestFurni(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
+    }
+
+    /**
+     * Player-first: clicking the furni chest opens the player Scrigno UI (item grid + withdraw) instead of
+     * the wired-config dialog. Anyone can open if accessOpen; withdraw is gated to room rights server-side
+     * (see ChestWithdrawFurniEvent).
+     */
+    @Override
+    public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
+        if (client == null || room == null) return;
+        if (!this.contents.isAccessOpen() && !room.hasRights(client.getHabbo())) return;
+        client.sendResponse(new ChestDataComposer(this));
     }
 
     @Override

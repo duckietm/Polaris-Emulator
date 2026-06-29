@@ -231,6 +231,13 @@ public class Incoming {
     public static final int MySanctionStatusEvent = 2746;
 
     public static final int MoodLightSaveSettingsEvent = 1648;
+    public static final int ChestDepositEvent = 9313; // Player-facing wired chest (Scrigno) deposit
+    public static final int ChestWithdrawEvent = 9314; // Player-facing wired chest (Scrigno) withdraw
+    public static final int ChestSaveSettingsEvent = 9315; // Wired chest settings (name/desc/access/appearance)
+    public static final int ChestSaveNotificationsEvent = 9316; // Wired chest notification prefs
+    public static final int ChestUpgradeCapacityEvent = 9317; // Wired chest buy capacity
+    public static final int ChestRequestLogEvent = 9318; // Wired chest request transaction log
+    public static final int ChestWithdrawFurniEvent = 9320; // Player-facing wired furni chest withdraw (to inventory)
     public static final int ModToolRequestIssueChatlogEvent = 211;
     public static final int ModToolRequestRoomUserChatlogEvent = -1;
     public static final int UsernameEvent = 3878;

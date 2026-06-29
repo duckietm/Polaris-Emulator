@@ -64,6 +64,10 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovement
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraTimeUtilities;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestCurrency;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestFurni;
+import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContractPayment;
+import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContractReward;
+import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContractTrade;
+import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredCustomContract;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMoveNoAnimation;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraOrEval;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRandom;
@@ -78,6 +82,8 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariable
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUnseen;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableReference;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLevelUpSystem;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraQuest;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraQuestChain;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableTextConnector;
 import com.eu.habbo.habbohotel.items.interactions.wired.selector.*;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.*;
@@ -311,6 +317,8 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_act_toggle_to_rnd", WiredEffectToggleRandom.class));
         this.interactionsList.add(new ItemInteraction("wf_act_move_furni_to", WiredEffectMoveFurniTo.class));
         this.interactionsList.add(new ItemInteraction("wf_act_move_furni_as_group", WiredEffectMoveFurniAsGroup.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_place_furni", WiredEffectPlaceFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_remove_furni", WiredEffectRemoveFurni.class));
         this.interactionsList.add(new ItemInteraction("wf_act_give_reward", WiredEffectGiveReward.class));
         // Phase C — currency effects (reuse the SHOW_MESSAGE dialog: amount text field + user source).
         this.interactionsList.add(new ItemInteraction("wf_act_give_credits", WiredEffectGiveCredits.class));
@@ -492,6 +500,11 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_act_cancel_transaction", WiredEffectCancelTransaction.class));
         this.interactionsList.add(new ItemInteraction("wf_trg_transaction_complete", WiredTriggerTransactionComplete.class));
         this.interactionsList.add(new ItemInteraction("wf_trg_transaction_fail", WiredTriggerTransactionFail.class));
+        // Phase-2 contracts (gen-3): config-holder terms executed by the upgraded Init Transaction.
+        this.interactionsList.add(new ItemInteraction("wf_contract_payment", InteractionWiredContractPayment.class));
+        this.interactionsList.add(new ItemInteraction("wf_contract_reward", InteractionWiredContractReward.class));
+        this.interactionsList.add(new ItemInteraction("wf_contract_trade", InteractionWiredContractTrade.class));
+        this.interactionsList.add(new ItemInteraction("wf_xtra_custom_contract", InteractionWiredCustomContract.class));
         this.interactionsList.add(new ItemInteraction("wf_xtra_exec_in_order", WiredExtraExecuteInOrder.class));
         this.interactionsList.add(new ItemInteraction("wf_xtra_execution_limit", WiredExtraExecutionLimit.class));
         this.interactionsList.add(new ItemInteraction("wf_xtra_text_output_username", WiredExtraTextOutputUsername.class));
@@ -500,6 +513,9 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_xtra_text_input_variable", WiredExtraTextInputVariable.class));
         this.interactionsList.add(new ItemInteraction("wf_xtra_var_text_connector", WiredExtraVariableTextConnector.class));
         this.interactionsList.add(new ItemInteraction("wf_xtra_var_lvlup_system", WiredExtraVariableLevelUpSystem.class));
+        // Gen-3 Wired 2.0 quest boxes — derived-variable definition add-ons (codes 108/109).
+        this.interactionsList.add(new ItemInteraction("wf_var_quest", WiredExtraQuest.class));
+        this.interactionsList.add(new ItemInteraction("wf_var_quest_chain", WiredExtraQuestChain.class));
         this.interactionsList.add(new ItemInteraction("wf_var_user", WiredExtraUserVariable.class));
         this.interactionsList.add(new ItemInteraction("wf_var_furni", WiredExtraFurniVariable.class));
         this.interactionsList.add(new ItemInteraction("wf_var_room", WiredExtraRoomVariable.class));

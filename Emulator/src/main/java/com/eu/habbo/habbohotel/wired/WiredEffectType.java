@@ -82,7 +82,10 @@ public enum WiredEffectType {
     GIVE_FURNI_FROM_CHEST(102),
     SCAN_CHEST_FURNI_BY_TYPE(103),
     INIT_TRANSACTION(104),
-    CANCEL_TRANSACTION(105);
+    CANCEL_TRANSACTION(105),
+    // Deferred Phase-1 furni — spawn/remove a furni in the room (matching Nitro WiredActionLayoutCode 106/107).
+    PLACE_FURNI(106),
+    REMOVE_FURNI(107);
 
     public final int code;
 

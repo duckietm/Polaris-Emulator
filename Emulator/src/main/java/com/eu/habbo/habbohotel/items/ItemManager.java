@@ -203,6 +203,12 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_conf_handitem_block", InteractionHanditemBlockControl.class));
         this.interactionsList.add(new ItemInteraction("wf_conf_queue_speed", InteractionQueueSpeedControl.class));
         this.interactionsList.add(new ItemInteraction("wf_conf_wired_disable", InteractionWiredDisableControl.class));
+        this.interactionsList.add(new ItemInteraction("conf_hidewired", InteractionHideWiredControl.class));
+        this.interactionsList.add(new ItemInteraction("wf_conf_hidewired", InteractionHideWiredControl.class));
+        this.interactionsList.add(new ItemInteraction("conf_dice_disable", InteractionDiceDisableControl.class));
+        this.interactionsList.add(new ItemInteraction("wf_conf_dice_disable", InteractionDiceDisableControl.class));
+        this.interactionsList.add(new ItemInteraction("conf_doorkick_disable", InteractionDoorkickDisableControl.class));
+        this.interactionsList.add(new ItemInteraction("wf_conf_doorkick_disable", InteractionDoorkickDisableControl.class));
         this.interactionsList.add(new ItemInteraction("switch_remote_control", InteractionSwitchRemoteControl.class));
         this.interactionsList.add(new ItemInteraction("fx_box", InteractionFXBox.class));
         this.interactionsList.add(new ItemInteraction("blackhole", InteractionBlackHole.class));

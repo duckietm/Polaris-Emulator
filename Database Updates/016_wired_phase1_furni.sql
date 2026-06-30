@@ -24,3 +24,11 @@ UPDATE items_base SET interaction_type = 'wf_act_move_furni_as_group'
 
 UPDATE items_base SET interaction_type = 'wf_slc_remote'
     WHERE item_name = 'wf_slc_remote'              AND interaction_type <> 'wf_slc_remote';
+
+-- Teleport-to-room: the official furni exist in furnidata but were inert; point them at the
+-- existing WiredEffectForwardUserToRoom (reuses the SHOW_MESSAGE dialog, text field = target room id).
+UPDATE items_base SET interaction_type = 'wf_act_teleport_to_room'
+    WHERE item_name = 'wf_act_teleport_to_room'    AND interaction_type <> 'wf_act_teleport_to_room';
+
+UPDATE items_base SET interaction_type = 'wf_act_tele_room'
+    WHERE item_name = 'wf_act_tele_room'           AND interaction_type <> 'wf_act_tele_room';

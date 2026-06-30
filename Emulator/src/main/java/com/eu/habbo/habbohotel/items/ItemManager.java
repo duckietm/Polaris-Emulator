@@ -496,6 +496,9 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_act_double_click", WiredEffectToggleFurni.class));
         this.interactionsList.add(new ItemInteraction("wf_act_give_enable", WiredEffectGiveEffect.class));
         this.interactionsList.add(new ItemInteraction("wf_act_forward_user_to_room", WiredEffectForwardUserToRoom.class));
+        // Official teleport-to-room wired furni (exist in furnidata) -> same effect (reuses the SHOW_MESSAGE dialog; text field = target room id).
+        this.interactionsList.add(new ItemInteraction("wf_act_teleport_to_room", WiredEffectForwardUserToRoom.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_tele_room", WiredEffectForwardUserToRoom.class));
         this.interactionsList.add(new ItemInteraction("wf_cnd_user_in_range", WiredConditionUserInRange.class));
         this.interactionsList.add(new ItemInteraction("wf_cnd_user_not_in_range", WiredConditionUserNotInRange.class));
         this.interactionsList.add(new ItemInteraction("wf_trg_username_as_trigger", WiredTriggerUsernameAsTrigger.class));

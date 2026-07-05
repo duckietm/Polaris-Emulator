@@ -390,6 +390,7 @@ public class PacketManager {
         this.registerHandler(Incoming.SearchRoomsMyFavoriteEvent, SearchRoomsMyFavouriteEvent.class);
         this.registerHandler(Incoming.SearchRoomsVisitedEvent, SearchRoomsVisitedEvent.class);
         this.registerHandler(Incoming.RequestNewNavigatorDataEvent, RequestNewNavigatorDataEvent.class);
+        this.registerHandler(Incoming.GetCategoriesWithUserCountEvent, GetCategoriesWithUserCountEvent.class);
         this.registerHandler(Incoming.RequestNewNavigatorRoomsEvent, RequestNewNavigatorRoomsEvent.class);
         this.registerHandler(Incoming.NewNavigatorActionEvent, NewNavigatorActionEvent.class);
         this.registerHandler(Incoming.RequestNavigatorSettingsEvent, RequestNavigatorSettingsEvent.class);
@@ -466,6 +467,7 @@ public class PacketManager {
         this.registerHandler(Incoming.ChestStartDepositEvent, ChestStartDepositEvent.class);
         this.registerHandler(Incoming.ChestDepositInventoryItemEvent, ChestDepositInventoryItemEvent.class);
         this.registerHandler(Incoming.ChestWithdrawAllFurniEvent, ChestWithdrawAllFurniEvent.class);
+        this.registerHandler(Incoming.ChestOpenEvent, ChestOpenEvent.class);
         this.registerHandler(Incoming.ChestSaveSettingsEvent, ChestSaveSettingsEvent.class);
         this.registerHandler(Incoming.ChestSaveNotificationsEvent, ChestSaveNotificationsEvent.class);
         this.registerHandler(Incoming.ChestUpgradeCapacityEvent, ChestUpgradeCapacityEvent.class);

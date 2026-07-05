@@ -14,6 +14,7 @@ public class Incoming {
     public static final int ChestStartDepositEvent = 9324; // Enter furni deposit mode (official Kigike)
     public static final int ChestDepositInventoryItemEvent = 9325; // Deposit one inventory row into active chest
     public static final int ChestWithdrawAllFurniEvent = 9326; // Withdraw all furni (official Vefehonuj shape)
+    public static final int ChestOpenEvent = 9327; // Open wired chest (official Nod)
     public static final int ChangeNameCheckUsernameEvent = 3950;
     public static final int ConfirmChangeNameEvent = 2977;
     public static final int ActivateEffectEvent = 2959;
@@ -231,6 +232,7 @@ public class Incoming {
     public static final int UnknownEvent1 = 1371;
     public static final int RequestTalenTrackEvent = 196;
     public static final int RequestNewNavigatorDataEvent = 2110;
+    public static final int GetCategoriesWithUserCountEvent = 3782;
     public static final int RequestNewNavigatorRoomsEvent = 249;
     public static final int RedeemClothingEvent = 3374;
     public static final int NewNavigatorActionEvent = 1703;

@@ -6,8 +6,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.messages.ServerMessage;
-import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniPackets;
-import com.eu.habbo.messages.outgoing.rooms.items.ChestDataComposer;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestOpenHelper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -39,8 +38,7 @@ public class InteractionWiredChestFurni extends InteractionWiredChest {
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
         if (client == null || room == null) return;
         if (!this.contents.isAccessOpen() && !room.hasRights(client.getHabbo())) return;
-        client.sendResponse(new ChestDataComposer(this));
-        ChestFurniPackets.sendFullChunks(client, this.getId(), this.contents);
+        ChestOpenHelper.open(client, this, room);
     }
 
     @Override

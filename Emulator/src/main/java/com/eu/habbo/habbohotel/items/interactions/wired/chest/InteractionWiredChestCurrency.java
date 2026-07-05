@@ -5,7 +5,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.messages.ServerMessage;
-import com.eu.habbo.messages.outgoing.rooms.items.ChestDataComposer;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestOpenHelper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -40,7 +40,7 @@ public class InteractionWiredChestCurrency extends InteractionWiredChest {
         if (client == null || room == null) return;
         // "Tutti possono aprire" toggle: anyone if accessOpen, otherwise room rights only.
         if (!this.contents.isAccessOpen() && !room.hasRights(client.getHabbo())) return;
-        client.sendResponse(new ChestDataComposer(this));
+        ChestOpenHelper.open(client, this, room);
     }
 
     @Override

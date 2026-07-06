@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.rooms.items.lovelock;
 
 import com.eu.habbo.habbohotel.items.interactions.InteractionLoveLock;
+import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -16,37 +17,58 @@ public class LoveLockStartConfirmEvent extends MessageHandler {
         if (!RoomItemInputGuard.isPositiveId(itemId))
             return;
 
-        if (this.packet.readBoolean()) {
-            if (this.client.getHabbo().getHabboInfo().getCurrentRoom() == null)
-                return;
+        boolean confirmed = this.packet.readBoolean();
 
-            HabboItem item = this.client.getHabbo().getHabboInfo().getCurrentRoom().getHabboItem(itemId);
+        Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+        if (room == null)
+            return;
 
-            if (item == null)
-                return;
+        HabboItem item = room.getHabboItem(itemId);
+        if (!(item instanceof InteractionLoveLock loveLock))
+            return;
 
-            if (item instanceof InteractionLoveLock) {
-                int userId = 0;
+        Habbo self = this.client.getHabbo();
+        if (self == null)
+            return;
 
-                if (((InteractionLoveLock) item).userOneId == this.client.getHabbo().getHabboInfo().getId() && ((InteractionLoveLock) item).userTwoId != 0) {
-                    userId = ((InteractionLoveLock) item).userTwoId;
-                } else if (((InteractionLoveLock) item).userOneId != 0 && ((InteractionLoveLock) item).userTwoId == this.client.getHabbo().getHabboInfo().getId()) {
-                    userId = ((InteractionLoveLock) item).userOneId;
-                }
-
-                if (userId > 0) {
-                    Habbo habbo = this.client.getHabbo().getHabboInfo().getCurrentRoom().getHabbo(userId);
-
-                    if (habbo != null) {
-                        habbo.getClient().sendResponse(new LoveLockFurniFriendConfirmedComposer((InteractionLoveLock) item));
-
-                        habbo.getClient().sendResponse(new LoveLockFurniFinishedComposer((InteractionLoveLock) item));
-                        this.client.sendResponse(new LoveLockFurniFinishedComposer((InteractionLoveLock) item));
-
-                        ((InteractionLoveLock) item).lock(habbo, this.client.getHabbo(), this.client.getHabbo().getHabboInfo().getCurrentRoom());
-                    }
-                }
-            }
+        if (!confirmed) {
+            loveLock.cancel(self);
+            return;
         }
+
+        int selfId = self.getHabboInfo().getId();
+        int partnerId = 0;
+
+        if (loveLock.userOneId == selfId) {
+            loveLock.userOneConfirmed = true;
+            partnerId = loveLock.userTwoId;
+        } else if (loveLock.userTwoId == selfId) {
+            loveLock.userTwoConfirmed = true;
+            partnerId = loveLock.userOneId;
+        } else {
+            return;
+        }
+
+        if (partnerId <= 0)
+            return;
+
+        Habbo partner = room.getHabbo(partnerId);
+        if (partner == null || partner.getClient() == null)
+            return;
+
+        if (loveLock.userOneConfirmed && loveLock.userTwoConfirmed) {
+            Habbo userOne = room.getHabbo(loveLock.userOneId);
+            Habbo userTwo = room.getHabbo(loveLock.userTwoId);
+
+            if (userOne != null && userTwo != null && loveLock.lock(userOne, userTwo, room)) {
+                userOne.getClient().sendResponse(new LoveLockFurniFinishedComposer(loveLock));
+                userTwo.getClient().sendResponse(new LoveLockFurniFinishedComposer(loveLock));
+            }
+
+            loveLock.resetSession();
+            return;
+        }
+
+        partner.getClient().sendResponse(new LoveLockFurniFriendConfirmedComposer(loveLock));
     }
 }

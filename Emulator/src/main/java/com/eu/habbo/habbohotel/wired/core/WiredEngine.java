@@ -773,7 +773,8 @@ public final class WiredEngine {
         }
 
         WiredEffectType effectType = ((InteractionWiredEffect) effect).getType();
-        return effectType == WiredEffectType.NEG_CALL_STACKS || effectType == WiredEffectType.NEG_SEND_SIGNAL;
+        return effectType == WiredEffectType.NEG_CALL_STACKS || effectType == WiredEffectType.NEG_SEND_SIGNAL
+                || effectType == WiredEffectType.NEG_SHOW_MESSAGE || effectType == WiredEffectType.NEG_LOG;
     }
 
     private WiredTextInputCaptureSupport.CaptureResult resolveTextInputCapture(WiredStack stack, WiredEvent event) {

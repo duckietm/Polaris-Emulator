@@ -1,5 +1,17 @@
 -- =====================================================================
--- 018_wired_chest_furni.sql — furni chest + give furni + has-item-type condition
+-- 018_wired_chest_furni.sql
+-- =====================================================================
+-- Phase-2 chest/storage, furni slice. Point the items_base rows at their
+-- newly-registered classes. Same pattern as 013-017. Emulator restart req.
+-- Idempotent.
+--
+--   wf_storage_furni1/2/_starter -> InteractionWiredChestFurni  (Furni Chest, dialog code 101)
+--   wf_act_give_furni            -> WiredEffectGiveFurniFromChest (effect code 102)
+--   wf_cnd_chest_has_item_type   -> WiredConditionChestHasItemType (condition code 48)
+--
+-- NOTE: wf_storage_furni2 may already read 'wf_storage_furni2' (legacy) — the
+-- guard makes this a no-op there. wf_xtra_scan_chest_furni_by_type (scanner)
+-- is NOT in this slice (future).
 -- =====================================================================
 
 UPDATE items_base SET interaction_type = 'wf_storage_furni1'

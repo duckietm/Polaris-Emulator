@@ -14,7 +14,11 @@ import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-/** Fired by {@code WiredEffectInitTransaction} on failure or {@code WiredEffectCancelTransaction}. */
+/**
+ * Transaction Failed trigger (furni classname {@code wf_trg_transaction_fail}). Fires when a
+ * {@code Cancel Transaction} effect ({@code wf_act_cancel_transaction}) raises a
+ * {@link WiredEvent.Type#TRANSACTION_FAIL} event in the room. No configuration (v1).
+ */
 public class WiredTriggerTransactionFail extends InteractionWiredTrigger {
     public static final WiredTriggerType type = WiredTriggerType.TRANSACTION_FAIL;
 
@@ -28,35 +32,13 @@ public class WiredTriggerTransactionFail extends InteractionWiredTrigger {
 
     @Override
     public boolean matches(HabboItem triggerItem, WiredEvent event) {
-        return false;
+        return true;
     }
 
     @Deprecated
     @Override
     public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
-        return true;
-    }
-
-    @Override
-    public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(this.getDelay()));
-    }
-
-    @Override
-    public void loadWiredData(ResultSet set, Room room) throws SQLException {
-        this.onPickUp();
-        String wiredData = set.getString("wired_data");
-        if (wiredData != null && wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            if (data != null) {
-                this.setDelay(data.delay);
-            }
-        }
-    }
-
-    @Override
-    public void onPickUp() {
-        this.setDelay(0);
+        return false;
     }
 
     @Override
@@ -67,34 +49,38 @@ public class WiredTriggerTransactionFail extends InteractionWiredTrigger {
     @Override
     public void serializeWiredData(ServerMessage message, Room room) {
         message.appendBoolean(false);
-        message.appendInt(5);
+        message.appendInt(WiredManager.MAXIMUM_FURNI_SELECTION);
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
         message.appendInt(0);
         message.appendInt(0);
-        message.appendInt(this.getType().code);
-        message.appendInt(this.getDelay());
+        message.appendInt(type.code);
+        message.appendInt(0);
         message.appendInt(0);
     }
 
     @Override
     public boolean saveData(WiredSettings settings) {
-        this.setDelay(settings.getDelay());
         return true;
     }
 
     @Override
-    public boolean isTriggeredByRoomUnit() {
-        return true;
+    public String getWiredData() {
+        return "";
     }
 
-    static class JsonData {
-        int delay;
+    @Override
+    public void loadWiredData(ResultSet set, Room room) throws SQLException {
+    }
 
-        JsonData(int delay) {
-            this.delay = delay;
-        }
+    @Override
+    public void onPickUp() {
+    }
+
+    @Override
+    public boolean isTriggeredByRoomUnit() {
+        return false;
     }
 }

@@ -501,6 +501,7 @@ public class PacketManager {
         this.registerHandler(Incoming.BotSaveSettingsEvent, BotSaveSettingsEvent.class);
         this.registerHandler(Incoming.BotSettingsEvent, BotSettingsEvent.class);
         this.registerHandler(Incoming.TriggerDiceEvent, TriggerDiceEvent.class);
+        this.registerHandler(Incoming.PressKeybindEvent, com.eu.habbo.messages.incoming.rooms.items.PressKeybindEvent.class);
         this.registerHandler(Incoming.CloseDiceEvent, CloseDiceEvent.class);
         this.registerHandler(Incoming.TriggerColorWheelEvent, TriggerColorWheelEvent.class);
         this.registerHandler(Incoming.RedeemItemEvent, RedeemItemEvent.class);

@@ -1,8 +1,14 @@
 -- =====================================================================
 -- 021_wired_contracts.sql
 -- =====================================================================
--- Wired contract extras (Nitro layout 110–113), executed by Init Transaction.
--- Idempotent. Emulator restart required.
+-- Phase-2 contracts (gen-3 Origins): config-holder term furni executed by
+-- the upgraded Init Transaction. Point the inert items_base rows at their
+-- new classes. Pattern 013-020. Emulator restart required. Idempotent.
+--
+--   wf_contract_payment     -> InteractionWiredContractPayment  (extra, dialog code 110)
+--   wf_contract_reward      -> InteractionWiredContractReward   (extra, dialog code 111)
+--   wf_contract_trade       -> InteractionWiredContractTrade    (extra, dialog code 112)
+--   wf_xtra_custom_contract -> InteractionWiredCustomContract   (extra, dialog code 113)
 -- =====================================================================
 
 UPDATE items_base SET interaction_type = 'wf_contract_payment'

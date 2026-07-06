@@ -77,6 +77,12 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUnseen;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableReference;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLevelUpSystem;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableTextConnector;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraQuest;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraQuestChain;
+import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContractPayment;
+import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContractReward;
+import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContractTrade;
+import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredCustomContract;
 import com.eu.habbo.habbohotel.items.interactions.wired.selector.*;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.*;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestCurrency;
@@ -444,6 +450,26 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_storage_furni1", InteractionWiredChestFurni.class));
         this.interactionsList.add(new ItemInteraction("wf_storage_furni2", InteractionWiredChestFurni.class));
         this.interactionsList.add(new ItemInteraction("wf_storage_furni_starter", InteractionWiredChestFurni.class));
+
+        // Phase-2 chest-full wired: give-from-chest, has-item conditions, scanner, transactions,
+        // place/remove-furni, contracts, quests (chest storage furni above are from the #291 base).
+        this.interactionsList.add(new ItemInteraction("wf_act_give_currency", WiredEffectGiveCurrencyFromChest.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_chest_has_items", WiredConditionChestHasItems.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_give_furni", WiredEffectGiveFurniFromChest.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_chest_has_item_type", WiredConditionChestHasItemType.class));
+        this.interactionsList.add(new ItemInteraction("wf_xtra_scan_chest_furni_by_type", WiredEffectScanChestFurniByType.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_init_transaction", WiredEffectInitTransaction.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_cancel_transaction", WiredEffectCancelTransaction.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_transaction_complete", WiredTriggerTransactionComplete.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_transaction_fail", WiredTriggerTransactionFail.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_place_furni", WiredEffectPlaceFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_remove_furni", WiredEffectRemoveFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_contract_payment", InteractionWiredContractPayment.class));
+        this.interactionsList.add(new ItemInteraction("wf_contract_reward", InteractionWiredContractReward.class));
+        this.interactionsList.add(new ItemInteraction("wf_contract_trade", InteractionWiredContractTrade.class));
+        this.interactionsList.add(new ItemInteraction("wf_xtra_custom_contract", InteractionWiredCustomContract.class));
+        this.interactionsList.add(new ItemInteraction("wf_var_quest", WiredExtraQuest.class));
+        this.interactionsList.add(new ItemInteraction("wf_var_quest_chain", WiredExtraQuestChain.class));
 
 
         this.interactionsList.add(new ItemInteraction("wf_xtra_random", WiredExtraRandom.class));

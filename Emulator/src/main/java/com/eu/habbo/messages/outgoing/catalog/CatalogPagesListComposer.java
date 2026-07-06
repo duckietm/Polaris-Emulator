@@ -16,7 +16,6 @@ import java.util.List;
 public class CatalogPagesListComposer extends MessageComposer {
     private static final Logger LOGGER = LoggerFactory.getLogger(CatalogPagesListComposer.class);
 
-    private static final int MAX_OFFERS = 1000;
     private static final int MAX_CHILDREN = 500;
     private static final int MAX_DEPTH = 20;
 
@@ -74,13 +73,9 @@ public class CatalogPagesListComposer extends MessageComposer {
         this.response.appendString(category.getPageName());
         this.response.appendString(category.getCaption() + (this.hasPermission ? " (" + category.getId() + ")" : ""));
 
-        int[] offers = category.getOfferIds().toIntArray();
-        int offerCount = Math.min(offers.length, MAX_OFFERS);
-        this.response.appendInt(offerCount);
-
-        for (int idx = 0; idx < offerCount; idx++) {
-            this.response.appendInt(offers[idx]);
-        }
+        // Offer IDs are resolved when a page is opened (GetCatalogPage). Embedding ~80k
+        // ids in the index bloats the first catalog open by seconds on large catalogs.
+        this.response.appendInt(0);
 
         if (depth >= MAX_DEPTH) {
             this.response.appendInt(0);

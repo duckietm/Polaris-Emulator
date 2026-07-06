@@ -37,7 +37,7 @@ public final class ChestFurniDepositHelper {
         if (removed == null) return false;
         habbo.getInventory().getItemsComponent().removeHabboItem(removed);
 
-        ChestFurniStoredItem stored = ChestFurniStoredItem.fromHabboItem(removed, 0);
+        ChestFurniStoredItem stored = ChestFurniStoredItem.fromHabboItem(removed, removed.getId());
         contents.addFurniItem(stored);
         contents.addLog(new ChestStorage.LogEntry("deposit", System.currentTimeMillis(), habbo.getHabboInfo().getUsername(), 0, 1));
         chest.persistContents();

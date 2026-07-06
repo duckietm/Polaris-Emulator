@@ -267,21 +267,64 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_trg_game_team_win", WiredTriggerTeamWins.class));
         this.interactionsList.add(new ItemInteraction("wf_trg_game_team_lose", WiredTriggerTeamLoses.class));
         this.interactionsList.add(new ItemInteraction("wf_trg_recv_signal", WiredTriggerReceiveSignal.class));
-        this.interactionsList.add(new ItemInteraction("wf_trg_user_gets_handitem", WiredTriggerUserGetsHandItem.class));
-        this.interactionsList.add(new ItemInteraction("wf_trg_dice_rolled", WiredTriggerDiceRolled.class));
-
-        this.interactionsList.add(new ItemInteraction("wf_act_roller_speed", WiredEffectSetRollerSpeed.class));
-        this.interactionsList.add(new ItemInteraction("wf_act_bot_start_dance", WiredEffectBotDance.class));
-        this.interactionsList.add(new ItemInteraction("wf_act_bot_stop_dance", WiredEffectBotDance.class));
-        this.interactionsList.add(new ItemInteraction("wf_act_give_points_type", WiredEffectGivePointsType.class));
-        this.interactionsList.add(new ItemInteraction("wf_cnd_not_battlebanzai", WiredConditionNoBattleBanzaiRunning.class));
-        this.interactionsList.add(new ItemInteraction("wf_cnd_not_battlebz", WiredConditionNoBattleBanzaiRunning.class));
-        this.interactionsList.add(new ItemInteraction("wf_act_give_or_take_furni", WiredEffectGiveOrTakeFurni.class));
-        this.interactionsList.add(new ItemInteraction("wf_act_play_youtube_sound", WiredEffectPlayYoutube.class));
-        this.interactionsList.add(new ItemInteraction("wf_act_quick_bopper", WiredEffectQuickBopper.class));
-        this.interactionsList.add(new ItemInteraction("wf_act_set_room_ad", WiredEffectSetRoomAd.class));
-        this.interactionsList.add(new ItemInteraction("wf_cnd_user_on_furni_with_state", WiredConditionUserOnFurniWithState.class));
-        this.interactionsList.add(new ItemInteraction("wf_cnd_trg_frn_adjacent_state", WiredConditionTriggerFurniAdjacentState.class));
+        // Phase-C triggers (dance/idle)
+        this.interactionsList.add(new ItemInteraction("wf_trg_starts_dancing", WiredTriggerHabboStartsDancing.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_stops_dancing", WiredTriggerHabboStopsDancing.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_idles", WiredTriggerHabboIdles.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_unidles", WiredTriggerHabboUnidles.class));
+        // Phase-C effects (currency)
+        this.interactionsList.add(new ItemInteraction("wf_act_give_credits", WiredEffectGiveCredits.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_give_duckets", WiredEffectGiveDuckets.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_give_diamonds", WiredEffectGiveDiamonds.class));
+        // Phase-C effects (badges / achievements / posture / movement / misc)
+        this.interactionsList.add(new ItemInteraction("wf_act_give_badge", WiredEffectGiveBadge.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_give_userbadge", WiredEffectGiveBadge.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_remove_badge", WiredEffectRemoveBadge.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_give_achievement", WiredEffectGiveAchievement.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_give_experience", WiredEffectGiveExperience.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_say_command", WiredEffectSayCommand.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_open_habbo_pages", WiredEffectOpenHabboPages.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_make_user_say", WiredEffectMakeUserSay.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_log", WiredEffectLog.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_walk_to_furni", WiredEffectWalkToFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_sit", WiredEffectSit.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_lay", WiredEffectLay.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_make_fast_walk", WiredEffectMakeFastWalk.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_toggle_moodlight", WiredEffectToggleMoodlight.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_reset_highscores", WiredEffectResetHighscores.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_move_user_tiles", WiredEffectMoveUserTiles.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_all_users_leave_team", WiredEffectAllUsersLeaveTeam.class));
+        // Phase-C conditions (currency / freeze / furni-range / same-height)
+        this.interactionsList.add(new ItemInteraction("wf_cnd_not_habbo_has_credits", WiredConditionHabboLacksCredits.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_not_habbo_has_diamonds", WiredConditionHabboLacksDiamonds.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_not_habbo_has_duckets", WiredConditionHabboLacksDuckets.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_freeze", WiredConditionFrozen.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_not_freeze", WiredConditionNotFrozen.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_furni_in_range", WiredConditionFurniInRange.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_furni_not_in_range", WiredConditionFurniNotInRange.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_has_same_height", WiredConditionSameHeight.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_not_has_same_height", WiredConditionNotSameHeight.class));
+        // owns_furni: check the triggerer's inventory for the picked furni type(s) (reuse HAS_ALTITUDE picker).
+        this.interactionsList.add(new ItemInteraction("wf_cnd_habbo_owns_furni", WiredConditionHabboOwnsFurni.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_habbo_not_owns_furni", WiredConditionHabboNotOwnsFurni.class));
+        // Negative-branch effects (run when the stack's conditions FAIL); reuse the SHOW_MESSAGE dialog.
+        this.interactionsList.add(new ItemInteraction("wf_act_neg_show_message", WiredEffectNegativeShowMessage.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_neg_log", WiredEffectNegativeLog.class));
+        // give_look exists client-side (FurnitureData): set the user's figure (text dialog = figure string).
+        this.interactionsList.add(new ItemInteraction("wf_act_give_look", WiredEffectGiveLook.class));
+        // Profile tags (text dialog = the tag; persisted via the new HabboStats tag helpers).
+        this.interactionsList.add(new ItemInteraction("wf_act_add_tag", WiredEffectAddTag.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_add_tag_perm", WiredEffectAddTag.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_remove_tag", WiredEffectRemoveTag.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_has_tag", WiredConditionHasTag.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_not_has_tag", WiredConditionNotHasTag.class));
+        // Identity conditions reusing a meaningful existing dialog field (text = motto / int = item count).
+        this.interactionsList.add(new ItemInteraction("wf_cnd_motto_contains", WiredConditionMottoContains.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_habbo_has_at_least_x_items", WiredConditionHabboHasMinItems.class));
+        // OWNED-badge check (Phase A skipped these because only a worn-badge class existed): reuses the
+        // wears-badge dialog but checks inventory ownership via BadgesComponent.hasBadge.
+        this.interactionsList.add(new ItemInteraction("wf_cnd_habbo_owns_badge", WiredConditionHabboOwnsBadge.class));
+        this.interactionsList.add(new ItemInteraction("wf_cnd_not_habbo_owns_badge", WiredConditionNotHabboOwnsBadge.class));
 
 
         this.interactionsList.add(new ItemInteraction("wf_act_toggle_state", WiredEffectToggleFurni.class));

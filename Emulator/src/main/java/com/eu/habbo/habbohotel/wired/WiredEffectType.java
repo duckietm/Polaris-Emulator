@@ -70,6 +70,19 @@ public enum WiredEffectType {
     CANCEL_TRANSACTION(105),
     PLACE_FURNI(106),
     REMOVE_FURNI(107);
+    MOVE_FURNI_AS_GROUP(95),
+    REMOTE_SELECTOR(96),
+    // Negative-branch effects that reuse the SHOW_MESSAGE(7) client dialog (text). Distinct enum
+    // constants so WiredEngine.isNegativeConditionEffect runs them only when conditions FAIL.
+    NEG_SHOW_MESSAGE(7),
+    NEG_LOG(7);
+    SET_ROLLER_SPEED(88),
+    BOT_DANCE(89),
+    GIVE_POINTS_TYPE(90),
+    GIVE_OR_TAKE_FURNI(91),
+    PLAY_YOUTUBE(92),
+    QUICK_BOPPER(93),
+    SET_ROOM_AD(94);
 
     public final int code;
 

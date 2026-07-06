@@ -452,6 +452,27 @@ public final class WiredEvents {
                 .build();
     }
 
+    /**
+     * Create an event for when a user receives a hand item.
+     */
+    public static WiredEvent userGetsHandItem(Room room, RoomUnit user) {
+        return WiredEvent.builder(WiredEvent.Type.USER_GETS_HANDITEM, room)
+                .actor(user)
+                .tile(user.getCurrentLocation())
+                .build();
+    }
+
+    /**
+     * Create an event for when a dice furni is rolled (its value finalized).
+     */
+    public static WiredEvent diceRolled(Room room, HabboItem dice) {
+        RoomTile tile = room.getLayout().getTile(dice.getX(), dice.getY());
+        return WiredEvent.builder(WiredEvent.Type.DICE_ROLLED, room)
+                .sourceItem(dice)
+                .tile(tile)
+                .build();
+    }
+
     // ========== Legacy Compatibility ==========
 
     /**

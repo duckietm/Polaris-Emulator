@@ -877,8 +877,10 @@ public class RoomManager {
                 }
             }
 
+            final boolean hideWiredControllerActive = RoomHideWiredSupport.isActive(room);
+
             for (HabboItem object : allFloorItems) {
-                if (room.isHideWired() && object instanceof InteractionWired) {
+                if ((room.isHideWired() || hideWiredControllerActive) && object instanceof InteractionWired) {
                     continue;
                 }
 

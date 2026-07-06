@@ -46,6 +46,9 @@ public enum WiredConditionType {
     // Phase-2 chest/storage conditions. Require the matching Nitro WiredConditionLayoutCode.
     CHEST_HAS_ITEMS(47),
     CHEST_HAS_ITEM_TYPE(48);
+    NO_BATTLEBANZAI(44),
+    USER_ON_FURNI_WITH_STATE(45),
+    TRG_FURNI_ADJACENT_STATE(46);
 
     public final int code;
 

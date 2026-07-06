@@ -126,6 +126,11 @@ public final class WiredEvent {
 
         /** A wired transaction failed / was cancelled (fired by Cancel Transaction) */
         TRANSACTION_FAIL(WiredTriggerType.TRANSACTION_FAIL),
+        /** User receives a hand item */
+        USER_GETS_HANDITEM(WiredTriggerType.USER_GETS_HANDITEM),
+
+        /** A dice furni was rolled */
+        DICE_ROLLED(WiredTriggerType.DICE_ROLLED),
 
         /** Custom trigger type for plugins */
         CUSTOM(WiredTriggerType.CUSTOM);

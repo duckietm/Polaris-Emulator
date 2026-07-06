@@ -2,8 +2,10 @@ package com.eu.habbo.threading.runnables;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.interactions.InteractionColorWheel;
+import com.eu.habbo.habbohotel.items.interactions.InteractionDice;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.wired.core.WiredManager;
 
 public class RandomDiceNumber implements Runnable {
     private final HabboItem item;
@@ -35,6 +37,11 @@ public class RandomDiceNumber implements Runnable {
         Emulator.getThreading().run(this.item);
 
         this.room.updateItem(this.item);
+
+        if (this.item instanceof InteractionDice) {
+            WiredManager.triggerDiceRolled(this.room, this.item);
+        }
+
         if (this.item instanceof InteractionColorWheel) {
             ((InteractionColorWheel) this.item).clearRunnable();
         }

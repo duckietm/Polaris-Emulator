@@ -1196,6 +1196,10 @@ public class RoomUnitManager {
     public void giveHandItem(RoomUnit roomUnit, int handItem) {
         roomUnit.setHandItem(handItem);
         this.room.sendComposer(new RoomUserHandItemComposer(roomUnit).compose());
+
+        if (handItem > 0) {
+            com.eu.habbo.habbohotel.wired.core.WiredManager.triggerUserGetsHandItem(this.room, roomUnit);
+        }
     }
 
     // ==================== IDLE AND DANCE ====================

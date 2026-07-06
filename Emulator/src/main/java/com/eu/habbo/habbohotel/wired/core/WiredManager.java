@@ -706,15 +706,26 @@ public final class WiredManager {
     }
 
     /**
-     * Trigger when a user presses a configured keybind key (raised by the client-&gt;server
-     * PressKeybindEvent packet). The pressed key code travels on the event's actionParameter.
+     * Trigger when a user receives a hand item.
      */
-    public static boolean triggerKeybind(Room room, RoomUnit user, int keyCode) {
+    public static boolean triggerUserGetsHandItem(Room room, RoomUnit user) {
         if (!isEnabled() || room == null || user == null) {
             return false;
         }
 
-        WiredEvent event = WiredEvents.pressKeybind(room, user, keyCode);
+        WiredEvent event = WiredEvents.userGetsHandItem(room, user);
+        return handleEvent(event);
+    }
+
+    /**
+     * Trigger when a dice furni is rolled.
+     */
+    public static boolean triggerDiceRolled(Room room, HabboItem dice) {
+        if (!isEnabled() || room == null || dice == null) {
+            return false;
+        }
+
+        WiredEvent event = WiredEvents.diceRolled(room, dice);
         return handleEvent(event);
     }
 

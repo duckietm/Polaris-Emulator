@@ -121,8 +121,11 @@ public final class WiredEvent {
         /** Signal received from a Send Signal effect */
         SIGNAL_RECEIVED(WiredTriggerType.RECEIVE_SIGNAL),
 
-        /** A user pressed a configured keybind key */
-        PRESS_KEYBIND(WiredTriggerType.PRESS_KEYBIND),
+        /** User receives a hand item */
+        USER_GETS_HANDITEM(WiredTriggerType.USER_GETS_HANDITEM),
+
+        /** A dice furni was rolled */
+        DICE_ROLLED(WiredTriggerType.DICE_ROLLED),
 
         /** Custom trigger type for plugins */
         CUSTOM(WiredTriggerType.CUSTOM);

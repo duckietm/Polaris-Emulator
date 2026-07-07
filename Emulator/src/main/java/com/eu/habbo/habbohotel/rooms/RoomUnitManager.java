@@ -31,42 +31,26 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-/**
- * Manages all room units (Habbos, Bots, Pets) within a room.
- * Handles adding, removing, and querying units, as well as effects and hand items.
- */
 public class RoomUnitManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomUnitManager.class);
     static final int BED_LOVE_EFFECT_ID = 9;
+    static final int RIDING_EFFECT_ID = 77;
 
     private final Room room;
-
-    // Unit collections - these are the actual data stores
     private final ConcurrentHashMap<Integer, Habbo> currentHabbos = new ConcurrentHashMap<>(3);
     private final Int2ObjectMap<Habbo> habboQueue = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
     private final Int2ObjectMap<Bot> currentBots = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
     private final Int2ObjectMap<Pet> currentPets = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
-
-    // Unit counter for assigning IDs
     private volatile int unitCounter;
 
     public RoomUnitManager(Room room) {
         this.room = room;
     }
 
-    // ==================== INITIALIZATION ====================
-
-    /**
-     * Clears all units and resets the counter.
-     */
     public void clear() {
         synchronized (this.room.roomUnitLock) {
             for (Habbo habbo : this.currentHabbos.values()) {
@@ -94,61 +78,38 @@ public class RoomUnitManager {
         }
     }
 
-    /**
-     * Clears all bots from the room.
-     */
     public void clearBots() {
         synchronized (this.room.roomUnitLock) {
             this.currentBots.clear();
         }
     }
 
-    /**
-     * Clears all pets from the room.
-     */
     public void clearPets() {
         synchronized (this.room.roomUnitLock) {
             this.currentPets.clear();
         }
     }
 
-    /**
-     * Clears the habbo queue.
-     */
     public void clearQueue() {
         synchronized (this.habboQueue) {
             this.habboQueue.clear();
         }
     }
 
-    /**
-     * Gets the current unit counter value.
-     */
     public int getUnitCounter() {
         return this.unitCounter;
     }
 
-    /**
-     * Increments and returns the next unit ID.
-     */
     public int getNextUnitId() {
         synchronized (this.room.roomUnitLock) {
             return this.unitCounter++;
         }
     }
 
-    // ==================== HABBO MANAGEMENT ====================
-
-    /**
-     * Gets a Habbo by their user ID.
-     */
     public Habbo getHabbo(int habboId) {
         return this.currentHabbos.get(habboId);
     }
 
-    /**
-     * Gets a Habbo by their username.
-     */
     public Habbo getHabbo(String username) {
         for (Habbo habbo : this.currentHabbos.values()) {
             if (habbo.getHabboInfo().getUsername().equalsIgnoreCase(username)) {
@@ -158,9 +119,6 @@ public class RoomUnitManager {
         return null;
     }
 
-    /**
-     * Gets a Habbo by their RoomUnit.
-     */
     public Habbo getHabboByRoomUnit(RoomUnit roomUnit) {
         for (Habbo habbo : this.currentHabbos.values()) {
             if (habbo.getRoomUnit() == roomUnit) {
@@ -170,9 +128,6 @@ public class RoomUnitManager {
         return null;
     }
 
-    /**
-     * Gets a Habbo by their RoomUnit ID.
-     */
     public Habbo getHabboByRoomUnitId(int roomUnitId) {
         for (Habbo habbo : this.currentHabbos.values()) {
             if (habbo.getRoomUnit().getId() == roomUnitId) {
@@ -182,37 +137,22 @@ public class RoomUnitManager {
         return null;
     }
 
-    /**
-     * Gets all Habbos in the room as a map.
-     */
     public ConcurrentHashMap<Integer, Habbo> getCurrentHabbos() {
         return this.currentHabbos;
     }
 
-    /**
-     * Gets all Habbos in the room.
-     */
     public Collection<Habbo> getHabbos() {
         return this.currentHabbos.values();
     }
 
-    /**
-     * Gets the number of Habbos in the room.
-     */
     public int getHabboCount() {
         return this.currentHabbos.size();
     }
 
-    /**
-     * Checks if a Habbo is in the room.
-     */
     public boolean hasHabbo(int habboId) {
         return this.currentHabbos.containsKey(habboId);
     }
 
-    /**
-     * Adds a Habbo to the room.
-     */
     public void addHabbo(Habbo habbo) {
         synchronized (this.room.roomUnitLock) {
             habbo.getRoomUnit().setId(this.unitCounter);
@@ -222,16 +162,10 @@ public class RoomUnitManager {
         }
     }
 
-    /**
-     * Removes a Habbo from the room.
-     */
     public void removeHabbo(Habbo habbo) {
         this.removeHabbo(habbo, false);
     }
 
-    /**
-     * Removes a Habbo from the room with option to send remove packet.
-     */
     public void removeHabbo(Habbo habbo, boolean sendRemovePacket) {
         if (habbo == null) {
             return;
@@ -291,10 +225,7 @@ public class RoomUnitManager {
         this.room.updateDatabaseUserCount();
     }
 
-    /**
-     * Kicks a Habbo from the room.
-     */
-    public void kickHabbo(Habbo habbo, boolean alert) {
+     public void kickHabbo(Habbo habbo, boolean alert) {
         if (alert) {
             habbo.getClient().sendResponse(
                     new GenericErrorMessagesComposer(GenericErrorMessagesComposer.KICKED_OUT_OF_THE_ROOM));
@@ -310,9 +241,6 @@ public class RoomUnitManager {
         }
     }
 
-    /**
-     * Checks if there are Habbos at the specified position.
-     */
     public boolean hasHabbosAt(int x, int y) {
         for (Habbo habbo : this.getHabbos()) {
             if (habbo.getRoomUnit().getX() == x && habbo.getRoomUnit().getY() == y) {
@@ -322,16 +250,10 @@ public class RoomUnitManager {
         return false;
     }
 
-    /**
-     * Gets all Habbos at a specific position.
-     */
     public Set<Habbo> getHabbosAt(short x, short y) {
         return this.getHabbosAt(this.room.getLayout().getTile(x, y));
     }
 
-    /**
-     * Gets all Habbos at a specific tile.
-     */
     public Set<Habbo> getHabbosAt(RoomTile tile) {
         Set<Habbo> habbos = new HashSet<>();
 
@@ -344,9 +266,6 @@ public class RoomUnitManager {
         return habbos;
     }
 
-    /**
-     * Gets all Habbos on a specific item.
-     */
     public Set<Habbo> getHabbosOnItem(HabboItem item) {
         Set<Habbo> habbos = new HashSet<>();
         for (short x = item.getX(); x < item.getX() + item.getBaseItem().getLength(); x++) {
@@ -358,16 +277,10 @@ public class RoomUnitManager {
         return habbos;
     }
 
-    /**
-     * Updates all Habbos at a position.
-     */
     public void updateHabbosAt(short x, short y) {
         this.updateHabbosAt(x, y, this.getHabbosAt(x, y));
     }
 
-    /**
-     * Updates specific Habbos at a position.
-     */
     public void updateHabbosAt(short x, short y, Collection<Habbo> habbos) {
         RoomTile tile = this.room.getLayout().getTile(x, y);
 
@@ -393,8 +306,6 @@ public class RoomUnitManager {
             boolean isRiding = habbo.getHabboInfo() != null && habbo.getHabboInfo().getRiding() != null;
 
             if (isRiding) {
-                // A mounted rider never sits or lays - that would draw the seated/laying pose on top
-                // of the horse. Clear any sit/lay and leave the height to the riding logic.
                 if (habbo.getRoomUnit().hasStatus(RoomUnitStatus.SIT)) {
                     habbo.getRoomUnit().removeStatus(RoomUnitStatus.SIT);
                 }
@@ -424,10 +335,8 @@ public class RoomUnitManager {
             } else if (topItem != null && topItem.getBaseItem().allowLay()) {
                 BedProfile bedProfile = new BedProfile(topItem);
 
-                // Snap user to the correct pillow tile for the current bed rotation
                 RoomTile pillowTile = bedProfile.snapToLay(this.room, topItem, habbo.getRoomUnit().getX(), habbo.getRoomUnit().getY());
 
-                // For double beds: if another user already occupies this pillow, use the other side
                 if (pillowTile != null && bedProfile.isDouble()) {
                     Set<Habbo> habbosAtPillow = this.getHabbosAt(pillowTile.x, pillowTile.y);
                     for (Habbo other : habbosAtPillow) {
@@ -488,45 +397,26 @@ public class RoomUnitManager {
         }
     }
 
-    // ==================== HABBO QUEUE ====================
-
-    /**
-     * Adds a Habbo to the queue.
-     */
     public void addToQueue(Habbo habbo) {
         synchronized (this.habboQueue) {
             this.habboQueue.put(habbo.getHabboInfo().getId(), habbo);
         }
     }
 
-    /**
-     * Removes a Habbo from the queue.
-     */
     public Habbo removeFromQueue(int habboId) {
         synchronized (this.habboQueue) {
             return this.habboQueue.remove(habboId);
         }
     }
 
-    /**
-     * Checks if a Habbo is in the queue.
-     */
     public boolean isInQueue(int habboId) {
         return this.habboQueue.containsKey(habboId);
     }
 
-    /**
-     * Gets the Habbo queue.
-     */
     public Int2ObjectMap<Habbo> getHabboQueue() {
         return this.habboQueue;
     }
 
-    // ==================== BOT MANAGEMENT ====================
-
-    /**
-     * Loads bots from the database.
-     */
     public void loadBots(Connection connection) {
         this.currentBots.clear();
 
@@ -563,16 +453,10 @@ public class RoomUnitManager {
         }
     }
 
-    /**
-     * Gets a Bot by ID.
-     */
     public Bot getBot(int botId) {
         return this.currentBots.get(botId);
     }
 
-    /**
-     * Gets a Bot by RoomUnit.
-     */
     public Bot getBot(RoomUnit roomUnit) {
         synchronized (this.currentBots) {
             for (Bot bot : this.currentBots.values()) {
@@ -585,9 +469,6 @@ public class RoomUnitManager {
         return null;
     }
 
-    /**
-     * Gets a Bot by RoomUnit ID.
-     */
     public Bot getBotByRoomUnitId(int id) {
         synchronized (this.currentBots) {
             for (Bot bot : this.currentBots.values()) {
@@ -600,9 +481,6 @@ public class RoomUnitManager {
         return null;
     }
 
-    /**
-     * Gets all Bots with a specific name.
-     */
     public List<Bot> getBots(String name) {
         List<Bot> bots = new ArrayList<>();
 
@@ -617,23 +495,14 @@ public class RoomUnitManager {
         return bots;
     }
 
-    /**
-     * Gets all Bots in the room.
-     */
     public Collection<Bot> getBots() {
         return this.currentBots.values();
     }
 
-    /**
-     * Gets the Bot map.
-     */
     public Int2ObjectMap<Bot> getCurrentBots() {
         return this.currentBots;
     }
 
-    /**
-     * Adds a Bot to the room.
-     */
     public void addBot(Bot bot) {
         synchronized (this.room.roomUnitLock) {
             bot.getRoomUnit().setId(this.unitCounter);
@@ -642,9 +511,6 @@ public class RoomUnitManager {
         }
     }
 
-    /**
-     * Removes a Bot from the room.
-     */
     public boolean removeBot(Bot bot) {
         synchronized (this.currentBots) {
             if (this.currentBots.containsKey(bot.getId())) {
@@ -672,9 +538,6 @@ public class RoomUnitManager {
         return false;
     }
 
-    /**
-     * Checks if there are Bots at the specified position.
-     */
     public boolean hasBotsAt(final int x, final int y) {
         synchronized (this.currentBots) {
             for (Bot bot : this.currentBots.values()) {
@@ -687,9 +550,6 @@ public class RoomUnitManager {
         return false;
     }
 
-    /**
-     * Gets all Bots at a specific tile.
-     */
     public Set<Bot> getBotsAt(RoomTile tile) {
         Set<Bot> bots = new HashSet<>();
         synchronized (this.currentBots) {
@@ -703,9 +563,6 @@ public class RoomUnitManager {
         return bots;
     }
 
-    /**
-     * Gets all Bots on a specific item.
-     */
     public Set<Bot> getBotsOnItem(HabboItem item) {
         Set<Bot> bots = new HashSet<>();
         for (short x = item.getX(); x < item.getX() + item.getBaseItem().getLength(); x++) {
@@ -717,9 +574,6 @@ public class RoomUnitManager {
         return bots;
     }
 
-    /**
-     * Updates all Bots at a position.
-     */
     public void updateBotsAt(short x, short y) {
         RoomTile tile = this.room.getLayout().getTile(x, y);
 
@@ -770,11 +624,6 @@ public class RoomUnitManager {
         }
     }
 
-    // ==================== PET MANAGEMENT ====================
-
-    /**
-     * Loads pets from the database.
-     */
     public void loadPets(Connection connection) {
         this.currentPets.clear();
 
@@ -807,16 +656,10 @@ public class RoomUnitManager {
         }
     }
 
-    /**
-     * Gets a Pet by ID.
-     */
     public Pet getPet(int petId) {
         return this.currentPets.get(petId);
     }
 
-    /**
-     * Gets a Pet by RoomUnit.
-     */
     public Pet getPet(RoomUnit roomUnit) {
         synchronized (this.currentPets) {
             for (Pet pet : this.currentPets.values()) {
@@ -829,23 +672,14 @@ public class RoomUnitManager {
         return null;
     }
 
-    /**
-     * Gets all Pets in the room.
-     */
     public Collection<Pet> getPets() {
         return this.currentPets.values();
     }
 
-    /**
-     * Gets the Pet map.
-     */
     public Int2ObjectMap<Pet> getCurrentPets() {
         return this.currentPets;
     }
 
-    /**
-     * Adds a Pet to the room.
-     */
     public void addPet(Pet pet) {
         synchronized (this.room.roomUnitLock) {
             pet.getRoomUnit().setId(this.unitCounter);
@@ -860,9 +694,6 @@ public class RoomUnitManager {
         }
     }
 
-    /**
-     * Removes a Pet from the room.
-     */
     public Pet removePet(int petId) {
         Pet pet = this.currentPets.remove(petId);
         if (pet != null && pet.getRoomUnit() != null) {
@@ -872,9 +703,6 @@ public class RoomUnitManager {
         return pet;
     }
 
-    /**
-     * Places a Pet in the room.
-     */
     public void placePet(Pet pet, short x, short y, double z, int rot) {
         synchronized (this.currentPets) {
             RoomTile tile = this.room.getLayout().getTile(x, y);
@@ -911,9 +739,6 @@ public class RoomUnitManager {
         }
     }
 
-    /**
-     * Checks if there are Pets at the specified position.
-     */
     public boolean hasPetsAt(int x, int y) {
         synchronized (this.currentPets) {
             for (Pet pet : this.currentPets.values()) {
@@ -926,9 +751,6 @@ public class RoomUnitManager {
         return false;
     }
 
-    /**
-     * Gets all Pets at a specific tile.
-     */
     public Set<Pet> getPetsAt(RoomTile tile) {
         Set<Pet> pets = new HashSet<>();
         synchronized (this.currentPets) {
@@ -942,9 +764,6 @@ public class RoomUnitManager {
         return pets;
     }
 
-    /**
-     * Updates all Pets at a position.
-     */
     public void updatePetsAt(short x, short y) {
         RoomTile tile = this.room.getLayout().getTile(x, y);
 
@@ -983,9 +802,6 @@ public class RoomUnitManager {
         }
     }
 
-    /**
-     * Picks up all pets belonging to a Habbo.
-     */
     public void pickupPetsForHabbo(Habbo habbo) {
         Set<Pet> pets = new HashSet<>();
 
@@ -1013,17 +829,10 @@ public class RoomUnitManager {
         }
     }
 
-    /**
-     * Removes all pets from the room.
-     */
     public void removeAllPets() {
         removeAllPets(-1);
     }
 
-    /**
-     * Removes all pets from the room, optionally keeping one Habbo's pets.
-     * @param excludeUserId User ID whose pets should NOT be removed, -1 to remove all
-     */
     public void removeAllPets(int excludeUserId) {
         Set<Pet> toRemove = new HashSet<>();
 
@@ -1056,18 +865,10 @@ public class RoomUnitManager {
         }
     }
 
-    // ==================== COMBINED UNIT METHODS ====================
-
-    /**
-     * Gets all Habbos and Bots at a position.
-     */
     public Set<RoomUnit> getHabbosAndBotsAt(short x, short y) {
         return this.getHabbosAndBotsAt(this.room.getLayout().getTile(x, y));
     }
 
-    /**
-     * Gets all Habbos and Bots at a tile.
-     */
     public Set<RoomUnit> getHabbosAndBotsAt(RoomTile tile) {
         Set<RoomUnit> list = new HashSet<>();
 
@@ -1082,16 +883,10 @@ public class RoomUnitManager {
         return list;
     }
 
-    /**
-     * Gets all room units (Habbos, Bots, Pets).
-     */
     public Set<RoomUnit> getRoomUnits() {
         return getRoomUnits(null);
     }
 
-    /**
-     * Gets all room units at a specific tile.
-     */
     public Set<RoomUnit> getRoomUnits(RoomTile atTile) {
         Set<RoomUnit> units = new HashSet<>();
 
@@ -1122,29 +917,18 @@ public class RoomUnitManager {
         return units;
     }
 
-    /**
-     * Gets room units at a specific tile as a collection.
-     */
     public Collection<RoomUnit> getRoomUnitsAt(RoomTile tile) {
         Set<RoomUnit> roomUnits = getRoomUnits();
         return roomUnits.stream().filter(unit -> unit.getCurrentLocation().equals(tile))
                 .collect(Collectors.toSet());
     }
 
-    // ==================== EFFECTS AND HAND ITEMS ====================
-
-    /**
-     * Gives an effect to a Habbo.
-     */
     public void giveEffect(Habbo habbo, int effectId, int duration) {
         if (this.currentHabbos.containsKey(habbo.getHabboInfo().getId())) {
             this.giveEffect(habbo.getRoomUnit(), effectId, duration);
         }
     }
 
-    /**
-     * Gives an effect to a RoomUnit.
-     */
     public void giveEffect(RoomUnit roomUnit, int effectId, int duration) {
         if (duration == -1 || duration == Integer.MAX_VALUE) {
             duration = Integer.MAX_VALUE;
@@ -1153,6 +937,14 @@ public class RoomUnitManager {
         }
 
         if (this.room.isAllowEffects() && roomUnit != null) {
+            if (effectId != RIDING_EFFECT_ID) {
+                Habbo rider = this.getHabboByRoomUnit(roomUnit);
+
+                if (rider != null && rider.getHabboInfo() != null && rider.getHabboInfo().getRiding() != null) {
+                    return;
+                }
+            }
+
             roomUnit.setEffectId(effectId, duration);
             this.room.sendComposer(new RoomUserEffectComposer(roomUnit).compose());
         }
@@ -1183,16 +975,10 @@ public class RoomUnitManager {
         }
     }
 
-    /**
-     * Gives a hand item to a Habbo.
-     */
     public void giveHandItem(Habbo habbo, int handItem) {
         this.giveHandItem(habbo.getRoomUnit(), handItem);
     }
 
-    /**
-     * Gives a hand item to a RoomUnit.
-     */
     public void giveHandItem(RoomUnit roomUnit, int handItem) {
         roomUnit.setHandItem(handItem);
         this.room.sendComposer(new RoomUserHandItemComposer(roomUnit).compose());
@@ -1202,11 +988,6 @@ public class RoomUnitManager {
         }
     }
 
-    // ==================== IDLE AND DANCE ====================
-
-    /**
-     * Sets a Habbo to idle state.
-     */
     public void idle(Habbo habbo) {
         habbo.getRoomUnit().setIdle();
 
@@ -1218,9 +999,6 @@ public class RoomUnitManager {
         WiredManager.triggerUserIdles(this.room, habbo.getRoomUnit());
     }
 
-    /**
-     * Removes idle state from a Habbo.
-     */
     public void unIdle(Habbo habbo) {
         if (habbo == null || habbo.getRoomUnit() == null) {
             return;
@@ -1235,16 +1013,10 @@ public class RoomUnitManager {
         }
     }
 
-    /**
-     * Makes a Habbo dance.
-     */
     public void dance(Habbo habbo, DanceType danceType) {
         this.dance(habbo.getRoomUnit(), danceType);
     }
 
-    /**
-     * Makes a RoomUnit dance.
-     */
     public void dance(RoomUnit unit, DanceType danceType) {
         if (unit.getDanceType() != danceType) {
             boolean isDancing = !unit.getDanceType().equals(DanceType.NONE);
@@ -1259,41 +1031,24 @@ public class RoomUnitManager {
         }
     }
 
-    // ==================== TELEPORTATION ====================
-
-    /**
-     * Teleports a Habbo to an item.
-     */
     public void teleportHabboToItem(Habbo habbo, HabboItem item) {
         this.teleportRoomUnitToLocation(habbo.getRoomUnit(), item.getX(), item.getY(),
                 item.getZ() + Item.getCurrentHeight(item));
     }
 
-    /**
-     * Teleports a Habbo to a location.
-     */
     public void teleportHabboToLocation(Habbo habbo, short x, short y) {
         this.teleportRoomUnitToLocation(habbo.getRoomUnit(), x, y, 0.0);
     }
 
-    /**
-     * Teleports a RoomUnit to an item.
-     */
     public void teleportRoomUnitToItem(RoomUnit roomUnit, HabboItem item) {
         this.teleportRoomUnitToLocation(roomUnit, item.getX(), item.getY(),
                 item.getZ() + Item.getCurrentHeight(item));
     }
 
-    /**
-     * Teleports a RoomUnit to a location.
-     */
     public void teleportRoomUnitToLocation(RoomUnit roomUnit, short x, short y) {
         this.teleportRoomUnitToLocation(roomUnit, x, y, 0.0);
     }
 
-    /**
-     * Teleports a RoomUnit to a location with specific height.
-     */
     public void teleportRoomUnitToLocation(RoomUnit roomUnit, short x, short y, double z) {
         if (this.room.isLoaded()) {
             WiredFreezeUtil.onTeleport(this.room, roomUnit);
@@ -1313,11 +1068,6 @@ public class RoomUnitManager {
         }
     }
 
-    // ==================== VISITOR BOT HANDLING ====================
-
-    /**
-     * Handles Habbo entering the room (visitor bot notification and pet greeting).
-     */
     public void habboEntered(Habbo habbo) {
         habbo.getRoomUnit().animateWalk = false;
 
@@ -1356,11 +1106,6 @@ public class RoomUnitManager {
         }
     }
 
-    // ==================== SIT AND STAND ====================
-
-    /**
-     * Makes a Habbo sit.
-     */
     public void makeSit(Habbo habbo) {
         if (habbo.getRoomUnit() == null) {
             return;
@@ -1379,9 +1124,6 @@ public class RoomUnitManager {
         this.room.sendComposer(new RoomUserStatusComposer(habbo.getRoomUnit()).compose());
     }
 
-    /**
-     * Makes a Habbo stand.
-     */
     public void makeStand(Habbo habbo) {
         if (habbo.getRoomUnit() == null) {
             return;

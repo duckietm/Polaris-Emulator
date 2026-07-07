@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Manages the room cycle/tick logic.
@@ -448,6 +447,15 @@ public class RoomCycleManager {
             if (unit.hasStatus(RoomUnitStatus.MOVE) && !unit.animateWalk) {
                 unit.removeStatus(RoomUnitStatus.MOVE);
                 update = true;
+            }
+
+            if (isRiding) {
+                RoomUnit ridingUnit = ridingHabbo.getHabboInfo().getRiding().getRoomUnit();
+
+                if (ridingUnit != null && ridingUnit.hasStatus(RoomUnitStatus.MOVE)) {
+                    ridingUnit.removeStatus(RoomUnitStatus.MOVE);
+                    this.room.sendComposer(new RoomUserStatusComposer(ridingUnit).compose());
+                }
             }
 
             if (!unit.isWalking() && !unit.cmdSit) {

@@ -452,9 +452,21 @@ public class RoomCycleManager {
             if (isRiding) {
                 RoomUnit ridingUnit = ridingHabbo.getHabboInfo().getRiding().getRoomUnit();
 
-                if (ridingUnit != null && ridingUnit.hasStatus(RoomUnitStatus.MOVE)) {
-                    ridingUnit.removeStatus(RoomUnitStatus.MOVE);
-                    this.room.sendComposer(new RoomUserStatusComposer(ridingUnit).compose());
+                if (ridingUnit != null) {
+                    boolean horseMoving = ridingUnit.hasStatus(RoomUnitStatus.MOVE);
+                    boolean horseMisplaced = ridingUnit.getX() != unit.getX() || ridingUnit.getY() != unit.getY();
+
+                    if (horseMoving || horseMisplaced) {
+                        ridingUnit.setPreviousLocation(ridingUnit.getCurrentLocation());
+                        ridingUnit.setCurrentLocation(unit.getCurrentLocation());
+                        ridingUnit.setGoalLocation(unit.getCurrentLocation());
+                        ridingUnit.setZ(unit.getZ() - 1.0);
+                        ridingUnit.animateWalk = false;
+
+                        if (horseMoving) ridingUnit.removeStatus(RoomUnitStatus.MOVE);
+
+                        this.room.sendComposer(new RoomUserStatusComposer(ridingUnit).compose());
+                    }
                 }
             }
 

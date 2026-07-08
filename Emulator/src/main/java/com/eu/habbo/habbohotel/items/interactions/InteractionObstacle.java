@@ -7,13 +7,11 @@ import com.eu.habbo.habbohotel.items.ICycleable;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.pets.HorsePet;
 import com.eu.habbo.habbohotel.pets.Pet;
-import com.eu.habbo.habbohotel.pets.PetTasks;
 import com.eu.habbo.habbohotel.rooms.*;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
-import com.eu.habbo.threading.runnables.HabboItemNewState;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -21,11 +19,18 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class InteractionObstacle extends HabboItem implements ICycleable {
 
-    private Set<RoomTile> middleTiles;
-    private boolean middleTilesCalculated;
+    private static final int CLEAN_JUMP_STATE = 4;
+    private static final int JUMP_DURATION_MS = 2000;
+
+    private static final String HORSE_JUMP_ID_KEY = "obstacleJumpId";
+    private static final AtomicInteger JUMP_ID_COUNTER = new AtomicInteger();
+    private final AtomicInteger animationSerial = new AtomicInteger();
+    private volatile Set<RoomTile> middleTiles;
+    private volatile boolean middleTilesCalculated;
 
     public InteractionObstacle(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -49,7 +54,23 @@ public class InteractionObstacle extends HabboItem implements ICycleable {
 
     @Override
     public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
-        return true;
+        return this.allowsUnit(roomUnit, room, false);
+    }
+
+    private boolean allowsUnit(RoomUnit roomUnit, Room room, boolean crossingBar) {
+        if (roomUnit.getRoomUnitType() == RoomUnitType.PET) {
+            Pet pet = room.getPet(roomUnit);
+
+            if (!(pet instanceof HorsePet)) {
+                return false;
+            }
+
+            return !crossingBar || ((HorsePet) pet).getRider() != null;
+        }
+
+        Habbo habbo = room.getHabbo(roomUnit);
+
+        return habbo != null && habbo.getHabboInfo() != null && habbo.getHabboInfo().getRiding() instanceof HorsePet;
     }
 
     @Override
@@ -64,31 +85,42 @@ public class InteractionObstacle extends HabboItem implements ICycleable {
 
     @Override
     public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-        Pet pet = room.getPet(roomUnit);
+        Habbo habbo = room.getHabbo(roomUnit);
 
-        if (pet instanceof HorsePet && ((HorsePet) pet).getRider() != null) {
-            Habbo rider = ((HorsePet) pet).getRider();
-            if (pet.getTask() != null && pet.getTask().equals(PetTasks.RIDE)) {
-                if (pet.getRoomUnit().hasStatus(RoomUnitStatus.JUMP)) {
-                    pet.getRoomUnit().removeStatus(RoomUnitStatus.JUMP);
-                    Emulator.getThreading().run(new HabboItemNewState(this, room, "0"), 2000);
-                } else {
-                    int state = 0;
-                    for (int i = 0; i < 2; i++) {
-                        state = Emulator.getRandom().nextInt(4) + 1;
+        if (habbo == null || habbo.getHabboInfo() == null || !(habbo.getHabboInfo().getRiding() instanceof HorsePet)) {
+            return;
+        }
 
-                        if (state == 4)
-                            break;
+        RoomTile next = (objects != null && objects.length > 1 && objects[1] instanceof RoomTile)
+                ? (RoomTile) objects[1] : null;
+
+        if (next == null) {
+            return;
+        }
+
+        RoomUnit horseUnit = ((HorsePet) habbo.getHabboInfo().getRiding()).getRoomUnit();
+
+        if (horseUnit == null) {
+            return;
+        }
+
+        if (this.isMiddleTile(next)) {
+            if (!horseUnit.hasStatus(RoomUnitStatus.JUMP)) {
+                this.startJump(horseUnit, room, Emulator.getRandom().nextInt(3) + 1);
+            }
+        } else if (horseUnit.hasStatus(RoomUnitStatus.JUMP)) {
+            Object idObj = horseUnit.getCacheable().get(HORSE_JUMP_ID_KEY);
+
+            if (idObj instanceof Integer) {
+                int jumpId = (Integer) idObj;
+
+                Emulator.getThreading().run(() -> {
+                    Object currentId = horseUnit.getCacheable().get(HORSE_JUMP_ID_KEY);
+
+                    if (currentId instanceof Integer && (Integer) currentId == jumpId) {
+                        this.endJump(horseUnit, room);
                     }
-
-                    this.setExtradata(state + "");
-                    pet.getRoomUnit().setStatus(RoomUnitStatus.JUMP, "0");
-
-                    AchievementManager.progressAchievement(rider, Emulator.getGameEnvironment().getAchievementManager().getAchievement("HorseConsecutiveJumpsCount"));
-                    AchievementManager.progressAchievement(rider, Emulator.getGameEnvironment().getAchievementManager().getAchievement("HorseJumping"));
-                }
-
-                room.updateItemState(this);
+                }, 500);
             }
         }
     }
@@ -99,27 +131,7 @@ public class InteractionObstacle extends HabboItem implements ICycleable {
 
         Habbo habbo = room.getHabbo(roomUnit);
 
-        if (habbo == null) {
-            Pet pet = room.getPet(roomUnit);
-
-            if (pet instanceof HorsePet && ((HorsePet) pet).getRider() != null) {
-                if (roomUnit.getBodyRotation().getValue() % 2 == 0) {
-                    if (this.getRotation() == 2) {
-                        if (roomUnit.getBodyRotation().equals(RoomUserRotation.WEST)) {
-                            ((HorsePet) pet).getRider().getRoomUnit().setGoalLocation(room.getLayout().getTile((short) (roomUnit.getX() - 3), roomUnit.getY()));
-                        } else if (roomUnit.getBodyRotation().equals(RoomUserRotation.EAST)) {
-                            ((HorsePet) pet).getRider().getRoomUnit().setGoalLocation(room.getLayout().getTile((short) (roomUnit.getX() + 3), roomUnit.getY()));
-                        }
-                    } else if (this.getRotation() == 4) {
-                        if (roomUnit.getBodyRotation().equals(RoomUserRotation.NORTH)) {
-                            ((HorsePet) pet).getRider().getRoomUnit().setGoalLocation(room.getLayout().getTile(roomUnit.getX(), (short) (roomUnit.getY() - 3)));
-                        } else if (roomUnit.getBodyRotation().equals(RoomUserRotation.SOUTH)) {
-                            ((HorsePet) pet).getRider().getRoomUnit().setGoalLocation(room.getLayout().getTile(roomUnit.getX(), (short) (roomUnit.getY() + 3)));
-                        }
-                    }
-                }
-            }
-        } else if (habbo.getHabboInfo() != null && habbo.getHabboInfo().getRiding() instanceof HorsePet) {
+        if (habbo != null && habbo.getHabboInfo() != null && habbo.getHabboInfo().getRiding() instanceof HorsePet) {
             this.setupRiderJump(habbo, (HorsePet) habbo.getHabboInfo().getRiding(), roomUnit, room);
         }
     }
@@ -127,7 +139,7 @@ public class InteractionObstacle extends HabboItem implements ICycleable {
     private void setupRiderJump(Habbo rider, HorsePet horse, RoomUnit riderUnit, Room room) {
         RoomUnit horseUnit = horse.getRoomUnit();
 
-        if (horseUnit == null || horseUnit.hasStatus(RoomUnitStatus.JUMP)) {
+        if (horseUnit == null) {
             return;
         }
 
@@ -173,30 +185,58 @@ public class InteractionObstacle extends HabboItem implements ICycleable {
 
         RoomUnit horseUnit = horse.getRoomUnit();
 
-        if (horseUnit == null || horseUnit.hasStatus(RoomUnitStatus.JUMP)) {
+        if (horseUnit == null) {
             return;
         }
 
-        int state = 0;
-        for (int i = 0; i < 2; i++) {
-            state = Emulator.getRandom().nextInt(4) + 1;
+        this.startJump(horseUnit, room, CLEAN_JUMP_STATE);
 
-            if (state == 4)
-                break;
-        }
-        this.setExtradata(state + "");
-        horseUnit.setStatus(RoomUnitStatus.JUMP, "0");
         AchievementManager.progressAchievement(rider, Emulator.getGameEnvironment().getAchievementManager().getAchievement("HorseConsecutiveJumpsCount"));
         AchievementManager.progressAchievement(rider, Emulator.getGameEnvironment().getAchievementManager().getAchievement("HorseJumping"));
-        room.updateItemState(this);
-        Emulator.getThreading().run(new HabboItemNewState(this, room, "0"), 2000);
+    }
+
+    private void startJump(RoomUnit horseUnit, Room room, int state) {
+        int jumpId = JUMP_ID_COUNTER.incrementAndGet();
+        horseUnit.getCacheable().put(HORSE_JUMP_ID_KEY, jumpId);
+        horseUnit.setStatus(RoomUnitStatus.JUMP, "0");
+        this.showAnimation(room, state);
+
         Emulator.getThreading().run(() -> {
-            if (horseUnit.hasStatus(RoomUnitStatus.JUMP)) {
-                horseUnit.removeStatus(RoomUnitStatus.JUMP);
-                horseUnit.statusUpdate(true);
-                room.sendComposer(new RoomUserStatusComposer(horseUnit).compose());
+            Object currentId = horseUnit.getCacheable().get(HORSE_JUMP_ID_KEY);
+
+            if (currentId instanceof Integer && (Integer) currentId == jumpId) {
+                this.endJump(horseUnit, room);
             }
-        }, 2000);
+        }, JUMP_DURATION_MS);
+    }
+
+    private void showAnimation(Room room, int state) {
+        int serial = this.animationSerial.incrementAndGet();
+
+        if (!"0".equals(this.getExtradata())) {
+            this.setExtradata("0");
+            room.updateItemState(this);
+        }
+
+        this.setExtradata(Integer.toString(state));
+        room.updateItemState(this);
+
+        Emulator.getThreading().run(() -> {
+            if (this.animationSerial.get() == serial && this.getRoomId() == room.getId()) {
+                this.setExtradata("0");
+                room.updateItemState(this);
+            }
+        }, JUMP_DURATION_MS);
+    }
+
+    private void endJump(RoomUnit horseUnit, Room room) {
+        horseUnit.getCacheable().remove(HORSE_JUMP_ID_KEY);
+
+        if (horseUnit.hasStatus(RoomUnitStatus.JUMP)) {
+            horseUnit.removeStatus(RoomUnitStatus.JUMP);
+            horseUnit.statusUpdate(true);
+            room.sendComposer(new RoomUserStatusComposer(horseUnit).compose());
+        }
     }
 
     @Override
@@ -205,32 +245,28 @@ public class InteractionObstacle extends HabboItem implements ICycleable {
 
         Habbo habbo = room.getHabbo(roomUnit);
 
-        if (habbo == null) {
-            Pet pet = room.getPet(roomUnit);
+        if (habbo == null || habbo.getHabboInfo() == null || !(habbo.getHabboInfo().getRiding() instanceof HorsePet)) {
+            return;
+        }
 
-            if (pet instanceof HorsePet && ((HorsePet) pet).getRider() != null) {
-                pet.getRoomUnit().removeStatus(RoomUnitStatus.JUMP);
-            }
-        } else if (habbo.getHabboInfo() != null && habbo.getHabboInfo().getRiding() instanceof HorsePet) {
-            RoomTile next = (objects != null && objects.length > 1 && objects[1] instanceof RoomTile)
-                    ? (RoomTile) objects[1] : null;
+        RoomTile next = (objects != null && objects.length > 1 && objects[1] instanceof RoomTile)
+                ? (RoomTile) objects[1] : null;
 
-            boolean stillOnObstacle = false;
-            if (next != null) {
-                for (HabboItem item : room.getItemsAt(next)) {
-                    if (item == this) {
-                        stillOnObstacle = true;
-                        break;
-                    }
+        boolean stillOnObstacle = false;
+        if (next != null) {
+            for (HabboItem item : room.getItemsAt(next)) {
+                if (item == this) {
+                    stillOnObstacle = true;
+                    break;
                 }
             }
+        }
 
-            if (!stillOnObstacle) {
-                RoomUnit horseUnit = ((HorsePet) habbo.getHabboInfo().getRiding()).getRoomUnit();
+        if (!stillOnObstacle) {
+            RoomUnit horseUnit = ((HorsePet) habbo.getHabboInfo().getRiding()).getRoomUnit();
 
-                if (horseUnit != null) {
-                    horseUnit.removeStatus(RoomUnitStatus.JUMP);
-                }
+            if (horseUnit != null) {
+                this.endJump(horseUnit, room);
             }
         }
     }
@@ -244,7 +280,7 @@ public class InteractionObstacle extends HabboItem implements ICycleable {
     @Override
     public void onPickUp(Room room) {
         super.onPickUp(room);
-        middleTiles.clear();
+        this.middleTiles = new HashSet<>();
         this.middleTilesCalculated = false;
     }
 
@@ -255,40 +291,38 @@ public class InteractionObstacle extends HabboItem implements ICycleable {
     }
 
     private void calculateMiddleTiles(Room room) {
-        middleTiles.clear();
+        Set<RoomTile> tiles = new HashSet<>();
 
         if(this.getRotation() == 2) {
-            middleTiles.add(room.getLayout().getTile((short)(this.getX() + 1), this.getY()));
-            middleTiles.add(room.getLayout().getTile((short)(this.getX() + 1), (short)(this.getY() + 1)));
+            tiles.add(room.getLayout().getTile((short)(this.getX() + 1), this.getY()));
+            tiles.add(room.getLayout().getTile((short)(this.getX() + 1), (short)(this.getY() + 1)));
         }
         else if(this.getRotation() == 4) {
-            middleTiles.add(room.getLayout().getTile(this.getX(), (short)(this.getY() + 1)));
-            middleTiles.add(room.getLayout().getTile((short)(this.getX() + 1), (short)(this.getY() + 1)));
+            tiles.add(room.getLayout().getTile(this.getX(), (short)(this.getY() + 1)));
+            tiles.add(room.getLayout().getTile((short)(this.getX() + 1), (short)(this.getY() + 1)));
         }
 
-        middleTiles.remove(null);
+        tiles.remove(null);
+        this.middleTiles = tiles;
         this.middleTilesCalculated = true;
     }
 
     @Override
-    public RoomTileState getOverrideTileState(RoomTile tile, Room room) {
+    public RoomTile getOverrideGoalTile(RoomUnit roomUnit, Room room, RoomTile tile) {
         if(this.isMiddleTile(tile))
-            return RoomTileState.BLOCKED;
+            return null;
 
-        return null;
+        return tile;
+    }
+
+    @Override
+    public RoomTileState getOverrideTileState(RoomTile tile, Room room) {
+        return RoomTileState.BLOCKED;
     }
 
     @Override
     public boolean canOverrideTile(RoomUnit roomUnit, Room room, RoomTile tile) {
-        if(!this.isMiddleTile(tile))
-            return false;
-
-        Habbo habbo = room.getHabbo(roomUnit);
-        if(habbo != null)
-            return habbo.getHabboInfo() != null && habbo.getHabboInfo().getRiding() instanceof HorsePet;
-
-        Pet pet = room.getPet(roomUnit);
-        return pet instanceof HorsePet && ((HorsePet) pet).getRider() != null;
+        return this.allowsUnit(roomUnit, room, this.isMiddleTile(tile));
     }
 
     private boolean isMiddleTile(RoomTile tile) {
@@ -325,14 +359,24 @@ public class InteractionObstacle extends HabboItem implements ICycleable {
                     if(unit.getBodyRotation().getValue() != this.getRotation() && (opposite == null || opposite.getValue() != this.getRotation()))
                         continue;
 
+                    RoomTile pushTo = null;
+
                     RoomTile tileInfront = room.getLayout().getTileInFront(unit.getCurrentLocation(), unit.getBodyRotation().getValue());
                     if(tileInfront != null && tileInfront.state != RoomTileState.INVALID && tileInfront.state != RoomTileState.BLOCKED && room.getRoomUnitsAt(tileInfront).size() == 0) {
-                        unit.setGoalLocation(tileInfront);
+                        pushTo = tileInfront;
                     }
                     else if(opposite != null) {
                         RoomTile tileBehind = room.getLayout().getTileInFront(unit.getCurrentLocation(), opposite.getValue());
                         if(tileBehind != null && tileBehind.state != RoomTileState.INVALID && tileBehind.state != RoomTileState.BLOCKED && room.getRoomUnitsAt(tileBehind).size() == 0) {
-                            unit.setGoalLocation(tileBehind);
+                            pushTo = tileBehind;
+                        }
+                    }
+
+                    if(pushTo != null) {
+                        unit.setGoalLocation(pushTo);
+
+                        if("0".equals(this.getExtradata())) {
+                            this.showAnimation(room, Emulator.getRandom().nextInt(3) + 1);
                         }
                     }
                 }

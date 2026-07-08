@@ -243,7 +243,7 @@ public class RoomUnit {
 
       if (!(this.path.isEmpty() && (canSitNextTile || canLayNextTile))) {
         double height = next.getStackHeight() - this.currentLocation.getStackHeight();
-        if (canMoveToTile(room, next, height, canSitNextTile, canLayNextTile)) {
+        if (!overrideChecks && canMoveToTile(room, next, height, canSitNextTile, canLayNextTile)) {
           this.path.clear();
           this.status.remove(RoomUnitStatus.MOVE);
           return false;
@@ -281,9 +281,7 @@ public class RoomUnit {
 
       HabboItem habboItem = room.getTopItemAt(this.getX(), this.getY());
       if (habboItem != null) {
-        if (habboItem != item || !RoomLayout.pointInSquare(habboItem.getX(), habboItem.getY(),
-                habboItem.getX() + habboItem.getBaseItem().getWidth() - 1,
-                habboItem.getY() + habboItem.getBaseItem().getLength() - 1, next.x, next.y)) {
+        if (habboItem != item || !itemOccupiesTile(habboItem, next.x, next.y)) {
           habboItem.onWalkOff(this, room, new Object[]{this.getCurrentLocation(), next});
         }
       }
@@ -294,9 +292,7 @@ public class RoomUnit {
       this.setRotation(
               RoomUserRotation.values()[Rotation.Calculate(this.getX(), this.getY(), next.x, next.y)]);
       if (item != null) {
-        if (item != habboItem || !RoomLayout.pointInSquare(item.getX(), item.getY(),
-                item.getX() + item.getBaseItem().getWidth() - 1,
-                item.getY() + item.getBaseItem().getLength() - 1, this.getX(), this.getY())) {
+        if (item != habboItem || !itemOccupiesTile(item, this.getX(), this.getY())) {
           if (item.canWalkOn(this, room, null)) {
             item.onWalkOn(this, room, new Object[]{this.getCurrentLocation(), next});
           } else if (item instanceof ConditionalGate) {
@@ -376,6 +372,20 @@ public class RoomUnit {
       LOGGER.error("Caught exception", e);
       return false;
     }
+  }
+
+  private static boolean itemOccupiesTile(HabboItem item, short x, short y) {
+    int width = item.getBaseItem().getWidth() > 0 ? item.getBaseItem().getWidth() : 1;
+    int length = item.getBaseItem().getLength() > 0 ? item.getBaseItem().getLength() : 1;
+
+    if (item.getRotation() == 2 || item.getRotation() == 6) {
+      int swap = width;
+      width = length;
+      length = swap;
+    }
+
+    return RoomLayout.pointInSquare(item.getX(), item.getY(),
+            item.getX() + width - 1, item.getY() + length - 1, x, y);
   }
 
   private static boolean canMoveToTile(Room room, RoomTile next, double height,

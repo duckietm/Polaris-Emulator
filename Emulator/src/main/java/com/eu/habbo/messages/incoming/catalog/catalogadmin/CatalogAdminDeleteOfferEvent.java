@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.catalog.CatalogAdminCacheSync;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -35,6 +36,7 @@ public class CatalogAdminDeleteOfferEvent extends MessageHandler {
             }
         }
 
+        CatalogAdminCacheSync.removeCatalogItem(offerId, pageType, -1);
         this.client.sendResponse(new CatalogAdminResultComposer(true, "Offer deleted"));
     }
 }

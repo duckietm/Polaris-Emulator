@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.catalog.CatalogAdminCacheSync;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -85,6 +86,7 @@ public class CatalogAdminCreateOfferEvent extends MessageHandler {
         }
 
         if (newId > 0) {
+            CatalogAdminCacheSync.reloadCatalogItem(newId, pageType);
             this.client.sendResponse(new CatalogAdminResultComposer(true, "Offer created: " + newId));
         } else {
             this.client.sendResponse(new CatalogAdminResultComposer(false, "Failed to create offer"));

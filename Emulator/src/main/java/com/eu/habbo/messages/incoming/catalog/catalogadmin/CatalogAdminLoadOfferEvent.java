@@ -32,7 +32,10 @@ public class CatalogAdminLoadOfferEvent extends MessageHandler {
             statement.setInt(1, offerId);
 
             try (ResultSet set = statement.executeQuery()) {
-                if (!set.next()) return;
+                if (!set.next()) {
+                    this.client.sendResponse(new CatalogAdminResultComposer(false, "Offer not found: " + offerId));
+                    return;
+                }
 
                 if (pageType == CatalogPageType.BUILDER) {
                     this.client.sendResponse(new CatalogAdminOfferDetailsComposer(

@@ -15,7 +15,7 @@ class CatalogAdminOfferPayloadTest {
                 "extra", true, 0, 0, 10, CatalogPageType.NORMAL);
 
         assertNotNull(payload);
-        assertEquals("1,2,3", payload.itemIds);
+        assertEquals("1;2;3", payload.itemIds);
         assertEquals("Rare Chair", payload.catalogName);
     }
 
@@ -37,5 +37,15 @@ class CatalogAdminOfferPayloadTest {
                 "", false, 0, 0, 0, CatalogPageType.BUILDER));
         assertNull(CatalogAdminOfferPayload.validate(42, "1", "", 0, 0, 0, 1, 0,
                 "", false, 0, 0, 0, CatalogPageType.BUILDER));
+    }
+
+    @Test
+    void acceptsSemicolonSeparatedItemIds() {
+        CatalogAdminOfferPayload payload = CatalogAdminOfferPayload.validate(
+                42, "100;200", "Bundle", 10, 0, 0, 1, 0,
+                "", false, 0, 0, 0, CatalogPageType.NORMAL);
+
+        assertNotNull(payload);
+        assertEquals("100;200", payload.itemIds);
     }
 }

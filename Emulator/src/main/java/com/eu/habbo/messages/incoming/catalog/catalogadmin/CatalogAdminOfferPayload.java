@@ -84,15 +84,17 @@ final class CatalogAdminOfferPayload {
             return "0";
         }
 
-        String clean = value.trim();
+        String clean = value.trim().replaceAll("\\s+", "");
+        String[] parts = clean.split("[;,]");
         if (clean.length() > MAX_ITEM_IDS_LENGTH) {
             return null;
         }
 
-        String[] parts = clean.split(",");
         if (parts.length == 0 || parts.length > MAX_ITEM_IDS) {
             return null;
         }
+
+        StringBuilder normalized = new StringBuilder();
 
         for (String part : parts) {
             if (part.isBlank()) {
@@ -100,15 +102,18 @@ final class CatalogAdminOfferPayload {
             }
 
             try {
-                if (Integer.parseInt(part.trim()) < 0) {
+                if (Integer.parseInt(part) < 0) {
                     return null;
                 }
             } catch (NumberFormatException e) {
                 return null;
             }
+
+            if (normalized.length() > 0) normalized.append(';');
+            normalized.append(part);
         }
 
-        return clean.replaceAll("\\s+", "");
+        return normalized.toString();
     }
 
     private static boolean isInRange(int value, int min, int max) {

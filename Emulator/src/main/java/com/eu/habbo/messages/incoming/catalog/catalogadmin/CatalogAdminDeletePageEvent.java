@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.catalog.CatalogAdminCacheSync;
 import com.eu.habbo.habbohotel.catalog.CatalogPage;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.permissions.Permission;
@@ -42,8 +43,7 @@ public class CatalogAdminDeletePageEvent extends MessageHandler {
             }
         }
 
-        Emulator.getGameEnvironment().getCatalogManager().getCatalogPagesMap(pageType).remove(pageId);
-
+        CatalogAdminCacheSync.detachDeletedPage(page, pageType);
         this.client.sendResponse(new CatalogAdminResultComposer(true, "Page deleted"));
     }
 }

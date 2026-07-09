@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.catalog.CatalogItem;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -37,6 +38,11 @@ public class CatalogAdminMoveOfferEvent extends MessageHandler {
                 this.client.sendResponse(new CatalogAdminResultComposer(false, "Offer not found: " + offerId));
                 return;
             }
+        }
+
+        CatalogItem item = Emulator.getGameEnvironment().getCatalogManager().getCatalogItem(offerId, pageType);
+        if (item != null) {
+            item.setOrderNumber(orderNumber);
         }
 
         this.client.sendResponse(new CatalogAdminResultComposer(true, "Offer reordered"));

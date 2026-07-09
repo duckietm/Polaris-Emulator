@@ -1,7 +1,6 @@
 package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.catalog.CatalogPage;
 import com.eu.habbo.habbohotel.catalog.CatalogPageLayouts;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.permissions.Permission;
@@ -49,8 +48,8 @@ public class CatalogAdminCreatePageEvent extends MessageHandler {
         if (caption.length() > 128) caption = caption.substring(0, 128);
         if (caption2.length() > 25) caption2 = caption2.substring(0, 25);
 
-        CatalogPage page = Emulator.getGameEnvironment().getCatalogManager().createCatalogPage(
-                caption, caption2, 0, iconType, pageLayout, minRank, parentId, pageType, catalogMode
+        var page = Emulator.getGameEnvironment().getCatalogManager().createCatalogPage(
+                caption, caption2, 0, iconType, pageLayout, minRank, parentId, pageType, catalogMode, visible, enabled, orderNum
         );
 
         if (page == null) {

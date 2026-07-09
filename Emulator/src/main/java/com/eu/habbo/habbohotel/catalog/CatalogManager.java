@@ -462,6 +462,7 @@ public class CatalogManager {
     }
 
     private synchronized void loadCatalogItems() {
+        this.offerDefs.clear();
         this.clubItems.clear();
         catalogItemAmount = 0;
 
@@ -895,11 +896,15 @@ public class CatalogManager {
 
 
     public CatalogPage createCatalogPage(String caption, String captionSave, int roomId, int icon, CatalogPageLayouts layout, int minRank, int parentId, CatalogPageType pageType, CatalogPageType catalogMode) {
+        return createCatalogPage(caption, captionSave, roomId, icon, layout, minRank, parentId, pageType, catalogMode, true, true, 1);
+    }
+
+    public CatalogPage createCatalogPage(String caption, String captionSave, int roomId, int icon, CatalogPageLayouts layout, int minRank, int parentId, CatalogPageType pageType, CatalogPageType catalogMode, boolean visible, boolean enabled, int orderNum) {
         CatalogPage catalogPage = null;
         boolean buildersClubPage = (pageType == CatalogPageType.BUILDER);
         String insertQuery = buildersClubPage
                 ? "INSERT INTO catalog_pages_bc (parent_id, caption, page_layout, icon_color, icon_image, order_num, visible, enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-                : "INSERT INTO catalog_pages (parent_id, caption, caption_save, icon_image, visible, enabled, min_rank, page_layout, room_id, catalog_mode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                : "INSERT INTO catalog_pages (parent_id, caption, caption_save, icon_image, visible, enabled, min_rank, page_layout, room_id, catalog_mode, order_num) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         String selectQuery = buildersClubPage
                 ? "SELECT id, parent_id, caption, caption AS caption_save, page_layout, icon_color, icon_image, 1 AS min_rank, order_num, visible, enabled, '0' AS club_only, 'BUILDERS_CLUB' AS catalog_mode, page_headline, page_teaser, page_special, page_text1, page_text2, page_text_details, page_text_teaser, '' AS includes FROM catalog_pages_bc WHERE id = ?"
                 : "SELECT * FROM catalog_pages WHERE id = ?";
@@ -913,18 +918,19 @@ public class CatalogManager {
                 statement.setString(3, layout.name());
                 statement.setInt(4, 1);
                 statement.setInt(5, icon);
-                statement.setInt(6, 1);
-                statement.setString(7, "1");
-                statement.setString(8, "1");
+                statement.setInt(6, orderNum < 0 ? 0 : orderNum);
+                statement.setString(7, visible ? "1" : "0");
+                statement.setString(8, enabled ? "1" : "0");
             } else {
                 statement.setString(3, captionSave);
                 statement.setInt(4, icon);
-                statement.setString(5, "1");
-                statement.setString(6, "1");
+                statement.setString(5, visible ? "1" : "0");
+                statement.setString(6, enabled ? "1" : "0");
                 statement.setInt(7, minRank);
                 statement.setString(8, layout.name());
                 statement.setInt(9, roomId);
                 statement.setString(10, catalogMode.name());
+                statement.setInt(11, orderNum < 0 ? 0 : orderNum);
             }
             statement.execute();
             try (ResultSet set = statement.getGeneratedKeys()) {
@@ -955,6 +961,7 @@ public class CatalogManager {
 
         if (catalogPage != null) {
             this.getCatalogPagesMap(pageType).put(catalogPage.getId(), catalogPage);
+            CatalogAdminCacheSync.attachCreatedPage(catalogPage, parentId, orderNum < 0 ? 0 : orderNum, pageType);
         }
 
         return catalogPage;

@@ -105,6 +105,58 @@ public abstract class CatalogPage implements Comparable<CatalogPage>, ISerialize
         this.rank = rank;
     }
 
+    public void setParentId(int parentId) {
+        this.parentId = parentId;
+    }
+
+    public void setCaption(String caption) {
+        this.caption = caption;
+    }
+
+    public void setPageName(String pageName) {
+        this.pageName = pageName;
+    }
+
+    public void setIconImage(int iconImage) {
+        this.iconImage = iconImage;
+    }
+
+    public void setOrderNum(int orderNum) {
+        this.orderNum = orderNum;
+    }
+
+    public void setVisible(boolean visible) {
+        this.visible = visible;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public void setLayout(String layout) {
+        this.layout = layout;
+    }
+
+    public void setCatalogPageType(CatalogPageType catalogPageType) {
+        this.catalogPageType = catalogPageType;
+    }
+
+    public void setHeaderImage(String headerImage) {
+        this.headerImage = headerImage;
+    }
+
+    public void setTeaserImage(String teaserImage) {
+        this.teaserImage = teaserImage;
+    }
+
+    public void setTextOne(String textOne) {
+        this.textOne = textOne;
+    }
+
+    public void setTextDetails(String textDetails) {
+        this.textDetails = textDetails;
+    }
+
     public String getCaption() {
         return this.caption;
     }

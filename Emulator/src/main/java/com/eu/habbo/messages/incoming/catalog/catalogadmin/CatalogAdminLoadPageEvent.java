@@ -21,7 +21,10 @@ public class CatalogAdminLoadPageEvent extends MessageHandler {
         CatalogPageType pageType = CatalogPageType.fromString(this.packet.readString());
 
         CatalogPage page = Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(pageId, pageType);
-        if (page == null) return;
+        if (page == null) {
+            this.client.sendResponse(new CatalogAdminResultComposer(false, "Page not found: " + pageId));
+            return;
+        }
 
         this.client.sendResponse(new CatalogAdminPageDetailsComposer(page));
     }

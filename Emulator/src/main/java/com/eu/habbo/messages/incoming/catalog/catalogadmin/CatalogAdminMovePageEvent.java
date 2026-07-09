@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.catalog.CatalogAdminCacheSync;
 import com.eu.habbo.habbohotel.catalog.CatalogPage;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.permissions.Permission;
@@ -44,6 +45,7 @@ public class CatalogAdminMovePageEvent extends MessageHandler {
                     return;
                 }
             }
+            CatalogAdminCacheSync.refreshPageFlagsFromDb(pageId, pageType);
             this.client.sendResponse(new CatalogAdminResultComposer(true, "Page toggled"));
             return;
         }
@@ -58,6 +60,7 @@ public class CatalogAdminMovePageEvent extends MessageHandler {
                     return;
                 }
             }
+            CatalogAdminCacheSync.refreshPageFlagsFromDb(pageId, pageType);
             this.client.sendResponse(new CatalogAdminResultComposer(true, "Visibility toggled"));
             return;
         }
@@ -92,6 +95,7 @@ public class CatalogAdminMovePageEvent extends MessageHandler {
             }
         }
 
+        CatalogAdminCacheSync.reparentPage(page, newParentId, newIndex, pageType);
         this.client.sendResponse(new CatalogAdminResultComposer(true, "Page moved"));
     }
 

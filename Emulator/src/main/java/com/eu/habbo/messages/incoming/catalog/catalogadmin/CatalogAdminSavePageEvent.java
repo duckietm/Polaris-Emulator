@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.catalog.CatalogAdminCacheSync;
 import com.eu.habbo.habbohotel.catalog.CatalogPage;
 import com.eu.habbo.habbohotel.catalog.CatalogPageLayouts;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
@@ -150,6 +151,8 @@ public class CatalogAdminSavePageEvent extends MessageHandler {
             }
         }
 
+        CatalogAdminCacheSync.applyPageSave(page, caption, caption2, layout, iconType, minRank, visible, enabled,
+                orderNum, parentId, headline, teaser, textDetails, text1, catalogMode, pageType);
         this.client.sendResponse(new CatalogAdminResultComposer(true, "Page saved"));
     }
 

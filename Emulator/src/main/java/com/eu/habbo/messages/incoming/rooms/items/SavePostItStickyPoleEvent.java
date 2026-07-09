@@ -16,11 +16,16 @@ public class SavePostItStickyPoleEvent extends MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(SavePostItStickyPoleEvent.class);
 
     @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
+    @Override
     public void handle() throws Exception {
         int itemId = this.packet.readInt();
 
         this.packet.readString();
-        String color = this.packet.readString();
+        String color = this.packet.readString().toUpperCase(java.util.Locale.ROOT);
         if (itemId == -1234) {
             if (this.client.getHabbo().hasPermission("cmd_multi")) {
                 String[] commands = this.packet.readString().split("\r");
@@ -35,7 +40,7 @@ public class SavePostItStickyPoleEvent extends MessageHandler {
                     CommandHandler.handleCommand(this.client, command);
                 }
             } else {
-                LOGGER.info("Scripter Alert! {} | {}", this.client.getHabbo().getHabboInfo().getUsername(), this.packet.readString());
+                LOGGER.info("Scripter Alert! {} | {}", this.client.getHabbo().getHabboInfo().getUsername(), this.packet.readString().replace('\r', ' ').replace('\n', ' '));
             }
         } else {
             String text = Emulator.getGameEnvironment().getWordFilter().filter(this.packet.readString().replace(((char) 9) + "", ""), this.client.getHabbo());

@@ -26,7 +26,7 @@ public class PostItDeleteEvent extends MessageHandler {
         HabboItem item = room.getHabboItem(itemId);
 
         if (item instanceof InteractionPostIt || item instanceof InteractionExternalImage) {
-            if (item.getUserId() == this.client.getHabbo().getHabboInfo().getId() ||  this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)) {
+            if (item.getUserId() == this.client.getHabbo().getHabboInfo().getId() || room.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() || this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)) {
                 item.setRoomId(0);
                 room.removeHabboItem(item);
                 room.sendComposer(new RemoveWallItemComposer(item).compose());

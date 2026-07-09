@@ -136,6 +136,25 @@ class RoomItemInputGuardContractTest {
     }
 
     @Test
+    void wallPositionsAreStrictlyValidated() throws Exception {
+        assertTrue(RoomItemInputGuard.isValidWallPosition(":w=3,2 l=9,63 l"));
+        assertTrue(RoomItemInputGuard.isValidWallPosition(":w=14,0 l=0,-6 r"));
+        assertTrue(RoomItemInputGuard.isValidWallPosition(":w=103,103 l=31,86 r"));
+        assertFalse(RoomItemInputGuard.isValidWallPosition(null));
+        assertFalse(RoomItemInputGuard.isValidWallPosition(""));
+        assertFalse(RoomItemInputGuard.isValidWallPosition("w=3,2 l=9,63 l"));
+        assertFalse(RoomItemInputGuard.isValidWallPosition(":w=3,2 l=9,63 x"));
+        assertFalse(RoomItemInputGuard.isValidWallPosition(":w=3,2 l=9,63 l "));
+        assertFalse(RoomItemInputGuard.isValidWallPosition(":w=3,2 l=9,63 l\n:w=1,1 l=1,1 l"));
+        assertFalse(RoomItemInputGuard.isValidWallPosition(":w=99999,2 l=9,63 l"));
+        assertFalse(RoomItemInputGuard.isValidWallPosition(":w=3,2 l=9,63 l".repeat(50)));
+        assertTrue(source("PostItPlaceEvent").contains("RoomItemInputGuard.isValidWallPosition(location)"),
+                "post-it placement should validate the wall position format");
+        assertTrue(source("MoveWallItemEvent").contains("RoomItemInputGuard.isValidWallPosition(wallPosition)"),
+                "wall item moves should validate the wall position format");
+    }
+
+    @Test
     void helperRejectsMalformedValues() {
         assertFalse(RoomItemInputGuard.isPositiveId(0));
         assertTrue(RoomItemInputGuard.isPositiveId(1));

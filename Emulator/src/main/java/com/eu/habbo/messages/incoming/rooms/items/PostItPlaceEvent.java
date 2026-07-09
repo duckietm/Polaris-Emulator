@@ -12,14 +12,20 @@ import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.AddWallItemComposer;
+import com.eu.habbo.messages.outgoing.rooms.items.PostItStickyPoleOpenComposer;
 
 public class PostItPlaceEvent extends MessageHandler {
+    @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
     @Override
     public void handle() throws Exception {
         int itemId = this.packet.readInt();
         String location = this.packet.readString();
 
-        if (!RoomItemInputGuard.isPositiveId(itemId) || location.length() <= 13)
+        if (!RoomItemInputGuard.isPositiveId(itemId) || !RoomItemInputGuard.isValidWallPosition(location))
             return;
 
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
@@ -47,12 +53,13 @@ public class PostItPlaceEvent extends MessageHandler {
                             AchievementManager.progressAchievement(this.client.getHabbo().getHabboInfo().getId(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("NotesLeft"));
                         }
 
+                        if (!room.hasRights(this.client.getHabbo())) {
+                            this.client.sendResponse(new PostItStickyPoleOpenComposer(item));
+                        }
                     }
                     else {
                         this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.MAX_STICKIES.errorCode));
                     }
-
-                    //this.client.sendResponse(new PostItStickyPoleOpenComposer(item));
                 }
             }
         }

@@ -8,16 +8,18 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.Locale;
 
 public class PostItSaveDataEvent extends MessageHandler {
-    private static List<String> COLORS = Arrays.asList("9CCEFF", "FF9CFF", "9CFF9C", "FFFF33");
+    @Override
+    public int getRatelimit() {
+        return 100;
+    }
 
     @Override
     public void handle() throws Exception {
         int itemId = this.packet.readInt();
-        String color = this.packet.readString();
+        String color = this.packet.readString().toUpperCase(Locale.ROOT);
         String text = Emulator.getGameEnvironment().getWordFilter().filter(this.packet.readString().replace(((char) 9) + "", ""), this.client.getHabbo());
 
         if (!RoomItemInputGuard.isPositiveId(itemId))
@@ -28,7 +30,7 @@ public class PostItSaveDataEvent extends MessageHandler {
             return;
         }
 
-        if (!COLORS.contains(color)) {
+        if (PostItColor.isCustomColor(color)) {
             return;
         }
 

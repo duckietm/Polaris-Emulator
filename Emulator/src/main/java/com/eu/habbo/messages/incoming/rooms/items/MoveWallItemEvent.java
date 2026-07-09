@@ -25,7 +25,7 @@ public class MoveWallItemEvent extends MessageHandler {
         int itemId = this.packet.readInt();
         String wallPosition = this.packet.readString();
 
-        if (!RoomItemInputGuard.isPositiveId(itemId) || wallPosition.length() <= 13)
+        if (!RoomItemInputGuard.isPositiveId(itemId) || !RoomItemInputGuard.isValidWallPosition(wallPosition))
             return;
 
         HabboItem item = room.getHabboItem(itemId);

@@ -526,4 +526,8 @@ public class Incoming {
     public static final int RequestMessengerHistoryEvent = 4901;
     public static final int SendMessengerMessageEvent = 4902;
     public static final int MarkMessengerReadEvent = 4903;
+    public static final int AddFriendCategoryEvent = 4081;
+    public static final int RenameFriendCategoryEvent = 4082;
+    public static final int RemoveFriendCategoryEvent = 4083;
+    public static final int MoveFriendToCategoryEvent = 4084;
 }

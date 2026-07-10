@@ -238,12 +238,37 @@ public class HabboInfo implements Runnable {
     }
 
     public void deleteMessengerCategory(MessengerCategory category) {
-        this.messengerCategories.remove(category);
-
         try {
-            SqlQueries.update("DELETE FROM messenger_categories WHERE id = ?", category.getId());
+            SqlQueries.update("UPDATE messenger_friendships SET category = 0 WHERE user_one_id = ? AND category = ?", this.id, category.getId());
+            if (SqlQueries.update("DELETE FROM messenger_categories WHERE id = ? AND user_id = ?", category.getId(), this.id) > 0) {
+                this.messengerCategories.remove(category);
+            }
         } catch (SqlQueries.DataAccessException e) {
             LOGGER.error("Caught SQL exception", e);
+        }
+    }
+
+    public MessengerCategory getMessengerCategory(int categoryId) {
+        return this.messengerCategories.stream().filter(category -> category.getId() == categoryId).findFirst().orElse(null);
+    }
+
+    public boolean renameMessengerCategory(MessengerCategory category, String name) {
+        try {
+            if (SqlQueries.update("UPDATE messenger_categories SET name = ? WHERE id = ? AND user_id = ?", name, category.getId(), this.id) <= 0) return false;
+            category.setName(name);
+            return true;
+        } catch (SqlQueries.DataAccessException e) {
+            LOGGER.error("Caught SQL exception", e);
+            return false;
+        }
+    }
+
+    public boolean moveMessengerFriendToCategory(int friendId, int categoryId) {
+        try {
+            return SqlQueries.update("UPDATE messenger_friendships SET category = ? WHERE user_one_id = ? AND user_two_id = ?", categoryId, this.id, friendId) > 0;
+        } catch (SqlQueries.DataAccessException e) {
+            LOGGER.error("Caught SQL exception", e);
+            return false;
         }
     }
 

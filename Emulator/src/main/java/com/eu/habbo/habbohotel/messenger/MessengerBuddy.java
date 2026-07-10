@@ -140,6 +140,8 @@ public class MessengerBuddy implements Runnable, ISerialize {
 
     public int getCategoryId() { return this.categoryId; }
 
+    public void setCategoryId(int categoryId) { this.categoryId = categoryId; }
+
     public boolean inRoom() {
         return this.inRoom;
     }

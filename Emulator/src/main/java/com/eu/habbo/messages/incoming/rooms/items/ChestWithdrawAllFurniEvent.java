@@ -22,6 +22,11 @@ import java.util.List;
  */
 public class ChestWithdrawAllFurniEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
+    @Override
     public void handle() throws Exception {
         Habbo habbo = this.client.getHabbo();
         if (habbo == null) return;

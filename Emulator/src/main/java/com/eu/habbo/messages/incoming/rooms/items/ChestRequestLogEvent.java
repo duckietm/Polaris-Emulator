@@ -12,6 +12,11 @@ import com.eu.habbo.messages.outgoing.rooms.items.ChestLogComposer;
  */
 public class ChestRequestLogEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
+    @Override
     public void handle() throws Exception {
         Habbo habbo = this.client.getHabbo();
         if (habbo == null) return;
@@ -23,6 +28,10 @@ public class ChestRequestLogEvent extends MessageHandler {
 
         HabboItem item = room.getHabboItem(itemId);
         if (!(item instanceof InteractionWiredChest chest)) return;
+
+        // The log carries other players' usernames and amounts, so gate it the same way the chest
+        // itself opens — public chests anyone may view, private ones only for users with rights.
+        if (!chest.getContents().isAccessOpen() && !room.hasRights(habbo)) return;
 
         this.client.sendResponse(new ChestLogComposer(chest));
     }

@@ -20,6 +20,11 @@ public class ChestUpgradeCapacityEvent extends MessageHandler {
     private static final int MAX_QUANTITY = 10;
 
     @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
+    @Override
     public void handle() throws Exception {
         Habbo habbo = this.client.getHabbo();
         if (habbo == null) return;

@@ -15,6 +15,11 @@ import com.eu.habbo.messages.outgoing.rooms.items.ChestDataComposer;
  */
 public class ChestDepositEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        return 250;
+    }
+
+    @Override
     public void handle() throws Exception {
         Habbo habbo = this.client.getHabbo();
         if (habbo == null) return;
@@ -25,6 +30,9 @@ public class ChestDepositEvent extends MessageHandler {
         int itemId = this.packet.readInt();
         int currencyType = this.packet.readInt();
         int amount = this.packet.readInt();
+        // Any negative type is credits; canonicalise to -1 so the stored key can't be split
+        // across -1/-2/-3 (which would strand a deposit that later withdraws under a different key).
+        if (currencyType < 0) currencyType = -1;
         if (amount <= 0) return;
 
         HabboItem item = room.getHabboItem(itemId);
@@ -37,17 +45,17 @@ public class ChestDepositEvent extends MessageHandler {
         int balance = (currencyType < 0)
                 ? habbo.getHabboInfo().getCredits()
                 : habbo.getHabboInfo().getCurrencyAmount(currencyType);
-        if (balance < amount) return;
+        if (balance <= 0) return;
 
-        int capacityLeft = contents.getCapacityMax() - contents.total(ChestStorage.KIND_CURRENCY);
-        if (capacityLeft <= 0) return;
-        if (amount > capacityLeft) amount = capacityLeft;
+        // Never debit more than the user owns; the chest decides atomically how much fits.
+        int desired = Math.min(amount, balance);
+        int accepted = contents.depositCurrency(currencyType, desired);
+        if (accepted <= 0) return;
 
-        if (currencyType < 0) habbo.giveCredits(-amount);
-        else habbo.givePoints(currencyType, -amount);
+        if (currencyType < 0) habbo.giveCredits(-accepted);
+        else habbo.givePoints(currencyType, -accepted);
 
-        contents.add(ChestStorage.KIND_CURRENCY, currencyType, amount);
-        contents.addLog(new ChestStorage.LogEntry("deposit", System.currentTimeMillis(), habbo.getHabboInfo().getUsername(), 0, amount));
+        contents.addLog(new ChestStorage.LogEntry("deposit", System.currentTimeMillis(), habbo.getHabboInfo().getUsername(), 0, accepted));
         chest.persistContents();
 
         this.client.sendResponse(new ChestDataComposer(chest));

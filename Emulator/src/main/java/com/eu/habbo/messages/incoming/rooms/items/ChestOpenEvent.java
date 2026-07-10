@@ -12,6 +12,12 @@ import com.eu.habbo.messages.incoming.MessageHandler;
  */
 public class ChestOpenEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        // Opening streams the full contents in chunks; throttle to blunt request floods.
+        return 250;
+    }
+
+    @Override
     public void handle() throws Exception {
         Habbo habbo = this.client.getHabbo();
         if (habbo == null) return;

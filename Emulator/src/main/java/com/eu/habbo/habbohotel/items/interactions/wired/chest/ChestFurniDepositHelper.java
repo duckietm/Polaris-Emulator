@@ -28,7 +28,6 @@ public final class ChestFurniDepositHelper {
 
         ChestStorage contents = chest.getContents();
         if (!contents.isAccessDonate() && !room.hasRights(habbo)) return false;
-        if (contents.furniItemCount() >= contents.getCapacityMax()) return false;
 
         Item baseItem = inventoryItem.getBaseItem();
         if (baseItem == null || baseItem.getType() != FurnitureType.FLOOR) return false;
@@ -38,7 +37,12 @@ public final class ChestFurniDepositHelper {
         habbo.getInventory().getItemsComponent().removeHabboItem(removed);
 
         ChestFurniStoredItem stored = ChestFurniStoredItem.fromHabboItem(removed, removed.getId());
-        contents.addFurniItem(stored);
+
+        // Atomic capacity-guarded add; if the chest is full, hand the item back rather than lose it.
+        if (!contents.tryDepositFurni(stored)) {
+            habbo.getInventory().getItemsComponent().addItem(removed);
+            return false;
+        }
         contents.addLog(new ChestStorage.LogEntry("deposit", System.currentTimeMillis(), habbo.getHabboInfo().getUsername(), 0, 1));
         chest.persistContents();
 

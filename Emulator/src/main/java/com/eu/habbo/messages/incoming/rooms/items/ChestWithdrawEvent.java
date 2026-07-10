@@ -15,6 +15,11 @@ import com.eu.habbo.messages.outgoing.rooms.items.ChestDataComposer;
  */
 public class ChestWithdrawEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        return 250;
+    }
+
+    @Override
     public void handle() throws Exception {
         Habbo habbo = this.client.getHabbo();
         if (habbo == null) return;
@@ -25,6 +30,7 @@ public class ChestWithdrawEvent extends MessageHandler {
         int itemId = this.packet.readInt();
         int currencyType = this.packet.readInt();
         int amount = this.packet.readInt();
+        if (currencyType < 0) currencyType = -1;
 
         HabboItem item = room.getHabboItem(itemId);
         if (!(item instanceof InteractionWiredChest chest)) return;
@@ -32,13 +38,9 @@ public class ChestWithdrawEvent extends MessageHandler {
         if (!room.hasRights(habbo)) return;
 
         ChestStorage contents = chest.getContents();
-        int available = contents.count(ChestStorage.KIND_CURRENCY, currencyType);
-        if (available <= 0) return;
-
-        int requested = (amount < 0) ? available : Math.min(amount, available);
-        if (requested <= 0) return;
-
-        int taken = contents.take(ChestStorage.KIND_CURRENCY, currencyType, requested);
+        // Atomic check-and-take: never returns more than is present, so racing another thread
+        // (another user or a wired effect on the room thread) can't over-withdraw or duplicate.
+        int taken = contents.withdrawCurrency(currencyType, amount);
         if (taken <= 0) return;
 
         contents.addLog(new ChestStorage.LogEntry("withdraw", System.currentTimeMillis(), habbo.getHabboInfo().getUsername(), taken, 0));

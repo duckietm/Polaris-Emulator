@@ -11,6 +11,11 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 /** Deposit one inventory furni row into a wired furni chest [chestItemId, inventoryItemId]. Header 9325. */
 public class ChestDepositInventoryItemEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        return 100;
+    }
+
+    @Override
     public void handle() throws Exception {
         Habbo habbo = this.client.getHabbo();
         if (habbo == null) return;

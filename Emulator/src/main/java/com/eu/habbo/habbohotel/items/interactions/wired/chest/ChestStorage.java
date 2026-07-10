@@ -16,6 +16,16 @@ import java.util.Set;
  * just default.
  *
  * <p>Pure model — no room/DB access — so it stays unit-testable.</p>
+ *
+ * <p><b>Thread-safety:</b> a chest's contents are mutated from several threads — the per-channel
+ * Netty handler for player packets (deposit/withdraw), other players' channels, and the room/wired
+ * thread (wired chest effects and contract transactions). Every method that reads or mutates the
+ * entries / stored furni / log therefore synchronizes on this instance, and the collection getters
+ * return defensive snapshots so callers can iterate without racing a concurrent mutation. The
+ * combined {@code depositCurrency} / {@code withdrawCurrency} / {@code tryDepositFurni} /
+ * {@code removeFurniByWireType} operations are the atomic building blocks the packet handlers use so
+ * a check-then-act can't be split by another thread (which is how items/currency would otherwise be
+ * duplicated).</p>
  */
 public class ChestStorage {
     public static final int KIND_CURRENCY = 0;
@@ -82,28 +92,42 @@ public class ChestStorage {
     private boolean notifyWired = false;
     private int notifyMode = 0;              // 0 = always
 
-    public List<Entry> entries() {
-        return this.entries;
+    /** Defensive snapshot — safe to iterate off-thread; mutate the chest through the dedicated methods. */
+    public synchronized List<Entry> entries() {
+        return new ArrayList<>(this.entries);
     }
 
-    public List<ChestFurniStoredItem> furniItems() {
-        return this.furniItems;
+    /** Defensive snapshot (element references preserved, so field reads on the rows are still live). */
+    public synchronized List<ChestFurniStoredItem> furniItems() {
+        return new ArrayList<>(this.furniItems);
     }
 
-    public int furniItemCount() {
+    public synchronized int furniItemCount() {
         return this.furniItems.size();
     }
 
     /** Add one stored furni row (v2). Keeps aggregate {@link #KIND_FURNI} entries in sync for wired conditions. */
-    public ChestFurniStoredItem addFurniItem(ChestFurniStoredItem item) {
+    public synchronized ChestFurniStoredItem addFurniItem(ChestFurniStoredItem item) {
         this.assignInventoryId(item);
         this.furniItems.add(item);
         this.add(KIND_FURNI, item.baseItemId, 1);
         return item;
     }
 
+    /**
+     * Capacity-guarded furni add. Returns false (and adds nothing) when the chest is already at
+     * capacity, so a concurrent deposit can't push it over the limit. Atomic.
+     */
+    public synchronized boolean tryDepositFurni(ChestFurniStoredItem item) {
+        if (item == null || this.furniItems.size() >= this.getCapacityMax()) {
+            return false;
+        }
+        this.addFurniItem(item);
+        return true;
+    }
+
     /** Remove every stored furni row and clear aggregate {@link #KIND_FURNI} entries. */
-    public List<ChestFurniStoredItem> removeAllFurniItems() {
+    public synchronized List<ChestFurniStoredItem> removeAllFurniItems() {
         if (this.furniItems.isEmpty()) {
             return List.of();
         }
@@ -114,7 +138,7 @@ public class ChestStorage {
     }
 
     /** Remove up to {@code amount} rows matching a {@link ChestItemType} wire identity. */
-    public List<ChestFurniStoredItem> removeFurniByType(boolean wallItem, int baseItemId, String legacyPosterId, int amount) {
+    public synchronized List<ChestFurniStoredItem> removeFurniByType(boolean wallItem, int baseItemId, String legacyPosterId, int amount) {
         List<ChestFurniStoredItem> removed = new ArrayList<>();
         if (amount <= 0) return removed;
 
@@ -133,7 +157,7 @@ public class ChestStorage {
     }
 
     /** Floor-item shortcut for legacy withdraw wire [baseItemId, amount]. */
-    public List<ChestFurniStoredItem> removeFurniByBaseItemId(int baseItemId, int amount) {
+    public synchronized List<ChestFurniStoredItem> removeFurniByBaseItemId(int baseItemId, int amount) {
         return removeFurniByType(false, baseItemId, "", amount);
     }
 
@@ -141,7 +165,7 @@ public class ChestStorage {
      * Quantity of stored rows matching a CLIENT-facing type id ({@link ChestFurniStoredItem#wireTypeId()}
      * — the sprite id the client saw and echoes back on withdraw, not the internal base item id).
      */
-    public int countFurniByWireType(boolean wallItem, int wireTypeId, String legacyPosterId) {
+    public synchronized int countFurniByWireType(boolean wallItem, int wireTypeId, String legacyPosterId) {
         String poster = legacyPosterId == null ? "" : legacyPosterId;
         int count = 0;
         for (ChestFurniStoredItem item : this.furniItems) {
@@ -153,8 +177,8 @@ public class ChestStorage {
         return count;
     }
 
-    /** Like {@link #removeFurniByType} but matching the CLIENT-facing type id (sprite id) instead. */
-    public List<ChestFurniStoredItem> removeFurniByWireType(boolean wallItem, int wireTypeId, String legacyPosterId, int amount) {
+    /** Like {@link #removeFurniByType} but matching the CLIENT-facing type id (sprite id) instead. Atomic. */
+    public synchronized List<ChestFurniStoredItem> removeFurniByWireType(boolean wallItem, int wireTypeId, String legacyPosterId, int amount) {
         List<ChestFurniStoredItem> removed = new ArrayList<>();
         if (amount <= 0) return removed;
 
@@ -173,7 +197,7 @@ public class ChestStorage {
     }
 
     /** Expand legacy aggregate furni rows into per-item storage (called once on load). */
-    public void migrateAggregatedFurniToItems() {
+    public synchronized void migrateAggregatedFurniToItems() {
         if (!this.furniItems.isEmpty()) return;
 
         for (Entry e : this.entries) {
@@ -198,12 +222,12 @@ public class ChestStorage {
         }
     }
 
-    public boolean isEmpty() {
+    public synchronized boolean isEmpty() {
         return this.entries.isEmpty();
     }
 
     /** Total quantity across every entry of a kind. */
-    public int total(int kind) {
+    public synchronized int total(int kind) {
         int sum = 0;
         for (Entry e : this.entries) {
             if (e.kind == kind) {
@@ -214,7 +238,7 @@ public class ChestStorage {
     }
 
     /** Quantity held for a specific kind+type. */
-    public int count(int kind, int type) {
+    public synchronized int count(int kind, int type) {
         int sum = 0;
         for (Entry e : this.entries) {
             if (e.kind == kind && e.type == type) {
@@ -224,12 +248,12 @@ public class ChestStorage {
         return sum;
     }
 
-    public boolean has(int kind, int type, int quantity) {
+    public synchronized boolean has(int kind, int type, int quantity) {
         return this.count(kind, type) >= quantity;
     }
 
     /** Distinct types present for a kind, in insertion order. */
-    public List<Integer> distinctTypes(int kind) {
+    public synchronized List<Integer> distinctTypes(int kind) {
         Set<Integer> seen = new LinkedHashSet<>();
         for (Entry e : this.entries) {
             if (e.kind == kind && e.quantity > 0) {
@@ -239,8 +263,43 @@ public class ChestStorage {
         return new ArrayList<>(seen);
     }
 
+    /**
+     * Capacity-guarded currency deposit. Accepts at most what fits under {@link #getCapacityMax()},
+     * adds it, and returns the accepted amount (0 when full) so the caller debits the user by exactly
+     * that. Atomic, so two concurrent deposits can't jointly overflow the capacity.
+     */
+    public synchronized int depositCurrency(int currencyType, int amount) {
+        if (amount <= 0) {
+            return 0;
+        }
+        int capacityLeft = this.getCapacityMax() - this.total(KIND_CURRENCY);
+        int accepted = Math.min(amount, capacityLeft);
+        if (accepted <= 0) {
+            return 0;
+        }
+        this.add(KIND_CURRENCY, currencyType, accepted);
+        return accepted;
+    }
+
+    /**
+     * Currency withdraw. {@code amount < 0} withdraws all of that type. Returns how much was actually
+     * removed (never more than is present, never negative) so the caller credits the user by exactly
+     * that. Atomic.
+     */
+    public synchronized int withdrawCurrency(int currencyType, int amount) {
+        int available = this.count(KIND_CURRENCY, currencyType);
+        if (available <= 0) {
+            return 0;
+        }
+        int requested = (amount < 0) ? available : Math.min(amount, available);
+        if (requested <= 0) {
+            return 0;
+        }
+        return this.take(KIND_CURRENCY, currencyType, requested);
+    }
+
     /** Add quantity to a kind+type, merging into the existing entry if present. No-op for quantity &lt;= 0. */
-    public void add(int kind, int type, int quantity) {
+    public synchronized void add(int kind, int type, int quantity) {
         if (quantity <= 0) {
             return;
         }
@@ -257,7 +316,7 @@ public class ChestStorage {
      * Remove up to {@code quantity} of a specific kind+type. Returns how many were actually removed
      * (capped by what's available). Entries that reach zero are dropped. Never goes negative.
      */
-    public int take(int kind, int type, int quantity) {
+    public synchronized int take(int kind, int type, int quantity) {
         if (quantity <= 0) {
             return 0;
         }
@@ -313,12 +372,13 @@ public class ChestStorage {
         this.notifyMode = mode;
     }
 
-    public List<LogEntry> getLog() {
-        return this.log;
+    /** Defensive snapshot — safe to iterate off-thread. */
+    public synchronized List<LogEntry> getLog() {
+        return new ArrayList<>(this.log);
     }
 
     /** Record a transaction at the head of the log, keeping at most {@link #MAX_LOG} rows. */
-    public void addLog(LogEntry entry) {
+    public synchronized void addLog(LogEntry entry) {
         if (entry == null) return;
         this.log.add(0, entry);
         while (this.log.size() > MAX_LOG) {
@@ -326,7 +386,7 @@ public class ChestStorage {
         }
     }
 
-    public String toJson() {
+    public synchronized String toJson() {
         JsonData data = new JsonData(this.entries);
         data.name = this.name;
         data.description = this.description;

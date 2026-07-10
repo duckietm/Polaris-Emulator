@@ -22,6 +22,13 @@ import java.util.List;
  * amount {@code < 0} = withdraw all matching rows.
  */
 public class ChestWithdrawFurniEvent extends MessageHandler {
+    private static final int MAX_WITHDRAW_AMOUNT = 1000;
+
+    @Override
+    public int getRatelimit() {
+        return 250;
+    }
+
     @Override
     public void handle() throws Exception {
         Habbo habbo = this.client.getHabbo();
@@ -42,11 +49,11 @@ public class ChestWithdrawFurniEvent extends MessageHandler {
         if (!room.hasRights(habbo)) return;
 
         // typeId is the CLIENT-facing type (sprite id) echoed back from what we sent on the wire.
+        // amount < 0 = withdraw all matching rows; a positive amount is capped so a spoofed huge
+        // value can't force an oversized allocation. removeFurniByWireType is atomic and caps at
+        // whatever is actually present, so it can never over-withdraw or duplicate.
         ChestStorage contents = chest.getContents();
-        int available = contents.countFurniByWireType(wallItem, typeId, legacyPosterId);
-        if (available <= 0) return;
-
-        int requested = (amount < 0) ? available : Math.min(amount, available);
+        int requested = (amount < 0) ? Integer.MAX_VALUE : Math.min(amount, MAX_WITHDRAW_AMOUNT);
         if (requested <= 0) return;
 
         var removedItems = contents.removeFurniByWireType(wallItem, typeId, legacyPosterId, requested);

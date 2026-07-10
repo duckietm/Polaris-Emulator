@@ -29,6 +29,11 @@ public class ChestDepositFurniEvent extends MessageHandler {
     private static final int MAX_DEPOSIT_AMOUNT = 100;
 
     @Override
+    public int getRatelimit() {
+        return 250;
+    }
+
+    @Override
     public void handle() throws Exception {
         Habbo habbo = this.client.getHabbo();
         if (habbo == null) return;
@@ -64,15 +69,22 @@ public class ChestDepositFurniEvent extends MessageHandler {
         for (int i = 0; i < amount; i++) {
             HabboItem removed = habbo.getInventory().getItemsComponent().getAndRemoveHabboItem(baseItem);
             if (removed == null) break;
+
+            ChestFurniStoredItem stored = ChestFurniStoredItem.fromHabboItem(removed, 0);
+
+            // Atomic capacity-guarded add: if a concurrent deposit filled the chest between the
+            // capacity check above and here, put the item straight back so it can't be lost.
+            if (!contents.tryDepositFurni(stored)) {
+                habbo.getInventory().getItemsComponent().addItem(removed);
+                break;
+            }
+
             toRemove.add(removed);
-            added.add(ChestFurniStoredItem.fromHabboItem(removed, 0));
+            added.add(stored);
         }
         int deposited = toRemove.size();
         if (deposited <= 0) return;
 
-        for (ChestFurniStoredItem stored : added) {
-            contents.addFurniItem(stored);
-        }
         contents.addLog(new ChestStorage.LogEntry("deposit", System.currentTimeMillis(), habbo.getHabboInfo().getUsername(), 0, deposited));
         chest.persistContents();
 

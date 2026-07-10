@@ -14,6 +14,11 @@ import com.eu.habbo.messages.outgoing.rooms.items.ChestDataComposer;
  */
 public class ChestSaveSettingsEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
+    @Override
     public void handle() throws Exception {
         Habbo habbo = this.client.getHabbo();
         if (habbo == null) return;

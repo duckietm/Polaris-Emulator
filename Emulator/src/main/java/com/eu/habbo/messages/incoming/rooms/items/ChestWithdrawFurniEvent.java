@@ -41,21 +41,22 @@ public class ChestWithdrawFurniEvent extends MessageHandler {
 
         if (!room.hasRights(habbo)) return;
 
-        Item baseItem = Emulator.getGameEnvironment().getItemManager().getItem(typeId);
-        if (baseItem == null) return;
-
+        // typeId is the CLIENT-facing type (sprite id) echoed back from what we sent on the wire.
         ChestStorage contents = chest.getContents();
-        int available = contents.count(ChestStorage.KIND_FURNI, typeId);
+        int available = contents.countFurniByWireType(wallItem, typeId, legacyPosterId);
         if (available <= 0) return;
 
         int requested = (amount < 0) ? available : Math.min(amount, available);
         if (requested <= 0) return;
 
-        var removedItems = contents.removeFurniByType(wallItem, typeId, legacyPosterId, requested);
+        var removedItems = contents.removeFurniByWireType(wallItem, typeId, legacyPosterId, requested);
         int taken = removedItems.size();
         if (taken <= 0) return;
 
         for (ChestFurniStoredItem stored : removedItems) {
+            Item baseItem = Emulator.getGameEnvironment().getItemManager().getItem(stored.baseItemId);
+            if (baseItem == null) continue;
+
             HabboItem created = Emulator.getGameEnvironment().getItemManager().createItem(
                     habbo.getHabboInfo().getId(), baseItem, stored.limitedStack, stored.limitedSells, stored.extradata);
             if (created == null) continue;

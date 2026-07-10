@@ -137,6 +137,41 @@ public class ChestStorage {
         return removeFurniByType(false, baseItemId, "", amount);
     }
 
+    /**
+     * Quantity of stored rows matching a CLIENT-facing type id ({@link ChestFurniStoredItem#wireTypeId()}
+     * — the sprite id the client saw and echoes back on withdraw, not the internal base item id).
+     */
+    public int countFurniByWireType(boolean wallItem, int wireTypeId, String legacyPosterId) {
+        String poster = legacyPosterId == null ? "" : legacyPosterId;
+        int count = 0;
+        for (ChestFurniStoredItem item : this.furniItems) {
+            if (item.wallItem != wallItem || item.wireTypeId() != wireTypeId) continue;
+            String itemPoster = item.legacyPosterId == null ? "" : item.legacyPosterId;
+            if (wallItem && !poster.equals(itemPoster)) continue;
+            count++;
+        }
+        return count;
+    }
+
+    /** Like {@link #removeFurniByType} but matching the CLIENT-facing type id (sprite id) instead. */
+    public List<ChestFurniStoredItem> removeFurniByWireType(boolean wallItem, int wireTypeId, String legacyPosterId, int amount) {
+        List<ChestFurniStoredItem> removed = new ArrayList<>();
+        if (amount <= 0) return removed;
+
+        String poster = legacyPosterId == null ? "" : legacyPosterId;
+        var it = this.furniItems.iterator();
+        while (it.hasNext() && removed.size() < amount) {
+            ChestFurniStoredItem item = it.next();
+            if (item.wallItem != wallItem || item.wireTypeId() != wireTypeId) continue;
+            String itemPoster = item.legacyPosterId == null ? "" : item.legacyPosterId;
+            if (wallItem && !poster.equals(itemPoster)) continue;
+            removed.add(item);
+            it.remove();
+            this.take(KIND_FURNI, item.baseItemId, 1);
+        }
+        return removed;
+    }
+
     /** Expand legacy aggregate furni rows into per-item storage (called once on load). */
     public void migrateAggregatedFurniToItems() {
         if (!this.furniItems.isEmpty()) return;

@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 
+import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -39,6 +40,23 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
         this.contents = ChestStorage.fromJson(set.getString("wired_data"));
+        resolveLegacySpriteIds(this.contents);
+    }
+
+    /**
+     * Payloads persisted before the sprite id was stored per row only carry the internal base item
+     * id. The client needs the furnidata sprite id to render icons/names, so backfill it here — the
+     * next persist writes it out permanently.
+     */
+    private static void resolveLegacySpriteIds(ChestStorage contents) {
+        if (Emulator.getGameEnvironment() == null || Emulator.getGameEnvironment().getItemManager() == null) return;
+
+        for (ChestFurniStoredItem stored : contents.furniItems()) {
+            if (stored.spriteId > 0) continue;
+
+            Item base = Emulator.getGameEnvironment().getItemManager().getItem(stored.baseItemId);
+            if (base != null) stored.spriteId = base.getSpriteId();
+        }
     }
 
     @Override

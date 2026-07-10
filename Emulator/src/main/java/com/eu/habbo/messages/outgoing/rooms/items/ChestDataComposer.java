@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.rooms.items;
 
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniStoredItem;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestFurni;
@@ -8,7 +9,9 @@ import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Player-facing wired chest (Scrigno) state push. Sent on open and after every deposit / withdraw /
@@ -70,18 +73,20 @@ public class ChestDataComposer extends MessageComposer {
             this.response.appendInt(e.quantity);
         }
 
-        // chest kind + furni contents (base item id + quantity per stored type)
+        // chest kind + furni contents (client-facing sprite id + quantity per stored type).
+        // Aggregated from the stored rows so the ids match what ChestFurniChunkComposer sends —
+        // the client resolves icons/names against furnidata, which only knows sprite ids.
         this.response.appendInt(chestKind);
 
-        List<ChestStorage.Entry> furni = new ArrayList<>();
-        for (ChestStorage.Entry e : c.entries()) {
-            if (e.kind == ChestStorage.KIND_FURNI && e.quantity > 0) furni.add(e);
+        Map<Integer, Integer> furni = new LinkedHashMap<>();
+        for (ChestFurniStoredItem stored : c.furniItems()) {
+            furni.merge(stored.wireTypeId(), 1, Integer::sum);
         }
 
         this.response.appendInt(furni.size());
-        for (ChestStorage.Entry e : furni) {
-            this.response.appendInt(e.type);
-            this.response.appendInt(e.quantity);
+        for (Map.Entry<Integer, Integer> e : furni.entrySet()) {
+            this.response.appendInt(e.getKey());
+            this.response.appendInt(e.getValue());
         }
 
         return this.response;

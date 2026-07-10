@@ -15,7 +15,7 @@ public final class ChestFurniWireUtil {
         message.appendInt(item.lockState);
         appendLong(message, item.transactionId);
         message.appendBoolean(item.wallItem);
-        message.appendInt(item.baseItemId);
+        message.appendInt(item.wireTypeId());
         message.appendString(item.legacyPosterId == null ? "" : item.legacyPosterId);
         message.appendBoolean(item.groupable);
         message.appendInt(item.specialType);

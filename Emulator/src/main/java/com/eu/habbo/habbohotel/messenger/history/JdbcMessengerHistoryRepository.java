@@ -232,15 +232,20 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
     public void cleanupRetention(int days, int maxMessagesPerConversation) {
         String deleteExpired = "DELETE FROM messenger_messages WHERE created_at < UTC_TIMESTAMP() - INTERVAL ? DAY LIMIT ?";
         String deleteOverflow = """
-                DELETE FROM messenger_messages
-                WHERE id IN (
-                    SELECT id FROM (
-                        SELECT id, ROW_NUMBER() OVER (PARTITION BY conversation_id ORDER BY id DESC) AS row_number
-                        FROM messenger_messages
-                    ) ranked
-                    WHERE ranked.row_number > ?
-                    LIMIT ?
-                )
+                DELETE messages FROM messenger_messages messages
+                JOIN (
+                    SELECT overflow_rows.id
+                    FROM (
+                        SELECT older.id
+                        FROM messenger_messages older
+                        JOIN messenger_messages newer
+                          ON newer.conversation_id = older.conversation_id
+                         AND newer.id > older.id
+                        GROUP BY older.id
+                        HAVING COUNT(newer.id) >= ?
+                        LIMIT ?
+                    ) overflow_rows
+                ) doomed ON doomed.id = messages.id
                 """;
         try (Connection connection = dataSource.getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement(deleteExpired)) {

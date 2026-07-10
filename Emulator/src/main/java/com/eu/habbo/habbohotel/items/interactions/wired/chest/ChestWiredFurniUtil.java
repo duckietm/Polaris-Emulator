@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-/** Chest ↔ inventory furni helpers for wired effects and contract transactions. */
 public final class ChestWiredFurniUtil {
     private ChestWiredFurniUtil() {
     }
@@ -29,7 +28,7 @@ public final class ChestWiredFurniUtil {
         }
 
         List<ChestFurniStoredItem> removed = chest.getContents().removeFurniByType(wallItem, baseItemId, legacyPosterId, amount);
-        int given = deliverStoredItems(habbo, removed);
+        int given = giveStoredItemsToInventory(habbo, removed);
         if (given > 0) {
             chest.persistContents();
         }
@@ -127,7 +126,10 @@ public final class ChestWiredFurniUtil {
         chest.persistContents();
     }
 
-    private static int deliverStoredItems(Habbo habbo, List<ChestFurniStoredItem> removed) {
+    public static int giveStoredItemsToInventory(Habbo habbo, List<ChestFurniStoredItem> removed) {
+        if (habbo == null || habbo.getClient() == null || removed == null || removed.isEmpty()) {
+            return 0;
+        }
         int given = 0;
         for (ChestFurniStoredItem stored : removed) {
             Item baseItem = Emulator.getGameEnvironment().getItemManager().getItem(stored.baseItemId);

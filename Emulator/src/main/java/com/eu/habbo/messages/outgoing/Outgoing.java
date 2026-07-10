@@ -617,5 +617,11 @@ public class Outgoing {
     public static final int EarningsClaimResultComposer = 9408;
     public static final int MentionReceivedComposer = 4801;
     public static final int MentionsListComposer = 4802;
+    public static final int MessengerConversationsComposer = 4900;
+    public static final int MessengerHistoryComposer = 4901;
+    public static final int MessengerMessageAckComposer = 4902;
+    public static final int MessengerMessageFailedComposer = 4903;
+    public static final int MessengerMessageV2Composer = 4904;
+    public static final int MessengerReadCursorComposer = 4905;
 
 }

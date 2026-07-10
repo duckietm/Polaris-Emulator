@@ -5,6 +5,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,6 +17,41 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
     public JdbcMessengerHistoryRepository(DataSource dataSource) {
         if (dataSource == null) throw new IllegalArgumentException("dataSource is required");
         this.dataSource = dataSource;
+    }
+
+    @Override
+    public List<MessengerConversationSummary> listConversations(int userId) {
+        String sql = """
+                SELECT c.id, c.type, c.name, COALESCE(MAX(m.id), 0) AS last_message_id,
+                       SUM(CASE WHEN m.id > COALESCE(member.last_read_message_id, 0) AND m.sender_id <> ? THEN 1 ELSE 0 END) AS unread_count,
+                       UNIX_TIMESTAMP(c.updated_at) AS updated_at
+                FROM messenger_members member
+                JOIN messenger_conversations c ON c.id = member.conversation_id
+                LEFT JOIN messenger_messages m ON m.conversation_id = c.id
+                WHERE member.user_id = ? AND member.left_at IS NULL
+                GROUP BY c.id, c.type, c.name, member.last_read_message_id, c.updated_at
+                ORDER BY c.updated_at DESC
+                """;
+        List<MessengerConversationSummary> summaries = new ArrayList<>();
+        try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, userId);
+            statement.setInt(2, userId);
+            try (ResultSet result = statement.executeQuery()) {
+                while (result.next()) {
+                    summaries.add(new MessengerConversationSummary(
+                            result.getLong("id"),
+                            ConversationType.valueOf(result.getString("type").toUpperCase()),
+                            result.getString("name"),
+                            result.getLong("last_message_id"),
+                            result.getInt("unread_count"),
+                            result.getLong("updated_at")
+                    ));
+                }
+            }
+            return summaries;
+        } catch (SQLException exception) {
+            throw new IllegalStateException("failed to list messenger conversations", exception);
+        }
     }
 
     @Override
@@ -72,6 +108,99 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
             return messages;
         } catch (SQLException exception) {
             throw new IllegalStateException("failed to load messenger history", exception);
+        }
+    }
+
+    @Override
+    public MessengerStoredMessage storeDirectMessage(int senderId, int recipientId, int type, String message, String metadata) {
+        String conversationSql = "INSERT INTO messenger_conversations (type, direct_key) VALUES ('direct', ?) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), updated_at = CURRENT_TIMESTAMP";
+        String memberSql = "INSERT INTO messenger_members (conversation_id, user_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE left_at = NULL, left_message_id = NULL";
+        try (Connection connection = dataSource.getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                long conversationId;
+                try (PreparedStatement statement = connection.prepareStatement(conversationSql, Statement.RETURN_GENERATED_KEYS)) {
+                    statement.setString(1, MessengerHistoryService.directKey(senderId, recipientId));
+                    statement.executeUpdate();
+                    try (ResultSet keys = statement.getGeneratedKeys()) {
+                        if (!keys.next()) throw new SQLException("missing conversation id");
+                        conversationId = keys.getLong(1);
+                    }
+                }
+                try (PreparedStatement statement = connection.prepareStatement(memberSql)) {
+                    statement.setLong(1, conversationId);
+                    statement.setInt(2, senderId);
+                    statement.addBatch();
+                    statement.setLong(1, conversationId);
+                    statement.setInt(2, recipientId);
+                    statement.addBatch();
+                    statement.executeBatch();
+                }
+                MessengerStoredMessage stored = insertMessage(connection, conversationId, senderId, type, message, metadata);
+                connection.commit();
+                return stored;
+            } catch (SQLException exception) {
+                connection.rollback();
+                throw exception;
+            } finally {
+                connection.setAutoCommit(true);
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("failed to store direct messenger message", exception);
+        }
+    }
+
+    @Override
+    public MessengerStoredMessage storeConversationMessage(long conversationId, int senderId, int type, String message, String metadata) {
+        try (Connection connection = dataSource.getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                MessengerStoredMessage stored = insertMessage(connection, conversationId, senderId, type, message, metadata);
+                connection.commit();
+                return stored;
+            } catch (SQLException exception) {
+                connection.rollback();
+                throw exception;
+            } finally {
+                connection.setAutoCommit(true);
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("failed to store messenger message", exception);
+        }
+    }
+
+    private MessengerStoredMessage insertMessage(Connection connection, long conversationId, int senderId, int type, String message, String metadata) throws SQLException {
+        String sql = "INSERT INTO messenger_messages (conversation_id, sender_id, type, message, metadata) VALUES (?, ?, ?, ?, ?)";
+        long messageId;
+        try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            statement.setLong(1, conversationId);
+            statement.setInt(2, senderId);
+            statement.setInt(3, type);
+            statement.setString(4, message);
+            statement.setString(5, metadata);
+            statement.executeUpdate();
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                if (!keys.next()) throw new SQLException("missing message id");
+                messageId = keys.getLong(1);
+            }
+        }
+        try (PreparedStatement statement = connection.prepareStatement("UPDATE messenger_conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?")) {
+            statement.setLong(1, conversationId);
+            statement.executeUpdate();
+        }
+        return new MessengerStoredMessage(messageId, conversationId, senderId, type, message, metadata, System.currentTimeMillis() / 1000L);
+    }
+
+    @Override
+    public boolean markRead(long conversationId, int userId, long messageId) {
+        String sql = "UPDATE messenger_members SET last_read_message_id = GREATEST(COALESCE(last_read_message_id, 0), ?) WHERE conversation_id = ? AND user_id = ? AND left_at IS NULL";
+        try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, messageId);
+            statement.setLong(2, conversationId);
+            statement.setInt(3, userId);
+            return statement.executeUpdate() == 1;
+        } catch (SQLException exception) {
+            throw new IllegalStateException("failed to update messenger read cursor", exception);
         }
     }
 

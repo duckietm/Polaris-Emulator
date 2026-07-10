@@ -57,6 +57,11 @@ class MessengerHistoryServiceTest {
         private final List<MessengerStoredMessage> rows = new ArrayList<>();
 
         @Override
+        public List<MessengerConversationSummary> listConversations(int userId) {
+            return List.of();
+        }
+
+        @Override
         public boolean isActiveMember(long conversationId, int userId) {
             return member;
         }
@@ -65,6 +70,21 @@ class MessengerHistoryServiceTest {
         public List<MessengerStoredMessage> loadHistory(long conversationId, int userId, long beforeMessageId, int limit) {
             requestedLimit = limit;
             return new ArrayList<>(rows);
+        }
+
+        @Override
+        public MessengerStoredMessage storeDirectMessage(int senderId, int recipientId, int type, String message, String metadata) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public MessengerStoredMessage storeConversationMessage(long conversationId, int senderId, int type, String message, String metadata) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean markRead(long conversationId, int userId, long messageId) {
+            return true;
         }
 
         @Override

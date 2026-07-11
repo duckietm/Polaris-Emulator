@@ -28,4 +28,30 @@ class AtomicCatalogPurchaseContractTest {
         assertTrue(source.contains("UPDATE users_currency SET amount = amount - ? WHERE user_id = ? AND type = ? AND amount >= ?"));
         assertTrue(source.contains("connection.rollback()"));
     }
+
+    @Test
+    void catalogPublishesFurnitureOnlyAfterAtomicPurchaseReturns() throws Exception {
+        String source = Files.readString(Path.of(
+                "src/main/java/com/eu/habbo/habbohotel/catalog/CatalogManager.java"));
+
+        int method = source.indexOf("purchaseFurnitureAtomically(");
+        int transaction = source.indexOf("CatalogPurchaseTransaction.execute(", method);
+        int inventory = source.indexOf("getItemsComponent().addItems(", transaction);
+        int success = source.indexOf("new PurchaseOKComposer(", transaction);
+
+        assertTrue(method > -1);
+        assertTrue(transaction > method);
+        assertTrue(inventory > transaction);
+        assertTrue(success > transaction);
+    }
+
+    @Test
+    void limitedFurnitureReservationUsesThePurchaseConnection() throws Exception {
+        String source = Files.readString(Path.of(
+                "src/main/java/com/eu/habbo/habbohotel/catalog/CatalogLimitedConfiguration.java"));
+
+        assertTrue(source.contains("limitedSold(Connection connection, int catalogItemId"));
+        assertTrue(source.contains("AND number = ? AND user_id = 0 LIMIT 1"));
+        assertTrue(source.contains("executeUpdate() != 1"));
+    }
 }

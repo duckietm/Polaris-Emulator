@@ -33,25 +33,46 @@ public class CatalogLimitedConfiguration implements Runnable {
 
     public int getNumber() {
         synchronized (this.limitedNumbers) {
-            int num = this.limitedNumbers.pop();
-            if (this.limitedNumbers.isEmpty()) {
-                Emulator.getGameEnvironment().getCatalogManager().moveCatalogItem(Emulator.getGameEnvironment().getCatalogManager().getCatalogItem(this.itemId), Emulator.getConfig().getInt("catalog.ltd.page.soldout"));
-            }
-            return num;
+            return this.limitedNumbers.pop();
         }
     }
 
     public void limitedSold(int catalogItemId, Habbo habbo, HabboItem item) {
         synchronized (this.limitedNumbers) {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE catalog_items_limited SET user_id = ?, timestamp = ?, item_id = ? WHERE catalog_item_id = ? AND number = ? AND user_id = 0 LIMIT 1")) {
-                statement.setInt(1, habbo.getHabboInfo().getId());
-                statement.setInt(2, Emulator.getIntUnixTimestamp());
-                statement.setInt(3, item.getId());
-                statement.setInt(4, catalogItemId);
-                statement.setInt(5, item.getLimitedSells());
-                statement.execute();
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+                this.limitedSold(connection, catalogItemId, habbo, item);
+                this.markSoldOutIfEmpty();
             } catch (SQLException e) {
                 LOGGER.error("Caught SQL exception", e);
+            }
+        }
+    }
+
+    public void limitedSold(Connection connection, int catalogItemId, Habbo habbo, HabboItem item) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("UPDATE catalog_items_limited SET user_id = ?, timestamp = ?, item_id = ? WHERE catalog_item_id = ? AND number = ? AND user_id = 0 LIMIT 1")) {
+            statement.setInt(1, habbo.getHabboInfo().getId());
+            statement.setInt(2, Emulator.getIntUnixTimestamp());
+            statement.setInt(3, item.getId());
+            statement.setInt(4, catalogItemId);
+            statement.setInt(5, item.getLimitedSells());
+            if (statement.executeUpdate() != 1) {
+                throw new SQLException("Limited catalog number is no longer available: " + item.getLimitedSells());
+            }
+        }
+    }
+
+    public void restoreNumber(int number) {
+        synchronized (this.limitedNumbers) {
+            if (!this.limitedNumbers.contains(number)) this.limitedNumbers.push(number);
+        }
+    }
+
+    public void markSoldOutIfEmpty() {
+        synchronized (this.limitedNumbers) {
+            if (this.limitedNumbers.isEmpty()) {
+                Emulator.getGameEnvironment().getCatalogManager().moveCatalogItem(
+                        Emulator.getGameEnvironment().getCatalogManager().getCatalogItem(this.itemId),
+                        Emulator.getConfig().getInt("catalog.ltd.page.soldout"));
             }
         }
     }

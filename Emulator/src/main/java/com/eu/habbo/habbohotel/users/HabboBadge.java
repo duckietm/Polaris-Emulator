@@ -57,18 +57,9 @@ public class HabboBadge implements Runnable {
     public void run() {
         try {
             if (this.needsInsert) {
-                try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO users_badges (user_id, slot_id, badge_code) VALUES (?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
-                    statement.setInt(1, this.habbo.getHabboInfo().getId());
-                    statement.setInt(2, this.slot);
-                    statement.setString(3, this.code);
-                    statement.execute();
-                    try (ResultSet set = statement.getGeneratedKeys()) {
-                        if (set.next()) {
-                            this.id = set.getInt(1);
-                        }
-                    }
+                try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+                    this.insert(connection);
                 }
-                this.needsInsert = false;
             } else if (this.needsUpdate) {
                 try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE users_badges SET slot_id = ?, badge_code = ? WHERE id = ? AND user_id = ?")) {
                     statement.setInt(1, this.slot);
@@ -82,6 +73,22 @@ public class HabboBadge implements Runnable {
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
         }
+    }
+
+    public void insert(Connection connection) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO users_badges (user_id, slot_id, badge_code) VALUES (?, ?, ?)",
+                Statement.RETURN_GENERATED_KEYS)) {
+            statement.setInt(1, this.habbo.getHabboInfo().getId());
+            statement.setInt(2, this.slot);
+            statement.setString(3, this.code);
+            statement.executeUpdate();
+            try (ResultSet set = statement.getGeneratedKeys()) {
+                if (!set.next()) throw new SQLException("Unable to create user badge");
+                this.id = set.getInt(1);
+            }
+        }
+        this.needsInsert = false;
     }
 
     public void needsUpdate(boolean needsUpdate) {

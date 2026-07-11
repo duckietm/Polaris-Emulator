@@ -63,6 +63,32 @@ public class EffectsComponent {
         return effect;
     }
 
+    public static HabboEffect persistEffect(Connection connection, int userId, int effectId, int duration) throws SQLException {
+        String upsert = "INSERT INTO users_effects (user_id, effect, total, duration) VALUES (?, ?, 1, ?) "
+                + "ON DUPLICATE KEY UPDATE total = LEAST(total + 1, 100), duration = VALUES(duration)";
+        try (PreparedStatement statement = connection.prepareStatement(upsert)) {
+            statement.setInt(1, userId);
+            statement.setInt(2, effectId);
+            statement.setInt(3, duration);
+            statement.executeUpdate();
+        }
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT * FROM users_effects WHERE user_id = ? AND effect = ? LIMIT 1")) {
+            statement.setInt(1, userId);
+            statement.setInt(2, effectId);
+            try (ResultSet result = statement.executeQuery()) {
+                if (!result.next()) throw new SQLException("Unable to load persisted effect " + effectId);
+                return new HabboEffect(result);
+            }
+        }
+    }
+
+    public void publishEffect(HabboEffect effect) {
+        synchronized (this.effects) {
+            this.addEffect(effect);
+        }
+    }
+
     public HabboEffect createRankEffect(int effectId) {
         HabboEffect rankEffect = new HabboEffect(effectId, habbo.getHabboInfo().getId());
         rankEffect.duration = 0;

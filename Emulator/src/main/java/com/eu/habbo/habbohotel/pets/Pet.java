@@ -192,53 +192,52 @@ public class Pet implements ISerialize, Runnable {
 
     @Override
     public void run() {
-        if (this.needsUpdate) {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-                if (this.id > 0) {
-                    try (PreparedStatement statement = connection.prepareStatement("UPDATE users_pets SET room_id = ?, experience = ?, energy = ?, respect = ?, x = ?, y = ?, z = ?, rot = ?, hunger = ?, thirst = ?, happiness = ?, created = ? WHERE id = ?")) {
-                        statement.setInt(1, (this.room == null ? 0 : this.room.getId()));
-                        statement.setInt(2, this.experience);
-                        statement.setInt(3, this.energy);
-                        statement.setInt(4, this.respect);
-                        statement.setInt(5, this.roomUnit != null ? this.roomUnit.getX() : 0);
-                        statement.setInt(6, this.roomUnit != null ? this.roomUnit.getY() : 0);
-                        statement.setDouble(7, this.roomUnit != null ? this.roomUnit.getZ() : 0.0);
-                        statement.setInt(8, this.roomUnit != null ? this.roomUnit.getBodyRotation().getValue() : 0);
-                        statement.setInt(9, this.levelHunger);
-                        statement.setInt(10, this.levelThirst);
-                        statement.setInt(11, this.happiness);
-                        statement.setInt(12, this.created);
-                        statement.setInt(13, this.id);
-                        statement.execute();
-                    }
-                } else if (this.id == 0) {
-                    try (PreparedStatement statement = connection.prepareStatement("INSERT INTO users_pets (user_id, room_id, name, race, type, color, experience, energy, respect, created) VALUES (?, 0, ?, ?, ?, ?, 0, 0, 0, ?)", Statement.RETURN_GENERATED_KEYS)) {
-                        statement.setInt(1, this.userId);
-                        statement.setString(2, this.name);
-                        statement.setInt(3, this.race);
-                        statement.setInt(4, 0);
+        if (!this.needsUpdate) return;
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            this.save(connection);
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+    }
 
-                        if (this.petData != null) {
-                            statement.setInt(4, this.petData.getType());
-                        }
-
-                        statement.setString(5, this.color);
-                        statement.setInt(6, this.created);
-                        statement.execute();
-
-                        try (ResultSet set = statement.getGeneratedKeys()) {
-                            if (set.next()) {
-                                this.id = set.getInt(1);
-                            }
-                        }
-                    }
+    public void save(Connection connection) throws SQLException {
+        if (!this.needsUpdate) return;
+        if (this.id > 0) {
+            try (PreparedStatement statement = connection.prepareStatement("UPDATE users_pets SET room_id = ?, experience = ?, energy = ?, respect = ?, x = ?, y = ?, z = ?, rot = ?, hunger = ?, thirst = ?, happiness = ?, created = ? WHERE id = ?")) {
+                statement.setInt(1, (this.room == null ? 0 : this.room.getId()));
+                statement.setInt(2, this.experience);
+                statement.setInt(3, this.energy);
+                statement.setInt(4, this.respect);
+                statement.setInt(5, this.roomUnit != null ? this.roomUnit.getX() : 0);
+                statement.setInt(6, this.roomUnit != null ? this.roomUnit.getY() : 0);
+                statement.setDouble(7, this.roomUnit != null ? this.roomUnit.getZ() : 0.0);
+                statement.setInt(8, this.roomUnit != null ? this.roomUnit.getBodyRotation().getValue() : 0);
+                statement.setInt(9, this.levelHunger);
+                statement.setInt(10, this.levelThirst);
+                statement.setInt(11, this.happiness);
+                statement.setInt(12, this.created);
+                statement.setInt(13, this.id);
+                if (statement.executeUpdate() != 1) throw new SQLException("Unable to update pet " + this.id);
+            }
+        } else if (this.id == 0) {
+            try (PreparedStatement statement = connection.prepareStatement("INSERT INTO users_pets (user_id, room_id, name, race, type, color, experience, energy, respect, created) VALUES (?, 0, ?, ?, ?, ?, 0, 0, 0, ?)", Statement.RETURN_GENERATED_KEYS)) {
+                statement.setInt(1, this.userId);
+                statement.setString(2, this.name);
+                statement.setInt(3, this.race);
+                statement.setInt(4, this.petData == null ? 0 : this.petData.getType());
+                statement.setString(5, this.color);
+                statement.setInt(6, this.created);
+                statement.executeUpdate();
+                try (ResultSet set = statement.getGeneratedKeys()) {
+                    if (!set.next()) throw new SQLException("Unable to create pet");
+                    this.id = set.getInt(1);
                 }
             } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
+                this.id = 0;
+                throw e;
             }
-
-            this.needsUpdate = false;
         }
+        this.needsUpdate = false;
     }
 
     public void cycle() {

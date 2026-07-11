@@ -115,7 +115,7 @@ public class RedeemItemEvent extends MessageHandler {
                             break;
 
                         case FurnitureRedeemedEvent.DIAMONDS:
-                            this.client.getHabbo().givePoints(furniRedeemEvent.amount);
+                            this.client.getHabbo().givePoints(FurnitureRedeemedEvent.DIAMONDS, furniRedeemEvent.amount);
                             break;
 
                         case FurnitureRedeemedEvent.PIXELS:

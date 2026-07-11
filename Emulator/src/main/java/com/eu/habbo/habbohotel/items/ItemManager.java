@@ -827,9 +827,22 @@ public class ItemManager {
             return null;
         }
 
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            return this.createItem(connection, habboId, item, limitedStack, limitedSells, extraData);
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+        return null;
+    }
+
+    public HabboItem createItem(Connection connection, int habboId, Item item, int limitedStack, int limitedSells, String extraData) throws SQLException {
+        if (habboId <= 0 || item == null) {
+            return null;
+        }
+
         extraData = ItemDataGuard.normalizeExtraData(extraData);
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO items (user_id, item_id, extra_data, limited_data) VALUES (?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement statement = connection.prepareStatement("INSERT INTO items (user_id, item_id, extra_data, limited_data) VALUES (?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
             statement.setInt(1, habboId);
             statement.setInt(2, item.getId());
             statement.setString(3, extraData);
@@ -850,10 +863,6 @@ public class ItemManager {
                     }
                 }
             }
-        } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
-        } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
         }
         return null;
     }
@@ -975,22 +984,34 @@ public class ItemManager {
     }
 
     public void insertTeleportPair(int itemOneId, int itemTwoId) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO items_teleports (teleport_one_id, teleport_two_id) VALUES (?, ?)")) {
-            statement.setInt(1, itemOneId);
-            statement.setInt(2, itemTwoId);
-            statement.execute();
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            this.insertTeleportPair(connection, itemOneId, itemTwoId);
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
         }
     }
 
+    public void insertTeleportPair(Connection connection, int itemOneId, int itemTwoId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("INSERT INTO items_teleports (teleport_one_id, teleport_two_id) VALUES (?, ?)")) {
+            statement.setInt(1, itemOneId);
+            statement.setInt(2, itemTwoId);
+            statement.execute();
+        }
+    }
+
     public void insertHopper(HabboItem hopper) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO items_hoppers VALUES (?, ?)")) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            this.insertHopper(connection, hopper);
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+    }
+
+    public void insertHopper(Connection connection, HabboItem hopper) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("INSERT INTO items_hoppers VALUES (?, ?)")) {
             statement.setInt(1, hopper.getId());
             statement.setInt(2, hopper.getBaseItem().getId());
             statement.execute();
-        } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
         }
     }
 

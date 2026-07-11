@@ -15,12 +15,17 @@ class RedeemItemCurrencyContractTest {
     @Test
     void diamondFurnitureCreditsTheDiamondCurrencyExplicitly() throws Exception {
         String source = source();
-        int diamondCase = source.indexOf("case FurnitureRedeemedEvent.DIAMONDS:");
-        int nextCase = source.indexOf("case FurnitureRedeemedEvent.PIXELS:", diamondCase);
-        String diamondBranch = source.substring(diamondCase, nextCase);
+        int diamondFurniture = source.indexOf("startsWith(\"CF_diamond_\")");
+        int diamondType = source.indexOf("FurnitureRedeemedEvent.DIAMONDS", diamondFurniture);
+        int transaction = source.indexOf("RedeemItemTransaction.commit(", diamondType);
+        int transactionType = source.indexOf("currencyGrant.currencyType()", transaction);
+        int apply = source.indexOf("applyCurrencyGrant(currencyGrant)", transactionType);
 
-        assertTrue(diamondCase > -1, "diamond redemption branch must exist");
-        assertTrue(diamondBranch.contains("givePoints(FurnitureRedeemedEvent.DIAMONDS, furniRedeemEvent.amount)"),
-                "diamond furniture must not depend on seasonal.primary.type");
+        assertTrue(diamondFurniture > -1 && diamondType > diamondFurniture,
+                "diamond furniture must resolve explicitly to the diamond currency type");
+        assertTrue(transactionType > transaction,
+                "the resolved diamond type must be persisted by the atomic transaction");
+        assertTrue(apply > transactionType,
+                "the client balance must use the same committed currency grant");
     }
 }

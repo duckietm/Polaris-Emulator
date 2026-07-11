@@ -9,8 +9,12 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.rooms.UpdateStackHeightComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.RemoveFloorItemComposer;
+import com.eu.habbo.messages.outgoing.users.UserCreditsComposer;
+import com.eu.habbo.messages.outgoing.users.UserCurrencyComposer;
+import com.eu.habbo.messages.outgoing.users.UserPointsComposer;
 import com.eu.habbo.plugin.events.furniture.FurnitureRedeemedEvent;
-import com.eu.habbo.threading.runnables.QueryDeleteHabboItem;
+import com.eu.habbo.plugin.events.users.UserCreditsEvent;
+import com.eu.habbo.plugin.events.users.UserPointsEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,7 +101,19 @@ public class RedeemItemEvent extends MessageHandler {
                     if (furniRedeemEvent.amount < 1)
                         return;
 
+                    PreparedCurrencyGrant currencyGrant = prepareCurrencyGrant(
+                            furniRedeemEvent.currencyID, furniRedeemEvent.amount);
+                    if (currencyGrant == null || currencyGrant.amount() <= 0)
+                        return;
+
                     if (room.getHabboItem(item.getId()) == null) // plugins may cause a lag between which time the item can be removed from the room
+                        return;
+
+                    if (!RedeemItemTransaction.commit(
+                            item.getId(),
+                            this.client.getHabbo().getHabboInfo().getId(),
+                            currencyGrant.currencyType(),
+                            currencyGrant.amount()))
                         return;
 
                     room.removeHabboItem(item);
@@ -109,34 +125,14 @@ public class RedeemItemEvent extends MessageHandler {
                     t.setStackHeight(room.getStackHeight(item.getX(), item.getY(), false));
                     room.updateTile(t);
                     room.sendComposer(new UpdateStackHeightComposer(item.getX(), item.getY(), t.z, t.relativeHeight()).compose());
-                    Emulator.getThreading().run(new QueryDeleteHabboItem(item.getId()));
-
-                    int balanceBefore = getCurrencyBalance(furniRedeemEvent.currencyID);
-
-                    switch (furniRedeemEvent.currencyID) {
-                        case FurnitureRedeemedEvent.CREDITS:
-                            this.client.getHabbo().giveCredits(furniRedeemEvent.amount);
-                            break;
-
-                        case FurnitureRedeemedEvent.DIAMONDS:
-                            this.client.getHabbo().givePoints(FurnitureRedeemedEvent.DIAMONDS, furniRedeemEvent.amount);
-                            break;
-
-                        case FurnitureRedeemedEvent.PIXELS:
-                            this.client.getHabbo().givePixels(furniRedeemEvent.amount);
-                            break;
-
-                        default:
-                            this.client.getHabbo().givePoints(furniRedeemEvent.currencyID, furniRedeemEvent.amount);
-                            break;
-                    }
-
-                    int balanceAfter = getCurrencyBalance(furniRedeemEvent.currencyID);
+                    int balanceBefore = getCurrencyBalance(currencyGrant.currencyType());
+                    applyCurrencyGrant(currencyGrant);
+                    int balanceAfter = getCurrencyBalance(currencyGrant.currencyType());
                     EconomyAuditLogger.record(EconomyAuditEntry.redemption(
                             this.client.getHabbo().getHabboInfo().getId(),
                             item.getId(),
-                            furniRedeemEvent.currencyID,
-                            furniRedeemEvent.amount,
+                            currencyGrant.currencyType(),
+                            currencyGrant.amount(),
                             balanceBefore,
                             balanceAfter,
                             item.getBaseItem().getName()));
@@ -151,5 +147,38 @@ public class RedeemItemEvent extends MessageHandler {
             case FurnitureRedeemedEvent.PIXELS -> this.client.getHabbo().getHabboInfo().getPixels();
             default -> this.client.getHabbo().getHabboInfo().getCurrencyAmount(currencyType);
         };
+    }
+
+    private PreparedCurrencyGrant prepareCurrencyGrant(int currencyType, int amount) {
+        if (currencyType == FurnitureRedeemedEvent.CREDITS) {
+            UserCreditsEvent event = new UserCreditsEvent(this.client.getHabbo(), amount);
+            if (Emulator.getPluginManager().fireEvent(event).isCancelled()) return null;
+            return new PreparedCurrencyGrant(FurnitureRedeemedEvent.CREDITS, event.credits);
+        }
+
+        UserPointsEvent event = new UserPointsEvent(this.client.getHabbo(), amount, currencyType);
+        if (Emulator.getPluginManager().fireEvent(event).isCancelled()) return null;
+        return new PreparedCurrencyGrant(event.type, event.points);
+    }
+
+    private void applyCurrencyGrant(PreparedCurrencyGrant grant) {
+        if (grant.currencyType() == FurnitureRedeemedEvent.CREDITS) {
+            this.client.getHabbo().getHabboInfo().addCredits(grant.amount());
+            this.client.sendResponse(new UserCreditsComposer(this.client.getHabbo()));
+            return;
+        }
+
+        this.client.getHabbo().getHabboInfo().addCurrencyAmount(grant.currencyType(), grant.amount());
+        if (grant.currencyType() == FurnitureRedeemedEvent.PIXELS) {
+            this.client.sendResponse(new UserCurrencyComposer(this.client.getHabbo()));
+        } else {
+            this.client.sendResponse(new UserPointsComposer(
+                    this.client.getHabbo().getHabboInfo().getCurrencyAmount(grant.currencyType()),
+                    grant.amount(),
+                    grant.currencyType()));
+        }
+    }
+
+    private record PreparedCurrencyGrant(int currencyType, int amount) {
     }
 }

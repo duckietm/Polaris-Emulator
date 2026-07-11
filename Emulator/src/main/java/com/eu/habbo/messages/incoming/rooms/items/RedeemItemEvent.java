@@ -8,7 +8,6 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.rooms.UpdateStackHeightComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.RemoveFloorItemComposer;
 import com.eu.habbo.plugin.events.furniture.FurnitureRedeemedEvent;
-import com.eu.habbo.threading.runnables.QueryDeleteHabboItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,6 +97,9 @@ public class RedeemItemEvent extends MessageHandler {
                     if (room.getHabboItem(item.getId()) == null) // plugins may cause a lag between which time the item can be removed from the room
                         return;
 
+                    if (!RedeemItemClaim.tryClaim(item.getId(), this.client.getHabbo().getHabboInfo().getId()))
+                        return;
+
                     room.removeHabboItem(item);
                     room.sendComposer(new RemoveFloorItemComposer(item).compose());
                     RoomTile t = room.getLayout().getTile(item.getX(), item.getY());
@@ -107,8 +109,6 @@ public class RedeemItemEvent extends MessageHandler {
                     t.setStackHeight(room.getStackHeight(item.getX(), item.getY(), false));
                     room.updateTile(t);
                     room.sendComposer(new UpdateStackHeightComposer(item.getX(), item.getY(), t.z, t.relativeHeight()).compose());
-                    Emulator.getThreading().run(new QueryDeleteHabboItem(item.getId()));
-
                     switch (furniRedeemEvent.currencyID) {
                         case FurnitureRedeemedEvent.CREDITS:
                             this.client.getHabbo().giveCredits(furniRedeemEvent.amount);

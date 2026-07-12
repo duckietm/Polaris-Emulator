@@ -66,4 +66,19 @@ class ModToolReportInputContractTest {
         assertTrue(source.contains("if (!this.client.getHabbo().getHabboStats().allowTalk())"),
                 "bully reports must reject muted users instead of rejecting users who can talk");
     }
+
+    @Test
+    void privateChatReportBindsEveryLogAuthorToTheConversation() throws Exception {
+        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/messages/incoming/modtool/ReportFriendPrivateChatEvent.java"));
+
+        int authorRead = source.indexOf("int chatUserId = this.packet.readInt()");
+        int participantGuard = source.indexOf("isPrivateChatParticipant(chatUserId", authorRead);
+        int messageRead = source.indexOf("this.packet.readString()", authorRead);
+
+        assertTrue(authorRead > -1, "private chat reports must read the composer author id");
+        assertTrue(participantGuard > authorRead, "private chat reports must bind authors to reporter or reported user");
+        assertTrue(participantGuard < messageRead, "invalid authors must be rejected before their message is accepted");
+        assertTrue(!source.contains("this.packet.readInt() == info.getId()"),
+                "private chat reports must not consume a second, unauthenticated author id");
+    }
 }

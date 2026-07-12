@@ -34,4 +34,15 @@ class ModToolReportInputGuardTest {
         assertFalse(ModToolReportInputGuard.isPositiveId(-1));
         assertTrue(ModToolReportInputGuard.isPositiveId(1));
     }
+
+    @Test
+    void privateChatAuthorsMustBelongToTheReportedConversation() {
+        int reporterId = 7;
+        int reportedUserId = 11;
+
+        assertTrue(ModToolReportInputGuard.isPrivateChatParticipant(reporterId, reporterId, reportedUserId));
+        assertTrue(ModToolReportInputGuard.isPrivateChatParticipant(reportedUserId, reporterId, reportedUserId));
+        assertFalse(ModToolReportInputGuard.isPrivateChatParticipant(99, reporterId, reportedUserId));
+        assertFalse(ModToolReportInputGuard.isPrivateChatParticipant(0, reporterId, reportedUserId));
+    }
 }

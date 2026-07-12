@@ -45,16 +45,20 @@ public class ReportFriendPrivateChatEvent extends MessageHandler {
 
         if (info == null) return;
 
+        int reporterId = this.client.getHabbo().getHabboInfo().getId();
         for (int i = 0; i < count; i++) {
             int chatUserId = this.packet.readInt();
-            String username = this.packet.readInt() == info.getId() ? info.getUsername() : this.client.getHabbo().getHabboInfo().getUsername();
-            String chatMessage = ModToolReportInputGuard.normalize(this.packet.readString());
 
-            if (!ModToolReportInputGuard.isPositiveId(chatUserId) ||
-                    !ModToolReportInputGuard.isValidChatLogMessage(chatMessage)) {
+            if (!ModToolReportInputGuard.isPrivateChatParticipant(chatUserId, reporterId, info.getId())) {
                 return;
             }
 
+            String chatMessage = ModToolReportInputGuard.normalize(this.packet.readString());
+            if (!ModToolReportInputGuard.isValidChatLogMessage(chatMessage)) return;
+
+            String username = chatUserId == info.getId()
+                    ? info.getUsername()
+                    : this.client.getHabbo().getHabboInfo().getUsername();
             chatLogs.add(new ModToolChatLog(0, chatUserId, username, chatMessage));
         }
 

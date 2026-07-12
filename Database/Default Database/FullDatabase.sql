@@ -15151,6 +15151,7 @@ INSERT INTO `emulator_settings` (`key`, `value`, `comment`) VALUES
 	('hotel.welcome.alert.enabled', '0', 'Enable the welcome alert shown after login.'),
 	('hotel.welcome.alert.message', 'Welcome to Habbo Hotel %user%!', 'Message template used by the welcome alert.'),
 	('hotel.welcome.alert.oldstyle', '0', 'Use the legacy welcome alert window style.'),
+	('client.release.allowed', 'NITRO-3-6-0', 'Comma-separated client release versions accepted before SSO login.'),
 	('hotel.wordfilter.automute', '1', 'Mute duration in minutes applied when word-filter automute is triggered.'),
 	('hotel.wordfilter.enabled', '1', 'Enable the word filter system.'),
 	('hotel.wordfilter.messenger', '1', 'Apply the word filter to messenger messages.'),

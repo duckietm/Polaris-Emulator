@@ -8,6 +8,6 @@ public class ReleaseVersionEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        this.packet.readString();
+        this.client.setReleaseVersion(ClientReleaseGuard.normalize(this.packet.readString()));
     }
 }

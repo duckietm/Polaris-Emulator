@@ -74,6 +74,15 @@ public class SecureLoginEvent extends MessageHandler {
             return;
         }
 
+        String allowedReleases = Emulator.getConfig().getValue(
+                "client.release.allowed", ClientReleaseGuard.DEFAULT_ALLOWED_RELEASES);
+        if (!ClientReleaseGuard.isAllowed(this.client.getReleaseVersion(), allowedReleases)) {
+            LOGGER.warn("Rejected client release '{}' (allowed: '{}')",
+                    this.client.getReleaseVersion(), allowedReleases);
+            Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
+            return;
+        }
+
         String sso = SecureLoginInputGuard.normalizeSsoTicket(this.packet.readString());
 
         if (!SecureLoginInputGuard.isValidSsoTicket(sso)) {

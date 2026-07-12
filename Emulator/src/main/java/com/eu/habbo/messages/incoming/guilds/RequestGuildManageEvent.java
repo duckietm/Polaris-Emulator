@@ -28,7 +28,7 @@ public class RequestGuildManageEvent extends MessageHandler {
         if (habboInfo == null) return;
 
         final int guildId = this.packet.readInt();
-        if (guildId <= 0) return;
+        if (!GuildInputGuard.isPositiveId(guildId)) return;
 
         final GuildManager guildManager = Emulator.getGameEnvironment().getGuildManager();
         final Guild guild = guildManager.getGuild(guildId);

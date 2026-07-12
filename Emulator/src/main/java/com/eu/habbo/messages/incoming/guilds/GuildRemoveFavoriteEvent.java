@@ -17,6 +17,10 @@ public class GuildRemoveFavoriteEvent extends MessageHandler {
     public void handle() throws Exception {
         int guildId = this.packet.readInt();
 
+        if (!GuildInputGuard.isPositiveId(guildId)) {
+            return;
+        }
+
         if (this.client.getHabbo().getHabboStats().hasGuild(guildId)) {
             Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
             GuildRemovedFavoriteEvent favoriteEvent = new GuildRemovedFavoriteEvent(guild, this.client.getHabbo());

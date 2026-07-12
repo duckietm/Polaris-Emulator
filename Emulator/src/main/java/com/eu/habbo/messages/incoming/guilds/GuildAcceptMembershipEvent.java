@@ -24,6 +24,10 @@ public class GuildAcceptMembershipEvent extends MessageHandler {
         int guildId = this.packet.readInt();
         int userId = this.packet.readInt();
 
+        if (!GuildInputGuard.arePositiveIds(guildId, userId)) {
+            return;
+        }
+
         Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
 
         if (guild == null) {

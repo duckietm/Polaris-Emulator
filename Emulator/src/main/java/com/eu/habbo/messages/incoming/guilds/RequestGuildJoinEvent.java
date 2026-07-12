@@ -18,6 +18,10 @@ public class RequestGuildJoinEvent extends MessageHandler {
     public void handle() throws Exception {
         int guildId = this.packet.readInt();
 
+        if (!GuildInputGuard.isPositiveId(guildId)) {
+            return;
+        }
+
         if (this.client.getHabbo().getHabboStats().hasGuild(guildId))
             return;
 

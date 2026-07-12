@@ -16,6 +16,10 @@ public class RequestGuildInfoEvent extends MessageHandler {
         int guildId = this.packet.readInt();
         boolean newWindow = this.packet.readBoolean();
 
+        if (!GuildInputGuard.isPositiveId(guildId)) {
+            return;
+        }
+
         Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
 
         if (guild != null) {

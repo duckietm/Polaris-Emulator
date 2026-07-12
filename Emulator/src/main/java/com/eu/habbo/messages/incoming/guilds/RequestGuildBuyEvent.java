@@ -46,6 +46,11 @@ public class RequestGuildBuyEvent extends MessageHandler {
 
         int roomId = this.packet.readInt();
 
+        if (!GuildInputGuard.isPositiveId(roomId)) {
+            this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+            return;
+        }
+
         Room r = Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
 
         if (r == null) {

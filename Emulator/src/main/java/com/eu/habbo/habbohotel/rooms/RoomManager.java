@@ -29,6 +29,7 @@ import com.eu.habbo.habbohotel.users.*;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.incoming.users.UserNuxEvent;
 import com.eu.habbo.messages.outgoing.generic.alerts.GenericErrorMessagesComposer;
+import com.eu.habbo.messages.outgoing.generic.alerts.GenericErrorCode;
 import com.eu.habbo.messages.outgoing.hotelview.HotelViewComposer;
 import com.eu.habbo.messages.outgoing.polls.PollStartComposer;
 import com.eu.habbo.messages.outgoing.polls.infobus.SimplePollAnswersComposer;
@@ -619,7 +620,7 @@ public class RoomManager {
             if (room.getPassword().equalsIgnoreCase(password))
                 this.openRoom(habbo, room, doorLocation, isReconnectSpawn);
             else {
-                habbo.getClient().sendResponse(new GenericErrorMessagesComposer(GenericErrorMessagesComposer.WRONG_PASSWORD_USED));
+                habbo.getClient().sendResponse(new GenericErrorMessagesComposer(GenericErrorCode.WRONG_ROOM_PASSWORD));
                 habbo.getClient().sendResponse(new HotelViewComposer());
                 habbo.getHabboInfo().setLoadingRoom(0);
             }

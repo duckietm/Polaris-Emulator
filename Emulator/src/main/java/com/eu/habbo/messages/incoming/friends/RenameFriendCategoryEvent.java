@@ -13,6 +13,7 @@ public class RenameFriendCategoryEvent extends MessageHandler {
         HabboInfo info = this.client.getHabbo().getHabboInfo();
         int categoryId = this.packet.readInt();
         String name = FriendCategoryInputGuard.normalizeName(this.packet.readString());
+        if (!FriendInputGuard.isPositiveId(categoryId)) return;
         MessengerCategory category = info.getMessengerCategory(categoryId);
         if (category == null || !FriendCategoryInputGuard.isValidName(name)) return;
         if (info.getMessengerCategories().stream().anyMatch(item -> item.getId() != categoryId && item.getName().equalsIgnoreCase(name))) return;

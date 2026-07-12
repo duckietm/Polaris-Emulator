@@ -14,6 +14,7 @@ public class RemoveFriendCategoryEvent extends MessageHandler {
     public void handle() {
         HabboInfo info = this.client.getHabbo().getHabboInfo();
         int categoryId = this.packet.readInt();
+        if (!FriendInputGuard.isPositiveId(categoryId)) return;
         MessengerCategory category = info.getMessengerCategory(categoryId);
         if (category == null) return;
 

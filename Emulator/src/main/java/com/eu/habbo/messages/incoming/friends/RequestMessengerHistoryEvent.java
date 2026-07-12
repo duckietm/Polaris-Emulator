@@ -11,7 +11,7 @@ public final class RequestMessengerHistoryEvent extends MessageHandler {
         int conversationId = packet.readInt();
         int beforeMessageId = packet.readInt();
         int limit = packet.readInt();
-        if (conversationId <= 0 || beforeMessageId < 0) return;
+        if (!FriendInputGuard.isPositiveId(conversationId) || beforeMessageId < 0) return;
         int userId = client.getHabbo().getHabboInfo().getId();
         MessengerHistoryPage page = MessengerHistoryServices.create().loadHistory(conversationId, userId, beforeMessageId, limit);
         client.sendResponse(new MessengerHistoryComposer(conversationId, page));

@@ -28,4 +28,21 @@ final class FriendInputGuard {
     static boolean isValidRelation(int relationId) {
         return relationId >= 0 && relationId <= MAX_RELATION_ID;
     }
+
+    static boolean isPositiveId(int id) {
+        return id > 0;
+    }
+
+    static boolean arePositiveIds(int... ids) {
+        for (int id : ids) {
+            if (!isPositiveId(id)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    static boolean isValidMessageTarget(int conversationId, int recipientId) {
+        return isPositiveId(conversationId) || (conversationId == 0 && isPositiveId(recipientId));
+    }
 }

@@ -13,7 +13,7 @@ public final class MarkMessengerReadEvent extends MessageHandler {
         int conversationId = packet.readInt();
         int messageId = packet.readInt();
         int userId = client.getHabbo().getHabboInfo().getId();
-        if (conversationId <= 0 || messageId <= 0) return;
+        if (!FriendInputGuard.arePositiveIds(conversationId, messageId)) return;
         MessengerHistoryService history = MessengerHistoryServices.create();
         if (history.markRead(conversationId, userId, messageId)) {
             for (int memberId : history.listActiveMemberIds(conversationId, userId)) {

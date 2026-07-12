@@ -25,6 +25,7 @@ public final class SendMessengerMessageEvent extends MessageHandler {
 
         try {
             if (!client.getHabbo().getHabboStats().allowTalk()) throw new IllegalStateException("muted");
+            if (!FriendInputGuard.isValidMessageTarget(conversationId, recipientId)) throw new IllegalArgumentException("invalid message target");
             if (conversationId <= 0) {
                 MessengerBuddy buddy = client.getHabbo().getMessenger().getFriend(recipientId);
                 if (buddy == null) throw new SecurityException("not friends");

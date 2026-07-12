@@ -33,7 +33,7 @@ public class InviteFriendsEvent extends MessageHandler {
             message = FriendInputGuard.normalizeMessage(message);
 
             for (int i : userIds) {
-                if (i == 0)
+                if (!FriendInputGuard.isPositiveId(i))
                     continue;
 
                 if (!this.client.getHabbo().getMessenger().getFriends().containsKey(i))

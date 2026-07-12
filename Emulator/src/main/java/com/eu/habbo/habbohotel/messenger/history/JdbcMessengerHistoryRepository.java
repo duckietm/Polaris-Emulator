@@ -217,11 +217,26 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
 
     @Override
     public boolean markRead(long conversationId, int userId, long messageId) {
-        String sql = "UPDATE messenger_members SET last_read_message_id = GREATEST(COALESCE(last_read_message_id, 0), ?) WHERE conversation_id = ? AND user_id = ? AND left_at IS NULL";
+        String sql = """
+                UPDATE messenger_members member
+                SET member.last_read_message_id = GREATEST(COALESCE(member.last_read_message_id, 0), ?)
+                WHERE member.conversation_id = ?
+                  AND member.user_id = ?
+                  AND member.left_at IS NULL
+                  AND EXISTS (
+                      SELECT 1
+                      FROM messenger_messages message
+                      WHERE message.id = ?
+                        AND message.conversation_id = member.conversation_id
+                        AND (member.joined_message_id IS NULL OR message.id >= member.joined_message_id)
+                        AND (member.left_message_id IS NULL OR message.id <= member.left_message_id)
+                  )
+                """;
         try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, messageId);
             statement.setLong(2, conversationId);
             statement.setInt(3, userId);
+            statement.setLong(4, messageId);
             return statement.executeUpdate() == 1;
         } catch (SQLException exception) {
             throw new IllegalStateException("failed to update messenger read cursor", exception);

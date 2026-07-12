@@ -16,7 +16,9 @@ public class DeclineFriendRequestEvent extends MessageHandler {
             if (count <= 0 || count > MAX_BATCH_SIZE) return;
 
             for (int i = 0; i < count; i++) {
-                this.client.getHabbo().getMessenger().deleteFriendRequests(this.packet.readInt(), this.client.getHabbo().getHabboInfo().getId());
+                int userId = this.packet.readInt();
+                if (!FriendInputGuard.isPositiveId(userId)) continue;
+                this.client.getHabbo().getMessenger().deleteFriendRequests(userId, this.client.getHabbo().getHabboInfo().getId());
             }
         }
     }

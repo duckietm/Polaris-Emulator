@@ -1,6 +1,8 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.economy.EconomyAuditEntry;
+import com.eu.habbo.habbohotel.economy.EconomyAuditLogger;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -109,6 +111,8 @@ public class RedeemItemEvent extends MessageHandler {
                     room.sendComposer(new UpdateStackHeightComposer(item.getX(), item.getY(), t.z, t.relativeHeight()).compose());
                     Emulator.getThreading().run(new QueryDeleteHabboItem(item.getId()));
 
+                    int balanceBefore = getCurrencyBalance(furniRedeemEvent.currencyID);
+
                     switch (furniRedeemEvent.currencyID) {
                         case FurnitureRedeemedEvent.CREDITS:
                             this.client.getHabbo().giveCredits(furniRedeemEvent.amount);
@@ -126,8 +130,26 @@ public class RedeemItemEvent extends MessageHandler {
                             this.client.getHabbo().givePoints(furniRedeemEvent.currencyID, furniRedeemEvent.amount);
                             break;
                     }
+
+                    int balanceAfter = getCurrencyBalance(furniRedeemEvent.currencyID);
+                    EconomyAuditLogger.record(EconomyAuditEntry.redemption(
+                            this.client.getHabbo().getHabboInfo().getId(),
+                            item.getId(),
+                            furniRedeemEvent.currencyID,
+                            furniRedeemEvent.amount,
+                            balanceBefore,
+                            balanceAfter,
+                            item.getBaseItem().getName()));
                 }
             }
         }
+    }
+
+    private int getCurrencyBalance(int currencyType) {
+        return switch (currencyType) {
+            case FurnitureRedeemedEvent.CREDITS -> this.client.getHabbo().getHabboInfo().getCredits();
+            case FurnitureRedeemedEvent.PIXELS -> this.client.getHabbo().getHabboInfo().getPixels();
+            default -> this.client.getHabbo().getHabboInfo().getCurrencyAmount(currencyType);
+        };
     }
 }

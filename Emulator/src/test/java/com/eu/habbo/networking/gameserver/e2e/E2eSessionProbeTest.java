@@ -84,4 +84,17 @@ class E2eSessionProbeTest {
         assertEquals(HttpResponseStatus.NO_CONTENT, drop.status());
         assertFalse(channel.isOpen());
     }
+
+    @Test
+    void reportsAnEmptyRoomStateWhenTheUserIsNotAuthenticated() {
+        var state = E2eSessionProbe.evaluate(
+                HttpMethod.GET,
+                "/__e2e/room-state?userId=7",
+                new InetSocketAddress("127.0.0.1", 1234),
+                clients,
+                true);
+
+        assertEquals(HttpResponseStatus.OK, state.status());
+        assertEquals("{\"roomId\":0,\"x\":-1,\"y\":-1,\"presenceIdentity\":0,\"enteredAt\":0}", state.body());
+    }
 }

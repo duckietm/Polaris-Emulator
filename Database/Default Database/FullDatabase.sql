@@ -30700,6 +30700,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `ip_current` varchar(45) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT 'Have your CMS update this IP. If you do not do this IP banning won''t work!',
   `machine_id` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT '',
   `background_id` int(11) NOT NULL DEFAULT 0,
+  `background_border_id` int(11) NOT NULL DEFAULT 0,
   `background_stand_id` int(11) NOT NULL DEFAULT 0,
   `background_overlay_id` int(11) NOT NULL DEFAULT 0,
   `background_card_id` int(11) NOT NULL DEFAULT 0,
@@ -30723,8 +30724,8 @@ CREATE TABLE IF NOT EXISTS `users` (
 
 -- Dumping data for table habbo.users: ~1 rows (approximately)
 DELETE FROM `users`;
-INSERT INTO `users` (`id`, `username`, `real_name`, `password`, `mail`, `mail_verified`, `account_created`, `account_day_of_birth`, `last_login`, `last_online`, `motto`, `look`, `gender`, `rank`, `credits`, `pixels`, `points`, `online`, `auth_ticket`, `remember_token_hash`, `remember_token_expires_at`, `ip_register`, `ip_current`, `machine_id`, `background_id`, `background_stand_id`, `background_overlay_id`, `background_card_id`, `home_room`, `secret_key`, `pincode`, `extra_rank`, `last_username_change`) VALUES
-	(0, '[SYSTEM]', 'KREWS DEV', '!', NULL, '0', 0, 0, 0, 0, 'System sentinel - do not delete', '', 'M', 1, 0, 500, 10, '0', '', '', 0, '127.0.0.1', '127.0.0.1', '', 0, 0, 0, 0, 0, NULL, NULL, NULL, 0);
+INSERT INTO `users` (`id`, `username`, `real_name`, `password`, `mail`, `mail_verified`, `account_created`, `account_day_of_birth`, `last_login`, `last_online`, `motto`, `look`, `gender`, `rank`, `credits`, `pixels`, `points`, `online`, `auth_ticket`, `remember_token_hash`, `remember_token_expires_at`, `ip_register`, `ip_current`, `machine_id`, `background_id`, `background_border_id`, `background_stand_id`, `background_overlay_id`, `background_card_id`, `home_room`, `secret_key`, `pincode`, `extra_rank`, `last_username_change`) VALUES
+	(0, '[SYSTEM]', 'KREWS DEV', '!', NULL, '0', 0, 0, 0, 0, 'System sentinel - do not delete', '', 'M', 1, 0, 500, 10, '0', '', '', 0, '127.0.0.1', '127.0.0.1', '', 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, 0);
 
 -- Dumping structure for table habbo.users_achievements
 DROP TABLE IF EXISTS `users_achievements`;

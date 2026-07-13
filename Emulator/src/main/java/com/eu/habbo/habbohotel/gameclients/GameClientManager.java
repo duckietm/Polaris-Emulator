@@ -99,6 +99,11 @@ public class GameClientManager {
         return this.authenticatedClients.get(userId);
     }
 
+    public int getAuthenticatedSessionCount(int userId) {
+        if (userId <= 0) return 0;
+        return this.authenticatedClients.containsKey(userId) ? 1 : 0;
+    }
+
 
     public boolean containsHabbo(Integer id) {
         if (!this.clients.isEmpty()) {

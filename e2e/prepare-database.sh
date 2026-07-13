@@ -19,5 +19,6 @@ sed -e "s/CREATE DATABASE IF NOT EXISTS \`habbo\`/CREATE DATABASE IF NOT EXISTS 
 password=()
 [[ -z "${E2E_DB_PASSWORD:-}" ]] || password=("--password=$E2E_DB_PASSWORD")
 mysql "--host=$E2E_DB_HOST" "--port=$E2E_DB_PORT" "--user=$E2E_DB_USER" "${password[@]}" --default-character-set=utf8mb4 < "$dump"
+mysql "--host=$E2E_DB_HOST" "--port=$E2E_DB_PORT" "--user=$E2E_DB_USER" "${password[@]}" "--database=$E2E_DB_NAME" < "$repo/Database/Database Updates/002_backgounds_border.sql"
 { printf "SET @e2e_sso_ticket='%s';\n" "$E2E_SSO_TICKET"; cat "$repo/e2e/seed.sql"; } |
   mysql "--host=$E2E_DB_HOST" "--port=$E2E_DB_PORT" "--user=$E2E_DB_USER" "${password[@]}" "--database=$E2E_DB_NAME"

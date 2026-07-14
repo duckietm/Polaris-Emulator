@@ -51,6 +51,7 @@ jobs:
       E2E_DB_USER: root
       E2E_DB_PASSWORD: root
       E2E_SSO_TICKET: e2e-reconnect-ticket
+      E2E_SECOND_SSO_TICKET: e2e-messenger-peer-ticket
       E2E_GAME_PORT: "31999"
       E2E_RAW_PORT: "31998"
       E2E_RCON_PORT: "32000"

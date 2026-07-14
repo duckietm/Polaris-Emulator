@@ -1,7 +1,8 @@
 param(
     [string] $Mysql = $env:E2E_MYSQL,
     [string] $Database = $env:E2E_DB_NAME,
-    [string] $Ticket = $env:E2E_SSO_TICKET
+    [string] $Ticket = $env:E2E_SSO_TICKET,
+    [string] $SecondTicket = $env:E2E_SECOND_SSO_TICKET
 )
 
 $ErrorActionPreference = 'Stop'
@@ -9,10 +10,12 @@ $ErrorActionPreference = 'Stop'
 if ([string]::IsNullOrWhiteSpace($Mysql)) { throw 'E2E_MYSQL is required' }
 if ([string]::IsNullOrWhiteSpace($Database)) { throw 'E2E_DB_NAME is required' }
 if ([string]::IsNullOrWhiteSpace($Ticket)) { throw 'E2E_SSO_TICKET is required' }
+if ([string]::IsNullOrWhiteSpace($SecondTicket)) { throw 'E2E_SECOND_SSO_TICKET is required' }
 if (-not (Test-Path -LiteralPath $Mysql)) { throw "MySQL client not found: $Mysql" }
 if ($env:E2E_DB_HOST -notin @('127.0.0.1', 'localhost', '::1')) { throw 'E2E_DB_HOST must use a loopback host' }
 if ($Database -notmatch '^[A-Za-z0-9_]+$') { throw 'E2E_DB_NAME contains unsupported characters' }
 if ($Ticket -notmatch '^[A-Za-z0-9._-]+$') { throw 'E2E_SSO_TICKET contains unsupported characters' }
+if ($SecondTicket -notmatch '^[A-Za-z0-9._-]+$') { throw 'E2E_SECOND_SSO_TICKET contains unsupported characters' }
 
 $repo = Split-Path -Parent $PSScriptRoot
 $dump = Join-Path $repo 'Database\Default Database\FullDatabase.sql'
@@ -33,7 +36,7 @@ try {
     [System.IO.File]::ReadAllText($migration) | & $Mysql "--host=$($env:E2E_DB_HOST)" "--port=$($env:E2E_DB_PORT)" "--user=$($env:E2E_DB_USER)" @passwordArgument "--database=$Database"
     if ($LASTEXITCODE -ne 0) { throw "Database migration failed with exit code $LASTEXITCODE" }
 
-    $seedContent = "SET @e2e_sso_ticket='$Ticket';`n" + [System.IO.File]::ReadAllText($seed)
+    $seedContent = "SET @e2e_sso_ticket='$Ticket';`nSET @e2e_second_sso_ticket='$SecondTicket';`n" + [System.IO.File]::ReadAllText($seed)
     $seedContent | & $Mysql "--host=$($env:E2E_DB_HOST)" "--port=$($env:E2E_DB_PORT)" "--user=$($env:E2E_DB_USER)" @passwordArgument "--database=$Database"
     if ($LASTEXITCODE -ne 0) { throw "E2E seed failed with exit code $LASTEXITCODE" }
 }

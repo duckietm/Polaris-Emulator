@@ -5,6 +5,10 @@ db.database=ms
 db.username=root
 db.password=root
 db.params=
+# validate (default), apply, or off
+db.migrations.mode=validate
+# bounded MariaDB advisory-lock wait in seconds (1-60)
+db.migrations.lock_timeout_seconds=10
 db.pool.minsize=25
 db.pool.maxsize=100
 

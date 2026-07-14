@@ -6,7 +6,7 @@
 
     <groupId>com.eu.habbo</groupId>
     <artifactId>Polaris</artifactId>
-    <version>4.2.58</version>
+    <version>4.2.59</version>
     <name>Polaris</name>
 
     <properties>

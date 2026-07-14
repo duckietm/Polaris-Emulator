@@ -204,7 +204,9 @@ public class SecureLoginEvent extends MessageHandler {
 
                 ArrayList<ServerMessage> messages = new ArrayList<>();
 
-                messages.add(new SecureLoginOKComposer().compose());
+                Room resumedRoom = isSessionResume ? habbo.getHabboInfo().getCurrentRoom() : null;
+                int resumedRoomId = resumedRoom != null ? resumedRoom.getId() : 0;
+                messages.add(new SecureLoginOKComposer(isSessionResume, resumedRoomId).compose());
 
                 int roomIdToEnter = 0;
 
@@ -214,7 +216,7 @@ public class SecureLoginEvent extends MessageHandler {
                     // the server. Setting roomIdToEnter = 0 prevents UserHomeRoomComposer
                     // from triggering a full room re-entry on the client (which would
                     // tear down and rebuild the room view).
-                    Room currentRoom = habbo.getHabboInfo().getCurrentRoom();
+                    Room currentRoom = resumedRoom;
                     if (currentRoom != null) {
                         LOGGER.info("[SessionResume] {} is still in room {} — client will resume in-place",
                                 habbo.getHabboInfo().getUsername(), currentRoom.getId());

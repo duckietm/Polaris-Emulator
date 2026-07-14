@@ -3,6 +3,7 @@ package com.eu.habbo.networking.gameserver.handlers;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.networking.gameserver.GameServerAttributes;
 import com.eu.habbo.networking.gameserver.auth.AuthHttpUtil;
+import com.eu.habbo.networking.gameserver.e2e.E2eSessionProbe;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -31,6 +32,15 @@ public class WebSocketHttpHandler extends ChannelInboundHandlerAdapter {
     }
 
     private boolean handleHttpRequest(ChannelHandlerContext ctx, HttpMessage req) {
+        if (req instanceof FullHttpRequest fullRequest
+                && E2eSessionProbe.tryHandle(
+                        fullRequest,
+                        ctx,
+                        Emulator.getGameServer().getGameClientManager(),
+                        Emulator.getConfig().getBoolean("e2e.enabled", false))) {
+            return false;
+        }
+
         captureForwardedIp(ctx, req);
 
         if (!isWebSocketUpgrade(req)) {

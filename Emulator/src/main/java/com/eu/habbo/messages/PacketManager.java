@@ -427,7 +427,7 @@ public class PacketManager {
         this.registerHandler(Incoming.RequestInventoryBotsEvent, RequestInventoryBotsEvent.class);
         this.registerHandler(Incoming.RequestInventoryItemsDelete, RequestInventoryItemsDelete.class);
         this.registerHandler(Incoming.RequestInventoryItemsEvent, RequestInventoryItemsEvent.class);
-        this.registerHandler(Incoming.HotelViewInventoryEvent, RequestInventoryItemsEvent.class);
+        this.registerHandler(Incoming.HotelViewInventoryEvent, HotelViewInventoryEvent.class);
         this.registerHandler(Incoming.RequestInventoryPetsEvent, RequestInventoryPetsEvent.class);
         this.registerHandler(Incoming.RequestInventoryPetDelete, RequestInventoryPetDelete.class);
         this.registerHandler(Incoming.RequestInventoryBadgeDelete, RequestInventoryBadgeDelete.class);

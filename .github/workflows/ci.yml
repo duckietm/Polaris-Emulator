@@ -29,3 +29,62 @@ jobs:
 
       - name: Build and test
         run: mvn -B verify
+
+  e2e-runtime:
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      E2E_DB_HOST: 127.0.0.1
+      E2E_DB_PORT: "3306"
+      E2E_DB_NAME: polaris_e2e
+      E2E_DB_USER: root
+      E2E_DB_PASSWORD: root
+      E2E_SSO_TICKET: e2e-reconnect-ticket
+      E2E_GAME_PORT: "31999"
+      E2E_RAW_PORT: "31998"
+      E2E_RCON_PORT: "32000"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
+      - name: Install MariaDB client
+        run: sudo apt-get update && sudo apt-get install -y mariadb-client
+
+      - name: Build emulator
+        working-directory: Emulator
+        run: mvn -B package -DskipTests
+
+      - name: Prepare isolated database
+        run: bash e2e/prepare-database.sh
+
+      - name: Start emulator and verify probe
+        run: |
+          bash e2e/start-emulator.sh
+          curl --fail --silent "http://127.0.0.1:${E2E_GAME_PORT}/__e2e/session-count?userId=900001" | grep '"activeSessions":0'
+
+      - name: Stop emulator
+        if: always()
+        run: |
+          if [ -f "${E2E_RUNTIME_DIR:-}/polaris.pid" ]; then
+            kill "$(cat "${E2E_RUNTIME_DIR}/polaris.pid")" || true
+          else
+            pkill -f 'Polaris-.*-jar-with-dependencies.jar' || true
+          fi

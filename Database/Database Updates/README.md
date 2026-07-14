@@ -37,3 +37,24 @@ java -cp Emulator/target/Polaris-4.2.50-jar-with-dependencies.jar com.eu.habbo.d
 ```
 
 Use `validate` during normal startup. Use `off` only as an explicit emergency compatibility escape hatch because it disables migration guarantees.
+
+## Operator workflow and recovery
+
+Normal startup uses `validate` and never applies pending SQL. Select the mode, in
+ascending precedence, with `db.migrations.mode`, `DB_MIGRATIONS_MODE`, or
+`--migrations=validate|apply|off`. Use `--migrations-only` with explicit apply
+for a controlled deployment step before starting the emulator.
+
+An existing recognizable Polaris database without `schema_migrations` receives
+one historical baseline row at version `027`; the runner never replays the old
+scripts against it. Managed history is protected by SHA-256 checksum validation,
+contiguous versions, and a database-scoped MariaDB `GET_LOCK`. A database newer
+than the packaged catalog, an altered applied script, or malformed history stops
+startup.
+
+For a clean installation, import `Database/Default Database/FullDatabase.sql`,
+then run explicit apply once. Back up the database before applying production
+migrations. If apply fails, fix the cause or restore the backup; do not insert,
+delete, or edit `schema_migrations` rows manually. Applied scripts must not be
+edited. Add a new corrective migration instead. The `off` mode is only for a
+time-bounded emergency and removes all schema compatibility guarantees.

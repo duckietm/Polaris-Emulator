@@ -19,7 +19,7 @@ class MigrationDocumentationContractTest {
 
     @Test
     void operatorGuideCoversModesHistoryAndRecovery() throws Exception {
-        String guide = read("e2e/README.md");
+        String guide = read("Database/Database Updates/README.md");
 
         for (String required : new String[]{
                 "DB_MIGRATIONS_MODE",

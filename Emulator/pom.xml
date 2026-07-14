@@ -24,7 +24,7 @@
         <commons-math3.version>3.6.1</commons-math3.version>
         <jsoup.version>1.22.2</jsoup.version>
         <slf4j.version>2.0.18</slf4j.version>
-        <logback.version>1.5.37</logback.version>
+        <logback.version>1.5.38</logback.version>
         <jansi.version>2.4.3</jansi.version>
         <bcrypt.version>0.10.2</bcrypt.version>
         <jakarta-mail.version>2.0.5</jakarta-mail.version>

@@ -26,4 +26,17 @@ class E2eInventoryFixtureContractTest {
 
         assertTrue(dump.contains("(18, 18, 'Dining Chair', 'chair_polyfon', 's'"));
     }
+
+    @Test
+    void persistenceScriptsCheckTheExactOwnedInventoryState() throws IOException {
+        String shell = Files.readString(REPOSITORY.resolve("e2e/verify-inventory-state.sh"));
+        String powershell = Files.readString(REPOSITORY.resolve("e2e/verify-inventory-state.ps1"));
+
+        for (String script : new String[]{shell, powershell}) {
+            assertTrue(script.contains("900004"));
+            assertTrue(script.contains("900001:0"));
+            assertTrue(script.contains("user_id"));
+            assertTrue(script.contains("room_id"));
+        }
+    }
 }

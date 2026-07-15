@@ -10,21 +10,18 @@ public class MarketplaceSellItemComposer extends MessageComposer {
     public static final int NO_ADS_LEFT = 4;
 
     private final int errorCode;
-    private final int valueA;
-    private final int valueB;
+    private final int tokenCount;
 
-    public MarketplaceSellItemComposer(int errorCode, int valueA, int valueB) {
+    public MarketplaceSellItemComposer(int errorCode, int tokenCount) {
         this.errorCode = errorCode;
-        this.valueA = valueA;
-        this.valueB = valueB;
+        this.tokenCount = tokenCount;
     }
 
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.MarketplaceSellItemComposer);
         this.response.appendInt(this.errorCode);
-        this.response.appendInt(this.valueA);
-        this.response.appendInt(this.valueB);
+        this.response.appendInt(this.tokenCount);
         return this.response;
     }
 
@@ -32,11 +29,7 @@ public class MarketplaceSellItemComposer extends MessageComposer {
         return errorCode;
     }
 
-    public int getValueA() {
-        return valueA;
-    }
-
-    public int getValueB() {
-        return valueB;
+    public int getTokenCount() {
+        return tokenCount;
     }
 }

@@ -8,8 +8,8 @@ public class RequestSellItemEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         if (MarketPlace.MARKETPLACE_ENABLED)
-            this.client.sendResponse(new MarketplaceSellItemComposer(1, 0, 0));
+            this.client.sendResponse(new MarketplaceSellItemComposer(1, 0));
         else
-            this.client.sendResponse(new MarketplaceSellItemComposer(3, 0, 0));
+            this.client.sendResponse(new MarketplaceSellItemComposer(3, 0));
     }
 }

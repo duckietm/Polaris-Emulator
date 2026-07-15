@@ -8254,6 +8254,33 @@
       ]
     },
     {
+      "name": "MARKETPLACE_SELL_ITEM",
+      "direction": "server_to_client",
+      "header": 54,
+      "java": {
+        "symbol": "MarketplaceSellItemComposer",
+        "className": "MarketplaceSellItemComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/marketplace/MarketplaceSellItemComposer.java"
+      },
+      "typescript": {
+        "symbol": "MARKETPLACE_SELL_ITEM",
+        "className": "MarketplaceCanMakeOfferResultParser",
+        "path": "packages/communication/src/messages/parser/marketplace/MarketplaceCanMakeOfferResultParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
       "name": "GIFT_OPENED",
       "direction": "server_to_client",
       "header": 56,
@@ -9829,6 +9856,28 @@
         {
           "kind": "scalar",
           "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "MESSENGER_FIND_FRIENDS",
+      "direction": "server_to_client",
+      "header": 1210,
+      "java": {
+        "symbol": "FriendFindingRoomComposer",
+        "className": "FriendFindingRoomComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/friends/FriendFindingRoomComposer.java"
+      },
+      "typescript": {
+        "symbol": "MESSENGER_FIND_FRIENDS",
+        "className": "FindFriendsProcessResultParser",
+        "path": "packages/communication/src/messages/parser/friendlist/FindFriendsProcessResultParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "boolean",
           "name": ""
         }
       ]
@@ -11853,6 +11902,33 @@
       ]
     },
     {
+      "name": "FURNITURE_STATE",
+      "direction": "server_to_client",
+      "header": 2376,
+      "java": {
+        "symbol": "ItemStateComposer",
+        "className": "ItemStateComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/items/ItemStateComposer.java"
+      },
+      "typescript": {
+        "symbol": "FURNITURE_STATE",
+        "className": "OneWayDoorStatusMessageParser",
+        "path": "packages/communication/src/messages/parser/room/furniture/OneWayDoorStatusMessageParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
       "name": "GROUP_FORUM_UNREAD_COUNT",
       "direction": "server_to_client",
       "header": 2379,
@@ -12824,6 +12900,38 @@
         "path": "packages/communication/src/messages/parser/inventory/trading/TradingYouAreNotAllowedParser.ts"
       },
       "fields": []
+    },
+    {
+      "name": "MESSENGER_FRIEND_NOTIFICATION",
+      "direction": "server_to_client",
+      "header": 3082,
+      "java": {
+        "symbol": "FriendToolbarNotificationComposer",
+        "className": "FriendNotificationComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/friends/FriendNotificationComposer.java"
+      },
+      "typescript": {
+        "symbol": "MESSENGER_FRIEND_NOTIFICATION",
+        "className": "FriendNotificationParser",
+        "path": "packages/communication/src/messages/parser/friendlist/FriendNotificationParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        }
+      ]
     },
     {
       "name": "TRADE_NOT_OPEN",
@@ -15839,6 +15947,14 @@
     {
       "direction": "server_to_client",
       "side": "typescript",
+      "header": 84,
+      "symbol": "NO_SUCH_FLAT",
+      "path": "packages/communication/src/messages/parser/roomsettings/NoSuchFlatParser.ts",
+      "reason": "Header is registered only by the Nitro Renderer packet registry"
+    },
+    {
+      "direction": "server_to_client",
+      "side": "typescript",
       "header": 195,
       "symbol": "DIRECT_SMS_CLUB_BUY",
       "path": "packages/communication/src/messages/parser/catalog/DirectSMSClubBuyAvailableMessageParser.ts",
@@ -18007,22 +18123,6 @@
       "reason": "Java analyzer: Packet fields delegated to external serializer serialize inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor GuestRoomSearchResultData inside parse"
     },
     {
-      "name": "MARKETPLACE_SELL_ITEM",
-      "direction": "server_to_client",
-      "header": 54,
-      "java": {
-        "symbol": "MarketplaceSellItemComposer",
-        "className": "MarketplaceSellItemComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/marketplace/MarketplaceSellItemComposer.java"
-      },
-      "typescript": {
-        "symbol": "MARKETPLACE_SELL_ITEM",
-        "className": "MarketplaceCanMakeOfferResultParser",
-        "path": "packages/communication/src/messages/parser/marketplace/MarketplaceCanMakeOfferResultParser.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [int, int, int] versus TypeScript [int, int]"
-    },
-    {
       "name": "ACHIEVEMENTRESOLUTIONS",
       "direction": "server_to_client",
       "header": 66,
@@ -18053,22 +18153,6 @@
         "path": "packages/communication/src/messages/parser/room/bots/BotSkillListUpdateParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor BotSkillData inside parse"
-    },
-    {
-      "name": "NO_SUCH_FLAT",
-      "direction": "server_to_client",
-      "header": 84,
-      "java": {
-        "symbol": "RoomUserRemoveRightsComposer",
-        "className": "RoomUserRemoveRightsComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/users/RoomUserRemoveRightsComposer.java"
-      },
-      "typescript": {
-        "symbol": "NO_SUCH_FLAT",
-        "className": "NoSuchFlatParser",
-        "path": "packages/communication/src/messages/parser/roomsettings/NoSuchFlatParser.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [int, int] versus TypeScript [int]"
     },
     {
       "name": "USER_FURNITURE_ADD",
@@ -18951,22 +19035,6 @@
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor GroupMemberParser inside parse"
     },
     {
-      "name": "MESSENGER_FIND_FRIENDS",
-      "direction": "server_to_client",
-      "header": 1210,
-      "java": {
-        "symbol": "FriendFindingRoomComposer",
-        "className": "FriendFindingRoomComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/friends/FriendFindingRoomComposer.java"
-      },
-      "typescript": {
-        "symbol": "MESSENGER_FIND_FRIENDS",
-        "className": "FindFriendsProcessResultParser",
-        "path": "packages/communication/src/messages/parser/friendlist/FindFriendsProcessResultParser.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [int] versus TypeScript [boolean]"
-    },
-    {
       "name": "GET_USER_TAGS",
       "direction": "server_to_client",
       "header": 1255,
@@ -19799,22 +19867,6 @@
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor BundleDiscountRuleset inside parse"
     },
     {
-      "name": "FURNITURE_STATE",
-      "direction": "server_to_client",
-      "header": 2376,
-      "java": {
-        "symbol": "ItemStateComposer",
-        "className": "ItemStateComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/items/ItemStateComposer.java"
-      },
-      "typescript": {
-        "symbol": "FURNITURE_STATE",
-        "className": "OneWayDoorStatusMessageParser",
-        "path": "packages/communication/src/messages/parser/room/furniture/OneWayDoorStatusMessageParser.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [int, int, int] versus TypeScript [int, int]"
-    },
-    {
       "name": "PET_OPEN_PACKAGE_REQUESTED",
       "direction": "server_to_client",
       "header": 2380,
@@ -20357,22 +20409,6 @@
         "path": "packages/communication/src/messages/parser/navigator/NavigatorMetadataParser.ts"
       },
       "reason": "TypeScript analyzer: Packet fields delegated to external constructor NavigatorTopLevelContext inside parse"
-    },
-    {
-      "name": "MESSENGER_FRIEND_NOTIFICATION",
-      "direction": "server_to_client",
-      "header": 3082,
-      "java": {
-        "symbol": "FriendToolbarNotificationComposer",
-        "className": "FriendNotificationComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/friends/FriendNotificationComposer.java"
-      },
-      "typescript": {
-        "symbol": "MESSENGER_FRIEND_NOTIFICATION",
-        "className": "FriendNotificationParser",
-        "path": "packages/communication/src/messages/parser/friendlist/FriendNotificationParser.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [string, int, string] versus TypeScript [int, int, string]"
     },
     {
       "name": "USER_BOTS",

@@ -53,6 +53,17 @@ class JavaPacketSignatureExtractorTest {
     }
 
     @Test
+    void collapsesEquivalentTryAndCatchWritesIntoOneWireField() throws Exception {
+        ExtractionResult result = extractor.extract(
+                fixture("EquivalentTryCatchOutgoingFixture.java"),
+                JavaPacketSide.OUTGOING,
+                "composeInternal");
+
+        assertFalse(result.unsupportedReason().isPresent());
+        assertEquals(List.of("int", "int", "string"), scalarTypes(result.fields()));
+    }
+
+    @Test
     void verifierReportsFirstOrderMismatchWithContext() {
         List<WireSchema> expected = List.of(
                 new ScalarSchema("int", "id"),

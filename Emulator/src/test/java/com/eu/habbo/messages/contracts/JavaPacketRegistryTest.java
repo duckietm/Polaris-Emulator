@@ -21,6 +21,11 @@ class JavaPacketRegistryTest {
 
         assertTrue(registry.active().size() > 800);
         assertTrue(registry.active().stream().anyMatch(packet -> packet.header() == 412));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> registry.require(JavaPacketRegistry.Direction.SERVER_TO_CLIENT, 84));
+        assertTrue(registry.require(JavaPacketRegistry.Direction.SERVER_TO_CLIENT, 1327)
+                .source().endsWith("RoomRemoveRightsListComposer.java"));
     }
 
     @Test

@@ -12,6 +12,7 @@ import com.github.javaparser.ast.stmt.ForEachStmt;
 import com.github.javaparser.ast.stmt.ForStmt;
 import com.github.javaparser.ast.stmt.IfStmt;
 import com.github.javaparser.ast.stmt.SwitchStmt;
+import com.github.javaparser.ast.stmt.TryStmt;
 import com.github.javaparser.ast.stmt.WhileStmt;
 
 import java.io.IOException;
@@ -21,9 +22,11 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 enum JavaPacketSide {
     INCOMING,
@@ -93,6 +96,11 @@ final class JavaPacketSignatureExtractor {
             Optional<String> dynamic = dynamicControlFlow(method, side);
             if (dynamic.isPresent()) return ExtractionResult.unsupported(dynamic.get());
 
+            TryCatchAnalysis tryCatch = analyzeTryCatch(method, side);
+            if (tryCatch.unsupportedReason().isPresent()) {
+                return ExtractionResult.unsupported(tryCatch.unsupportedReason().orElseThrow());
+            }
+
             List<MethodCallExpr> calls = method.getBody().orElseThrow().findAll(MethodCallExpr.class).stream()
                     .sorted(Comparator.comparing(
                             call -> call.getBegin().orElseThrow(),
@@ -101,6 +109,7 @@ final class JavaPacketSignatureExtractor {
                     .toList();
             List<WireSchema> fields = new ArrayList<>();
             for (MethodCallExpr call : calls) {
+                if (tryCatch.callsToSkip().contains(call)) continue;
                 String wireType = wireType(call, side);
                 if (wireType != null) {
                     fields.add(new ScalarSchema(wireType, inferredName(call)));
@@ -118,6 +127,37 @@ final class JavaPacketSignatureExtractor {
         } finally {
             stack.removeLast();
         }
+    }
+
+    private static TryCatchAnalysis analyzeTryCatch(MethodDeclaration method, JavaPacketSide side) {
+        Set<MethodCallExpr> callsToSkip = new HashSet<>();
+        for (TryStmt tryStatement : method.findAll(TryStmt.class)) {
+            if (tryStatement.getCatchClauses().isEmpty()) continue;
+            List<String> tryFields = wireTypes(tryStatement.getTryBlock().findAll(MethodCallExpr.class), side);
+            for (var catchClause : tryStatement.getCatchClauses()) {
+                List<MethodCallExpr> catchCalls = catchClause.getBody().findAll(MethodCallExpr.class);
+                List<String> catchFields = wireTypes(catchCalls, side);
+                if (tryFields.isEmpty() || catchFields.isEmpty()) continue;
+                if (!tryFields.equals(catchFields)) {
+                    return new TryCatchAnalysis(
+                            Set.of(),
+                            Optional.of("Different packet operations across try/catch inside "
+                                    + method.getNameAsString()));
+                }
+                catchCalls.stream()
+                        .filter(call -> wireType(call, side) != null)
+                        .forEach(callsToSkip::add);
+            }
+        }
+        return new TryCatchAnalysis(callsToSkip, Optional.empty());
+    }
+
+    private static List<String> wireTypes(List<MethodCallExpr> calls, JavaPacketSide side) {
+        return calls.stream()
+                .sorted(Comparator.comparing(call -> call.getBegin().orElseThrow()))
+                .map(call -> wireType(call, side))
+                .filter(java.util.Objects::nonNull)
+                .toList();
     }
 
     private static Optional<String> externalDelegation(MethodDeclaration method, JavaPacketSide side) {
@@ -189,5 +229,12 @@ final class JavaPacketSignatureExtractor {
             if (current instanceof com.github.javaparser.ast.stmt.Statement) return "";
         }
         return "";
+    }
+}
+
+record TryCatchAnalysis(Set<MethodCallExpr> callsToSkip, Optional<String> unsupportedReason) {
+    TryCatchAnalysis {
+        callsToSkip = Set.copyOf(callsToSkip);
+        unsupportedReason = unsupportedReason == null ? Optional.empty() : unsupportedReason;
     }
 }

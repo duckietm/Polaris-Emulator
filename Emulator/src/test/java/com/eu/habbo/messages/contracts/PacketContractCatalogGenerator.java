@@ -107,8 +107,8 @@ final class PacketContractCatalogGenerator {
                     List<String> javaSignature = javaPacket.fields().stream().map(this::signature).toList();
                     List<String> tsSignature = tsPacket.fields().stream().map(this::signature).toList();
                     boolean analyzable = javaPacket.unsupportedReason() == null && tsPacket.unsupportedReason() == null;
-                    if (analyzable && javaSignature.equals(tsSignature)) {
-                        contracts.add(contract(javaPacket, tsPacket));
+                    if (analyzable && signaturesCompatible(javaSignature, tsSignature)) {
+                        contracts.add(contract(javaPacket, tsPacket, !javaSignature.equals(tsSignature)));
                     } else {
                         exemptions.add(exemption(javaPacket, tsPacket, javaSignature, tsSignature));
                     }
@@ -145,12 +145,26 @@ final class PacketContractCatalogGenerator {
 
     private JsonObject contract(
             JavaPacketInventoryEntry javaPacket,
-            TypeScriptPacketInventoryEntry tsPacket) {
+            TypeScriptPacketInventoryEntry tsPacket,
+            boolean useTypeScriptFields) {
         JsonObject result = base(javaPacket, tsPacket);
         JsonArray fields = new JsonArray();
-        javaPacket.fields().forEach(field -> fields.add(schemaJson(field)));
+        if (useTypeScriptFields) {
+            tsPacket.fields().forEach(field -> fields.add(schemaJson(field)));
+        } else {
+            javaPacket.fields().forEach(field -> fields.add(schemaJson(field)));
+        }
         result.add("fields", fields);
         return result;
+    }
+
+    static boolean signaturesCompatible(List<String> javaSignature, List<String> typescriptSignature) {
+        if (javaSignature.equals(typescriptSignature)) return true;
+        if (javaSignature.size() >= typescriptSignature.size()) return false;
+        if (!javaSignature.equals(typescriptSignature.subList(0, javaSignature.size()))) return false;
+        return typescriptSignature.subList(javaSignature.size(), typescriptSignature.size()).stream()
+                .allMatch(field -> field.startsWith("optional<")
+                        || field.startsWith("{\"type\":\"optional\""));
     }
 
     private JsonObject exemption(
@@ -237,6 +251,39 @@ final class PacketContractCatalogGenerator {
                 JsonArray fields = new JsonArray();
                 branch.forEach(field -> fields.add(schemaJson(field)));
                 branches.add(key, fields);
+            });
+            result.add("branches", branches);
+        }
+        return result;
+    }
+
+    private JsonObject schemaJson(JsonObject schema) {
+        JsonObject result = new JsonObject();
+        String type = schema.get("type").getAsString();
+        if (!type.equals("list") && !type.equals("optional") && !type.equals("variant")) {
+            result.addProperty("kind", "scalar");
+            result.addProperty("type", type);
+            result.addProperty("name", schema.has("name") ? schema.get("name").getAsString() : "");
+            return result;
+        }
+        result.addProperty("kind", type);
+        if (type.equals("list")) {
+            result.addProperty("countType", schema.get("countType").getAsString());
+            JsonArray items = new JsonArray();
+            schema.getAsJsonArray("item").forEach(item -> items.add(schemaJson(item.getAsJsonObject())));
+            result.add("item", items);
+        } else if (type.equals("optional")) {
+            result.addProperty("controller", schema.get("controller").getAsString());
+            JsonArray fields = new JsonArray();
+            schema.getAsJsonArray("fields").forEach(field -> fields.add(schemaJson(field.getAsJsonObject())));
+            result.add("fields", fields);
+        } else {
+            result.addProperty("discriminator", schema.get("discriminator").getAsString());
+            JsonObject branches = new JsonObject();
+            schema.getAsJsonObject("branches").entrySet().forEach(branch -> {
+                JsonArray fields = new JsonArray();
+                branch.getValue().getAsJsonArray().forEach(field -> fields.add(schemaJson(field.getAsJsonObject())));
+                branches.add(branch.getKey(), fields);
             });
             result.add("branches", branches);
         }

@@ -6,6 +6,7 @@ import com.eu.habbo.messages.outgoing.gamecenter.basejump.BaseJumpUnloadGameComp
 public class GameCenterLeaveGameEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
+        this.packet.readInt(); // unloaded game type
         this.client.sendResponse(new BaseJumpUnloadGameComposer());
     }
 }

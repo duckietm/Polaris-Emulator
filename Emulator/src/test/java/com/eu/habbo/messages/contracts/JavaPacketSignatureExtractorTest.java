@@ -106,6 +106,33 @@ class JavaPacketSignatureExtractorTest {
     }
 
     @Test
+    void extractsIssueDeletedIdentifierAsAString() throws Exception {
+        ExtractionResult result = extractor.extract(
+                realSource("outgoing/modtool/IssueDeletedComposer.java"),
+                JavaPacketSide.OUTGOING,
+                "composeInternal");
+
+        assertFalse(result.unsupportedReason().isPresent());
+        assertEquals(List.of("string"), scalarTypes(result.fields()));
+    }
+
+    @Test
+    void extractsAllFieldsFromRemainingRendererRequests() throws Exception {
+        assertIncomingSignature("incoming/camera/CameraPurchaseEvent.java", "string");
+        assertIncomingSignature("incoming/handshake/SecureLoginEvent.java", "string", "int");
+        assertIncomingSignature("incoming/users/RequestUserWardrobeEvent.java", "int");
+        assertIncomingSignature("incoming/helper/MySanctionStatusEvent.java", "boolean");
+        assertIncomingSignature("incoming/navigator/RequestPopularRoomsEvent.java", "string", "int");
+        assertIncomingSignature("incoming/navigator/RequestHighestScoreRoomsEvent.java", "int");
+        assertIncomingSignature("incoming/gamecenter/GameCenterEvent.java", "int");
+        assertIncomingSignature("incoming/gamecenter/GameCenterLeaveGameEvent.java", "int");
+        assertIncomingSignature("incoming/rooms/RequestRoomRightsEvent.java", "int");
+        assertIncomingSignature("incoming/catalog/CatalogBuyClubDiscountEvent.java", "int");
+        assertIncomingSignature("incoming/rooms/RoomVoteEvent.java", "int");
+        assertIncomingSignature("incoming/users/GetIgnoredUsersEvent.java", "string");
+    }
+
+    @Test
     void verifierReportsFirstOrderMismatchWithContext() {
         List<WireSchema> expected = List.of(
                 new ScalarSchema("int", "id"),
@@ -140,6 +167,16 @@ class JavaPacketSignatureExtractorTest {
         assertTrue(error.getMessage().contains("observed short"));
     }
 
+    @Test
+    void verifierAllowsMissingTrailingOptionalFields() {
+        PacketContractVerifier.verify(
+                List.of(
+                        new ScalarSchema("int", "id"),
+                        new OptionalSchema("bytesAvailable", List.of(new ScalarSchema("string", "figure")))),
+                List.of(new ScalarSchema("int", "id")),
+                new PacketContractContext("OPTIONAL_FIXTURE", "server_to_client", "Fixture.java"));
+    }
+
     private static Path fixture(String name) {
         return Path.of("src", "test", "resources", "packet-contracts", "java", name);
     }
@@ -150,5 +187,12 @@ class JavaPacketSignatureExtractorTest {
 
     private static List<String> scalarTypes(List<WireSchema> fields) {
         return fields.stream().map(field -> ((ScalarSchema) field).type()).toList();
+    }
+
+    private void assertIncomingSignature(String relative, String... types) throws Exception {
+        ExtractionResult result = extractor.extract(realSource(relative), JavaPacketSide.INCOMING, "handle");
+
+        assertFalse(result.unsupportedReason().isPresent());
+        assertEquals(List.of(types), scalarTypes(result.fields()), relative);
     }
 }

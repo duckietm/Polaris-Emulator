@@ -84,6 +84,7 @@ public class SecureLoginEvent extends MessageHandler {
         }
 
         String sso = SecureLoginInputGuard.normalizeSsoTicket(this.packet.readString());
+        this.packet.readInt(); // client timestamp; retained for wire compatibility
 
         if (!SecureLoginInputGuard.isValidSsoTicket(sso)) {
             Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
@@ -323,6 +324,8 @@ public class SecureLoginEvent extends MessageHandler {
 
                 // Skip login-only events on session resume (welcome alerts, login events, etc.)
                 if (!isSessionResume) {
+                    UsernameEvent.completeLogin(this.client);
+
                     UserLoginEvent userLoginEvent = new UserLoginEvent(habbo, this.client.getHabbo().getHabboInfo().getIpLogin());
                     Emulator.getPluginManager().fireEvent(userLoginEvent);
 

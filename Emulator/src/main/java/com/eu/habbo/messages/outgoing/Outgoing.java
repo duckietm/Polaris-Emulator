@@ -60,7 +60,7 @@ public class Outgoing {
     public final static int MarketplaceItemInfoComposer = 725;
     public final static int RoomRelativeMapComposer = 2753;
     public final static int ModToolComposerTwo = 2335;
-    public final static int ModToolComposerOne = 3192;
+    public final static int IssueDeletedComposer = 3192;
     public final static int RoomRightsComposer = 780;
     public final static int ObjectOnRollerComposer = 3207;
     public final static int PollStartComposer = 3785;

@@ -29,11 +29,14 @@ final class PacketContractVerifier {
             List<WireSchema> observed,
             String path,
             List<String> errors) {
-        if (expected.size() != observed.size()) {
+        if (observed.size() > expected.size()
+                || (observed.size() < expected.size()
+                && expected.subList(observed.size(), expected.size()).stream()
+                .anyMatch(field -> !(field instanceof OptionalSchema)))) {
             errors.add(path + " expected " + expected.size() + " fields but observed " + observed.size());
             return;
         }
-        for (int index = 0; index < expected.size(); index++) {
+        for (int index = 0; index < observed.size(); index++) {
             compare(expected.get(index), observed.get(index), path + "[" + index + "]", errors);
             if (!errors.isEmpty()) return;
         }

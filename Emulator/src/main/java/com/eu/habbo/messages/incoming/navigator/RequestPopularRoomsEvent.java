@@ -7,6 +7,8 @@ import com.eu.habbo.messages.outgoing.navigator.PrivateRoomsComposer;
 public class RequestPopularRoomsEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
+        this.packet.readString(); // search query
+        this.packet.readInt(); // ad index
         this.client.sendResponse(new PrivateRoomsComposer(Emulator.getGameEnvironment().getRoomManager().getActiveRooms(-1)));
     }
 }

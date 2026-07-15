@@ -322,7 +322,7 @@ public class PacketManager {
         this.registerHandler(Incoming.CompleteDiffieHandshake, CompleteDiffieHandshakeEvent.class);
         this.registerHandler(Incoming.SecureLoginEvent, SecureLoginEvent.class);
         this.registerHandler(Incoming.MachineIDEvent, MachineIDEvent.class);
-        this.registerHandler(Incoming.UsernameEvent, UsernameEvent.class);
+        this.registerHandler(Incoming.GetIgnoredUsersEvent, GetIgnoredUsersEvent.class);
         this.registerHandler(Incoming.PingEvent, PingEvent.class);
     }
 

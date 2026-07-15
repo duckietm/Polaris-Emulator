@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.campaign.calendar.CalendarCampaign;
 import com.eu.habbo.habbohotel.catalog.TargetOffer;
+import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.catalog.TargetedOfferComposer;
 import com.eu.habbo.messages.outgoing.events.calendar.AdventCalendarDataComposer;
@@ -19,6 +20,12 @@ import java.util.Date;
 import static java.time.temporal.ChronoUnit.DAYS;
 
 public class UsernameEvent extends MessageHandler {
+    public static void completeLogin(GameClient client) throws Exception {
+        UsernameEvent event = new UsernameEvent();
+        event.client = client;
+        event.handle();
+    }
+
     @Override
     public void handle() throws Exception {
         if (!this.client.getHabbo().getHabboStats().getAchievementProgress().containsKey(Emulator.getGameEnvironment().getAchievementManager().getAchievement("Login"))) {

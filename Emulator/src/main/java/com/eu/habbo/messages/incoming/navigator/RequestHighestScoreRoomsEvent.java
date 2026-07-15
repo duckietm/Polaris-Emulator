@@ -7,6 +7,7 @@ import com.eu.habbo.messages.outgoing.navigator.PrivateRoomsComposer;
 public class RequestHighestScoreRoomsEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
+        this.packet.readInt(); // ad index
         this.client.sendResponse(new PrivateRoomsComposer(Emulator.getGameEnvironment().getRoomManager().getRoomsByScore()));
     }
 }

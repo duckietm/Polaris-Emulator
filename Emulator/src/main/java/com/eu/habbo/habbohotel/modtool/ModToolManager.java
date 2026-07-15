@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.messages.ClientMessage;
+import com.eu.habbo.messages.outgoing.modtool.IssueDeletedComposer;
 import com.eu.habbo.messages.outgoing.modtool.ModToolIssueHandledComposer;
 import com.eu.habbo.messages.outgoing.modtool.ModToolIssueInfoComposer;
 import com.eu.habbo.messages.outgoing.modtool.ModToolUserInfoComposer;
@@ -666,8 +667,14 @@ public class ModToolManager {
     }
 
     public void removeTicket(int issueId) {
+        boolean removed;
         synchronized (this.tickets) {
-            this.tickets.remove(issueId);
+            removed = this.tickets.remove(issueId) != null;
+        }
+
+        if (removed) {
+            Emulator.getGameEnvironment().getHabboManager().sendPacketToHabbosWithPermission(
+                    new IssueDeletedComposer(issueId).compose(), Permission.ACC_SUPPORTTOOL);
         }
     }
 

@@ -3394,6 +3394,55 @@
       ]
     },
     {
+      "name": "PURCHASE_PHOTO",
+      "direction": "client_to_server",
+      "header": 2408,
+      "java": {
+        "symbol": "CameraPurchaseEvent",
+        "className": "CameraPurchaseEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/camera/CameraPurchaseEvent.java"
+      },
+      "typescript": {
+        "symbol": "PURCHASE_PHOTO",
+        "className": "PurchasePhotoMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/camera/PurchasePhotoMessageComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "SECURITY_TICKET",
+      "direction": "client_to_server",
+      "header": 2419,
+      "java": {
+        "symbol": "SecureLoginEvent",
+        "className": "SecureLoginEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java"
+      },
+      "typescript": {
+        "symbol": "SECURITY_TICKET",
+        "className": "SSOTicketMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/handshake/SSOTicketMessageComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "sso"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
       "name": "GET_FRIEND_REQUESTS",
       "direction": "client_to_server",
       "header": 2448,
@@ -3706,6 +3755,50 @@
       ]
     },
     {
+      "name": "GET_WARDROBE",
+      "direction": "client_to_server",
+      "header": 2742,
+      "java": {
+        "symbol": "RequestUserWardrobeEvent",
+        "className": "RequestUserWardrobeEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/users/RequestUserWardrobeEvent.java"
+      },
+      "typescript": {
+        "symbol": "GET_WARDROBE",
+        "className": "GetWardrobeMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/avatar/GetWardrobeMessageComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "GET_CFH_STATUS",
+      "direction": "client_to_server",
+      "header": 2746,
+      "java": {
+        "symbol": "MySanctionStatusEvent",
+        "className": "MySanctionStatusEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/helper/MySanctionStatusEvent.java"
+      },
+      "typescript": {
+        "symbol": "GET_CFH_STATUS",
+        "className": "GetCfhStatusMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/help/GetCfhStatusMessageComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        }
+      ]
+    },
+    {
       "name": "ROOM_CREATE",
       "direction": "client_to_server",
       "header": 2752,
@@ -3749,6 +3842,33 @@
           "kind": "scalar",
           "type": "int",
           "name": "tradeType"
+        }
+      ]
+    },
+    {
+      "name": "POPULAR_ROOMS_SEARCH",
+      "direction": "client_to_server",
+      "header": 2758,
+      "java": {
+        "symbol": "RequestPopularRoomsEvent",
+        "className": "RequestPopularRoomsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/navigator/RequestPopularRoomsEvent.java"
+      },
+      "typescript": {
+        "symbol": "POPULAR_ROOMS_SEARCH",
+        "className": "PopularRoomsSearchMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/navigator/PopularRoomsSearchMessageComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
         }
       ]
     },
@@ -3947,6 +4067,28 @@
       ]
     },
     {
+      "name": "GAMES_INIT",
+      "direction": "client_to_server",
+      "header": 2914,
+      "java": {
+        "symbol": "GameCenterEvent",
+        "className": "GameCenterEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/gamecenter/GameCenterEvent.java"
+      },
+      "typescript": {
+        "symbol": "GAMES_INIT",
+        "className": "GetWeeklyGameRewardComposer",
+        "path": "packages/communication/src/messages/outgoing/game/score/GetWeeklyGameRewardComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
       "name": "PET_INFO",
       "direction": "client_to_server",
       "header": 2934,
@@ -3965,6 +4107,28 @@
           "kind": "scalar",
           "type": "int",
           "name": "petId"
+        }
+      ]
+    },
+    {
+      "name": "ROOMS_WITH_HIGHEST_SCORE_SEARCH",
+      "direction": "client_to_server",
+      "header": 2939,
+      "java": {
+        "symbol": "RequestHighestScoreRoomsEvent",
+        "className": "RequestHighestScoreRoomsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/navigator/RequestHighestScoreRoomsEvent.java"
+      },
+      "typescript": {
+        "symbol": "ROOMS_WITH_HIGHEST_SCORE_SEARCH",
+        "className": "RoomsWithHighestScoreSearchMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/navigator/RoomsWithHighestScoreSearchMessageComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
         }
       ]
     },
@@ -4560,6 +4724,28 @@
       ]
     },
     {
+      "name": "GAMEUNLOADEDMESSAGE",
+      "direction": "client_to_server",
+      "header": 3207,
+      "java": {
+        "symbol": "GameCenterLeaveGameEvent",
+        "className": "GameCenterLeaveGameEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/gamecenter/GameCenterLeaveGameEvent.java"
+      },
+      "typescript": {
+        "symbol": "GAMEUNLOADEDMESSAGE",
+        "className": "GameUnloadedMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/game/lobby/GameUnloadedMessageComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
       "name": "USER_PROFILE",
       "direction": "client_to_server",
       "header": 3265,
@@ -4902,6 +5088,28 @@
       ]
     },
     {
+      "name": "ROOM_RIGHTS_LIST",
+      "direction": "client_to_server",
+      "header": 3385,
+      "java": {
+        "symbol": "RequestRoomRightsEvent",
+        "className": "RequestRoomRightsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/RequestRoomRightsEvent.java"
+      },
+      "typescript": {
+        "symbol": "ROOM_RIGHTS_LIST",
+        "className": "RoomUsersWithRightsComposer",
+        "path": "packages/communication/src/messages/outgoing/room/data/RoomUsersWithRightsComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "requestedRoomId"
+        }
+      ]
+    },
+    {
       "name": "GROUP_REQUEST_ACCEPT",
       "direction": "client_to_server",
       "header": 3386,
@@ -4925,6 +5133,28 @@
           "kind": "scalar",
           "type": "int",
           "name": "userId"
+        }
+      ]
+    },
+    {
+      "name": "PURCHASE_VIP_MEMBERSHIP_EXTENSION",
+      "direction": "client_to_server",
+      "header": 3407,
+      "java": {
+        "symbol": "CatalogBuyClubDiscountEvent",
+        "className": "CatalogBuyClubDiscountEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/CatalogBuyClubDiscountEvent.java"
+      },
+      "typescript": {
+        "symbol": "PURCHASE_VIP_MEMBERSHIP_EXTENSION",
+        "className": "PurchaseVipMembershipExtensionComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/PurchaseVipMembershipExtensionComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "offerId"
         }
       ]
     },
@@ -5118,6 +5348,28 @@
           "kind": "scalar",
           "type": "string",
           "name": "message"
+        }
+      ]
+    },
+    {
+      "name": "ROOM_LIKE",
+      "direction": "client_to_server",
+      "header": 3582,
+      "java": {
+        "symbol": "RoomVoteEvent",
+        "className": "RoomVoteEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/RoomVoteEvent.java"
+      },
+      "typescript": {
+        "symbol": "ROOM_LIKE",
+        "className": "RateFlatMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/navigator/RateFlatMessageComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "points"
         }
       ]
     },
@@ -5411,6 +5663,28 @@
         "path": "packages/communication/src/messages/outgoing/inventory/trading/TradingAcceptComposer.ts"
       },
       "fields": []
+    },
+    {
+      "name": "USER_IGNORED",
+      "direction": "client_to_server",
+      "header": 3878,
+      "java": {
+        "symbol": "GetIgnoredUsersEvent",
+        "className": "GetIgnoredUsersEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/users/GetIgnoredUsersEvent.java"
+      },
+      "typescript": {
+        "symbol": "USER_IGNORED",
+        "className": "GetIgnoredUsersComposer",
+        "path": "packages/communication/src/messages/outgoing/user/data/GetIgnoredUsersComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "requestedUsername"
+        }
+      ]
     },
     {
       "name": "OPEN_CAMPAIGN_CALENDAR_DOOR_STAFF",
@@ -11921,6 +12195,39 @@
       ]
     },
     {
+      "name": "PET_OPEN_PACKAGE_REQUESTED",
+      "direction": "server_to_client",
+      "header": 2380,
+      "java": {
+        "symbol": "LeprechaunStarterBundleComposer",
+        "className": "PetPackageComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/pets/PetPackageComposer.java"
+      },
+      "typescript": {
+        "symbol": "PET_OPEN_PACKAGE_REQUESTED",
+        "className": "OpenPetPackageRequestedMessageParser",
+        "path": "packages/communication/src/messages/parser/pet/OpenPetPackageRequestedMessageParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "_objectId"
+        },
+        {
+          "kind": "optional",
+          "controller": "bytesAvailable",
+          "fields": [
+            {
+              "kind": "scalar",
+              "type": "string",
+              "name": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "ROOM_RIGHTS_CLEAR",
       "direction": "server_to_client",
       "header": 2392,
@@ -12956,6 +13263,28 @@
         "path": "packages/communication/src/messages/parser/inventory/furniture/FurnitureListInvalidateParser.ts"
       },
       "fields": []
+    },
+    {
+      "name": "ISSUE_DELETED",
+      "direction": "server_to_client",
+      "header": 3192,
+      "java": {
+        "symbol": "IssueDeletedComposer",
+        "className": "IssueDeletedComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/modtool/IssueDeletedComposer.java"
+      },
+      "typescript": {
+        "symbol": "ISSUE_DELETED",
+        "className": "IssueDeletedMessageParser",
+        "path": "packages/communication/src/messages/parser/moderation/IssueDeletedMessageParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        }
+      ]
     },
     {
       "name": "SHOWMYSTERYBOXWAITMESSAGE",
@@ -16973,38 +17302,6 @@
       "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle; TypeScript analyzer: Outgoing composer message array cannot be resolved statically"
     },
     {
-      "name": "PURCHASE_PHOTO",
-      "direction": "client_to_server",
-      "header": 2408,
-      "java": {
-        "symbol": "CameraPurchaseEvent",
-        "className": "CameraPurchaseEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/camera/CameraPurchaseEvent.java"
-      },
-      "typescript": {
-        "symbol": "PURCHASE_PHOTO",
-        "className": "PurchasePhotoMessageComposer",
-        "path": "packages/communication/src/messages/outgoing/camera/PurchasePhotoMessageComposer.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string]"
-    },
-    {
-      "name": "SECURITY_TICKET",
-      "direction": "client_to_server",
-      "header": 2419,
-      "java": {
-        "symbol": "SecureLoginEvent",
-        "className": "SecureLoginEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java"
-      },
-      "typescript": {
-        "symbol": "SECURITY_TICKET",
-        "className": "SSOTicketMessageComposer",
-        "path": "packages/communication/src/messages/outgoing/handshake/SSOTicketMessageComposer.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [string] versus TypeScript [string, int]"
-    },
-    {
       "name": "UNIT_ACTION",
       "direction": "client_to_server",
       "header": 2456,
@@ -17117,54 +17414,6 @@
       "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle; TypeScript analyzer: Outgoing value issueIds.length has no statically resolvable wire type"
     },
     {
-      "name": "GET_WARDROBE",
-      "direction": "client_to_server",
-      "header": 2742,
-      "java": {
-        "symbol": "RequestUserWardrobeEvent",
-        "className": "RequestUserWardrobeEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/users/RequestUserWardrobeEvent.java"
-      },
-      "typescript": {
-        "symbol": "GET_WARDROBE",
-        "className": "GetWardrobeMessageComposer",
-        "path": "packages/communication/src/messages/outgoing/avatar/GetWardrobeMessageComposer.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [int]"
-    },
-    {
-      "name": "GET_CFH_STATUS",
-      "direction": "client_to_server",
-      "header": 2746,
-      "java": {
-        "symbol": "MySanctionStatusEvent",
-        "className": "MySanctionStatusEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/helper/MySanctionStatusEvent.java"
-      },
-      "typescript": {
-        "symbol": "GET_CFH_STATUS",
-        "className": "GetCfhStatusMessageComposer",
-        "path": "packages/communication/src/messages/outgoing/help/GetCfhStatusMessageComposer.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [boolean]"
-    },
-    {
-      "name": "POPULAR_ROOMS_SEARCH",
-      "direction": "client_to_server",
-      "header": 2758,
-      "java": {
-        "symbol": "RequestPopularRoomsEvent",
-        "className": "RequestPopularRoomsEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/navigator/RequestPopularRoomsEvent.java"
-      },
-      "typescript": {
-        "symbol": "POPULAR_ROOMS_SEARCH",
-        "className": "PopularRoomsSearchMessageComposer",
-        "path": "packages/communication/src/messages/outgoing/navigator/PopularRoomsSearchMessageComposer.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, int]"
-    },
-    {
       "name": "MODTOOL_SANCTION_BAN",
       "direction": "client_to_server",
       "header": 2766,
@@ -17227,38 +17476,6 @@
         "path": "packages/communication/src/messages/outgoing/friendlist/DeclineFriendMessageComposer.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle; TypeScript analyzer: Outgoing value userIds.length has no statically resolvable wire type"
-    },
-    {
-      "name": "GAMES_INIT",
-      "direction": "client_to_server",
-      "header": 2914,
-      "java": {
-        "symbol": "GameCenterEvent",
-        "className": "GameCenterEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/gamecenter/GameCenterEvent.java"
-      },
-      "typescript": {
-        "symbol": "GAMES_INIT",
-        "className": "GetWeeklyGameRewardComposer",
-        "path": "packages/communication/src/messages/outgoing/game/score/GetWeeklyGameRewardComposer.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [int]"
-    },
-    {
-      "name": "ROOMS_WITH_HIGHEST_SCORE_SEARCH",
-      "direction": "client_to_server",
-      "header": 2939,
-      "java": {
-        "symbol": "RequestHighestScoreRoomsEvent",
-        "className": "RequestHighestScoreRoomsEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/navigator/RequestHighestScoreRoomsEvent.java"
-      },
-      "typescript": {
-        "symbol": "ROOMS_WITH_HIGHEST_SCORE_SEARCH",
-        "className": "RoomsWithHighestScoreSearchMessageComposer",
-        "path": "packages/communication/src/messages/outgoing/navigator/RoomsWithHighestScoreSearchMessageComposer.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [int]"
     },
     {
       "name": "CALL_FOR_HELP_FROM_IM",
@@ -17373,22 +17590,6 @@
       "reason": "Java analyzer: Packet fields delegated to external reader readSettings inside handle; TypeScript analyzer: Outgoing value ints.length has no statically resolvable wire type"
     },
     {
-      "name": "GAMEUNLOADEDMESSAGE",
-      "direction": "client_to_server",
-      "header": 3207,
-      "java": {
-        "symbol": "GameCenterLeaveGameEvent",
-        "className": "GameCenterLeaveGameEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/gamecenter/GameCenterLeaveGameEvent.java"
-      },
-      "typescript": {
-        "symbol": "GAMEUNLOADEDMESSAGE",
-        "className": "GameUnloadedMessageComposer",
-        "path": "packages/communication/src/messages/outgoing/game/lobby/GameUnloadedMessageComposer.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [int]"
-    },
-    {
       "name": "RENDER_ROOM",
       "direction": "client_to_server",
       "header": 3226,
@@ -17451,38 +17652,6 @@
         "path": "packages/communication/src/messages/outgoing/moderation/GetModeratorUserInfoMessageComposer.ts"
       },
       "reason": "Java analyzer: Packet fields delegated to external reader requestUserInfo inside handle"
-    },
-    {
-      "name": "ROOM_RIGHTS_LIST",
-      "direction": "client_to_server",
-      "header": 3385,
-      "java": {
-        "symbol": "RequestRoomRightsEvent",
-        "className": "RequestRoomRightsEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/RequestRoomRightsEvent.java"
-      },
-      "typescript": {
-        "symbol": "ROOM_RIGHTS_LIST",
-        "className": "RoomUsersWithRightsComposer",
-        "path": "packages/communication/src/messages/outgoing/room/data/RoomUsersWithRightsComposer.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [int]"
-    },
-    {
-      "name": "PURCHASE_VIP_MEMBERSHIP_EXTENSION",
-      "direction": "client_to_server",
-      "header": 3407,
-      "java": {
-        "symbol": "CatalogBuyClubDiscountEvent",
-        "className": "CatalogBuyClubDiscountEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/CatalogBuyClubDiscountEvent.java"
-      },
-      "typescript": {
-        "symbol": "PURCHASE_VIP_MEMBERSHIP_EXTENSION",
-        "className": "PurchaseVipMembershipExtensionComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/PurchaseVipMembershipExtensionComposer.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [int]"
     },
     {
       "name": "GROUP_SAVE_PREFERENCES",
@@ -17597,22 +17766,6 @@
       "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle"
     },
     {
-      "name": "ROOM_LIKE",
-      "direction": "client_to_server",
-      "header": 3582,
-      "java": {
-        "symbol": "RoomVoteEvent",
-        "className": "RoomVoteEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/RoomVoteEvent.java"
-      },
-      "typescript": {
-        "symbol": "ROOM_LIKE",
-        "className": "RateFlatMessageComposer",
-        "path": "packages/communication/src/messages/outgoing/navigator/RateFlatMessageComposer.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [int]"
-    },
-    {
       "name": "SET_OBJECT_DATA",
       "direction": "client_to_server",
       "header": 3608,
@@ -17707,22 +17860,6 @@
         "path": "packages/communication/src/messages/outgoing/moderation/ModeratorActionMessageComposer.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle; TypeScript analyzer: Outgoing composer message array cannot be resolved statically"
-    },
-    {
-      "name": "USER_IGNORED",
-      "direction": "client_to_server",
-      "header": 3878,
-      "java": {
-        "symbol": "UsernameEvent",
-        "className": "UsernameEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/handshake/UsernameEvent.java"
-      },
-      "typescript": {
-        "symbol": "USER_IGNORED",
-        "className": "GetIgnoredUsersComposer",
-        "path": "packages/communication/src/messages/outgoing/user/data/GetIgnoredUsersComposer.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string]"
     },
     {
       "name": "GUIDE_SESSION_MESSAGE",
@@ -18186,7 +18323,7 @@
         "className": "IgnoredUsersParser",
         "path": "packages/communication/src/messages/parser/user/IgnoredUsersParser.ts"
       },
-      "reason": "TypeScript analyzer: Data-dependent packet operations in WhileStatement inside parse"
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in WhileStatement inside parse"
     },
     {
       "name": "USER_FAVORITE_ROOM_COUNT",
@@ -19837,22 +19974,6 @@
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor BundleDiscountRuleset inside parse"
     },
     {
-      "name": "PET_OPEN_PACKAGE_REQUESTED",
-      "direction": "server_to_client",
-      "header": 2380,
-      "java": {
-        "symbol": "LeprechaunStarterBundleComposer",
-        "className": "PetPackageComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/pets/PetPackageComposer.java"
-      },
-      "typescript": {
-        "symbol": "PET_OPEN_PACKAGE_REQUESTED",
-        "className": "OpenPetPackageRequestedMessageParser",
-        "path": "packages/communication/src/messages/parser/pet/OpenPetPackageRequestedMessageParser.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [int] versus TypeScript [int, string]"
-    },
-    {
       "name": "GROUP_BADGES",
       "direction": "server_to_client",
       "header": 2402,
@@ -20443,22 +20564,6 @@
         "path": "packages/communication/src/messages/parser/moderation/IssuePickFailedMessageParser.ts"
       },
       "reason": "Java analyzer: Packet fields delegated to external serializer serialize inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
-    },
-    {
-      "name": "ISSUE_DELETED",
-      "direction": "server_to_client",
-      "header": 3192,
-      "java": {
-        "symbol": "ModToolComposerOne",
-        "className": "ModToolComposerOne",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/unknown/ModToolComposerOne.java"
-      },
-      "typescript": {
-        "symbol": "ISSUE_DELETED",
-        "className": "IssueDeletedMessageParser",
-        "path": "packages/communication/src/messages/parser/moderation/IssueDeletedMessageParser.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string]"
     },
     {
       "name": "ROOM_ROLLING",

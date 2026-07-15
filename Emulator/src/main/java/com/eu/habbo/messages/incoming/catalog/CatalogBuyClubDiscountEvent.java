@@ -14,6 +14,7 @@ public class CatalogBuyClubDiscountEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
+        int offerId = this.packet.readInt();
 
         Subscription subscription = this.client.getHabbo().getHabboStats().getSubscription(SubscriptionHabboClub.HABBO_CLUB);
 
@@ -32,9 +33,9 @@ public class CatalogBuyClubDiscountEvent extends MessageHandler {
         }
 
         if(timeRemaining > 0 && SubscriptionHabboClub.DISCOUNT_ENABLED && days <= SubscriptionHabboClub.DISCOUNT_DAYS_BEFORE_END) {
-            ClubOffer deal = Emulator.getGameEnvironment().getCatalogManager().clubOffers.values().stream().filter(ClubOffer::isDeal).findAny().orElse(null);
+            ClubOffer deal = Emulator.getGameEnvironment().getCatalogManager().clubOffers.get(offerId);
 
-            if(deal != null) {
+            if(deal != null && deal.isDeal()) {
                 ClubOffer regular = Emulator.getGameEnvironment().getCatalogManager().getClubOffers().stream().filter(x -> x.getDays() == deal.getDays()).findAny().orElse(null);
                 if(regular != null) {
 

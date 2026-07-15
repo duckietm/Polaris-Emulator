@@ -247,7 +247,7 @@ public class Incoming {
     public static final int MoodLightSaveSettingsEvent = 1648;
     public static final int ModToolRequestIssueChatlogEvent = 211;
     public static final int ModToolRequestRoomUserChatlogEvent = -1;
-    public static final int UsernameEvent = 3878;
+    public static final int GetIgnoredUsersEvent = 3878;
     public static final int RequestClubGiftsEvent = 487;
     public static final int RentSpaceEvent = 2946;
     public static final int RentSpaceCancelEvent = 1667;

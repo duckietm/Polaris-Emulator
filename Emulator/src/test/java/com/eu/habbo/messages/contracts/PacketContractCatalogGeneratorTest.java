@@ -3,10 +3,18 @@ package com.eu.habbo.messages.contracts;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PacketContractCatalogGeneratorTest {
+    @Test
+    void acceptsAJavaPrefixWhenTypeScriptOnlyAddsTrailingOptionalFields() {
+        assertTrue(PacketContractCatalogGenerator.signaturesCompatible(
+                List.of("int"),
+                List.of("int", "optional<bytesAvailable:[string]>")));
+    }
+
     @Test
     void extractsTheCompleteJavaPacketInventory() throws Exception {
         Path repositoryRoot = Path.of("..").toAbsolutePath().normalize();

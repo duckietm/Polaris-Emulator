@@ -52,9 +52,13 @@ final class SessionEndpoints {
                     : RememberJwtService.revokeFromToken(conn, rememberToken);
 
             if (ssoTicket != null && !ssoTicket.isEmpty()) {
-                SsoTicketPolicy.TicketSession ssoSession = SsoTicketPolicy.resolve(conn, ssoTicket);
-                if (ssoSession != null) {
-                    userId = ssoSession.userId();
+                try (PreparedStatement lookup = conn.prepareStatement(
+                        "SELECT id FROM users WHERE auth_ticket = ? "
+                                + "AND (auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW()) LIMIT 1")) {
+                    lookup.setString(1, ssoTicket);
+                    try (ResultSet rs = lookup.executeQuery()) {
+                        if (rs.next()) userId = rs.getInt("id");
+                    }
                 }
             }
 
@@ -65,11 +69,11 @@ final class SessionEndpoints {
 
             if (userId > 0) {
                 try (PreparedStatement clear = conn.prepareStatement(
-                        "UPDATE users SET auth_ticket = '', online = '0' WHERE id = ? LIMIT 1")) {
+                        "UPDATE users SET auth_ticket = '', auth_ticket_expires_at = NULL, online = '0' "
+                                + "WHERE id = ? LIMIT 1")) {
                     clear.setInt(1, userId);
                     clear.executeUpdate();
                 }
-                SsoTicketPolicy.revoke(conn, ssoTicket);
 
                 AccessTokenService.revokeAll(conn, userId);
 
@@ -104,21 +108,20 @@ final class SessionEndpoints {
             }
 
             String ssoTicket = mintSsoTicket();
+            Timestamp ssoExpiry = newSsoTicketExpiry();
             try (PreparedStatement upd = conn.prepareStatement(
-                    "UPDATE users SET auth_ticket = ?, ip_current = ? WHERE id = ? LIMIT 1")) {
+                    "UPDATE users SET auth_ticket = ?, auth_ticket_expires_at = ?, ip_current = ? "
+                            + "WHERE id = ? LIMIT 1")) {
                 upd.setString(1, ssoTicket);
-                upd.setString(2, ip == null ? "" : ip);
-                upd.setInt(3, rot.userId);
+                upd.setTimestamp(2, ssoExpiry);
+                upd.setString(3, ip == null ? "" : ip);
+                upd.setInt(4, rot.userId);
                 upd.executeUpdate();
-            }
-            SsoTicketPolicy.TicketSession ssoSession = SsoTicketPolicy.register(conn, rot.userId, ssoTicket);
-            if (ssoSession == null) {
-                throw new SQLException("Could not register SSO ticket session");
             }
 
             JsonObject ok = new JsonObject();
             ok.addProperty("ssoTicket", ssoTicket);
-            ok.addProperty("ssoTicketExpiresAt", ssoSession.expiresAt().toInstant().getEpochSecond());
+            ok.addProperty("ssoTicketExpiresAt", ssoExpiry.toInstant().getEpochSecond());
             ok.addProperty("username", rot.username);
             ok.addProperty("rememberToken", rot.jwt);
             ok.addProperty("expiresAt", rot.expiresAt);
@@ -141,35 +144,28 @@ final class SessionEndpoints {
             return;
         }
 
-        try (Connection conn = Emulator.getDatabase().getDataSource().getConnection()) {
-            SsoTicketPolicy.TicketSession ssoSession = SsoTicketPolicy.resolve(conn, ssoTicket);
-            if (ssoSession == null) {
-                AuthRateLimiter.recordFailure(ip);
-                sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("SSO ticket not recognised."));
-                return;
-            }
-
-            String username = null;
-            try (PreparedStatement lookup = conn.prepareStatement("SELECT username FROM users WHERE id = ? LIMIT 1")) {
-                lookup.setInt(1, ssoSession.userId());
-                try (ResultSet rs = lookup.executeQuery()) {
-                    if (rs.next()) username = rs.getString("username");
+        try (Connection conn = Emulator.getDatabase().getDataSource().getConnection();
+             PreparedStatement lookup = conn.prepareStatement(
+                     "SELECT id, username FROM users WHERE auth_ticket = ? "
+                             + "AND (auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW()) LIMIT 1")) {
+            lookup.setString(1, ssoTicket);
+            try (ResultSet rs = lookup.executeQuery()) {
+                if (!rs.next()) {
+                    AuthRateLimiter.recordFailure(ip);
+                    sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("SSO ticket not recognised."));
+                    return;
                 }
-            }
-            if (username == null) {
-                AuthRateLimiter.recordFailure(ip);
-                sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("SSO ticket not recognised."));
-                return;
-            }
 
-            AuthRateLimiter.recordSuccess(ip);
+                int userId = rs.getInt("id");
+                AuthRateLimiter.recordSuccess(ip);
 
-            AccessTokenService.Issued access = AccessTokenService.issue(conn, ssoSession.userId());
-            JsonObject ok = new JsonObject();
-            ok.addProperty("username", username);
-            ok.addProperty("accessToken", access.token);
-            ok.addProperty("accessTokenExpiresAt", access.expiresAt);
-            sendJson(ctx, req, HttpResponseStatus.OK, ok);
+                AccessTokenService.Issued access = AccessTokenService.issue(conn, userId);
+                JsonObject ok = new JsonObject();
+                ok.addProperty("username", rs.getString("username"));
+                ok.addProperty("accessToken", access.token);
+                ok.addProperty("accessTokenExpiresAt", access.expiresAt);
+                sendJson(ctx, req, HttpResponseStatus.OK, ok);
+            }
         } catch (Exception e) {
             LOGGER.error("[auth/sso-token] lookup failed", e);
             sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
@@ -261,17 +257,16 @@ final class SessionEndpoints {
                     }
 
                     String ssoTicket = mintSsoTicket();
+                    Timestamp ssoExpiry = newSsoTicketExpiry();
 
                     try (PreparedStatement upd = conn.prepareStatement(
-                            "UPDATE users SET auth_ticket = ?, ip_current = ? WHERE id = ? LIMIT 1")) {
+                            "UPDATE users SET auth_ticket = ?, auth_ticket_expires_at = ?, ip_current = ? "
+                                    + "WHERE id = ? LIMIT 1")) {
                         upd.setString(1, ssoTicket);
-                        upd.setString(2, ip == null ? "" : ip);
-                        upd.setInt(3, userId);
+                        upd.setTimestamp(2, ssoExpiry);
+                        upd.setString(3, ip == null ? "" : ip);
+                        upd.setInt(4, userId);
                         upd.executeUpdate();
-                    }
-                    SsoTicketPolicy.TicketSession ssoSession = SsoTicketPolicy.register(conn, userId, ssoTicket);
-                    if (ssoSession == null) {
-                        throw new SQLException("Could not register SSO ticket session");
                     }
 
                     String rememberToken = null;
@@ -289,7 +284,7 @@ final class SessionEndpoints {
 
                     JsonObject ok = new JsonObject();
                     ok.addProperty("ssoTicket", ssoTicket);
-                    ok.addProperty("ssoTicketExpiresAt", ssoSession.expiresAt().toInstant().getEpochSecond());
+                    ok.addProperty("ssoTicketExpiresAt", ssoExpiry.toInstant().getEpochSecond());
                     ok.addProperty("username", rs.getString("username"));
                     if (rememberToken != null) ok.addProperty("rememberToken", rememberToken);
                     AccessTokenService.Issued access = AccessTokenService.issue(conn, userId);
@@ -492,5 +487,11 @@ final class SessionEndpoints {
         }
 
         return authorization.substring(7).trim();
+    }
+
+    private static Timestamp newSsoTicketExpiry() {
+        int ttlSeconds = Math.max(1,
+                Emulator.getConfig().getInt("login.sso.ticket.ttl.seconds", 60));
+        return Timestamp.from(Instant.now().plusSeconds(ttlSeconds));
     }
 }

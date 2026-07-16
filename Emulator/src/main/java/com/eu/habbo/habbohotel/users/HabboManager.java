@@ -12,7 +12,6 @@ import com.eu.habbo.messages.outgoing.generic.alerts.GenericAlertComposer;
 import com.eu.habbo.messages.outgoing.modtool.ModToolComposer;
 import com.eu.habbo.messages.outgoing.users.UserPerksComposer;
 import com.eu.habbo.messages.outgoing.users.UserPermissionsComposer;
-import com.eu.habbo.networking.gameserver.auth.SsoTicketPolicy;
 import com.eu.habbo.plugin.events.users.UserRankChangedEvent;
 import com.eu.habbo.plugin.events.users.UserRegisteredEvent;
 import org.slf4j.Logger;
@@ -96,11 +95,15 @@ public class HabboManager {
         Habbo habbo;
         int userId = 0;
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-            SsoTicketPolicy.TicketSession session = SsoTicketPolicy.resolve(connection, sso);
-            if (session != null) {
-                userId = session.userId();
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+             PreparedStatement statement = connection.prepareStatement("SELECT id FROM users WHERE auth_ticket = ? AND (auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW()) LIMIT 1")) {
+            statement.setString(1, sso);
+            try (ResultSet s = statement.executeQuery()) {
+                if (s.next()) {
+                    userId = s.getInt("id");
+                }
             }
+            statement.close();
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
         }
@@ -119,8 +122,8 @@ public class HabboManager {
 
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT * FROM users WHERE id = ? LIMIT 1")) {
-            statement.setInt(1, userId);
+             PreparedStatement statement = connection.prepareStatement("SELECT * FROM users WHERE auth_ticket = ? AND (auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW()) LIMIT 1")) {
+            statement.setString(1, sso);
             try (ResultSet set = statement.executeQuery()) {
                 if (set.next()) {
                     habbo = new Habbo(set);
@@ -133,9 +136,8 @@ public class HabboManager {
                     // Cloudflare il WebSocket viene droppato e il client ritenta più
                     // volte con lo STESSO ticket: se lo consumassimo al primo uso, i
                     // retry (e l'hard-refresh) fallirebbero con "non-existing SSO token".
-                    // The emulator-managed hashed ticket session supplies the TTL.
-                    // External CMS deployments only keep writing auth_ticket; a
-                    // new ticket hash is enrolled automatically on first use.
+                    // Il ticket resta valido fino alla scadenza (auth_ticket_expires_at,
+                    // TTL gestito dal CMS) o finché il CMS non ne scrive uno nuovo / logout.
                 }
             }
         } catch (SQLException e) {

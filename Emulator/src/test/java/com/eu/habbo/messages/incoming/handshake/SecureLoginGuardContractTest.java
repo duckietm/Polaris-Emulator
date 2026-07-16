@@ -19,7 +19,7 @@ class SecureLoginGuardContractTest {
 
         int maxConstant = source.indexOf("MAX_SSO_TICKET_LENGTH = 128");
         int guard = source.indexOf("sso.isEmpty() || sso.length() > MAX_SSO_TICKET_LENGTH");
-        int lookup = source.indexOf("SsoTicketPolicy.resolve(conn, sso)");
+        int lookup = source.indexOf("SELECT id FROM users WHERE auth_ticket = ?");
 
         assertTrue(maxConstant > -1, "Secure login should define the same SSO length cap used by HTTP auth");
         assertTrue(guard > -1, "Secure login must reject missing or oversized SSO tickets");

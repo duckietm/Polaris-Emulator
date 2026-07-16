@@ -9,39 +9,36 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SsoTicketExpiryContractTest {
     @Test
-    void builtInIssuersRegisterEmulatorManagedTicketSessions() throws Exception {
+    void builtInIssuersPersistFreshTicketExpiry() throws Exception {
         String endpoints = read("src/main/java/com/eu/habbo/networking/gameserver/auth/SessionEndpoints.java");
 
-        assertTrue(count(endpoints, "SsoTicketPolicy.register(conn") >= 2,
-                "password and remember login must register a hashed SSO session");
-        assertTrue(endpoints.contains("auth_ticket = '', online = '0'"),
-                "logout must clear the CMS-compatible auth_ticket field");
-        assertTrue(!endpoints.contains("auth_ticket_expires_at"),
-                "runtime authentication must not require CMS-managed expiry metadata");
+        assertTrue(count(endpoints, "auth_ticket = ?, auth_ticket_expires_at = ?, ip_current = ?") >= 2,
+                "password and remember login must persist a fresh expiry with each ticket");
+        assertTrue(count(endpoints, "Timestamp ssoExpiry = newSsoTicketExpiry()") >= 2,
+                "each built-in issuer must calculate its own fresh deadline");
+        assertTrue(endpoints.contains("auth_ticket = '', auth_ticket_expires_at = NULL, online = '0'"),
+                "logout must clear both built-in ticket fields");
     }
 
     @Test
-    void everySsoEntryPointUsesTheEmulatorManagedResolver() throws Exception {
+    void legacyCmsTicketsRemainCompatibleWhileNonNullExpiryIsEnforced() throws Exception {
         String combined = read("src/main/java/com/eu/habbo/networking/gameserver/auth/SessionEndpoints.java")
                 + read("src/main/java/com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java")
                 + read("src/main/java/com/eu/habbo/habbohotel/users/HabboManager.java");
 
-        assertTrue(count(combined, "SsoTicketPolicy.resolve(") >= 4,
-                "HTTP exchange, logout, ghost resume, and game login must use the same fixed-deadline resolver");
+        assertTrue(count(combined,
+                "auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW()") >= 5,
+                "all SSO lookups must enforce a supplied expiry without rejecting unchanged legacy CMS tickets");
     }
 
     @Test
-    void resolverStoresOnlyTicketHashAndDoesNotExtendExistingDeadline() throws Exception {
-        String policy = read("src/main/java/com/eu/habbo/networking/gameserver/auth/SsoTicketPolicy.java");
+    void expiryIsConfigurableWithoutASecondSessionStore() throws Exception {
+        String endpoints = read("src/main/java/com/eu/habbo/networking/gameserver/auth/SessionEndpoints.java");
 
-        assertTrue(policy.contains("MessageDigest.getInstance(\"SHA-256\")"),
-                "raw SSO bearer values must not be stored in the session table");
-        assertTrue(policy.contains("INSERT IGNORE INTO users_auth_ticket_sessions"),
-                "first use should enroll tickets without overwriting an existing expiry");
-        assertTrue(policy.contains("expires_at >= NOW()"),
-                "subsequent uses must enforce the original fixed deadline");
-        assertTrue(policy.contains("SELECT id FROM users WHERE auth_ticket = ?"),
-                "unchanged external CMS issuers must remain compatible");
+        assertTrue(endpoints.contains("login.sso.ticket.ttl.seconds\", 60"),
+                "the built-in issuer should use a short configurable TTL");
+        assertTrue(!endpoints.contains("users_auth_ticket_sessions"),
+                "the proportional fix must not introduce a second SSO session store");
     }
 
     private static String read(String path) throws Exception {

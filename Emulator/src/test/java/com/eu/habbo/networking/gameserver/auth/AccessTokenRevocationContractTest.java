@@ -37,7 +37,7 @@ class AccessTokenRevocationContractTest {
         String session = read("src/main/java/com/eu/habbo/networking/gameserver/auth/SessionEndpoints.java");
 
         int remember = session.indexOf("RememberJwtService.revokeFromToken");
-        int ssoLookup = session.indexOf("SsoTicketPolicy.resolve(conn, ssoTicket)", remember);
+        int ssoLookup = session.indexOf("SELECT id FROM users WHERE auth_ticket = ?", remember);
         int bearer = session.indexOf("AccessTokenService.verify(conn, bearerToken(req))", ssoLookup);
         int revoke = session.indexOf("AccessTokenService.revokeAll(conn, userId)", bearer);
 

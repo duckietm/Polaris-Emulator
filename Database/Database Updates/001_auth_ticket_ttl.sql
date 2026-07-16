@@ -3,9 +3,10 @@
 --
 -- Adds an explicit expiry timestamp to the SSO auth_ticket on `users`.
 --
--- This legacy compatibility column may still be used by a CMS, but the emulator
--- no longer requires external issuers to populate it. Run
--- 013_auth_ticket_sessions.sql to enable emulator-managed hashed ticket TTLs.
+-- Polaris's built-in password and remember-login issuers populate this column
+-- with a short expiry. Existing CMS deployments that only write auth_ticket
+-- remain compatible: NULL retains their established behavior, while CMSs that
+-- already populate an expiry continue to have it enforced by every validator.
 --
 -- Idempotent: skips the ALTER if the column already exists.
 -- ============================================================================

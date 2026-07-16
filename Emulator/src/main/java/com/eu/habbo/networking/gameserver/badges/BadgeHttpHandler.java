@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.users.custombadge.CustomBadgeManager;
 import com.eu.habbo.networking.gameserver.GameServerAttributes;
 import com.eu.habbo.networking.gameserver.auth.AccessTokenService;
 import com.eu.habbo.networking.gameserver.auth.AuthRateLimiter;
+import com.eu.habbo.networking.gameserver.auth.CorsOriginGate;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -342,11 +343,11 @@ public class BadgeHttpHandler extends ChannelInboundHandlerAdapter {
 
     private static void applyCors(FullHttpRequest req, FullHttpResponse response) {
         String origin = req.headers().get(HttpHeaderNames.ORIGIN);
-        if (origin != null && !origin.isEmpty()) {
+        if (origin != null && !origin.isEmpty() && CorsOriginGate.isAllowed(req)) {
             response.headers().set("Access-Control-Allow-Origin", origin);
-            response.headers().set("Vary", "Origin");
             response.headers().set("Access-Control-Allow-Credentials", "true");
         }
+        response.headers().set("Vary", "Origin");
         response.headers().set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, DELETE, OPTIONS");
         response.headers().set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
     }

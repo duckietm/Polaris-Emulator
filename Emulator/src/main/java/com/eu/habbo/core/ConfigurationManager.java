@@ -87,6 +87,7 @@ public class ConfigurationManager {
             envMapping.put("rcon.host", "RCON_HOST");
             envMapping.put("rcon.port", "RCON_PORT");
             envMapping.put("rcon.allowed", "RCON_ALLOWED");
+            envMapping.put("rcon.auth.secret", "RCON_AUTH_SECRET");
 
             // Runtime
             envMapping.put("runtime.threads", "RT_THREADS");

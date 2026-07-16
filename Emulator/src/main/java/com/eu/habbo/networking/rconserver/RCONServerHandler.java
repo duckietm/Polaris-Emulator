@@ -64,12 +64,17 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
             try {
                 JsonObject object = gson.fromJson(message, JsonObject.class);
                 key = object.get("key").getAsString();
+                if (!RconRequestAuthenticator.verify(object, key, object.get("data"))) {
+                    LOGGER.warn("Rejected unauthenticated RCON request from {}", remoteAddress(ctx));
+                    writeAndClose(ctx, "UNAUTHORIZED");
+                    return;
+                }
                 response = Emulator.getRconServer().handle(ctx, key, object.get("data").toString());
             } catch (ArrayIndexOutOfBoundsException e) {
                 LOGGER.error("Unknown RCON Message: {}", key);
             } catch (Exception e) {
-                LOGGER.error("Invalid RCON Message: {}", message);
-            LOGGER.error("Caught exception", e);
+                LOGGER.error("Invalid RCON message from {}", remoteAddress(ctx));
+                LOGGER.error("Caught exception", e);
             }
 
             writeAndClose(ctx, response);

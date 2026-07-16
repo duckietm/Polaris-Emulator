@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
+import java.net.InetAddress;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -88,6 +89,11 @@ public class RCONServer extends Server {
         this.addRCONMessage("updateitems", UpdateItems.class);
 
         Collections.addAll(this.allowedAdresses, Emulator.getConfig().getValue("rcon.allowed", "127.0.0.1").split(";"));
+
+        if (!isLoopbackHost(host) && !RconRequestAuthenticator.enabled()) {
+            LOGGER.warn("RCON is bound to non-loopback host {} without rcon.auth.secret; "
+                    + "legacy IP allowlisting remains active, but signed request authentication is disabled", host);
+        }
     }
 
     @Override
@@ -157,5 +163,13 @@ public class RCONServer extends Server {
 
         SocketAddress address = ctx.channel().remoteAddress();
         return address == null ? "unknown" : address.toString();
+    }
+
+    private static boolean isLoopbackHost(String host) {
+        try {
+            return InetAddress.getByName(host).isLoopbackAddress();
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 }

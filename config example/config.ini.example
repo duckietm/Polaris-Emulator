@@ -18,6 +18,9 @@ game.port=3000
 rcon.host=127.0.0.1
 rcon.port=3001
 rcon.allowed=127.0.0.1;127.0.0.2
+# Optional backward-compatible signed-request mode. Leave empty for legacy CMS requests.
+rcon.auth.secret=
+rcon.auth.max_clock_skew_seconds=60
 
 # Databse configuration
 db.pool.connection_timeout_ms = 10000

@@ -430,21 +430,36 @@ final class SessionEndpoints {
                     int userId = rs.getInt("id");
                     String username = rs.getString("username");
                     String token = mintResetToken();
-                    long expiresAt = Instant.now().getEpochSecond() + 60L * 60L; // 1h
+                    int ttlSeconds = Math.max(300, Math.min(3600,
+                            Emulator.getConfig().getInt("password.reset.ttl.seconds", 3600)));
+                    long expiresAt = Instant.now().getEpochSecond() + ttlSeconds;
+                    boolean secureStorage = Emulator.getConfig().getBoolean(
+                            "password.reset.secure_storage.enabled", false);
+                    String resetUrlBase = Emulator.getConfig().getValue("password.reset.url",
+                            "http://localhost/reset-password");
+
+                    if (secureStorage && !PasswordResetPolicy.isSecureOrLoopbackUrl(resetUrlBase)) {
+                        LOGGER.error("Secure password reset refused unsafe public URL: {}", resetUrlBase);
+                        sendJson(ctx, req, HttpResponseStatus.OK, ok);
+                        return;
+                    }
+
+                    try (PreparedStatement cleanup = conn.prepareStatement(
+                            "DELETE FROM password_resets WHERE expires_at < NOW()")) {
+                        cleanup.executeUpdate();
+                    }
 
                     try (PreparedStatement ins = conn.prepareStatement(
                             "INSERT INTO password_resets (user_id, token, expires_at, created_ip) " +
                                     "VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE " +
                                     "token = VALUES(token), expires_at = VALUES(expires_at), created_ip = VALUES(created_ip)")) {
                         ins.setInt(1, userId);
-                        ins.setString(2, token);
+                        ins.setString(2, PasswordResetPolicy.storedToken(token, secureStorage));
                         ins.setTimestamp(3, Timestamp.from(Instant.ofEpochSecond(expiresAt)));
                         ins.setString(4, ip == null ? "" : ip);
                         ins.executeUpdate();
                     }
 
-                    String resetUrlBase = Emulator.getConfig().getValue("password.reset.url",
-                            "http://localhost/reset-password");
                     String fullUrl = resetUrlBase + (resetUrlBase.contains("?") ? "&" : "?") + "token=" + token;
                     String subject = "Reset your Habbo password";
                     String message = "Hi " + username + ",\n\n" +

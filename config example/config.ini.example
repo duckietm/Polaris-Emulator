@@ -55,6 +55,10 @@ login.remember.jwt.secret=hange-me-to-a-long-random-secret
 # Login news API.
 login.news.limit=5
 
+# Optional built-in password reset consumption. Legacy CMS token storage remains the default.
+password.reset.secure_storage.enabled=false
+password.reset.ttl.seconds=3600
+
 #Performance / concurrency (optional — sensible defaults apply if unset; adjust in the Database).
 ## io.packet.handler.threads=24 #Game packet-handler pool size; runs game handlers OFF the Netty I/O loop. Default max(16, 2 x CPU cores).
 ## auth.http.pool.size=16 #Dedicated worker pool for the /api/auth/* HTTP endpoints (BCrypt/JDBC/Turnstile/SMTP run off the event loop). Default 16.

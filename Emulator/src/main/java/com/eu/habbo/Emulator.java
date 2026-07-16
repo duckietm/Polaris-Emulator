@@ -408,6 +408,8 @@ public final class Emulator {
         Emulator.config.register("nitro.secure.api.max_payload_bytes", "65536");
         Emulator.config.register("nitro.secure.config.max_file_bytes", "2097152");
         Emulator.config.register("nitro.secure.gamedata.max_file_bytes", "16777216");
+        Emulator.config.register("password.reset.secure_storage.enabled", "0");
+        Emulator.config.register("password.reset.ttl.seconds", "3600");
         registerEarningsSettings();
     }
 

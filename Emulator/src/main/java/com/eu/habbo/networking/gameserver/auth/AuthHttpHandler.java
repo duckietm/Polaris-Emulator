@@ -62,6 +62,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
     static final String LOGIN_PATH           = "/api/auth/login";
     static final String REGISTER_PATH        = "/api/auth/register";
     static final String FORGOT_PATH          = "/api/auth/forgot-password";
+    static final String RESET_PASSWORD_PATH  = "/api/auth/reset-password";
     static final String LOGOUT_PATH          = "/api/auth/logout";
     static final String CHECK_EMAIL_PATH     = "/api/auth/check-email";
     static final String CHECK_USERNAME_PATH  = "/api/auth/check-username";
@@ -121,6 +122,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
         return path.equals(LOGIN_PATH)
                 || path.equals(REGISTER_PATH)
                 || path.equals(FORGOT_PATH)
+                || path.equals(RESET_PASSWORD_PATH)
                 || path.equals(LOGOUT_PATH)
                 || path.equals(CHECK_EMAIL_PATH)
                 || path.equals(CHECK_USERNAME_PATH)
@@ -221,6 +223,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
         if (path.equals(REMEMBER_PATH))        { SessionEndpoints.handleRemember(ctx, req, body, ip);       return; }
         if (path.equals(REFRESH_PATH))         { SessionEndpoints.handleRefresh(ctx, req, body, ip);        return; }
         if (path.equals(SSO_TOKEN_PATH))       { SessionEndpoints.handleSsoToken(ctx, req, body, ip);       return; }
+        if (path.equals(RESET_PASSWORD_PATH))  { PasswordResetEndpoints.handleReset(ctx, req, body, ip);    return; }
         if (path.equals(CHANGE_PASSWORD_PATH)) { AccountChangeEndpoints.handleChangePassword(ctx, req, body, ip); return; }
         if (path.equals(CHANGE_EMAIL_PATH))    { AccountChangeEndpoints.handleChangeEmail(ctx, req, body, ip);    return; }
         if (path.equals(CHANGE_USERNAME_PATH)) { AccountChangeEndpoints.handleChangeUsername(ctx, req, body, ip); return; }

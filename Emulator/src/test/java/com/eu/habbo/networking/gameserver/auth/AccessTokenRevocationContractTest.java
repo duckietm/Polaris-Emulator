@@ -12,13 +12,24 @@ class AccessTokenRevocationContractTest {
     void tokensCarryAndVerifyTheUsersCurrentVersion() throws Exception {
         String access = read("src/main/java/com/eu/habbo/networking/gameserver/auth/AccessTokenService.java");
 
-        int issueVersion = access.indexOf("long version = currentVersion(conn, userId)");
-        int claim = access.indexOf("payload.addProperty(\"ver\", version)", issueVersion);
-        int verifyVersion = access.indexOf("version != currentVersion(conn, userId)", claim);
+        int issueState = access.indexOf("UserSecurityState securityState = currentSecurityState(conn, userId)");
+        int claim = access.indexOf("payload.addProperty(\"ver\", securityState.version)", issueState);
+        int verifyVersion = access.indexOf("version != securityState.version", claim);
 
-        assertTrue(issueVersion > -1, "issuance must load the persisted user version");
-        assertTrue(claim > issueVersion, "issued access token must contain that version");
+        assertTrue(issueState > -1, "issuance must load the persisted user security state");
+        assertTrue(claim > issueState, "issued access token must contain that version");
         assertTrue(verifyVersion > claim, "verification must reject a stale version");
+    }
+
+    @Test
+    void tokensAreBoundToCurrentPasswordWithoutCmsChanges() throws Exception {
+        String access = read("src/main/java/com/eu/habbo/networking/gameserver/auth/AccessTokenService.java");
+        String remember = read("src/main/java/com/eu/habbo/networking/gameserver/auth/RememberJwtService.java");
+
+        assertTrue(access.contains("credentialBinding(userId, securityState.passwordHash)"),
+                "access tokens must be invalidated automatically when the stored password changes");
+        assertTrue(remember.contains("parsed.credential.equals(credentialBinding(parsed.userId, identity.passwordHash))"),
+                "remember tokens must be invalidated automatically when the stored password changes");
     }
 
     @Test

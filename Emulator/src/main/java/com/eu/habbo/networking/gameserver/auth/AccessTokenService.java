@@ -53,7 +53,7 @@ public final class AccessTokenService {
     static Issued issue(Connection conn, int userId) throws SQLException {
         long now = Emulator.getIntUnixTimestamp();
         long exp = now + ttlSeconds();
-        long version = currentVersion(conn, userId);
+        UserSecurityState securityState = currentSecurityState(conn, userId);
 
         JsonObject header = new JsonObject();
         header.addProperty("alg", "HS256");
@@ -64,7 +64,8 @@ public final class AccessTokenService {
         payload.addProperty("iat", now);
         payload.addProperty("exp", exp);
         payload.addProperty("typ", "access");
-        payload.addProperty("ver", version);
+        payload.addProperty("ver", securityState.version);
+        payload.addProperty("cred", credentialBinding(userId, securityState.passwordHash));
 
         String h = URL_ENC.encodeToString(header.toString().getBytes(StandardCharsets.UTF_8));
         String p = URL_ENC.encodeToString(payload.toString().getBytes(StandardCharsets.UTF_8));
@@ -104,7 +105,12 @@ public final class AccessTokenService {
             if (exp <= Emulator.getIntUnixTimestamp()) return 0;
             int userId = payload.get("sub").getAsInt();
             long version = payload.get("ver").getAsLong();
-            if (userId <= 0 || version < 0 || version != currentVersion(conn, userId)) return 0;
+            String credential = payload.get("cred").getAsString();
+            if (userId <= 0 || version < 0) return 0;
+
+            UserSecurityState securityState = currentSecurityState(conn, userId);
+            if (version != securityState.version
+                    || !credential.equals(credentialBinding(userId, securityState.passwordHash))) return 0;
             return userId;
         } catch (SQLException e) {
             throw e;
@@ -123,17 +129,28 @@ public final class AccessTokenService {
         }
     }
 
-    private static long currentVersion(Connection conn, int userId) throws SQLException {
+    private static UserSecurityState currentSecurityState(Connection conn, int userId) throws SQLException {
         try (PreparedStatement select = conn.prepareStatement(
-                "SELECT access_token_version FROM users WHERE id = ? LIMIT 1")) {
+                "SELECT access_token_version, password FROM users WHERE id = ? LIMIT 1")) {
             select.setInt(1, userId);
             try (ResultSet result = select.executeQuery()) {
                 if (!result.next()) {
                     throw new SQLException("Access token user does not exist: " + userId);
                 }
-                return result.getLong("access_token_version");
+                return new UserSecurityState(
+                        result.getLong("access_token_version"),
+                        result.getString("password"));
             }
         }
+    }
+
+    private static String credentialBinding(int userId, String passwordHash) {
+        String value = userId + "\0" + (passwordHash == null ? "" : passwordHash);
+        return URL_ENC.encodeToString(hmacSha256(secret().getBytes(StandardCharsets.UTF_8),
+                value.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    private record UserSecurityState(long version, String passwordHash) {
     }
 
     private static String secret() {

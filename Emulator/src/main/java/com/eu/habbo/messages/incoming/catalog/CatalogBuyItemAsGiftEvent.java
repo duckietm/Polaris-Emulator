@@ -89,6 +89,10 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
 
                 CatalogPage clubGiftPage = Emulator.getGameEnvironment().getCatalogManager().catalogPages.get(pageId);
                 if (this.isClubOfferPage(clubGiftPage)) {
+                    if (!this.canAccessPage(clubGiftPage)) {
+                        this.client.sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+                        return;
+                    }
                     this.handleClubOfferGift(clubGiftPage, itemId, username);
                     return;
                 }
@@ -218,13 +222,19 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                         }
                     }
 
-                    int totalCredits = item.getCredits();
-                    int totalPoints = item.getPoints();
-
                     // Paid wrapping (giftWrappers) costs hotel.gifts.special.price; default furni wrap is free.
                     boolean isPaidWrap = Emulator.getGameEnvironment().getCatalogManager().giftWrappers.containsKey(spriteId);
                     int wrapFee = isPaidWrap ? Emulator.getConfig().getInt("hotel.gifts.special.price", 0) : 0;
-                    totalCredits += wrapFee;
+                    int totalCredits;
+                    int totalPoints;
+                    try {
+                        totalCredits = CatalogPurchaseMath.checkedAdd(item.getCredits(), wrapFee);
+                        totalPoints = CatalogPurchaseMath.requireNonNegative(item.getPoints(), "gift points price");
+                    } catch (IllegalArgumentException e) {
+                        LOGGER.warn("Rejected invalid gift price for itemId={}", itemId);
+                        this.client.sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+                        return;
+                    }
 
                     if (totalCredits > this.client.getHabbo().getHabboInfo().getCredits()
                             || totalPoints > this.client.getHabbo().getHabboInfo().getCurrencyAmount(item.getPointsType())) {
@@ -599,6 +609,13 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                 || page instanceof BuildersClubLoyaltyLayout;
     }
 
+    private boolean canAccessPage(CatalogPage page) {
+        return CatalogPageAccessPolicy.canAccess(
+                page,
+                this.client.getHabbo().getHabboInfo().getRank().getId(),
+                this.client.getHabbo().getHabboStats().hasActiveClub());
+    }
+
     private int getClubOfferWindowId(CatalogPage page) {
         if (page instanceof BuildersClubAddonsLayout) {
             return ClubOffer.WINDOW_BUILDERS_CLUB_ADDONS;
@@ -629,8 +646,17 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
             return;
         }
 
-        int totalCredits = offer.getCredits();
-        int totalPoints = offer.getPoints();
+        int totalCredits;
+        int totalPoints;
+        int duration;
+        try {
+            totalCredits = CatalogPurchaseMath.requireNonNegative(offer.getCredits(), "club gift credit price");
+            totalPoints = CatalogPurchaseMath.requireNonNegative(offer.getPoints(), "club gift points price");
+            duration = CatalogPurchaseMath.checkedSubscriptionSeconds(offer.getDays());
+        } catch (IllegalArgumentException e) {
+            this.client.sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+            return;
+        }
 
         if (totalCredits > this.client.getHabbo().getHabboInfo().getCredits()
                 || totalPoints > this.client.getHabbo().getHabboInfo().getCurrencyAmount(offer.getPointsType())) {
@@ -666,7 +692,6 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
         }
 
         String subscriptionType = offer.isBuildersClubSubscription() ? Subscription.BUILDERS_CLUB : Subscription.HABBO_CLUB;
-        int duration = offer.getDays() * 86400;
 
         boolean extended;
         if (recipient != null) {
@@ -728,7 +753,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                         int existing = set.getInt("duration");
                         try (PreparedStatement update = connection.prepareStatement(
                                 "UPDATE users_subscriptions SET duration = ? WHERE id = ?")) {
-                            update.setInt(1, existing + duration);
+                            update.setInt(1, CatalogPurchaseMath.checkedAdd(existing, duration));
                             update.setInt(2, subId);
                             update.executeUpdate();
                             return true;
@@ -747,7 +772,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                 insert.executeUpdate();
                 return true;
             }
-        } catch (SQLException e) {
+        } catch (SQLException | IllegalArgumentException e) {
             LOGGER.error("Caught SQL exception while extending offline subscription", e);
             return false;
         }

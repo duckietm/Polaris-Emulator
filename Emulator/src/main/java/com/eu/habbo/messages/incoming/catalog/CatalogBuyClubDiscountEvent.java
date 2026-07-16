@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.catalog;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.catalog.ClubOffer;
+import com.eu.habbo.habbohotel.catalog.CatalogPurchaseMath;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.subscriptions.Subscription;
 import com.eu.habbo.habbohotel.users.subscriptions.SubscriptionHabboClub;
@@ -39,9 +40,19 @@ public class CatalogBuyClubDiscountEvent extends MessageHandler {
                 ClubOffer regular = Emulator.getGameEnvironment().getCatalogManager().getClubOffers().stream().filter(x -> x.getDays() == deal.getDays()).findAny().orElse(null);
                 if(regular != null) {
 
-                    int totalDays = deal.getDays();
-                    int totalCredits = deal.getCredits();
-                    int totalDuckets = deal.getPoints();
+                    int totalDays;
+                    int totalCredits;
+                    int totalDuckets;
+                    int subscriptionSeconds;
+                    try {
+                        totalDays = CatalogPurchaseMath.requireNonNegative(deal.getDays(), "discount club duration");
+                        totalCredits = CatalogPurchaseMath.requireNonNegative(deal.getCredits(), "discount club credit price");
+                        totalDuckets = CatalogPurchaseMath.requireNonNegative(deal.getPoints(), "discount club points price");
+                        subscriptionSeconds = CatalogPurchaseMath.checkedSubscriptionSeconds(totalDays);
+                    } catch (IllegalArgumentException e) {
+                        this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                        return;
+                    }
 
                     if (totalDays > 0) {
                         if (this.client.getHabbo().getHabboInfo().getCurrencyAmount(deal.getPointsType()) < totalDuckets)
@@ -57,7 +68,7 @@ public class CatalogBuyClubDiscountEvent extends MessageHandler {
                             this.client.getHabbo().givePoints(deal.getPointsType(), -totalDuckets);
 
 
-                        if(this.client.getHabbo().getHabboStats().createSubscription(Subscription.HABBO_CLUB, (totalDays * 86400)) == null) {
+                        if(this.client.getHabbo().getHabboStats().createSubscription(Subscription.HABBO_CLUB, subscriptionSeconds) == null) {
                             this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
                             throw new Exception("Unable to create or extend subscription");
                         }

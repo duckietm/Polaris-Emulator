@@ -1070,8 +1070,9 @@ public class CatalogManager {
                     if (amount == item.getAmount()) {
                         amount = 1;
                     } else {
-                        if (amount * item.getAmount() > 100) {
-                            habbo.alert("Whoops! You tried to buy this " + (amount * item.getAmount()) + " times. This must've been a mistake.");
+                        long requestedItems = (long) amount * item.getAmount();
+                        if (requestedItems > 100) {
+                            habbo.alert("Whoops! You tried to buy this " + requestedItems + " times. This must've been a mistake.");
                             habbo.getClient().sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
                             return;
                         }
@@ -1102,8 +1103,8 @@ public class CatalogManager {
                 int totalCredits = free ? 0 : this.calculateDiscountedPrice(item.getCredits(), amount, item);
                 int totalPoints = free ? 0 : this.calculateDiscountedPrice(item.getPoints(), amount, item);
 
-                if (totalCredits > 0 && habbo.getHabboInfo().getCredits() - totalCredits < 0) return;
-                if (totalPoints > 0 && habbo.getHabboInfo().getCurrencyAmount(item.getPointsType()) - totalPoints < 0)
+                if (totalCredits > habbo.getHabboInfo().getCredits()) return;
+                if (totalPoints > habbo.getHabboInfo().getCurrencyAmount(item.getPointsType()))
                     return;
 
                 if (limitedConfiguration != null) limitedNumber = limitedConfiguration.getNumber();
@@ -1314,6 +1315,15 @@ public class CatalogManager {
 
                 UserCatalogItemPurchasedEvent purchasedEvent = new UserCatalogItemPurchasedEvent(habbo, item, itemsList, totalCredits, totalPoints, badges);
                 Emulator.getPluginManager().fireEvent(purchasedEvent);
+
+                CatalogPurchaseMath.requireNonNegative(purchasedEvent.totalCredits, "plugin-adjusted credit price");
+                CatalogPurchaseMath.requireNonNegative(purchasedEvent.totalPoints, "plugin-adjusted points price");
+
+                if (purchasedEvent.totalCredits > habbo.getHabboInfo().getCredits()
+                        || purchasedEvent.totalPoints > habbo.getHabboInfo().getCurrencyAmount(item.getPointsType())) {
+                    habbo.getClient().sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+                    return;
+                }
 
                 if (!free && !habbo.getClient().getHabbo().hasPermission(Permission.ACC_INFINITE_CREDITS)) {
                     if (purchasedEvent.totalCredits > 0) {
@@ -1836,7 +1846,7 @@ public class CatalogManager {
     }
 
     private int calculateDiscountedPrice(int originalPrice, int amount, CatalogItem item) {
-        if (!CatalogItem.haveOffer(item)) return originalPrice * amount;
+        if (!CatalogItem.haveOffer(item)) return CatalogPurchaseMath.checkedPrice(originalPrice, amount);
 
         int basicDiscount = amount / DiscountComposer.DISCOUNT_BATCH_SIZE;
 
@@ -1856,6 +1866,7 @@ public class CatalogManager {
 
         int totalDiscountedItems = (basicDiscount * DiscountComposer.DISCOUNT_AMOUNT_PER_BATCH) + bonusDiscount + additionalDiscounts;
 
-        return Math.max(0, originalPrice * (amount - totalDiscountedItems));
+        int payableItems = Math.max(0, amount - totalDiscountedItems);
+        return CatalogPurchaseMath.checkedPrice(originalPrice, payableItems);
     }
 }

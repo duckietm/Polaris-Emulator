@@ -114,23 +114,47 @@ public class Habbo implements Runnable {
         this.client = client;
     }
 
-
     public boolean connect() {
+        ConnectionSecurityResult security = this.checkConnectionSecurity();
+        if (!security.allowed()) {
+            return false;
+        }
+
+        this.isOnline(true);
+
+        this.messenger.connectionChanged(this, true, false);
+
+        Emulator.getGameEnvironment().getRoomManager().loadRoomsForHabbo(this);
+        LOGGER.info("{} logged in from IP {} using proxyserver {}", this.habboInfo.getUsername(), this.habboInfo.getIpLogin(), security.proxyInfo());
+        LOGGER.info("{} client MachineId = {}", this.habboInfo.getUsername(), this.client.getMachineId());
+        return true;
+    }
+
+    /**
+     * Re-evaluates identity bans without replaying the normal login side effects.
+     * Session resume uses this after attaching the new transport to a parked Habbo.
+     */
+    public boolean passesConnectionSecurityChecks() {
+        return this.checkConnectionSecurity().allowed();
+    }
+
+    private ConnectionSecurityResult checkConnectionSecurity() {
+        if (this.client == null || this.client.getChannel() == null) {
+            return new ConnectionSecurityResult(false, "missing client channel");
+        }
+
         String ip = "";
         String proxyInfo = "";
 
         String wsIp = this.client.getChannel().attr(GameServerAttributes.WS_IP).get();
         if (wsIp != null && !wsIp.isEmpty()) {
             ip = wsIp;
-            SocketAddress address = this.client.getChannel().remoteAddress();
-            proxyInfo = ((InetSocketAddress) address).getAddress().getHostAddress();
+            proxyInfo = remoteIp(this.client.getChannel().remoteAddress());
         } else if (!Emulator.getConfig().getBoolean("networking.tcp.proxy") && this.client.getChannel().remoteAddress() != null) {
-            SocketAddress address = this.client.getChannel().remoteAddress();
-            ip = ((InetSocketAddress) address).getAddress().getHostAddress();
+            ip = remoteIp(this.client.getChannel().remoteAddress());
             proxyInfo = "- no proxy server used";
         } else {
-            SocketAddress address = this.client.getChannel().remoteAddress();
-            proxyInfo = ((InetSocketAddress) address).getAddress().getHostAddress();
+            proxyInfo = remoteIp(this.client.getChannel().remoteAddress());
         }
 
         if (Emulator.getPluginManager().isRegistered(UserGetIPAddressEvent.class, true)) {
@@ -144,6 +168,10 @@ public class Habbo implements Runnable {
             this.habboInfo.setIpLogin(ip);
         }
 
+        if (Emulator.getGameEnvironment().getModToolManager().checkForBan(this.habboInfo.getId()) != null) {
+            return new ConnectionSecurityResult(false, proxyInfo);
+        }
+
         // The Nitro client sends the UniqueID (machine fingerprint) packet right
         // AFTER the SSO ticket, so client.getMachineId() may still be null here.
         // Do NOT reject the login for a missing machineId — MachineIDEvent sets it
@@ -154,23 +182,27 @@ public class Habbo implements Runnable {
             this.habboInfo.setMachineID(machineId);
 
             if (Emulator.getGameEnvironment().getModToolManager().hasMACBan(this.client)) {
-                return false;
+                return new ConnectionSecurityResult(false, proxyInfo);
             }
         }
 
         if (Emulator.getGameEnvironment().getModToolManager().hasIPBan(this.habboInfo.getIpLogin())) {
-            return false;
+            return new ConnectionSecurityResult(false, proxyInfo);
         }
-        this.isOnline(true);
 
-        this.messenger.connectionChanged(this, true, false);
-
-        Emulator.getGameEnvironment().getRoomManager().loadRoomsForHabbo(this);
-        LOGGER.info("{} logged in from IP {} using proxyserver {}", this.habboInfo.getUsername(), this.habboInfo.getIpLogin(), proxyInfo);
-        LOGGER.info("{} client MachineId = {}", this.habboInfo.getUsername(), this.client.getMachineId());
-        return true;
+        return new ConnectionSecurityResult(true, proxyInfo);
     }
 
+    private static String remoteIp(SocketAddress address) {
+        if (address instanceof InetSocketAddress inetAddress && inetAddress.getAddress() != null) {
+            return inetAddress.getAddress().getHostAddress();
+        }
+
+        return "";
+    }
+
+    private record ConnectionSecurityResult(boolean allowed, String proxyInfo) {
+    }
 
     public synchronized void disconnect() {
         if (!Emulator.isShuttingDown) {

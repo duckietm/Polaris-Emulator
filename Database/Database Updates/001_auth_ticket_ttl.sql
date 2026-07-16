@@ -8,12 +8,10 @@
 -- side SELECT queries that look up a user by auth_ticket have been changed to
 --
 --     WHERE auth_ticket = ?
---       AND (auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW())
+--       AND auth_ticket_expires_at >= NOW()
 --
--- The NULL branch keeps backward-compatibility with CMS deployments that do
--- not populate the column yet: existing rows continue to authenticate the
--- same way they always did, and the TTL kicks in only once the CMS starts
--- writing the expiry value.
+-- Run 013_require_sso_ticket_expiry.sql after this migration. Deployments with
+-- an external CMS must populate the expiry on every newly issued ticket.
 --
 -- Idempotent: skips the ALTER if the column already exists.
 -- ============================================================================

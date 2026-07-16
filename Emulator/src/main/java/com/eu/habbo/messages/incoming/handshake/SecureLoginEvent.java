@@ -105,7 +105,7 @@ public class SecureLoginEvent extends MessageHandler {
             // First, look up the user ID to check for ghost sessions
             int lookupUserId = 0;
             try (java.sql.Connection conn = Emulator.getDatabase().getDataSource().getConnection();
-                 java.sql.PreparedStatement stmt = conn.prepareStatement("SELECT id FROM users WHERE auth_ticket = ? AND (auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW()) LIMIT 1")) {
+                 java.sql.PreparedStatement stmt = conn.prepareStatement("SELECT id FROM users WHERE auth_ticket = ? AND auth_ticket_expires_at >= NOW() LIMIT 1")) {
                 stmt.setString(1, sso);
                 try (java.sql.ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
@@ -133,6 +133,13 @@ public class SecureLoginEvent extends MessageHandler {
                 habbo.setClient(this.client);
                 this.client.setHabbo(habbo);
                 this.client.setMachineId(habbo.getHabboInfo().getMachineID());
+
+                if (!habbo.passesConnectionSecurityChecks()) {
+                    LOGGER.warn("[SessionResume] Rejected resumed session for banned identity id={}",
+                            habbo.getHabboInfo().getId());
+                    Emulator.getGameServer().getGameClientManager().forceDisposeClient(this.client);
+                    return;
+                }
 
                 // NB: NON svuotiamo il ticket SSO qui (vedi HabboManager.loadHabbo):
                 // dietro Cloudflare il client ritenta la connessione con lo stesso

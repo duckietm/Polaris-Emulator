@@ -47,6 +47,7 @@ nitro.secure.gamedata.root=
 nitro.secure.master_key=change-me-to-a-long-random-secret
 
 # Remember-me login tokens.
+login.sso.ticket.ttl.seconds=60
 login.remember.enabled=true
 login.remember.duration.days=30
 # Optional: set a persistent remember-me JWT secret here, otherwise one is generated and stored in emulator_settings.

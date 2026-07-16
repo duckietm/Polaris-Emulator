@@ -96,7 +96,7 @@ public class HabboManager {
         int userId = 0;
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT id FROM users WHERE auth_ticket = ? AND (auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW()) LIMIT 1")) {
+             PreparedStatement statement = connection.prepareStatement("SELECT id FROM users WHERE auth_ticket = ? AND auth_ticket_expires_at >= NOW() LIMIT 1")) {
             statement.setString(1, sso);
             try (ResultSet s = statement.executeQuery()) {
                 if (s.next()) {
@@ -122,7 +122,7 @@ public class HabboManager {
 
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT * FROM users WHERE auth_ticket = ? AND (auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW()) LIMIT 1")) {
+             PreparedStatement statement = connection.prepareStatement("SELECT * FROM users WHERE auth_ticket = ? AND auth_ticket_expires_at >= NOW() LIMIT 1")) {
             statement.setString(1, sso);
             try (ResultSet set = statement.executeQuery()) {
                 if (set.next()) {

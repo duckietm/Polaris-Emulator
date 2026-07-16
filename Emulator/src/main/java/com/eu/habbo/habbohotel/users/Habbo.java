@@ -285,6 +285,7 @@ public class Habbo implements Runnable {
             this.client.sendResponse(new UserPointsComposer(this.getHabboInfo().getCurrencyAmount(type), event.points, event.type));
     }
 
+
     public void whisper(String message) {
         this.whisper(message, this.habboStats.chatColor);
     }

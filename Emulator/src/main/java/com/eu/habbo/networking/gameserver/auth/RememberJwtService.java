@@ -186,11 +186,22 @@ public final class RememberJwtService {
         return new RotationResult(newJwt, parsed.userId, username, newExpiresAt);
     }
 
-    public static void revokeFromToken(Connection conn, String jwt) {
+    public static int revokeFromToken(Connection conn, String jwt) {
         try {
             ParsedJwt p = verifyAndParse(jwt);
             revokeFamilyById(conn, p.familyId);
-        } catch (Exception ignored) { }
+            return p.userId;
+        } catch (Exception ignored) {
+            return 0;
+        }
+    }
+
+    public static void revokeAllForUser(Connection conn, int userId) throws SQLException {
+        try (PreparedStatement update = conn.prepareStatement(
+                "UPDATE users_remember_families SET revoked = 1 WHERE user_id = ?")) {
+            update.setInt(1, userId);
+            update.executeUpdate();
+        }
     }
 
     private static void revokeFamilyById(Connection conn, String familyId) {

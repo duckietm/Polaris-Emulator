@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Base64;
 
@@ -42,8 +43,17 @@ public final class AccessTokenService {
     }
 
     public static Issued issue(int userId) {
+        try (Connection conn = Emulator.getDatabase().getDataSource().getConnection()) {
+            return issue(conn, userId);
+        } catch (SQLException e) {
+            throw new IllegalStateException("Could not load access token version", e);
+        }
+    }
+
+    static Issued issue(Connection conn, int userId) throws SQLException {
         long now = Emulator.getIntUnixTimestamp();
         long exp = now + ttlSeconds();
+        long version = currentVersion(conn, userId);
 
         JsonObject header = new JsonObject();
         header.addProperty("alg", "HS256");
@@ -54,6 +64,7 @@ public final class AccessTokenService {
         payload.addProperty("iat", now);
         payload.addProperty("exp", exp);
         payload.addProperty("typ", "access");
+        payload.addProperty("ver", version);
 
         String h = URL_ENC.encodeToString(header.toString().getBytes(StandardCharsets.UTF_8));
         String p = URL_ENC.encodeToString(payload.toString().getBytes(StandardCharsets.UTF_8));
@@ -64,6 +75,15 @@ public final class AccessTokenService {
     }
 
     public static int verify(String token) {
+        try (Connection conn = Emulator.getDatabase().getDataSource().getConnection()) {
+            return verify(conn, token);
+        } catch (SQLException e) {
+            LOGGER.warn("[auth/access] token version lookup failed", e);
+            return 0;
+        }
+    }
+
+    static int verify(Connection conn, String token) throws SQLException {
         if (token == null || token.isEmpty() || token.length() > MAX_TOKEN_CHARS) return 0;
 
         String[] parts = token.split("\\.");
@@ -82,9 +102,37 @@ public final class AccessTokenService {
             if (!payload.has("typ") || !"access".equals(payload.get("typ").getAsString())) return 0;
             long exp = payload.get("exp").getAsLong();
             if (exp <= Emulator.getIntUnixTimestamp()) return 0;
-            return payload.get("sub").getAsInt();
+            int userId = payload.get("sub").getAsInt();
+            long version = payload.get("ver").getAsLong();
+            if (userId <= 0 || version < 0 || version != currentVersion(conn, userId)) return 0;
+            return userId;
+        } catch (SQLException e) {
+            throw e;
         } catch (Exception e) {
             return 0;
+        }
+    }
+
+    public static void revokeAll(Connection conn, int userId) throws SQLException {
+        if (userId <= 0) return;
+
+        try (PreparedStatement update = conn.prepareStatement(
+                "UPDATE users SET access_token_version = access_token_version + 1 WHERE id = ? LIMIT 1")) {
+            update.setInt(1, userId);
+            update.executeUpdate();
+        }
+    }
+
+    private static long currentVersion(Connection conn, int userId) throws SQLException {
+        try (PreparedStatement select = conn.prepareStatement(
+                "SELECT access_token_version FROM users WHERE id = ? LIMIT 1")) {
+            select.setInt(1, userId);
+            try (ResultSet result = select.executeQuery()) {
+                if (!result.next()) {
+                    throw new SQLException("Access token user does not exist: " + userId);
+                }
+                return result.getLong("access_token_version");
+            }
         }
     }
 

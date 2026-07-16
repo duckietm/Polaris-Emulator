@@ -95,11 +95,24 @@ final class AccountChangeEndpoints {
             }
 
             String hashed = PasswordHasher.hash(newPassword, 12);
-            try (PreparedStatement upd = conn.prepareStatement(
-                    "UPDATE users SET password = ? WHERE id = ? LIMIT 1")) {
-                upd.setString(1, hashed);
-                upd.setInt(2, userId);
-                upd.executeUpdate();
+            boolean previousAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                try (PreparedStatement upd = conn.prepareStatement(
+                        "UPDATE users SET password = ?, auth_ticket = '', "
+                                + "access_token_version = access_token_version + 1 "
+                                + "WHERE id = ? LIMIT 1")) {
+                    upd.setString(1, hashed);
+                    upd.setInt(2, userId);
+                    upd.executeUpdate();
+                }
+                RememberJwtService.revokeAllForUser(conn, userId);
+                conn.commit();
+            } catch (SQLException transactionError) {
+                try { conn.rollback(); } catch (SQLException ignored) { }
+                throw transactionError;
+            } finally {
+                conn.setAutoCommit(previousAutoCommit);
             }
 
             AuthRateLimiter.recordSuccess(ip);
@@ -456,10 +469,12 @@ final class AccountChangeEndpoints {
             }
 
             try (PreparedStatement clear = conn.prepareStatement(
-                    "UPDATE users SET auth_ticket = '', online = '0' WHERE id = ? LIMIT 1")) {
+                    "UPDATE users SET auth_ticket = '', online = '0', "
+                            + "access_token_version = access_token_version + 1 WHERE id = ? LIMIT 1")) {
                 clear.setInt(1, userId);
                 clear.executeUpdate();
             }
+            RememberJwtService.revokeAllForUser(conn, userId);
 
             if (Emulator.getGameServer() != null
                     && Emulator.getGameServer().getGameClientManager() != null) {

@@ -38,6 +38,7 @@ import com.eu.habbo.messages.outgoing.modtool.ModToolSanctionInfoComposer;
 import com.eu.habbo.messages.outgoing.mysterybox.MysteryBoxKeysComposer;
 import com.eu.habbo.messages.outgoing.navigator.NewNavigatorSavedSearchesComposer;
 import com.eu.habbo.messages.outgoing.users.*;
+import com.eu.habbo.networking.gameserver.auth.SsoTicketPolicy;
 import com.eu.habbo.plugin.events.emulator.SSOAuthenticationEvent;
 import com.eu.habbo.plugin.events.users.UserLoginEvent;
 import org.slf4j.Logger;
@@ -104,13 +105,10 @@ public class SecureLoginEvent extends MessageHandler {
 
             // First, look up the user ID to check for ghost sessions
             int lookupUserId = 0;
-            try (java.sql.Connection conn = Emulator.getDatabase().getDataSource().getConnection();
-                 java.sql.PreparedStatement stmt = conn.prepareStatement("SELECT id FROM users WHERE auth_ticket = ? AND auth_ticket_expires_at >= NOW() LIMIT 1")) {
-                stmt.setString(1, sso);
-                try (java.sql.ResultSet rs = stmt.executeQuery()) {
-                    if (rs.next()) {
-                        lookupUserId = rs.getInt("id");
-                    }
+            try (java.sql.Connection conn = Emulator.getDatabase().getDataSource().getConnection()) {
+                SsoTicketPolicy.TicketSession session = SsoTicketPolicy.resolve(conn, sso);
+                if (session != null) {
+                    lookupUserId = session.userId();
                 }
             } catch (Exception e) {
                 LOGGER.error("Caught exception looking up user for session resume", e);

@@ -3,15 +3,9 @@
 --
 -- Adds an explicit expiry timestamp to the SSO auth_ticket on `users`.
 --
--- The CMS issuing the ticket is expected to populate auth_ticket_expires_at
--- (e.g. NOW() + INTERVAL 60 SECOND) on every login redirect. The emulator-
--- side SELECT queries that look up a user by auth_ticket have been changed to
---
---     WHERE auth_ticket = ?
---       AND auth_ticket_expires_at >= NOW()
---
--- Run 013_require_sso_ticket_expiry.sql after this migration. Deployments with
--- an external CMS must populate the expiry on every newly issued ticket.
+-- This legacy compatibility column may still be used by a CMS, but the emulator
+-- no longer requires external issuers to populate it. Run
+-- 013_auth_ticket_sessions.sql to enable emulator-managed hashed ticket TTLs.
 --
 -- Idempotent: skips the ALTER if the column already exists.
 -- ============================================================================

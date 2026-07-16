@@ -131,8 +131,8 @@ public class SessionResumeManager {
         // lentamente (~15s) e la grace (5s) scade prima che la nuova connessione
         // arrivi: svuotando il ticket si cancellava quello NUOVO appena scritto dal
         // CMS per il refresh → "non-existing SSO token" → bisognava refreshare 2 volte.
-        // Il ticket vive col suo TTL (auth_ticket_expires_at) e viene sovrascritto dal
-        // CMS al prossimo /client o azzerato al logout.
+        // The ticket lives only for the emulator-managed hashed-session TTL and is
+        // overwritten by the CMS on the next /client request or cleared on logout.
     }
 
     private void restoreSsoTicket(int userId, String ssoTicket) {

@@ -30726,6 +30726,17 @@ DELETE FROM `users`;
 INSERT INTO `users` (`id`, `username`, `real_name`, `password`, `mail`, `mail_verified`, `account_created`, `account_day_of_birth`, `last_login`, `last_online`, `motto`, `look`, `gender`, `rank`, `credits`, `pixels`, `points`, `online`, `auth_ticket`, `remember_token_hash`, `remember_token_expires_at`, `ip_register`, `ip_current`, `machine_id`, `background_id`, `background_stand_id`, `background_overlay_id`, `background_card_id`, `home_room`, `secret_key`, `pincode`, `extra_rank`, `last_username_change`) VALUES
 	(0, '[SYSTEM]', 'KREWS DEV', '!', NULL, '0', 0, 0, 0, 0, 'System sentinel - do not delete', '', 'M', 1, 0, 500, 10, '0', '', '', 0, '127.0.0.1', '127.0.0.1', '', 0, 0, 0, 0, 0, NULL, NULL, NULL, 0);
 
+-- Dumping structure for table habbo.users_auth_ticket_sessions
+DROP TABLE IF EXISTS `users_auth_ticket_sessions`;
+CREATE TABLE IF NOT EXISTS `users_auth_ticket_sessions` (
+  `ticket_hash` char(64) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `expires_at` timestamp NOT NULL,
+  PRIMARY KEY (`ticket_hash`),
+  KEY `idx_auth_ticket_session_user` (`user_id`),
+  KEY `idx_auth_ticket_session_expiry` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Dumping structure for table habbo.users_achievements
 DROP TABLE IF EXISTS `users_achievements`;
 CREATE TABLE IF NOT EXISTS `users_achievements` (

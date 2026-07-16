@@ -106,10 +106,14 @@ class EarningsCenterManagerTest {
     }
 
     @Test
-    void failedRewardGrantRollsBackClaimRecord() {
-        TestConfig config = enabledConfig().with("earnings.daily_gift.credits", "10");
+    void failedRewardGrantRetainsClaimToPreventPartialRewardReplay() {
+        TestConfig config = enabledConfig()
+                .with("earnings.daily_gift.credits", "10")
+                .with("earnings.daily_gift.points", "5");
         TestClaims claims = new TestClaims();
+        List<EarningsReward> partiallyGranted = new ArrayList<>();
         EarningsCenterManager manager = new EarningsCenterManager(config, claims, (habbo, rewards) -> {
+            partiallyGranted.add(rewards.getFirst());
             throw new SQLException("grant failed");
         }, FIXED_CLOCK);
 
@@ -118,7 +122,8 @@ class EarningsCenterManagerTest {
                 .claim(null, "daily_gift");
 
         assertEquals(EarningsClaimResult.Status.ERROR, failed.getStatus());
-        assertEquals(EarningsClaimResult.Status.SUCCESS, retried.getStatus());
+        assertEquals(1, partiallyGranted.size());
+        assertEquals(EarningsClaimResult.Status.ALREADY_CLAIMED, retried.getStatus());
     }
 
     @Test

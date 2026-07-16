@@ -6,6 +6,8 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboBadge;
 import com.eu.habbo.habbohotel.users.subscriptions.SubscriptionHabboClub;
 import com.eu.habbo.messages.outgoing.users.AddUserBadgeComposer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -18,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 
 public class EarningsCenterManager {
+    private static final Logger LOGGER = LoggerFactory.getLogger(EarningsCenterManager.class);
     public static final String CONFIG_PREFIX = "earnings.";
     private static final int DEFAULT_COOLDOWN_SECONDS = 86400;
     private static final int DEFAULT_POINTS_TYPE = 5;
@@ -109,10 +112,12 @@ public class EarningsCenterManager {
             this.rewards.grant(habbo, definition.rewards());
             return new EarningsClaimResult(category, EarningsClaimResult.Status.SUCCESS, buildEntry(habbo, userId, category, now));
         } catch (SQLException e) {
-            try {
-                this.claims.removeClaim(userId, category.getKey(), periodKey);
-            } catch (SQLException ignored) {
-            }
+            // A reward applier may have completed earlier grants before a later
+            // database-backed reward failed. Keep the unique claim marker so a
+            // retry cannot duplicate the already-applied portion. Operators can
+            // reconcile the retained claim and missing reward from this log.
+            LOGGER.error("Earnings grant failed after claim marker was recorded; retaining claim userId={} category={} period={}",
+                    userId, category.getKey(), periodKey, e);
             return new EarningsClaimResult(category, EarningsClaimResult.Status.ERROR, buildEntry(habbo, userId, category, now));
         }
     }

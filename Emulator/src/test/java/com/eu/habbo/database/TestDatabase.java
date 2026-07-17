@@ -16,7 +16,9 @@ public final class TestDatabase {
     /** Pinned supported image; CI's version matrix overrides it via
      *  the POLARIS_TEST_MARIADB_IMAGE environment variable. */
     public static final String MARIADB_IMAGE =
-            System.getenv().getOrDefault("POLARIS_TEST_MARIADB_IMAGE", "mariadb:11");
+            System.getenv().getOrDefault(
+                    "POLARIS_TEST_MARIADB_IMAGE",
+                    "mariadb:11.4.12@sha256:a794d9eb009e20de605858a11f32f63b4075cbd197c650436f0e3b457e4caed7");
 
     private static volatile MariaDBContainer<?> container;
     private static volatile HikariDataSource dataSource;
@@ -26,8 +28,8 @@ public final class TestDatabase {
 
     /**
      * True when Testcontainers can reach a Docker daemon. Integration tests use
-     * this with {@code assumeTrue} so they SKIP (not fail) on a machine without a
-     * usable Docker environment, while still running in CI.
+     * this to offer a local skip when no daemon is available. CI treats an
+     * unavailable container as a test failure.
      */
     public static boolean dockerAvailable() {
         try {
@@ -41,7 +43,9 @@ public final class TestDatabase {
         if (dataSource != null) {
             return dataSource;
         }
-        MariaDBContainer<?> c = new MariaDBContainer<>(DockerImageName.parse(MARIADB_IMAGE))
+        DockerImageName image = DockerImageName.parse(MARIADB_IMAGE)
+                .asCompatibleSubstituteFor("mariadb");
+        MariaDBContainer<?> c = new MariaDBContainer<>(image)
                 .withDatabaseName("habbo_test")
                 .withUsername("polaris")
                 .withPassword("polaris");
@@ -63,8 +67,8 @@ public final class TestDatabase {
      * tables dropped, including flyway_schema_history). The container's user only
      * has rights on its own database, so tests share one database and reset it
      * between runs rather than creating new ones. Integration tests run
-     * sequentially, so this is safe. The returned handle is the shared pool and
-     * must NOT be closed by the caller.
+     * sequentially, so this is safe. The returned handle is a separate pool on
+     * that database and should be closed by the caller.
      *
      * @param label used only for logging
      */

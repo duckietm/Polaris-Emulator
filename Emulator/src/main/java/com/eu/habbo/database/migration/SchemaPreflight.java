@@ -7,7 +7,9 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -16,26 +18,29 @@ import java.util.Set;
  * from baselining and mutating a schema it does not recognise (for example a
  * mistyped database name).
  *
- * <p>Phase 2 ships the core classification (empty / already-managed / recognised
- * existing / unknown) using a minimal invariant set. Phase 4 refines the
- * recognised branch into pristine-Arc vs existing-pre-migration-Polaris and adds
- * per-object fingerprints; the enum and entry point are stable so that work slots
- * in without touching callers.
+ * <p>The recognition check deliberately uses a compact Arc-family signature
+ * instead of requiring an exact pristine dump. Real hotels commonly add plugin
+ * tables or harmless custom columns, and those should remain a one-start upgrade.
+ * Requiring several characteristic tables and columns still avoids blessing an
+ * unrelated database selected by mistake.
  */
 public final class SchemaPreflight {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SchemaPreflight.class);
 
-    /** Tables that any Arc-family or Polaris database must have. Kept intentionally
-     *  minimal so slightly-customised real installs are still recognised; extra
-     *  tables are tolerated. */
-    private static final Set<String> REQUIRED_INVARIANT_TABLES = new LinkedHashSet<>();
+    /** Characteristic Arc/Polaris tables and their stable identity columns.
+     * Extra tables and columns are intentionally tolerated. */
+    private static final Map<String, Set<String>> REQUIRED_SCHEMA_SIGNATURE = new LinkedHashMap<>();
 
     static {
-        REQUIRED_INVARIANT_TABLES.add("users");
-        REQUIRED_INVARIANT_TABLES.add("items");
-        REQUIRED_INVARIANT_TABLES.add("rooms");
-        REQUIRED_INVARIANT_TABLES.add("emulator_settings");
+        REQUIRED_SCHEMA_SIGNATURE.put("users", Set.of("id", "username", "password", "auth_ticket"));
+        REQUIRED_SCHEMA_SIGNATURE.put("rooms", Set.of("id", "owner_id", "model"));
+        REQUIRED_SCHEMA_SIGNATURE.put("items", Set.of("id", "user_id", "room_id", "item_id"));
+        REQUIRED_SCHEMA_SIGNATURE.put("items_base", Set.of("id", "interaction_type"));
+        REQUIRED_SCHEMA_SIGNATURE.put("catalog_pages", Set.of("id", "page_layout"));
+        REQUIRED_SCHEMA_SIGNATURE.put("emulator_settings", Set.of("key", "value"));
+        REQUIRED_SCHEMA_SIGNATURE.put("permissions", Set.of("id", "rank_name"));
+        REQUIRED_SCHEMA_SIGNATURE.put("users_currency", Set.of("user_id", "type", "amount"));
     }
 
     public enum State {
@@ -65,9 +70,16 @@ public final class SchemaPreflight {
             }
 
             Set<String> missing = new LinkedHashSet<>();
-            for (String required : REQUIRED_INVARIANT_TABLES) {
-                if (!tableExists(connection, required)) {
-                    missing.add(required);
+            for (Map.Entry<String, Set<String>> entry : REQUIRED_SCHEMA_SIGNATURE.entrySet()) {
+                String table = entry.getKey();
+                if (!tableExists(connection, table)) {
+                    missing.add(table);
+                    continue;
+                }
+                for (String column : entry.getValue()) {
+                    if (!columnExists(connection, table, column)) {
+                        missing.add(table + "." + column);
+                    }
                 }
             }
 
@@ -86,6 +98,18 @@ public final class SchemaPreflight {
         try (var statement = connection.prepareStatement(
                 "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?")) {
             statement.setString(1, table);
+            try (ResultSet rs = statement.executeQuery()) {
+                return rs.next() && rs.getInt(1) > 0;
+            }
+        }
+    }
+
+    private static boolean columnExists(Connection connection, String table, String column) throws SQLException {
+        try (var statement = connection.prepareStatement(
+                "SELECT COUNT(*) FROM information_schema.COLUMNS "
+                        + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?")) {
+            statement.setString(1, table);
+            statement.setString(2, column);
             try (ResultSet rs = statement.executeQuery()) {
                 return rs.next() && rs.getInt(1) > 0;
             }

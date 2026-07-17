@@ -830,7 +830,7 @@ CREATE TABLE IF NOT EXISTS `calendar_campaigns` (
   `lock_expired` enum('1','0') NOT NULL DEFAULT '1',
   `enabled` enum('1','0') NOT NULL DEFAULT '1',
   UNIQUE KEY `id` (`id`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 LOCK TABLES `calendar_campaigns` WRITE;
 UNLOCK TABLES;
 COMMIT;
@@ -848,7 +848,7 @@ CREATE TABLE IF NOT EXISTS `calendar_rewards` (
   `subscription_type` varchar(128) CHARACTER SET latin1 COLLATE latin1_swedish_ci DEFAULT '',
   `subscription_days` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 LOCK TABLES `calendar_rewards` WRITE;
 UNLOCK TABLES;
 COMMIT;
@@ -858,7 +858,7 @@ CREATE TABLE IF NOT EXISTS `calendar_rewards_claimed` (
   `day` int(11) NOT NULL,
   `reward_id` int(11) NOT NULL,
   `timestamp` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 LOCK TABLES `calendar_rewards_claimed` WRITE;
 UNLOCK TABLES;
 COMMIT;
@@ -27991,7 +27991,7 @@ CREATE TABLE IF NOT EXISTS `messenger_categories` (
   `name` varchar(25) NOT NULL,
   `user_id` int(11) NOT NULL,
   UNIQUE KEY `identifier` (`id`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 LOCK TABLES `messenger_categories` WRITE;
 UNLOCK TABLES;
 COMMIT;

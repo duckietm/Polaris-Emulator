@@ -38,8 +38,6 @@ public final class MigrationRunner {
     public static final String BASELINE_VERSION = "1";
 
     private static final String KEY_ON_STARTUP = "db.migrate.on_startup";
-    private static final String KEY_MIGRATE_USER = "db.migrate.username";
-    private static final String KEY_MIGRATE_PASS = "db.migrate.password";
 
     private MigrationRunner() {
     }
@@ -55,14 +53,14 @@ public final class MigrationRunner {
             return;
         }
 
-        HikariDataSource dedicated = migrationCredentialDataSource(runtimeDataSource, config);
-        DataSource dataSource = dedicated != null ? dedicated : runtimeDataSource;
-        try {
-            migrate(dataSource);
-        } finally {
-            if (dedicated != null) {
-                dedicated.close();
-            }
+        // Production's runtime datasource is a LegacyBridgeDataSource. Its
+        // getConnection() method wraps every JDBC statement so old plugin SQL can
+        // be translated. Flyway must not pass through that compatibility layer:
+        // a future migration mentioning a legacy table name could otherwise be
+        // silently rewritten. Reuse the normal DB credentials in a tiny,
+        // short-lived raw pool instead.
+        try (HikariDataSource rawMigrationDataSource = rawMigrationDataSource(runtimeDataSource)) {
+            migrate(rawMigrationDataSource);
         }
     }
 
@@ -82,8 +80,9 @@ public final class MigrationRunner {
                                 + "No changes were made. Check that db.database points at the correct database, or see the "
                                 + "conversion/recovery instructions before proceeding.");
                 case RECOGNISED_EXISTING -> {
-                    LOGGER.warn("[migrate] Recognised an existing Arc/Polaris database with no Flyway history. "
-                            + "Baselining at V{} and applying pending migrations. A full backup is strongly recommended before upgrades.", BASELINE_VERSION);
+                    LOGGER.warn("[migrate] Existing Arcturus/Polaris hotel detected with no migration history. "
+                            + "Polaris will preserve the hotel data, record the Arcturus V{} baseline, and apply the required upgrades now. "
+                            + "A full database backup before first startup is strongly recommended.", BASELINE_VERSION);
                     flyway.baseline();
                     return flyway.migrate();
                 }
@@ -135,26 +134,16 @@ public final class MigrationRunner {
                 .load();
     }
 
-    /**
-     * If separate migration credentials are configured (so the runtime account can
-     * run without DDL privileges), build a short-lived datasource that reuses the
-     * runtime JDBC URL with those credentials. Returns {@code null} to use the
-     * runtime datasource (the common single-account setup).
-     */
-    private static HikariDataSource migrationCredentialDataSource(HikariDataSource runtime, ConfigurationManager config) {
-        String user = config.getValue(KEY_MIGRATE_USER, "");
-        if (user == null || user.isEmpty()) {
-            return null;
-        }
-        String pass = config.getValue(KEY_MIGRATE_PASS, "");
-
+    private static HikariDataSource rawMigrationDataSource(HikariDataSource runtime) {
         HikariConfig migrateConfig = new HikariConfig();
         migrateConfig.setJdbcUrl(runtime.getJdbcUrl());
-        migrateConfig.setUsername(user);
-        migrateConfig.setPassword(pass);
+        migrateConfig.setUsername(runtime.getUsername());
+        migrateConfig.setPassword(runtime.getPassword());
+        migrateConfig.setDataSourceProperties(runtime.getDataSourceProperties());
         migrateConfig.setMaximumPoolSize(2);
+        migrateConfig.setMinimumIdle(0);
         migrateConfig.setPoolName("polaris-migrate");
-        LOGGER.info("[migrate] Using dedicated migration credentials (user '{}').", user);
+        LOGGER.debug("[migrate] Opened an unwrapped migration datasource using the configured database account.");
         return new HikariDataSource(migrateConfig);
     }
 }

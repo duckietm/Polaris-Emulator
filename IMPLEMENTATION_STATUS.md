@@ -3,34 +3,39 @@
 Branch: `feature/testing-and-migrations` (off `main`). **Not pushed** — for local
 review and testing first. Companion to `TESTING_AND_MIGRATIONS_PLAN.md`.
 
-This is a foundation-first, verified first-cut. The core migration pipeline is
-**proven against a real MariaDB**; the larger data/behavior work is scaffolded and
-flagged for your review, since that's where local testing and judgement are needed.
+This is a foundation-first, verified first cut. The V1–V4 migration pipeline is
+proven against real MariaDB 10.11 and 11 containers. The remaining Arc→current
+Polaris schema/reference-data work is still Phase 3 and is not represented as
+finished here.
 
 ## What's implemented and verified ✅
 
 | Area | State | How it was verified |
 |---|---|---|
-| **pom deps** (Flyway core+mysql, Testcontainers, Mockito, Failsafe, datafaker, JaCoCo profile) | Done | `mvn verify` builds; 445 unit tests pass |
-| **Test DB seam** (`Database(HikariDataSource)`, `Emulator.setDatabaseForTesting`) | Done | compiles; no public signature changed |
-| **Flyway runner + fail-closed startup** (`MigrationRunner`, `SchemaPreflight`) | Done | see migration verification below |
-| **V1 = Arc MS 3.5.5 baseline** (schema + data, obsolete `old_guilds_forums*` excluded) | Done | applied via Flyway to a throwaway MariaDB 11 |
+| **pom deps** (Flyway core+mysql, Testcontainers, Mockito, Failsafe, datafaker, JaCoCo profile) | Done | `mvn test`: 446 tests pass |
+| **Test DB seam** (`Database(HikariDataSource)`, `Emulator.setDatabaseForTesting`) | Done | both seams are package-private; no public plugin signature changed |
+| **Flyway runner + fail-closed startup** (`MigrationRunner`, `SchemaPreflight`) | Done | migrations use a short-lived raw pool with the existing DB credentials; migration failure escapes `main` and closes the runtime pool |
+| **V1 = Arc MS 3.5.5 baseline** (schema + data, obsolete `old_guilds_forums*` excluded) | Done | compared with the supplied `retro-hotel-files/BaseDB MS 3.5.5.sql`; four MySQL-only collations normalized for MariaDB 10.11 |
 | **V2 = 23 Polaris-only tables** | Done, verified | schema diff |
 | **V3 = 26 Polaris-added columns** | Done, verified | schema diff |
 | **V4 = `marketplace_items` → InnoDB** | Done, verified | engine asserted InnoDB after migrate |
 | **Migration authoring guide** | Done | `Emulator/src/main/resources/db/migration/README.md` |
-| **Testcontainers harness + `MigrationRunnerIT`** | Done, verified | 3 IT tests pass against real MariaDB (fresh migrate, existing-install adoption, unknown-DB refusal); skips only without a Docker daemon |
-| **CI** (unit + integration + MariaDB 10.11/11 matrix) | Done | `.github/workflows/ci.yml` |
-| **`UserFactory`** (test factory template) | Done | insert column set verified against real schema |
+| **Testcontainers harness + `MigrationRunnerIT`** | Done, verified | 4 IT tests pass against both pinned versions: fresh migrate/idempotency, real Arc fixture conversion/data preservation/schema convergence, unknown-DB refusal, and raw-datasource/legacy-bridge isolation |
+| **CI** (unit + integration + MariaDB 10.11.14/11.4.12 LTS matrix) | Done | exact images pinned by digest; container startup failures fail CI; PRs to any branch run CI |
+| **`UserFactory`** (test factory template) | Done | valid bcrypt test hash and resettable deterministic sequence |
 
-**Migration verification (Flyway, real MariaDB 11):** a fresh database migrated
-with `V1+V2+V3+V4` reproduces the current Polaris schema **exactly — 143/143
-tables, 1210/1210 columns, zero drift** — the chain is **idempotent** (second
-`migrate` is a no-op), and it applies cleanly on a **data-populated Arc database**
-(the converter path). Two real bugs were caught by this and fixed: V4 needed to
-reset `ROW_FORMAT=FIXED` (InnoDB rejects it), and Flyway placeholder replacement
-had to be disabled because the reference data contains `${image.library.url}`
-template strings.
+**What migration verification proves:** a fresh database and a committed
+running-hotel Arcturus fixture converge after `V1+V2+V3+V4` / baseline+`V2+V3+V4`.
+The gate compares tables, complete column definitions, indexes, constraints,
+engines, row formats, and collations while tolerating the two obsolete Arc-only
+forum tables. It also asserts preservation of a representative user, room, item,
+currency balance, and operator setting. A second migrate is a no-op.
+
+This is **not yet a claim that V1–V4 equals the current `FullDatabase.sql` in
+every definition or required Polaris reference row**. Direct comparison found
+that the dump contains later/historical changes which still belong in reviewed
+Phase 3 migrations. The earlier 143-table/1210-column statement proved only
+name/count parity and has been retired.
 
 ## How to test locally
 
@@ -40,11 +45,12 @@ mvn verify            # unit tests + integration tests (needs a Docker daemon)
 ```
 
 - **The integration tests run locally against a throwaway MariaDB** (Testcontainers).
-  Verified passing on **OrbStack** with no env vars — all 3 `MigrationRunnerIT` tests
+  Verified passing on **OrbStack** with no env vars — all 4 `MigrationRunnerIT` tests
   green. (This needed Testcontainers **1.21.4**; 1.20.6 couldn't negotiate OrbStack's
   Docker API and the tests skipped.) On any standard Docker/colima/CI it also runs.
-- **Without a Docker daemon** the integration tests **skip** (not fail), so `mvn verify`
-  still passes; you can also verify migrations directly with the Flyway plugin:
+- **Without a Docker daemon** integration tests may skip for a local developer.
+  In CI, an unavailable or failed Testcontainer is a hard failure. You can also
+  verify migrations directly with the Flyway plugin:
 
   ```bash
   mvn org.flywaydb:flyway-maven-plugin:11.10.0:migrate \
@@ -74,22 +80,25 @@ mvn verify            # unit tests + integration tests (needs a Docker daemon)
   `access_token_version`, `background_border_id`, wired extensions) into `V5+`. The
   loose `Database Updates/*.sql` scripts are **intentionally retained** — do not delete
   them until this is complete and the CI schema-equivalence gate is green.
-- **Phase 4 — deeper adoption preflight.** `SchemaPreflight` currently recognises
-  empty / managed / recognised-existing / unknown via a minimal invariant set. The
-  per-object fingerprinting and the Arc-vs-existing-Polaris split still need real
-  production dumps to design against (gather 2–3).
+- **Phase 4 — broader compatibility fixtures.** `SchemaPreflight` currently
+  recognises empty / managed / recognised-existing / unknown through eight stable
+  Arc-family tables and their identity columns. Extra plugin/CMS tables and
+  columns are tolerated. Add 2–3 anonymized real-world Polaris/Arc snapshots
+  before claiming every hand-customized historical install is supported.
 - **Phase 6/7 — behavior integration tests** (marketplace rollback, token revocation).
   These need a lightweight Emulator test-bootstrap, which doesn't exist yet.
 - **Phase 8 — dev seeder + more factories** (`RoomFactory`, `BotFactory`, `db seed-dev`).
 - **Operator CLI** (`db check/status/migrate`) — `MigrationRunner.status()` exists;
   the console-command wiring does not.
-- **Schema-equivalence CI gate** — proven manually; not yet a committed CI job.
+- **Final target-manifest gate** — the committed test proves fresh/Arc path
+  convergence through V4. The final current-Polaris schema/data manifest remains
+  Phase 3 and must be green before the loose SQL scripts are retired.
 
-## Commits on this branch
+## Current verification
 
-1. docs: the plan (Flyway free-tier, Arc baseline)
-2. build: deps + test DB seam
-3. feat(db): Flyway runner + fail-closed startup + preflight
-4. feat(db): V1 Arc baseline + verified V2–V4 deltas + authoring guide
-5. test(db): Testcontainers harness + migration IT; disable Flyway placeholders
-6. ci: unit + integration + MariaDB matrix; `UserFactory`; this status doc
+- `mvn -B test`: 446 tests, 0 failures, 0 skips.
+- `MigrationRunnerIT` on pinned MariaDB 10.11.14: 4 tests, 0 failures, 0 skips.
+- `MigrationRunnerIT` on pinned MariaDB 11.4.12 LTS: 4 tests, 0 failures, 0 skips.
+- Direct source audit: supplied Arc dump has 122 tables; V1 retains all 120
+  active tables and intentionally tolerates/preserves the two empty
+  `old_guilds_forums*` leftovers during conversion.

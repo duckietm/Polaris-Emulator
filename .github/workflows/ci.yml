@@ -2,9 +2,8 @@ name: CI
 
 on:
   pull_request:
-    branches: [dev]
   push:
-    branches-ignore: [dev]
+    branches: [main, dev]
 
 permissions:
   contents: read
@@ -41,7 +40,9 @@ jobs:
       fail-fast: false
       matrix:
         # Minimum-supported and recommended MariaDB releases.
-        mariadb: ["mariadb:10.11", "mariadb:11"]
+        mariadb:
+          - "mariadb:10.11.14@sha256:dbe56e20372fc6d6b8e0e396866ba89c4c7f128c38c4f59aaa54d957db95790c"
+          - "mariadb:11.4.12@sha256:a794d9eb009e20de605858a11f32f63b4075cbd197c650436f0e3b457e4caed7"
     defaults:
       run:
         working-directory: Emulator

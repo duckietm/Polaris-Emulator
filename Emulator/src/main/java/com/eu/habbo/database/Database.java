@@ -32,7 +32,7 @@ public class Database {
      * bootstrap or migration preflight. Additive only — not used by production
      * startup and not a change to any existing signature.
      */
-    public Database(HikariDataSource dataSource) {
+    Database(HikariDataSource dataSource) {
         this.dataSource = dataSource;
     }
 

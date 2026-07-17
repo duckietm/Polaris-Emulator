@@ -7,6 +7,7 @@ import com.eu.habbo.core.*;
 import com.eu.habbo.core.consolecommands.ConsoleCommand;
 import com.eu.habbo.database.Database;
 import com.eu.habbo.database.migration.MigrationRunner;
+import com.eu.habbo.database.migration.MigrationException;
 import com.eu.habbo.gui.EmulatorDashboard;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.gameclients.SessionResumeManager;
@@ -229,6 +230,12 @@ public final class Emulator {
                 }
             }
 
+        } catch (MigrationException e) {
+            LOGGER.error("Polaris could not safely prepare the database, so startup was aborted.", e);
+            if (Emulator.database != null) {
+                Emulator.database.dispose();
+            }
+            throw e;
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
             throw e;

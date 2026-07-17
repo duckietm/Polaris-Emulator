@@ -3,6 +3,24 @@
 -- NOTE: this guards on column NAME. Where a converter might hold a DIFFERENT definition,
 -- a state-aware check (see the authoring guide) should replace the plain guard.
 
+-- The supplied Arc dump uses MySQL 8's utf8mb4_0900_ai_ci for four tables.
+-- MariaDB 10.11 does not provide that collation. Normalize both fresh installs
+-- and converters to the MariaDB-supported utf8mb4_unicode_ci without changing
+-- the calendar_rewards columns that were explicitly declared latin1.
+ALTER TABLE `calendar_campaigns`
+    DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+    MODIFY `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+    MODIFY `image` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+    MODIFY `lock_expired` enum('1','0') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '1',
+    MODIFY `enabled` enum('1','0') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '1';
+ALTER TABLE `calendar_rewards`
+    DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `calendar_rewards_claimed`
+    DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `messenger_categories`
+    DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+    MODIFY `name` varchar(25) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL;
+
 ALTER TABLE `bot_serves` ADD COLUMN IF NOT EXISTS `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST;
 ALTER TABLE `catalog_pages` ADD COLUMN IF NOT EXISTS `catalog_mode` enum('NORMAL','BUILDER','BOTH') NOT NULL DEFAULT 'NORMAL';
 ALTER TABLE `chatlogs_room` ADD COLUMN IF NOT EXISTS `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST;

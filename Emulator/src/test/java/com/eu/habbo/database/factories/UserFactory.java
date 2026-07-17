@@ -27,7 +27,7 @@ public final class UserFactory {
 
     public static final class Spec {
         String username = "user_" + SEQ.incrementAndGet();
-        String password = "$2y$10$abcdefghijklmnopqrstuv"; // placeholder bcrypt-shaped hash
+        String password = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
         String mail = null;                                 // defaults to username@test.local
         int credits = 0;
         String look = "hd-180-1.hr-100-0";
@@ -52,6 +52,10 @@ public final class UserFactory {
 
     public static int create(DataSource dataSource) {
         return create(dataSource, s -> {});
+    }
+
+    public static void resetSequence() {
+        SEQ.set(0);
     }
 
     public static int create(DataSource dataSource, Consumer<Spec> customiser) {

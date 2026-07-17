@@ -1,5 +1,6 @@
--- V4: convert marketplace_items to InnoDB so the marketplace purchase transaction
--- (FOR UPDATE row locks + rollback) is actually atomic. MyISAM ignores both.
+-- V4: convert marketplace_items to InnoDB so a marketplace purchase can use
+-- row locks and rollback when the Java transaction refactor lands. MyISAM
+-- supports neither; this migration enables atomicity but does not provide it alone.
 -- The table ships as MyISAM ROW_FORMAT=FIXED; InnoDB rejects ROW_FORMAT=FIXED, so
 -- the row format is reset in the same statement.
 -- Guarded: only rebuilds when not already InnoDB. Small table (listings), so the

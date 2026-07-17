@@ -28,12 +28,20 @@ online.
 
 ### 1. Database
 
-Create an empty database and import
-`Database/Default Database/FullDatabase.sql`.
+Create an empty MariaDB database and put its name and credentials in
+`config.ini`. Polaris creates the schema automatically on first startup; you do
+not need to import `FullDatabase.sql`.
 
-Upgrading an existing database? **Make a full backup first.** Then run the
-scripts in `Database/Database Updates/Own_Database_RunFirst/` in numeric
-order, followed by the numbered scripts in `Database/Database Updates/`.
+Already running an Arcturus Morningstar 3.5.5 or older Polaris hotel? **Make a
+full database backup first**, point Polaris at that database, and start the
+emulator. A recognized hotel is adopted and upgraded automatically while its
+users, rooms, items, currencies, settings, and custom tables are preserved.
+Polaris refuses to modify a non-empty database that does not look like an
+Arcturus/Polaris hotel.
+
+Automatic migrations are enabled by default. Advanced deployments can set
+`db.migrate.on_startup=false` (or `DB_MIGRATE_ON_STARTUP=false`) after applying
+migrations separately.
 
 ### 2. Game server
 

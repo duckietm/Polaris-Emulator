@@ -44,4 +44,17 @@ class MigrationOptionsTest {
                 IllegalArgumentException.class,
                 () -> MigrationOptions.parse(new String[]{"--migrations=off"}));
     }
+
+    @Test
+    void nearMissMigrationOptionsAreRejectedInsteadOfBootingTheHotel() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> MigrationOptions.parse(new String[]{"--migration=apply"}));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> MigrationOptions.parse(new String[]{"--migrations-only=true"}));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> MigrationOptions.parse(new String[]{"--Migrations=validate"}));
+    }
 }

@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
+import java.util.Properties;
 
 /**
  * Runs Flyway migrations.
@@ -109,33 +110,40 @@ public final class MigrationRunner {
             return out.toString();
         }
 
-        Flyway flyway = flyway(dataSource);
-        if (state == SchemaPreflight.State.MANAGED) {
-            flyway.validate();
-        }
-
-        MigrationInfoService info = flyway.info();
-        MigrationInfo current = info.current();
-        out.append("Current version: ").append(current == null ? "(none)" : current.getVersion()).append('\n');
-        if (state == SchemaPreflight.State.RECOGNISED_EXISTING) {
-            out.append("Adoption: record baseline V").append(BASELINE_VERSION).append('\n');
-        }
-
-        MigrationInfo[] pending = info.pending();
-        int pendingCount = 0;
-        for (MigrationInfo migration : pending) {
-            if (!isBaselineSkippedDuringAdoption(state, migration)) {
-                pendingCount++;
+        try {
+            Flyway flyway = flyway(dataSource);
+            if (state == SchemaPreflight.State.MANAGED) {
+                flyway.validate();
             }
-        }
-        out.append("Pending migrations: ").append(pendingCount).append('\n');
-        for (MigrationInfo migration : pending) {
-            if (!isBaselineSkippedDuringAdoption(state, migration)) {
-                out.append("  - V").append(migration.getVersion()).append(' ')
-                        .append(migration.getDescription()).append('\n');
+
+            MigrationInfoService info = flyway.info();
+            MigrationInfo current = info.current();
+            out.append("Current version: ").append(current == null ? "(none)" : current.getVersion()).append('\n');
+            if (state == SchemaPreflight.State.RECOGNISED_EXISTING) {
+                out.append("Adoption: record baseline V").append(BASELINE_VERSION).append('\n');
             }
+
+            MigrationInfo[] pending = info.pending();
+            int pendingCount = 0;
+            for (MigrationInfo migration : pending) {
+                if (!isBaselineSkippedDuringAdoption(state, migration)) {
+                    pendingCount++;
+                }
+            }
+            out.append("Pending migrations: ").append(pendingCount).append('\n');
+            for (MigrationInfo migration : pending) {
+                if (!isBaselineSkippedDuringAdoption(state, migration)) {
+                    out.append("  - V").append(migration.getVersion()).append(' ')
+                            .append(migration.getDescription()).append('\n');
+                }
+            }
+            return out.toString();
+        } catch (MigrationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new MigrationException("Migration status failed; the schema history could not be "
+                    + "validated against the packaged migrations. No changes were made.", e);
         }
-        return out.toString();
     }
 
     private static boolean isBaselineSkippedDuringAdoption(
@@ -165,7 +173,13 @@ public final class MigrationRunner {
         migrateConfig.setJdbcUrl(runtime.getJdbcUrl());
         migrateConfig.setUsername(runtime.getUsername());
         migrateConfig.setPassword(runtime.getPassword());
-        migrateConfig.setDataSourceProperties(runtime.getDataSourceProperties());
+        Properties migrateProperties = new Properties();
+        migrateProperties.putAll(runtime.getDataSourceProperties());
+        // The runtime pool tunes for short gameplay queries (socketTimeout=30s), but
+        // adoption DDL such as rebuilding a hotel's chat-log tables can legitimately
+        // run for minutes. Migrations get no per-statement timeout.
+        migrateProperties.setProperty("socketTimeout", "0");
+        migrateConfig.setDataSourceProperties(migrateProperties);
         migrateConfig.setMaximumPoolSize(2);
         migrateConfig.setMinimumIdle(0);
         migrateConfig.setPoolName("polaris-migrate");

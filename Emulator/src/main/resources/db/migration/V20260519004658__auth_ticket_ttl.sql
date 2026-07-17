@@ -47,8 +47,18 @@ WHERE legacy.`key` = 'ws.nitro.port'
       SELECT 1 FROM emulator_settings current_setting
       WHERE current_setting.`key` = 'ws.port'
   );
-INSERT IGNORE INTO emulator_settings (`key`, `value`)
-VALUES ('ws.ip.header', 'X-Forwarded-For');
+INSERT INTO emulator_settings (`key`, `value`)
+SELECT 'ws.ip.header', 'X-Forwarded-For'
+FROM DUAL
+WHERE NOT EXISTS (
+    SELECT 1 FROM emulator_settings current_setting
+    WHERE current_setting.`key` = 'ws.ip.header'
+);
 
-INSERT IGNORE INTO emulator_settings (`key`, `value`)
-VALUES ('ws.enabled', 'true');
+INSERT INTO emulator_settings (`key`, `value`)
+SELECT 'ws.enabled', 'true'
+FROM DUAL
+WHERE NOT EXISTS (
+    SELECT 1 FROM emulator_settings current_setting
+    WHERE current_setting.`key` = 'ws.enabled'
+);

@@ -17,7 +17,8 @@ repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 base_database="$repo/Emulator/src/main/resources/db/migration/V20260518000000__base_database.sql"
 
 mysql_args=("--host=$E2E_DB_HOST" "--port=$E2E_DB_PORT" "--user=$E2E_DB_USER")
-[[ -z "${E2E_DB_PASSWORD:-}" ]] || mysql_args+=("--password=$E2E_DB_PASSWORD")
+# MYSQL_PWD keeps the password out of the process list.
+[[ -z "${E2E_DB_PASSWORD:-}" ]] || export MYSQL_PWD="$E2E_DB_PASSWORD"
 mysql "${mysql_args[@]}" \
   --execute="DROP DATABASE IF EXISTS \`$E2E_DB_NAME\`; CREATE DATABASE \`$E2E_DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 mysql "${mysql_args[@]}" \

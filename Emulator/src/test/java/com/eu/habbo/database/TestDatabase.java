@@ -58,6 +58,16 @@ public final class TestDatabase {
         try (var connection = shared.getConnection();
              var statement = connection.createStatement()) {
             statement.execute("SET FOREIGN_KEY_CHECKS = 0");
+            java.util.List<String> views = new java.util.ArrayList<>();
+            try (var rs = statement.executeQuery(
+                    "SELECT TABLE_NAME FROM information_schema.VIEWS WHERE TABLE_SCHEMA = DATABASE()")) {
+                while (rs.next()) {
+                    views.add(rs.getString(1));
+                }
+            }
+            for (String view : views) {
+                statement.execute("DROP VIEW IF EXISTS `" + view + "`");
+            }
             java.util.List<String> tables = new java.util.ArrayList<>();
             try (var rs = statement.executeQuery(
                     "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE'")) {

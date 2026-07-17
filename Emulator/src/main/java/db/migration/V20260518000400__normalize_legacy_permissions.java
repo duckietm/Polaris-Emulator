@@ -3,6 +3,8 @@ package db.migration;
 import org.flywaydb.core.api.FlywayException;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -28,7 +30,14 @@ import java.util.regex.Pattern;
  */
 public final class V20260518000400__normalize_legacy_permissions extends BaseJavaMigration {
 
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(V20260518000400__normalize_legacy_permissions.class);
+
     private static final Pattern SAFE_IDENTIFIER = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
+    /** Legacy permission values are 0/1/2 flags: enum or integer columns only. */
+    private static final Pattern PERMISSION_VALUE_TYPE = Pattern.compile(
+            "enum\\(.*\\)|(?:tiny|small|medium|big)?int(?:\\(\\d+\\))?(?:\\s+unsigned)?(?:\\s+zerofill)?",
+            Pattern.CASE_INSENSITIVE);
     private static final Set<String> METADATA_COLUMNS = Set.of(
             "id", "rank_name", "hidden_rank", "badge", "job_description",
             "staff_color", "staff_background", "level", "room_effect", "log_commands",
@@ -146,9 +155,18 @@ public final class V20260518000400__normalize_legacy_permissions extends BaseJav
                 if (METADATA_COLUMNS.contains(name.toLowerCase(Locale.ROOT))) {
                     continue;
                 }
-                requireSafeIdentifier(name);
                 String type = result.getString("COLUMN_TYPE");
-                int maxValue = type != null && type.contains("'2'") ? 2 : 1;
+                if (type == null || !PERMISSION_VALUE_TYPE.matcher(type.trim()).matches()) {
+                    // A plugin may have attached non-permission data (varchar notes,
+                    // timestamps) to the legacy table; copying those as 0/1/2 flags
+                    // would fail or corrupt them. They stay behind in `permissions`.
+                    LOGGER.warn("[migrate] Skipping legacy permissions column `{}` of type {} — "
+                            + "not a 0/1/2 permission flag, so it is not copied into permission_definitions.",
+                            name, type);
+                    continue;
+                }
+                requireSafeIdentifier(name);
+                int maxValue = type.contains("'2'") ? 2 : 1;
                 String comment = result.getString("COLUMN_COMMENT");
                 if (comment == null || comment.isBlank()) {
                     comment = generatedComment(name, maxValue);
@@ -180,23 +198,27 @@ public final class V20260518000400__normalize_legacy_permissions extends BaseJav
             Connection connection,
             List<Integer> ranks,
             List<LegacyPermission> permissions) throws SQLException {
-        for (LegacyPermission permission : permissions) {
-            String permissionColumn = quoteIdentifier(permission.name());
+        for (int rank : ranks) {
             try (PreparedStatement read = connection.prepareStatement(
-                    "SELECT COALESCE(" + permissionColumn + ", 0) FROM `permissions` WHERE `id` = ?")) {
-                for (int rank : ranks) {
-                    read.setInt(1, rank);
-                    try (ResultSet result = read.executeQuery()) {
-                        if (!result.next()) {
-                            throw new FlywayException("Legacy permission rank " + rank + " disappeared during migration.");
-                        }
-                        try (PreparedStatement write = connection.prepareStatement(
-                                "UPDATE `permission_definitions` SET `rank_" + rank
-                                        + "` = ? WHERE `permission_key` = ?")) {
-                            write.setInt(1, result.getInt(1));
+                    "SELECT * FROM `permissions` WHERE `id` = ?")) {
+                read.setInt(1, rank);
+                try (ResultSet row = read.executeQuery()) {
+                    if (!row.next()) {
+                        throw new FlywayException("Legacy permission rank " + rank + " disappeared during migration.");
+                    }
+                    try (PreparedStatement write = connection.prepareStatement(
+                            "UPDATE `permission_definitions` SET `rank_" + rank
+                                    + "` = ? WHERE `permission_key` = ?")) {
+                        for (LegacyPermission permission : permissions) {
+                            int value = row.getInt(permission.name());
+                            if (row.wasNull()) {
+                                value = 0;
+                            }
+                            write.setInt(1, value);
                             write.setString(2, permission.name());
-                            write.executeUpdate();
+                            write.addBatch();
                         }
+                        write.executeBatch();
                     }
                 }
             }
@@ -234,11 +256,6 @@ public final class V20260518000400__normalize_legacy_permissions extends BaseJav
                     + (maxValue == 2 ? ", 2 = enabled with room-owner rights." : ".");
         }
         return "Legacy permission value migrated from the Arcturus permissions table.";
-    }
-
-    private static String quoteIdentifier(String identifier) {
-        requireSafeIdentifier(identifier);
-        return "`" + identifier + "`";
     }
 
     private static void requireSafeIdentifier(String identifier) {

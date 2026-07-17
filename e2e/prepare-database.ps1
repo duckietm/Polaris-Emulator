@@ -21,14 +21,15 @@ $repo = Split-Path -Parent $PSScriptRoot
 $baseDatabase = Join-Path $repo 'Emulator\src\main\resources\db\migration\V20260518000000__base_database.sql'
 $seed = Join-Path $PSScriptRoot 'seed.sql'
 
-$passwordArgument = if ([string]::IsNullOrEmpty($env:E2E_DB_PASSWORD)) { @() } else { @("--password=$($env:E2E_DB_PASSWORD)") }
+# MYSQL_PWD keeps the password out of the process list.
+if (-not [string]::IsNullOrEmpty($env:E2E_DB_PASSWORD)) { $env:MYSQL_PWD = $env:E2E_DB_PASSWORD }
 $resetSql = "DROP DATABASE IF EXISTS ``$Database``; CREATE DATABASE ``$Database`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-& $Mysql "--host=$($env:E2E_DB_HOST)" "--port=$($env:E2E_DB_PORT)" "--user=$($env:E2E_DB_USER)" @passwordArgument --execute $resetSql
+& $Mysql "--host=$($env:E2E_DB_HOST)" "--port=$($env:E2E_DB_PORT)" "--user=$($env:E2E_DB_USER)" --execute $resetSql
 if ($LASTEXITCODE -ne 0) { throw "Database reset failed with exit code $LASTEXITCODE" }
 
-& $Mysql "--host=$($env:E2E_DB_HOST)" "--port=$($env:E2E_DB_PORT)" "--user=$($env:E2E_DB_USER)" @passwordArgument "--database=$Database" --default-character-set=utf8mb4 --execute "source $($baseDatabase.Replace('\', '/'))"
+& $Mysql "--host=$($env:E2E_DB_HOST)" "--port=$($env:E2E_DB_PORT)" "--user=$($env:E2E_DB_USER)" "--database=$Database" --default-character-set=utf8mb4 --execute "source $($baseDatabase.Replace('\', '/'))"
 if ($LASTEXITCODE -ne 0) { throw "Database import failed with exit code $LASTEXITCODE" }
 
 $seedContent = "SET @e2e_sso_ticket='$Ticket';`nSET @e2e_second_sso_ticket='$SecondTicket';`n" + [System.IO.File]::ReadAllText($seed)
-$seedContent | & $Mysql "--host=$($env:E2E_DB_HOST)" "--port=$($env:E2E_DB_PORT)" "--user=$($env:E2E_DB_USER)" @passwordArgument "--database=$Database"
+$seedContent | & $Mysql "--host=$($env:E2E_DB_HOST)" "--port=$($env:E2E_DB_PORT)" "--user=$($env:E2E_DB_USER)" "--database=$Database"
 if ($LASTEXITCODE -ne 0) { throw "E2E seed failed with exit code $LASTEXITCODE" }

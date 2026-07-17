@@ -108,7 +108,8 @@ class MigrationRunnerIT {
             String status = MigrationRunner.status(ds);
             assertTrue(status.contains(
                     "Adoption: record baseline V" + MigrationRunner.BASELINE_VERSION));
-            assertTrue(status.contains("Pending migrations: 29"));
+            // Adoption applies every packaged migration except the skipped baseline.
+            assertTrue(status.contains("Pending migrations: " + (packagedMigrationCount() - 1)));
             assertTrue(!tableExists(ds, "flyway_schema_history"),
                     "read-only status must not adopt or mutate the hotel");
             MigrationRunner.migrate(ds);
@@ -330,6 +331,21 @@ class MigrationRunnerIT {
                 return rs.next() ? rs.getString(1) : null;
             }
         }
+    }
+
+    /** Counts the packaged SQL and Java migrations from the source tree. */
+    private static long packagedMigrationCount() throws Exception {
+        long count = 0;
+        for (Path directory : List.of(
+                Path.of("src/main/resources/db/migration"),
+                Path.of("src/main/java/db/migration"))) {
+            try (var files = Files.list(directory)) {
+                count += files
+                        .filter(p -> p.getFileName().toString().matches("V\\d{14}__\\w+\\.(sql|java)"))
+                        .count();
+            }
+        }
+        return count;
     }
 
     private static void installArcturusFixture(HikariDataSource ds) throws Exception {

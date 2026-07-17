@@ -55,7 +55,7 @@ public class GameServer extends Server {
                 }
                 ch.pipeline().addLast("idleEventHandler", new IdleTimeoutHandler(30, 60));
                 ch.pipeline().addLast(new GameMessageRateLimit());
-                ch.pipeline().addLast(new GameMessageHandler());
+                ch.pipeline().addLast(GamePacketExecutionGroup.get(), "gameMessageHandler", new GameMessageHandler());
 
                 // Encoders.
                 ch.pipeline().addLast(new GameServerMessageEncoder());
@@ -126,9 +126,7 @@ public class GameServer extends Server {
             this.gameClientManager.forceDisposeClient(client);
         }
 
-        if (Emulator.getConfig().getBoolean("ws.enabled", false)) {
-            WebSocketChannelInitializer.shutdownPacketHandlers();
-        }
+        GamePacketExecutionGroup.shutdown();
 
         super.stop();
     }

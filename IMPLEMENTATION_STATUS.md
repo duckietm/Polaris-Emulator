@@ -19,7 +19,7 @@ flagged for your review, since that's where local testing and judgement are need
 | **V3 = 26 Polaris-added columns** | Done, verified | schema diff |
 | **V4 = `marketplace_items` → InnoDB** | Done, verified | engine asserted InnoDB after migrate |
 | **Migration authoring guide** | Done | `Emulator/src/main/resources/db/migration/README.md` |
-| **Testcontainers harness + `MigrationRunnerIT`** | Done | runs in CI; skips locally without Docker |
+| **Testcontainers harness + `MigrationRunnerIT`** | Done, verified | 3 IT tests pass against real MariaDB (fresh migrate, existing-install adoption, unknown-DB refusal); skips only without a Docker daemon |
 | **CI** (unit + integration + MariaDB 10.11/11 matrix) | Done | `.github/workflows/ci.yml` |
 | **`UserFactory`** (test factory template) | Done | insert column set verified against real schema |
 
@@ -36,17 +36,17 @@ template strings.
 
 ```bash
 cd Emulator
-mvn verify            # unit tests + integration tests (needs Docker for the IT)
+mvn verify            # unit tests + integration tests (needs a Docker daemon)
 ```
 
-- **Integration tests skip (not fail) without Docker.** On my machine Testcontainers
-  couldn't negotiate with **OrbStack** (docker-java pins API 1.32; OrbStack requires
-  ≥1.40), so `MigrationRunnerIT` is `assumeTrue`-guarded and reports *skipped*. On
-  standard Docker Desktop / colima / GitHub runners it runs normally. If you also hit
-  the OrbStack issue, verify migrations directly with the Flyway plugin:
+- **The integration tests run locally against a throwaway MariaDB** (Testcontainers).
+  Verified passing on **OrbStack** with no env vars — all 3 `MigrationRunnerIT` tests
+  green. (This needed Testcontainers **1.21.4**; 1.20.6 couldn't negotiate OrbStack's
+  Docker API and the tests skipped.) On any standard Docker/colima/CI it also runs.
+- **Without a Docker daemon** the integration tests **skip** (not fail), so `mvn verify`
+  still passes; you can also verify migrations directly with the Flyway plugin:
 
   ```bash
-  # against any throwaway MariaDB you control
   mvn org.flywaydb:flyway-maven-plugin:11.10.0:migrate \
     -Dflyway.url="jdbc:mariadb://127.0.0.1:3306/scratch" -Dflyway.user=root -Dflyway.password=... \
     -Dflyway.locations="filesystem:src/main/resources/db/migration" \

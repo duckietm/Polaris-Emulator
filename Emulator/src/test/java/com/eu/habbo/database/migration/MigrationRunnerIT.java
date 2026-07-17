@@ -58,21 +58,23 @@ class MigrationRunnerIT {
     }
 
     @Test
-    void existingArcDatabaseIsRecognisedAndBaselinedThenMigrated() throws Exception {
+    void existingUnmanagedInstallIsRecognisedBaselinedAndAdopted() throws Exception {
         requireDocker();
-        try (HikariDataSource ds = TestDatabase.freshDatabase("mig_arc")) {
-            // Simulate an Arc converter: the invariant tables already exist, no Flyway history.
+        try (HikariDataSource ds = TestDatabase.freshDatabase("mig_existing")) {
+            // Build the full Polaris schema, then drop the Flyway history to simulate an
+            // existing Arc/Polaris install that predates the migration system (has the
+            // schema, was never Flyway-managed).
+            MigrationRunner.migrate(ds);
             try (Connection c = ds.getConnection(); Statement s = c.createStatement()) {
-                s.execute("CREATE TABLE `users` (`id` INT PRIMARY KEY)");
-                s.execute("CREATE TABLE `items` (`id` INT PRIMARY KEY)");
-                s.execute("CREATE TABLE `rooms` (`id` INT PRIMARY KEY)");
-                s.execute("CREATE TABLE `emulator_settings` (`key` VARCHAR(64) PRIMARY KEY, `value` TEXT)");
+                s.execute("DROP TABLE `flyway_schema_history`");
             }
-            assertEquals(SchemaPreflight.State.RECOGNISED_EXISTING, SchemaPreflight.detect(ds));
 
-            // Should baseline at V1 (skip re-creating Arc schema) then apply V2.. — no crash.
+            // It must be recognised (not refused) and adopted: baseline at V1, then the
+            // guarded V2..Vn no-op since everything is already present.
+            assertEquals(SchemaPreflight.State.RECOGNISED_EXISTING, SchemaPreflight.detect(ds));
             MigrationRunner.migrate(ds);
             assertEquals(SchemaPreflight.State.MANAGED, SchemaPreflight.detect(ds));
+            assertTrue(tableExists(ds, "flyway_schema_history"), "adoption must create the Flyway history");
         }
     }
 

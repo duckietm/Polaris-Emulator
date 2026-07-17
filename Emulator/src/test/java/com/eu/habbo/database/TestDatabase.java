@@ -58,25 +58,44 @@ public final class TestDatabase {
         return dataSource;
     }
 
-    /** A fresh, empty datasource on its own database on the same container. */
-    public static synchronized HikariDataSource freshDatabase(String name) {
-        sharedDataSource();
-        try (var connection = dataSource.getConnection();
+    /**
+     * Returns the shared datasource after resetting its database to empty (all
+     * tables dropped, including flyway_schema_history). The container's user only
+     * has rights on its own database, so tests share one database and reset it
+     * between runs rather than creating new ones. Integration tests run
+     * sequentially, so this is safe. The returned handle is the shared pool and
+     * must NOT be closed by the caller.
+     *
+     * @param label used only for logging
+     */
+    public static synchronized HikariDataSource freshDatabase(String label) {
+        HikariDataSource shared = sharedDataSource();
+        try (var connection = shared.getConnection();
              var statement = connection.createStatement()) {
-            statement.execute("DROP DATABASE IF EXISTS `" + name + "`");
-            statement.execute("CREATE DATABASE `" + name + "`");
+            statement.execute("SET FOREIGN_KEY_CHECKS = 0");
+            java.util.List<String> tables = new java.util.ArrayList<>();
+            try (var rs = statement.executeQuery(
+                    "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE'")) {
+                while (rs.next()) {
+                    tables.add(rs.getString(1));
+                }
+            }
+            for (String table : tables) {
+                statement.execute("DROP TABLE IF EXISTS `" + table + "`");
+            }
+            statement.execute("SET FOREIGN_KEY_CHECKS = 1");
         } catch (Exception e) {
-            throw new IllegalStateException("Could not create test database " + name, e);
+            throw new IllegalStateException("Could not reset test database for " + label, e);
         }
 
+        // A separate, closeable pool on the same (now-empty) database, so the
+        // caller's try-with-resources doesn't close the shared suite pool.
         HikariConfig config = new HikariConfig();
-        String base = container.getJdbcUrl();
-        String rebased = base.replaceFirst("/" + container.getDatabaseName() + "(\\?|$)", "/" + name + "$1");
-        config.setJdbcUrl(rebased);
+        config.setJdbcUrl(container.getJdbcUrl());
         config.setUsername(container.getUsername());
         config.setPassword(container.getPassword());
         config.setMaximumPoolSize(2);
-        config.setPoolName("polaris-it-" + name);
+        config.setPoolName("polaris-it-" + label);
         return new HikariDataSource(config);
     }
 }

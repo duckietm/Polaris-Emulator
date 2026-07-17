@@ -40,4 +40,16 @@ class E2eInventoryFixtureContractTest {
             assertTrue(script.contains("room_id"));
         }
     }
+
+    @Test
+    void preparationScriptsOnlyResetDisposableSchemas() throws IOException {
+        String shell = Files.readString(REPOSITORY.resolve("e2e/prepare-database.sh"));
+        String powershell = Files.readString(REPOSITORY.resolve("e2e/prepare-database.ps1"));
+
+        for (String script : new String[]{shell, powershell}) {
+            assertTrue(script.contains("polaris_e2e_"));
+            assertTrue(script.contains("DROP DATABASE IF EXISTS"));
+            assertTrue(script.contains("CREATE DATABASE"));
+        }
+    }
 }

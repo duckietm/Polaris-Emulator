@@ -129,7 +129,14 @@ public class Habbo implements Runnable {
         return true;
     }
 
-    /** Re-evaluates identity bans without replaying normal-login side effects. */
+    /**
+     * Re-evaluates account, IP, and machine bans for the current connection,
+     * used when resuming a parked session that skips the normal login path.
+     * This resolves and records the resuming connection's IP (and fires
+     * {@link com.eu.habbo.plugin.events.users.UserGetIPAddressEvent}) exactly
+     * as {@link #connect()} does, but does not bring the Habbo online or load
+     * rooms. Returns true when the connection is allowed to proceed.
+     */
     public boolean passesConnectionSecurityChecks() {
         return this.checkConnectionSecurity().allowed();
     }

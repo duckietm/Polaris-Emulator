@@ -19,6 +19,8 @@ class MigrationStartupContractTest {
         assertTrue(source.contains("new DatabaseMigrationRunner"));
         assertTrue(source.contains("MigrationCatalog.load"));
         assertTrue(source.contains("migrationOptions.lockTimeoutSeconds()"));
+        assertTrue(source.contains("SchemaContractLoader.load"));
+        assertTrue(source.contains("new DatabaseSchemaValidator"));
         assertTrue(source.contains("this.dispose()"));
     }
 

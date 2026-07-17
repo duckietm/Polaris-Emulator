@@ -465,7 +465,8 @@ public final class Emulator {
         if (Emulator.pluginManager != null)
             tryShutdown(() -> Emulator.pluginManager.fireEvent(new EmulatorStoppedEvent()));
         if (Emulator.pluginManager != null) tryShutdown(() -> Emulator.pluginManager.dispose());
-        if (Emulator.config != null) tryShutdown(() -> Emulator.config.saveToDatabase());
+        if (Emulator.config != null && Emulator.database != null)
+            tryShutdown(() -> Emulator.config.saveToDatabase());
         if (Emulator.gameServer != null) tryShutdown(() -> Emulator.gameServer.stop());
 
         LOGGER.info("Stopped Polaris {}", version);

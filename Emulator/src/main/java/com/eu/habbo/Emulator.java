@@ -467,11 +467,10 @@ public final class Emulator {
         if (Emulator.pluginManager != null) tryShutdown(() -> Emulator.pluginManager.dispose());
         if (Emulator.config != null) tryShutdown(() -> Emulator.config.saveToDatabase());
         if (Emulator.gameServer != null) tryShutdown(() -> Emulator.gameServer.stop());
+        if (Emulator.threading != null) tryShutdown(() -> Emulator.threading.shutDown());
+        if (Emulator.database != null) tryShutdown(() -> Emulator.database.dispose());
 
         LOGGER.info("Stopped Polaris {}", version);
-
-        if (Emulator.database != null) tryShutdown(() -> Emulator.database.dispose());
-        if (Emulator.threading != null) tryShutdown(() -> Emulator.threading.shutDown());
 
         Emulator.stopped = true;
     }

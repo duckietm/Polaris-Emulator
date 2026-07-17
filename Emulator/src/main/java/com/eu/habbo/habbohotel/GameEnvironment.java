@@ -133,6 +133,7 @@ public class GameEnvironment {
         this.pixelScheduler.setDisposed(true);
         this.creditsScheduler.setDisposed(true);
         this.gotwPointsScheduler.setDisposed(true);
+        this.subscriptionScheduler.setDisposed(true);
         this.craftingManager.dispose();
         this.habboManager.dispose();
         this.commandHandler.dispose();

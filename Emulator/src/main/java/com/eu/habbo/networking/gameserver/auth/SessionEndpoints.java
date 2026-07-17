@@ -487,7 +487,10 @@ final class SessionEndpoints {
     }
 
     private static Timestamp newSsoTicketExpiry() {
-        int ttlSeconds = Math.max(1,
+        // Floor the TTL well above realistic handshake latency and app/DB clock
+        // skew so a misconfigured tiny value cannot expire tickets before the
+        // client can present them.
+        int ttlSeconds = Math.max(15,
                 Emulator.getConfig().getInt("login.sso.ticket.ttl.seconds", 60));
         return Timestamp.from(Instant.now().plusSeconds(ttlSeconds));
     }

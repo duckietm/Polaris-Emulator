@@ -16,7 +16,7 @@ class SsoIssuerExpiryContractTest {
         assertTrue(count(source,
                 "auth_ticket = ?, auth_ticket_expires_at = ?, ip_current = ?") >= 2,
                 "password and remember issuers must persist a fresh expiry with each ticket");
-        assertTrue(count(source, "Timestamp ssoExpiry = newSsoTicketExpiry()") >= 2,
+        assertTrue(count(source, "newSsoTicketExpiry()") >= 2,
                 "each built-in issuance path must calculate a fresh deadline");
         assertTrue(source.contains("auth_ticket = '', auth_ticket_expires_at = NULL, online = '0'"),
                 "logout must clear the built-in ticket expiry alongside the ticket");

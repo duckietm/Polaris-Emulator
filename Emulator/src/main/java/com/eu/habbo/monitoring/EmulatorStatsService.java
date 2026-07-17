@@ -1,6 +1,8 @@
 package com.eu.habbo.monitoring;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.core.Scheduler;
+import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
@@ -300,12 +302,14 @@ public final class EmulatorStatsService {
     }
 
     private static SchedulerMetrics collectSchedulerMetrics() {
+        List<Scheduler.Status> tasks = collectSchedulerStatuses();
+
         if (Emulator.getThreading() == null) {
-            return new SchedulerMetrics(0, 0, 0, 0, false);
+            return new SchedulerMetrics(0, 0, 0, 0, false, tasks);
         }
 
         if (!(Emulator.getThreading().getService() instanceof ScheduledThreadPoolExecutor executor)) {
-            return new SchedulerMetrics(0, 0, 0, 0, false);
+            return new SchedulerMetrics(0, 0, 0, 0, false, tasks);
         }
 
         return new SchedulerMetrics(
@@ -313,8 +317,24 @@ public final class EmulatorStatsService {
                 executor.getActiveCount(),
                 executor.getPoolSize(),
                 executor.getCompletedTaskCount(),
-                !executor.isShutdown()
+                !executor.isShutdown(),
+                tasks
         );
+    }
+
+    private static List<Scheduler.Status> collectSchedulerStatuses() {
+        GameEnvironment environment = Emulator.getGameEnvironment();
+        if (environment == null) {
+            return List.of();
+        }
+
+        List<Scheduler.Status> statuses = new ArrayList<>(5);
+        if (environment.getCreditsScheduler() != null) statuses.add(environment.getCreditsScheduler().snapshot());
+        if (environment.getPixelScheduler() != null) statuses.add(environment.getPixelScheduler().snapshot());
+        if (environment.getPointsScheduler() != null) statuses.add(environment.getPointsScheduler().snapshot());
+        if (environment.getGotwPointsScheduler() != null) statuses.add(environment.getGotwPointsScheduler().snapshot());
+        if (environment.subscriptionScheduler != null) statuses.add(environment.subscriptionScheduler.snapshot());
+        return List.copyOf(statuses);
     }
 
     private static NetworkMetrics collectNetworkMetrics(long now) {
@@ -581,13 +601,19 @@ public final class EmulatorStatsService {
         public final int poolSize;
         public final long completedTasks;
         public final boolean running;
+        public final List<Scheduler.Status> tasks;
 
         public SchedulerMetrics(int queuedTasks, int activeThreads, int poolSize, long completedTasks, boolean running) {
+            this(queuedTasks, activeThreads, poolSize, completedTasks, running, List.of());
+        }
+
+        public SchedulerMetrics(int queuedTasks, int activeThreads, int poolSize, long completedTasks, boolean running, List<Scheduler.Status> tasks) {
             this.queuedTasks = queuedTasks;
             this.activeThreads = activeThreads;
             this.poolSize = poolSize;
             this.completedTasks = completedTasks;
             this.running = running;
+            this.tasks = tasks == null ? List.of() : List.copyOf(tasks);
         }
     }
 

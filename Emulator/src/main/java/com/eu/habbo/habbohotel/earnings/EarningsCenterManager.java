@@ -104,11 +104,22 @@ public class EarningsCenterManager {
 
         String periodKey = periodKey(habbo, category, now, definition.cooldownSeconds());
 
+        boolean claimRecorded;
         try {
-            if (!this.claims.recordClaim(userId, category.getKey(), periodKey, now)) {
-                return new EarningsClaimResult(category, EarningsClaimResult.Status.ALREADY_CLAIMED, buildEntry(habbo, userId, category, now));
-            }
+            claimRecorded = this.claims.recordClaim(userId, category.getKey(), periodKey, now);
+        } catch (SQLException e) {
+            // The claim marker was never written and no reward was applied, so a
+            // retry is safe and cannot duplicate anything.
+            LOGGER.error("Earnings claim marker could not be recorded; no reward granted, retry is safe userId={} category={} period={}",
+                    userId, category.getKey(), periodKey, e);
+            return new EarningsClaimResult(category, EarningsClaimResult.Status.ERROR, buildEntry(habbo, userId, category, now));
+        }
 
+        if (!claimRecorded) {
+            return new EarningsClaimResult(category, EarningsClaimResult.Status.ALREADY_CLAIMED, buildEntry(habbo, userId, category, now));
+        }
+
+        try {
             this.rewards.grant(habbo, definition.rewards());
             return new EarningsClaimResult(category, EarningsClaimResult.Status.SUCCESS, buildEntry(habbo, userId, category, now));
         } catch (SQLException e) {
@@ -296,8 +307,6 @@ public class EarningsCenterManager {
         boolean hasClaim(int userId, String category, String periodKey) throws SQLException;
 
         boolean recordClaim(int userId, String category, String periodKey, int claimedAt) throws SQLException;
-
-        void removeClaim(int userId, String category, String periodKey) throws SQLException;
     }
 
     public interface RewardApplier {
@@ -354,17 +363,6 @@ public class EarningsCenterManager {
                 return statement.executeUpdate() == 1;
             } catch (SQLIntegrityConstraintViolationException duplicate) {
                 return false;
-            }
-        }
-
-        @Override
-        public void removeClaim(int userId, String category, String periodKey) throws SQLException {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                 PreparedStatement statement = connection.prepareStatement("DELETE FROM users_earnings_claims WHERE user_id = ? AND category = ? AND period_key = ? LIMIT 1")) {
-                statement.setInt(1, userId);
-                statement.setString(2, category);
-                statement.setString(3, periodKey);
-                statement.executeUpdate();
             }
         }
     }

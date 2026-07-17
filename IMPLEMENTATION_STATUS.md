@@ -1,7 +1,6 @@
 # Implementation status — testing & migrations
 
-Branch: `feature/testing-and-migrations` (off `main`). **Not pushed** — for local
-review and testing first.
+Branch: `feature/testing-and-migrations`, targeting `dev`.
 
 The production migration implementation is complete through `V30` and is proven
 against real MariaDB 10.11 and 11 containers. Broader test-suite and seeder work
@@ -11,7 +10,7 @@ remains separate from the migration deliverable.
 
 | Area | State | How it was verified |
 |---|---|---|
-| **pom deps** (Flyway core+mysql, Testcontainers, Mockito, Failsafe, datafaker, JaCoCo profile) | Done | `mvn test`: 450 tests pass |
+| **pom deps** (Flyway core+mysql, Testcontainers, Mockito, Failsafe, datafaker, JaCoCo profile) | Done | `mvn test`: 548 tests pass |
 | **Test DB seam** (`Database(HikariDataSource)`, `Emulator.setDatabaseForTesting`) | Done | both seams are package-private; no public plugin signature changed |
 | **Flyway runner + fail-closed startup** (`MigrationRunner`, `SchemaPreflight`) | Done | migrations use a short-lived raw pool with the existing DB credentials; migration failure escapes `main` and closes the runtime pool |
 | **V1 = Arc MS 3.5.5 baseline** (schema + data, obsolete `old_guilds_forums*` excluded) | Done | compared with the supplied `retro-hotel-files/BaseDB MS 3.5.5.sql`; four MySQL-only collations normalized for MariaDB 10.11 |
@@ -22,6 +21,7 @@ remains separate from the migration deliverable.
 | **V6–V26 = current Polaris feature updates** | Done, verified | former numbered loose updates moved into the immutable Flyway chain; destructive preview/demo actions removed |
 | **V27–V29 = current `dev` updates** | Done, verified | messenger history, economy audit, and client-release contract retained without the custom runner |
 | **V30 = pet-breeding reference correction** | Done, verified | known Arc off-by-one data upgraded; custom/non-legacy rows retained |
+| **Custom runner replacement** | Done | the duplicate Java runner, SQL splitter, loose scripts, and `db.migrations.*` controls from `dev` are removed; Flyway is the only migration path |
 | **Migration authoring guide** | Done | `Emulator/src/main/resources/db/migration/README.md` |
 | **Operator controls** | Done | automatic apply remains default; `--migrations-only`, `--migrations=apply`, and read-only `--migrations=validate` |
 | **Testcontainers harness + `MigrationRunnerIT`** | Done, verified | 5 IT tests: fresh/current/idempotent, real Arc fixture conversion and full schema convergence, unknown refusal, raw datasource isolation, and safe takeover from the `dev` custom runner |
@@ -68,9 +68,6 @@ mvn verify            # unit tests + integration tests (needs a Docker daemon)
 - **`FullDatabase.sql` still hardcodes `CREATE DATABASE `habbo`; USE `habbo`;`** — a
   fresh import must target a `habbo` database or the statements go there. Unrelated
   papercut noticed during verification; worth fixing separately.
-- **`marketplace_items` is InnoDB now, but the Java transaction refactor (Phase 6) is
-  not done.** V4 makes the atomicity *possible*; `MarketPlace.buyItem` still needs the
-  currency debit brought onto the transaction to be fully all-or-nothing (see plan §6).
 
 ## Not yet done (remaining phases)
 
@@ -88,7 +85,7 @@ mvn verify            # unit tests + integration tests (needs a Docker daemon)
 
 ## Current verification
 
-- `mvn -B test`: 450 tests, 0 failures, 0 skips.
+- `mvn -B test`: 548 tests, 0 failures, 0 skips.
 - `MigrationRunnerIT` on pinned MariaDB 10.11.14: 5 tests, 0 failures, 0 skips.
 - `MigrationRunnerIT` on pinned MariaDB 11.4.12 LTS: 5 tests, 0 failures, 0 skips.
 - Direct source audit: supplied Arc dump has 122 tables; V1 retains all 120

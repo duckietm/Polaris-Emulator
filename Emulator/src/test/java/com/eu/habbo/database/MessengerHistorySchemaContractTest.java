@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MessengerHistorySchemaContractTest {
-    private static final Path MIGRATION = Path.of("../Database/Database Updates/025_messenger_history.sql");
+    private static final Path MIGRATION = Path.of("src/main/resources/db/migration/V27__messenger_history.sql");
     private static final Path FULL_DATABASE = Path.of("../Database/Default Database/FullDatabase.sql");
 
     @Test

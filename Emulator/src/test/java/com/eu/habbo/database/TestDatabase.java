@@ -13,8 +13,10 @@ import org.testcontainers.utility.DockerImageName;
  */
 public final class TestDatabase {
 
-    /** Pinned supported image. Keep in sync with the CI matrix. */
-    public static final String MARIADB_IMAGE = "mariadb:11";
+    /** Pinned supported image; CI's version matrix overrides it via
+     *  the POLARIS_TEST_MARIADB_IMAGE environment variable. */
+    public static final String MARIADB_IMAGE =
+            System.getenv().getOrDefault("POLARIS_TEST_MARIADB_IMAGE", "mariadb:11");
 
     private static volatile MariaDBContainer<?> container;
     private static volatile HikariDataSource dataSource;

@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   build:
+    name: Build + unit + integration
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -27,28 +28,24 @@ jobs:
           java-version: "25"
           cache: maven
 
+      # `verify` runs the unit tests (Surefire) and the *IT integration tests
+      # (Failsafe), which build the schema by running the real V1..Vn migrations
+      # against a Testcontainers MariaDB. A broken migration fails the build.
       - name: Build and test
         run: mvn -B verify
 
-  migration-integration:
+  migration-matrix:
+    name: Migrations on MariaDB ${{ matrix.mariadb }}
     runs-on: ubuntu-latest
-    services:
-      mariadb:
-        image: mariadb:11.4
-        env:
-          MARIADB_ROOT_PASSWORD: root
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="healthcheck.sh --connect --innodb_initialized"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=20
-    env:
-      MIGRATION_TEST_DB_HOST: 127.0.0.1
-      MIGRATION_TEST_DB_PORT: "3306"
-      MIGRATION_TEST_DB_USER: root
-      MIGRATION_TEST_DB_PASSWORD: root
+    strategy:
+      fail-fast: false
+      matrix:
+        # Minimum-supported and recommended MariaDB releases.
+        mariadb: ["mariadb:10.11", "mariadb:11"]
+    defaults:
+      run:
+        working-directory: Emulator
+
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -60,6 +57,7 @@ jobs:
           java-version: "25"
           cache: maven
 
-      - name: Verify versioned migrations on MariaDB
-        working-directory: Emulator
-        run: mvn -B -Dtest=MariaDbMigrationIntegrationTest test
+      - name: Verify migrations against ${{ matrix.mariadb }}
+        env:
+          POLARIS_TEST_MARIADB_IMAGE: ${{ matrix.mariadb }}
+        run: mvn -B test-compile failsafe:integration-test failsafe:verify -Dit.test=MigrationRunnerIT

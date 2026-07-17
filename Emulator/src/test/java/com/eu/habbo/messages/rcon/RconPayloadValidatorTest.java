@@ -41,4 +41,41 @@ class RconPayloadValidatorTest {
 
         assertEquals("invalid badge", RconPayloadValidator.validate(payload));
     }
+
+    @Test
+    void rejectsInvalidRoomOwnerIdentifiersBeforeDispatch() {
+        ChangeRoomOwner.JSON payload = new ChangeRoomOwner.JSON();
+        payload.room_id = 0;
+        payload.user_id = 1;
+
+        assertEquals("invalid room", RconPayloadValidator.validate(payload));
+    }
+
+    @Test
+    void rejectsBlankStaffAlertsBeforeDispatch() {
+        StaffAlert.JSON payload = new StaffAlert.JSON();
+        payload.message = " \r\n ";
+
+        assertEquals("invalid message", RconPayloadValidator.validate(payload));
+    }
+
+    @Test
+    void rejectsInvalidSubscriptionMetadataBeforeDispatch() {
+        ModifyUserSubscription.JSON payload = new ModifyUserSubscription.JSON();
+        payload.user_id = 1;
+        payload.type = "HABBO\nCLUB";
+        payload.action = "add";
+        payload.duration = 60;
+
+        assertEquals("invalid subscription type", RconPayloadValidator.validate(payload));
+    }
+
+    @Test
+    void rejectsInvalidUpdateUserToggleBeforeDispatch() {
+        UpdateUser.JSON payload = new UpdateUser.JSON();
+        payload.user_id = 1;
+        payload.block_following = 2;
+
+        assertEquals("invalid block_following", RconPayloadValidator.validate(payload));
+    }
 }

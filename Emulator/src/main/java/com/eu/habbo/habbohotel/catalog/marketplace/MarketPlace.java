@@ -297,7 +297,8 @@ public class MarketPlace {
                                         HabboItem item = Emulator.getGameEnvironment().getItemManager().loadHabboItem(itemSet);
 
                                         MarketPlaceItemSoldEvent event = new MarketPlaceItemSoldEvent(habbo, client.getHabbo(), item, set.getInt("price"));
-                                        if (Emulator.getPluginManager().fireEvent(event).isCancelled()) {
+                                        if (Emulator.getPluginManager().fireEvent(event).isCancelled()
+                                                || !isValidListingPrice(event.price)) {
                                             return;
                                         }
 
@@ -487,12 +488,14 @@ public class MarketPlace {
     private static PreparedCharge prepareMarketplaceCharge(Habbo buyer, int price) {
         if (MARKETPLACE_CURRENCY == 0) {
             UserCreditsEvent event = new UserCreditsEvent(buyer, -price);
-            if (Emulator.getPluginManager().fireEvent(event).isCancelled() || event.credits >= 0) return null;
+            if (Emulator.getPluginManager().fireEvent(event).isCancelled()
+                    || event.credits != -price) return null;
             return new PreparedCharge(-1, event.credits);
         }
 
         UserPointsEvent event = new UserPointsEvent(buyer, -price, MARKETPLACE_CURRENCY);
-        if (Emulator.getPluginManager().fireEvent(event).isCancelled() || event.points >= 0) return null;
+        if (Emulator.getPluginManager().fireEvent(event).isCancelled()
+                || event.type != MARKETPLACE_CURRENCY || event.points != -price) return null;
         return new PreparedCharge(event.type, event.points);
     }
 

@@ -45,11 +45,25 @@ class MarketPlaceListingPriceContractTest {
         int buyItemStart = source.indexOf("public static void buyItem");
         int rawPrice = source.indexOf("int rawPrice = set.getInt(\"price\")", buyItemStart);
         int validation = source.indexOf("!isValidListingPrice(rawPrice)", rawPrice);
-        int commission = source.indexOf("MarketPlace.calculateCommision(rawPrice)", rawPrice);
+        int event = source.indexOf("new MarketPlaceItemSoldEvent", validation);
+        int adjustedValidation = source.indexOf("!isValidListingPrice(event.price)", event);
+        int commission = source.indexOf("calculateCommision(event.price)", adjustedValidation);
 
         assertTrue(buyItemStart > -1, "MarketPlace.buyItem must exist");
         assertTrue(rawPrice > buyItemStart, "Marketplace buy path should read the persisted raw price");
         assertTrue(validation > rawPrice, "Persisted marketplace prices must be validated before charging buyers");
-        assertTrue(validation < commission, "Invalid persisted prices must not reach commission calculation");
+        assertTrue(validation < event, "Invalid persisted prices must not reach marketplace plugins");
+        assertTrue(adjustedValidation > event, "Plugin-adjusted prices must be revalidated");
+        assertTrue(adjustedValidation < commission, "Invalid adjusted prices must not reach commission calculation");
+    }
+
+    @Test
+    void transactionRequiresTheMarketplaceToStillOwnTheItem() throws Exception {
+        String transaction = Files.readString(Path.of(
+                "src/main/java/com/eu/habbo/habbohotel/catalog/marketplace/MarketPlacePurchaseTransaction.java"));
+
+        assertTrue(transaction.contains(
+                        "UPDATE items SET user_id = ? WHERE id = ? AND user_id = -1"),
+                "an offer must not transfer an item which has already left marketplace ownership");
     }
 }

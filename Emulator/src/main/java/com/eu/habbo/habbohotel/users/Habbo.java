@@ -258,7 +258,7 @@ public class Habbo implements Runnable {
         }
 
         UserCreditsEvent event = new UserCreditsEvent(this, -credits);
-        if (Emulator.getPluginManager().fireEvent(event).isCancelled() || event.credits > 0) {
+        if (Emulator.getPluginManager().fireEvent(event).isCancelled() || event.credits != -credits) {
             return false;
         }
 
@@ -309,7 +309,8 @@ public class Habbo implements Runnable {
         }
 
         UserPointsEvent event = new UserPointsEvent(this, -points, type);
-        if (Emulator.getPluginManager().fireEvent(event).isCancelled() || event.points > 0) {
+        if (Emulator.getPluginManager().fireEvent(event).isCancelled()
+                || event.type != type || event.points != -points) {
             return false;
         }
 

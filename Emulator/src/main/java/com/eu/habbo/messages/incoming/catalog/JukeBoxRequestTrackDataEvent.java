@@ -3,8 +3,8 @@ package com.eu.habbo.messages.incoming.catalog;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.SoundTrack;
 import com.eu.habbo.messages.incoming.MessageHandler;
-import com.eu.habbo.messages.incoming.PacketListGuard;
 import com.eu.habbo.messages.outgoing.rooms.items.jukebox.JukeBoxTrackDataComposer;
+import com.eu.habbo.util.PacketGuard;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,15 +13,10 @@ public class JukeBoxRequestTrackDataEvent extends MessageHandler {
     static final int MAX_TRACK_REQUESTS = 1_000;
 
     @Override
-    public int getRatelimit() {
-        return 250;
-    }
-
-    @Override
     public void handle() throws Exception {
         int count = this.packet.readInt();
 
-        if (!PacketListGuard.isValidIntList(count, this.packet.bytesAvailable(), MAX_TRACK_REQUESTS)) {
+        if (!PacketGuard.isValidIntList(count, this.packet.bytesAvailable(), MAX_TRACK_REQUESTS)) {
             return;
         }
 

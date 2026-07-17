@@ -8,7 +8,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
-import com.eu.habbo.messages.incoming.PacketListGuard;
+import com.eu.habbo.util.PacketGuard;
 import com.eu.habbo.messages.outgoing.catalog.AlertLimitedSoldOutComposer;
 import com.eu.habbo.messages.outgoing.crafting.CraftingResultComposer;
 import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
@@ -30,7 +30,7 @@ public class CraftingCraftSecretEvent extends MessageHandler {
         int altarId = this.packet.readInt();
         int count = this.packet.readInt();
 
-        if (count <= 0 || !PacketListGuard.isValidIntList(count, this.packet.bytesAvailable(), MAX_SECRET_CRAFT_INGREDIENTS)) {
+        if (count <= 0 || !PacketGuard.isValidIntList(count, this.packet.bytesAvailable(), MAX_SECRET_CRAFT_INGREDIENTS)) {
             this.client.sendResponse(new CraftingResultComposer(null));
             return;
         }

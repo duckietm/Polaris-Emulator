@@ -7,7 +7,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
-import com.eu.habbo.messages.incoming.PacketListGuard;
+import com.eu.habbo.util.PacketGuard;
 import com.eu.habbo.messages.outgoing.crafting.CraftingRecipesAvailableComposer;
 
 import java.util.HashMap;
@@ -36,7 +36,7 @@ public class RequestCraftingRecipesAvailableEvent extends MessageHandler {
             Map<Item, Integer> items = new HashMap<>();
 
             int count = this.packet.readInt();
-            if (!PacketListGuard.isValidIntList(count, this.packet.bytesAvailable(), MAX_CRAFTING_INGREDIENTS)) {
+            if (!PacketGuard.isValidIntList(count, this.packet.bytesAvailable(), MAX_CRAFTING_INGREDIENTS)) {
                 return;
             }
 

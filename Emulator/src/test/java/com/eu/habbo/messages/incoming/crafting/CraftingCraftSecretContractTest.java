@@ -17,7 +17,7 @@ class CraftingCraftSecretContractTest {
         String source = source();
 
         int countRead = source.indexOf("int count = this.packet.readInt()");
-        int guard = source.indexOf("count <= 0 || !PacketListGuard.isValidIntList(", countRead);
+        int guard = source.indexOf("count <= 0 || !PacketGuard.isValidIntList(", countRead);
         int loop = source.indexOf("for (int i = 0; i < count; i++)", guard);
 
         assertTrue(countRead > -1, "secret crafting must read the client supplied ingredient count");

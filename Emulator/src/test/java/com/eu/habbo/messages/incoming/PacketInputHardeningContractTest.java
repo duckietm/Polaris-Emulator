@@ -13,7 +13,7 @@ class PacketInputHardeningContractTest {
         String source = read("catalog/JukeBoxRequestTrackDataEvent.java");
 
         int count = source.indexOf("int count = this.packet.readInt()");
-        int guard = source.indexOf("PacketListGuard.isValidIntList(", count);
+        int guard = source.indexOf("PacketGuard.isValidIntList(", count);
         int allocation = source.indexOf("new ArrayList<>(count)", guard);
 
         assertTrue(count > -1);
@@ -38,7 +38,7 @@ class PacketInputHardeningContractTest {
     private static void assertCountGuardBeforeLoop(String relativePath) throws Exception {
         String source = read(relativePath);
         int count = source.indexOf("int count = this.packet.readInt()");
-        int guard = source.indexOf("PacketListGuard.isValidIntList(", count);
+        int guard = source.indexOf("PacketGuard.isValidIntList(", count);
         int loop = source.indexOf("for (int i = 0; i < count; i++)", guard);
 
         assertTrue(count > -1, relativePath + " must read a count");

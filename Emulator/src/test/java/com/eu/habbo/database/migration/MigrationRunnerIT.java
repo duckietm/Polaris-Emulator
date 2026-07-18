@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -50,6 +51,10 @@ class MigrationRunnerIT {
             assertEquals(SchemaPreflight.State.EMPTY, SchemaPreflight.detect(ds));
 
             MigrationRunner.migrate(ds);
+            assertEquals(
+                    RuntimeSchemaValidator.packagedContract(),
+                    RuntimeSchemaValidator.generateContract(ds),
+                    "the packaged runtime contract must match the fully migrated schema");
 
             // Base table and representative Polaris-only tables both exist.
             assertTrue(tableExists(ds, "users"), "base table users must exist");
@@ -244,6 +249,99 @@ class MigrationRunnerIT {
     }
 
     @Test
+    void legacyPasswordResetShapeIsRepairedWithoutRedundantIndexes() throws Exception {
+        requireDocker();
+        try (HikariDataSource ds = TestDatabase.freshDatabase("mig_password_resets")) {
+            installArcturusFixture(ds);
+            try (Connection c = ds.getConnection(); Statement s = c.createStatement()) {
+                s.execute("""
+                        CREATE TABLE password_resets (
+                            email VARCHAR(255) NOT NULL,
+                            token VARCHAR(128) NOT NULL,
+                            expires_at TIMESTAMP NOT NULL,
+                            UNIQUE KEY legacy_password_resets_token (token)
+                        ) ENGINE=InnoDB
+                        """);
+                s.execute("""
+                        INSERT INTO password_resets (email, token, expires_at)
+                        VALUES ('legacy@example.test', 'keep-this-token', CURRENT_TIMESTAMP)
+                        """);
+            }
+
+            MigrationRunner.migrate(ds);
+
+            assertTrue(columnExists(ds, "password_resets", "user_id"));
+            assertTrue(columnExists(ds, "password_resets", "created_ip"));
+            assertEquals(1, intValue(ds, "SELECT COUNT(*) FROM password_resets"));
+            assertEquals("keep-this-token",
+                    stringValue(ds, "SELECT token FROM password_resets"));
+            assertEquals(1, singleColumnUniqueKeyCount(ds, "password_resets", "user_id"));
+            assertEquals(1, singleColumnUniqueKeyCount(ds, "password_resets", "token"));
+
+            MigrationRunner.migrate(ds);
+            assertEquals(1, singleColumnUniqueKeyCount(ds, "password_resets", "user_id"));
+            assertEquals(1, singleColumnUniqueKeyCount(ds, "password_resets", "token"));
+        }
+    }
+
+    @Test
+    void runtimeValidationToleratesExtensionsAndRejectsCriticalDrift() throws Exception {
+        requireDocker();
+        try (HikariDataSource ds = TestDatabase.freshDatabase("mig_runtime_contract")) {
+            MigrationRunner.migrate(ds);
+            try (Connection c = ds.getConnection(); Statement s = c.createStatement()) {
+                s.execute("CREATE TABLE plugin_extension (id INT PRIMARY KEY, custom_value TEXT)");
+            }
+
+            MigrationRunner.migrate(ds);
+            assertTrue(tableExists(ds, "plugin_extension"));
+
+            try (Connection c = ds.getConnection(); Statement s = c.createStatement()) {
+                s.execute("DROP TABLE messenger_offline");
+            }
+            MigrationException error = assertThrows(
+                    MigrationException.class,
+                    () -> MigrationRunner.migrate(ds));
+            assertTrue(error.getMessage().contains("missing table messenger_offline"));
+
+            try (Connection c = ds.getConnection(); Statement s = c.createStatement()) {
+                s.execute("""
+                        CREATE TABLE messenger_offline (
+                            id INT, message TEXT, sended_on INT, user_from_id INT, user_id INT
+                        )
+                        """);
+                s.execute("ALTER TABLE messenger_offline DROP COLUMN message");
+            }
+            error = assertThrows(
+                    MigrationException.class,
+                    () -> MigrationRunner.migrate(ds));
+            assertTrue(error.getMessage().contains("missing column messenger_offline.message"));
+
+            try (Connection c = ds.getConnection(); Statement s = c.createStatement()) {
+                s.execute("ALTER TABLE messenger_offline ADD COLUMN message TEXT");
+                s.execute("ALTER TABLE password_resets DROP INDEX idx_token");
+            }
+            error = assertThrows(
+                    MigrationException.class,
+                    () -> MigrationRunner.migrate(ds));
+            assertTrue(error.getMessage().contains("missing unique key password_resets(token)"));
+
+            try (Connection c = ds.getConnection(); Statement s = c.createStatement()) {
+                s.execute("ALTER TABLE password_resets ADD UNIQUE INDEX restored_token (token)");
+                s.execute("""
+                        ALTER TABLE password_resets
+                        MODIFY COLUMN created_ip VARCHAR(16) NOT NULL DEFAULT ''
+                        """);
+            }
+            error = assertThrows(
+                    MigrationException.class,
+                    () -> MigrationRunner.migrate(ds));
+            assertTrue(error.getMessage().contains(
+                    "password_resets.created_ip has length 16; expected at least 45"));
+        }
+    }
+
+    @Test
     void unknownNonEmptyDatabaseIsRefusedWithoutMutation() throws Exception {
         requireDocker();
         try (HikariDataSource ds = TestDatabase.freshDatabase("mig_unknown")) {
@@ -329,6 +427,32 @@ class MigrationRunnerIT {
             st.setString(1, table);
             try (ResultSet rs = st.executeQuery()) {
                 return rs.next() ? rs.getString(1) : null;
+            }
+        }
+    }
+
+    private static int singleColumnUniqueKeyCount(
+            HikariDataSource ds,
+            String table,
+            String column) throws Exception {
+        try (Connection c = ds.getConnection();
+             var st = c.prepareStatement("""
+                     SELECT COUNT(*)
+                     FROM (
+                         SELECT INDEX_NAME
+                         FROM information_schema.STATISTICS
+                         WHERE TABLE_SCHEMA = DATABASE()
+                           AND TABLE_NAME = ?
+                           AND NON_UNIQUE = 0
+                         GROUP BY INDEX_NAME
+                         HAVING COUNT(*) = 1
+                            AND MAX(CASE WHEN SEQ_IN_INDEX = 1 AND COLUMN_NAME = ? THEN 1 ELSE 0 END) = 1
+                     ) AS matching_unique_keys
+                     """)) {
+            st.setString(1, table);
+            st.setString(2, column);
+            try (ResultSet rs = st.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
             }
         }
     }

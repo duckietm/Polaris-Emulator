@@ -7,6 +7,24 @@ existing-Polaris installs record the base version without importing it, then
 run the compatible additive changes. A schema-only Arcturus 3.5.5 fixture in
 the test resources proves the legacy conversion path.
 
+After Flyway reaches the current version, Polaris validates every table and
+column in the packaged runtime contract. The contract is generated from the
+fully migrated schema and checked against a fresh MariaDB database in CI.
+Plugin tables and custom columns remain allowed.
+
+After adding or changing a migration, regenerate the contract from the
+`Emulator` directory:
+
+```shell
+mvn -Pupdate-runtime-schema-contract verify
+```
+
+The update profile starts a throwaway MariaDB, applies the complete migration
+chain using the production Flyway configuration, discovers every resulting
+table and column, and atomically updates `db/runtime-schema-contract.json`.
+Normal `mvn verify` is check-only and fails if a migration changed the schema
+without a matching contract update.
+
 ## Rules
 
 1. **One logical change per migration.** Never edit a released migration —

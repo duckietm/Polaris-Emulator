@@ -74,7 +74,7 @@ public final class MigrationRunner {
 
         LOGGER.info("[migrate] Detected schema state: {}", state);
         try {
-            switch (state) {
+            MigrateResult result = switch (state) {
                 case UNKNOWN -> throw new MigrationException(
                         "Refusing to migrate: the database is non-empty but is not a recognised Arc/Polaris schema. "
                                 + "No changes were made. Check that db.database points at the correct database, or see the "
@@ -84,13 +84,14 @@ public final class MigrationRunner {
                             + "Polaris will preserve the hotel data, record adoption baseline V{}, and apply the required upgrades now. "
                             + "A full database backup before first startup is strongly recommended.", BASELINE_VERSION);
                     flyway.baseline();
-                    return flyway.migrate();
+                    yield flyway.migrate();
                 }
-                case EMPTY, MANAGED -> {
-                    return flyway.migrate();
-                }
+                case EMPTY, MANAGED -> flyway.migrate();
                 default -> throw new MigrationException("Unhandled schema state: " + state);
-            }
+            };
+            RuntimeSchemaValidator.validate(dataSource);
+            LOGGER.info("[migrate] Runtime schema invariants validated.");
+            return result;
         } catch (MigrationException e) {
             throw e;
         } catch (Exception e) {
@@ -154,7 +155,8 @@ public final class MigrationRunner {
                 && BASELINE_VERSION.equals(migration.getVersion().getVersion());
     }
 
-    private static Flyway flyway(DataSource dataSource) {
+    /** Package-visible so the contract generator can use the production Flyway configuration. */
+    static Flyway flyway(DataSource dataSource) {
         return Flyway.configure()
                 .dataSource(dataSource)
                 .locations(MIGRATION_LOCATION)

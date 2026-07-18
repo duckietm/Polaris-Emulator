@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.google.gson.JsonObject;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +47,9 @@ final class SessionEndpoints {
 
         try (Connection conn = Emulator.getDatabase().getDataSource().getConnection()) {
             int userId = 0;
+            int rememberUserId = rememberToken.isEmpty()
+                    ? 0
+                    : RememberJwtService.revokeFromToken(conn, rememberToken);
 
             if (ssoTicket != null && !ssoTicket.isEmpty()) {
                 try (PreparedStatement lookup = conn.prepareStatement(
@@ -56,26 +60,30 @@ final class SessionEndpoints {
                     }
                 }
 
-                if (userId > 0) {
-                    try (PreparedStatement clear = conn.prepareStatement(
-                            "UPDATE users SET auth_ticket = '', auth_ticket_expires_at = NULL, online = '0' WHERE id = ? LIMIT 1")) {
-                        clear.setInt(1, userId);
-                        clear.executeUpdate();
-                    }
-
-                    if (Emulator.getGameServer() != null
-                            && Emulator.getGameServer().getGameClientManager() != null) {
-                        com.eu.habbo.habbohotel.users.Habbo habbo =
-                                Emulator.getGameServer().getGameClientManager().getHabbo(userId);
-                        if (habbo != null && habbo.getClient() != null) {
-                            Emulator.getGameServer().getGameClientManager().forceDisposeClient(habbo.getClient());
-                        }
-                    }
-                }
             }
 
-            if (!rememberToken.isEmpty()) {
-                RememberJwtService.revokeFromToken(conn, rememberToken);
+            int bearerUserId = AccessTokenService.verify(conn, bearerToken(req));
+            if (userId == 0) {
+                userId = bearerUserId > 0 ? bearerUserId : rememberUserId;
+            }
+
+            if (userId > 0) {
+                try (PreparedStatement clear = conn.prepareStatement(
+                        "UPDATE users SET auth_ticket = '', auth_ticket_expires_at = NULL, online = '0' WHERE id = ? LIMIT 1")) {
+                    clear.setInt(1, userId);
+                    clear.executeUpdate();
+                }
+
+                AccessTokenService.revokeAll(conn, userId);
+
+                if (Emulator.getGameServer() != null
+                        && Emulator.getGameServer().getGameClientManager() != null) {
+                    com.eu.habbo.habbohotel.users.Habbo habbo =
+                            Emulator.getGameServer().getGameClientManager().getHabbo(userId);
+                    if (habbo != null && habbo.getClient() != null) {
+                        Emulator.getGameServer().getGameClientManager().forceDisposeClient(habbo.getClient());
+                    }
+                }
             }
         } catch (Exception e) {
             LOGGER.error("Logout cleanup failed", e);
@@ -116,7 +124,7 @@ final class SessionEndpoints {
             ok.addProperty("rememberToken", rot.jwt);
             ok.addProperty("expiresAt", rot.expiresAt);
             ok.addProperty("rememberExpiresAt", rot.expiresAt);
-            AccessTokenService.Issued access = AccessTokenService.issue(rot.userId);
+            AccessTokenService.Issued access = AccessTokenService.issue(conn, rot.userId);
             ok.addProperty("accessToken", access.token);
             ok.addProperty("accessTokenExpiresAt", access.expiresAt);
             sendJson(ctx, req, HttpResponseStatus.OK, ok);
@@ -149,7 +157,7 @@ final class SessionEndpoints {
 
                 AuthRateLimiter.recordSuccess(ip);
 
-                AccessTokenService.Issued access = AccessTokenService.issue(userId);
+                AccessTokenService.Issued access = AccessTokenService.issue(conn, userId);
                 JsonObject ok = new JsonObject();
                 ok.addProperty("username", username);
                 ok.addProperty("accessToken", access.token);
@@ -179,7 +187,7 @@ final class SessionEndpoints {
             ok.addProperty("rememberToken", rot.jwt);
             ok.addProperty("expiresAt", rot.expiresAt);
             ok.addProperty("rememberExpiresAt", rot.expiresAt);
-            AccessTokenService.Issued access = AccessTokenService.issue(rot.userId);
+            AccessTokenService.Issued access = AccessTokenService.issue(conn, rot.userId);
             ok.addProperty("accessToken", access.token);
             ok.addProperty("accessTokenExpiresAt", access.expiresAt);
             sendJson(ctx, req, HttpResponseStatus.OK, ok);
@@ -276,7 +284,7 @@ final class SessionEndpoints {
                     ok.addProperty("ssoTicketExpiresAt", ssoExpiry.toInstant().getEpochSecond());
                     ok.addProperty("username", rs.getString("username"));
                     if (rememberToken != null) ok.addProperty("rememberToken", rememberToken);
-                    AccessTokenService.Issued access = AccessTokenService.issue(userId);
+                    AccessTokenService.Issued access = AccessTokenService.issue(conn, userId);
                     ok.addProperty("accessToken", access.token);
                     ok.addProperty("accessTokenExpiresAt", access.expiresAt);
                     sendJson(ctx, req, HttpResponseStatus.OK, ok);
@@ -467,6 +475,15 @@ final class SessionEndpoints {
         }
 
         sendJson(ctx, req, HttpResponseStatus.OK, ok);
+    }
+
+    private static String bearerToken(FullHttpRequest req) {
+        String authorization = req.headers().get(HttpHeaderNames.AUTHORIZATION);
+        if (authorization == null || !authorization.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            return "";
+        }
+
+        return authorization.substring(7).trim();
     }
 
     private static Timestamp newSsoTicketExpiry() {

@@ -95,11 +95,24 @@ final class AccountChangeEndpoints {
             }
 
             String hashed = PasswordHasher.hash(newPassword, 12);
-            try (PreparedStatement upd = conn.prepareStatement(
-                    "UPDATE users SET password = ? WHERE id = ? LIMIT 1")) {
-                upd.setString(1, hashed);
-                upd.setInt(2, userId);
-                upd.executeUpdate();
+            boolean previousAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                try (PreparedStatement upd = conn.prepareStatement(
+                        "UPDATE users SET password = ?, auth_ticket = '', "
+                                + "access_token_version = access_token_version + 1 "
+                                + "WHERE id = ? LIMIT 1")) {
+                    upd.setString(1, hashed);
+                    upd.setInt(2, userId);
+                    upd.executeUpdate();
+                }
+                RememberJwtService.revokeAllForUser(conn, userId);
+                conn.commit();
+            } catch (SQLException transactionError) {
+                try { conn.rollback(); } catch (SQLException ignored) { }
+                throw transactionError;
+            } finally {
+                conn.setAutoCommit(previousAutoCommit);
             }
 
             AuthRateLimiter.recordSuccess(ip);
@@ -107,6 +120,19 @@ final class AccountChangeEndpoints {
 
             JsonObject ok = new JsonObject();
             ok.addProperty("message", "Password updated successfully.");
+
+            // The version bump above invalidates every existing access token,
+            // including the one this request authenticated with. Issue a fresh
+            // token bound to the new credential state so the device that changed
+            // the password stays logged in while all other sessions are revoked.
+            try {
+                AccessTokenService.Issued reissued = AccessTokenService.issue(conn, userId);
+                ok.addProperty("accessToken", reissued.token);
+                ok.addProperty("accessTokenExpiresAt", reissued.expiresAt);
+            } catch (SQLException reissueError) {
+                LOGGER.warn("[auth/change-password] could not reissue access token for user id={}; client must log in again", userId, reissueError);
+            }
+
             sendJson(ctx, req, HttpResponseStatus.OK, ok);
         } catch (Exception e) {
             LOGGER.error("[auth/change-password] failed for user id=" + userId, e);
@@ -455,10 +481,26 @@ final class AccountChangeEndpoints {
                 LOGGER.warn("[auth/change-username] failed to clear marketplace cache", cacheError);
             }
 
-            try (PreparedStatement clear = conn.prepareStatement(
-                    "UPDATE users SET auth_ticket = '', online = '0' WHERE id = ? LIMIT 1")) {
-                clear.setInt(1, userId);
-                clear.executeUpdate();
+            // Bump the token version and revoke remember families atomically: a
+            // username change does not alter the password, so if the family revoke
+            // failed after the version bump committed, surviving families could still
+            // mint fresh tokens under the new version and defeat the forced relogin.
+            boolean revocationAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                try (PreparedStatement clear = conn.prepareStatement(
+                        "UPDATE users SET auth_ticket = '', online = '0', "
+                                + "access_token_version = access_token_version + 1 WHERE id = ? LIMIT 1")) {
+                    clear.setInt(1, userId);
+                    clear.executeUpdate();
+                }
+                RememberJwtService.revokeAllForUser(conn, userId);
+                conn.commit();
+            } catch (SQLException revokeError) {
+                try { conn.rollback(); } catch (SQLException ignore) {}
+                throw revokeError;
+            } finally {
+                conn.setAutoCommit(revocationAutoCommit);
             }
 
             if (Emulator.getGameServer() != null

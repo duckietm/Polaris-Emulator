@@ -30696,6 +30696,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `auth_ticket_expires_at` timestamp NULL DEFAULT NULL,
   `remember_token_hash` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT '',
   `remember_token_expires_at` int(11) unsigned NOT NULL DEFAULT 0,
+  `access_token_version` bigint(20) NOT NULL DEFAULT 0,
   `ip_register` varchar(45) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
   `ip_current` varchar(45) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT 'Have your CMS update this IP. If you do not do this IP banning won''t work!',
   `machine_id` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT '',

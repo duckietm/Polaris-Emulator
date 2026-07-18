@@ -106,10 +106,14 @@ class EarningsCenterManagerTest {
     }
 
     @Test
-    void failedRewardGrantRollsBackClaimRecord() {
-        TestConfig config = enabledConfig().with("earnings.daily_gift.credits", "10");
+    void failedRewardGrantRetainsClaimToPreventPartialRewardReplay() {
+        TestConfig config = enabledConfig()
+                .with("earnings.daily_gift.credits", "10")
+                .with("earnings.daily_gift.points", "5");
         TestClaims claims = new TestClaims();
+        List<EarningsReward> partiallyGranted = new ArrayList<>();
         EarningsCenterManager manager = new EarningsCenterManager(config, claims, (habbo, rewards) -> {
+            partiallyGranted.add(rewards.getFirst());
             throw new SQLException("grant failed");
         }, FIXED_CLOCK);
 
@@ -118,6 +122,35 @@ class EarningsCenterManagerTest {
                 .claim(null, "daily_gift");
 
         assertEquals(EarningsClaimResult.Status.ERROR, failed.getStatus());
+        assertEquals(1, partiallyGranted.size());
+        assertEquals(EarningsClaimResult.Status.ALREADY_CLAIMED, retried.getStatus());
+    }
+
+    @Test
+    void failedClaimMarkerRecordingGrantsNothingAndAllowsRetry() {
+        TestConfig config = enabledConfig().with("earnings.daily_gift.credits", "10");
+        ClaimRepository throwingClaims = new ClaimRepository() {
+            @Override
+            public boolean hasClaim(int userId, String category, String periodKey) {
+                return false;
+            }
+
+            @Override
+            public boolean recordClaim(int userId, String category, String periodKey, int claimedAt) throws SQLException {
+                throw new SQLException("record failed");
+            }
+        };
+        TestRewards rewards = new TestRewards();
+
+        EarningsClaimResult failed = new EarningsCenterManager(config, throwingClaims, rewards, FIXED_CLOCK)
+                .claim(null, "daily_gift");
+
+        assertEquals(EarningsClaimResult.Status.ERROR, failed.getStatus());
+        assertEquals(0, rewards.granted.size());
+
+        TestClaims claims = new TestClaims();
+        EarningsClaimResult retried = new EarningsCenterManager(config, claims, new TestRewards(), FIXED_CLOCK)
+                .claim(null, "daily_gift");
         assertEquals(EarningsClaimResult.Status.SUCCESS, retried.getStatus());
     }
 
@@ -217,11 +250,6 @@ class EarningsCenterManagerTest {
         @Override
         public boolean recordClaim(int userId, String category, String periodKey, int claimedAt) {
             return this.claims.add(key(userId, category, periodKey));
-        }
-
-        @Override
-        public void removeClaim(int userId, String category, String periodKey) {
-            this.claims.remove(key(userId, category, periodKey));
         }
 
         private String key(int userId, String category, String periodKey) {

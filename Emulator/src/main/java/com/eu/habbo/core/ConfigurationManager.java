@@ -134,7 +134,13 @@ public class ConfigurationManager {
 
 
     public String getValue(String key) {
-        return this.getValue(key, "");
+        if (this.isLoading) return "";
+
+        String value = this.getValueIfPresent(key);
+        if (value != null) return value;
+
+        LOGGER.error("Config key not found {}", key);
+        return "";
     }
 
 
@@ -144,8 +150,6 @@ public class ConfigurationManager {
 
         String value = this.getValueIfPresent(key);
         if (value != null) return value;
-
-        LOGGER.error("Config key not found {}", key);
         return defaultValue;
     }
 
@@ -172,11 +176,12 @@ public class ConfigurationManager {
         if (this.isLoading)
             return defaultValue;
 
-        try {
-            return (this.getValue(key, "0").equals("1")) || (this.getValue(key, "false").equals("true"));
-        } catch (Exception e) {
-            LOGGER.error("Failed to parse key {} with value '{}' to type boolean.", key, this.getValue(key));
-        }
+        String value = this.getValueIfPresent(key);
+        if (value == null) return defaultValue;
+        if (value.equals("1") || value.equalsIgnoreCase("true")) return true;
+        if (value.equals("0") || value.equalsIgnoreCase("false")) return false;
+
+        LOGGER.error("Failed to parse key {} with value '{}' to type boolean.", key, value);
         return defaultValue;
     }
 

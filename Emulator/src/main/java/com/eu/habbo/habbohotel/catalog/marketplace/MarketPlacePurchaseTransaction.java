@@ -1,6 +1,8 @@
 package com.eu.habbo.habbohotel.catalog.marketplace;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.economy.EconomyLedger;
+import com.eu.habbo.habbohotel.economy.EconomyOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,7 +13,8 @@ import java.sql.SQLException;
 final class MarketPlacePurchaseTransaction {
     private static final Logger LOGGER = LoggerFactory.getLogger(MarketPlacePurchaseTransaction.class);
     private static final String SELL_OFFER = "UPDATE marketplace_items SET state = 2, sold_timestamp = ? WHERE id = ? AND state = 1";
-    private static final String TRANSFER_ITEM = "UPDATE items SET user_id = ? WHERE id = ?";
+    private static final String TRANSFER_ITEM =
+            "UPDATE items SET user_id = ? WHERE id = ? AND user_id = -1";
     private static final String CHARGE_CREDITS = "UPDATE users SET credits = credits - ? WHERE id = ? AND credits >= ?";
     private static final String CHARGE_CURRENCY = "UPDATE users_currency SET amount = amount - ? WHERE user_id = ? AND type = ? AND amount >= ?";
 
@@ -27,11 +30,21 @@ final class MarketPlacePurchaseTransaction {
             connection.setAutoCommit(false);
 
             if (!executeOfferSale(connection, offerId, soldTimestamp)
-                    || !executeItemTransfer(connection, itemId, buyerId)
-                    || !executeCharge(connection, buyerId, currencyType, charge)) {
+                    || !executeItemTransfer(connection, itemId, buyerId)) {
                 connection.rollback();
                 return false;
             }
+
+            EconomyLedger.apply(connection, new EconomyOperation(
+                    "marketplace:offer:" + offerId + ":buyer",
+                    buyerId,
+                    buyerId,
+                    "marketplace_purchase",
+                    "catalog.marketplace.buy",
+                    currencyType < 0 ? EconomyLedger.CREDITS : currencyType,
+                    -charge,
+                    itemId,
+                    "offerId=" + offerId));
 
             connection.commit();
             return true;
@@ -65,22 +78,4 @@ final class MarketPlacePurchaseTransaction {
         }
     }
 
-    private static boolean executeCharge(Connection connection, int buyerId, int currencyType, int charge) throws SQLException {
-        if (currencyType < 0) {
-            try (PreparedStatement statement = connection.prepareStatement(CHARGE_CREDITS)) {
-                statement.setInt(1, charge);
-                statement.setInt(2, buyerId);
-                statement.setInt(3, charge);
-                return statement.executeUpdate() == 1;
-            }
-        }
-
-        try (PreparedStatement statement = connection.prepareStatement(CHARGE_CURRENCY)) {
-            statement.setInt(1, charge);
-            statement.setInt(2, buyerId);
-            statement.setInt(3, currencyType);
-            statement.setInt(4, charge);
-            return statement.executeUpdate() == 1;
-        }
-    }
 }

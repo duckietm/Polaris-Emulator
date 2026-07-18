@@ -1,15 +1,14 @@
 package com.eu.habbo.messages.rcon;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.economy.EconomyLedger;
+import com.eu.habbo.habbohotel.economy.EconomyOperation;
+import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.google.gson.Gson;
 import jakarta.validation.constraints.Positive;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 
 public class GiveCredits extends RCONMessage<GiveCredits.JSONGiveCredits> {
     private static final Logger LOGGER = LoggerFactory.getLogger(GiveCredits.class);
@@ -34,18 +33,21 @@ public class GiveCredits extends RCONMessage<GiveCredits.JSONGiveCredits> {
         }
 
         Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(object.user_id);
+        String operationId = EconomyOperationId.create("rcon:credits:" + object.user_id);
 
         if (habbo != null) {
-            habbo.giveCredits(object.credits);
+            habbo.giveCredits(object.credits, "rcon.givecredits", operationId, null);
         } else {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE users SET credits = credits + ? WHERE id = ? LIMIT 1")) {
-                statement.setInt(1, object.credits);
-                statement.setInt(2, object.user_id);
-                if (statement.executeUpdate() == 0) {
-                    this.status = RCONMessage.HABBO_NOT_FOUND;
-                    return;
-                }
-            } catch (SQLException e) {
+            if (!RconUserLookup.userExists(object.user_id)) {
+                this.status = RCONMessage.HABBO_NOT_FOUND;
+                this.message = "user not found";
+                return;
+            }
+            try {
+                EconomyLedger.execute(new EconomyOperation(
+                        operationId, object.user_id, null, "credit_grant", "rcon.givecredits",
+                        EconomyLedger.CREDITS, object.credits, null, ""));
+            } catch (Exception e) {
                 this.status = RCONMessage.SYSTEM_ERROR;
                 LOGGER.error("Caught SQL exception", e);
                 return;

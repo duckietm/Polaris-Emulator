@@ -9,6 +9,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -19,6 +21,60 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MariaDbMigrationIntegrationTest {
+    @Test
+    void immutableEconomyLedgerMigrationRunsOnMariaDbAndRejectsChanges() throws Exception {
+        String host = System.getenv("MIGRATION_TEST_DB_HOST");
+        Assumptions.assumeTrue(host != null && !host.isBlank(),
+                "Set MIGRATION_TEST_DB_HOST to opt into the MariaDB integration test");
+        assertTrue(isLoopback(host), "Migration integration tests require a loopback MariaDB host");
+
+        String port = environment("MIGRATION_TEST_DB_PORT", "3306");
+        String user = environment("MIGRATION_TEST_DB_USER", "root");
+        String password = environment("MIGRATION_TEST_DB_PASSWORD", "");
+        String schema = "polaris_economy_test_" + UUID.randomUUID().toString().replace("-", "");
+        String serverUrl = "jdbc:mariadb://" + host + ":" + port + "/";
+
+        try (Connection admin = DriverManager.getConnection(serverUrl, user, password)) {
+            execute(admin, "CREATE DATABASE `" + schema + "` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        }
+
+        try (Connection connection = DriverManager.getConnection(serverUrl + schema, user, password)) {
+            execute(connection, """
+                    CREATE TABLE logs_economy (
+                      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                      operation_id VARCHAR(96) NOT NULL UNIQUE,
+                      user_id INT UNSIGNED NOT NULL,
+                      operation VARCHAR(64) NOT NULL,
+                      currency_type INT NOT NULL,
+                      amount INT NOT NULL,
+                      balance_before INT NOT NULL,
+                      balance_after INT NOT NULL,
+                      item_id INT UNSIGNED NULL,
+                      context VARCHAR(255) NOT NULL DEFAULT '',
+                      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    ) ENGINE=InnoDB
+                    """);
+            String migration = Files.readString(Path.of(
+                    "../Database/Database Updates/028_immutable_economy_ledger.sql"));
+            for (String statement : SqlScriptSplitter.split(migration)) execute(connection, statement);
+
+            execute(connection, """
+                    INSERT INTO logs_economy
+                      (operation_id, user_id, actor_id, operation, reason, currency_type, amount,
+                       balance_before, balance_after, context)
+                    VALUES ('integration:1', 1, 2, 'grant', 'integration.test', -1, 5, 0, 5, '')
+                    """);
+            assertThrows(SQLException.class,
+                    () -> execute(connection, "UPDATE logs_economy SET amount = 6 WHERE operation_id = 'integration:1'"));
+            assertThrows(SQLException.class,
+                    () -> execute(connection, "DELETE FROM logs_economy WHERE operation_id = 'integration:1'"));
+        } finally {
+            try (Connection admin = DriverManager.getConnection(serverUrl, user, password)) {
+                execute(admin, "DROP DATABASE IF EXISTS `" + schema + "`");
+            }
+        }
+    }
+
     @Test
     void verifiesBaselineApplyIdempotencyDriftFailureAndLockingOnDisposableSchema()
             throws Exception {

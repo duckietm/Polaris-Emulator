@@ -1,14 +1,13 @@
 package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.economy.EconomyLedger;
+import com.eu.habbo.habbohotel.economy.EconomyOperation;
+import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 
 public class HousekeepingGiveCreditsEvent extends MessageHandler {
     private static final String ACTION_KEY = "user.give_credits";
@@ -38,27 +37,23 @@ public class HousekeepingGiveCreditsEvent extends MessageHandler {
         }
 
         Habbo online = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
+        int actorId = this.client.getHabbo().getHabboInfo().getId();
+        String operationId = EconomyOperationId.create("housekeeping:credits:" + userId);
 
         if (online != null) {
             // giveCredits already pushes UserCreditsComposer and persists via the
             // standard HabboInfo write path; nothing extra needed for the online branch.
-            online.giveCredits(amount);
+            online.giveCredits(amount, "housekeeping.user.give_credits", operationId, actorId);
             this.audit(userId, amount);
             this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, userId, ""));
             return;
         }
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("UPDATE users SET credits = credits + ? WHERE id = ? LIMIT 1")) {
-            statement.setInt(1, amount);
-            statement.setInt(2, userId);
-            int rows = statement.executeUpdate();
-
-            if (rows == 0) {
-                this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.user_not_found"));
-                return;
-            }
-        } catch (SQLException e) {
+        try {
+            EconomyLedger.execute(new EconomyOperation(
+                    operationId, userId, actorId, "credit_grant", "housekeeping.user.give_credits",
+                    EconomyLedger.CREDITS, amount, null, ACTION_KEY));
+        } catch (Exception e) {
             this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.db_failed"));
             return;
         }

@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.catalog.layouts.*;
+import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.guilds.Guild;
 import com.eu.habbo.habbohotel.items.FurnitureType;
@@ -474,6 +475,11 @@ public class CatalogManager {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery("SELECT * FROM catalog_items")) {
             CatalogItem item;
             while (set.next()) {
+                List<String> valueErrors = CatalogValueValidator.validate(CatalogValueValidator.Values.from(set));
+                if (!valueErrors.isEmpty()) {
+                    valueErrors.forEach(error -> LOGGER.error("Catalog value validation: {}", error));
+                    continue;
+                }
                 if (set.getString("item_ids").equals("0"))
                     continue;
 
@@ -1022,12 +1028,31 @@ public class CatalogManager {
 
 
     public void purchaseItem(CatalogPage page, CatalogItem item, Habbo habbo, int amount, String extradata, boolean free) {
-        if (item == null || habbo.getHabboStats().isPurchasingFurniture) {
+        if (item == null) {
             habbo.getClient().sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
             return;
         }
 
-        habbo.getHabboStats().isPurchasingFurniture = true;
+        synchronized (habbo.getHabboStats()) {
+            if (habbo.getHabboStats().isPurchasingFurniture) {
+                habbo.getClient().sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
+                return;
+            }
+            habbo.getHabboStats().isPurchasingFurniture = true;
+        }
+
+        Set<HabboItem> createdItems = new HashSet<>();
+        List<Bot> createdBots = new ArrayList<>();
+        List<Pet> createdPets = new ArrayList<>();
+        List<Integer> pendingEffects = new ArrayList<>();
+        List<Guild> pendingGuildForums = new ArrayList<>();
+        boolean paymentTaken = false;
+        boolean purchaseDelivered = false;
+        int paidCredits = 0;
+        int paidPoints = 0;
+        int paidPointsType = 0;
+        CatalogLimitedConfiguration limitedConfiguration = null;
+        int limitedNumber = 0;
 
         try {
             if (item.isClubOnly() && !habbo.getClient().getHabbo().getHabboStats().hasActiveClub()) {
@@ -1041,9 +1066,7 @@ public class CatalogManager {
             }
 
             try {
-                CatalogLimitedConfiguration limitedConfiguration = null;
                 int limitedStack = 0;
-                int limitedNumber = 0;
                 if (item.isLimited()) {
                     amount = 1;
                     if (this.getLimitedConfig(item).available() == 0) {
@@ -1070,8 +1093,9 @@ public class CatalogManager {
                     if (amount == item.getAmount()) {
                         amount = 1;
                     } else {
-                        if (amount * item.getAmount() > 100) {
-                            habbo.alert("Whoops! You tried to buy this " + (amount * item.getAmount()) + " times. This must've been a mistake.");
+                        long requestedItems = (long) amount * item.getAmount();
+                        if (requestedItems > 100) {
+                            habbo.alert("Whoops! You tried to buy this " + requestedItems + " times. This must've been a mistake.");
                             habbo.getClient().sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
                             return;
                         }
@@ -1102,8 +1126,8 @@ public class CatalogManager {
                 int totalCredits = free ? 0 : this.calculateDiscountedPrice(item.getCredits(), amount, item);
                 int totalPoints = free ? 0 : this.calculateDiscountedPrice(item.getPoints(), amount, item);
 
-                if (totalCredits > 0 && habbo.getHabboInfo().getCredits() - totalCredits < 0) return;
-                if (totalPoints > 0 && habbo.getHabboInfo().getCurrencyAmount(item.getPointsType()) - totalPoints < 0)
+                if (totalCredits > habbo.getHabboInfo().getCredits()) return;
+                if (totalPoints > habbo.getHabboInfo().getCurrencyAmount(item.getPointsType()))
                     return;
 
                 if (limitedConfiguration != null) limitedNumber = limitedConfiguration.getNumber();
@@ -1129,10 +1153,6 @@ public class CatalogManager {
                 boolean badgeFound = false;
 
                 for (int i = 0; i < amount; i++) {
-                    if(item.isLimited()) {
-                        habbo.getHabboStats().addLtdLog(item.getId(), Emulator.getIntUnixTimestamp());
-                    }
-
                     for (Item baseItem : item.getBaseItems()) {
                         for (int k = 0; k < item.getItemAmount(baseItem.getId()); k++) {
                             if (baseItem.getName().startsWith("rentable_bot_") || baseItem.getName().startsWith("bot_")) {
@@ -1160,6 +1180,7 @@ public class CatalogManager {
                                 Bot bot = Emulator.getGameEnvironment().getBotManager().createBot(data, type, habbo.getHabboInfo().getId());
 
                                 if (bot != null) {
+                                    createdBots.add(bot);
                                     bot.setOwnerId(habbo.getClient().getHabbo().getHabboInfo().getId());
                                     bot.setOwnerName(habbo.getClient().getHabbo().getHabboInfo().getUsername());
                                     bot.needsUpdate(true);
@@ -1183,7 +1204,7 @@ public class CatalogManager {
                                 }
 
                                 if (effectId > 0) {
-                                    habbo.getInventory().getEffectsComponent().createEffect(effectId);
+                                    pendingEffects.add(effectId);
                                 }
                             } else if (Item.isPet(baseItem)) {
                                 String[] data = extradata.split("\n");
@@ -1206,6 +1227,7 @@ public class CatalogManager {
                                     return;
                                 }
 
+                                createdPets.add(pet);
                                 habbo.getClient().getHabbo().getInventory().getPetsComponent().addPet(pet);
                                 habbo.getClient().sendResponse(new AddPetComposer(pet));
                                 habbo.getClient().sendResponse(new PetBoughtNotificationComposer(pet, false));
@@ -1242,11 +1264,21 @@ public class CatalogManager {
                                 if (InteractionTeleport.class.isAssignableFrom(baseItem.getInteractionType().getType())) {
                                     HabboItem teleportOne = Emulator.getGameEnvironment().getItemManager().createItem(habbo.getClient().getHabbo().getHabboInfo().getId(), baseItem, limitedStack, limitedNumber, extradata);
                                     HabboItem teleportTwo = Emulator.getGameEnvironment().getItemManager().createItem(habbo.getClient().getHabbo().getHabboInfo().getId(), baseItem, limitedStack, limitedNumber, extradata);
+                                    if (teleportOne == null || teleportTwo == null) {
+                                        if (teleportOne != null) createdItems.add(teleportOne);
+                                        if (teleportTwo != null) createdItems.add(teleportTwo);
+                                        throw new IllegalStateException("failed to create catalog teleport pair");
+                                    }
+                                    createdItems.add(teleportOne);
+                                    createdItems.add(teleportTwo);
                                     Emulator.getGameEnvironment().getItemManager().insertTeleportPair(teleportOne.getId(), teleportTwo.getId());
                                     itemsList.add(teleportOne);
                                     itemsList.add(teleportTwo);
                                 } else if (baseItem.getInteractionType().getType() == InteractionHopper.class) {
                                     HabboItem hopper = Emulator.getGameEnvironment().getItemManager().createItem(habbo.getClient().getHabbo().getHabboInfo().getId(), baseItem, limitedStack, limitedNumber, extradata);
+
+                                    if (hopper == null) throw new IllegalStateException("failed to create catalog hopper");
+                                    createdItems.add(hopper);
 
                                     Emulator.getGameEnvironment().getItemManager().insertHopper(hopper);
 
@@ -1269,7 +1301,13 @@ public class CatalogManager {
                                             return;
                                         }
 
-                                        InteractionGuildFurni habboItem = (InteractionGuildFurni) Emulator.getGameEnvironment().getItemManager().createItem(habbo.getClient().getHabbo().getHabboInfo().getId(), baseItem, limitedStack, limitedNumber, extradata);
+                                        HabboItem createdItem = Emulator.getGameEnvironment().getItemManager().createItem(habbo.getClient().getHabbo().getHabboInfo().getId(), baseItem, limitedStack, limitedNumber, extradata);
+                                        if (!(createdItem instanceof InteractionGuildFurni)) {
+                                            if (createdItem != null) createdItems.add(createdItem);
+                                            throw new IllegalStateException("failed to create catalog guild item");
+                                        }
+                                        InteractionGuildFurni habboItem = (InteractionGuildFurni) createdItem;
+                                        createdItems.add(habboItem);
                                         habboItem.setExtradata("");
                                         habboItem.needsUpdate(true);
 
@@ -1278,9 +1316,7 @@ public class CatalogManager {
                                         itemsList.add(habboItem);
 
                                         if (baseItem.getName().equals("guild_forum")) {
-                                            guild.setForum(true);
-                                            guild.needsUpdate = true;
-                                            guild.run();
+                                            pendingGuildForums.add(guild);
                                         }
                                     }
                                 } else if (baseItem.getInteractionType().getType() == InteractionMusicDisc.class) {
@@ -1291,7 +1327,13 @@ public class CatalogManager {
                                         return;
                                     }
 
-                                    InteractionMusicDisc habboItem = (InteractionMusicDisc) Emulator.getGameEnvironment().getItemManager().createItem(habbo.getClient().getHabbo().getHabboInfo().getId(), baseItem, limitedStack, limitedNumber, habbo.getClient().getHabbo().getHabboInfo().getUsername() + "\n" + Calendar.getInstance().get(Calendar.DAY_OF_MONTH) + "\n" + (Calendar.getInstance().get(Calendar.MONTH) + 1) + "\n" + Calendar.getInstance().get(Calendar.YEAR) + "\n" + track.getLength() + "\n" + track.getName() + "\n" + track.getId());
+                                    HabboItem createdItem = Emulator.getGameEnvironment().getItemManager().createItem(habbo.getClient().getHabbo().getHabboInfo().getId(), baseItem, limitedStack, limitedNumber, habbo.getClient().getHabbo().getHabboInfo().getUsername() + "\n" + Calendar.getInstance().get(Calendar.DAY_OF_MONTH) + "\n" + (Calendar.getInstance().get(Calendar.MONTH) + 1) + "\n" + Calendar.getInstance().get(Calendar.YEAR) + "\n" + track.getLength() + "\n" + track.getName() + "\n" + track.getId());
+                                    if (!(createdItem instanceof InteractionMusicDisc)) {
+                                        if (createdItem != null) createdItems.add(createdItem);
+                                        throw new IllegalStateException("failed to create catalog music disc");
+                                    }
+                                    InteractionMusicDisc habboItem = (InteractionMusicDisc) createdItem;
+                                    createdItems.add(habboItem);
                                     habboItem.needsUpdate(true);
 
                                     Emulator.getThreading().run(habboItem);
@@ -1300,6 +1342,8 @@ public class CatalogManager {
                                     AchievementManager.progressAchievement(habbo, Emulator.getGameEnvironment().getAchievementManager().getAchievement("MusicCollector"));
                                 } else {
                                     HabboItem habboItem = Emulator.getGameEnvironment().getItemManager().createItem(habbo.getClient().getHabbo().getHabboInfo().getId(), baseItem, limitedStack, limitedNumber, extradata);
+                                    if (habboItem == null) throw new IllegalStateException("failed to create catalog item");
+                                    createdItems.add(habboItem);
                                     itemsList.add(habboItem);
                                 }
                             }
@@ -1315,16 +1359,34 @@ public class CatalogManager {
                 UserCatalogItemPurchasedEvent purchasedEvent = new UserCatalogItemPurchasedEvent(habbo, item, itemsList, totalCredits, totalPoints, badges);
                 Emulator.getPluginManager().fireEvent(purchasedEvent);
 
-                if (!free && !habbo.getClient().getHabbo().hasPermission(Permission.ACC_INFINITE_CREDITS)) {
-                    if (purchasedEvent.totalCredits > 0) {
-                        habbo.getClient().getHabbo().giveCredits(-purchasedEvent.totalCredits);
-                    }
+                CatalogPurchaseMath.requireNonNegative(purchasedEvent.totalCredits, "plugin-adjusted credit price");
+                CatalogPurchaseMath.requireNonNegative(purchasedEvent.totalPoints, "plugin-adjusted points price");
+
+                if (purchasedEvent.totalCredits > habbo.getHabboInfo().getCredits()
+                        || purchasedEvent.totalPoints > habbo.getHabboInfo().getCurrencyAmount(item.getPointsType())) {
+                    habbo.getClient().sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+                    return;
                 }
 
-                if (!free && !habbo.getClient().getHabbo().hasPermission(Permission.ACC_INFINITE_POINTS)) {
-                    if (purchasedEvent.totalPoints > 0) {
-                        habbo.getClient().getHabbo().givePoints(item.getPointsType(), -purchasedEvent.totalPoints);
-                    }
+                paidCredits = (!free && !habbo.hasPermission(Permission.ACC_INFINITE_CREDITS))
+                        ? purchasedEvent.totalCredits : 0;
+                paidPoints = (!free && !habbo.hasPermission(Permission.ACC_INFINITE_POINTS))
+                        ? purchasedEvent.totalPoints : 0;
+                paidPointsType = item.getPointsType();
+
+                if (!CatalogPaymentService.tryTake(habbo, paidCredits, paidPointsType, paidPoints)) {
+                    habbo.getClient().sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+                    return;
+                }
+                paymentTaken = true;
+
+                for (Integer effectId : pendingEffects) {
+                    habbo.getInventory().getEffectsComponent().createEffect(effectId);
+                }
+                for (Guild guild : pendingGuildForums) {
+                    guild.setForum(true);
+                    guild.needsUpdate = true;
+                    guild.run();
                 }
 
                 if (purchasedEvent.itemsList != null && !purchasedEvent.itemsList.isEmpty()) {
@@ -1355,6 +1417,22 @@ public class CatalogManager {
                     keys.put("message", Emulator.getTexts().getValue("commands.generic.cmd_badge.received"));
                     habbo.getClient().sendResponse(new BubbleAlertComposer(BubbleAlertKeys.RECEIVED_BADGE.key, keys));
                     unseenItems.get(AddHabboItemComposer.AddHabboItemCategory.BADGE).add(badge.getId());
+                }
+
+                // Durable items and wallet debit now agree. Nonessential response,
+                // achievement, and logging failures must not undo a delivered order.
+                purchaseDelivered = true;
+
+                if (item.isLimited()) {
+                    for (int i = 0; i < amount; i++) {
+                        habbo.getHabboStats().addLtdLog(item.getId(), Emulator.getIntUnixTimestamp());
+                    }
+                }
+
+                for (HabboItem createdItem : createdItems) {
+                    if (purchasedEvent.itemsList == null || !purchasedEvent.itemsList.contains(createdItem)) {
+                        Emulator.getGameEnvironment().getItemManager().deleteItem(createdItem);
+                    }
                 }
                 habbo.getClient().getHabbo().getHabboStats().addPurchase(purchasedEvent.catalogItem);
 
@@ -1388,7 +1466,34 @@ public class CatalogManager {
                 habbo.getClient().sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
             }
         } finally {
-            habbo.getHabboStats().isPurchasingFurniture = false;
+            try {
+                if (!purchaseDelivered) {
+                    for (HabboItem createdItem : createdItems) {
+                        if (createdItem != null) Emulator.getGameEnvironment().getItemManager().deleteItem(createdItem);
+                    }
+                    for (Bot bot : createdBots) {
+                        habbo.getInventory().getBotsComponent().removeBot(bot);
+                        Emulator.getGameEnvironment().getBotManager().deleteBot(bot);
+                    }
+                    for (Pet pet : createdPets) {
+                        habbo.getInventory().getPetsComponent().removePet(pet);
+                        Emulator.getGameEnvironment().getPetManager().deletePet(pet);
+                    }
+                    if (limitedConfiguration != null && limitedNumber > 0) {
+                        // Return the reserved limited number to the pool so a failed
+                        // purchase does not permanently shrink the stock or leave the
+                        // item stranded on the sold-out page.
+                        limitedConfiguration.restoreNumber(item.getId(), limitedNumber);
+                    }
+                    if (paymentTaken) {
+                        CatalogPaymentService.refund(habbo, paidCredits, paidPointsType, paidPoints);
+                    }
+                }
+            } finally {
+                synchronized (habbo.getHabboStats()) {
+                    habbo.getHabboStats().isPurchasingFurniture = false;
+                }
+            }
         }
     }
 
@@ -1431,8 +1536,10 @@ public class CatalogManager {
     private void purchaseBotsAndPetsAtomically(CatalogItem item, Habbo habbo, int amount, String extraData,
                                                boolean free, int totalCredits, int totalPoints) throws SQLException {
         String[] petData = extraData.split("\n");
+        String operationId = EconomyOperationId.create(
+                "catalog:" + habbo.getHabboInfo().getId() + ":" + item.getId());
         SpecialCompanionPurchase purchase = CatalogPurchaseTransaction.execute(
-                habbo.getHabboInfo().getId(), connection -> {
+                habbo.getHabboInfo().getId(), operationId, connection -> {
                     List<Bot> bots = new ArrayList<>();
                     List<Pet> pets = new ArrayList<>();
                     for (int index = 0; index < amount; index++) {
@@ -1528,7 +1635,10 @@ public class CatalogManager {
             }
         }
 
-        EntitlementPurchase purchase = CatalogPurchaseTransaction.execute(habbo.getHabboInfo().getId(), connection -> {
+        String operationId = EconomyOperationId.create(
+                "catalog:" + habbo.getHabboInfo().getId() + ":" + item.getId());
+        EntitlementPurchase purchase = CatalogPurchaseTransaction.execute(
+                habbo.getHabboInfo().getId(), operationId, connection -> {
             UserCatalogItemPurchasedEvent event = new UserCatalogItemPurchasedEvent(
                     habbo, item, new HashSet<>(), totalCredits, totalPoints, new ArrayList<>(requestedBadges));
             Emulator.getPluginManager().fireEvent(event);
@@ -1588,7 +1698,8 @@ public class CatalogManager {
             throws SQLException {
         int userId = habbo.getHabboInfo().getId();
         try {
-            AtomicFurniturePurchase purchase = CatalogPurchaseTransaction.execute(userId, connection -> {
+            String operationId = EconomyOperationId.create("catalog:" + userId + ":" + item.getId());
+            AtomicFurniturePurchase purchase = CatalogPurchaseTransaction.execute(userId, operationId, connection -> {
                 Set<HabboItem> createdItems = new HashSet<>();
                 Map<InteractionGuildFurni, Guild> guildFurniture = new HashMap<>();
                 boolean includesMusicDisc = false;
@@ -1836,7 +1947,7 @@ public class CatalogManager {
     }
 
     private int calculateDiscountedPrice(int originalPrice, int amount, CatalogItem item) {
-        if (!CatalogItem.haveOffer(item)) return originalPrice * amount;
+        if (!CatalogItem.haveOffer(item)) return CatalogPurchaseMath.checkedPrice(originalPrice, amount);
 
         int basicDiscount = amount / DiscountComposer.DISCOUNT_BATCH_SIZE;
 
@@ -1856,6 +1967,7 @@ public class CatalogManager {
 
         int totalDiscountedItems = (basicDiscount * DiscountComposer.DISCOUNT_AMOUNT_PER_BATCH) + bonusDiscount + additionalDiscounts;
 
-        return Math.max(0, originalPrice * (amount - totalDiscountedItems));
+        int payableItems = Math.max(0, amount - totalDiscountedItems);
+        return CatalogPurchaseMath.checkedPrice(originalPrice, payableItems);
     }
 }

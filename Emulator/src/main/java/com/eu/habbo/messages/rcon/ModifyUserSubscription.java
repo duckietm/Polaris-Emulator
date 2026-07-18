@@ -4,6 +4,10 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.subscriptions.Subscription;
 import com.google.gson.Gson;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,10 +109,17 @@ public class ModifyUserSubscription extends RCONMessage<ModifyUserSubscription.J
 
     static class JSON {
 
+        @Positive(message = "invalid user")
         public int user_id;
 
+        @NotBlank(message = "invalid subscription type")
+        @Size(max = 64, message = "invalid subscription type")
+        @Pattern(regexp = "[A-Za-z0-9_]+", message = "invalid subscription type")
         public String type = ""; // Subscription type e.g. HABBO_CLUB
 
+        @NotBlank(message = "invalid action")
+        @Size(max = 16, message = "invalid action")
+        @Pattern(regexp = "(?i)^(add|remove|a|r|\\+|-)$", message = "invalid action")
         public String action = ""; // Can be add or remove
 
         public int duration = -1; // Time to add/remove in seconds. -1 means remove subscription entirely

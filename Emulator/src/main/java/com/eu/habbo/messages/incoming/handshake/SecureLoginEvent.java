@@ -151,6 +151,13 @@ public class SecureLoginEvent extends MessageHandler {
                 this.client.setHabbo(habbo);
                 this.client.setMachineId(habbo.getHabboInfo().getMachineID());
 
+                if (!habbo.passesConnectionSecurityChecks()) {
+                    LOGGER.warn("[SessionResume] Rejected resumed session for banned identity id={}",
+                            habbo.getHabboInfo().getId());
+                    Emulator.getGameServer().getGameClientManager().forceDisposeClient(this.client);
+                    return;
+                }
+
                 // NB: NON svuotiamo il ticket SSO qui (vedi HabboManager.loadHabbo):
                 // dietro Cloudflare il client ritenta la connessione con lo stesso
                 // ticket, quindi deve restare valido fino alla scadenza TTL. Consumarlo

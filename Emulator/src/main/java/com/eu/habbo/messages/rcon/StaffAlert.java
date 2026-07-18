@@ -2,6 +2,8 @@ package com.eu.habbo.messages.rcon;
 
 import com.eu.habbo.Emulator;
 import com.google.gson.Gson;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 public class StaffAlert extends RCONMessage<StaffAlert.JSON> {
     public StaffAlert() {
@@ -15,6 +17,8 @@ public class StaffAlert extends RCONMessage<StaffAlert.JSON> {
 
     static class JSON {
 
+        @NotBlank(message = "invalid message")
+        @Size(max = 4096, message = "invalid message")
         public String message;
     }
 }

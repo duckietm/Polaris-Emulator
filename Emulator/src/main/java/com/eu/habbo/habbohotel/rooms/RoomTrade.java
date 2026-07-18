@@ -184,23 +184,32 @@ public class RoomTrade {
         Set<HabboItem> itemsUserOne = new HashSet<>(userOne.getItems());
         Set<HabboItem> itemsUserTwo = new HashSet<>(userTwo.getItems());
 
-        int creditsForUserTwo = 0;
+        int creditsForUserTwo;
+        int creditsForUserOne;
+        try {
+            creditsForUserTwo = checkedCreditTotal(itemsUserOne);
+            creditsForUserOne = checkedCreditTotal(itemsUserTwo);
+            checkedRecipientBalance(userTwo, creditsForUserTwo);
+            checkedRecipientBalance(userOne, creditsForUserOne);
+        } catch (IllegalArgumentException e) {
+            LOGGER.warn("Rejected trade with unrepresentable credit-furni value", e);
+            this.sendMessageToUsers(new TradeClosedComposer(
+                    userOne.getHabbo().getRoomUnit().getId(), TradeClosedComposer.ITEMS_NOT_FOUND));
+            return false;
+        }
         Set<HabboItem> creditFurniUserOne = new HashSet<>();
         for (HabboItem item : itemsUserOne) {
             int worth = RoomTrade.getCreditsByItem(item);
             if (worth > 0) {
-                creditsForUserTwo += worth;
                 creditFurniUserOne.add(item);
             }
         }
         itemsUserOne.removeAll(creditFurniUserOne);
 
-        int creditsForUserOne = 0;
         Set<HabboItem> creditFurniUserTwo = new HashSet<>();
         for (HabboItem item : itemsUserTwo) {
             int worth = RoomTrade.getCreditsByItem(item);
             if (worth > 0) {
-                creditsForUserOne += worth;
                 creditFurniUserTwo.add(item);
             }
         }
@@ -332,6 +341,33 @@ public class RoomTrade {
         }
 
         return true;
+    }
+
+    static int checkedAddCreditValue(int total, int worth) {
+        if (total < 0 || worth < 0) {
+            throw new IllegalArgumentException("trade credit value must not be negative");
+        }
+
+        long updated = (long) total + worth;
+        if (updated > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("trade credit value exceeds wallet range");
+        }
+        return (int) updated;
+    }
+
+    private static int checkedCreditTotal(Iterable<HabboItem> items) {
+        int total = 0;
+        for (HabboItem item : items) {
+            int worth = RoomTrade.getCreditsByItem(item);
+            if (worth > 0) {
+                total = checkedAddCreditValue(total, worth);
+            }
+        }
+        return total;
+    }
+
+    private static void checkedRecipientBalance(RoomTradeUser recipient, int incomingCredits) {
+        checkedAddCreditValue(recipient.getHabbo().getHabboInfo().getCredits(), incomingCredits);
     }
 
     public static int getCreditsByItem(HabboItem item) {

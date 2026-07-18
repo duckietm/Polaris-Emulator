@@ -11,6 +11,11 @@ public class ClaimEarningsRewardEvent extends MessageHandler {
     }
 
     @Override
+    public String getRatelimitGroup() {
+        return "earnings.claim";
+    }
+
+    @Override
     public void handle() {
         String categoryKey = this.packet.readString();
         EarningsCenterManager manager = new EarningsCenterManager();

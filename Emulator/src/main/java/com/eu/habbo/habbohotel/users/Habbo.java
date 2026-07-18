@@ -4,6 +4,10 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.economy.EconomyLedger;
+import com.eu.habbo.habbohotel.economy.EconomyMutationResult;
+import com.eu.habbo.habbohotel.economy.EconomyOperation;
+import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.messenger.Messenger;
 import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.rooms.*;
@@ -116,21 +120,48 @@ public class Habbo implements Runnable {
 
 
     public boolean connect() {
+        ConnectionSecurityResult security = this.checkConnectionSecurity();
+        if (!security.allowed()) {
+            return false;
+        }
+
+        this.isOnline(true);
+        this.messenger.connectionChanged(this, true, false);
+        Emulator.getGameEnvironment().getRoomManager().loadRoomsForHabbo(this);
+        LOGGER.info("{} logged in from IP {} using proxyserver {}", this.habboInfo.getUsername(), this.habboInfo.getIpLogin(), security.proxyInfo());
+        LOGGER.info("{} client MachineId = {}", this.habboInfo.getUsername(), this.client.getMachineId());
+        return true;
+    }
+
+    /**
+     * Re-evaluates account, IP, and machine bans for the current connection,
+     * used when resuming a parked session that skips the normal login path.
+     * This resolves and records the resuming connection's IP (and fires
+     * {@link com.eu.habbo.plugin.events.users.UserGetIPAddressEvent}) exactly
+     * as {@link #connect()} does, but does not bring the Habbo online or load
+     * rooms. Returns true when the connection is allowed to proceed.
+     */
+    public boolean passesConnectionSecurityChecks() {
+        return this.checkConnectionSecurity().allowed();
+    }
+
+    private ConnectionSecurityResult checkConnectionSecurity() {
+        if (this.client == null || this.client.getChannel() == null) {
+            return new ConnectionSecurityResult(false, "missing client channel");
+        }
+
         String ip = "";
         String proxyInfo = "";
 
         String wsIp = this.client.getChannel().attr(GameServerAttributes.WS_IP).get();
         if (wsIp != null && !wsIp.isEmpty()) {
             ip = wsIp;
-            SocketAddress address = this.client.getChannel().remoteAddress();
-            proxyInfo = ((InetSocketAddress) address).getAddress().getHostAddress();
+            proxyInfo = remoteIp(this.client.getChannel().remoteAddress());
         } else if (!Emulator.getConfig().getBoolean("networking.tcp.proxy") && this.client.getChannel().remoteAddress() != null) {
-            SocketAddress address = this.client.getChannel().remoteAddress();
-            ip = ((InetSocketAddress) address).getAddress().getHostAddress();
+            ip = remoteIp(this.client.getChannel().remoteAddress());
             proxyInfo = "- no proxy server used";
         } else {
-            SocketAddress address = this.client.getChannel().remoteAddress();
-            proxyInfo = ((InetSocketAddress) address).getAddress().getHostAddress();
+            proxyInfo = remoteIp(this.client.getChannel().remoteAddress());
         }
 
         if (Emulator.getPluginManager().isRegistered(UserGetIPAddressEvent.class, true)) {
@@ -144,31 +175,35 @@ public class Habbo implements Runnable {
             this.habboInfo.setIpLogin(ip);
         }
 
-        // The Nitro client sends the UniqueID (machine fingerprint) packet right
-        // AFTER the SSO ticket, so client.getMachineId() may still be null here.
-        // Do NOT reject the login for a missing machineId — MachineIDEvent sets it
-        // and enforces the MAC ban as soon as the UniqueID packet arrives. Only
-        // MAC-ban check here when the fingerprint is already available.
+        if (Emulator.getGameEnvironment().getModToolManager().checkForBan(this.habboInfo.getId()) != null) {
+            return new ConnectionSecurityResult(false, proxyInfo);
+        }
+
+        // Nitro sends its machine fingerprint after SSO. Check it here only when
+        // already available; MachineIDEvent enforces a later-arriving fingerprint.
         String machineId = this.client.getMachineId();
         if (machineId != null && !machineId.isEmpty()) {
             this.habboInfo.setMachineID(machineId);
-
             if (Emulator.getGameEnvironment().getModToolManager().hasMACBan(this.client)) {
-                return false;
+                return new ConnectionSecurityResult(false, proxyInfo);
             }
         }
 
         if (Emulator.getGameEnvironment().getModToolManager().hasIPBan(this.habboInfo.getIpLogin())) {
-            return false;
+            return new ConnectionSecurityResult(false, proxyInfo);
         }
-        this.isOnline(true);
 
-        this.messenger.connectionChanged(this, true, false);
+        return new ConnectionSecurityResult(true, proxyInfo);
+    }
 
-        Emulator.getGameEnvironment().getRoomManager().loadRoomsForHabbo(this);
-        LOGGER.info("{} logged in from IP {} using proxyserver {}", this.habboInfo.getUsername(), this.habboInfo.getIpLogin(), proxyInfo);
-        LOGGER.info("{} client MachineId = {}", this.habboInfo.getUsername(), this.client.getMachineId());
-        return true;
+    private static String remoteIp(SocketAddress address) {
+        if (address instanceof InetSocketAddress inetAddress && inetAddress.getAddress() != null) {
+            return inetAddress.getAddress().getHostAddress();
+        }
+        return "";
+    }
+
+    private record ConnectionSecurityResult(boolean allowed, String proxyInfo) {
     }
 
 
@@ -240,6 +275,16 @@ public class Habbo implements Runnable {
 
 
     public void giveCredits(int credits) {
+        this.giveCredits(credits, "economy.api.credits");
+    }
+
+    public void giveCredits(int credits, String reason) {
+        this.giveCredits(credits, reason,
+                EconomyOperationId.create("credits:" + this.getHabboInfo().getId()),
+                this.getHabboInfo().getId());
+    }
+
+    public void giveCredits(int credits, String reason, String operationId, Integer actorId) {
         if (credits == 0)
             return;
 
@@ -247,23 +292,51 @@ public class Habbo implements Runnable {
         if (Emulator.getPluginManager().fireEvent(event).isCancelled())
             return;
 
-        this.getHabboInfo().addCredits(event.credits);
+        try {
+            EconomyMutationResult result = EconomyLedger.execute(new EconomyOperation(
+                    operationId,
+                    this.getHabboInfo().getId(),
+                    actorId,
+                    event.credits > 0 ? "credit_grant" : "credit_debit",
+                    reason,
+                    EconomyLedger.CREDITS,
+                    event.credits,
+                    null,
+                    ""));
+            this.getHabboInfo().setCredits(result.balanceAfter());
+        } catch (Exception exception) {
+            LOGGER.error("Unable to apply audited credit mutation for user {}", this.getHabboInfo().getId(), exception);
+            return;
+        }
 
         if (this.client != null) this.client.sendResponse(new UserCreditsComposer(this));
     }
 
+    public boolean tryTakeCredits(int credits) {
+        if (credits <= 0) {
+            return false;
+        }
+
+        UserCreditsEvent event = new UserCreditsEvent(this, -credits);
+        if (Emulator.getPluginManager().fireEvent(event).isCancelled() || event.credits != -credits) {
+            return false;
+        }
+
+        if (!this.getHabboInfo().tryAddCredits(event.credits)) {
+            return false;
+        }
+
+        if (this.client != null) this.client.sendResponse(new UserCreditsComposer(this));
+        return true;
+    }
+
 
     public void givePixels(int pixels) {
-        if (pixels == 0)
-            return;
+        this.givePoints(0, pixels, "economy.api.pixels");
+    }
 
-
-        UserPointsEvent event = new UserPointsEvent(this, pixels, 0);
-        if (Emulator.getPluginManager().fireEvent(event).isCancelled())
-            return;
-
-        this.getHabboInfo().addPixels(event.points);
-        if (this.client != null) this.client.sendResponse(new UserCurrencyComposer(this));
+    public void givePixels(int pixels, String reason) {
+        this.givePoints(0, pixels, reason);
     }
 
 
@@ -273,6 +346,16 @@ public class Habbo implements Runnable {
 
 
     public void givePoints(int type, int points) {
+        this.givePoints(type, points, "economy.api.currency");
+    }
+
+    public void givePoints(int type, int points, String reason) {
+        this.givePoints(type, points, reason,
+                EconomyOperationId.create("currency:" + this.getHabboInfo().getId() + ":" + type),
+                this.getHabboInfo().getId());
+    }
+
+    public void givePoints(int type, int points, String reason, String operationId, Integer actorId) {
         if (points == 0)
             return;
 
@@ -280,9 +363,49 @@ public class Habbo implements Runnable {
         if (Emulator.getPluginManager().fireEvent(event).isCancelled())
             return;
 
-        this.getHabboInfo().addCurrencyAmount(event.type, event.points);
-        if (this.client != null)
-            this.client.sendResponse(new UserPointsComposer(this.getHabboInfo().getCurrencyAmount(type), event.points, event.type));
+        try {
+            EconomyMutationResult result = EconomyLedger.execute(new EconomyOperation(
+                    operationId,
+                    this.getHabboInfo().getId(),
+                    actorId,
+                    event.points > 0 ? "currency_grant" : "currency_debit",
+                    reason,
+                    event.type,
+                    event.points,
+                    null,
+                    ""));
+            this.getHabboInfo().setCurrencyAmount(event.type, result.balanceAfter());
+        } catch (Exception exception) {
+            LOGGER.error("Unable to apply audited currency mutation for user {}", this.getHabboInfo().getId(), exception);
+            return;
+        }
+        if (this.client != null) {
+            if (event.type == 0) this.client.sendResponse(new UserCurrencyComposer(this));
+            else this.client.sendResponse(new UserPointsComposer(
+                    this.getHabboInfo().getCurrencyAmount(event.type), event.points, event.type));
+        }
+    }
+
+    public boolean tryTakePoints(int type, int points) {
+        if (points <= 0) {
+            return false;
+        }
+
+        UserPointsEvent event = new UserPointsEvent(this, -points, type);
+        if (Emulator.getPluginManager().fireEvent(event).isCancelled()
+                || event.type != type || event.points != -points) {
+            return false;
+        }
+
+        if (!this.getHabboInfo().tryAddCurrencyAmount(event.type, event.points)) {
+            return false;
+        }
+
+        if (this.client != null) {
+            this.client.sendResponse(new UserPointsComposer(
+                    this.getHabboInfo().getCurrencyAmount(event.type), event.points, event.type));
+        }
+        return true;
     }
 
 

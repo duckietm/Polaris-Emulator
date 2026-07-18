@@ -1,7 +1,8 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.plugin.events.furniture.FurnitureRedeemedEvent;
+import com.eu.habbo.habbohotel.economy.EconomyLedger;
+import com.eu.habbo.habbohotel.economy.EconomyOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,16 +13,11 @@ import java.sql.SQLException;
 final class RedeemItemTransaction {
     private static final Logger LOGGER = LoggerFactory.getLogger(RedeemItemTransaction.class);
     private static final String DELETE_ITEM = "DELETE FROM items WHERE id = ? AND user_id = ? LIMIT 1";
-    private static final String ADD_CREDITS = "UPDATE users SET credits = credits + ? WHERE id = ? LIMIT 1";
-    private static final String ADD_CURRENCY = """
-            INSERT INTO users_currency (user_id, type, amount) VALUES (?, ?, ?)
-            ON DUPLICATE KEY UPDATE amount = amount + ?
-            """;
 
     private RedeemItemTransaction() {
     }
 
-    static boolean commit(int itemId, int userId, int currencyType, int amount) {
+    static boolean commit(int itemId, int userId, int currencyType, int amount, String itemName) {
         if (itemId <= 0 || userId <= 0 || amount <= 0) return false;
 
         Connection connection = null;
@@ -38,24 +34,16 @@ final class RedeemItemTransaction {
                 }
             }
 
-            if (currencyType == FurnitureRedeemedEvent.CREDITS) {
-                try (PreparedStatement update = connection.prepareStatement(ADD_CREDITS)) {
-                    update.setInt(1, amount);
-                    update.setInt(2, userId);
-                    if (update.executeUpdate() != 1) {
-                        connection.rollback();
-                        return false;
-                    }
-                }
-            } else {
-                try (PreparedStatement update = connection.prepareStatement(ADD_CURRENCY)) {
-                    update.setInt(1, userId);
-                    update.setInt(2, currencyType);
-                    update.setInt(3, amount);
-                    update.setInt(4, amount);
-                    update.executeUpdate();
-                }
-            }
+            EconomyLedger.apply(connection, new EconomyOperation(
+                    "furniture-redeem:" + itemId,
+                    userId,
+                    userId,
+                    "furniture_redeem",
+                    "furniture.redeem",
+                    currencyType,
+                    amount,
+                    itemId,
+                    itemName));
 
             connection.commit();
             return true;

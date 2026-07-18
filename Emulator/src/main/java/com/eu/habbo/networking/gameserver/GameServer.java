@@ -11,6 +11,7 @@ import com.eu.habbo.networking.gameserver.encoders.GameServerMessageLogger;
 import com.eu.habbo.networking.gameserver.handlers.IdleTimeoutHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.UnpooledByteBufAllocator;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -29,6 +30,8 @@ public class GameServer extends Server {
     private final PacketManager packetManager;
     private final GameClientManager gameClientManager;
     private ServerBootstrap webSocketBootstrap;
+    private volatile boolean webSocketListening;
+    private volatile Channel webSocketChannel;
 
     public GameServer(String host, int port) throws Exception {
         super("Game Server", host, port, Emulator.getConfig().getInt("io.bossgroup.threads"), Emulator.getConfig().getInt("io.workergroup.threads"));
@@ -55,7 +58,7 @@ public class GameServer extends Server {
                 }
                 ch.pipeline().addLast("idleEventHandler", new IdleTimeoutHandler(30, 60));
                 ch.pipeline().addLast(new GameMessageRateLimit());
-                ch.pipeline().addLast(new GameMessageHandler());
+                ch.pipeline().addLast(GamePacketExecutionGroup.get(), "gameMessageHandler", new GameMessageHandler());
 
                 // Encoders.
                 ch.pipeline().addLast(new GameServerMessageEncoder());
@@ -70,6 +73,7 @@ public class GameServer extends Server {
     }
 
     private void initializeWebSocketServer() {
+        this.webSocketListening = false;
         if (!Emulator.getConfig().getBoolean("ws.enabled", false)) {
             return;
         }
@@ -98,6 +102,9 @@ public class GameServer extends Server {
         if (!wsFuture.isSuccess()) {
             LOGGER.error("Failed to start WebSocket server on {}:{}", wsHost, wsPort);
         } else {
+            this.webSocketChannel = wsFuture.channel();
+            this.webSocketListening = true;
+            wsFuture.channel().closeFuture().addListener(ignored -> this.webSocketListening = false);
             LOGGER.info("WebSocket server started on {}:{} (SSL: {})", wsHost, wsPort, wsInitializer.isSslEnabled());
 
             if (com.eu.habbo.Emulator.getConfig().getBoolean("crypto.ws.signing.enabled", false)) {
@@ -120,15 +127,21 @@ public class GameServer extends Server {
         return this.gameClientManager;
     }
 
+    public boolean isWebSocketListening() {
+        return this.webSocketListening && this.webSocketChannel != null && this.webSocketChannel.isActive();
+    }
+
     @Override
     public void stop() {
+        this.webSocketListening = false;
+        if (this.webSocketChannel != null) {
+            this.webSocketChannel.close().syncUninterruptibly();
+        }
         for (GameClient client : new ArrayList<>(this.gameClientManager.getSessions().values())) {
             this.gameClientManager.forceDisposeClient(client);
         }
 
-        if (Emulator.getConfig().getBoolean("ws.enabled", false)) {
-            WebSocketChannelInitializer.shutdownPacketHandlers();
-        }
+        GamePacketExecutionGroup.shutdown();
 
         super.stop();
     }

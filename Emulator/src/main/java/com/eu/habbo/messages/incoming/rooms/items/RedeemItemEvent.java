@@ -1,8 +1,6 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.economy.EconomyAuditEntry;
-import com.eu.habbo.habbohotel.economy.EconomyAuditLogger;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -113,7 +111,8 @@ public class RedeemItemEvent extends MessageHandler {
                             item.getId(),
                             this.client.getHabbo().getHabboInfo().getId(),
                             currencyGrant.currencyType(),
-                            currencyGrant.amount()))
+                            currencyGrant.amount(),
+                            item.getBaseItem().getName()))
                         return;
 
                     room.removeHabboItem(item);
@@ -125,28 +124,10 @@ public class RedeemItemEvent extends MessageHandler {
                     t.setStackHeight(room.getStackHeight(item.getX(), item.getY(), false));
                     room.updateTile(t);
                     room.sendComposer(new UpdateStackHeightComposer(item.getX(), item.getY(), t.z, t.relativeHeight()).compose());
-                    int balanceBefore = getCurrencyBalance(currencyGrant.currencyType());
                     applyCurrencyGrant(currencyGrant);
-                    int balanceAfter = getCurrencyBalance(currencyGrant.currencyType());
-                    EconomyAuditLogger.record(EconomyAuditEntry.redemption(
-                            this.client.getHabbo().getHabboInfo().getId(),
-                            item.getId(),
-                            currencyGrant.currencyType(),
-                            currencyGrant.amount(),
-                            balanceBefore,
-                            balanceAfter,
-                            item.getBaseItem().getName()));
                 }
             }
         }
-    }
-
-    private int getCurrencyBalance(int currencyType) {
-        return switch (currencyType) {
-            case FurnitureRedeemedEvent.CREDITS -> this.client.getHabbo().getHabboInfo().getCredits();
-            case FurnitureRedeemedEvent.PIXELS -> this.client.getHabbo().getHabboInfo().getPixels();
-            default -> this.client.getHabbo().getHabboInfo().getCurrencyAmount(currencyType);
-        };
     }
 
     private PreparedCurrencyGrant prepareCurrencyGrant(int currencyType, int amount) {

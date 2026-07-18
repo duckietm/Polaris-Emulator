@@ -54,7 +54,9 @@ class MigrationRunnerIT {
             assertEquals(
                     RuntimeSchemaValidator.packagedContract(),
                     RuntimeSchemaValidator.generateContract(ds),
-                    "the packaged runtime contract must match the fully migrated schema");
+                    "the packaged runtime contract must match the fully migrated schema — "
+                            + "run 'mvn -Pupdate-runtime-schema-contract verify' in Emulator/ "
+                            + "and commit the updated runtime-schema-contract.json");
 
             // Base table and representative Polaris-only tables both exist.
             assertTrue(tableExists(ds, "users"), "base table users must exist");

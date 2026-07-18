@@ -128,7 +128,12 @@ final class RuntimeSchemaValidator {
 
             if (!violations.isEmpty()) {
                 throw new MigrationException(
-                        "Runtime database schema is incompatible: " + String.join("; ", violations));
+                        "Runtime database schema is incompatible: " + String.join("; ", violations)
+                                + ". If you changed or added a migration, did you remember to regenerate the"
+                                + " packaged contract? Run 'mvn -Pupdate-runtime-schema-contract verify' in"
+                                + " Emulator/ and rebuild. On a live hotel this means the schema was modified"
+                                + " outside migrations; restore the missing objects from a backup or"
+                                + " forward-fix with a new migration.");
             }
         } catch (MigrationException e) {
             throw e;

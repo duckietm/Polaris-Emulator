@@ -22,4 +22,24 @@ class ConfigurationManagerBooleanDefaultsTest {
         assertTrue(manager.getBoolean("missing.default.true", true));
         assertFalse(manager.getBoolean("missing.default.false", false));
     }
+
+    @Test
+    void invalidBooleanUsesTheCallersDefault() throws Exception {
+        Path config = tempDir.resolve("config.ini");
+        Files.writeString(config, "invalid.boolean=perhaps");
+        ConfigurationManager manager = new ConfigurationManager(config.toString());
+
+        assertTrue(manager.getBoolean("invalid.boolean", true));
+        assertFalse(manager.getBoolean("invalid.boolean", false));
+    }
+
+    @Test
+    void booleanValuesIgnoreCaseAndSurroundingWhitespace() throws Exception {
+        Path config = tempDir.resolve("config.ini");
+        Files.writeString(config, "enabled= TRUE \ndisabled= 0 ");
+        ConfigurationManager manager = new ConfigurationManager(config.toString());
+
+        assertTrue(manager.getBoolean("enabled", false));
+        assertFalse(manager.getBoolean("disabled", true));
+    }
 }

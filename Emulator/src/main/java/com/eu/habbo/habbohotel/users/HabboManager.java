@@ -1,6 +1,9 @@
 package com.eu.habbo.habbohotel.users;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.economy.EconomyLedger;
+import com.eu.habbo.habbohotel.economy.EconomyOperation;
+import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.database.SqlQueries;
 import com.eu.habbo.habbohotel.modtool.ModToolBan;
 import com.eu.habbo.habbohotel.permissions.Permission;
@@ -289,11 +292,14 @@ public class HabboManager {
     public void giveCredits(int userId, int credits) {
         Habbo habbo = this.getHabbo(userId);
         if (habbo != null) {
-            habbo.giveCredits(credits);
+            habbo.giveCredits(credits, "system.habbo_manager");
         } else {
             try {
-                SqlQueries.update("UPDATE users SET credits = credits + ? WHERE id = ? LIMIT 1", credits, userId);
-            } catch (SqlQueries.DataAccessException e) {
+                EconomyLedger.execute(new EconomyOperation(
+                        EconomyOperationId.create("habbo-manager:credits:" + userId),
+                        userId, null, credits > 0 ? "credit_grant" : "credit_debit",
+                        "system.habbo_manager", EconomyLedger.CREDITS, credits, null, ""));
+            } catch (Exception e) {
                 LOGGER.error("Caught SQL exception", e);
             }
         }

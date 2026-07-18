@@ -4,6 +4,10 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.economy.EconomyLedger;
+import com.eu.habbo.habbohotel.economy.EconomyMutationResult;
+import com.eu.habbo.habbohotel.economy.EconomyOperation;
+import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.messenger.Messenger;
 import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.rooms.*;
@@ -271,6 +275,16 @@ public class Habbo implements Runnable {
 
 
     public void giveCredits(int credits) {
+        this.giveCredits(credits, "economy.api.credits");
+    }
+
+    public void giveCredits(int credits, String reason) {
+        this.giveCredits(credits, reason,
+                EconomyOperationId.create("credits:" + this.getHabboInfo().getId()),
+                this.getHabboInfo().getId());
+    }
+
+    public void giveCredits(int credits, String reason, String operationId, Integer actorId) {
         if (credits == 0)
             return;
 
@@ -278,23 +292,33 @@ public class Habbo implements Runnable {
         if (Emulator.getPluginManager().fireEvent(event).isCancelled())
             return;
 
-        this.getHabboInfo().addCredits(event.credits);
+        try {
+            EconomyMutationResult result = EconomyLedger.execute(new EconomyOperation(
+                    operationId,
+                    this.getHabboInfo().getId(),
+                    actorId,
+                    event.credits > 0 ? "credit_grant" : "credit_debit",
+                    reason,
+                    EconomyLedger.CREDITS,
+                    event.credits,
+                    null,
+                    ""));
+            this.getHabboInfo().setCredits(result.balanceAfter());
+        } catch (Exception exception) {
+            LOGGER.error("Unable to apply audited credit mutation for user {}", this.getHabboInfo().getId(), exception);
+            return;
+        }
 
         if (this.client != null) this.client.sendResponse(new UserCreditsComposer(this));
     }
 
 
     public void givePixels(int pixels) {
-        if (pixels == 0)
-            return;
+        this.givePoints(0, pixels, "economy.api.pixels");
+    }
 
-
-        UserPointsEvent event = new UserPointsEvent(this, pixels, 0);
-        if (Emulator.getPluginManager().fireEvent(event).isCancelled())
-            return;
-
-        this.getHabboInfo().addPixels(event.points);
-        if (this.client != null) this.client.sendResponse(new UserCurrencyComposer(this));
+    public void givePixels(int pixels, String reason) {
+        this.givePoints(0, pixels, reason);
     }
 
 
@@ -304,6 +328,16 @@ public class Habbo implements Runnable {
 
 
     public void givePoints(int type, int points) {
+        this.givePoints(type, points, "economy.api.currency");
+    }
+
+    public void givePoints(int type, int points, String reason) {
+        this.givePoints(type, points, reason,
+                EconomyOperationId.create("currency:" + this.getHabboInfo().getId() + ":" + type),
+                this.getHabboInfo().getId());
+    }
+
+    public void givePoints(int type, int points, String reason, String operationId, Integer actorId) {
         if (points == 0)
             return;
 
@@ -311,9 +345,27 @@ public class Habbo implements Runnable {
         if (Emulator.getPluginManager().fireEvent(event).isCancelled())
             return;
 
-        this.getHabboInfo().addCurrencyAmount(event.type, event.points);
-        if (this.client != null)
-            this.client.sendResponse(new UserPointsComposer(this.getHabboInfo().getCurrencyAmount(type), event.points, event.type));
+        try {
+            EconomyMutationResult result = EconomyLedger.execute(new EconomyOperation(
+                    operationId,
+                    this.getHabboInfo().getId(),
+                    actorId,
+                    event.points > 0 ? "currency_grant" : "currency_debit",
+                    reason,
+                    event.type,
+                    event.points,
+                    null,
+                    ""));
+            this.getHabboInfo().setCurrencyAmount(event.type, result.balanceAfter());
+        } catch (Exception exception) {
+            LOGGER.error("Unable to apply audited currency mutation for user {}", this.getHabboInfo().getId(), exception);
+            return;
+        }
+        if (this.client != null) {
+            if (event.type == 0) this.client.sendResponse(new UserCurrencyComposer(this));
+            else this.client.sendResponse(new UserPointsComposer(
+                    this.getHabboInfo().getCurrencyAmount(event.type), event.points, event.type));
+        }
     }
 
 

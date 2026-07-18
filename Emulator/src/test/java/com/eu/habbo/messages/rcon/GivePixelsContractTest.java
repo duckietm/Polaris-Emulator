@@ -16,10 +16,8 @@ class GivePixelsContractTest {
     void offlinePixelGrantCreatesMissingCurrencyRow() throws Exception {
         String source = givePixelsSource();
 
-        assertTrue(source.contains("INSERT INTO users_currency"),
-                "Offline RCON pixel grants must create the users_currency type 0 row when it is missing");
-        assertTrue(source.contains("ON DUPLICATE KEY UPDATE"),
-                "Offline RCON pixel grants should increment existing rows with an upsert");
+        assertTrue(source.contains("EconomyLedger.execute"),
+                "Offline RCON pixel grants must use the immutable transactional ledger");
         assertTrue(source.contains("RconGrantGuard.validatePositiveAmount"),
                 "RCON pixel grants must reject zero, negative, and oversized grants");
         assertTrue(source.contains("RconUserLookup.userExists"),

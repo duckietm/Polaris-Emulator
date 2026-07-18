@@ -13,7 +13,9 @@ class EconomyAuditEntryTest {
 
         assertEquals("furniture-redeem:9001", entry.operationId());
         assertEquals(42, entry.userId());
+        assertEquals(42, entry.actorId());
         assertEquals("furniture_redeem", entry.operation());
+        assertEquals("furniture.redeem", entry.reason());
         assertEquals(-1, entry.currencyType());
         assertEquals(50, entry.amount());
         assertEquals(100, entry.balanceBefore());

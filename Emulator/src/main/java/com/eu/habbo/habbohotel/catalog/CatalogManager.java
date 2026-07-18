@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.catalog.layouts.*;
+import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.guilds.Guild;
 import com.eu.habbo.habbohotel.items.FurnitureType;
@@ -474,6 +475,11 @@ public class CatalogManager {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery("SELECT * FROM catalog_items")) {
             CatalogItem item;
             while (set.next()) {
+                List<String> valueErrors = CatalogValueValidator.validate(CatalogValueValidator.Values.from(set));
+                if (!valueErrors.isEmpty()) {
+                    valueErrors.forEach(error -> LOGGER.error("Catalog value validation: {}", error));
+                    continue;
+                }
                 if (set.getString("item_ids").equals("0"))
                     continue;
 
@@ -1530,8 +1536,10 @@ public class CatalogManager {
     private void purchaseBotsAndPetsAtomically(CatalogItem item, Habbo habbo, int amount, String extraData,
                                                boolean free, int totalCredits, int totalPoints) throws SQLException {
         String[] petData = extraData.split("\n");
+        String operationId = EconomyOperationId.create(
+                "catalog:" + habbo.getHabboInfo().getId() + ":" + item.getId());
         SpecialCompanionPurchase purchase = CatalogPurchaseTransaction.execute(
-                habbo.getHabboInfo().getId(), connection -> {
+                habbo.getHabboInfo().getId(), operationId, connection -> {
                     List<Bot> bots = new ArrayList<>();
                     List<Pet> pets = new ArrayList<>();
                     for (int index = 0; index < amount; index++) {
@@ -1627,7 +1635,10 @@ public class CatalogManager {
             }
         }
 
-        EntitlementPurchase purchase = CatalogPurchaseTransaction.execute(habbo.getHabboInfo().getId(), connection -> {
+        String operationId = EconomyOperationId.create(
+                "catalog:" + habbo.getHabboInfo().getId() + ":" + item.getId());
+        EntitlementPurchase purchase = CatalogPurchaseTransaction.execute(
+                habbo.getHabboInfo().getId(), operationId, connection -> {
             UserCatalogItemPurchasedEvent event = new UserCatalogItemPurchasedEvent(
                     habbo, item, new HashSet<>(), totalCredits, totalPoints, new ArrayList<>(requestedBadges));
             Emulator.getPluginManager().fireEvent(event);
@@ -1687,7 +1698,8 @@ public class CatalogManager {
             throws SQLException {
         int userId = habbo.getHabboInfo().getId();
         try {
-            AtomicFurniturePurchase purchase = CatalogPurchaseTransaction.execute(userId, connection -> {
+            String operationId = EconomyOperationId.create("catalog:" + userId + ":" + item.getId());
+            AtomicFurniturePurchase purchase = CatalogPurchaseTransaction.execute(userId, operationId, connection -> {
                 Set<HabboItem> createdItems = new HashSet<>();
                 Map<InteractionGuildFurni, Guild> guildFurniture = new HashMap<>();
                 boolean includesMusicDisc = false;

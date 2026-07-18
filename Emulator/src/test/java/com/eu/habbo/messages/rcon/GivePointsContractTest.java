@@ -22,7 +22,7 @@ class GivePointsContractTest {
                 "RCON point grants must reject zero, negative, and oversized grants");
         assertTrue(source.contains("RconUserLookup.userExists"),
                 "Offline RCON point grants must not create orphan currency rows for missing users");
-        assertTrue(source.contains("ON DUPLICATE KEY UPDATE"),
-                "Offline RCON point grants should increment existing rows with an upsert");
+        assertTrue(source.contains("EconomyLedger.execute"),
+                "Offline RCON point grants must use the immutable transactional ledger");
     }
 }

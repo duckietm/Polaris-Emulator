@@ -63,3 +63,8 @@ login.news.limit=5
 ## io.packet.handler.threads=24 #Game packet-handler pool size; runs game handlers OFF the Netty I/O loop. Default max(16, 2 x CPU cores).
 ## auth.http.pool.size=16 #Dedicated worker pool for the /api/auth/* HTTP endpoints (BCrypt/JDBC/Turnstile/SMTP run off the event loop). Default 16.
 ## io.netty.allocator.pooled=false #Set true to opt into Netty's pooled ByteBuf allocator. Default false (unpooled-heap).
+
+#Structured slow-query diagnostics. SQL literals and bound values are never logged.
+db.slow_query.enabled=true
+db.slow_query.threshold_ms=250
+db.slow_query.max_sql_length=1024

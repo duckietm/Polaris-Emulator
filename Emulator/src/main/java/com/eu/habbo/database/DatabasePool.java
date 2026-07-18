@@ -3,6 +3,7 @@ package com.eu.habbo.database;
 import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.database.compat.LegacyBridgeDataSource;
 import com.eu.habbo.database.compat.LegacySqlBridge;
+import com.eu.habbo.database.observability.SlowQuerySettings;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
@@ -98,7 +99,16 @@ class DatabasePool {
             log.info("HABBO DATABASE: " + config.getValue(DB_NAME_KEY));
             log.info("USING DRIVER: MariaDB Connector/J");
 
-            this.database = new LegacyBridgeDataSource(databaseConfiguration, legacySqlBridge);
+            SlowQuerySettings slowQuerySettings = SlowQuerySettings.from(config);
+            this.database = new LegacyBridgeDataSource(
+                    databaseConfiguration,
+                    legacySqlBridge,
+                    slowQuerySettings);
+            log.info(
+                    "SLOW QUERY LOGGING: {} (threshold={} ms, max_sql_length={})",
+                    slowQuerySettings.enabled() ? "enabled" : "disabled",
+                    slowQuerySettings.thresholdMs(),
+                    slowQuerySettings.maxSqlLength());
         } catch (Exception e) {
             log.error("Error initializing database connection pool: {}", e.getMessage());
             return false;

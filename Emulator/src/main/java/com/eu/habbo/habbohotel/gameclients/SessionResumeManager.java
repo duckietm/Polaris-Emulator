@@ -109,6 +109,27 @@ public class SessionResumeManager {
         return ghostSessions.containsKey(userId);
     }
 
+    /**
+     * Evicts a parked session immediately, cancelling its scheduled disposal and
+     * fully disconnecting the Habbo. Used when an external decision (such as a ban)
+     * must take effect during the reconnect grace window rather than waiting for a
+     * resume attempt to re-run its checks. Returns true if a ghost was evicted.
+     */
+    public boolean disposeGhostSession(int userId) {
+        GhostSession ghost = ghostSessions.remove(userId);
+        if (ghost == null) {
+            return false;
+        }
+
+        if (ghost.disposeFuture != null) {
+            ghost.disposeFuture.cancel(false);
+        }
+
+        LOGGER.info("[SessionResume] Evicting parked session for user {} (forced disposal)", userId);
+        performFullDisconnect(ghost.habbo);
+        return true;
+    }
+
     public void disposeAll() {
         for (GhostSession ghost : ghostSessions.values()) {
             if (ghost.disposeFuture != null) {

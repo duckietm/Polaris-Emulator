@@ -161,6 +161,8 @@ public final class Emulator {
                     return;
                 }
             }
+            com.eu.habbo.database.indexing.DatabaseIndexAuditor.auditAtStartup(
+                    Emulator.getDatabase().getDataSource());
             Emulator.databaseLogger = new DatabaseLogger();
             Emulator.config.loaded = true;
             Emulator.config.loadFromDatabase();

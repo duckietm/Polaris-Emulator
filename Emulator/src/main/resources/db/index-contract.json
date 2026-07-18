@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "source": "Audited emulator SQL workload",
+  "indexes": [
+    {
+      "name": "idx_users_badges_user_badge_slot",
+      "table": "users_badges",
+      "columns": ["user_id", "badge_code", "slot_id"],
+      "purpose": "Load and mutate a user's badges without scanning the badge table"
+    },
+    {
+      "name": "idx_users_badges_badge_user",
+      "table": "users_badges",
+      "columns": ["badge_code", "user_id"],
+      "purpose": "Aggregate badge ownership by badge code"
+    },
+    {
+      "name": "idx_room_rights_room_user",
+      "table": "room_rights",
+      "columns": ["room_id", "user_id"],
+      "purpose": "Load and revoke the rights assigned in a room"
+    },
+    {
+      "name": "idx_room_rights_user_room",
+      "table": "room_rights",
+      "columns": ["user_id", "room_id"],
+      "purpose": "Load rooms where a user has rights"
+    },
+    {
+      "name": "idx_users_pets_user_room",
+      "table": "users_pets",
+      "columns": ["user_id", "room_id"],
+      "purpose": "Load a user's pets by inventory or room state"
+    },
+    {
+      "name": "idx_users_pets_room_id",
+      "table": "users_pets",
+      "columns": ["room_id", "id"],
+      "purpose": "Load every pet currently placed in a room"
+    },
+    {
+      "name": "idx_sanctions_habbo_id",
+      "table": "sanctions",
+      "columns": ["habbo_id", "id"],
+      "purpose": "Load a user's sanctions in creation order"
+    },
+    {
+      "name": "idx_sanctions_habbo_trade_lock",
+      "table": "sanctions",
+      "columns": ["habbo_id", "trade_locked_until"],
+      "purpose": "Resolve an active trade lock without scanning all sanctions"
+    },
+    {
+      "name": "idx_messenger_categories_user_id",
+      "table": "messenger_categories",
+      "columns": ["user_id", "id"],
+      "purpose": "Load and authorize a user's Messenger categories"
+    },
+    {
+      "name": "idx_messenger_friendships_user_category",
+      "table": "messenger_friendships",
+      "columns": ["user_one_id", "category", "user_two_id"],
+      "purpose": "Move and reset friends inside a user's categories"
+    },
+    {
+      "name": "idx_wired_rewards_item_user_time",
+      "table": "wired_rewards_given",
+      "columns": ["wired_item", "user_id", "timestamp"],
+      "purpose": "Load recent rewards and delete rewards for a Wired item"
+    },
+    {
+      "name": "idx_users_saved_searches_user_id",
+      "table": "users_saved_searches",
+      "columns": ["user_id", "id"],
+      "purpose": "Load a user's Navigator saved searches"
+    },
+    {
+      "name": "idx_users_wardrobe_user_slot",
+      "table": "users_wardrobe",
+      "columns": ["user_id", "slot_id"],
+      "purpose": "Load and update a user's wardrobe slot"
+    },
+    {
+      "name": "idx_users_achievements_user_name",
+      "table": "users_achievements",
+      "columns": ["user_id", "achievement_name"],
+      "purpose": "Load and update one achievement for a user"
+    },
+    {
+      "name": "idx_guild_forum_threads_guild_id",
+      "table": "guilds_forums_threads",
+      "columns": ["guild_id", "id"],
+      "purpose": "Load and delete forum threads belonging to a guild"
+    },
+    {
+      "name": "idx_marketplace_items_user_id",
+      "table": "marketplace_items",
+      "columns": ["user_id", "id"],
+      "purpose": "Load marketplace offers owned by a user"
+    },
+    {
+      "name": "idx_room_bans_room_user_ends",
+      "table": "room_bans",
+      "columns": ["room_id", "user_id", "ends"],
+      "purpose": "Load and revoke a user's active room ban"
+    },
+    {
+      "name": "idx_room_bans_ends",
+      "table": "room_bans",
+      "columns": ["ends"],
+      "purpose": "Delete expired room bans without a table scan"
+    },
+    {
+      "name": "idx_room_mutes_ends",
+      "table": "room_mutes",
+      "columns": ["ends"],
+      "purpose": "Delete expired room mutes without a table scan"
+    },
+    {
+      "name": "idx_room_votes_user_room",
+      "table": "room_votes",
+      "columns": ["user_id", "room_id"],
+      "purpose": "Load rooms already voted by a user"
+    },
+    {
+      "name": "idx_room_votes_room_id",
+      "table": "room_votes",
+      "columns": ["room_id"],
+      "purpose": "Delete votes belonging to a room"
+    },
+    {
+      "name": "idx_namechange_log_user_time",
+      "table": "namechange_log",
+      "columns": ["user_id", "timestamp"],
+      "purpose": "Load a user's most recent name changes"
+    },
+    {
+      "name": "idx_voucher_history_voucher_id",
+      "table": "voucher_history",
+      "columns": ["voucher_id"],
+      "purpose": "Load redemption history for a voucher"
+    },
+    {
+      "name": "idx_calendar_claims_user_campaign_day",
+      "table": "calendar_rewards_claimed",
+      "columns": ["user_id", "campaign_id", "day"],
+      "purpose": "Load claimed calendar rewards for a user"
+    },
+    {
+      "name": "idx_user_window_settings_user_id",
+      "table": "user_window_settings",
+      "columns": ["user_id"],
+      "purpose": "Load and update a user's client window settings"
+    },
+    {
+      "name": "idx_room_trax_room_item",
+      "table": "room_trax",
+      "columns": ["room_id", "trax_item_id"],
+      "purpose": "Load and clear the Trax items in a room"
+    },
+    {
+      "name": "idx_items_hoppers_item_id",
+      "table": "items_hoppers",
+      "columns": ["item_id"],
+      "purpose": "Resolve and delete hopper configuration by item"
+    },
+    {
+      "name": "idx_items_hoppers_base_item",
+      "table": "items_hoppers",
+      "columns": ["base_item", "item_id"],
+      "purpose": "Find a compatible destination hopper"
+    },
+    {
+      "name": "idx_items_presents_item_id",
+      "table": "items_presents",
+      "columns": ["item_id"],
+      "purpose": "Resolve and delete present configuration by item"
+    }
+  ]
+}

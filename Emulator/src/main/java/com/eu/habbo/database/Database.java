@@ -7,6 +7,10 @@ import com.eu.habbo.database.migrations.MigrationCatalog;
 import com.eu.habbo.database.migrations.MigrationMode;
 import com.eu.habbo.database.migrations.MigrationOptions;
 import com.eu.habbo.database.migrations.MigrationReport;
+import com.eu.habbo.database.schema.DatabaseSchemaValidator;
+import com.eu.habbo.database.schema.SchemaContract;
+import com.eu.habbo.database.schema.SchemaContractLoader;
+import com.eu.habbo.database.schema.SchemaValidationReport;
 import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,6 +62,7 @@ public class Database {
         }
 
         MigrationCatalog catalog = MigrationCatalog.load(Database.class.getClassLoader());
+        SchemaContract schemaContract = SchemaContractLoader.load(Database.class.getClassLoader());
         try (Connection connection = this.dataSource.getConnection()) {
             MigrationReport report = new DatabaseMigrationRunner(
                     connection,
@@ -72,6 +77,12 @@ public class Database {
                     report.packagedVersion(),
                     report.pendingVersions(),
                     report.appliedVersions());
+            SchemaValidationReport schema =
+                    new DatabaseSchemaValidator(connection, schemaContract).validate();
+            LOGGER.info(
+                    "Database schema -> validated {} required tables and {} required columns",
+                    schema.requiredTables(),
+                    schema.requiredColumns());
         }
     }
 

@@ -7,6 +7,14 @@ db.password=root
 db.params=
 # Automatically prepare empty databases and upgrade recognized Arcturus/Polaris hotels.
 db.migrate.on_startup=true
+# Read-only duplicate/orphan audit: off, warn (default) or strict.
+db.integrity.audit.mode=warn
+# Bounded sample rows logged for each finding (0 disables samples).
+db.integrity.audit.sample_limit=5
+# Per-check JDBC timeout. Timeouts are warnings in warn mode and fatal in strict mode.
+db.integrity.audit.query_timeout_seconds=30
+# Overall startup budget, checked between bounded audit queries.
+db.integrity.audit.max_duration_seconds=120
 db.pool.minsize=25
 db.pool.maxsize=100
 

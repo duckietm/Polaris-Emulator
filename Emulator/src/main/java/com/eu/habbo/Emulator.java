@@ -6,6 +6,8 @@ import ch.qos.logback.core.ConsoleAppender;
 import com.eu.habbo.core.*;
 import com.eu.habbo.core.consolecommands.ConsoleCommand;
 import com.eu.habbo.database.Database;
+import com.eu.habbo.database.integrity.DatabaseIntegrityAudit;
+import com.eu.habbo.database.integrity.IntegrityAuditOptions;
 import com.eu.habbo.database.migration.MigrationRunner;
 import com.eu.habbo.database.migration.MigrationException;
 import com.eu.habbo.database.migration.MigrationOptions;
@@ -115,6 +117,7 @@ public final class Emulator {
     public static void main(String[] args) throws Exception {
         try {
             MigrationOptions migrationOptions = MigrationOptions.parse(args);
+            IntegrityAuditOptions integrityAuditOptions = IntegrityAuditOptions.parse(args);
             boolean styledConsole = shouldStyleConsole(
                     System.getenv(),
                     System.console() != null,
@@ -144,6 +147,10 @@ public final class Emulator {
             if (Emulator.getDatabase() != null && Emulator.getDatabase().getDataSource() != null) {
                 if (migrationOptions.mode() == MigrationOptions.Mode.VALIDATE) {
                     System.out.print(MigrationRunner.statusAtStartup(Emulator.getDatabase().getDataSource()));
+                    DatabaseIntegrityAudit.auditAtStartup(
+                            Emulator.getDatabase().getDataSource(),
+                            Emulator.getConfig(),
+                            integrityAuditOptions);
                     Emulator.database.dispose();
                     return;
                 }
@@ -154,6 +161,11 @@ public final class Emulator {
                 } else {
                     MigrationRunner.runAtStartup(Emulator.getDatabase().getDataSource(), Emulator.getConfig());
                 }
+
+                DatabaseIntegrityAudit.auditAtStartup(
+                        Emulator.getDatabase().getDataSource(),
+                        Emulator.getConfig(),
+                        integrityAuditOptions);
 
                 if (migrationOptions.migrationsOnly()) {
                     LOGGER.info("[migrate] Database migration completed; --migrations-only requested, so the emulator will not start.");

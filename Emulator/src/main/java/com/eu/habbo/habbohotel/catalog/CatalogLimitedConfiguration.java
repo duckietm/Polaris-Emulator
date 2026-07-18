@@ -18,6 +18,9 @@ public class CatalogLimitedConfiguration implements Runnable {
     private final int itemId;
     private final LinkedList<Integer> limitedNumbers;
     private int totalSet;
+    // Page the item lived on before a committed sale moved it to the sold-out page,
+    // so a later compensated legacy purchase can move it back.
+    private int soldOutFromPageId = 0;
 
     public CatalogLimitedConfiguration(int itemId, LinkedList<Integer> availableNumbers, int totalSet) {
         this.itemId = itemId;
@@ -34,6 +37,38 @@ public class CatalogLimitedConfiguration implements Runnable {
     public int getNumber() {
         synchronized (this.limitedNumbers) {
             return this.limitedNumbers.pop();
+        }
+    }
+
+    /**
+     * Returns a drawn number to the available pool when a purchase that reserved
+     * it did not complete, so a failed/compensated limited purchase does not
+     * permanently shrink the stock. If drawing the number had emptied the pool
+     * and moved the item to the sold-out page, the item is moved back.
+     */
+    public void restoreNumber(int catalogItemId, int number) {
+        synchronized (this.limitedNumbers) {
+            if (!this.limitedNumbers.contains(number)) this.limitedNumbers.push(number);
+
+            if (this.soldOutFromPageId > 0) {
+                CatalogItem catalogItem = Emulator.getGameEnvironment().getCatalogManager().getCatalogItem(this.itemId);
+                if (catalogItem != null) {
+                    Emulator.getGameEnvironment().getCatalogManager().moveCatalogItem(catalogItem, this.soldOutFromPageId);
+                }
+                this.soldOutFromPageId = 0;
+            }
+
+            // Clear any reservation limitedSold may have written for this number so
+            // the DB row matches the returned-to-pool in-memory state. A no-op when
+            // the row is still unsold (user_id = 0).
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                 PreparedStatement statement = connection.prepareStatement("UPDATE catalog_items_limited SET user_id = 0, timestamp = 0, item_id = 0 WHERE catalog_item_id = ? AND number = ? LIMIT 1")) {
+                statement.setInt(1, catalogItemId);
+                statement.setInt(2, number);
+                statement.execute();
+            } catch (SQLException e) {
+                LOGGER.error("Caught SQL exception restoring limited number", e);
+            }
         }
     }
 
@@ -70,9 +105,12 @@ public class CatalogLimitedConfiguration implements Runnable {
     public void markSoldOutIfEmpty() {
         synchronized (this.limitedNumbers) {
             if (this.limitedNumbers.isEmpty()) {
-                Emulator.getGameEnvironment().getCatalogManager().moveCatalogItem(
-                        Emulator.getGameEnvironment().getCatalogManager().getCatalogItem(this.itemId),
-                        Emulator.getConfig().getInt("catalog.ltd.page.soldout"));
+                CatalogItem catalogItem = Emulator.getGameEnvironment().getCatalogManager().getCatalogItem(this.itemId);
+                if (catalogItem != null) {
+                    this.soldOutFromPageId = catalogItem.getPageId();
+                    Emulator.getGameEnvironment().getCatalogManager().moveCatalogItem(
+                            catalogItem, Emulator.getConfig().getInt("catalog.ltd.page.soldout"));
+                }
             }
         }
     }

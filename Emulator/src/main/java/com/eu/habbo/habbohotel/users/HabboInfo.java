@@ -293,6 +293,44 @@ public class HabboInfo implements Runnable {
         this.run();
     }
 
+    /**
+     * Atomically debits the two currencies used by a catalog order. The
+     * affordability check and both mutations share the wallet lock, so two
+     * concurrent purchase paths cannot both spend the same balance.
+     */
+    public boolean tryDebitCatalogPayment(int credits, int pointsType, int points) {
+        if (credits < 0 || points < 0) {
+            return false;
+        }
+
+        synchronized (this.currencyLock) {
+            int currentPoints = this.currencies.get(pointsType);
+            if (this.credits < credits || currentPoints < points) {
+                return false;
+            }
+
+            this.credits -= credits;
+            this.currencies.put(pointsType, currentPoints - points);
+        }
+
+        this.run();
+        return true;
+    }
+
+    /** Restores a catalog debit after delivery failed. */
+    public void refundCatalogPayment(int credits, int pointsType, int points) {
+        if (credits < 0 || points < 0) {
+            throw new IllegalArgumentException("catalog refund cannot be negative");
+        }
+
+        synchronized (this.currencyLock) {
+            this.credits = Math.addExact(this.credits, credits);
+            this.currencies.put(pointsType, Math.addExact(this.currencies.get(pointsType), points));
+        }
+
+        this.run();
+    }
+
     public void setCurrencyAmount(int type, int amount) {
         synchronized (this.currencyLock) {
             this.currencies.put(type, amount);

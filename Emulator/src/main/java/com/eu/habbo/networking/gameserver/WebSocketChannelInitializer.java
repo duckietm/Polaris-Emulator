@@ -26,40 +26,14 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
-import io.netty.util.concurrent.DefaultEventExecutorGroup;
-import io.netty.util.concurrent.DefaultThreadFactory;
-import io.netty.util.concurrent.EventExecutorGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLEngine;
-import java.util.concurrent.TimeUnit;
 
 public class WebSocketChannelInitializer extends ChannelInitializer<SocketChannel> {
     private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketChannelInitializer.class);
     private static final int MAX_FRAME_SIZE = 500000;
-
-    // Runs the game packet handler OFF the Netty I/O event loop, so a blocking
-    // handler (login/friends/catalog/guild JDBC, A* pathfinding, etc.) can no
-    // longer stall socket I/O for every other client sharing that I/O thread.
-    // A DefaultEventExecutorGroup pins each channel to one executor, so a single
-    // client's packets stay strictly ordered (no new intra-client races); the
-    // cross-client concurrency degree is the same the multi-threaded I/O group
-    // already had. Daemon threads so they don't block JVM shutdown.
-    private static final EventExecutorGroup PACKET_HANDLER_GROUP = new DefaultEventExecutorGroup(
-            packetHandlerThreads(),
-            new DefaultThreadFactory("GamePacketHandler", true));
-
-    // Size of the packet-handler pool. Defaults to max(16, 2x CPU cores); set
-    // the optional `io.packet.handler.threads` config key to override.
-    private static int packetHandlerThreads() {
-        int fallback = Math.max(16, Runtime.getRuntime().availableProcessors() * 2);
-        if (Emulator.getConfig() == null) {
-            return fallback;
-        }
-        int configured = Emulator.getConfig().getInt("io.packet.handler.threads", fallback);
-        return configured > 0 ? configured : fallback;
-    }
 
     private final SslContext sslContext;
     private final boolean sslEnabled;
@@ -111,7 +85,7 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
 
         ch.pipeline().addLast("idleEventHandler", new IdleTimeoutHandler(30, 60));
         ch.pipeline().addLast(new GameMessageRateLimit());
-        ch.pipeline().addLast(PACKET_HANDLER_GROUP, "gameMessageHandler", new GameMessageHandler());
+        ch.pipeline().addLast(GamePacketExecutionGroup.get(), "gameMessageHandler", new GameMessageHandler());
         ch.pipeline().addLast("messageEncoder", new GameServerMessageEncoder());
 
         if (PacketManager.DEBUG_SHOW_PACKETS) {
@@ -123,12 +97,4 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
         return this.sslEnabled;
     }
 
-    /** Gracefully stop the off-I/O packet handler pool (call before worker/boss shutdown). */
-    public static void shutdownPacketHandlers() {
-        try {
-            PACKET_HANDLER_GROUP.shutdownGracefully(100, 3000, TimeUnit.MILLISECONDS).syncUninterruptibly();
-        } catch (Exception e) {
-            LOGGER.warn("Packet handler group shutdown interrupted", e);
-        }
-    }
 }

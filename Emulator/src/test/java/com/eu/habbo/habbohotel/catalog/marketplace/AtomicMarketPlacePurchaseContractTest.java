@@ -19,8 +19,9 @@ class AtomicMarketPlacePurchaseContractTest {
         assertTrue(source.contains("setAutoCommit(false)"));
         assertTrue(source.contains("UPDATE marketplace_items SET state = 2, sold_timestamp = ? WHERE id = ? AND state = 1"));
         assertTrue(source.contains("UPDATE items SET user_id = ? WHERE id = ?"));
-        assertTrue(source.contains("UPDATE users SET credits = credits - ? WHERE id = ? AND credits >= ?"));
-        assertTrue(source.contains("UPDATE users_currency SET amount = amount - ? WHERE user_id = ? AND type = ? AND amount >= ?"));
+        assertTrue(source.contains("EconomyLedger.apply(connection"));
+        assertTrue(source.contains("\"marketplace:offer:\" + offerId + \":buyer\""));
+        assertTrue(source.contains("\"catalog.marketplace.buy\""));
         assertTrue(source.contains("connection.commit()"));
         assertTrue(source.contains("connection.rollback()"));
     }

@@ -50,7 +50,9 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
             int readableBytes = data.readableBytes();
             int maxPayloadBytes = maxPayloadBytes();
             if (readableBytes > maxPayloadBytes) {
-                writeAndClose(ctx, "PAYLOAD_TOO_LARGE");
+                writeAndClose(ctx, RconResponse.error(
+                        com.eu.habbo.messages.rcon.RCONMessage.STATUS_ERROR,
+                        "payload too large").toJson(GSON));
                 LOGGER.warn("Rejected oversized RCON payload: {} bytes (max {})", readableBytes, maxPayloadBytes);
                 return;
             }
@@ -59,7 +61,9 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
             data.getBytes(0, d);
             String message = new String(d, java.nio.charset.StandardCharsets.UTF_8);
             Gson gson = GSON;
-            String response = "ERROR";
+            String response = RconResponse.error(
+                    com.eu.habbo.messages.rcon.RCONMessage.STATUS_ERROR,
+                    "invalid request").toJson(GSON);
             String key = "";
             try {
                 JsonObject object = gson.fromJson(message, JsonObject.class);
@@ -69,7 +73,7 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
                 LOGGER.error("Unknown RCON Message: {}", key);
             } catch (Exception e) {
                 LOGGER.error("Invalid RCON Message: {}", message);
-            LOGGER.error("Caught exception", e);
+                LOGGER.error("Caught exception", e);
             }
 
             writeAndClose(ctx, response);

@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "transport": "tcp-json",
+  "request": {
+    "key": "string",
+    "data": "object"
+  },
+  "response": {
+    "status": "integer",
+    "message": "string"
+  },
+  "statuses": {
+    "ok": 0,
+    "error": 1,
+    "systemError": 2
+  },
+  "commandNormalization": "remove underscores and lowercase",
+  "commands": [
+    "alertuser",
+    "disconnect",
+    "forwarduser",
+    "givebadge",
+    "givecredits",
+    "givepixels",
+    "givepoints",
+    "hotelalert",
+    "sendgift",
+    "sendroombundle",
+    "setrank",
+    "updatewordfilter",
+    "updatewheel",
+    "updatesoundboard",
+    "updatecatalog",
+    "executecommand",
+    "progressachievement",
+    "updateuser",
+    "friendrequest",
+    "imagehotelalert",
+    "imagealertuser",
+    "stalkuser",
+    "staffalert",
+    "modticket",
+    "talkuser",
+    "changeroomowner",
+    "muteuser",
+    "giverespect",
+    "ignoreuser",
+    "setmotto",
+    "giveuserclothing",
+    "modifysubscription",
+    "changeusername",
+    "updateitems"
+  ]
+}

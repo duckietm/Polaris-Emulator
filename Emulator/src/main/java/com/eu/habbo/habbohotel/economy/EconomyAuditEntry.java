@@ -3,7 +3,9 @@ package com.eu.habbo.habbohotel.economy;
 public record EconomyAuditEntry(
         String operationId,
         int userId,
+        Integer actorId,
         String operation,
+        String reason,
         int currencyType,
         int amount,
         int balanceBefore,
@@ -20,12 +22,29 @@ public record EconomyAuditEntry(
         return new EconomyAuditEntry(
                 "furniture-redeem:" + itemId,
                 userId,
+                userId,
                 "furniture_redeem",
+                "furniture.redeem",
                 currencyType,
                 amount,
                 balanceBefore,
                 balanceAfter,
                 itemId,
                 itemName == null ? "" : itemName);
+    }
+
+    public static EconomyAuditEntry from(EconomyOperation operation, int balanceBefore, int balanceAfter) {
+        return new EconomyAuditEntry(
+                operation.operationId(),
+                operation.userId(),
+                operation.actorId(),
+                operation.operation(),
+                operation.reason(),
+                operation.currencyType(),
+                operation.delta(),
+                balanceBefore,
+                balanceAfter,
+                operation.itemId(),
+                operation.context());
     }
 }

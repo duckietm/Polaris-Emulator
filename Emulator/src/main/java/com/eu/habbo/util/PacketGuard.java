@@ -22,4 +22,17 @@ public final class PacketGuard {
         long requiredBytes = (long) entryCount * bytesPerEntry;
         return requiredBytes <= Integer.MAX_VALUE && packet.bytesAvailable() >= requiredBytes;
     }
+
+    /**
+     * Validates a packet-supplied count of 4-byte (int) entries before it is used
+     * to allocate a collection or drive repeated reads: the count must be within
+     * {@code [0, maxCount]} and the packet must still hold {@code count * 4} bytes.
+     */
+    public static boolean isValidIntList(int count, int bytesAvailable, int maxCount) {
+        if (count < 0 || count > maxCount || bytesAvailable < 0) {
+            return false;
+        }
+
+        return (long) count * Integer.BYTES <= bytesAvailable;
+    }
 }

@@ -7,6 +7,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class RoomTradeSafetyContractTest {
     private static String roomTradeSource() throws Exception {
@@ -64,5 +66,31 @@ class RoomTradeSafetyContractTest {
         assertTrue(!RoomTrade.allOwnershipUpdatesSucceeded(new int[]{1, 0}, 2));
         assertTrue(!RoomTrade.allOwnershipUpdatesSucceeded(new int[]{1}, 2));
         assertTrue(!RoomTrade.allOwnershipUpdatesSucceeded(new int[]{Statement.EXECUTE_FAILED}, 1));
+    }
+
+    @Test
+    void creditFurniTotalsRejectOverflow() {
+        assertEquals(300, RoomTrade.checkedAddCreditValue(100, 200));
+        assertThrows(IllegalArgumentException.class,
+                () -> RoomTrade.checkedAddCreditValue(Integer.MAX_VALUE, 1));
+        assertThrows(IllegalArgumentException.class,
+                () -> RoomTrade.checkedAddCreditValue(0, -1));
+    }
+
+    @Test
+    void creditValueIsPreflightedBeforeOwnershipTransferAndItemDeletion() throws Exception {
+        String source = roomTradeSource();
+        String transaction = transactionSource();
+        int total = source.indexOf("creditsForUserTwo = checkedCreditTotal(itemsUserOne)");
+        int recipientBalance = source.indexOf("checkedRecipientBalance(userTwo, creditsForUserTwo)", total);
+        int transactionExecution = source.indexOf("RoomTradeTransaction.execute(", recipientBalance);
+        int ownershipSql = transaction.indexOf("UPDATE items SET user_id = ?");
+        int deleteCreditFurni = transaction.indexOf("DELETE FROM items", ownershipSql);
+
+        assertTrue(total > -1, "trade must calculate credit-furni value before mutation");
+        assertTrue(recipientBalance > total, "trade must verify the recipient wallet can represent the payout");
+        assertTrue(transactionExecution > recipientBalance, "preflight must happen before the transaction");
+        assertTrue(ownershipSql > -1, "transaction must guard ownership updates");
+        assertTrue(deleteCreditFurni > ownershipSql, "credit furni may only be deleted after safe preflight");
     }
 }

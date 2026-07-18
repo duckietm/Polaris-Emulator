@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.users.WalletBalanceMath;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.catalog.marketplace.RequestOffersEvent;
 import com.eu.habbo.messages.outgoing.catalog.marketplace.MarketplaceBuyErrorComposer;
@@ -296,7 +297,8 @@ public class MarketPlace {
                                         HabboItem item = Emulator.getGameEnvironment().getItemManager().loadHabboItem(itemSet);
 
                                         MarketPlaceItemSoldEvent event = new MarketPlaceItemSoldEvent(habbo, client.getHabbo(), item, set.getInt("price"));
-                                        if (Emulator.getPluginManager().fireEvent(event).isCancelled()) {
+                                        if (Emulator.getPluginManager().fireEvent(event).isCancelled()
+                                                || !isValidListingPrice(event.price)) {
                                             return;
                                         }
 
@@ -412,17 +414,44 @@ public class MarketPlace {
 
 
     public static void getCredits(GameClient client) {
-        int credits = 0;
-
         Set<MarketPlaceOffer> offers = new HashSet<>();
         offers.addAll(client.getHabbo().getInventory().getMarketplaceItems());
+
+        long claimable = 0;
+        for (MarketPlaceOffer offer : offers) {
+            if (offer.getState().equals(MarketPlaceState.SOLD)) {
+                if (offer.getPrice() < 0) {
+                    LOGGER.warn("Rejected negative marketplace payout for offer {}", offer.getOfferId());
+                    return;
+                }
+                claimable += offer.getPrice();
+            }
+        }
+
+        int currentBalance = MARKETPLACE_CURRENCY == 0
+                ? client.getHabbo().getHabboInfo().getCredits()
+                : client.getHabbo().getHabboInfo().getCurrencyAmount(MARKETPLACE_CURRENCY);
+        if (claimable > Integer.MAX_VALUE) {
+            LOGGER.warn("Marketplace payout for user {} exceeds wallet range: {}",
+                    client.getHabbo().getHabboInfo().getId(), claimable);
+            return;
+        }
+        try {
+            WalletBalanceMath.checkedBalance(currentBalance, (int) claimable);
+        } catch (IllegalArgumentException e) {
+            LOGGER.warn("Marketplace payout for user {} would overflow wallet: current={}, payout={}",
+                    client.getHabbo().getHabboInfo().getId(), currentBalance, claimable);
+            return;
+        }
+
+        int credits = 0;
 
         synchronized (client.getHabbo().getInventory()) {
             for (MarketPlaceOffer offer : offers) {
                 if (offer.getState().equals(MarketPlaceState.SOLD)) {
                     if (removeUser(offer)) {
                         client.getHabbo().getInventory().removeMarketplaceOffer(offer);
-                        credits += offer.getPrice();
+                        credits = WalletBalanceMath.checkedBalance(credits, offer.getPrice());
                         offer.needsUpdate(true);
                         Emulator.getThreading().run(offer);
                     }
@@ -459,12 +488,14 @@ public class MarketPlace {
     private static PreparedCharge prepareMarketplaceCharge(Habbo buyer, int price) {
         if (MARKETPLACE_CURRENCY == 0) {
             UserCreditsEvent event = new UserCreditsEvent(buyer, -price);
-            if (Emulator.getPluginManager().fireEvent(event).isCancelled() || event.credits >= 0) return null;
+            if (Emulator.getPluginManager().fireEvent(event).isCancelled()
+                    || event.credits != -price) return null;
             return new PreparedCharge(-1, event.credits);
         }
 
         UserPointsEvent event = new UserPointsEvent(buyer, -price, MARKETPLACE_CURRENCY);
-        if (Emulator.getPluginManager().fireEvent(event).isCancelled() || event.points >= 0) return null;
+        if (Emulator.getPluginManager().fireEvent(event).isCancelled()
+                || event.type != MARKETPLACE_CURRENCY || event.points != -price) return null;
         return new PreparedCharge(event.type, event.points);
     }
 

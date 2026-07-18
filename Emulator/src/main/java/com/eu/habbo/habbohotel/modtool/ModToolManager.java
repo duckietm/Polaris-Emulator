@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.modtool;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.gameclients.SessionResumeManager;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.permissions.Rank;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -469,6 +470,12 @@ public class ModToolManager {
         if (target != null) {
             Emulator.getGameServer().getGameClientManager().forceDisposeClient(target.getClient());
         }
+
+        // A parked/ghost session keeps the Habbo resumable during the reconnect
+        // grace window, and its client was already detached so forceDisposeClient
+        // above is a no-op for it. Evict it explicitly so a ban applied while the
+        // target is parked cannot be resumed.
+        SessionResumeManager.getInstance().disposeGhostSession(targetUserId);
 
         if ((type == ModToolBanType.IP || type == ModToolBanType.SUPER) && target != null && !ban.ip.equals("offline")) {
             for (Habbo h : Emulator.getGameServer().getGameClientManager().getHabbosWithIP(ban.ip)) {

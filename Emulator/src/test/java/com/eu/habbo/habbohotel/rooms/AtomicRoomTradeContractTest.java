@@ -23,7 +23,8 @@ class AtomicRoomTradeContractTest {
         assertTrue(begin > -1, "trade persistence must disable autocommit");
         assertTrue(source.contains("UPDATE items SET user_id = ? WHERE id = ? AND user_id = ? LIMIT 1"));
         assertTrue(source.contains("DELETE FROM items WHERE id = ? AND user_id = ? LIMIT 1"));
-        assertTrue(source.contains("UPDATE users SET credits = credits + ? WHERE id = ?"));
+        assertTrue(source.contains("EconomyLedger.apply(connection"));
+        assertTrue(source.contains("\"room.trade.credit_furni\""));
         assertTrue(persist > begin, "furni must be persisted inside the transaction");
         assertTrue(credit > persist, "trade credits must be granted after item persistence");
         assertTrue(commit > credit, "the transaction must commit only after every economy mutation");

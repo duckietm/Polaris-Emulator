@@ -90,6 +90,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class PacketManager {
 
@@ -206,14 +207,31 @@ public class PacketManager {
                 final MessageHandler handler = handlerClass.getDeclaredConstructor().newInstance();
 
                 if (handler.getRatelimit() > 0) {
-                    if (client.messageTimestamps.containsKey(handlerClass) && System.currentTimeMillis() - client.messageTimestamps.get(handlerClass) < handler.getRatelimit()) {
+                    long now = System.currentTimeMillis();
+                    String rateLimitGroup = handler.getRatelimitGroup();
+                    boolean rateLimited;
+
+                    if (rateLimitGroup != null && !rateLimitGroup.isBlank()) {
+                        rateLimited = !acquireGroupedRateLimit(
+                                client.groupedMessageRateLimitDeadlines,
+                                rateLimitGroup,
+                                handler.getRatelimit(),
+                                now);
+                    } else {
+                        rateLimited = client.messageTimestamps.containsKey(handlerClass)
+                                && now - client.messageTimestamps.get(handlerClass) < handler.getRatelimit();
+                    }
+
+                    if (rateLimited) {
                         if (PacketManager.DEBUG_SHOW_PACKETS) {
                             LOGGER.warn("Client packet {} was ratelimited.", packet.getMessageId());
                         }
 
                         return;
-                    } else {
-                        client.messageTimestamps.put(handlerClass, System.currentTimeMillis());
+                    }
+
+                    if (rateLimitGroup == null || rateLimitGroup.isBlank()) {
+                        client.messageTimestamps.put(handlerClass, now);
                     }
                 }
 
@@ -237,6 +255,23 @@ public class PacketManager {
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
         }
+    }
+
+    static boolean acquireGroupedRateLimit(Map<String, Long> deadlines, String group, long cooldownMs, long nowMs) {
+        if (deadlines == null || group == null || group.isBlank() || cooldownMs <= 0) {
+            return true;
+        }
+
+        AtomicBoolean acquired = new AtomicBoolean(false);
+        deadlines.compute(group, (key, deadline) -> {
+            if (deadline != null && deadline > nowMs) {
+                return deadline;
+            }
+
+            acquired.set(true);
+            return cooldownMs > Long.MAX_VALUE - nowMs ? Long.MAX_VALUE : nowMs + cooldownMs;
+        });
+        return acquired.get();
     }
 
     boolean isRegistered(int header) {

@@ -1,6 +1,9 @@
 package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.economy.EconomyLedger;
+import com.eu.habbo.habbohotel.economy.EconomyOperation;
+import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 
@@ -14,7 +17,6 @@ import java.util.Collection;
 final class RoomTradeTransaction {
     private static final String TRANSFER_ITEM = "UPDATE items SET user_id = ? WHERE id = ? AND user_id = ? LIMIT 1";
     private static final String REDEEM_ITEM = "DELETE FROM items WHERE id = ? AND user_id = ? LIMIT 1";
-    private static final String CREDIT_USER = "UPDATE users SET credits = credits + ? WHERE id = ?";
 
     private RoomTradeTransaction() {
     }
@@ -25,6 +27,7 @@ final class RoomTradeTransaction {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
             connection.setAutoCommit(false);
             try {
+                String operationId = EconomyOperationId.create("room-trade");
                 int tradeId = logTrades
                         ? insertTradeLog(connection, userOne, userTwo, userOneItems.size(), userTwoItems.size())
                         : 0;
@@ -33,8 +36,10 @@ final class RoomTradeTransaction {
                         userOneItems, logTrades);
                 persistItems(connection, tradeId, userTwo.getHabboInfo().getId(), userOne.getHabboInfo().getId(),
                         userTwoItems, logTrades);
-                creditUser(connection, userOne.getHabboInfo().getId(), creditsForUserOne);
-                creditUser(connection, userTwo.getHabboInfo().getId(), creditsForUserTwo);
+                creditUser(connection, operationId, userOne.getHabboInfo().getId(), creditsForUserOne,
+                        userTwo.getHabboInfo().getId(), tradeId);
+                creditUser(connection, operationId, userTwo.getHabboInfo().getId(), creditsForUserTwo,
+                        userOne.getHabboInfo().getId(), tradeId);
 
                 connection.commit();
                 return true;
@@ -99,12 +104,18 @@ final class RoomTradeTransaction {
         }
     }
 
-    private static void creditUser(Connection connection, int userId, int credits) throws SQLException {
+    private static void creditUser(Connection connection, String operationId, int userId, int credits,
+                                   int actorId, int tradeId) throws SQLException {
         if (credits <= 0) return;
-        try (PreparedStatement statement = connection.prepareStatement(CREDIT_USER)) {
-            statement.setInt(1, credits);
-            statement.setInt(2, userId);
-            if (statement.executeUpdate() != 1) throw new SQLException("Unable to credit trade recipient " + userId);
-        }
+        EconomyLedger.apply(connection, new EconomyOperation(
+                operationId + ":recipient:" + userId,
+                userId,
+                actorId,
+                "trade_credit_conversion",
+                "room.trade.credit_furni",
+                EconomyLedger.CREDITS,
+                credits,
+                null,
+                "tradeId=" + tradeId));
     }
 }

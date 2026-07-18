@@ -15,6 +15,11 @@ public class PurchaseTargetOfferEvent extends MessageHandler {
     }
 
     @Override
+    public String getRatelimitGroup() {
+        return "catalog.purchase";
+    }
+
+    @Override
     public void handle() throws Exception {
         final int offerId = this.packet.readInt();
         int amount = this.packet.readInt();

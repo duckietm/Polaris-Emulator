@@ -24,8 +24,10 @@ class AtomicCatalogPurchaseContractTest {
         assertTrue(credit > persist);
         assertTrue(points > credit);
         assertTrue(commit > points);
-        assertTrue(source.contains("UPDATE users SET credits = credits - ? WHERE id = ? AND credits >= ?"));
-        assertTrue(source.contains("UPDATE users_currency SET amount = amount - ? WHERE user_id = ? AND type = ? AND amount >= ?"));
+        assertTrue(source.contains("EconomyLedger.apply(connection"));
+        assertTrue(source.contains("\"catalog.purchase\""));
+        assertTrue(source.contains("operationId + \":credits\""));
+        assertTrue(source.contains("operationId + \":points\""));
         assertTrue(source.contains("connection.rollback()"));
     }
 

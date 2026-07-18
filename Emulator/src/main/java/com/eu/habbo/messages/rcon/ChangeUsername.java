@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.users.UserDataComposer;
 import com.google.gson.Gson;
+import jakarta.validation.constraints.Positive;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +63,7 @@ public class ChangeUsername extends RCONMessage<ChangeUsername.JSON> {
     }
 
     static class JSON {
+        @Positive(message = "invalid user")
         public int user_id;
 
         public boolean canChange;

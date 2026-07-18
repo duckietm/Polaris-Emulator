@@ -1,16 +1,15 @@
 package com.eu.habbo.messages.rcon;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.economy.EconomyLedger;
+import com.eu.habbo.habbohotel.economy.EconomyOperation;
+import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.google.gson.Gson;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 
 public class GivePoints extends RCONMessage<GivePoints.JSONGivePoints> {
     private static final Logger LOGGER = LoggerFactory.getLogger(GivePoints.class);
@@ -38,9 +37,10 @@ public class GivePoints extends RCONMessage<GivePoints.JSONGivePoints> {
         }
 
         Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(object.user_id);
+        String operationId = EconomyOperationId.create("rcon:currency:" + object.user_id + ":" + object.type);
 
         if (habbo != null) {
-            habbo.givePoints(object.type, object.points);
+            habbo.givePoints(object.type, object.points, "rcon.givepoints", operationId, null);
         } else {
             if (!RconUserLookup.userExists(object.user_id)) {
                 this.status = RCONMessage.HABBO_NOT_FOUND;
@@ -48,13 +48,11 @@ public class GivePoints extends RCONMessage<GivePoints.JSONGivePoints> {
                 return;
             }
 
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO users_currency (`user_id`, `type`, `amount`) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE amount = amount + ?")) {
-                statement.setInt(1, object.user_id);
-                statement.setInt(2, object.type);
-                statement.setInt(3, object.points);
-                statement.setInt(4, object.points);
-                statement.execute();
-            } catch (SQLException e) {
+            try {
+                EconomyLedger.execute(new EconomyOperation(
+                        operationId, object.user_id, null, "currency_grant", "rcon.givepoints",
+                        object.type, object.points, null, ""));
+            } catch (Exception e) {
                 this.status = RCONMessage.SYSTEM_ERROR;
                 LOGGER.error("Caught SQL exception", e);
             }

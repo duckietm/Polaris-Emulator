@@ -30,8 +30,10 @@ class RCONServerHandlerContractTest {
                 "RCON rate limiters must expire instead of growing forever");
         assertTrue(source.contains(".acquirePermission()"),
                 "RCON handler must consume a Resilience4j permit before dispatching commands");
-        assertTrue(source.contains("RATE_LIMITED"),
-                "RCON callers need a deterministic response when the rate limit rejects a request");
+        assertTrue(source.contains("RconResponse.error"),
+                "RCON rate-limit failures must use the shared JSON response envelope");
+        assertTrue(source.contains("rate limited"),
+                "RCON callers need a deterministic message when the rate limit rejects a request");
     }
 
     @Test
@@ -68,8 +70,10 @@ class RCONServerHandlerContractTest {
         assertTrue(maxPayload > readableBytes, "RCON handler must resolve max payload before allocation");
         assertTrue(oversizedGuard > maxPayload, "RCON handler must reject oversized payloads");
         assertTrue(oversizedGuard < byteArray, "Oversized RCON payloads must be rejected before byte array allocation");
-        assertTrue(handler.contains("PAYLOAD_TOO_LARGE"),
-                "RCON callers need a deterministic response for oversized payloads");
+        assertTrue(handler.contains("RconResponse.error"),
+                "Oversized payload failures must use the shared JSON response envelope");
+        assertTrue(handler.contains("payload too large"),
+                "RCON callers need a deterministic message for oversized payloads");
         assertTrue(emulator.contains("register(\"rcon.max_payload_bytes\", \"65536\")"),
                 "RCON max payload default must be registered before startup");
     }

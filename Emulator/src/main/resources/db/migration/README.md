@@ -35,6 +35,10 @@ credentials use a short-lived owner-only option file and never appear in the
 command line or metadata. A dump failure or timeout prevents Flyway from
 baselining or applying anything.
 
+The dump target is derived from the same raw JDBC datasource that Flyway will
+migrate, so embedded/test launchers and plugin wrappers cannot accidentally
+back up a different database through stale or incomplete config keys.
+
 Configure the archive directory, retention, timeout and executable with the
 `db.migrations.backup.*` keys in `config.ini`. The feature is enabled by
 default; disable it only when an independently verified backup system protects

@@ -2,6 +2,7 @@ package com.eu.habbo.database.backup;
 
 import com.eu.habbo.core.ConfigurationManager;
 import com.google.gson.Gson;
+import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,10 +73,17 @@ public final class MariaDbMigrationBackup implements MigrationBackup {
         this.clock = java.util.Objects.requireNonNull(clock, "clock");
     }
 
-    public static MigrationBackup resolve(ConfigurationManager config) {
+    public static MigrationBackup resolve(
+            ConfigurationManager config,
+            HikariDataSource migrationDataSource) {
         DatabaseBackupOptions options = DatabaseBackupOptions.resolve(config);
         if (!options.enabled()) return MigrationBackup.disabled();
-        return new MariaDbMigrationBackup(options, DatabaseBackupRequest.resolve(config));
+        return new MariaDbMigrationBackup(
+                options,
+                DatabaseBackupRequest.fromJdbc(
+                        migrationDataSource.getJdbcUrl(),
+                        migrationDataSource.getUsername(),
+                        migrationDataSource.getPassword()));
     }
 
     @Override

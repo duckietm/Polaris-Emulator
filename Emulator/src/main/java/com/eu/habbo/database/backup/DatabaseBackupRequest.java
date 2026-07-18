@@ -1,7 +1,7 @@
 package com.eu.habbo.database.backup;
 
-import com.eu.habbo.core.ConfigurationManager;
-
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Objects;
 
 public record DatabaseBackupRequest(
@@ -24,14 +24,36 @@ public record DatabaseBackupRequest(
         }
     }
 
-    public static DatabaseBackupRequest resolve(ConfigurationManager config) {
-        Objects.requireNonNull(config, "config");
+    public static DatabaseBackupRequest fromJdbc(
+            String jdbcUrl,
+            String username,
+            String password) {
+        Objects.requireNonNull(jdbcUrl, "jdbcUrl");
+        if (!jdbcUrl.startsWith("jdbc:mariadb://")) {
+            throw new IllegalArgumentException(
+                    "database backup requires a single-host jdbc:mariadb:// URL");
+        }
+
+        URI target;
+        try {
+            target = new URI(jdbcUrl.substring("jdbc:".length()));
+        } catch (URISyntaxException error) {
+            throw new IllegalArgumentException("database backup JDBC URL is invalid", error);
+        }
+
+        String path = target.getPath();
+        String database = path == null || path.length() <= 1 ? "" : path.substring(1);
+        if (database.contains("/")) {
+            throw new IllegalArgumentException(
+                    "database backup JDBC URL must identify exactly one database");
+        }
+
         return new DatabaseBackupRequest(
-                config.getValue("db.hostname", "localhost"),
-                config.getInt("db.port", 3306),
-                config.getValue("db.database"),
-                config.getValue("db.username"),
-                config.getValue("db.password"));
+                Objects.requireNonNullElse(target.getHost(), ""),
+                target.getPort() == -1 ? 3306 : target.getPort(),
+                database,
+                Objects.requireNonNullElse(username, ""),
+                Objects.requireNonNullElse(password, ""));
     }
 
     private static String safe(String value, String field) {

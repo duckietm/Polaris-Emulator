@@ -60,7 +60,9 @@ public final class MigrationRunner {
         // The runtime datasource rewrites legacy plugin SQL. Migrations require an
         // unwrapped pool so their DDL cannot be silently translated.
         try (HikariDataSource rawMigrationDataSource = rawMigrationDataSource(runtimeDataSource)) {
-            return migrate(rawMigrationDataSource, MariaDbMigrationBackup.resolve(config));
+            return migrate(
+                    rawMigrationDataSource,
+                    MariaDbMigrationBackup.resolve(config, rawMigrationDataSource));
         }
     }
 

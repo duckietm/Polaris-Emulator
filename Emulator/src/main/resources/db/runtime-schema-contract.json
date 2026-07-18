@@ -56,7 +56,7 @@
     "items_hoppers": ["base_item", "item_id"],
     "items_presents": ["base_item_reward", "item_id"],
     "items_teleports": ["teleport_one_id", "teleport_two_id"],
-    "logs_economy": ["amount", "balance_after", "balance_before", "context", "created_at", "currency_type", "id", "item_id", "operation", "operation_id", "user_id"],
+    "logs_economy": ["actor_id", "amount", "balance_after", "balance_before", "context", "created_at", "currency_type", "id", "item_id", "operation", "operation_id", "reason", "user_id"],
     "logs_hc_payday": ["claimed", "currency", "hc_streak", "id", "reward_coins_spent", "reward_streak", "timestamp", "total_coins_spent", "total_payout", "user_id"],
     "logs_shop_purchases": ["amount", "catalog_item_id", "catalog_name", "cost_credits", "cost_points", "id", "item_ids", "points_type", "timestamp", "user_id"],
     "marketplace_items": ["id", "item_id", "price", "sold_timestamp", "state", "timestamp", "user_id"],

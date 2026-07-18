@@ -312,6 +312,24 @@ public class Habbo implements Runnable {
         if (this.client != null) this.client.sendResponse(new UserCreditsComposer(this));
     }
 
+    public boolean tryTakeCredits(int credits) {
+        if (credits <= 0) {
+            return false;
+        }
+
+        UserCreditsEvent event = new UserCreditsEvent(this, -credits);
+        if (Emulator.getPluginManager().fireEvent(event).isCancelled() || event.credits != -credits) {
+            return false;
+        }
+
+        if (!this.getHabboInfo().tryAddCredits(event.credits)) {
+            return false;
+        }
+
+        if (this.client != null) this.client.sendResponse(new UserCreditsComposer(this));
+        return true;
+    }
+
 
     public void givePixels(int pixels) {
         this.givePoints(0, pixels, "economy.api.pixels");
@@ -366,6 +384,28 @@ public class Habbo implements Runnable {
             else this.client.sendResponse(new UserPointsComposer(
                     this.getHabboInfo().getCurrencyAmount(event.type), event.points, event.type));
         }
+    }
+
+    public boolean tryTakePoints(int type, int points) {
+        if (points <= 0) {
+            return false;
+        }
+
+        UserPointsEvent event = new UserPointsEvent(this, -points, type);
+        if (Emulator.getPluginManager().fireEvent(event).isCancelled()
+                || event.type != type || event.points != -points) {
+            return false;
+        }
+
+        if (!this.getHabboInfo().tryAddCurrencyAmount(event.type, event.points)) {
+            return false;
+        }
+
+        if (this.client != null) {
+            this.client.sendResponse(new UserPointsComposer(
+                    this.getHabboInfo().getCurrencyAmount(event.type), event.points, event.type));
+        }
+        return true;
     }
 
 

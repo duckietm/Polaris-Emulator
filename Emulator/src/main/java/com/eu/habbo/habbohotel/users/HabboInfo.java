@@ -91,7 +91,7 @@ public class HabboInfo implements Runnable {
             }
 
             this.accountCreated = set.getInt("account_created");
-            this.credits = set.getInt("credits");
+            this.credits = Math.max(0, set.getInt("credits"));
             this.homeRoom = set.getInt("home_room");
             this.lastOnline = set.getInt("last_online");
             this.machineID = set.getString("machine_id");
@@ -121,7 +121,7 @@ public class HabboInfo implements Runnable {
         try {
             SqlQueries.forEach(
                     "SELECT * FROM users_currency WHERE user_id = ?",
-                    rs -> this.currencies.put(rs.getInt("type"), rs.getInt("amount")),
+                    rs -> this.currencies.put(rs.getInt("type"), Math.max(0, rs.getInt("amount"))),
                     this.id);
         } catch (SqlQueries.DataAccessException e) {
             LOGGER.error("Caught SQL exception", e);
@@ -287,10 +287,34 @@ public class HabboInfo implements Runnable {
     }
 
     public void addCurrencyAmount(int type, int amount) {
+        // Legacy check-then-act entry point: never throw here, because the many
+        // existing callers (staff commands, wired, chests, plugins) are not
+        // structured to recover from a rejected mutation. Clamp into range and
+        // log if a delta would have gone out of bounds. Paths that must reject an
+        // out-of-range update use tryAddCurrencyAmount instead.
         synchronized (this.currencyLock) {
-            this.currencies.addTo(type, amount);
+            int current = this.currencies.get(type);
+            int updated = WalletBalanceMath.clampedBalance(current, amount);
+            if ((long) Math.max(0, current) + amount != updated) {
+                LOGGER.warn("Clamped out-of-range point balance for user {} (currency type {}): {} + {} -> {}",
+                        this.id, type, current, amount, updated);
+            }
+            this.currencies.put(type, updated);
         }
         this.run();
+    }
+
+    public boolean tryAddCurrencyAmount(int type, int amount) {
+        synchronized (this.currencyLock) {
+            int current = this.currencies.get(type);
+            try {
+                this.currencies.put(type, WalletBalanceMath.checkedBalance(current, amount));
+            } catch (IllegalArgumentException e) {
+                return false;
+            }
+        }
+        this.run();
+        return true;
     }
 
     /**
@@ -333,7 +357,7 @@ public class HabboInfo implements Runnable {
 
     public void setCurrencyAmount(int type, int amount) {
         synchronized (this.currencyLock) {
-            this.currencies.put(type, amount);
+            this.currencies.put(type, WalletBalanceMath.requireValidBalance(amount));
         }
         this.run();
     }
@@ -474,16 +498,36 @@ public class HabboInfo implements Runnable {
 
     public void setCredits(int credits) {
         synchronized (this.currencyLock) {
-            this.credits = credits;
+            this.credits = WalletBalanceMath.requireValidBalance(credits);
         }
         this.run();
     }
 
     public void addCredits(int credits) {
+        // Legacy check-then-act entry point: never throw here (see
+        // addCurrencyAmount). Clamp into range and log an out-of-range delta.
+        // Paths that must reject an out-of-range update use tryAddCredits.
         synchronized (this.currencyLock) {
-            this.credits += credits;
+            int updated = WalletBalanceMath.clampedBalance(this.credits, credits);
+            if ((long) Math.max(0, this.credits) + credits != updated) {
+                LOGGER.warn("Clamped out-of-range credit balance for user {}: {} + {} -> {}",
+                        this.id, this.credits, credits, updated);
+            }
+            this.credits = updated;
         }
         this.run();
+    }
+
+    public boolean tryAddCredits(int credits) {
+        synchronized (this.currencyLock) {
+            try {
+                this.credits = WalletBalanceMath.checkedBalance(this.credits, credits);
+            } catch (IllegalArgumentException e) {
+                return false;
+            }
+        }
+        this.run();
+        return true;
     }
 
     public int getPixels() {

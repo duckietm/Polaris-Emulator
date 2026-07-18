@@ -53,6 +53,7 @@ public class CustomBadgeManager {
 
     private final SecureRandom random = new SecureRandom();
     private final Map<Integer, long[]> rateBuckets = new ConcurrentHashMap<>();
+    private final Map<Integer, Object> userMutationLocks = new ConcurrentHashMap<>();
     private final Map<String, BadgeText> textCache = new ConcurrentHashMap<>();
     private final java.util.concurrent.atomic.AtomicLong textCacheVersion = new java.util.concurrent.atomic.AtomicLong();
 
@@ -186,6 +187,13 @@ public class CustomBadgeManager {
     public CustomBadge create(int userId, String name, String description, byte[] pngBytes) throws CustomBadgeException {
         enforceRateLimit(userId);
 
+        Object userLock = this.userMutationLocks.computeIfAbsent(userId, ignored -> new Object());
+        synchronized (userLock) {
+            return this.createForUser(userId, name, description, pngBytes);
+        }
+    }
+
+    private CustomBadge createForUser(int userId, String name, String description, byte[] pngBytes) throws CustomBadgeException {
         if (this.countForUser(userId) >= MAX_PER_USER) {
             throw new CustomBadgeException("limit_reached", "Maximum of " + MAX_PER_USER + " custom badges reached.");
         }
@@ -342,17 +350,15 @@ public class CustomBadgeManager {
 
         int currencyType = current.getCurrencyType();
         if (currencyType == -1) {
-            if (habbo.getHabboInfo().getCredits() < price) {
+            if (!habbo.tryTakeCredits(price)) {
                 throw new CustomBadgeException("insufficient_funds",
                         "You don't have enough credits (need " + price + ").");
             }
-            habbo.giveCredits(-price);
         } else {
-            if (habbo.getHabboInfo().getCurrencyAmount(currencyType) < price) {
+            if (!habbo.tryTakePoints(currencyType, price)) {
                 throw new CustomBadgeException("insufficient_funds",
                         "You don't have enough of that currency (need " + price + ").");
             }
-            habbo.givePoints(currencyType, -price);
         }
     }
 

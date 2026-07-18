@@ -898,9 +898,20 @@ public class ItemManager {
     }
 
     public void deleteItem(HabboItem item) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("DELETE FROM items WHERE id = ?")) {
-            statement.setInt(1, item.getId());
-            statement.execute();
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            try (PreparedStatement statement = connection.prepareStatement("DELETE FROM items_teleports WHERE teleport_one_id = ? OR teleport_two_id = ?")) {
+                statement.setInt(1, item.getId());
+                statement.setInt(2, item.getId());
+                statement.executeUpdate();
+            }
+            try (PreparedStatement statement = connection.prepareStatement("DELETE FROM items_hoppers WHERE item_id = ?")) {
+                statement.setInt(1, item.getId());
+                statement.executeUpdate();
+            }
+            try (PreparedStatement statement = connection.prepareStatement("DELETE FROM items WHERE id = ?")) {
+                statement.setInt(1, item.getId());
+                statement.executeUpdate();
+            }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
         }

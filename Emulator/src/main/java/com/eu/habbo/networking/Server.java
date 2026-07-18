@@ -5,6 +5,7 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.UnpooledByteBufAllocator;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
@@ -52,6 +53,8 @@ public abstract class Server {
     private final String name;
     private final String host;
     private final int port;
+    private volatile boolean listening;
+    private volatile Channel serverChannel;
 
     public Server(String name, String host, int port, int bossGroupThreads, int workerGroupThreads) throws Exception {
         this.name = name;
@@ -85,15 +88,23 @@ public abstract class Server {
         }
 
         if (!channelFuture.isSuccess()) {
+            this.listening = false;
             LOGGER.info("Failed to start {} on {}:{}", this.name, this.host, this.port);
             System.exit(0);
         } else {
+            this.serverChannel = channelFuture.channel();
+            this.listening = true;
+            channelFuture.channel().closeFuture().addListener(ignored -> this.listening = false);
             LOGGER.info("Started {} on {}:{}", this.name, this.host, this.port);
         }
     }
 
     public void stop() {
+        this.listening = false;
         LOGGER.info("Stopping {}", this.name);
+        if (this.serverChannel != null) {
+            this.serverChannel.close().syncUninterruptibly();
+        }
         try {
             this.workerGroup.shutdownGracefully(100, 3000, TimeUnit.MILLISECONDS).sync();
             this.bossGroup.shutdownGracefully(100, 3000, TimeUnit.MILLISECONDS).sync();
@@ -122,5 +133,9 @@ public abstract class Server {
 
     public int getPort() {
         return this.port;
+    }
+
+    public boolean isListening() {
+        return this.listening && this.serverChannel != null && this.serverChannel.isActive();
     }
 }

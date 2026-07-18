@@ -53,6 +53,8 @@ login.remember.enabled=true
 login.remember.duration.days=30
 # Optional: set a persistent remember-me JWT secret here, otherwise one is generated and stored in emulator_settings.
 login.remember.jwt.secret=hange-me-to-a-long-random-secret
+# Lifetime for SSO tickets minted by Polaris's built-in password/remember endpoints.
+login.sso.ticket.ttl.seconds=60
 
 # Login news API.
 login.news.limit=5

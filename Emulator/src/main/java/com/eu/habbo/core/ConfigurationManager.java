@@ -134,24 +134,22 @@ public class ConfigurationManager {
 
 
     public String getValue(String key) {
-        return this.getValue(key, "", true);
+        if (this.isLoading) return "";
+
+        String value = this.getValueIfPresent(key);
+        if (value != null) return value;
+
+        LOGGER.error("Config key not found {}", key);
+        return "";
     }
 
 
     public String getValue(String key, String defaultValue) {
-        return this.getValue(key, defaultValue, false);
-    }
-
-    private String getValue(String key, String defaultValue, boolean logMissing) {
         if (this.isLoading)
             return defaultValue;
 
         String value = this.getValueIfPresent(key);
         if (value != null) return value;
-
-        if (logMissing) {
-            LOGGER.error("Config key not found {}", key);
-        }
         return defaultValue;
     }
 
@@ -178,12 +176,12 @@ public class ConfigurationManager {
         if (this.isLoading)
             return defaultValue;
 
-        try {
-            String value = this.getValue(key, Boolean.toString(defaultValue));
-            return value.equals("1") || value.equalsIgnoreCase("true");
-        } catch (Exception e) {
-            LOGGER.error("Failed to parse key {} with value '{}' to type boolean.", key, this.getValue(key));
-        }
+        String value = this.getValueIfPresent(key);
+        if (value == null) return defaultValue;
+        if (value.equals("1") || value.equalsIgnoreCase("true")) return true;
+        if (value.equals("0") || value.equalsIgnoreCase("false")) return false;
+
+        LOGGER.error("Failed to parse key {} with value '{}' to type boolean.", key, value);
         return defaultValue;
     }
 

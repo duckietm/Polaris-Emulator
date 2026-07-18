@@ -43,6 +43,11 @@ jobs:
       - name: Build JAR
         run: mvn -B clean package -DskipTests
 
+      - name: Generate SHA-256 checksum
+        run: |
+          JAR="target/Polaris-${{ steps.bump.outputs.new_version }}-jar-with-dependencies.jar"
+          sha256sum "$JAR" > "$JAR.sha256"
+
       - name: Commit bumped pom.xml
         run: |
           git config user.name  "github-actions[bot]"
@@ -76,4 +81,6 @@ jobs:
           tag_name: v${{ steps.bump.outputs.new_version }}
           name: Release v${{ steps.bump.outputs.new_version }}
           body_path: release_notes.md
-          files: Emulator/target/Habbo-${{ steps.bump.outputs.new_version }}-jar-with-dependencies.jar
+          files: |
+            Emulator/target/Polaris-${{ steps.bump.outputs.new_version }}-jar-with-dependencies.jar
+            Emulator/target/Polaris-${{ steps.bump.outputs.new_version }}-jar-with-dependencies.jar.sha256

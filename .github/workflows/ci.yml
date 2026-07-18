@@ -20,6 +20,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Verify local build handoff
+        shell: pwsh
+        run: ../scripts/build-latest.test.ps1
+
       - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
@@ -32,6 +36,14 @@ jobs:
       # against a Testcontainers MariaDB. A broken migration fails the build.
       - name: Build and test
         run: mvn -B verify
+
+      - name: Upload furni consistency fixture report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: furni-consistency-fixture-report
+          path: Emulator/target/furni-consistency-fixture.json
+          if-no-files-found: error
 
   migration-matrix:
     name: Migrations on MariaDB ${{ matrix.mariadb }}

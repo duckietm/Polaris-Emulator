@@ -16,11 +16,14 @@ class MarketPlaceCreditClaimContractTest {
     void soldOfferIsDetachedBeforeCreditsAreGranted() throws Exception {
         String source = marketPlaceSource();
         int getCreditsStart = source.indexOf("public static void getCredits");
+        int payoutRangeGuard = source.indexOf("claimable > Integer.MAX_VALUE", getCreditsStart);
         int removeUserCall = source.indexOf("removeUser(offer)", getCreditsStart);
-        int creditAccumulator = source.indexOf("credits += offer.getPrice()", getCreditsStart);
+        int creditAccumulator = source.indexOf("credits = WalletBalanceMath.checkedBalance(credits, offer.getPrice())", getCreditsStart);
         int inventoryRemoval = source.indexOf("removeMarketplaceOffer(offer)", getCreditsStart);
 
         assertTrue(getCreditsStart > -1, "MarketPlace.getCredits must exist");
+        assertTrue(payoutRangeGuard > getCreditsStart && payoutRangeGuard < removeUserCall,
+                "Unrepresentable aggregate payouts must be rejected before any offer is claimed");
         assertTrue(removeUserCall > -1, "Sold marketplace offers must be detached in the database");
         assertTrue(removeUserCall < creditAccumulator,
                 "Credits must not be granted until the sold offer is detached from the seller in the database");

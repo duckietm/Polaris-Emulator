@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.google.gson.Gson;
+import jakarta.validation.constraints.Positive;
 
 public class ChangeRoomOwner extends RCONMessage<ChangeRoomOwner.JSON> {
     public ChangeRoomOwner() {
@@ -43,9 +44,11 @@ public class ChangeRoomOwner extends RCONMessage<ChangeRoomOwner.JSON> {
 
     static class JSON {
 
+        @Positive(message = "invalid room")
         public int room_id;
 
 
+        @Positive(message = "invalid user")
         public int user_id;
 
 

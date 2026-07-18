@@ -15,6 +15,10 @@ public abstract class MessageHandler {
         return 0;
     }
 
+    public String getRatelimitGroup() {
+        return "";
+    }
+
     protected final Room currentRoom() {
         if (this.client == null || this.client.getHabbo() == null) return null;
         if (this.client.getHabbo().getHabboInfo() == null) return null;

@@ -110,7 +110,7 @@ public class RCONServer extends Server {
     public String handle(ChannelHandlerContext ctx, String key, String body) throws Exception {
         if (!this.acquirePermit(ctx)) {
             LOGGER.warn("RCON rate limit exceeded for {}", remoteAddress(ctx));
-            return "RATE_LIMITED";
+            return RconResponse.error(RCONMessage.STATUS_ERROR, "rate limited").toJson(this.gsonBuilder.create());
         }
 
         Class<? extends RCONMessage> message = this.messages.get(key.replace("_", "").toLowerCase());
@@ -137,9 +137,10 @@ public class RCONServer extends Server {
             }
         } else {
             LOGGER.error("Couldn't find: {}", key);
+            return RconResponse.error(RCONMessage.STATUS_ERROR, "unknown command").toJson(this.gsonBuilder.create());
         }
 
-        throw new ArrayIndexOutOfBoundsException("Unhandled RCON Message");
+        return RconResponse.error(RCONMessage.SYSTEM_ERROR, "command failed").toJson(this.gsonBuilder.create());
     }
 
     public List<String> getCommands() {

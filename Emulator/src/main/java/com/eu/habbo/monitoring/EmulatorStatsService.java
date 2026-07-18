@@ -1,13 +1,13 @@
 package com.eu.habbo.monitoring;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.core.Scheduler;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics;
 import com.eu.habbo.habbohotel.wired.tick.WiredTickService;
+import com.eu.habbo.networking.gameserver.GameServer;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.HikariPoolMXBean;
 
@@ -243,11 +243,18 @@ public final class EmulatorStatsService {
         SchedulerMetrics schedulerMetrics = collectSchedulerMetrics();
         NetworkMetrics networkMetrics = collectNetworkMetrics(now);
         GarbageCollectorMetrics garbageCollectorMetrics = collectGarbageCollectorMetrics(now);
+        HealthSnapshot health = collectHealth(
+                now,
+                hikariPoolMetrics,
+                schedulerMetrics,
+                memoryUsagePercent,
+                cpuLoadPercent
+        );
 
         Overview overview = new Overview(
                 Emulator.getOnlineTime(),
                 now,
-                cpuLoadPercent >= 80D ? "Attention needed" : "Healthy",
+                health.status.name(),
                 usedMemMb,
                 maxMemMb,
                 estimatedAllocMb,
@@ -280,7 +287,8 @@ public final class EmulatorStatsService {
                 hikariPoolMetrics,
                 schedulerMetrics,
                 networkMetrics,
-                garbageCollectorMetrics
+                garbageCollectorMetrics,
+                health
         );
     }
 
@@ -322,19 +330,106 @@ public final class EmulatorStatsService {
         );
     }
 
-    private static List<Scheduler.Status> collectSchedulerStatuses() {
-        GameEnvironment environment = Emulator.getGameEnvironment();
-        if (environment == null) {
-            return List.of();
+    private static HealthSnapshot collectHealth(long now, HikariPoolMetrics databasePool, SchedulerMetrics executor, double memoryUsagePercent, double cpuLoadPercent) {
+        List<HealthCheck> checks = new ArrayList<>(7);
+
+        if (Emulator.isReady && !Emulator.isShuttingDown) {
+            checks.add(HealthCheck.healthy("runtime", true, "ready"));
+        } else {
+            checks.add(HealthCheck.unhealthy("runtime", true,
+                    Emulator.isShuttingDown ? "shutting down" : "not ready"));
         }
 
-        List<Scheduler.Status> statuses = new ArrayList<>(5);
-        if (environment.getCreditsScheduler() != null) statuses.add(environment.getCreditsScheduler().snapshot());
-        if (environment.getPixelScheduler() != null) statuses.add(environment.getPixelScheduler().snapshot());
-        if (environment.getPointsScheduler() != null) statuses.add(environment.getPointsScheduler().snapshot());
-        if (environment.getGotwPointsScheduler() != null) statuses.add(environment.getGotwPointsScheduler().snapshot());
-        if (environment.subscriptionScheduler != null) statuses.add(environment.subscriptionScheduler.snapshot());
-        return List.copyOf(statuses);
+        HikariDataSource dataSource = Emulator.getDatabase() != null
+                ? Emulator.getDatabase().getDataSource()
+                : null;
+        if (dataSource == null || dataSource.isClosed()) {
+            checks.add(HealthCheck.unhealthy("database", true, "pool unavailable"));
+        } else if (databasePool.maxConnections > 0
+                && databasePool.activeConnections >= databasePool.maxConnections
+                && databasePool.waitingThreads > 0) {
+            checks.add(HealthCheck.degraded("database", true,
+                    databasePool.waitingThreads + " threads waiting for a connection"));
+        } else {
+            checks.add(HealthCheck.healthy("database", true,
+                    databasePool.activeConnections + "/" + databasePool.maxConnections + " connections active"));
+        }
+
+        GameServer gameServer = Emulator.getGameServer();
+        if (gameServer != null && gameServer.isListening()) {
+            checks.add(HealthCheck.healthy("tcp", true, "listener active"));
+        } else {
+            checks.add(HealthCheck.unhealthy("tcp", true, "listener unavailable"));
+        }
+
+        boolean webSocketEnabled = Emulator.getConfig() != null
+                && Emulator.getConfig().getBoolean("ws.enabled", false);
+        if (!webSocketEnabled) {
+            checks.add(HealthCheck.healthy("websocket", false, "disabled by configuration"));
+        } else if (gameServer != null && gameServer.isWebSocketListening()) {
+            checks.add(HealthCheck.healthy("websocket", false, "listener active"));
+        } else {
+            checks.add(HealthCheck.unhealthy("websocket", false, "listener unavailable"));
+        }
+
+        if (executor.running) {
+            checks.add(HealthCheck.healthy("executor", true,
+                    executor.activeThreads + " active, " + executor.queuedTasks + " queued"));
+        } else {
+            checks.add(HealthCheck.unhealthy("executor", true, "thread pool unavailable"));
+        }
+
+        addSchedulerHealth(checks);
+
+        if (memoryUsagePercent >= 95D || cpuLoadPercent >= 95D) {
+            checks.add(HealthCheck.degraded("jvm", false,
+                    String.format("memory %.1f%%, cpu %.1f%%", memoryUsagePercent, cpuLoadPercent)));
+        } else {
+            checks.add(HealthCheck.healthy("jvm", false,
+                    String.format("memory %.1f%%, cpu %.1f%%", memoryUsagePercent, cpuLoadPercent)));
+        }
+
+        return assessHealth(now, checks);
+    }
+
+    private static void addSchedulerHealth(List<HealthCheck> checks) {
+        GameEnvironment environment = Emulator.getGameEnvironment();
+        if (environment == null || Emulator.getConfig() == null) {
+            checks.add(HealthCheck.degraded("schedulers", false, "game environment unavailable"));
+            return;
+        }
+
+        int enabled = 0;
+        int unavailable = 0;
+
+        if (Emulator.getConfig().getBoolean("hotel.auto.credits.enabled", false)) {
+            enabled++;
+            if (environment.getCreditsScheduler() == null || environment.getCreditsScheduler().isDisposed()) unavailable++;
+        }
+        if (Emulator.getConfig().getBoolean("hotel.auto.pixels.enabled", false)) {
+            enabled++;
+            if (environment.getPixelScheduler() == null || environment.getPixelScheduler().isDisposed()) unavailable++;
+        }
+        if (Emulator.getConfig().getBoolean("hotel.auto.points.enabled", false)) {
+            enabled++;
+            if (environment.getPointsScheduler() == null || environment.getPointsScheduler().isDisposed()) unavailable++;
+        }
+        if (Emulator.getConfig().getBoolean("hotel.auto.gotwpoints.enabled", false)) {
+            enabled++;
+            if (environment.getGotwPointsScheduler() == null || environment.getGotwPointsScheduler().isDisposed()) unavailable++;
+        }
+        if (Emulator.getConfig().getBoolean("subscriptions.scheduler.enabled", true)) {
+            enabled++;
+            if (environment.subscriptionScheduler == null || environment.subscriptionScheduler.isDisposed()) unavailable++;
+        }
+
+        if (unavailable > 0) {
+            checks.add(HealthCheck.degraded("schedulers", false,
+                    unavailable + " of " + enabled + " configured schedulers unavailable"));
+        } else {
+            checks.add(HealthCheck.healthy("schedulers", false,
+                    enabled + " configured schedulers active"));
+        }
     }
 
     private static NetworkMetrics collectNetworkMetrics(long now) {
@@ -407,6 +502,74 @@ public final class EmulatorStatsService {
         }
     }
 
+    static HealthSnapshot assessHealth(long checkedAtEpochMs, List<HealthCheck> sourceChecks) {
+        List<HealthCheck> checks = List.copyOf(sourceChecks);
+        List<String> reasons = new ArrayList<>();
+        HealthStatus overall = HealthStatus.HEALTHY;
+
+        for (HealthCheck check : checks) {
+            if (check.status == HealthStatus.HEALTHY) {
+                continue;
+            }
+
+            reasons.add(check.component + ": " + check.detail);
+
+            if (check.status == HealthStatus.UNHEALTHY && check.critical) {
+                overall = HealthStatus.UNHEALTHY;
+            } else if (overall == HealthStatus.HEALTHY) {
+                overall = HealthStatus.DEGRADED;
+            }
+        }
+
+        return new HealthSnapshot(overall, checkedAtEpochMs, checks, reasons);
+    }
+
+    public enum HealthStatus {
+        HEALTHY,
+        DEGRADED,
+        UNHEALTHY
+    }
+
+    public static final class HealthCheck {
+        public final String component;
+        public final HealthStatus status;
+        public final boolean critical;
+        public final String detail;
+
+        private HealthCheck(String component, HealthStatus status, boolean critical, String detail) {
+            this.component = component;
+            this.status = status;
+            this.critical = critical;
+            this.detail = detail;
+        }
+
+        public static HealthCheck healthy(String component, boolean critical, String detail) {
+            return new HealthCheck(component, HealthStatus.HEALTHY, critical, detail);
+        }
+
+        public static HealthCheck degraded(String component, boolean critical, String detail) {
+            return new HealthCheck(component, HealthStatus.DEGRADED, critical, detail);
+        }
+
+        public static HealthCheck unhealthy(String component, boolean critical, String detail) {
+            return new HealthCheck(component, HealthStatus.UNHEALTHY, critical, detail);
+        }
+    }
+
+    public static final class HealthSnapshot {
+        public final HealthStatus status;
+        public final long checkedAtEpochMs;
+        public final List<HealthCheck> checks;
+        public final List<String> reasons;
+
+        public HealthSnapshot(HealthStatus status, long checkedAtEpochMs, List<HealthCheck> checks, List<String> reasons) {
+            this.status = status;
+            this.checkedAtEpochMs = checkedAtEpochMs;
+            this.checks = List.copyOf(checks);
+            this.reasons = List.copyOf(reasons);
+        }
+    }
+
     public static final class Snapshot {
         public final Overview overview;
         public final List<MemoryPoint> memoryHistory;
@@ -418,8 +581,14 @@ public final class EmulatorStatsService {
         public final SchedulerMetrics scheduler;
         public final NetworkMetrics network;
         public final GarbageCollectorMetrics garbageCollector;
+        public final HealthSnapshot health;
 
         public Snapshot(Overview overview, List<MemoryPoint> memoryHistory, List<OnlineUserRow> users, List<ActiveRoomRow> rooms, List<WiredRoomRow> wired, List<WiredTopRoomRow> wiredTopRooms, HikariPoolMetrics databasePool, SchedulerMetrics scheduler, NetworkMetrics network, GarbageCollectorMetrics garbageCollector) {
+            this(overview, memoryHistory, users, rooms, wired, wiredTopRooms, databasePool, scheduler, network, garbageCollector,
+                    new HealthSnapshot(HealthStatus.DEGRADED, System.currentTimeMillis(), List.of(), List.of("health: not collected")));
+        }
+
+        public Snapshot(Overview overview, List<MemoryPoint> memoryHistory, List<OnlineUserRow> users, List<ActiveRoomRow> rooms, List<WiredRoomRow> wired, List<WiredTopRoomRow> wiredTopRooms, HikariPoolMetrics databasePool, SchedulerMetrics scheduler, NetworkMetrics network, GarbageCollectorMetrics garbageCollector, HealthSnapshot health) {
             this.overview = overview;
             this.memoryHistory = memoryHistory;
             this.users = users;
@@ -430,6 +599,7 @@ public final class EmulatorStatsService {
             this.scheduler = scheduler;
             this.network = network;
             this.garbageCollector = garbageCollector;
+            this.health = health;
         }
     }
 

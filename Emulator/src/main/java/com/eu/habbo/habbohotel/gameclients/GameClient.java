@@ -33,6 +33,7 @@ public class GameClient {
 
     public final ConcurrentHashMap<Integer, Integer> incomingPacketCounter = new ConcurrentHashMap<>(25);
     public final ConcurrentHashMap<Class<? extends MessageHandler>, Long> messageTimestamps = new ConcurrentHashMap<>();
+    public final ConcurrentHashMap<String, Long> groupedMessageRateLimitDeadlines = new ConcurrentHashMap<>();
     public long lastPacketCounterCleared = Emulator.getIntUnixTimestamp();
 
     public GameClient(Channel channel) {

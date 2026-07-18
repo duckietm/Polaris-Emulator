@@ -10,6 +10,11 @@ public class TakeBackItemEvent extends MessageHandler {
     }
 
     @Override
+    public String getRatelimitGroup() {
+        return "marketplace.mutation";
+    }
+
+    @Override
     public void handle() throws Exception {
         int offerId = this.packet.readInt();
 

@@ -38,6 +38,11 @@ public class CatalogBuyItemEvent extends MessageHandler {
     }
 
     @Override
+    public String getRatelimitGroup() {
+        return "catalog.purchase";
+    }
+
+    @Override
     public void handle() throws Exception {
         if (Emulator.getIntUnixTimestamp() - this.client.getHabbo().getHabboStats().lastPurchaseTimestamp >= CatalogManager.PURCHASE_COOLDOWN) {
             this.client.getHabbo().getHabboStats().lastPurchaseTimestamp = Emulator.getIntUnixTimestamp();

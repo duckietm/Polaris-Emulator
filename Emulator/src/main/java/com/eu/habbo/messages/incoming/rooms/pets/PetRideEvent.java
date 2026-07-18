@@ -15,6 +15,7 @@ public class PetRideEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         int petId = this.packet.readInt();
+        this.packet.readBoolean(); // Desired mount state; legacy behavior toggles from the authoritative room state.
         Habbo habbo = this.client.getHabbo();
         Room room = habbo.getHabboInfo().getCurrentRoom();
 

@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 import com.eu.habbo.networking.gameserver.auth.PasswordHasher;
+import com.eu.habbo.networking.gameserver.auth.RememberJwtService;
 
 import java.security.SecureRandom;
 import java.sql.Connection;
@@ -62,7 +63,9 @@ public class HousekeepingResetUserPasswordEvent extends MessageHandler {
         }
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("UPDATE users SET password = ?, auth_ticket = '' WHERE id = ? LIMIT 1")) {
+             PreparedStatement statement = connection.prepareStatement(
+                     "UPDATE users SET password = ?, auth_ticket = '', "
+                             + "access_token_version = access_token_version + 1 WHERE id = ? LIMIT 1")) {
             statement.setString(1, hash);
             statement.setInt(2, userId);
             int rows = statement.executeUpdate();
@@ -71,6 +74,7 @@ public class HousekeepingResetUserPasswordEvent extends MessageHandler {
                 this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.user_not_found"));
                 return;
             }
+            RememberJwtService.revokeAllForUser(connection, userId);
         } catch (SQLException e) {
             this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.db_failed"));
             return;

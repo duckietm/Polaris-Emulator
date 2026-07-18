@@ -60,7 +60,7 @@ public class Outgoing {
     public final static int MarketplaceItemInfoComposer = 725;
     public final static int RoomRelativeMapComposer = 2753;
     public final static int ModToolComposerTwo = 2335;
-    public final static int ModToolComposerOne = 3192;
+    public final static int IssueDeletedComposer = 3192;
     public final static int RoomRightsComposer = 780;
     public final static int ObjectOnRollerComposer = 3207;
     public final static int PollStartComposer = 3785;
@@ -617,5 +617,11 @@ public class Outgoing {
     public static final int EarningsClaimResultComposer = 9408;
     public static final int MentionReceivedComposer = 4801;
     public static final int MentionsListComposer = 4802;
+    public static final int MessengerConversationsComposer = 4900;
+    public static final int MessengerHistoryComposer = 4901;
+    public static final int MessengerMessageAckComposer = 4902;
+    public static final int MessengerMessageFailedComposer = 4903;
+    public static final int MessengerMessageComposer = 4904;
+    public static final int MessengerReadCursorComposer = 4905;
 
 }

@@ -18,6 +18,10 @@ public class GuildChangeBadgeEvent extends MessageHandler {
     public void handle() throws Exception {
         int guildId = this.packet.readInt();
 
+        if (!GuildInputGuard.isPositiveId(guildId)) {
+            return;
+        }
+
         Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
         if (guild != null) {
             if (guild.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() || this.client.getHabbo().hasPermission(Permission.ACC_GUILD_ADMIN)) {

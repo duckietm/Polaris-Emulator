@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.users.WalletBalanceMath;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.catalog.marketplace.RequestOffersEvent;
 import com.eu.habbo.messages.outgoing.catalog.marketplace.MarketplaceBuyErrorComposer;
@@ -11,9 +12,13 @@ import com.eu.habbo.messages.outgoing.catalog.marketplace.MarketplaceCancelSaleC
 import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemComposer;
+import com.eu.habbo.messages.outgoing.users.UserCreditsComposer;
+import com.eu.habbo.messages.outgoing.users.UserPointsComposer;
 import com.eu.habbo.plugin.events.marketplace.MarketPlaceItemCancelledEvent;
 import com.eu.habbo.plugin.events.marketplace.MarketPlaceItemOfferedEvent;
 import com.eu.habbo.plugin.events.marketplace.MarketPlaceItemSoldEvent;
+import com.eu.habbo.plugin.events.users.UserCreditsEvent;
+import com.eu.habbo.plugin.events.users.UserPointsEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -292,21 +297,27 @@ public class MarketPlace {
                                         HabboItem item = Emulator.getGameEnvironment().getItemManager().loadHabboItem(itemSet);
 
                                         MarketPlaceItemSoldEvent event = new MarketPlaceItemSoldEvent(habbo, client.getHabbo(), item, set.getInt("price"));
-                                        if (Emulator.getPluginManager().fireEvent(event).isCancelled()) {
+                                        if (Emulator.getPluginManager().fireEvent(event).isCancelled()
+                                                || !isValidListingPrice(event.price)) {
                                             return;
                                         }
 
                                         int soldTimestamp = Emulator.getIntUnixTimestamp();
-                                        try (PreparedStatement updateOffer = connection.prepareStatement("UPDATE marketplace_items SET state = 2, sold_timestamp = ? WHERE id = ? AND state = 1")) {
-                                            updateOffer.setInt(1, soldTimestamp);
-                                            updateOffer.setInt(2, offerId);
-                                            int updated = updateOffer.executeUpdate();
-                                            if (updated == 0) {
-                                                sendErrorMessage(client, set.getInt("item_id"), offerId);
-                                                return;
-                                            }
-                                        }
                                         event.price = calculateCommision(event.price);
+
+                                        PreparedCharge charge = prepareMarketplaceCharge(client.getHabbo(), event.price);
+                                        if (charge == null) return;
+
+                                        if (!MarketPlacePurchaseTransaction.commit(
+                                                offerId,
+                                                item.getId(),
+                                                client.getHabbo().getHabboInfo().getId(),
+                                                charge.currencyType(),
+                                                -charge.delta(),
+                                                soldTimestamp)) {
+                                            sendErrorMessage(client, item.getBaseItem().getId(), offerId);
+                                            return;
+                                        }
 
                                         item.setUserId(client.getHabbo().getHabboInfo().getId());
                                         item.needsUpdate(true);
@@ -314,11 +325,7 @@ public class MarketPlace {
 
                                         client.getHabbo().getInventory().getItemsComponent().addItem(item);
 
-                                        if (MARKETPLACE_CURRENCY == 0) {
-                                            client.getHabbo().giveCredits(-event.price);
-                                        } else {
-                                            client.getHabbo().givePoints(MARKETPLACE_CURRENCY, -event.price);
-                                        }
+                                        applyMarketplaceCharge(client, charge);
 
                                         client.sendResponse(new AddHabboItemComposer(item));
                                         client.sendResponse(new InventoryRefreshComposer());
@@ -407,17 +414,44 @@ public class MarketPlace {
 
 
     public static void getCredits(GameClient client) {
-        int credits = 0;
-
         Set<MarketPlaceOffer> offers = new HashSet<>();
         offers.addAll(client.getHabbo().getInventory().getMarketplaceItems());
+
+        long claimable = 0;
+        for (MarketPlaceOffer offer : offers) {
+            if (offer.getState().equals(MarketPlaceState.SOLD)) {
+                if (offer.getPrice() < 0) {
+                    LOGGER.warn("Rejected negative marketplace payout for offer {}", offer.getOfferId());
+                    return;
+                }
+                claimable += offer.getPrice();
+            }
+        }
+
+        int currentBalance = MARKETPLACE_CURRENCY == 0
+                ? client.getHabbo().getHabboInfo().getCredits()
+                : client.getHabbo().getHabboInfo().getCurrencyAmount(MARKETPLACE_CURRENCY);
+        if (claimable > Integer.MAX_VALUE) {
+            LOGGER.warn("Marketplace payout for user {} exceeds wallet range: {}",
+                    client.getHabbo().getHabboInfo().getId(), claimable);
+            return;
+        }
+        try {
+            WalletBalanceMath.checkedBalance(currentBalance, (int) claimable);
+        } catch (IllegalArgumentException e) {
+            LOGGER.warn("Marketplace payout for user {} would overflow wallet: current={}, payout={}",
+                    client.getHabbo().getHabboInfo().getId(), currentBalance, claimable);
+            return;
+        }
+
+        int credits = 0;
 
         synchronized (client.getHabbo().getInventory()) {
             for (MarketPlaceOffer offer : offers) {
                 if (offer.getState().equals(MarketPlaceState.SOLD)) {
                     if (removeUser(offer)) {
                         client.getHabbo().getInventory().removeMarketplaceOffer(offer);
-                        credits += offer.getPrice();
+                        credits = WalletBalanceMath.checkedBalance(credits, offer.getPrice());
                         offer.needsUpdate(true);
                         Emulator.getThreading().run(offer);
                     }
@@ -449,6 +483,37 @@ public class MarketPlace {
     public static int calculateCommision(int price) {
         long commission = price + (long) Math.ceil(price / 100.0);
         return commission > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) commission;
+    }
+
+    private static PreparedCharge prepareMarketplaceCharge(Habbo buyer, int price) {
+        if (MARKETPLACE_CURRENCY == 0) {
+            UserCreditsEvent event = new UserCreditsEvent(buyer, -price);
+            if (Emulator.getPluginManager().fireEvent(event).isCancelled()
+                    || event.credits != -price) return null;
+            return new PreparedCharge(-1, event.credits);
+        }
+
+        UserPointsEvent event = new UserPointsEvent(buyer, -price, MARKETPLACE_CURRENCY);
+        if (Emulator.getPluginManager().fireEvent(event).isCancelled()
+                || event.type != MARKETPLACE_CURRENCY || event.points != -price) return null;
+        return new PreparedCharge(event.type, event.points);
+    }
+
+    private static void applyMarketplaceCharge(GameClient client, PreparedCharge charge) {
+        if (charge.currencyType() < 0) {
+            client.getHabbo().getHabboInfo().addCredits(charge.delta());
+            client.sendResponse(new UserCreditsComposer(client.getHabbo()));
+            return;
+        }
+
+        client.getHabbo().getHabboInfo().addCurrencyAmount(charge.currencyType(), charge.delta());
+        client.sendResponse(new UserPointsComposer(
+                client.getHabbo().getHabboInfo().getCurrencyAmount(charge.currencyType()),
+                charge.delta(),
+                charge.currencyType()));
+    }
+
+    private record PreparedCharge(int currencyType, int delta) {
     }
 
     public static boolean isValidListingPrice(int price) {

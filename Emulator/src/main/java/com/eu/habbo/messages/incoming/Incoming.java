@@ -247,7 +247,7 @@ public class Incoming {
     public static final int MoodLightSaveSettingsEvent = 1648;
     public static final int ModToolRequestIssueChatlogEvent = 211;
     public static final int ModToolRequestRoomUserChatlogEvent = -1;
-    public static final int UsernameEvent = 3878;
+    public static final int GetIgnoredUsersEvent = 3878;
     public static final int RequestClubGiftsEvent = 487;
     public static final int RentSpaceEvent = 2946;
     public static final int RentSpaceCancelEvent = 1667;
@@ -522,4 +522,12 @@ public class Incoming {
     public static final int RequestMentionsEvent = 4803;
     public static final int MarkMentionsReadEvent = 4804;
     public static final int DeleteMentionEvent = 4805;
+    public static final int RequestMessengerConversationsEvent = 4900;
+    public static final int RequestMessengerHistoryEvent = 4901;
+    public static final int SendMessengerMessageEvent = 4902;
+    public static final int MarkMessengerReadEvent = 4903;
+    public static final int AddFriendCategoryEvent = 4081;
+    public static final int RenameFriendCategoryEvent = 4082;
+    public static final int RemoveFriendCategoryEvent = 4083;
+    public static final int MoveFriendToCategoryEvent = 4084;
 }

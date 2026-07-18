@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboManager;
 import com.google.gson.Gson;
+import jakarta.validation.constraints.Positive;
 
 public class SendRoomBundle extends RCONMessage<SendRoomBundle.JSON> {
     public SendRoomBundle() {
@@ -34,10 +35,10 @@ public class SendRoomBundle extends RCONMessage<SendRoomBundle.JSON> {
     }
 
     static class JSON {
-
+        @Positive(message = "invalid user")
         public int user_id;
 
-
+        @Positive(message = "invalid catalog page")
         public int catalog_page;
     }
 }

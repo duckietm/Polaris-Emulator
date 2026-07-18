@@ -473,6 +473,18 @@ public class PetManager {
         return null;
     }
 
+    public Pet createPet(Connection connection, Item item, String name, String race, String color, GameClient client) throws SQLException {
+        int type = Integer.parseInt(item.getName().toLowerCase().replace("a0 pet", ""));
+        if (!this.petData.containsKey(type) || type == 16) return null;
+
+        Pet pet = type == 15
+                ? new HorsePet(type, Integer.parseInt(race), color, name, client.getHabbo().getHabboInfo().getId())
+                : new Pet(type, Integer.parseInt(race), color, name, client.getHabbo().getHabboInfo().getId());
+        pet.needsUpdate = true;
+        pet.save(connection);
+        return pet;
+    }
+
     public Pet createPet(int type, String name, GameClient client) {
         return this.createPet(type, Emulator.getRandom().nextInt(this.petRaces.get(type).size() + 1), name, client);
     }

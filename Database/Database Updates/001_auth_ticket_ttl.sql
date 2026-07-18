@@ -3,8 +3,10 @@
 --
 -- Adds an explicit expiry timestamp to the SSO auth_ticket on `users`.
 --
--- The CMS issuing the ticket is expected to populate auth_ticket_expires_at
--- (e.g. NOW() + INTERVAL 60 SECOND) on every login redirect. The emulator-
+-- Polaris's built-in password and remember-login issuers populate
+-- auth_ticket_expires_at. External CMS issuers may continue writing only
+-- auth_ticket; the nullable compatibility behavior below remains unchanged.
+-- The emulator-
 -- side SELECT queries that look up a user by auth_ticket have been changed to
 --
 --     WHERE auth_ticket = ?

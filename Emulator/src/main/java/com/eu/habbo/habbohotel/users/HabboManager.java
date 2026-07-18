@@ -1,6 +1,9 @@
 package com.eu.habbo.habbohotel.users;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.economy.EconomyLedger;
+import com.eu.habbo.habbohotel.economy.EconomyOperation;
+import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.database.SqlQueries;
 import com.eu.habbo.habbohotel.modtool.ModToolBan;
 import com.eu.habbo.habbohotel.permissions.Permission;
@@ -289,10 +292,15 @@ public class HabboManager {
     public void giveCredits(int userId, int credits) {
         Habbo habbo = this.getHabbo(userId);
         if (habbo != null) {
-            habbo.giveCredits(credits);
+            habbo.giveCredits(credits, "system.habbo_manager");
         } else {
             try {
-                SqlQueries.update("UPDATE users SET credits = credits + ? WHERE id = ? LIMIT 1", credits, userId);
+                // Clamp the offline balance into [0, INT_MAX] in SQL so this path
+                // upholds the same wallet invariant as the in-memory addCredits and
+                // cannot persist a negative or wrapped balance.
+                SqlQueries.update(
+                        "UPDATE users SET credits = LEAST(GREATEST(CAST(credits AS SIGNED) + ?, 0), 2147483647) WHERE id = ? LIMIT 1",
+                        credits, userId);
             } catch (SqlQueries.DataAccessException e) {
                 LOGGER.error("Caught SQL exception", e);
             }

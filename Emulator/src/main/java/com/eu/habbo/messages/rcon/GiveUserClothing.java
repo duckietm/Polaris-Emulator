@@ -7,6 +7,7 @@ import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import com.eu.habbo.messages.outgoing.users.UserClothesComposer;
 import com.google.gson.Gson;
+import jakarta.validation.constraints.Positive;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,7 +101,10 @@ public class GiveUserClothing extends RCONMessage<GiveUserClothing.JSONGiveUserC
     }
 
     static class JSONGiveUserClothing {
+        @Positive(message = "invalid user")
         public int user_id;
+
+        @Positive(message = "invalid clothing")
         public int clothing_id;
     }
 }

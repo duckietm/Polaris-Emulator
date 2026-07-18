@@ -90,6 +90,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class PacketManager {
 
@@ -206,14 +207,31 @@ public class PacketManager {
                 final MessageHandler handler = handlerClass.getDeclaredConstructor().newInstance();
 
                 if (handler.getRatelimit() > 0) {
-                    if (client.messageTimestamps.containsKey(handlerClass) && System.currentTimeMillis() - client.messageTimestamps.get(handlerClass) < handler.getRatelimit()) {
+                    long now = System.currentTimeMillis();
+                    String rateLimitGroup = handler.getRatelimitGroup();
+                    boolean rateLimited;
+
+                    if (rateLimitGroup != null && !rateLimitGroup.isBlank()) {
+                        rateLimited = !acquireGroupedRateLimit(
+                                client.groupedMessageRateLimitDeadlines,
+                                rateLimitGroup,
+                                handler.getRatelimit(),
+                                now);
+                    } else {
+                        rateLimited = client.messageTimestamps.containsKey(handlerClass)
+                                && now - client.messageTimestamps.get(handlerClass) < handler.getRatelimit();
+                    }
+
+                    if (rateLimited) {
                         if (PacketManager.DEBUG_SHOW_PACKETS) {
                             LOGGER.warn("Client packet {} was ratelimited.", packet.getMessageId());
                         }
 
                         return;
-                    } else {
-                        client.messageTimestamps.put(handlerClass, System.currentTimeMillis());
+                    }
+
+                    if (rateLimitGroup == null || rateLimitGroup.isBlank()) {
+                        client.messageTimestamps.put(handlerClass, now);
                     }
                 }
 
@@ -237,6 +255,23 @@ public class PacketManager {
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
         }
+    }
+
+    static boolean acquireGroupedRateLimit(Map<String, Long> deadlines, String group, long cooldownMs, long nowMs) {
+        if (deadlines == null || group == null || group.isBlank() || cooldownMs <= 0) {
+            return true;
+        }
+
+        AtomicBoolean acquired = new AtomicBoolean(false);
+        deadlines.compute(group, (key, deadline) -> {
+            if (deadline != null && deadline > nowMs) {
+                return deadline;
+            }
+
+            acquired.set(true);
+            return cooldownMs > Long.MAX_VALUE - nowMs ? Long.MAX_VALUE : nowMs + cooldownMs;
+        });
+        return acquired.get();
     }
 
     boolean isRegistered(int header) {
@@ -322,7 +357,7 @@ public class PacketManager {
         this.registerHandler(Incoming.CompleteDiffieHandshake, CompleteDiffieHandshakeEvent.class);
         this.registerHandler(Incoming.SecureLoginEvent, SecureLoginEvent.class);
         this.registerHandler(Incoming.MachineIDEvent, MachineIDEvent.class);
-        this.registerHandler(Incoming.UsernameEvent, UsernameEvent.class);
+        this.registerHandler(Incoming.GetIgnoredUsersEvent, GetIgnoredUsersEvent.class);
         this.registerHandler(Incoming.PingEvent, PingEvent.class);
     }
 
@@ -340,6 +375,14 @@ public class PacketManager {
         this.registerHandler(Incoming.RequestInitFriendsEvent, RequestInitFriendsEvent.class);
         this.registerHandler(Incoming.FindNewFriendsEvent, FindNewFriendsEvent.class);
         this.registerHandler(Incoming.InviteFriendsEvent, InviteFriendsEvent.class);
+        this.registerHandler(Incoming.RequestMessengerConversationsEvent, RequestMessengerConversationsEvent.class);
+        this.registerHandler(Incoming.RequestMessengerHistoryEvent, RequestMessengerHistoryEvent.class);
+        this.registerHandler(Incoming.SendMessengerMessageEvent, SendMessengerMessageEvent.class);
+        this.registerHandler(Incoming.MarkMessengerReadEvent, MarkMessengerReadEvent.class);
+        this.registerHandler(Incoming.AddFriendCategoryEvent, AddFriendCategoryEvent.class);
+        this.registerHandler(Incoming.RenameFriendCategoryEvent, RenameFriendCategoryEvent.class);
+        this.registerHandler(Incoming.RemoveFriendCategoryEvent, RemoveFriendCategoryEvent.class);
+        this.registerHandler(Incoming.MoveFriendToCategoryEvent, MoveFriendToCategoryEvent.class);
     }
 
     private void registerUsers() throws Exception {
@@ -419,7 +462,7 @@ public class PacketManager {
         this.registerHandler(Incoming.RequestInventoryBotsEvent, RequestInventoryBotsEvent.class);
         this.registerHandler(Incoming.RequestInventoryItemsDelete, RequestInventoryItemsDelete.class);
         this.registerHandler(Incoming.RequestInventoryItemsEvent, RequestInventoryItemsEvent.class);
-        this.registerHandler(Incoming.HotelViewInventoryEvent, RequestInventoryItemsEvent.class);
+        this.registerHandler(Incoming.HotelViewInventoryEvent, HotelViewInventoryEvent.class);
         this.registerHandler(Incoming.RequestInventoryPetsEvent, RequestInventoryPetsEvent.class);
         this.registerHandler(Incoming.RequestInventoryPetDelete, RequestInventoryPetDelete.class);
         this.registerHandler(Incoming.RequestInventoryBadgeDelete, RequestInventoryBadgeDelete.class);

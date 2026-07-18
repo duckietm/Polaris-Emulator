@@ -4,19 +4,31 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.crafting.CraftingAltar;
 import com.eu.habbo.habbohotel.crafting.CraftingRecipe;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.util.PacketGuard;
 import com.eu.habbo.messages.outgoing.crafting.CraftingRecipesAvailableComposer;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class RequestCraftingRecipesAvailableEvent extends MessageHandler {
+    static final int MAX_CRAFTING_INGREDIENTS = 50;
+
     @Override
     public void handle() throws Exception {
         int altarId = this.packet.readInt();
 
-        HabboItem item = this.client.getHabbo().getHabboInfo().getCurrentRoom().getHabboItem(altarId);
+        Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+        if (room == null) {
+            return;
+        }
+
+        HabboItem item = room.getHabboItem(altarId);
+        if (item == null) {
+            return;
+        }
 
         CraftingAltar altar = Emulator.getGameEnvironment().getCraftingManager().getAltar(item.getBaseItem());
 
@@ -24,6 +36,10 @@ public class RequestCraftingRecipesAvailableEvent extends MessageHandler {
             Map<Item, Integer> items = new HashMap<>();
 
             int count = this.packet.readInt();
+            if (!PacketGuard.isValidIntList(count, this.packet.bytesAvailable(), MAX_CRAFTING_INGREDIENTS)) {
+                return;
+            }
+
             for (int i = 0; i < count; i++) {
                 HabboItem habboItem = this.client.getHabbo().getInventory().getItemsComponent().getHabboItem(this.packet.readInt());
 

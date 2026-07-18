@@ -1,14 +1,13 @@
 package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.economy.EconomyLedger;
+import com.eu.habbo.habbohotel.economy.EconomyOperation;
+import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 
 /**
  * Generic non-credits currency grant. Wire field `currencyType`:
@@ -52,14 +51,16 @@ public class HousekeepingGiveCurrencyEvent extends MessageHandler {
         }
 
         Habbo online = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
+        int actorId = this.client.getHabbo().getHabboInfo().getId();
+        String operationId = EconomyOperationId.create("housekeeping:currency:" + userId + ":" + currencyType);
 
         if (online != null) {
             // givePixels writes users_currency type=0 and ships UserCurrency;
             // givePoints(type, amount) is the generalised path for everything else.
             if (currencyType == CURRENCY_DUCKETS) {
-                online.givePixels(amount);
+                online.givePoints(currencyType, amount, "housekeeping.user.give_currency", operationId, actorId);
             } else {
-                online.givePoints(currencyType, amount);
+                online.givePoints(currencyType, amount, "housekeeping.user.give_currency", operationId, actorId);
             }
 
             this.audit(actionKey, userId, currencyType, amount);
@@ -67,15 +68,11 @@ public class HousekeepingGiveCurrencyEvent extends MessageHandler {
             return;
         }
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "INSERT INTO users_currency (user_id, type, amount) VALUES (?, ?, ?) " +
-                     "ON DUPLICATE KEY UPDATE amount = amount + VALUES(amount)")) {
-            statement.setInt(1, userId);
-            statement.setInt(2, currencyType);
-            statement.setInt(3, amount);
-            statement.executeUpdate();
-        } catch (SQLException e) {
+        try {
+            EconomyLedger.execute(new EconomyOperation(
+                    operationId, userId, actorId, "currency_grant", "housekeeping.user.give_currency",
+                    currencyType, amount, null, actionKey));
+        } catch (Exception e) {
             this.client.sendResponse(new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.db_failed"));
             return;
         }

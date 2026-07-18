@@ -57,6 +57,35 @@ class PluginRuntimeValidatorTest {
         assertFalse(report.hasErrors());
     }
 
+    @Test
+    void rejectsPluginMetadataContainingControlCharacters() {
+        HabboPluginConfiguration configuration = configuration("Unsafe\nPlugin", ValidPlugin.class.getName());
+
+        RuntimeValidationReport report = PluginRuntimeValidator.validateConfiguration("unsafe.jar", configuration);
+
+        assertTrue(report.hasErrors());
+        assertTrue(report.errors().stream().anyMatch(issue -> issue.message().contains("invalid name")));
+    }
+
+    @Test
+    void rejectsInvalidPluginMainClassName() {
+        HabboPluginConfiguration configuration = configuration("Unsafe", "../com.eu.habbo.BadPlugin");
+
+        RuntimeValidationReport report = PluginRuntimeValidator.validateConfiguration("unsafe.jar", configuration);
+
+        assertTrue(report.hasErrors());
+        assertTrue(report.errors().stream().anyMatch(issue -> issue.message().contains("invalid main")));
+    }
+
+    @Test
+    void keepsLegacyPluginNamespaceCompatible() {
+        HabboPluginConfiguration configuration = configuration("Legacy", ValidPlugin.class.getName());
+
+        RuntimeValidationReport report = PluginRuntimeValidator.validateConfiguration("legacy.jar", configuration);
+
+        assertFalse(report.hasErrors());
+    }
+
     private static HabboPluginConfiguration configuration(String name, String main) {
         HabboPluginConfiguration configuration = new HabboPluginConfiguration();
         configuration.name = name;

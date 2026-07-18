@@ -15,6 +15,11 @@ public class StalkFriendEvent extends MessageHandler {
     public void handle() throws Exception {
         int friendId = this.packet.readInt();
 
+        if (!FriendInputGuard.isPositiveId(friendId)) {
+            this.client.sendResponse(new StalkErrorComposer(StalkErrorComposer.NOT_IN_FRIEND_LIST));
+            return;
+        }
+
         MessengerBuddy buddy = this.client.getHabbo().getMessenger().getFriend(friendId);
 
         if (buddy == null) {

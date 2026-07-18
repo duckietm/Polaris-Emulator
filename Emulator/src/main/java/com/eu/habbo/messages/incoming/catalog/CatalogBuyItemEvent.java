@@ -38,6 +38,11 @@ public class CatalogBuyItemEvent extends MessageHandler {
     }
 
     @Override
+    public String getRatelimitGroup() {
+        return "catalog.purchase";
+    }
+
+    @Override
     public void handle() throws Exception {
         if (Emulator.getIntUnixTimestamp() - this.client.getHabbo().getHabboStats().lastPurchaseTimestamp >= CatalogManager.PURCHASE_COOLDOWN) {
             this.client.getHabbo().getHabboStats().lastPurchaseTimestamp = Emulator.getIntUnixTimestamp();
@@ -72,7 +77,7 @@ public class CatalogBuyItemEvent extends MessageHandler {
                     page = Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(searchedItem.getPageId());
 
                     if(page != null) {
-                        if (page.getRank() > this.client.getHabbo().getHabboInfo().getRank().getId()) {
+                        if (!this.canAccessPage(page)) {
                             page = null;
                         } else if (page.getLayout() != null && page.getLayout().equalsIgnoreCase(CatalogPageLayouts.club_gift.name())) {
                             page = null;
@@ -86,6 +91,10 @@ public class CatalogBuyItemEvent extends MessageHandler {
                     page = null;
                 }
 
+                if (page != null && !this.canAccessPage(page)) {
+                    page = null;
+                }
+
                 if (page instanceof RoomBundleLayout) {
                     final CatalogItem[] item = new CatalogItem[1];
                     for (CatalogItem object : page.getCatalogItems().values()) {
@@ -94,7 +103,23 @@ public class CatalogBuyItemEvent extends MessageHandler {
                     }
 
                     CatalogItem roomBundleItem = item[0];
-                    if (roomBundleItem == null || roomBundleItem.getCredits() > this.client.getHabbo().getHabboInfo().getCredits() || roomBundleItem.getPoints() > this.client.getHabbo().getHabboInfo().getCurrencyAmount(roomBundleItem.getPointsType())) {
+                    if (roomBundleItem == null) {
+                        this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                        return;
+                    }
+
+                    int roomCredits;
+                    int roomPoints;
+                    try {
+                        roomCredits = CatalogPurchaseMath.requireNonNegative(roomBundleItem.getCredits(), "room bundle credit price");
+                        roomPoints = CatalogPurchaseMath.requireNonNegative(roomBundleItem.getPoints(), "room bundle points price");
+                    } catch (IllegalArgumentException e) {
+                        this.client.sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+                        return;
+                    }
+
+                    if (roomCredits > this.client.getHabbo().getHabboInfo().getCredits()
+                            || roomPoints > this.client.getHabbo().getHabboInfo().getCurrencyAmount(roomBundleItem.getPointsType())) {
                         this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
                         return;
                     }
@@ -108,10 +133,10 @@ public class CatalogBuyItemEvent extends MessageHandler {
                     }
                     ((RoomBundleLayout) page).buyRoom(this.client.getHabbo());
                     if (!this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_CREDITS)) { //if the player has this perm disabled
-                        this.client.getHabbo().giveCredits(-roomBundleItem.getCredits()); // takes their credits away
+                        this.client.getHabbo().giveCredits(-roomCredits); // takes their credits away
                     }
                     if (!this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_POINTS)) { //if the player has this perm disabled
-                        this.client.getHabbo().givePoints(roomBundleItem.getPointsType(), -roomBundleItem.getPoints()); // takes their points away
+                        this.client.getHabbo().givePoints(roomBundleItem.getPointsType(), -roomPoints); // takes their points away
                     }
                     this.client.sendResponse(new PurchaseOKComposer()); // Sends the composer to close the window.
 
@@ -144,21 +169,36 @@ public class CatalogBuyItemEvent extends MessageHandler {
             }
 
             if (this.isClubOfferPage(page)) {
-                ClubOffer item = Emulator.getGameEnvironment().getCatalogManager().clubOffers.get(itemId);
+                synchronized (this.client.getHabbo().getHabboStats()) {
+                    if (this.client.getHabbo().getHabboStats().isPurchasingFurniture) {
+                        this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                        return;
+                    }
+                    this.client.getHabbo().getHabboStats().isPurchasingFurniture = true;
+                }
+
+                try {
+                    ClubOffer item = Emulator.getGameEnvironment().getCatalogManager().clubOffers.get(itemId);
 
                 if (item == null || !item.belongsToWindow(this.getClubOfferWindowId(page))) {
                     this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
                     return;
                 }
 
-                int totalDays = 0;
-                int totalCredits = 0;
-                int totalDuckets = 0;
-
-                for (int i = 0; i < count; i++) {
-                    totalDays += item.getDays();
-                    totalCredits += item.getCredits();
-                    totalDuckets += item.getPoints();
+                int totalDays;
+                int totalCredits;
+                int totalDuckets;
+                int subscriptionSeconds;
+                try {
+                    totalDays = CatalogPurchaseMath.checkedPrice(item.getDays(), count);
+                    totalCredits = CatalogPurchaseMath.checkedPrice(item.getCredits(), count);
+                    totalDuckets = CatalogPurchaseMath.checkedPrice(item.getPoints(), count);
+                    subscriptionSeconds = item.isBuildersClubAddon()
+                            ? 0
+                            : CatalogPurchaseMath.checkedSubscriptionSeconds(totalDays);
+                } catch (IllegalArgumentException e) {
+                    this.client.sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+                    return;
                 }
 
                 if (totalDays > 0) {
@@ -168,11 +208,12 @@ public class CatalogBuyItemEvent extends MessageHandler {
                     if (this.client.getHabbo().getHabboInfo().getCredits() < totalCredits)
                         return;
 
-                    if (!this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_CREDITS))
-                        this.client.getHabbo().giveCredits(-totalCredits);
-
-                    if (!this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_POINTS))
-                        this.client.getHabbo().givePoints(item.getPointsType(), -totalDuckets);
+                    int paidCredits = this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_CREDITS) ? 0 : totalCredits;
+                    int paidPoints = this.client.getHabbo().hasPermission(Permission.ACC_INFINITE_POINTS) ? 0 : totalDuckets;
+                    if (!CatalogPaymentService.tryTake(this.client.getHabbo(), paidCredits, item.getPointsType(), paidPoints)) {
+                        this.client.sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+                        return;
+                    }
 
                     if (item.isBuildersClubAddon()) {
                         this.client.getHabbo().getHabboStats().addBuildersClubBonusFurni(totalDays);
@@ -181,9 +222,10 @@ public class CatalogBuyItemEvent extends MessageHandler {
                     } else {
                         String subscriptionType = item.isBuildersClubSubscription() ? Subscription.BUILDERS_CLUB : Subscription.HABBO_CLUB;
 
-                        if (this.client.getHabbo().getHabboStats().createSubscription(subscriptionType, (totalDays * 86400)) == null) {
+                        if (this.client.getHabbo().getHabboStats().createSubscription(subscriptionType, subscriptionSeconds) == null) {
+                            CatalogPaymentService.refund(this.client.getHabbo(), paidCredits, item.getPointsType(), paidPoints);
                             this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
-                            throw new Exception("Unable to create or extend subscription");
+                            return;
                         }
                     }
 
@@ -192,7 +234,12 @@ public class CatalogBuyItemEvent extends MessageHandler {
 
                     this.client.getHabbo().getHabboStats().run();
                 }
-                return;
+                    return;
+                } finally {
+                    synchronized (this.client.getHabbo().getHabboStats()) {
+                        this.client.getHabbo().getHabboStats().isPurchasingFurniture = false;
+                    }
+                }
             }
 
             CatalogItem item;
@@ -254,6 +301,13 @@ public class CatalogBuyItemEvent extends MessageHandler {
                 || page instanceof BuildersClubFrontPageLayout
                 || page instanceof BuildersClubAddonsLayout
                 || page instanceof BuildersClubLoyaltyLayout;
+    }
+
+    private boolean canAccessPage(CatalogPage page) {
+        return CatalogPageAccessPolicy.canAccess(
+                page,
+                this.client.getHabbo().getHabboInfo().getRank().getId(),
+                this.client.getHabbo().getHabboStats().hasActiveClub());
     }
 
     private int getClubOfferWindowId(CatalogPage page) {

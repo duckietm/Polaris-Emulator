@@ -11,7 +11,7 @@ public class FriendPrivateMessageEvent extends MessageHandler {
         int userId = this.packet.readInt();
         String message = FriendInputGuard.normalizeMessage(this.packet.readString());
 
-        if (message.isEmpty()) {
+        if (!FriendInputGuard.isPositiveId(userId) || message.isEmpty()) {
             return;
         }
 

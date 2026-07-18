@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.rooms.RoomChatMessage;
 import com.eu.habbo.habbohotel.rooms.RoomUnitStatus;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.plugin.events.bots.BotServerItemEvent;
+import com.eu.habbo.plugin.PluginEventInputGuard;
 import com.eu.habbo.threading.runnables.RoomUnitGiveHanditem;
 import com.eu.habbo.threading.runnables.RoomUnitWalkToRoomUnit;
 import org.slf4j.Logger;
@@ -93,6 +94,10 @@ public class ButlerBot extends Bot {
                         // Enable plugins to cancel this event
                         BotServerItemEvent serveEvent = new BotServerItemEvent(this, message.getHabbo(), itemId);
                         if (Emulator.getPluginManager().fireEvent(serveEvent).isCancelled()) {
+                            return;
+                        }
+
+                        if (!PluginEventInputGuard.isPositiveId(serveEvent.itemId)) {
                             return;
                         }
 

@@ -17,7 +17,7 @@ public class FriendFindingRoomComposer extends MessageComposer {
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.FriendFindingRoomComposer);
-        this.response.appendInt(this.errorCode);
+        this.response.appendBoolean(this.errorCode == ROOM_FOUND);
         return this.response;
     }
 

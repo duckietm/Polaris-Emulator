@@ -12,6 +12,10 @@ public class ChangeRelationEvent extends MessageHandler {
         int userId = this.packet.readInt();
         int relationId = this.packet.readInt();
 
+        if (!FriendInputGuard.isPositiveId(userId)) {
+            return;
+        }
+
         MessengerBuddy buddy = this.client.getHabbo().getMessenger().getFriends().get(userId);
         if (buddy != null && FriendInputGuard.isValidRelation(relationId)) {
             UserRelationShipEvent event = new UserRelationShipEvent(this.client.getHabbo(), buddy, relationId);

@@ -20,6 +20,8 @@ public class CameraPurchaseEvent extends MessageHandler {
 
     @Override
     public void handle() {
+        this.packet.readString();
+
         Habbo habbo = this.client.getHabbo();
         HabboInfo habboInfo = habbo.getHabboInfo();
 

@@ -20,6 +20,7 @@ public class ModToolKickEvent extends MessageHandler {
 
         int userId = this.packet.readInt();
         String message = ModToolInputGuard.normalize(this.packet.readString());
+        this.packet.readInt(); // Moderator category; kick auditing currently stores the normalized message.
 
         if (!ModToolTicketGuard.isPositiveId(userId) || !ModToolInputGuard.isSafeMessage(message)) {
             return;

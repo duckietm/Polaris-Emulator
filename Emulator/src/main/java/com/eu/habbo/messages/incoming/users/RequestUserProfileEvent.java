@@ -10,6 +10,7 @@ public class RequestUserProfileEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         int habboId = this.packet.readInt();
+        this.packet.readBoolean(); // UI display hint; profile visibility is enforced by the server response.
 
         if (!UserInputGuard.isPositiveId(habboId))
             return;

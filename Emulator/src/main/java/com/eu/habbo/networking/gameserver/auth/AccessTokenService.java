@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Base64;
 
@@ -42,8 +43,20 @@ public final class AccessTokenService {
     }
 
     public static Issued issue(int userId) {
+        try (Connection conn = Emulator.getDatabase().getDataSource().getConnection()) {
+            return issue(conn, userId);
+        } catch (SQLException e) {
+            throw new IllegalStateException("Could not load access token version", e);
+        }
+    }
+
+    static Issued issue(Connection conn, int userId) throws SQLException {
         long now = Emulator.getIntUnixTimestamp();
         long exp = now + ttlSeconds();
+        UserSecurityState securityState = currentSecurityState(conn, userId);
+        if (securityState == null) {
+            throw new SQLException("Cannot issue access token for unknown user " + userId);
+        }
 
         JsonObject header = new JsonObject();
         header.addProperty("alg", "HS256");
@@ -54,6 +67,8 @@ public final class AccessTokenService {
         payload.addProperty("iat", now);
         payload.addProperty("exp", exp);
         payload.addProperty("typ", "access");
+        payload.addProperty("ver", securityState.version);
+        payload.addProperty("cred", credentialBinding(userId, securityState.passwordHash));
 
         String h = URL_ENC.encodeToString(header.toString().getBytes(StandardCharsets.UTF_8));
         String p = URL_ENC.encodeToString(payload.toString().getBytes(StandardCharsets.UTF_8));
@@ -64,6 +79,20 @@ public final class AccessTokenService {
     }
 
     public static int verify(String token) {
+        // Do the cheap, stateless checks (structure, signature, expiry) before
+        // acquiring a database connection, so unsigned or expired garbage cannot
+        // drive a connection checkout per request.
+        if (!passesStatelessChecks(token)) return 0;
+
+        try (Connection conn = Emulator.getDatabase().getDataSource().getConnection()) {
+            return verify(conn, token);
+        } catch (SQLException e) {
+            LOGGER.warn("[auth/access] token version lookup failed", e);
+            return 0;
+        }
+    }
+
+    static int verify(Connection conn, String token) throws SQLException {
         if (token == null || token.isEmpty() || token.length() > MAX_TOKEN_CHARS) return 0;
 
         String[] parts = token.split("\\.");
@@ -82,10 +111,79 @@ public final class AccessTokenService {
             if (!payload.has("typ") || !"access".equals(payload.get("typ").getAsString())) return 0;
             long exp = payload.get("exp").getAsLong();
             if (exp <= Emulator.getIntUnixTimestamp()) return 0;
-            return payload.get("sub").getAsInt();
+            int userId = payload.get("sub").getAsInt();
+            long version = payload.get("ver").getAsLong();
+            String credential = payload.get("cred").getAsString();
+            if (userId <= 0 || version < 0) return 0;
+
+            UserSecurityState securityState = currentSecurityState(conn, userId);
+            // A validly-signed token for a since-deleted account is simply invalid,
+            // not a server error; reject it quietly rather than logging per request.
+            if (securityState == null) return 0;
+            if (version != securityState.version
+                    || !credential.equals(credentialBinding(userId, securityState.passwordHash))) return 0;
+            return userId;
+        } catch (SQLException e) {
+            throw e;
         } catch (Exception e) {
             return 0;
         }
+    }
+
+    private static boolean passesStatelessChecks(String token) {
+        if (token == null || token.isEmpty() || token.length() > MAX_TOKEN_CHARS) return false;
+
+        String[] parts = token.split("\\.");
+        if (parts.length != 3) return false;
+
+        try {
+            String signingInput = parts[0] + "." + parts[1];
+            byte[] expected = hmacSha256(secret().getBytes(StandardCharsets.UTF_8),
+                    signingInput.getBytes(StandardCharsets.UTF_8));
+            byte[] provided = URL_DEC.decode(parts[2]);
+            if (!constantTimeEquals(expected, provided)) return false;
+
+            byte[] payloadBytes = URL_DEC.decode(parts[1]);
+            JsonObject payload = JsonParser.parseString(new String(payloadBytes, StandardCharsets.UTF_8)).getAsJsonObject();
+            if (!payload.has("typ") || !"access".equals(payload.get("typ").getAsString())) return false;
+            return payload.get("exp").getAsLong() > Emulator.getIntUnixTimestamp();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public static void revokeAll(Connection conn, int userId) throws SQLException {
+        if (userId <= 0) return;
+
+        try (PreparedStatement update = conn.prepareStatement(
+                "UPDATE users SET access_token_version = access_token_version + 1 WHERE id = ? LIMIT 1")) {
+            update.setInt(1, userId);
+            update.executeUpdate();
+        }
+    }
+
+    private static UserSecurityState currentSecurityState(Connection conn, int userId) throws SQLException {
+        try (PreparedStatement select = conn.prepareStatement(
+                "SELECT access_token_version, password FROM users WHERE id = ? LIMIT 1")) {
+            select.setInt(1, userId);
+            try (ResultSet result = select.executeQuery()) {
+                if (!result.next()) {
+                    return null;
+                }
+                return new UserSecurityState(
+                        result.getLong("access_token_version"),
+                        result.getString("password"));
+            }
+        }
+    }
+
+    private static String credentialBinding(int userId, String passwordHash) {
+        String value = userId + "\0" + (passwordHash == null ? "" : passwordHash);
+        return URL_ENC.encodeToString(hmacSha256(secret().getBytes(StandardCharsets.UTF_8),
+                value.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    private record UserSecurityState(long version, String passwordHash) {
     }
 
     private static String secret() {

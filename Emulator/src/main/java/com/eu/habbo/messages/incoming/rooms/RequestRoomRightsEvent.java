@@ -8,9 +8,10 @@ import com.eu.habbo.messages.outgoing.rooms.RoomRightsListComposer;
 public class RequestRoomRightsEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
+        int requestedRoomId = this.packet.readInt();
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
-        if (room == null)
+        if (room == null || room.getId() != requestedRoomId)
             return;
 
         if (room.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() || this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)) {

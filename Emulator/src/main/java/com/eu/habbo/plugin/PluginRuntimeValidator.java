@@ -3,6 +3,10 @@ package com.eu.habbo.plugin;
 import com.eu.habbo.messages.RuntimeValidationReport;
 
 public final class PluginRuntimeValidator {
+    private static final int MAX_PLUGIN_NAME_LENGTH = 100;
+    private static final int MAX_PLUGIN_AUTHOR_LENGTH = 100;
+    private static final int MAX_MAIN_CLASS_LENGTH = 255;
+    private static final String JAVA_CLASS_NAME_PATTERN = "(?:[A-Za-z_$][A-Za-z0-9_$]*\\.)*[A-Za-z_$][A-Za-z0-9_$]*";
 
     private PluginRuntimeValidator() {
     }
@@ -17,10 +21,18 @@ public final class PluginRuntimeValidator {
 
         if (isBlank(configuration.name)) {
             report.addError("Plugin " + jarName + " is missing required plugin.json field name");
+        } else if (!isSafeMetadata(configuration.name, MAX_PLUGIN_NAME_LENGTH)) {
+            report.addError("Plugin " + jarName + " has an invalid name");
         }
 
         if (isBlank(configuration.main)) {
             report.addError("Plugin " + jarName + " is missing required plugin.json field main");
+        } else if (configuration.main.length() > MAX_MAIN_CLASS_LENGTH || !configuration.main.matches(JAVA_CLASS_NAME_PATTERN)) {
+            report.addError("Plugin " + jarName + " has an invalid main class name");
+        }
+
+        if (!isBlank(configuration.author) && !isSafeMetadata(configuration.author, MAX_PLUGIN_AUTHOR_LENGTH)) {
+            report.addError("Plugin " + jarName + " has an invalid author");
         }
 
         return report;
@@ -65,5 +77,13 @@ public final class PluginRuntimeValidator {
 
     private static boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
+    }
+
+    private static boolean isSafeMetadata(String value, int maxLength) {
+        if (value.length() > maxLength) {
+            return false;
+        }
+
+        return value.codePoints().noneMatch(Character::isISOControl);
     }
 }

@@ -11,6 +11,11 @@ public class ClaimAllEarningsRewardsEvent extends MessageHandler {
     }
 
     @Override
+    public String getRatelimitGroup() {
+        return "earnings.claim";
+    }
+
+    @Override
     public void handle() {
         EarningsCenterManager manager = new EarningsCenterManager();
         this.client.sendResponse(new EarningsClaimResultComposer(manager.claimAll(this.client.getHabbo())));

@@ -14,9 +14,9 @@ public class DisconnectUser extends RCONMessage<DisconnectUser.DisconnectUserJSO
     public void handle(Gson gson, DisconnectUserJSON json) {
         Habbo target;
 
-        if (json.user_id >= 0) {
+        if (json.user_id > 0) {
             target = Emulator.getGameEnvironment().getHabboManager().getHabbo(json.user_id);
-        } else if (!json.username.isEmpty()) {
+        } else if (json.username != null && !json.username.isBlank()) {
             target = Emulator.getGameEnvironment().getHabboManager().getHabbo(json.username);
         } else {
             this.status = RCONMessage.HABBO_NOT_FOUND;

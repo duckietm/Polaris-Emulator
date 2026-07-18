@@ -7,6 +7,7 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.camera.CameraPublishWaitMessageComposer;
 import com.eu.habbo.messages.outgoing.catalog.NotEnoughPointsTypeComposer;
 import com.eu.habbo.plugin.events.users.UserPublishPictureEvent;
+import com.eu.habbo.plugin.PluginEventInputGuard;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +52,11 @@ public class CameraPublishToWebEvent extends MessageHandler {
             UserPublishPictureEvent publishPictureEvent = new UserPublishPictureEvent(habbo, habboInfo.getPhotoURL(), currentTimestamp, habboInfo.getPhotoRoomId());
 
             if (!Emulator.getPluginManager().fireEvent(publishPictureEvent).isCancelled()) {
+                if (!PluginEventInputGuard.isPositiveId(publishPictureEvent.roomId)
+                        || Emulator.getGameEnvironment().getRoomManager().loadRoom(publishPictureEvent.roomId) == null) {
+                    return;
+                }
+
                 try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                      PreparedStatement statement = connection.prepareStatement("INSERT INTO camera_web (user_id, room_id, timestamp, url) VALUES (?, ?, ?, ?)")) {
                     statement.setInt(1, habboInfo.getId());

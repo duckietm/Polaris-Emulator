@@ -20,12 +20,58 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Set up JDK 21
+      - name: Verify local build handoff
+        shell: pwsh
+        run: ../scripts/build-latest.test.ps1
+
+      - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: "25"
           cache: maven
 
       - name: Build and test
         run: mvn -B verify
+
+      - name: Upload furni consistency fixture report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: furni-consistency-fixture-report
+          path: Emulator/target/furni-consistency-fixture.json
+          if-no-files-found: error
+
+  migration-integration:
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      MIGRATION_TEST_DB_HOST: 127.0.0.1
+      MIGRATION_TEST_DB_PORT: "3306"
+      MIGRATION_TEST_DB_USER: root
+      MIGRATION_TEST_DB_PASSWORD: root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
+      - name: Verify versioned migrations on MariaDB
+        working-directory: Emulator
+        run: mvn -B -Dtest=MariaDbMigrationIntegrationTest test

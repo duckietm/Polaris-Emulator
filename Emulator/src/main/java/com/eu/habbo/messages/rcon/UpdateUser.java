@@ -6,6 +6,11 @@ import com.eu.habbo.messages.outgoing.rooms.users.RoomUserDataComposer;
 import com.eu.habbo.messages.outgoing.users.MeMenuSettingsComposer;
 import com.eu.habbo.messages.outgoing.users.UpdateUserLookComposer;
 import com.google.gson.Gson;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -166,27 +171,41 @@ public class UpdateUser extends RCONMessage<UpdateUser.JSON> {
 
     static class JSON {
 
+        @Positive(message = "invalid user")
         public int user_id;
 
 
+        @PositiveOrZero(message = "invalid achievement score")
         public int achievement_score = 0;
 
 
+        @Min(value = -1, message = "invalid block_following")
+        @Max(value = 1, message = "invalid block_following")
         public int block_following = -1;
 
 
+        @Min(value = -1, message = "invalid block_friendrequests")
+        @Max(value = 1, message = "invalid block_friendrequests")
         public int block_friendrequests = -1;
 
 
+        @Min(value = -1, message = "invalid block_roominvites")
+        @Max(value = 1, message = "invalid block_roominvites")
         public int block_roominvites = -1;
 
 
+        @Min(value = -1, message = "invalid old_chat")
+        @Max(value = 1, message = "invalid old_chat")
         public int old_chat = -1;
 
 
+        @Min(value = -1, message = "invalid block_camera_follow")
+        @Max(value = 1, message = "invalid block_camera_follow")
         public int block_camera_follow = -1;
 
 
+        @Size(max = MAX_LOOK_LENGTH, message = "invalid look")
+        @jakarta.validation.constraints.Pattern(regexp = "^$|[A-Za-z0-9.-]+", message = "invalid look")
         public String look = "";
 
         public boolean strip_unredeemed_clothing = false;

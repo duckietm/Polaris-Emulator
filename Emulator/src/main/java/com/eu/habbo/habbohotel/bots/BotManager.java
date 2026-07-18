@@ -81,8 +81,19 @@ public class BotManager {
             return null;
         }
 
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            return this.createBot(connection, data, type, ownerId);
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+            return null;
+        }
+    }
+
+    public Bot createBot(Connection connection, Map<String, String> data, String type, int ownerId) throws SQLException {
+        if (ownerId <= 0) return null;
+
         Bot bot = null;
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO bots (user_id, room_id, name, motto, figure, gender, type) VALUES (?, 0, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement statement = connection.prepareStatement("INSERT INTO bots (user_id, room_id, name, motto, figure, gender, type) VALUES (?, 0, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
             statement.setInt(1, ownerId);
             statement.setString(2, data.get("name"));
             statement.setString(3, data.get("motto"));
@@ -99,13 +110,9 @@ public class BotManager {
                                 bot = this.loadBot(resultSet);
                             }
                         }
-                    } catch (SQLException e) {
-                        LOGGER.error("Caught SQL exception", e);
                     }
                 }
             }
-        } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
         }
 
         return bot;

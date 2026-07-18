@@ -2,6 +2,7 @@ package com.eu.habbo.core;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.guilds.forums.ForumThread;
+import com.eu.habbo.habbohotel.messenger.history.MessengerHistoryServices;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.friends.SearchUserEvent;
 import com.eu.habbo.messages.outgoing.users.UserDataComposer;
@@ -27,6 +28,7 @@ public class CleanerThread implements Runnable {
     private static final int REMOVE_INACTIVE_TOURS = 600;
     private static final int SAVE_ERROR_LOGS = 30;
     private static final int CLEAR_CACHED_VALUES = 60 * 60;
+    private static final int CLEAN_MESSENGER_HISTORY = 60 * 60;
     private static final int CALLBACK_TIME = 60 * 15;
 
     private static int LAST_HOF_RELOAD = Emulator.getIntUnixTimestamp();
@@ -38,6 +40,7 @@ public class CleanerThread implements Runnable {
     private static int LAST_DAILY_REFILL = Emulator.getIntUnixTimestamp();
     private static int LAST_CALLBACK = Emulator.getIntUnixTimestamp();
     private static int LAST_HABBO_CACHE_CLEARED = Emulator.getIntUnixTimestamp();
+    private static int LAST_MESSENGER_HISTORY_CLEANED = Emulator.getIntUnixTimestamp();
 
     public CleanerThread() {
         this.databaseCleanup();
@@ -98,6 +101,15 @@ public class CleanerThread implements Runnable {
         if (time - LAST_HABBO_CACHE_CLEARED > CLEAR_CACHED_VALUES) {
             this.clearCachedValues();
             LAST_HABBO_CACHE_CLEARED = time;
+        }
+
+        if (time - LAST_MESSENGER_HISTORY_CLEANED > CLEAN_MESSENGER_HISTORY) {
+            try {
+                MessengerHistoryServices.create().cleanupRetention();
+            } catch (RuntimeException exception) {
+                LOGGER.error("Unable to clean messenger history", exception);
+            }
+            LAST_MESSENGER_HISTORY_CLEANED = time;
         }
 
         SearchUserEvent.cleanExpiredCache();

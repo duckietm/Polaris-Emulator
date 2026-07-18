@@ -1,8 +1,16 @@
 package com.eu.habbo.database;
 
-import com.eu.habbo.Emulator;
 import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.database.compat.LegacySqlBridge;
+import com.eu.habbo.database.migrations.DatabaseMigrationRunner;
+import com.eu.habbo.database.migrations.MigrationCatalog;
+import com.eu.habbo.database.migrations.MigrationMode;
+import com.eu.habbo.database.migrations.MigrationOptions;
+import com.eu.habbo.database.migrations.MigrationReport;
+import com.eu.habbo.database.schema.DatabaseSchemaValidator;
+import com.eu.habbo.database.schema.SchemaContract;
+import com.eu.habbo.database.schema.SchemaContractLoader;
+import com.eu.habbo.database.schema.SchemaValidationReport;
 import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,28 +31,59 @@ public class Database {
     private final LegacySqlBridge legacySqlBridge = new LegacySqlBridge();
 
     public Database(ConfigurationManager config) {
-        long millis = System.currentTimeMillis();
+        this(config, MigrationOptions.resolve(config, new String[0], System.getenv()));
+    }
 
-        boolean SQLException = false;
+    public Database(ConfigurationManager config, MigrationOptions migrationOptions) {
+        long millis = System.currentTimeMillis();
 
         try {
             this.databasePool = new DatabasePool();
             if (!this.databasePool.getStoragePooling(config, this.legacySqlBridge)) {
-                LOGGER.info("Failed to connect to the database. Please check config.ini and make sure the MySQL process is running. Shutting down...");
-                SQLException = true;
-                return;
+                throw new IllegalStateException(
+                        "Failed to initialize the database pool; check config.ini and MariaDB availability");
             }
             this.dataSource = this.databasePool.getDatabase();
+            this.runMigrations(migrationOptions);
         } catch (Exception e) {
-            SQLException = true;
+            this.dispose();
             LOGGER.error("Failed to connect to your database.", e);
-        } finally {
-            if (SQLException) {
-                Emulator.prepareShutdown();
-            }
+            if (e instanceof RuntimeException runtimeException) throw runtimeException;
+            throw new IllegalStateException("Database startup failed", e);
         }
 
         LOGGER.info("Database -> Connected! ({} MS)", System.currentTimeMillis() - millis);
+    }
+
+    private void runMigrations(MigrationOptions migrationOptions) throws SQLException {
+        if (migrationOptions.mode() == MigrationMode.OFF) {
+            LOGGER.warn("Database migrations are OFF; schema compatibility is not verified.");
+            return;
+        }
+
+        MigrationCatalog catalog = MigrationCatalog.load(Database.class.getClassLoader());
+        SchemaContract schemaContract = SchemaContractLoader.load(Database.class.getClassLoader());
+        try (Connection connection = this.dataSource.getConnection()) {
+            MigrationReport report = new DatabaseMigrationRunner(
+                    connection,
+                    catalog,
+                    migrationOptions.lockTimeoutSeconds())
+                    .run(migrationOptions.mode());
+            LOGGER.info(
+                    "Database migrations -> database={}, mode={}, installed={}, packaged={}, pending={}, applied={}",
+                    connection.getCatalog(),
+                    report.mode().name().toLowerCase(),
+                    report.installedVersion(),
+                    report.packagedVersion(),
+                    report.pendingVersions(),
+                    report.appliedVersions());
+            SchemaValidationReport schema =
+                    new DatabaseSchemaValidator(connection, schemaContract).validate();
+            LOGGER.info(
+                    "Database schema -> validated {} required tables and {} required columns",
+                    schema.requiredTables(),
+                    schema.requiredColumns());
+        }
     }
 
     public void dispose() {

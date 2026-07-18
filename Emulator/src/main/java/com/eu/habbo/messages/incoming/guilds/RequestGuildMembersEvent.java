@@ -24,7 +24,7 @@ public class RequestGuildMembersEvent extends MessageHandler {
         int pageId = this.packet.readInt();
         String query = this.packet.readString();
         int levelId = this.packet.readInt();
-        if (pageId < 0 || pageId > MAX_PAGE_ID || levelId < 0 || levelId > MAX_LEVEL_ID || query == null || query.length() > MAX_QUERY_LENGTH) {
+        if (!GuildInputGuard.isPositiveId(groupId) || pageId < 0 || pageId > MAX_PAGE_ID || levelId < 0 || levelId > MAX_LEVEL_ID || query == null || query.length() > MAX_QUERY_LENGTH) {
             return;
         }
 

@@ -21,6 +21,7 @@ public class GuildForumThreadsEvent extends MessageHandler {
     public void handle() throws Exception {
         int guildId = packet.readInt();
         int index = packet.readInt();
+        packet.readInt(); // Requested page size; the response currently applies its canonical limit.
 
         if (!GuildForumInputGuard.isPositiveId(guildId) || !GuildForumInputGuard.isValidThreadIndex(index)) {
             this.client.sendResponse(new ConnectionErrorComposer(400));

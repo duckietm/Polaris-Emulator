@@ -27,4 +27,8 @@ final class ModToolReportInputGuard {
     static boolean isPositiveId(int id) {
         return id > 0;
     }
+
+    static boolean isPrivateChatParticipant(int authorId, int reporterId, int reportedUserId) {
+        return authorId > 0 && (authorId == reporterId || authorId == reportedUserId);
+    }
 }

@@ -16,8 +16,12 @@ public class ClickFurniEvent extends MessageHandler {
             return;
         }
 
-        int itemId = Math.abs(this.packet.readInt());
+        int itemId = this.packet.readInt();
         this.packet.readInt();
+
+        if (!RoomItemInputGuard.isPositiveId(itemId)) {
+            return;
+        }
 
         HabboItem item = room.getHabboItem(itemId);
 

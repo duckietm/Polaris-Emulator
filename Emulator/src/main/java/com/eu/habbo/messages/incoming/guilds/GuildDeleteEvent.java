@@ -22,6 +22,10 @@ public class GuildDeleteEvent extends MessageHandler {
     public void handle() throws Exception {
         int guildId = this.packet.readInt();
 
+        if (!GuildInputGuard.isPositiveId(guildId)) {
+            return;
+        }
+
         Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);
 
         if (guild != null) {

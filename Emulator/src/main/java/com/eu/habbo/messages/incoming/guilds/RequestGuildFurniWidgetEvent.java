@@ -17,6 +17,10 @@ public class RequestGuildFurniWidgetEvent extends MessageHandler {
         int itemId = this.packet.readInt();
         int guildId = this.packet.readInt();
 
+        if (!GuildInputGuard.arePositiveIds(itemId, guildId)) {
+            return;
+        }
+
         if (this.client.getHabbo().getHabboInfo().getCurrentRoom() != null) {
             HabboItem item = this.client.getHabbo().getHabboInfo().getCurrentRoom().getHabboItem(itemId);
             Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(guildId);

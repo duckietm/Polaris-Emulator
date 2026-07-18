@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "source": "Database/Default Database/FullDatabase.sql",
+  "tables": {
+    "achievements": [
+      "id",
+      "name",
+      "category",
+      "level",
+      "reward_amount",
+      "reward_type",
+      "points",
+      "progress_needed"
+    ]
+  }
+}

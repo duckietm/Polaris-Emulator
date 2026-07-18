@@ -24,16 +24,24 @@ public class TradeOfferMultipleItemsEvent extends MessageHandler {
         if (count <= 0 || count > RoomTrade.MAX_OFFERED_ITEMS)
             return;
 
+        int[] itemIds = new int[count];
         for (int i = 0; i < count; i++) {
-            int itemId = this.packet.readInt();
-            if (itemId <= 0)
-                continue;
-
-            HabboItem item = this.client.getHabbo().getInventory().getItemsComponent().getHabboItem(itemId);
-            if (item != null && item.getBaseItem().allowTrade()) {
-                items.add(item);
-            }
+            itemIds[i] = this.packet.readInt();
         }
+
+        if (!TradeItemIdGuard.arePositiveAndUnique(itemIds))
+            return;
+
+        for (int itemId : itemIds) {
+            HabboItem item = this.client.getHabbo().getInventory().getItemsComponent().getHabboItem(itemId);
+            if (item == null || !item.getBaseItem().allowTrade())
+                return;
+
+            items.add(item);
+        }
+
+        if (items.size() != count)
+            return;
 
         trade.offerMultipleItems(this.client.getHabbo(), items);
     }

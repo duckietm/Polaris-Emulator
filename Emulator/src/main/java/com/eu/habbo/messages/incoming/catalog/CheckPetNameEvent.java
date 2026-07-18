@@ -12,6 +12,7 @@ public class CheckPetNameEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         String petName = this.packet.readString();
+        this.packet.readInt(); // Name-validation type; this handler validates pet names only.
 
         if (petName.length() < PET_NAME_LENGTH_MINIMUM) {
             this.client.sendResponse(new PetNameErrorComposer(PetNameErrorComposer.NAME_TO_SHORT, PET_NAME_LENGTH_MINIMUM + ""));

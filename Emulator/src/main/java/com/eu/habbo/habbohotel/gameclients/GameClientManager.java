@@ -15,9 +15,11 @@ import java.util.concurrent.ConcurrentMap;
 public class GameClientManager {
 
     private final ConcurrentMap<ChannelId, GameClient> clients;
+    private final ConcurrentMap<Integer, GameClient> authenticatedClients;
 
     public GameClientManager() {
         this.clients = new ConcurrentHashMap<>();
+        this.authenticatedClients = new ConcurrentHashMap<>();
     }
 
 
@@ -70,6 +72,9 @@ public class GameClientManager {
         GameClient client = channel.attr(GameServerAttributes.CLIENT).get();
 
         if (client != null) {
+            if (client.getHabbo() != null && client.getHabbo().getHabboInfo() != null) {
+                this.releaseAuthenticatedSession(client.getHabbo().getHabboInfo().getId(), client);
+            }
             client.dispose(allowSessionResume);
         }
         channel.deregister();
@@ -77,6 +82,26 @@ public class GameClientManager {
         channel.closeFuture();
         channel.close();
         this.clients.remove(channel.id());
+    }
+
+    public GameClient claimAuthenticatedSession(int userId, GameClient client) {
+        if (userId <= 0 || client == null) return null;
+        return this.authenticatedClients.put(userId, client);
+    }
+
+    public void releaseAuthenticatedSession(int userId, GameClient client) {
+        if (userId <= 0 || client == null) return;
+        this.authenticatedClients.remove(userId, client);
+    }
+
+    public GameClient getAuthenticatedClient(int userId) {
+        if (userId <= 0) return null;
+        return this.authenticatedClients.get(userId);
+    }
+
+    public int getAuthenticatedSessionCount(int userId) {
+        if (userId <= 0) return 0;
+        return this.authenticatedClients.containsKey(userId) ? 1 : 0;
     }
 
 

@@ -15151,6 +15151,7 @@ INSERT INTO `emulator_settings` (`key`, `value`, `comment`) VALUES
 	('hotel.welcome.alert.enabled', '0', 'Enable the welcome alert shown after login.'),
 	('hotel.welcome.alert.message', 'Welcome to Habbo Hotel %user%!', 'Message template used by the welcome alert.'),
 	('hotel.welcome.alert.oldstyle', '0', 'Use the legacy welcome alert window style.'),
+	('client.release.allowed', 'NITRO-3-6-0', 'Comma-separated client release versions accepted before SSO login.'),
 	('hotel.wordfilter.automute', '1', 'Mute duration in minutes applied when word-filter automute is triggered.'),
 	('hotel.wordfilter.enabled', '1', 'Enable the word filter system.'),
 	('hotel.wordfilter.messenger', '1', 'Apply the word filter to messenger messages.'),
@@ -30695,6 +30696,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `auth_ticket_expires_at` timestamp NULL DEFAULT NULL,
   `remember_token_hash` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT '',
   `remember_token_expires_at` int(11) unsigned NOT NULL DEFAULT 0,
+  `access_token_version` bigint(20) NOT NULL DEFAULT 0,
   `ip_register` varchar(45) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
   `ip_current` varchar(45) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT 'Have your CMS update this IP. If you do not do this IP banning won''t work!',
   `machine_id` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT '',
@@ -31209,3 +31211,45 @@ DELETE FROM `youtube_playlists`;
 /*!40014 SET FOREIGN_KEY_CHECKS=IFNULL(@OLD_FOREIGN_KEY_CHECKS, 1) */;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40111 SET SQL_NOTES=IFNULL(@OLD_SQL_NOTES, 1) */;
+-- Persistent messenger conversations and history.
+CREATE TABLE IF NOT EXISTS `messenger_conversations` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `type` ENUM('direct','group') NOT NULL,
+  `direct_key` VARCHAR(64) NULL,
+  `name` VARCHAR(100) NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_messenger_direct_key` (`direct_key`),
+  KEY `idx_messenger_updated` (`updated_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `messenger_members` (
+  `conversation_id` BIGINT UNSIGNED NOT NULL,
+  `user_id` INT NOT NULL,
+  `role` ENUM('member','admin') NOT NULL DEFAULT 'member',
+  `joined_message_id` BIGINT UNSIGNED NULL,
+  `left_message_id` BIGINT UNSIGNED NULL,
+  `last_read_message_id` BIGINT UNSIGNED NULL,
+  `joined_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `left_at` TIMESTAMP NULL,
+  PRIMARY KEY (`conversation_id`, `user_id`),
+  KEY `idx_messenger_member_user` (`user_id`, `left_at`),
+  CONSTRAINT `fk_messenger_member_conversation`
+    FOREIGN KEY (`conversation_id`) REFERENCES `messenger_conversations` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `messenger_messages` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `conversation_id` BIGINT UNSIGNED NOT NULL,
+  `sender_id` INT NOT NULL,
+  `type` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  `message` VARCHAR(255) NOT NULL,
+  `metadata` VARCHAR(1024) NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_messenger_page` (`conversation_id`, `id`),
+  KEY `idx_messenger_retention` (`created_at`, `conversation_id`),
+  CONSTRAINT `fk_messenger_message_conversation`
+    FOREIGN KEY (`conversation_id`) REFERENCES `messenger_conversations` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

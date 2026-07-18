@@ -633,13 +633,19 @@ public class GuildManager {
 
 
     public void setGuild(InteractionGuildFurni furni, int guildId) {
-        furni.setGuildId(guildId);
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE items SET guild_id = ? WHERE id = ?")) {
-            statement.setInt(1, guildId);
-            statement.setInt(2, furni.getId());
-            statement.execute();
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            this.persistGuild(connection, furni.getId(), guildId);
+            furni.setGuildId(guildId);
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+        }
+    }
+
+    public void persistGuild(Connection connection, int furniId, int guildId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("UPDATE items SET guild_id = ? WHERE id = ?")) {
+            statement.setInt(1, guildId);
+            statement.setInt(2, furniId);
+            if (statement.executeUpdate() != 1) throw new SQLException("Unable to assign guild furniture " + furniId);
         }
     }
 

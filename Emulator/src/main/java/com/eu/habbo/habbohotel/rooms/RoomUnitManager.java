@@ -18,6 +18,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper;
 import com.eu.habbo.habbohotel.wired.core.WiredUserMovementHelper;
 import com.eu.habbo.messages.outgoing.generic.alerts.GenericErrorMessagesComposer;
+import com.eu.habbo.messages.outgoing.generic.alerts.GenericErrorCode;
 import com.eu.habbo.messages.outgoing.inventory.AddPetComposer;
 import com.eu.habbo.messages.outgoing.rooms.pets.RoomPetComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.*;
@@ -228,7 +229,7 @@ public class RoomUnitManager {
      public void kickHabbo(Habbo habbo, boolean alert) {
         if (alert) {
             habbo.getClient().sendResponse(
-                    new GenericErrorMessagesComposer(GenericErrorMessagesComposer.KICKED_OUT_OF_THE_ROOM));
+                    new GenericErrorMessagesComposer(GenericErrorCode.KICKED_OUT_OF_ROOM));
         }
 
         habbo.getRoomUnit().isKicked = true;

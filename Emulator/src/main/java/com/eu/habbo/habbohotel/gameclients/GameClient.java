@@ -29,9 +29,11 @@ public class GameClient {
     private boolean handshakeFinished;
     private String machineId = "";
     private String ssoTicket = "";
+    private String releaseVersion = "";
 
     public final ConcurrentHashMap<Integer, Integer> incomingPacketCounter = new ConcurrentHashMap<>(25);
     public final ConcurrentHashMap<Class<? extends MessageHandler>, Long> messageTimestamps = new ConcurrentHashMap<>();
+    public final ConcurrentHashMap<String, Long> groupedMessageRateLimitDeadlines = new ConcurrentHashMap<>();
     public long lastPacketCounterCleared = Emulator.getIntUnixTimestamp();
 
     public GameClient(Channel channel) {
@@ -91,6 +93,14 @@ public class GameClient {
 
     public void setSsoTicket(String ssoTicket) {
         this.ssoTicket = ssoTicket != null ? ssoTicket : "";
+    }
+
+    public String getReleaseVersion() {
+        return this.releaseVersion;
+    }
+
+    public void setReleaseVersion(String releaseVersion) {
+        this.releaseVersion = releaseVersion != null ? releaseVersion : "";
     }
 
     public void sendResponse(MessageComposer composer) {

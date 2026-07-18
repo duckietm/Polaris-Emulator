@@ -3,6 +3,7 @@ package com.eu.habbo.messages.incoming.handshake;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.messenger.Messenger;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.gameclients.GameClientManager;
 import com.eu.habbo.habbohotel.gameclients.SessionResumeManager;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctionItem;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctions;
@@ -73,7 +74,17 @@ public class SecureLoginEvent extends MessageHandler {
             return;
         }
 
+        String allowedReleases = Emulator.getConfig().getValue(
+                "client.release.allowed", ClientReleaseGuard.DEFAULT_ALLOWED_RELEASES);
+        if (!ClientReleaseGuard.isAllowed(this.client.getReleaseVersion(), allowedReleases)) {
+            LOGGER.warn("Rejected client release '{}' (allowed: '{}')",
+                    this.client.getReleaseVersion(), allowedReleases);
+            Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
+            return;
+        }
+
         String sso = SecureLoginInputGuard.normalizeSsoTicket(this.packet.readString());
+        this.packet.readInt(); // client timestamp; retained for wire compatibility
 
         if (!SecureLoginInputGuard.isValidSsoTicket(sso)) {
             Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
@@ -102,10 +113,16 @@ public class SecureLoginEvent extends MessageHandler {
                 Emulator.getGameServer().getGameClientManager().disposeClient(existingClient);
             }
 
-            // First, look up the user ID to check for ghost sessions
+            // First, look up the user ID to check for ghost sessions. This lookup
+            // deliberately does NOT enforce auth_ticket_expires_at: a parked (ghost)
+            // session only lives for the reconnect grace window, which is the real
+            // time bound here. A short-lived built-in SSO ticket can expire while a
+            // session is still open, so enforcing expiry here would refuse a normal
+            // mid-session reconnect. A genuinely fresh login still falls through to
+            // loadHabbo() below, which does enforce the ticket expiry.
             int lookupUserId = 0;
             try (java.sql.Connection conn = Emulator.getDatabase().getDataSource().getConnection();
-                 java.sql.PreparedStatement stmt = conn.prepareStatement("SELECT id FROM users WHERE auth_ticket = ? AND (auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW()) LIMIT 1")) {
+                 java.sql.PreparedStatement stmt = conn.prepareStatement("SELECT id FROM users WHERE auth_ticket = ? LIMIT 1")) {
                 stmt.setString(1, sso);
                 try (java.sql.ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
@@ -134,6 +151,13 @@ public class SecureLoginEvent extends MessageHandler {
                 this.client.setHabbo(habbo);
                 this.client.setMachineId(habbo.getHabboInfo().getMachineID());
 
+                if (!habbo.passesConnectionSecurityChecks()) {
+                    LOGGER.warn("[SessionResume] Rejected resumed session for banned identity id={}",
+                            habbo.getHabboInfo().getId());
+                    Emulator.getGameServer().getGameClientManager().forceDisposeClient(this.client);
+                    return;
+                }
+
                 // NB: NON svuotiamo il ticket SSO qui (vedi HabboManager.loadHabbo):
                 // dietro Cloudflare il client ritenta la connessione con lo stesso
                 // ticket, quindi deve restare valido fino alla scadenza TTL. Consumarlo
@@ -144,6 +168,14 @@ public class SecureLoginEvent extends MessageHandler {
             }
 
             if (habbo != null) {
+                GameClientManager clientManager = Emulator.getGameServer().getGameClientManager();
+                GameClient previousClient = clientManager.claimAuthenticatedSession(
+                        habbo.getHabboInfo().getId(), this.client);
+                if (previousClient != null && previousClient != this.client) {
+                    LOGGER.info("Replacing duplicate active session for user {}", habbo.getHabboInfo().getId());
+                    clientManager.forceDisposeClient(previousClient);
+                }
+
                 if (!isSessionResume) {
                     try {
                         habbo.setClient(this.client);
@@ -186,7 +218,9 @@ public class SecureLoginEvent extends MessageHandler {
 
                 ArrayList<ServerMessage> messages = new ArrayList<>();
 
-                messages.add(new SecureLoginOKComposer().compose());
+                Room resumedRoom = isSessionResume ? habbo.getHabboInfo().getCurrentRoom() : null;
+                int resumedRoomId = resumedRoom != null ? resumedRoom.getId() : 0;
+                messages.add(new SecureLoginOKComposer(isSessionResume, resumedRoomId).compose());
 
                 int roomIdToEnter = 0;
 
@@ -196,7 +230,7 @@ public class SecureLoginEvent extends MessageHandler {
                     // the server. Setting roomIdToEnter = 0 prevents UserHomeRoomComposer
                     // from triggering a full room re-entry on the client (which would
                     // tear down and rebuild the room view).
-                    Room currentRoom = habbo.getHabboInfo().getCurrentRoom();
+                    Room currentRoom = resumedRoom;
                     if (currentRoom != null) {
                         LOGGER.info("[SessionResume] {} is still in room {} — client will resume in-place",
                                 habbo.getHabboInfo().getUsername(), currentRoom.getId());
@@ -303,6 +337,8 @@ public class SecureLoginEvent extends MessageHandler {
 
                 // Skip login-only events on session resume (welcome alerts, login events, etc.)
                 if (!isSessionResume) {
+                    UsernameEvent.completeLogin(this.client);
+
                     UserLoginEvent userLoginEvent = new UserLoginEvent(habbo, this.client.getHabbo().getHabboInfo().getIpLogin());
                     Emulator.getPluginManager().fireEvent(userLoginEvent);
 

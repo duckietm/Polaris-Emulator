@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.google.gson.Gson;
+import jakarta.validation.constraints.Positive;
 
 public class SendGift extends RCONMessage<SendGift.SendGiftJSON> {
     private static final int DEFAULT_MAX_MESSAGE_LENGTH = 300;
@@ -107,9 +108,11 @@ public class SendGift extends RCONMessage<SendGift.SendGiftJSON> {
 
     static class SendGiftJSON {
 
+        @Positive(message = "invalid user")
         public int user_id = -1;
 
 
+        @Positive(message = "invalid item")
         public int itemid = -1;
 
 

@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class ThreadPooling {
@@ -59,10 +60,81 @@ public class ThreadPooling {
     }
 
     public void shutDown() {
-        this.canAdd = false;
-        this.scheduledPool.shutdownNow();
+        this.shutDown(5, TimeUnit.SECONDS);
+    }
 
-        LOGGER.info("Threading -> Disposed!");
+    ShutdownResult shutDown(long timeout, TimeUnit unit) {
+        this.canAdd = false;
+        this.scheduledPool.shutdown();
+
+        boolean terminatedGracefully = false;
+        boolean terminated = false;
+        boolean interrupted = false;
+        int cancelledTasks = 0;
+
+        try {
+            terminatedGracefully = this.scheduledPool.awaitTermination(Math.max(0L, timeout), unit);
+        } catch (InterruptedException exception) {
+            interrupted = true;
+        }
+
+        if (!terminatedGracefully) {
+            cancelledTasks = this.scheduledPool.shutdownNow().size();
+
+            if (!interrupted) {
+                try {
+                    terminated = this.scheduledPool.awaitTermination(Math.max(0L, timeout), unit);
+                } catch (InterruptedException exception) {
+                    interrupted = true;
+                }
+            }
+        } else {
+            terminated = true;
+        }
+
+        long completedTasks = this.scheduledPool instanceof ScheduledThreadPoolExecutor executor
+                ? executor.getCompletedTaskCount()
+                : 0L;
+
+        if (interrupted) {
+            Thread.currentThread().interrupt();
+        }
+
+        ShutdownResult result = new ShutdownResult(
+                terminatedGracefully,
+                terminated,
+                cancelledTasks,
+                completedTasks,
+                interrupted
+        );
+
+        if (terminatedGracefully) {
+            LOGGER.info("Threading -> Disposed gracefully (completed tasks: {})", completedTasks);
+        } else if (terminated) {
+            LOGGER.warn(
+                    "Threading -> Disposed after forced shutdown (completed tasks: {}, cancelled queued tasks: {})",
+                    completedTasks,
+                    cancelledTasks
+            );
+        } else {
+            LOGGER.error(
+                    "Threading -> Workers still active after forced shutdown (completed tasks: {}, cancelled queued tasks: {}, interrupted: {})",
+                    completedTasks,
+                    cancelledTasks,
+                    interrupted
+            );
+        }
+
+        return result;
+    }
+
+    record ShutdownResult(
+            boolean terminatedGracefully,
+            boolean terminated,
+            int cancelledTasks,
+            long completedTasks,
+            boolean interrupted
+    ) {
     }
 
     public void setCanAdd(boolean canAdd) {

@@ -19,6 +19,11 @@ public class SellItemEvent extends MessageHandler {
     }
 
     @Override
+    public String getRatelimitGroup() {
+        return "marketplace.mutation";
+    }
+
+    @Override
     public void handle() throws Exception {
         if (!MarketPlace.MARKETPLACE_ENABLED) {
             this.client.sendResponse(new MarketplaceItemPostedComposer(MarketplaceItemPostedComposer.MARKETPLACE_DISABLED));

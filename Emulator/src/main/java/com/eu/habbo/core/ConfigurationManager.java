@@ -78,6 +78,7 @@ public class ConfigurationManager {
             envMapping.put("db.username", "DB_USERNAME");
             envMapping.put("db.password", "DB_PASSWORD");
             envMapping.put("db.params", "DB_PARAMS");
+            envMapping.put("db.migrations.mode", "DB_MIGRATIONS_MODE");
 
             // Game Configuration
             envMapping.put("game.host", "EMU_HOST");
@@ -133,7 +134,13 @@ public class ConfigurationManager {
 
 
     public String getValue(String key) {
-        return this.getValue(key, "");
+        if (this.isLoading) return "";
+
+        String value = this.getValueIfPresent(key);
+        if (value != null) return value;
+
+        LOGGER.error("Config key not found {}", key);
+        return "";
     }
 
 
@@ -141,21 +148,24 @@ public class ConfigurationManager {
         if (this.isLoading)
             return defaultValue;
 
-        Properties targetProperties = this.resolveProperties(key);
+        String value = this.getValueIfPresent(key);
+        if (value != null) return value;
+        return defaultValue;
+    }
 
+    public String getValueIfPresent(String key) {
+        if (this.isLoading) return null;
+
+        Properties targetProperties = this.resolveProperties(key);
         if (targetProperties.containsKey(key)) {
-            return targetProperties.getProperty(key, defaultValue);
+            return targetProperties.getProperty(key);
         }
 
         if (this.isWiredSettingKey(key) && this.properties.containsKey(key)) {
-            return this.properties.getProperty(key, defaultValue);
+            return this.properties.getProperty(key);
         }
 
-        if (!targetProperties.containsKey(key)) {
-            LOGGER.error("Config key not found {}", key);
-        }
-
-        return defaultValue;
+        return null;
     }
 
     public boolean getBoolean(String key) {
@@ -166,11 +176,12 @@ public class ConfigurationManager {
         if (this.isLoading)
             return defaultValue;
 
-        try {
-            return (this.getValue(key, "0").equals("1")) || (this.getValue(key, "false").equals("true"));
-        } catch (Exception e) {
-            LOGGER.error("Failed to parse key {} with value '{}' to type boolean.", key, this.getValue(key));
-        }
+        String value = this.getValueIfPresent(key);
+        if (value == null) return defaultValue;
+        if (value.equals("1") || value.equalsIgnoreCase("true")) return true;
+        if (value.equals("0") || value.equalsIgnoreCase("false")) return false;
+
+        LOGGER.error("Failed to parse key {} with value '{}' to type boolean.", key, value);
         return defaultValue;
     }
 

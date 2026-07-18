@@ -4,6 +4,9 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserDataComposer;
 import com.google.gson.Gson;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,10 +44,11 @@ public class SetMotto extends RCONMessage<SetMotto.SetMottoJSON> {
     }
 
     static class SetMottoJSON {
-
+        @Positive(message = "invalid user")
         public int user_id;
 
-
+        @NotNull(message = "invalid motto")
+        @Size(max = 127, message = "invalid motto")
         public String motto;
     }
 }

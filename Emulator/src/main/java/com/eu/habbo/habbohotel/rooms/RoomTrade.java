@@ -7,13 +7,15 @@ import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
+import com.eu.habbo.messages.outgoing.users.UserCreditsComposer;
 import com.eu.habbo.messages.outgoing.trading.*;
 import com.eu.habbo.plugin.events.trading.TradeConfirmEvent;
-import com.eu.habbo.threading.runnables.QueryDeleteHabboItem;
+import com.eu.habbo.plugin.events.users.UserCreditsEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.*;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -179,73 +181,48 @@ public class RoomTrade {
             Emulator.getPluginManager().fireEvent(tradeConfirmEvent);
         }
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+        Set<HabboItem> itemsUserOne = new HashSet<>(userOne.getItems());
+        Set<HabboItem> itemsUserTwo = new HashSet<>(userTwo.getItems());
 
-            int tradeId = 0;
-
-            boolean logTrades = Emulator.getConfig().getBoolean("hotel.log.trades");
-            if (logTrades) {
-                try (PreparedStatement statement = connection.prepareStatement("INSERT INTO room_trade_log (user_one_id, user_two_id, user_one_ip, user_two_ip, timestamp, user_one_item_count, user_two_item_count) VALUES (?, ?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
-                    statement.setInt(1, userOne.getHabbo().getHabboInfo().getId());
-                    statement.setInt(2, userTwo.getHabbo().getHabboInfo().getId());
-                    statement.setString(3, userOne.getHabbo().getHabboInfo().getIpLogin());
-                    statement.setString(4, userTwo.getHabbo().getHabboInfo().getIpLogin());
-                    statement.setInt(5, Emulator.getIntUnixTimestamp());
-                    statement.setInt(6, userOne.getItems().size());
-                    statement.setInt(7, userTwo.getItems().size());
-                    statement.executeUpdate();
-                    try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                        if (generatedKeys.next()) {
-                            tradeId = generatedKeys.getInt(1);
-                        }
-                    }
-                }
+        int creditsForUserTwo;
+        int creditsForUserOne;
+        try {
+            creditsForUserTwo = checkedCreditTotal(itemsUserOne);
+            creditsForUserOne = checkedCreditTotal(itemsUserTwo);
+            checkedRecipientBalance(userTwo, creditsForUserTwo);
+            checkedRecipientBalance(userOne, creditsForUserOne);
+        } catch (IllegalArgumentException e) {
+            LOGGER.warn("Rejected trade with unrepresentable credit-furni value", e);
+            this.sendMessageToUsers(new TradeClosedComposer(
+                    userOne.getHabbo().getRoomUnit().getId(), TradeClosedComposer.ITEMS_NOT_FOUND));
+            return false;
+        }
+        Set<HabboItem> creditFurniUserOne = new HashSet<>();
+        for (HabboItem item : itemsUserOne) {
+            int worth = RoomTrade.getCreditsByItem(item);
+            if (worth > 0) {
+                creditFurniUserOne.add(item);
             }
+        }
+        itemsUserOne.removeAll(creditFurniUserOne);
 
-            int userOneId = userOne.getHabbo().getHabboInfo().getId();
-            int userTwoId = userTwo.getHabbo().getHabboInfo().getId();
+        Set<HabboItem> creditFurniUserTwo = new HashSet<>();
+        for (HabboItem item : itemsUserTwo) {
+            int worth = RoomTrade.getCreditsByItem(item);
+            if (worth > 0) {
+                creditFurniUserTwo.add(item);
+            }
+        }
+        itemsUserTwo.removeAll(creditFurniUserTwo);
 
-            try (PreparedStatement statement = connection.prepareStatement("UPDATE items SET user_id = ? WHERE id = ? AND user_id = ? LIMIT 1")) {
-                try (PreparedStatement stmt = connection.prepareStatement("INSERT INTO room_trade_log_items (id, item_id, user_id) VALUES (?, ?, ?)")) {
-                    for (HabboItem item : userOne.getItems()) {
-                        statement.setInt(1, userTwoId);
-                        statement.setInt(2, item.getId());
-                        statement.setInt(3, userOneId);
-                        statement.addBatch();
+        creditsForUserOne = resolveCredits(userOne.getHabbo(), creditsForUserOne);
+        creditsForUserTwo = resolveCredits(userTwo.getHabbo(), creditsForUserTwo);
 
-                        if (logTrades) {
-                            stmt.setInt(1, tradeId);
-                            stmt.setInt(2, item.getId());
-                            stmt.setInt(3, userOneId);
-                            stmt.addBatch();
-                        }
-                    }
-
-                    for (HabboItem item : userTwo.getItems()) {
-                        statement.setInt(1, userOneId);
-                        statement.setInt(2, item.getId());
-                        statement.setInt(3, userTwoId);
-                        statement.addBatch();
-
-                        if (logTrades) {
-                            stmt.setInt(1, tradeId);
-                            stmt.setInt(2, item.getId());
-                            stmt.setInt(3, userTwoId);
-                            stmt.addBatch();
-                        }
-                    }
-
-                    if (logTrades) {
-                        stmt.executeBatch();
-                    }
-                }
-
-                int expectedUpdates = userOne.getItems().size() + userTwo.getItems().size();
-                int[] updateCounts = statement.executeBatch();
-                if (!RoomTrade.allOwnershipUpdatesSucceeded(updateCounts, expectedUpdates)) {
-                    this.sendMessageToUsers(new TradeClosedComposer(userOne.getHabbo().getRoomUnit().getId(), TradeClosedComposer.ITEMS_NOT_FOUND));
-                    return false;
-                }
+        try {
+            if (!RoomTradeTransaction.execute(userOne.getHabbo(), userTwo.getHabbo(),
+                    userOne.getItems(), userTwo.getItems(), creditsForUserOne, creditsForUserTwo,
+                    Emulator.getConfig().getBoolean("hotel.log.trades"))) {
+                return false;
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
@@ -253,46 +230,14 @@ public class RoomTrade {
             return false;
         }
 
-        for (HabboItem item : userOne.getItems()) {
-            item.setUserId(userTwo.getHabbo().getHabboInfo().getId());
-        }
-
-        for (HabboItem item : userTwo.getItems()) {
-            item.setUserId(userOne.getHabbo().getHabboInfo().getId());
-        }
-
-        Set<HabboItem> itemsUserOne = new HashSet<>(userOne.getItems());
-        Set<HabboItem> itemsUserTwo = new HashSet<>(userTwo.getItems());
+        for (HabboItem item : itemsUserOne) item.setUserId(userTwo.getHabbo().getHabboInfo().getId());
+        for (HabboItem item : itemsUserTwo) item.setUserId(userOne.getHabbo().getHabboInfo().getId());
 
         userOne.clearItems();
         userTwo.clearItems();
 
-        int creditsForUserTwo = 0;
-        Set<HabboItem> creditFurniUserOne = new HashSet<>();
-        for (HabboItem item : itemsUserOne) {
-            int worth = RoomTrade.getCreditsByItem(item);
-            if (worth > 0) {
-                creditsForUserTwo += worth;
-                creditFurniUserOne.add(item);
-                new QueryDeleteHabboItem(item).run();
-            }
-        }
-        itemsUserOne.removeAll(creditFurniUserOne);
-
-        int creditsForUserOne = 0;
-        Set<HabboItem> creditFurniUserTwo = new HashSet<>();
-        for (HabboItem item : itemsUserTwo) {
-            int worth = RoomTrade.getCreditsByItem(item);
-            if (worth > 0) {
-                creditsForUserOne += worth;
-                creditFurniUserTwo.add(item);
-                new QueryDeleteHabboItem(item).run();
-            }
-        }
-        itemsUserTwo.removeAll(creditFurniUserTwo);
-
-        userOne.getHabbo().giveCredits(creditsForUserOne);
-        userTwo.getHabbo().giveCredits(creditsForUserTwo);
+        applyCommittedCredits(userOne.getHabbo(), creditsForUserOne);
+        applyCommittedCredits(userTwo.getHabbo(), creditsForUserTwo);
 
         userOne.getHabbo().getInventory().getItemsComponent().addItems(itemsUserTwo);
         userTwo.getHabbo().getInventory().getItemsComponent().addItems(itemsUserOne);
@@ -303,6 +248,18 @@ public class RoomTrade {
         userOne.getHabbo().getClient().sendResponse(new InventoryRefreshComposer());
         userTwo.getHabbo().getClient().sendResponse(new InventoryRefreshComposer());
         return true;
+    }
+
+    private static int resolveCredits(Habbo habbo, int credits) {
+        if (credits <= 0) return 0;
+        UserCreditsEvent event = new UserCreditsEvent(habbo, credits);
+        return Emulator.getPluginManager().fireEvent(event).isCancelled() ? 0 : Math.max(0, event.credits);
+    }
+
+    private static void applyCommittedCredits(Habbo habbo, int credits) {
+        if (credits <= 0) return;
+        habbo.getHabboInfo().addCredits(credits);
+        if (habbo.getClient() != null) habbo.getClient().sendResponse(new UserCreditsComposer(habbo));
     }
 
     protected void clearAccepted() {
@@ -384,6 +341,33 @@ public class RoomTrade {
         }
 
         return true;
+    }
+
+    static int checkedAddCreditValue(int total, int worth) {
+        if (total < 0 || worth < 0) {
+            throw new IllegalArgumentException("trade credit value must not be negative");
+        }
+
+        long updated = (long) total + worth;
+        if (updated > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("trade credit value exceeds wallet range");
+        }
+        return (int) updated;
+    }
+
+    private static int checkedCreditTotal(Iterable<HabboItem> items) {
+        int total = 0;
+        for (HabboItem item : items) {
+            int worth = RoomTrade.getCreditsByItem(item);
+            if (worth > 0) {
+                total = checkedAddCreditValue(total, worth);
+            }
+        }
+        return total;
+    }
+
+    private static void checkedRecipientBalance(RoomTradeUser recipient, int incomingCredits) {
+        checkedAddCreditValue(recipient.getHabbo().getHabboInfo().getCredits(), incomingCredits);
     }
 
     public static int getCreditsByItem(HabboItem item) {

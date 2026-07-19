@@ -89,6 +89,7 @@ public final class Emulator {
     public static boolean debugging = false;
     private static int timeStarted = 0;
     private static Runtime runtime;
+    private static PolarisRuntime polarisRuntime;
     private static ConfigurationManager config;
     private static CryptoConfig crypto;
     private static TextsManager texts;
@@ -129,8 +130,10 @@ public final class Emulator {
             Locale.setDefault(Locale.of("en"));
             setBuild();
             Emulator.stopped = false;
+            Emulator.polarisRuntime = new PolarisRuntime();
             ConsoleCommand.load();
             Emulator.logging = new Logging();
+            Emulator.polarisRuntime.installLogging(Emulator.logging);
 
             System.out.println(startupHero(styledConsole));
 
@@ -138,12 +141,15 @@ public final class Emulator {
 
             Emulator.runtime = Runtime.getRuntime();
             Emulator.config = new ConfigurationManager("config.ini");
+            Emulator.polarisRuntime.installConfiguration(Emulator.config);
             Emulator.crypto = new CryptoConfig(
                     Emulator.getConfig().getBoolean("enc.enabled", false),
                     Emulator.getConfig().getValue("enc.e"),
                     Emulator.getConfig().getValue("enc.n"),
                     Emulator.getConfig().getValue("enc.d"));
+            Emulator.polarisRuntime.installCrypto(Emulator.crypto);
             Emulator.database = new Database(Emulator.getConfig());
+            Emulator.polarisRuntime.installDatabase(Emulator.database);
             // Migrate before loading database-backed configuration.
             if (Emulator.getDatabase() != null && Emulator.getDatabase().getDataSource() != null) {
                 if (migrationOptions.mode() == MigrationOptions.Mode.VALIDATE) {
@@ -179,16 +185,20 @@ public final class Emulator {
             com.eu.habbo.database.indexing.DatabaseIndexAuditor.auditAtStartup(
                     Emulator.getDatabase().getDataSource());
             Emulator.databaseLogger = new DatabaseLogger();
+            Emulator.polarisRuntime.installDatabaseLogger(Emulator.databaseLogger);
             Emulator.config.loaded = true;
             Emulator.config.loadFromDatabase();
             Emulator.threading = new ThreadPooling(Emulator.getConfig().getInt("runtime.threads"));
+            Emulator.polarisRuntime.installThreading(Emulator.threading);
             Emulator.getDatabase().getDataSource().setMaximumPoolSize(Emulator.getConfig().getInt("runtime.threads") * 2);
             Emulator.getDatabase().getDataSource().setMinimumIdle(10);
             registerStartupConfigDefaults();
             Emulator.pluginManager = new PluginManager();
+            Emulator.polarisRuntime.installPluginManager(Emulator.pluginManager);
             Emulator.pluginManager.reload();
             Emulator.getPluginManager().fireEvent(new EmulatorConfigUpdatedEvent());
             Emulator.texts = new TextsManager();
+            Emulator.polarisRuntime.installTexts(Emulator.texts);
 
             String hotelTimezoneId = Emulator.getConfig().getValue("hotel.timezone", java.time.ZoneId.systemDefault().getId());
             System.out.println(startupCard(hotelTimezoneId));
@@ -203,8 +213,11 @@ public final class Emulator {
 
             new CleanerThread();
             Emulator.gameServer = new GameServer(getConfig().getValue("game.host", "127.0.0.1"), getConfig().getInt("game.port", 30000));
+            Emulator.polarisRuntime.installGameServer(Emulator.gameServer);
             Emulator.rconServer = new RCONServer(getConfig().getValue("rcon.host", "127.0.0.1"), getConfig().getInt("rcon.port", 30001));
+            Emulator.polarisRuntime.installRconServer(Emulator.rconServer);
             Emulator.gameEnvironment = new GameEnvironment();
+            Emulator.polarisRuntime.installGameEnvironment(Emulator.gameEnvironment);
             Emulator.gameEnvironment.load();
             Emulator.gameServer.initializePipeline();
             Emulator.gameServer.connect();
@@ -212,6 +225,7 @@ public final class Emulator {
             Emulator.rconServer.initializePipeline();
             Emulator.rconServer.connect();
             Emulator.badgeImager = new BadgeImager();
+            Emulator.polarisRuntime.installBadgeImager(Emulator.badgeImager);
 
             LOGGER.info("Polaris has successfully loaded.");
             LOGGER.info("System launched in: {}ms. Using {} threads!", (System.nanoTime() - startTime) / 1e6, Runtime.getRuntime().availableProcessors() * 2);
@@ -532,28 +546,41 @@ public final class Emulator {
     }
 
     public static ConfigurationManager getConfig() {
-        return config;
+        return polarisRuntime != null && polarisRuntime.configuration() != null
+                ? polarisRuntime.configuration()
+                : config;
     }
 
     public static CryptoConfig getCrypto() {
-        return crypto;
+        return polarisRuntime != null && polarisRuntime.crypto() != null
+                ? polarisRuntime.crypto()
+                : crypto;
     }
 
     public static TextsManager getTexts() {
-        return texts;
+        return polarisRuntime != null && polarisRuntime.texts() != null
+                ? polarisRuntime.texts()
+                : texts;
     }
 
     public static Database getDatabase() {
-        return database;
+        return polarisRuntime != null && polarisRuntime.database() != null
+                ? polarisRuntime.database()
+                : database;
     }
 
     /** Installs the integration-test database without exposing a public API. */
     static void setDatabaseForTesting(Database database) {
         Emulator.database = database;
+        if (Emulator.polarisRuntime != null && database != null) {
+            Emulator.polarisRuntime.installDatabase(database);
+        }
     }
 
     public static DatabaseLogger getDatabaseLogger() {
-        return databaseLogger;
+        return polarisRuntime != null && polarisRuntime.databaseLogger() != null
+                ? polarisRuntime.databaseLogger()
+                : databaseLogger;
     }
 
     public static Runtime getRuntime() {
@@ -561,7 +588,9 @@ public final class Emulator {
     }
 
     public static GameServer getGameServer() {
-        return gameServer;
+        return polarisRuntime != null && polarisRuntime.gameServer() != null
+                ? polarisRuntime.gameServer()
+                : gameServer;
     }
 
     private static void registerEarningsSettings() {
@@ -601,7 +630,9 @@ public final class Emulator {
     }
 
     public static RCONServer getRconServer() {
-        return rconServer;
+        return polarisRuntime != null && polarisRuntime.rconServer() != null
+                ? polarisRuntime.rconServer()
+                : rconServer;
     }
 
     /**
@@ -609,19 +640,27 @@ public final class Emulator {
      */
     @Deprecated
     public static Logging getLogging() {
-        return logging;
+        return polarisRuntime != null && polarisRuntime.logging() != null
+                ? polarisRuntime.logging()
+                : logging;
     }
 
     public static ThreadPooling getThreading() {
-        return threading;
+        return polarisRuntime != null && polarisRuntime.threading() != null
+                ? polarisRuntime.threading()
+                : threading;
     }
 
     public static GameEnvironment getGameEnvironment() {
-        return gameEnvironment;
+        return polarisRuntime != null && polarisRuntime.gameEnvironment() != null
+                ? polarisRuntime.gameEnvironment()
+                : gameEnvironment;
     }
 
     public static PluginManager getPluginManager() {
-        return pluginManager;
+        return polarisRuntime != null && polarisRuntime.pluginManager() != null
+                ? polarisRuntime.pluginManager()
+                : pluginManager;
     }
 
     public static Random getRandom() {
@@ -631,7 +670,9 @@ public final class Emulator {
         return secureRandom;
     }
     public static BadgeImager getBadgeImager() {
-        return badgeImager;
+        return polarisRuntime != null && polarisRuntime.badgeImager() != null
+                ? polarisRuntime.badgeImager()
+                : badgeImager;
     }
 
     public static int getTimeStarted() {

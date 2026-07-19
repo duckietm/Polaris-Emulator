@@ -31,8 +31,12 @@ class EmulatorRuntimeFacadeCompatibilityTest {
         gettersByField.put("pluginManager", "getPluginManager");
         gettersByField.put("badgeImager", "getBadgeImager");
 
+        Field runtimeOwner = Emulator.class.getDeclaredField("polarisRuntime");
+        runtimeOwner.setAccessible(true);
+        Object originalRuntimeOwner = runtimeOwner.get(null);
         Map<Field, Object> originalValues = new LinkedHashMap<>();
         try {
+            runtimeOwner.set(null, null);
             for (Map.Entry<String, String> entry
                     : gettersByField.entrySet()) {
                 Field field = Emulator.class.getDeclaredField(
@@ -52,6 +56,7 @@ class EmulatorRuntimeFacadeCompatibilityTest {
                     : originalValues.entrySet()) {
                 entry.getKey().set(null, entry.getValue());
             }
+            runtimeOwner.set(null, originalRuntimeOwner);
         }
     }
 

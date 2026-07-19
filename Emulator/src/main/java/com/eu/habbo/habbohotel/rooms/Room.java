@@ -2614,7 +2614,11 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   }
 
   public void updateItemState(HabboItem item) {
-    if (item != null && RoomAreaHideSupport.isControllerItem(item)) {
+    if (item == null) {
+      return;
+    }
+
+    if (RoomAreaHideSupport.isControllerItem(item)) {
       this.updateItem(item);
       return;
     }

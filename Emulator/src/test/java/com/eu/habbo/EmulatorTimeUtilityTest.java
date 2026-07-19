@@ -3,11 +3,13 @@ package com.eu.habbo;
 import org.junit.jupiter.api.Test;
 
 import java.text.SimpleDateFormat;
+import java.lang.reflect.Method;
 import java.util.Date;
 import java.util.TimeZone;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class EmulatorTimeUtilityTest {
@@ -79,5 +81,34 @@ class EmulatorTimeUtilityTest {
         assertEquals(
                 int.class,
                 Emulator.class.getDeclaredMethod("getOnlineTime").getReturnType());
+    }
+
+    @Test
+    void durationParserSaturatesInsteadOfOverflowing() {
+        assertEquals(
+                Integer.MAX_VALUE,
+                Emulator.timeStringToSeconds("100 year"));
+        assertEquals(
+                Integer.MAX_VALUE,
+                Emulator.timeStringToSeconds("68 year 10 year"));
+    }
+
+    @Test
+    void internalEpochCalculationsRemainValidPastTheIntBoundary() throws Exception {
+        assertEquals(long.class, Emulator.class.getDeclaredField("timeStarted").getType());
+
+        Method longTimestamp = Emulator.class.getDeclaredMethod("getLongUnixTimestamp");
+        assertEquals(long.class, longTimestamp.getReturnType());
+        assertTrue((long) longTimestamp.invoke(null) > 0L);
+
+        Method elapsedSeconds =
+                Emulator.class.getDeclaredMethod("elapsedSeconds", long.class, long.class);
+        elapsedSeconds.setAccessible(true);
+        assertEquals(
+                20,
+                elapsedSeconds.invoke(null, 2_147_483_640L, 2_147_483_660L));
+        assertEquals(
+                Integer.MAX_VALUE,
+                elapsedSeconds.invoke(null, 0L, 3_000_000_000L));
     }
 }

@@ -18,7 +18,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -26,6 +28,39 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class EmulatorLifecycleCompatibilityTest {
+
+    @Test
+    void stoppedIsPublishedOnlyAfterRuntimeResourcesClose()
+            throws Exception {
+        AtomicBoolean databaseClosed = new AtomicBoolean();
+        PolarisRuntime runtime = new PolarisRuntime(() -> {
+        });
+        Database database = mock(Database.class);
+        when(database.getDataSource()).thenReturn(null);
+        doAnswer(invocation -> {
+            assertFalse(Emulator.stopped);
+            databaseClosed.set(true);
+            return null;
+        }).when(database).dispose();
+        runtime.installDatabase(database);
+
+        Map<Field, Object> originalFields = new LinkedHashMap<>();
+        Map<Field, Boolean> originalFlags = new LinkedHashMap<>();
+        try {
+            install(originalFields, "polarisRuntime", runtime);
+            installFlag(originalFlags, "stopped", false);
+
+            Method dispose = Emulator.class.getDeclaredMethod("dispose");
+            dispose.setAccessible(true);
+            dispose.invoke(null);
+
+            assertTrue(databaseClosed.get());
+            assertTrue(Emulator.stopped);
+        } finally {
+            restore(originalFields);
+            restoreFlags(originalFlags);
+        }
+    }
 
     @Test
     void shutdownKeepsItsObservableOrderAndContinuesAfterFailure()

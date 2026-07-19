@@ -28,7 +28,8 @@ class PolarisRuntimeTest {
     @Test
     void emulatorFacadeDelegatesToEveryInstalledRuntimeService()
             throws Exception {
-        PolarisRuntime runtime = new PolarisRuntime();
+        PolarisRuntime runtime = new PolarisRuntime(() -> {
+        });
         Map<Class<?>, RuntimeService<?>> services = new LinkedHashMap<>();
         services.put(
                 ConfigurationManager.class,
@@ -100,7 +101,8 @@ class PolarisRuntimeTest {
         Object originalConfig = configField.get(null);
         ConfigurationManager legacyConfig = mock(ConfigurationManager.class);
         try {
-            runtimeOwner.set(null, new PolarisRuntime());
+            runtimeOwner.set(null, new PolarisRuntime(() -> {
+            }));
             configField.set(null, legacyConfig);
 
             assertSame(legacyConfig, Emulator.getConfig());

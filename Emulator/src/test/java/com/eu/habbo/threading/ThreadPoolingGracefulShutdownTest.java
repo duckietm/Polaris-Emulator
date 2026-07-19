@@ -107,21 +107,6 @@ class ThreadPoolingGracefulShutdownTest {
     }
 
     @Test
-    void executorDrainsBeforeDatabaseIsClosed() throws Exception {
-        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/Emulator.java"));
-        String shutdownMethod = source.substring(source.indexOf("private static void dispose()"));
-        int threadingShutdown = shutdownMethod.indexOf("Emulator.threading.shutDown()");
-        int databaseShutdown = shutdownMethod.indexOf("Emulator.database.dispose()");
-        int stoppedLog = shutdownMethod.indexOf("LOGGER.info(\"Stopped Polaris {}\", version)");
-
-        assertTrue(threadingShutdown >= 0);
-        assertTrue(databaseShutdown > threadingShutdown,
-                "tasks must finish before their database dependency is closed");
-        assertTrue(stoppedLog > databaseShutdown,
-                "the emulator must only report stopped after dependencies are closed");
-    }
-
-    @Test
     void rejectedDelayedShutdownTaskIsReported() {
         ThreadPooling pooling = new ThreadPooling(1);
         Logger logger = (Logger) LoggerFactory.getLogger(ThreadPooling.class);

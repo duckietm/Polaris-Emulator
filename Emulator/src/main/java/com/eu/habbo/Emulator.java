@@ -130,7 +130,8 @@ public final class Emulator {
             Locale.setDefault(Locale.of("en"));
             setBuild();
             Emulator.stopped = false;
-            Emulator.polarisRuntime = new PolarisRuntime();
+            Emulator.polarisRuntime = new PolarisRuntime(
+                    () -> SessionResumeManager.getInstance().disposeAll());
             ConsoleCommand.load();
             Emulator.logging = new Logging();
             Emulator.polarisRuntime.installLogging(Emulator.logging);
@@ -279,15 +280,15 @@ public final class Emulator {
 
         } catch (IllegalArgumentException e) {
             LOGGER.error("Invalid startup option: {}", e.getMessage());
+            shutdownAfterStartupFailure();
             throw e;
         } catch (MigrationException e) {
             LOGGER.error("Polaris could not safely prepare the database, so startup was aborted.", e);
-            if (Emulator.database != null) {
-                Emulator.database.dispose();
-            }
+            shutdownAfterStartupFailure();
             throw e;
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
+            shutdownAfterStartupFailure();
             throw e;
         }
     }
@@ -504,13 +505,31 @@ public final class Emulator {
 
     private static void dispose() {
         Emulator.isShuttingDown = true;
-        if (Emulator.threading != null) {
-            Emulator.threading.setCanAdd(false);
-        }
         Emulator.isReady = false;
 
         LOGGER.info("Stopping Polaris {}", version);
 
+        if (Emulator.polarisRuntime != null) {
+            Emulator.polarisRuntime.shutdown();
+        } else {
+            disposeLegacyRuntime();
+        }
+
+        LOGGER.info("Stopped Polaris {}", version);
+
+        Emulator.stopped = true;
+    }
+
+    private static void shutdownAfterStartupFailure() {
+        if (Emulator.polarisRuntime != null) {
+            Emulator.polarisRuntime.shutdown();
+        }
+    }
+
+    private static void disposeLegacyRuntime() {
+        if (Emulator.threading != null) {
+            Emulator.threading.setCanAdd(false);
+        }
         if (Emulator.pluginManager != null)
             tryShutdown(() -> Emulator.pluginManager.fireEvent(new EmulatorStartShutdownEvent()));
         if (Emulator.rconServer != null) tryShutdown(() -> Emulator.rconServer.stop());
@@ -524,10 +543,6 @@ public final class Emulator {
         if (Emulator.gameServer != null) tryShutdown(() -> Emulator.gameServer.stop());
         if (Emulator.threading != null) tryShutdown(() -> Emulator.threading.shutDown());
         if (Emulator.database != null) tryShutdown(() -> Emulator.database.dispose());
-
-        LOGGER.info("Stopped Polaris {}", version);
-
-        Emulator.stopped = true;
     }
 
     private static boolean canPersistConfiguration() {

@@ -23,6 +23,7 @@ import java.util.Objects;
  */
 final class PolarisRuntime {
 
+    private final RuntimeLifecycle lifecycle;
     private ConfigurationManager configuration;
     private CryptoConfig crypto;
     private TextsManager texts;
@@ -35,6 +36,14 @@ final class PolarisRuntime {
     private GameEnvironment gameEnvironment;
     private PluginManager pluginManager;
     private BadgeImager badgeImager;
+
+    PolarisRuntime(Runnable sessionCleanup) {
+        this.lifecycle = new RuntimeLifecycle(this, sessionCleanup);
+    }
+
+    void shutdown() {
+        lifecycle.shutdown();
+    }
 
     ConfigurationManager configuration() {
         return configuration;

@@ -181,8 +181,9 @@ public final class Emulator {
             Emulator.databaseLogger = new DatabaseLogger();
             Emulator.config.loaded = true;
             Emulator.config.loadFromDatabase();
-            Emulator.threading = new ThreadPooling(Emulator.getConfig().getInt("runtime.threads"));
-            Emulator.getDatabase().getDataSource().setMaximumPoolSize(Emulator.getConfig().getInt("runtime.threads") * 2);
+            int runtimeThreads = runtimeThreadCount(Emulator.getConfig());
+            Emulator.threading = new ThreadPooling(runtimeThreads);
+            Emulator.getDatabase().getDataSource().setMaximumPoolSize(runtimeThreads * 2);
             Emulator.getDatabase().getDataSource().setMinimumIdle(10);
             registerStartupConfigDefaults();
             Emulator.pluginManager = new PluginManager();
@@ -233,9 +234,9 @@ public final class Emulator {
                 EmulatorDashboard.launch();
             }
 
-            if (Emulator.getConfig().getInt("runtime.threads") < (Runtime.getRuntime().availableProcessors() * 2)) {
+            if (runtimeThreads < (Runtime.getRuntime().availableProcessors() * 2)) {
                 LOGGER.warn("Emulator settings runtime.threads ({}) can be increased to ({}) to possibly increase performance.",
-                        Emulator.getConfig().getInt("runtime.threads"),
+                        runtimeThreads,
                         Runtime.getRuntime().availableProcessors() * 2);
             }
 
@@ -431,6 +432,10 @@ public final class Emulator {
 
     static boolean shouldLaunchGui() {
         return Emulator.getConfig() != null && Emulator.getConfig().getBoolean("gui.autostart.enabled", false);
+    }
+
+    static int runtimeThreadCount(ConfigurationManager config) {
+        return config.getInt("runtime.threads");
     }
 
     private static void registerStartupConfigDefaults() {

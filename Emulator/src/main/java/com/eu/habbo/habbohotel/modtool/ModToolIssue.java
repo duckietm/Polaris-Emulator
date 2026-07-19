@@ -106,6 +106,6 @@ public class ModToolIssue implements ISerialize {
     }
 
     public void updateInDatabase() {
-        Emulator.getThreading().run(new UpdateModToolIssue(this));
+        Emulator.getThreading().runPersistence(new UpdateModToolIssue(this));
     }
 }

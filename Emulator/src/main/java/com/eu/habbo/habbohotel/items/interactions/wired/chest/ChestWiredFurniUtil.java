@@ -107,7 +107,7 @@ public final class ChestWiredFurniUtil {
                 habbo.getClient().sendResponse(new RemoveHabboItemComposer(removed.getGiftAdjustedId()));
             }
             habbo.getClient().sendResponse(new InventoryRefreshComposer());
-            Emulator.getThreading().run(new QueryDeleteHabboItems(removedItems));
+            Emulator.getThreading().runPersistence(new QueryDeleteHabboItems(removedItems));
         }
 
         return taken;

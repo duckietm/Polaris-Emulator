@@ -971,7 +971,7 @@ public class ItemManager {
     }
 
     public HabboItem handleOpenRecycleBox(Habbo habbo, HabboItem box) {
-        Emulator.getThreading().run(new QueryDeleteHabboItem(box.getId()));
+        Emulator.getThreading().runPersistence(new QueryDeleteHabboItem(box.getId()));
         HabboItem item = null;
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM items_presents WHERE item_id = ? LIMIT 1")) {
             statement.setInt(1, box.getId());

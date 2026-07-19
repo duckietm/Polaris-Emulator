@@ -129,10 +129,13 @@ final class PolarisBootstrap {
         configuration.loadFromDatabase();
 
         int runtimeThreads = configuration.getInt("runtime.threads");
-        runtime.installThreading(new ThreadPooling(runtimeThreads));
-        runtime.installPersistenceExecutor(
+        PersistenceExecutor persistenceExecutor =
                 PersistenceExecutor.forRuntimeThreads(
-                        runtimeThreads));
+                        runtimeThreads);
+        runtime.installPersistenceExecutor(persistenceExecutor);
+        runtime.installThreading(new ThreadPooling(
+                runtimeThreads,
+                persistenceExecutor));
         Emulator.synchronizeLegacyFacade(runtime);
         database.getDataSource().setMaximumPoolSize(runtimeThreads * 2);
         database.getDataSource().setMinimumIdle(10);

@@ -125,7 +125,7 @@ public class WiredEffectGiveOrTakeFurni extends InteractionWiredEffect {
         }
 
         habbo.getClient().sendResponse(new InventoryRefreshComposer());
-        Emulator.getThreading().run(new QueryDeleteHabboItems(toRemove.values()));
+        Emulator.getThreading().runPersistence(new QueryDeleteHabboItems(toRemove.values()));
     }
 
     @Deprecated

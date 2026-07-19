@@ -198,7 +198,7 @@ public class InteractionPetBreedingNest extends HabboItem {
             return;
         }
 
-        Emulator.getThreading().run(new QueryDeleteHabboItem(this.getId()));
+        Emulator.getThreading().runPersistence(new QueryDeleteHabboItem(this.getId()));
 
         this.setExtradata("2");
         habbo.getHabboInfo().getCurrentRoom().updateItem(this);

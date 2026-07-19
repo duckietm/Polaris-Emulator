@@ -39,7 +39,7 @@ public class EmptyInventoryCommand extends Command {
             if (habbo != null) {
                 List<HabboItem> items = new ArrayList<>(habbo.getInventory().getItemsComponent().getItems().values());
                 habbo.getInventory().getItemsComponent().getItems().clear();
-                Emulator.getThreading().run(new QueryDeleteHabboItems(items));
+                Emulator.getThreading().runPersistence(new QueryDeleteHabboItems(items));
 
                 habbo.getClient().sendResponse(new InventoryRefreshComposer());
                 habbo.getClient().sendResponse(new InventoryItemsComposer(0, 1, gameClient.getHabbo().getInventory().getItemsComponent().getItems()));

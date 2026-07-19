@@ -223,7 +223,7 @@ public class TraxEditorManager {
         for (HabboItem disc : discs) {
             habbo.getInventory().getItemsComponent().removeHabboItem(disc);
             habbo.getClient().sendResponse(new RemoveHabboItemComposer(disc.getId()));
-            Emulator.getThreading().run(new QueryDeleteHabboItem(disc.getId()));
+            Emulator.getThreading().runPersistence(new QueryDeleteHabboItem(disc.getId()));
         }
 
         habbo.getClient().sendResponse(new InventoryRefreshComposer());

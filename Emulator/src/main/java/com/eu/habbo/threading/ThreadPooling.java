@@ -1,6 +1,7 @@
 package com.eu.habbo.threading;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.database.PersistenceExecutor;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,11 +17,19 @@ public class ThreadPooling {
 
     public final int threads;
     private final ScheduledExecutorService scheduledPool;
+    private final PersistenceExecutor persistenceExecutor;
     private volatile boolean canAdd;
 
     public ThreadPooling(Integer threads) {
+        this(threads, null);
+    }
+
+    public ThreadPooling(
+            Integer threads,
+            PersistenceExecutor persistenceExecutor) {
         this.threads = threads;
         this.scheduledPool = new HabboExecutorService(this.threads, new DefaultThreadFactory("HabExec"));
+        this.persistenceExecutor = persistenceExecutor;
         this.canAdd = true;
         LOGGER.info("Thread Pool -> Loaded!");
     }
@@ -62,6 +71,15 @@ public class ThreadPooling {
         }
 
         return null;
+    }
+
+    public void runPersistence(Runnable task) {
+        if (this.persistenceExecutor == null) {
+            this.run(task);
+            return;
+        }
+
+        this.persistenceExecutor.execute(task);
     }
 
     public void shutDown() {

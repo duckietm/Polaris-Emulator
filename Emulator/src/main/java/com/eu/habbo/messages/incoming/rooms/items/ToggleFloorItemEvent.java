@@ -116,7 +116,7 @@ public class ToggleFloorItemEvent extends MessageHandler {
                     return;
                 }
 
-                Emulator.getThreading().run(new QueryDeleteHabboItem(item.getId()));
+                Emulator.getThreading().runPersistence(new QueryDeleteHabboItem(item.getId()));
 
                 boolean isRare = item.getBaseItem().getName().contains("rare");
                 int rarity = 0;

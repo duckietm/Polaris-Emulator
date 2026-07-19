@@ -48,7 +48,7 @@ public final class ChestFurniDepositHelper {
 
         habbo.getClient().sendResponse(new RemoveHabboItemComposer(removed.getGiftAdjustedId()));
         habbo.getClient().sendResponse(new InventoryRefreshComposer());
-        Emulator.getThreading().run(new QueryDeleteHabboItems(List.of(removed)));
+        Emulator.getThreading().runPersistence(new QueryDeleteHabboItems(List.of(removed)));
 
         habbo.getClient().sendResponse(new ChestDataComposer(chest));
         ChestFurniPackets.sendDelta(habbo.getClient(), chest.getId(), List.of(), List.of(stored));

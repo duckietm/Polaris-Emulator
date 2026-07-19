@@ -80,7 +80,7 @@ public class RedeemCommand extends Command {
             deleted.add(item);
         }
 
-        Emulator.getThreading().run(new QueryDeleteHabboItems(deleted));
+        Emulator.getThreading().runPersistence(new QueryDeleteHabboItems(deleted));
 
         gameClient.sendResponse(new InventoryRefreshComposer());
         gameClient.getHabbo().giveCredits(credits);

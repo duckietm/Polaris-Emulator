@@ -84,7 +84,7 @@ public class CraftingCraftItemEvent extends MessageHandler {
                 });
                 this.client.sendResponse(new InventoryRefreshComposer());
 
-                Emulator.getThreading().run(new QueryDeleteHabboItems(toRemove.values()));
+                Emulator.getThreading().runPersistence(new QueryDeleteHabboItems(toRemove.values()));
                 return;
             }
 

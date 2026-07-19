@@ -47,7 +47,7 @@ public class RequestInventoryItemsDelete extends MessageHandler {
             habbo.getClient().sendResponse(new RemoveHabboItemComposer(object.getGiftAdjustedId()));
         });
         habbo.getClient().sendResponse(new InventoryRefreshComposer());
-        Emulator.getThreading().run(new QueryDeleteHabboItems(toRemove.values()));
+        Emulator.getThreading().runPersistence(new QueryDeleteHabboItems(toRemove.values()));
     }
 
     private boolean hasFurnitureInInventory(Habbo habbo, Item item, Integer amount) {

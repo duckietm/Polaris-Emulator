@@ -242,7 +242,7 @@ public abstract class Game implements Runnable {
         teamsCopy.putAll(this.teams);
 
         for (Map.Entry<GameTeamColors, GameTeam> teamEntry : teamsCopy.entrySet()) {
-            Emulator.getThreading().run(new SaveScoreForTeam(teamEntry.getValue(), this));
+            Emulator.getThreading().runPersistence(new SaveScoreForTeam(teamEntry.getValue(), this));
         }
     }
 

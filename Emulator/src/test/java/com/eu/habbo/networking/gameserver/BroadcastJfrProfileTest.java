@@ -1,6 +1,7 @@
 package com.eu.habbo.networking.gameserver;
 
 import com.eu.habbo.messages.ServerMessage;
+import com.eu.habbo.messages.ServerMessageFrame;
 import com.eu.habbo.networking.gameserver.encoders.GameServerMessageEncoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -35,22 +36,32 @@ class BroadcastJfrProfileTest {
         Path profileDirectory =
                 Path.of("target", "profiles");
         Files.createDirectories(profileDirectory);
+        boolean sharedFrame =
+                Boolean.getBoolean(
+                        "polaris.profile.broadcast.shared");
+        String profileName = sharedFrame
+                ? "broadcast-shared-frame"
+                : "broadcast-baseline";
         Path recordingPath =
                 profileDirectory.resolve(
-                        "broadcast-baseline.jfr");
+                        profileName + ".jfr");
         Path summaryPath =
                 profileDirectory.resolve(
-                        "broadcast-baseline.txt");
+                        profileName + ".txt");
 
         EmbeddedChannel channel =
                 new EmbeddedChannel(
                         new GameServerMessageEncoder());
         ServerMessage message = representativeMessage();
+        if (sharedFrame) {
+            ServerMessageFrame.prepareBroadcast(message);
+        }
         try {
             runBroadcasts(
                     channel,
                     message,
-                    WARMUP_BROADCASTS);
+                    WARMUP_BROADCASTS,
+                    sharedFrame);
 
             long startedAt = System.nanoTime();
             try (Recording recording = new Recording()) {
@@ -66,7 +77,8 @@ class BroadcastJfrProfileTest {
                 runBroadcasts(
                         channel,
                         message,
-                        PROFILE_BROADCASTS);
+                        PROFILE_BROADCASTS,
+                        sharedFrame);
                 recording.stop();
                 recording.dump(recordingPath);
             }
@@ -108,7 +120,8 @@ class BroadcastJfrProfileTest {
     private static void runBroadcasts(
             EmbeddedChannel channel,
             ServerMessage message,
-            int broadcasts) {
+            int broadcasts,
+            boolean sharedFrame) {
         for (int broadcast = 0;
              broadcast < broadcasts;
              broadcast++) {
@@ -116,7 +129,12 @@ class BroadcastJfrProfileTest {
                  recipient < RECIPIENTS;
                  recipient++) {
                 assertTrue(
-                        channel.writeOutbound(message));
+                        channel.writeOutbound(
+                                sharedFrame
+                                        ? ServerMessageFrame
+                                                .retainedDuplicate(
+                                                        message)
+                                        : message));
                 ByteBuf encoded = channel.readOutbound();
                 blackhole += encoded.getByte(
                         encoded.readerIndex());
@@ -189,6 +207,8 @@ class BroadcastJfrProfileTest {
                             .getName();
             if (type.equals(
                     "com.eu.habbo.messages.ServerMessage")
+                    || type.equals(
+                    "com.eu.habbo.messages.ServerMessageFrame")
                     || type.equals(
                     "com.eu.habbo.networking.gameserver."
                             + "encoders.GameServerMessageEncoder")) {

@@ -3,9 +3,11 @@ package com.eu.habbo.habbohotel.gameclients;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.core.CryptoConfig;
 import com.eu.habbo.messages.ServerMessage;
+import com.eu.habbo.messages.ServerMessageFrame;
 import com.eu.habbo.plugin.PluginManager;
 import com.eu.habbo.plugin.events.emulator.OutgoingPacketEvent;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.buffer.ByteBuf;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +16,7 @@ import org.mockito.ArgumentCaptor;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
@@ -152,6 +155,70 @@ class GameClientOutgoingPacketCompatibilityTest {
         assertSame(first, this.channel.readOutbound());
         assertSame(second, this.channel.readOutbound());
         assertNull(this.channel.readOutbound());
+    }
+
+    @Test
+    void preparedBroadcastWritesTheSharedFrameWithoutSubscribers() {
+        ServerMessage response =
+                new ServerMessage(100);
+        response.appendInt(77);
+        ServerMessageFrame.prepareBroadcast(response);
+        ByteBuf expected = response.get();
+
+        this.client.sendResponse(response);
+
+        ByteBuf actual = this.channel.readOutbound();
+        try {
+            assertEquals(expected, actual);
+        } finally {
+            expected.release();
+            actual.release();
+        }
+    }
+
+    @Test
+    void preparedBroadcastStillUsesPacketEventsWhenRegistered() {
+        org.mockito.Mockito.when(this.pluginManager.isRegistered(
+                OutgoingPacketEvent.class,
+                false)).thenReturn(true);
+        ServerMessage response =
+                new ServerMessage(100);
+        ServerMessageFrame.prepareBroadcast(response);
+
+        this.client.sendResponse(response);
+
+        verify(this.pluginManager).fireEvent(
+                any(OutgoingPacketEvent.class));
+        assertSame(response, this.channel.readOutbound());
+    }
+
+    @Test
+    void preparedBroadcastBatchWritesEachSharedFrame() {
+        ServerMessage first =
+                new ServerMessage(100);
+        first.appendInt(1);
+        ServerMessage second =
+                new ServerMessage(101);
+        second.appendInt(2);
+        ServerMessageFrame.prepareBroadcast(first);
+        ServerMessageFrame.prepareBroadcast(second);
+        ByteBuf expectedFirst = first.get();
+        ByteBuf expectedSecond = second.get();
+
+        this.client.sendResponses(new ArrayList<>(
+                java.util.List.of(first, second)));
+
+        ByteBuf actualFirst = this.channel.readOutbound();
+        ByteBuf actualSecond = this.channel.readOutbound();
+        try {
+            assertEquals(expectedFirst, actualFirst);
+            assertEquals(expectedSecond, actualSecond);
+        } finally {
+            expectedFirst.release();
+            expectedSecond.release();
+            actualFirst.release();
+            actualSecond.release();
+        }
     }
 
     private static Field field(String name) throws Exception {

@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.rooms;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
+import com.eu.habbo.messages.ServerMessageFrame;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -12,6 +13,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -48,6 +50,10 @@ class RoomMessagingManagerBatchTest {
         assertEquals(
                 List.of(first, second),
                 capturedBatch(secondClient));
+        assertTrue(
+                ServerMessageFrame.isBroadcastPrepared(first));
+        assertTrue(
+                ServerMessageFrame.isBroadcastPrepared(second));
     }
 
     @Test

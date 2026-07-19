@@ -40,7 +40,7 @@ public class ModToolUserChatlogComposer extends MessageComposer {
 
             this.response.appendShort(visit.chat.size());
             for (ModToolChatLog chatLog : visit.chat) {
-                this.response.appendString(format.format(chatLog.timestamp * 1000L));
+                this.response.appendString(formatTimestamp(chatLog.timestamp));
                 this.response.appendInt(chatLog.habboId);
                 this.response.appendString(chatLog.username);
                 this.response.appendString(chatLog.message);
@@ -48,6 +48,10 @@ public class ModToolUserChatlogComposer extends MessageComposer {
             }
         }
         return this.response;
+    }
+
+    static String formatTimestamp(int timestamp) {
+        return format.format(timestamp * 1000L);
     }
 
     public ArrayList<ModToolRoomVisit> getSet() {

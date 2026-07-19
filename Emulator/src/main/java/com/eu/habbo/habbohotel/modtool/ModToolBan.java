@@ -77,10 +77,14 @@ public class ModToolBan implements Runnable {
                 "Type: " + this.type.getType() + "\r" +
                 "Reason: " + "<i>" + this.reason + "</i>" + "\r" +
                 "Moderator Id: " + this.staffId + "\r" +
-                "Date: " + dateFormat.format(this.timestamp * 1000L) + "\r" +
-                "Expire Date: " + dateFormat.format(this.expireDate * 1000L) + "\r" +
+                "Date: " + formatTimestamp(this.timestamp) + "\r" +
+                "Expire Date: " + formatTimestamp(this.expireDate) + "\r" +
                 "IP: " + this.ip + "\r" +
                 "MachineID: " + this.machineId + "\r" +
                 "Topic: " + this.cfhTopic;
+    }
+
+    static String formatTimestamp(int timestamp) {
+        return dateFormat.format(timestamp * 1000L);
     }
 }

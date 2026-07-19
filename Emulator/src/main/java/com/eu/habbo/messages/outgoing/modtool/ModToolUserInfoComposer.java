@@ -165,7 +165,7 @@ public class ModToolUserInfoComposer extends MessageComposer {
      * is rendered as an empty string so the client falls back to its
      * empty-state placeholder.
      */
-    private static String formatUnixTimestamp(int timestamp) {
+    static String formatUnixTimestamp(int timestamp) {
         if (timestamp <= 0) return "";
         return DATE_FORMAT.format(new Date(timestamp * 1000L));
     }

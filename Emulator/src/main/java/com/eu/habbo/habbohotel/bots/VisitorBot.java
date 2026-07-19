@@ -26,7 +26,11 @@ public class VisitorBot extends Bot {
     }
 
     public static void initialise() {
-        DATE_FORMAT = new SimpleDateFormat(Emulator.getConfig().getValue("bots.visitor.dateformat"));
+        initialise(Emulator.getConfig().getValue("bots.visitor.dateformat"));
+    }
+
+    static void initialise(String pattern) {
+        DATE_FORMAT = new SimpleDateFormat(pattern);
     }
 
     @Override
@@ -42,7 +46,7 @@ public class VisitorBot extends Bot {
                     list.append("\r");
                     list.append(visit.roomName).append(" ");
                     list.append(Emulator.getTexts().getValue("generic.time.at")).append(" ");
-                    list.append(DATE_FORMAT.format(new Date((visit.timestamp * 1000L))));
+                    list.append(formatTimestamp(visit.timestamp));
                 }
 
                 visitMessage = visitMessage.replace("%list%", list.toString());
@@ -66,6 +70,10 @@ public class VisitorBot extends Bot {
                 }
             }
         }
+    }
+
+    static String formatTimestamp(int timestamp) {
+        return DATE_FORMAT.format(new Date(timestamp * 1000L));
     }
 
 }

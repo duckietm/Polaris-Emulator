@@ -12,7 +12,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -24,6 +26,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
@@ -50,13 +53,19 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 class PluginAbiCompatibilityTest {
 
-    private record Gate(String name, Path baselineJar, Path acceptedFile, List<String> acceptedFileHeader) {
+    private record Gate(
+            String name,
+            Path baselineJar,
+            Path acceptedFile,
+            String reviewedAcceptedFileSha256,
+            List<String> acceptedFileHeader) {
     }
 
     private static final Gate MORNINGSTAR_GATE = new Gate(
             "Arcturus Morningstar 3.5.5",
             Path.of("abi-baseline", "arcturus-morningstar-3.5.5-api.jar"),
             Path.of("abi-baseline", "accepted-divergence-morningstar.txt"),
+            "b070a28e0147c581cf52a2f24472cd0ec0e7b962370201cdc34ac9d48c09b51b",
             List.of(
                     "# Binary-incompatible divergence from the Arcturus Morningstar 3.5.5 plugin ABI",
                     "# that has already shipped in Polaris and is accepted. One token per line.",
@@ -66,6 +75,7 @@ class PluginAbiCompatibilityTest {
             "the released Polaris jar (see abi-baseline/README.md for the pinned version)",
             Path.of("abi-baseline", "polaris-release-api.jar"),
             Path.of("abi-baseline", "accepted-divergence-polaris.txt"),
+            "da4111fd732beb33104cc62940f6649e9f5ca907ce2bff026c64878412072b29",
             List.of(
                     "# Binary-incompatible divergence from the latest RELEASED Polaris jar that is",
                     "# accepted on this branch. One token per line; kept near-empty by policy —",
@@ -105,6 +115,15 @@ class PluginAbiCompatibilityTest {
 
         assertTrue(Files.isRegularFile(gate.acceptedFile()),
                 "Missing " + gate.acceptedFile() + "; regenerate with -D" + REGENERATE_PROPERTY + "=true");
+        assertEquals(
+                gate.reviewedAcceptedFileSha256(),
+                sha256(gate.acceptedFile()),
+                """
+                        The accepted ABI divergence list changed without updating its reviewed digest.
+                        Review every added token semantically; do not accept a signature break merely
+                        to make japicmp green. Update the digest in PluginAbiCompatibilityTest only
+                        in the same explicitly reviewed change.
+                        """);
 
         Set<String> accepted;
         try (Stream<String> lines = Files.lines(gate.acceptedFile())) {
@@ -206,5 +225,14 @@ class PluginAbiCompatibilityTest {
         lines.addAll(tokens);
         Files.write(gate.acceptedFile(), lines);
         System.out.println("ABI gate: wrote " + tokens.size() + " accepted divergence tokens to " + gate.acceptedFile());
+    }
+
+    private static String sha256(Path path) throws IOException {
+        try {
+            return HexFormat.of().formatHex(
+                    MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(path)));
+        } catch (java.security.NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException("JDK is missing SHA-256", impossible);
+        }
     }
 }

@@ -1,0 +1,5 @@
+{
+  "name": "Morningstar compatibility fixture",
+  "author": "Polaris tests",
+  "main": "fixture.morningstar.LegacyBehaviorPlugin"
+}

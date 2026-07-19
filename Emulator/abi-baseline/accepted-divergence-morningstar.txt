@@ -195,6 +195,11 @@ field com.eu.habbo.threading.runnables.WiredCollissionRunnable#objects FIELD_REM
 interface com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerRepeater#com.eu.habbo.habbohotel.items.ICycleable INTERFACE_REMOVED
 interface com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerRepeaterLong#com.eu.habbo.habbohotel.items.ICycleable INTERFACE_REMOVED
 interface com.eu.habbo.messages.MalformedPacketException#java.io.Serializable INTERFACE_REMOVED
+# Reviewed 2026-07-19: these interfaces were removed with their Trove-typed
+# constructors/methods in the already-shipped fastutil composer migrations.
+interface com.eu.habbo.messages.outgoing.inventory.InventoryItemsComposer#gnu.trove.procedure.TIntObjectProcedure INTERFACE_REMOVED
+interface com.eu.habbo.messages.outgoing.modtool.ModToolComposer#gnu.trove.procedure.TObjectProcedure INTERFACE_REMOVED
+interface com.eu.habbo.messages.outgoing.rooms.pets.RoomPetComposer#gnu.trove.procedure.TIntObjectProcedure INTERFACE_REMOVED
 interface com.eu.habbo.networking.camera.CameraHandler#io.netty.channel.ChannelHandler INTERFACE_REMOVED
 interface com.eu.habbo.networking.camera.CameraHandler#io.netty.channel.ChannelInboundHandler INTERFACE_REMOVED
 interface com.eu.habbo.threading.runnables.CameraClientAutoReconnect#java.lang.Runnable INTERFACE_REMOVED

@@ -181,6 +181,23 @@ class RoomConstructionCharacterizationTest {
         assertSame(room.getWordFilterWords(), room.getWordFilterWords());
     }
 
+    @Test
+    void packagePrivateConstructionUsesAnExplicitDatabaseDependency() throws Exception {
+        setEmulatorField("database", null);
+
+        Room room = new Room(
+                roomRow(),
+                new RoomDependencies(this.dataSource::getConnection));
+
+        assertEquals(41, room.getId());
+        assertEquals(
+                "SELECT users.username, users.id, room_bans.* FROM room_bans "
+                        + "INNER JOIN users ON room_bans.user_id = users.id "
+                        + "WHERE ends > ? AND room_bans.room_id = ?",
+                this.dataSource.sql);
+        assertEquals(41, this.dataSource.parameters.get(2));
+    }
+
     private static void setEmulatorField(String name, Object value) throws Exception {
         Field field = Emulator.class.getDeclaredField(name);
         field.setAccessible(true);

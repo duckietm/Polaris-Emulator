@@ -26,6 +26,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
+import io.netty.util.concurrent.EventExecutorGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,12 +62,25 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
         ch.pipeline().addLast("httpCodec", new HttpServerCodec());
         ch.pipeline().addLast("httpAggregator", new HttpObjectAggregator(MAX_FRAME_SIZE));
         ch.pipeline().addLast("wsHttpHandler", new WebSocketHttpHandler());
-        ch.pipeline().addLast("nitroSecureAssetHandler", new NitroSecureAssetHandler());
+        EventExecutorGroup blockingHttp = BlockingHttpExecutionGroup.get();
+        ch.pipeline().addLast(
+                blockingHttp,
+                "nitroSecureAssetHandler",
+                new NitroSecureAssetHandler());
         ch.pipeline().addLast("nitroSecureApiHandler", new NitroSecureApiHandler());
         ch.pipeline().addLast("authHttpHandler", new AuthHttpHandler());
-        ch.pipeline().addLast("badgeHttpHandler", new BadgeHttpHandler());
-        ch.pipeline().addLast("badgeLeaderboardHttpHandler", new BadgeLeaderboardHttpHandler());
-        ch.pipeline().addLast("emuStatsHttpHandler", new EmuStatsHttpHandler());
+        ch.pipeline().addLast(
+                blockingHttp,
+                "badgeHttpHandler",
+                new BadgeHttpHandler());
+        ch.pipeline().addLast(
+                blockingHttp,
+                "badgeLeaderboardHttpHandler",
+                new BadgeLeaderboardHttpHandler());
+        ch.pipeline().addLast(
+                blockingHttp,
+                "emuStatsHttpHandler",
+                new EmuStatsHttpHandler());
         ch.pipeline().addLast("wsProtocolHandler", new WebSocketServerProtocolHandler(this.wsConfig));
         ch.pipeline().addLast("wsFrameAggregator", new WebSocketFrameAggregator(MAX_FRAME_SIZE));
         ch.pipeline().addLast("wsCodec", new WebSocketCodec());

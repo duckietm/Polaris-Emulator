@@ -115,6 +115,13 @@ public class HabboInfo implements Runnable {
         this.loadMessengerCategories();
     }
 
+    HabboInfo(int id, int credits) {
+        this.id = id;
+        this.credits = WalletBalanceMath.requireValidBalance(credits);
+        this.gender = HabboGender.M;
+        this.currencies = new Int2IntOpenHashMap();
+    }
+
     private void loadCurrencies() {
         this.currencies = new Int2IntOpenHashMap();
 

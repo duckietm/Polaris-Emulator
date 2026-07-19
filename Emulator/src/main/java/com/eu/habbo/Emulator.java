@@ -282,10 +282,11 @@ public final class Emulator {
             PrintStream output) throws IOException {
         String line = reader.readLine();
 
-        if (line != null) {
-            commandHandler.accept(line);
+        if (line == null) {
+            return false;
         }
 
+        commandHandler.accept(line);
         output.println("Waiting for command: ");
         return true;
     }

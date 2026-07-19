@@ -58,6 +58,7 @@ public class RoomItemManager {
     private final Room room;
     private final RoomItemIndex index;
     private final RoomItemOperations operations;
+    private final RoomItemRegistry registry;
 
     // Tile cache for item lookups
     public final ConcurrentHashMap<RoomTile, Set<HabboItem>> tileCache;
@@ -66,6 +67,7 @@ public class RoomItemManager {
         this.room = room;
         this.index = new RoomItemIndex(room);
         this.operations = new RoomItemOperations(room);
+        this.registry = new RoomItemRegistry(room);
         this.tileCache = this.index.tileCache();
     }
 
@@ -476,94 +478,9 @@ public class RoomItemManager {
         }
 
         // Register with special types
-        this.registerItemWithSpecialTypes(item);
+        this.registry.register(item);
     }
 
-    /**
-     * Registers an item with room special types.
-     */
-    private void registerItemWithSpecialTypes(HabboItem item) {
-        RoomSpecialTypes specialTypes = this.room.getRoomSpecialTypes();
-        if (specialTypes == null) {
-            return;
-        }
-
-        boolean isWiredItem = false;
-
-        synchronized (specialTypes) {
-            // Register with tick service for time-based wired triggers (new 50ms tick system)
-            // This replaces ICycleable for wired items
-            if (item instanceof WiredTickable) {
-                WiredManager.registerTickable(this.room, (WiredTickable) item);
-            }
-            // Still register non-wired ICycleable items with the old system
-            else if (item instanceof ICycleable) {
-                specialTypes.addCycleTask((ICycleable) item);
-            }
-
-            if (item instanceof InteractionWiredTrigger) {
-                specialTypes.addTrigger((InteractionWiredTrigger) item);
-                isWiredItem = true;
-            } else if (item instanceof InteractionWiredEffect) {
-                specialTypes.addEffect((InteractionWiredEffect) item);
-                isWiredItem = true;
-            } else if (item instanceof InteractionWiredCondition) {
-                specialTypes.addCondition((InteractionWiredCondition) item);
-                isWiredItem = true;
-            } else if (item instanceof InteractionWiredExtra) {
-                specialTypes.addExtra((InteractionWiredExtra) item);
-                isWiredItem = true;
-            } else if (item instanceof InteractionBattleBanzaiTeleporter) {
-                specialTypes.addBanzaiTeleporter((InteractionBattleBanzaiTeleporter) item);
-            } else if (item instanceof InteractionRoller) {
-                specialTypes.addRoller((InteractionRoller) item);
-            } else if (item instanceof InteractionGameScoreboard) {
-                specialTypes.addGameScoreboard((InteractionGameScoreboard) item);
-            } else if (item instanceof InteractionGameGate) {
-                specialTypes.addGameGate((InteractionGameGate) item);
-            } else if (item instanceof InteractionGameTimer) {
-                specialTypes.addGameTimer((InteractionGameTimer) item);
-            } else if (item instanceof InteractionFreezeExitTile) {
-                specialTypes.addFreezeExitTile((InteractionFreezeExitTile) item);
-            } else if (item instanceof InteractionNest) {
-                specialTypes.addNest((InteractionNest) item);
-            } else if (item instanceof InteractionPetDrink) {
-                specialTypes.addPetDrink((InteractionPetDrink) item);
-            } else if (item instanceof InteractionPetFood) {
-                specialTypes.addPetFood((InteractionPetFood) item);
-            } else if (item instanceof InteractionPetToy) {
-                specialTypes.addPetToy((InteractionPetToy) item);
-            } else if (item instanceof InteractionPetTree) {
-                specialTypes.addPetTree((InteractionPetTree) item);
-            } else if (item instanceof InteractionMoodLight ||
-                    item instanceof InteractionPyramid ||
-                    item instanceof InteractionMusicDisc ||
-                    item instanceof InteractionBattleBanzaiSphere ||
-                    item instanceof InteractionTalkingFurniture ||
-                    item instanceof InteractionWater ||
-                    item instanceof InteractionWaterItem ||
-                    item instanceof InteractionMuteArea ||
-                    item instanceof InteractionBuildArea ||
-                    item instanceof InteractionTagPole ||
-                    item instanceof InteractionTagField ||
-                    item instanceof InteractionJukeBox ||
-                    item instanceof InteractionPetBreedingNest ||
-                    item instanceof InteractionBlackHole ||
-                    item instanceof InteractionWiredHighscore ||
-                    item instanceof InteractionStickyPole ||
-                    item instanceof WiredBlob ||
-                    item instanceof InteractionTent ||
-                    item instanceof InteractionSnowboardSlope ||
-                    item instanceof InteractionFireworks || item instanceof InteractionVoteCounter) {
-                specialTypes.addUndefined(item);
-            }
-        }
-
-        // Invalidate wired cache when wired items are added
-        if (isWiredItem) {
-            WiredManager.invalidateRoom(this.room);
-        }
-    }
 
     /**
      * Removes an item by ID.
@@ -603,7 +520,7 @@ public class RoomItemManager {
             }
 
             // Unregister from special types
-            this.unregisterItemFromSpecialTypes(item);
+            this.registry.unregister(item);
         }
 
         if (trackedBuildersClubItem) {
@@ -617,134 +534,6 @@ public class RoomItemManager {
         }
     }
 
-    /**
-     * Unregisters an item from room special types.
-     */
-    private void unregisterItemFromSpecialTypes(HabboItem item) {
-        RoomSpecialTypes specialTypes = this.room.getRoomSpecialTypes();
-        if (specialTypes == null) {
-            return;
-        }
-
-        boolean cleanedSignalAntennaReferences = false;
-        if (this.isAntennaItem(item)) {
-            cleanedSignalAntennaReferences = specialTypes.unlinkSignalAntennaReferences(item.getId());
-        }
-
-        this.room.getFurniVariableManager().removeAssignmentsForFurni(item.getId());
-
-        boolean isWiredItem = false;
-
-        // Unregister from tick service for time-based wired triggers (new 50ms tick system)
-        if (item instanceof WiredTickable) {
-            WiredManager.unregisterTickable(this.room, (WiredTickable) item);
-        }
-        // Still handle non-wired ICycleable items with the old system
-        else if (item instanceof ICycleable) {
-            specialTypes.removeCycleTask((ICycleable) item);
-        }
-
-        if (item instanceof InteractionBattleBanzaiTeleporter) {
-            specialTypes.removeBanzaiTeleporter((InteractionBattleBanzaiTeleporter) item);
-        } else if (item instanceof InteractionWiredTrigger) {
-            specialTypes.removeTrigger((InteractionWiredTrigger) item);
-            isWiredItem = true;
-        } else if (item instanceof InteractionWiredEffect) {
-            specialTypes.removeEffect((InteractionWiredEffect) item);
-            isWiredItem = true;
-        } else if (item instanceof InteractionWiredCondition) {
-            specialTypes.removeCondition((InteractionWiredCondition) item);
-            isWiredItem = true;
-        } else if (item instanceof InteractionWiredExtra) {
-            boolean removedContextDefinition = false;
-            boolean removedVariableTextConnector = false;
-            if (item instanceof WiredExtraUserVariable) {
-                this.room.getUserVariableManager().removeDefinition(item.getId());
-            } else if (item instanceof WiredExtraFurniVariable) {
-                this.room.getFurniVariableManager().removeDefinition(item.getId());
-            } else if (item instanceof WiredExtraRoomVariable) {
-                this.room.getRoomVariableManager().removeDefinition(item.getId());
-            } else if (item instanceof WiredExtraContextVariable) {
-                removedContextDefinition = true;
-            } else if (item instanceof WiredExtraVariableTextConnector) {
-                removedVariableTextConnector = true;
-            } else if (item instanceof WiredExtraVariableReference) {
-                if (((WiredExtraVariableReference) item).isRoomReference()) {
-                    this.room.getRoomVariableManager().removeDefinition(item.getId());
-                } else {
-                    this.room.getUserVariableManager().removeDefinition(item.getId());
-                }
-            } else if (item instanceof WiredExtraVariableEcho) {
-                WiredExtraVariableEcho echo = (WiredExtraVariableEcho) item;
-
-                if (echo.isRoomEcho()) {
-                    this.room.getRoomVariableManager().removeDefinition(item.getId());
-                } else if (echo.isFurniEcho()) {
-                    this.room.getFurniVariableManager().removeDefinition(item.getId());
-                } else {
-                    this.room.getUserVariableManager().removeDefinition(item.getId());
-                }
-            }
-            specialTypes.removeExtra((InteractionWiredExtra) item);
-            if (removedContextDefinition || removedVariableTextConnector) {
-                WiredContextVariableSupport.broadcastDefinitions(this.room);
-            }
-            isWiredItem = true;
-        } else if (item instanceof InteractionRoller) {
-            specialTypes.removeRoller((InteractionRoller) item);
-        } else if (item instanceof InteractionGameScoreboard) {
-            specialTypes.removeScoreboard((InteractionGameScoreboard) item);
-        } else if (item instanceof InteractionGameGate) {
-            specialTypes.removeGameGate((InteractionGameGate) item);
-        } else if (item instanceof InteractionGameTimer) {
-            specialTypes.removeGameTimer((InteractionGameTimer) item);
-        } else if (item instanceof InteractionFreezeExitTile) {
-            specialTypes.removeFreezeExitTile((InteractionFreezeExitTile) item);
-        } else if (item instanceof InteractionNest) {
-            specialTypes.removeNest((InteractionNest) item);
-        } else if (item instanceof InteractionPetDrink) {
-            specialTypes.removePetDrink((InteractionPetDrink) item);
-        } else if (item instanceof InteractionPetFood) {
-            specialTypes.removePetFood((InteractionPetFood) item);
-        } else if (item instanceof InteractionPetToy) {
-            specialTypes.removePetToy((InteractionPetToy) item);
-        } else if (item instanceof InteractionPetTree) {
-            specialTypes.removePetTree((InteractionPetTree) item);
-        } else if (item instanceof InteractionMoodLight ||
-                item instanceof InteractionPyramid ||
-                item instanceof InteractionMusicDisc ||
-                item instanceof InteractionBattleBanzaiSphere ||
-                item instanceof InteractionTalkingFurniture ||
-                item instanceof InteractionWaterItem ||
-                item instanceof InteractionWater ||
-                item instanceof InteractionMuteArea ||
-                item instanceof InteractionTagPole ||
-                item instanceof InteractionTagField ||
-                item instanceof InteractionJukeBox ||
-                item instanceof InteractionPetBreedingNest ||
-                item instanceof InteractionBlackHole ||
-                item instanceof InteractionWiredHighscore ||
-                item instanceof InteractionStickyPole ||
-                item instanceof WiredBlob ||
-                item instanceof InteractionTent ||
-                item instanceof InteractionSnowboardSlope || item instanceof InteractionVoteCounter) {
-            specialTypes.removeUndefined(item);
-        }
-
-        // Invalidate wired cache when wired items are removed
-        if (isWiredItem || cleanedSignalAntennaReferences) {
-            WiredManager.invalidateRoom(this.room);
-        }
-    }
-
-    private boolean isAntennaItem(HabboItem item) {
-        if (item == null || item.getBaseItem() == null || item.getBaseItem().getInteractionType() == null) {
-            return false;
-        }
-
-        String interactionType = item.getBaseItem().getInteractionType().getName();
-        return interactionType != null && interactionType.equalsIgnoreCase("antenna");
-    }
 
     // ==================== ITEM UPDATES ====================
 

@@ -45,7 +45,10 @@ class RoomLifecycleConcurrencyTest {
         Room room = new Room(41, 7);
         CountDownLatch cycleEntered = new CountDownLatch(1);
         CountDownLatch disposerStarted = new CountDownLatch(1);
-        setField(room, "loaded", true);
+        long load = room.beginLoadTransition();
+        assertTrue(room.publishLoadTransition(
+                load,
+                FakeScheduledFuture::new));
         setField(room, "cycleManager", new CoordinatedCycleManager(
                 room,
                 cycleEntered,
@@ -66,7 +69,6 @@ class RoomLifecycleConcurrencyTest {
     @Test
     void disposeInvalidatesAnInFlightLoadBeforeItCanInstallACycle() throws Exception {
         Room room = new Room(41, 7);
-        setField(room, "preLoaded", true);
         long load = room.beginLoadTransition();
         FakeScheduledFuture staleTask = new FakeScheduledFuture();
 
@@ -85,7 +87,6 @@ class RoomLifecycleConcurrencyTest {
     @Test
     void loadPublicationInstallsTheCycleInTheSameTransition() throws Exception {
         Room room = new Room(41, 7);
-        setField(room, "preLoaded", true);
         long load = room.beginLoadTransition();
         FakeScheduledFuture task = new FakeScheduledFuture();
 
@@ -98,7 +99,6 @@ class RoomLifecycleConcurrencyTest {
     @Test
     void unloadTransitionCancelsThePublishedCycleBeforeClearingLoadedState() throws Exception {
         Room room = new Room(41, 7);
-        setField(room, "preLoaded", true);
         long load = room.beginLoadTransition();
         FakeScheduledFuture task = new FakeScheduledFuture();
         assertTrue(room.publishLoadTransition(load, () -> task));

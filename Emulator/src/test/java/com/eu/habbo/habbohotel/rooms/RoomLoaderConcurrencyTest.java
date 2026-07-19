@@ -131,7 +131,6 @@ class RoomLoaderConcurrencyTest {
                 7,
                 new RoomDependencies(
                         this.injectedDataSource::getConnection));
-        setRoomField(room, "preLoaded", true);
         return room;
     }
 

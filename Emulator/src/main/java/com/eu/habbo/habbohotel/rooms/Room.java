@@ -129,16 +129,13 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   private final Set<Game> games;
   private final Int2ObjectMap<RoomMoodlightData> moodlightData;
   private final RoomDependencies dependencies;
+  private final RoomLifecycle lifecycle;
   private final RoomLoader loader;
   private final RoomPersistence persistence;
   private final RoomRepository repository;
   public volatile double lastCycleCpuMs = 0.0;
   public volatile String lastCycleThread = "N/A";
 
-  private final Object loadLock = new Object();
-  private LifecycleState lifecycleState = LifecycleState.PRELOADED;
-  private long lifecycleGeneration;
-  private long activeLoadGeneration;
   //Use appropriately. Could potentially cause memory leaks when used incorrectly.
   public volatile boolean preventUnloading = false;
   public volatile boolean preventUncaching = false;
@@ -198,10 +195,6 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   private RoomState buildersClubOriginalState;
   private RoomPromotion promotion;
   private volatile boolean needsUpdate;
-  private volatile boolean loaded;
-  private volatile boolean preLoaded;
-  private volatile boolean loadingInProgress;
-  private volatile CompletableFuture<Void> loadingFuture;
   private int rollerSpeed;
   private int lastTimerReset = Emulator.getIntUnixTimestamp();
   private volatile boolean muted;
@@ -242,13 +235,6 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
   public final Map<String, Object> cache;
 
-  private enum LifecycleState {
-    PRELOADED,
-    LOADING,
-    LOADED,
-    DISPOSING
-  }
-
   Room(int id, int ownerId) {
     this(id, ownerId, RoomDependencies.runtime());
   }
@@ -256,6 +242,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   Room(int id, int ownerId, RoomDependencies dependencies) {
     this.cache = new HashMap<>();
     this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
+    this.lifecycle = new RoomLifecycle(new RoomCycleTaskSlot());
     this.persistence = new RoomPersistence(this.dependencies.database());
     this.repository = new RoomRepository(this.dependencies.database());
     this.id = id;
@@ -278,6 +265,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   Room(ResultSet set, RoomDependencies dependencies) throws SQLException {
     this.cache = new HashMap<>(1000);
     this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
+    this.lifecycle = new RoomLifecycle(new RoomCycleTaskSlot());
     this.persistence = new RoomPersistence(this.dependencies.database());
     this.repository = new RoomRepository(this.dependencies.database());
     RoomSnapshot.Initial initial = RoomSnapshot.readInitial(set);
@@ -339,7 +327,6 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     this.moveDiagonally = snapshot.postBanLoad().moveDiagonally();
     this.allowUnderpass = snapshot.postBanLoad().allowUnderpass();
 
-    this.preLoaded = true;
     this.allowBotsWalk = true;
     this.allowEffects = true;
     this.moodlightData = new Int2ObjectOpenHashMap<>(defaultMoodData);
@@ -487,140 +474,51 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
    * Checks if the room is currently loading data.
    */
   public boolean isLoadingInProgress() {
-    synchronized (this.loadLock) {
-      return this.loadingInProgress;
-    }
+    return this.lifecycle.isLoading();
   }
 
   /**
    * Checks if the room data is loaded or is currently being loaded.
    */
   public boolean isLoadedOrLoading() {
-    synchronized (this.loadLock) {
-      return this.loaded || this.loadingInProgress;
-    }
+    return this.lifecycle.isLoadedOrLoading();
   }
 
   long beginLoadTransition() {
-    synchronized (this.loadLock) {
-      if (this.loaded
-              || this.loadingInProgress
-              || !this.preLoaded
-              || this.lifecycleState == LifecycleState.DISPOSING) {
-        return -1L;
-      }
-
-      this.loadingInProgress = true;
-      this.lifecycleState = LifecycleState.LOADING;
-      long generation = ++this.lifecycleGeneration;
-      this.activeLoadGeneration = generation;
-      return generation;
-    }
+    return this.lifecycle.beginLoad();
   }
 
   boolean publishLoadTransition(
           long generation,
           Supplier<ScheduledFuture<?>> cycleScheduler
   ) {
-    synchronized (this.loadLock) {
-      if (generation != this.lifecycleGeneration
-              || generation != this.activeLoadGeneration
-              || this.lifecycleState != LifecycleState.LOADING) {
-        this.completeLoadAttemptLocked(generation);
-        return false;
-      }
-
-      ScheduledFuture<?> previousTask = this.roomCycleTask;
-      if (previousTask != null) {
-        previousTask.cancel(false);
-      }
-
-      ScheduledFuture<?> newTask = cycleScheduler.get();
-      if (newTask == null) {
-        this.failLoadTransitionLocked(generation);
-        return false;
-      }
-
-      this.roomCycleTask = newTask;
-      this.loaded = true;
-      this.preLoaded = false;
-      this.loadingInProgress = false;
-      this.loadingFuture = null;
-      this.activeLoadGeneration = 0L;
-      this.lifecycleState = LifecycleState.LOADED;
-      return true;
-    }
+    return this.lifecycle.publishLoad(generation, cycleScheduler);
   }
 
   boolean beginUnloadTransition() {
-    synchronized (this.loadLock) {
-      if (this.lifecycleState == LifecycleState.DISPOSING) {
-        return false;
-      }
-
-      boolean loadInProgress = this.activeLoadGeneration != 0L;
-      this.lifecycleGeneration++;
-      this.lifecycleState = LifecycleState.DISPOSING;
-      this.loaded = false;
-
-      ScheduledFuture<?> task = this.roomCycleTask;
-      this.roomCycleTask = null;
-      if (task != null) {
-        task.cancel(false);
-      }
-
-      if (!loadInProgress) {
-        this.loadingInProgress = false;
-        this.loadingFuture = null;
-      }
-      return true;
-    }
+    return this.lifecycle.beginUnload();
   }
 
   void finishUnloadTransition() {
-    synchronized (this.loadLock) {
-      this.preLoaded = true;
-      this.lifecycleState = LifecycleState.PRELOADED;
-    }
+    this.lifecycle.finishUnload();
   }
 
   void quiesceCycleTask() {
     synchronized (this) {
-      synchronized (this.loadLock) {
-        ScheduledFuture<?> task = this.roomCycleTask;
-        this.roomCycleTask = null;
-        if (task != null) {
-          task.cancel(false);
-        }
-      }
+      this.lifecycle.quiesceCycle();
     }
+  }
+
+  void resetIdleCycles() {
+    this.lifecycle.resetIdleCycles();
+  }
+
+  boolean advanceIdleUnload(boolean empty) {
+    return this.lifecycle.advanceIdleUnload(empty);
   }
 
   private void failLoadTransition(long generation) {
-    synchronized (this.loadLock) {
-      this.failLoadTransitionLocked(generation);
-    }
-  }
-
-  private void failLoadTransitionLocked(long generation) {
-    if (generation != this.activeLoadGeneration) {
-      return;
-    }
-
-    if (generation == this.lifecycleGeneration
-            && this.lifecycleState == LifecycleState.LOADING) {
-      this.preLoaded = true;
-      this.lifecycleState = LifecycleState.PRELOADED;
-    }
-    this.completeLoadAttemptLocked(generation);
-  }
-
-  private void completeLoadAttemptLocked(long generation) {
-    if (generation == this.activeLoadGeneration) {
-      this.activeLoadGeneration = 0L;
-      this.loadingInProgress = false;
-      this.loadingFuture = null;
-    }
+    this.lifecycle.failLoad(generation);
   }
 
   /**
@@ -629,22 +527,9 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
    * reducing perceived load time.
    */
   public void startBackgroundLoad() {
-    synchronized (this.loadLock) {
-      long generation = this.beginLoadTransition();
-      if (generation < 0L) {
-        return;
-      }
-
-      try {
-        this.loadingFuture = CompletableFuture.runAsync(
-                () -> this.loadDataInternal(generation),
-                LOAD_COORDINATOR
-        );
-      } catch (RuntimeException exception) {
-        this.failLoadTransitionLocked(generation);
-        throw exception;
-      }
-    }
+    this.lifecycle.startBackgroundLoad(
+        LOAD_COORDINATOR,
+        this::loadDataInternal);
   }
 
   /**
@@ -652,13 +537,10 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
    * If loading hasn't started yet, starts loading synchronously.
    */
   public void waitForLoad() {
-    CompletableFuture<Void> future;
-    synchronized (this.loadLock) {
-      if (this.loaded) {
-        return;
-      }
-      future = this.loadingFuture;
+    if (this.lifecycle.isLoaded()) {
+      return;
     }
+    CompletableFuture<Void> future = this.lifecycle.loadingFuture();
 
     if (future != null) {
       try {
@@ -672,17 +554,9 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   }
 
   public void loadData() {
-    CompletableFuture<Void> futureToWait = null;
-    long generation = -1L;
-
-    synchronized (this.loadLock) {
-      if (this.loadingInProgress) {
-        // Get the future to wait on outside the lock
-        futureToWait = this.loadingFuture;
-      } else {
-        generation = this.beginLoadTransition();
-      }
-    }
+    RoomLifecycle.LoadAttempt attempt =
+        this.lifecycle.beginOrJoinLoad();
+    CompletableFuture<Void> futureToWait = attempt.future();
 
     // Wait for existing load outside the lock
     if (futureToWait != null) {
@@ -695,8 +569,8 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     }
 
     // Load if needed
-    if (generation >= 0L) {
-      this.loadDataInternal(generation);
+    if (attempt.generation() >= 0L) {
+      this.loadDataInternal(attempt.generation());
     }
   }
 
@@ -724,6 +598,20 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
             () -> Emulator.getThreading().getService());
   }
 
+  private final class RoomCycleTaskSlot
+      implements RoomLifecycle.CycleTaskSlot {
+
+    @Override
+    public ScheduledFuture<?> get() {
+      return Room.this.roomCycleTask;
+    }
+
+    @Override
+    public void set(ScheduledFuture<?> task) {
+      Room.this.roomCycleTask = task;
+    }
+  }
+
   private final class RoomLoadOperations implements RoomLoader.Operations {
 
     @Override
@@ -733,14 +621,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
     @Override
     public boolean prepare(long generation) {
-      synchronized (Room.this.loadLock) {
-        if (generation != Room.this.lifecycleGeneration
-                || Room.this.lifecycleState != LifecycleState.LOADING) {
-          return false;
-        }
-        Room.this.preLoaded = false;
-        return true;
-      }
+      return Room.this.lifecycle.prepareLoad(generation);
     }
 
     @Override
@@ -1169,25 +1050,19 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   }
 
   public synchronized void dispose() {
-    if (this.preventUnloading) {
-      return;
-    }
+    this.lifecycle.dispose(
+        this.preventUnloading,
+        () -> Emulator.getPluginManager()
+            .fireEvent(new RoomUnloadingEvent(this))
+            .isCancelled(),
+        this::disposeState,
+        () -> Emulator.getPluginManager()
+            .fireEvent(new RoomUnloadedEvent(this)));
+  }
 
-    if (Emulator.getPluginManager().fireEvent(new RoomUnloadingEvent(this)).isCancelled()) {
-      return;
-    }
-
-    boolean wasLoaded;
-    synchronized (this.loadLock) {
-      wasLoaded = this.loaded;
-    }
-    if (!this.beginUnloadTransition()) {
-      return;
-    }
-
-    try {
-      if (wasLoaded) {
-        try {
+  private void disposeState(boolean wasLoaded) {
+    if (wasLoaded) {
+      try {
           if (this.traxManager != null && !this.traxManager.disposed()) {
             this.traxManager.dispose();
           }
@@ -1259,25 +1134,20 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
           this.unitManager.clear();
           this.unitManager.clearBots();
           this.unitManager.clearPets();
-        } catch (Exception e) {
-          LOGGER.error("Caught exception", e);
-        }
-      }
-
-      try {
-        this.wordQuiz = "";
-        this.yesVotes = 0;
-        this.noVotes = 0;
-        this.updateDatabaseUserCount();
-        this.layout = null;
       } catch (Exception e) {
         LOGGER.error("Caught exception", e);
       }
-    } finally {
-      this.finishUnloadTransition();
     }
 
-    Emulator.getPluginManager().fireEvent(new RoomUnloadedEvent(this));
+    try {
+      this.wordQuiz = "";
+      this.yesVotes = 0;
+      this.noVotes = 0;
+      this.updateDatabaseUserCount();
+      this.layout = null;
+    } catch (Exception e) {
+      LOGGER.error("Caught exception", e);
+    }
   }
 
   @Override
@@ -1356,10 +1226,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   @Override
   public void run() {
     synchronized (this) {
-      boolean runCycle;
-      synchronized (this.loadLock) {
-        runCycle = this.loaded;
-      }
+      boolean runCycle = this.lifecycle.isLoaded();
 
       if (runCycle) {
         try {
@@ -2022,11 +1889,11 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   }
 
   public boolean isPreLoaded() {
-    return this.preLoaded;
+    return this.lifecycle.isPreloaded();
   }
 
   public boolean isLoaded() {
-    return this.loaded;
+    return this.lifecycle.isLoaded();
   }
 
   public void setNeedsUpdate(boolean needsUpdate) {

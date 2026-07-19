@@ -43,13 +43,15 @@ class RoomManagerCycleQuiescenceTest {
         Room room = new Room(41, 7);
         CountDownLatch cycleStarted = new CountDownLatch(1);
         CountDownLatch releaseCycle = new CountDownLatch(1);
-        setField(room, "loaded", true);
+        long load = room.beginLoadTransition();
+        assertTrue(room.publishLoadTransition(
+                load,
+                TestScheduledFuture::new));
         setField(room, "cycleManager", new BlockingCycleManager(
                 room,
                 cycleStarted,
                 releaseCycle
         ));
-        room.roomCycleTask = new TestScheduledFuture();
         manager.registerActiveRoom(room);
         ExecutorService executor = Executors.newFixedThreadPool(2);
 

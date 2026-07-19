@@ -31,7 +31,6 @@ public class RoomCycleManager {
     private final Room room;
     private boolean cycleOdd;
     private long cycleTimestamp;
-    private int idleCycles;
     private int idleHostingCycles;
     private long rollerCycle = System.currentTimeMillis();
 
@@ -39,7 +38,6 @@ public class RoomCycleManager {
         this.room = room;
         this.cycleOdd = false;
         this.cycleTimestamp = 0;
-        this.idleCycles = 0;
         this.idleHostingCycles = 0;
     }
 
@@ -48,7 +46,7 @@ public class RoomCycleManager {
     }
 
     public void resetIdleCycles() {
-        this.idleCycles = 0;
+        this.room.resetIdleCycles();
     }
 
     public void cycle() {
@@ -125,17 +123,7 @@ public class RoomCycleManager {
     }
 
     boolean advanceIdleUnload(boolean empty) {
-        if (!empty) {
-            this.idleCycles = 0;
-            return false;
-        }
-
-        if (this.idleCycles < 60) {
-            this.idleCycles++;
-            return false;
-        }
-
-        return true;
+        return this.room.advanceIdleUnload(empty);
     }
 
     private void processScheduledTasks() {

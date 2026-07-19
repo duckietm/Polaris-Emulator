@@ -56,6 +56,13 @@ class PacketManagerHandlerInstanceTest {
         assertSame(second, secondHandler.packet);
     }
 
+    @Test
+    void reusesTheResolvedConstructorWithoutReusingHandlers() {
+        assertSame(
+                PacketManager.constructorFor(RecordingHandler.class),
+                PacketManager.constructorFor(RecordingHandler.class));
+    }
+
     private static void setField(
             PacketManager manager,
             String name,

@@ -86,6 +86,7 @@ import com.eu.habbo.plugin.events.emulator.EmulatorConfigUpdatedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -95,6 +96,23 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class PacketManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PacketManager.class);
+    private static final ClassValue<
+            Constructor<? extends MessageHandler>> HANDLER_CONSTRUCTORS =
+            new ClassValue<>() {
+                @Override
+                protected Constructor<? extends MessageHandler> computeValue(
+                        Class<?> type) {
+                    try {
+                        return type.asSubclass(MessageHandler.class)
+                                .getDeclaredConstructor();
+                    } catch (NoSuchMethodException exception) {
+                        throw new IllegalArgumentException(
+                                "Incoming handler has no default constructor: "
+                                        + type.getName(),
+                                exception);
+                    }
+                }
+            };
 
     private static final List<Integer> logList = new ArrayList<>();
     public static boolean DEBUG_SHOW_PACKETS = false;
@@ -204,7 +222,8 @@ public class PacketManager {
                     return;
                 }
 
-                final MessageHandler handler = handlerClass.getDeclaredConstructor().newInstance();
+                final MessageHandler handler =
+                        constructorFor(handlerClass).newInstance();
 
                 if (handler.getRatelimit() > 0) {
                     long now = System.currentTimeMillis();
@@ -276,6 +295,11 @@ public class PacketManager {
 
     boolean isRegistered(int header) {
         return this.incoming.containsKey(header);
+    }
+
+    static Constructor<? extends MessageHandler> constructorFor(
+            Class<? extends MessageHandler> handlerClass) {
+        return HANDLER_CONSTRUCTORS.get(handlerClass);
     }
 
     private void registerAmbassadors() throws Exception {

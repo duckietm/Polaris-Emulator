@@ -57,7 +57,7 @@ class EconomyAuditCoverageContractTest {
     }
 
     @Test
-    void firstPartyCodeDoesNotUseLegacyDirectCreditMutators() throws Exception {
+    void firstPartyCodeDoesNotUseLegacyDirectWalletMutators() throws Exception {
         Set<String> callers = new HashSet<>();
         try (var paths = Files.walk(SOURCES)) {
             for (Path path : paths.filter(file -> file.toString().endsWith(".java")).toList()) {
@@ -67,14 +67,17 @@ class EconomyAuditCoverageContractTest {
                 String source = Files.readString(path);
                 if (source.contains(".addCredits(")
                         || source.contains(".setCredits(")
-                        || source.contains(".tryAddCredits(")) {
+                        || source.contains(".tryAddCredits(")
+                        || source.contains(".addCurrencyAmount(")
+                        || source.contains(".setCurrencyAmount(")
+                        || source.contains(".tryAddCurrencyAmount(")) {
                     callers.add(SOURCES.relativize(path).toString());
                 }
             }
         }
 
         assertEquals(Set.of(), callers,
-                "first-party credit changes must use explicit ledger operations or committed-balance publication");
+                "first-party wallet changes must use explicit ledger operations or committed-balance publication");
     }
 
     @Test

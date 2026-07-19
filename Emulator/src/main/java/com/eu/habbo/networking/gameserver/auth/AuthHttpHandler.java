@@ -68,6 +68,15 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
         return executor;
     }
 
+    static boolean submitTask(Runnable task) {
+        try {
+            AUTH_EXECUTOR.execute(task);
+            return true;
+        } catch (RejectedExecutionException rejected) {
+            return false;
+        }
+    }
+
     // Max threads for the auth pool. Defaults to 16; set the optional
     // `auth.http.pool.size` config key to override.
     private static int authPoolMax() {
@@ -113,22 +122,20 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
         // Offload the (potentially blocking) auth work off the event loop. Netty
         // writes are thread-safe, so the endpoints' sendJson/writeAndFlush calls
         // are fine from the worker; the request is released once the work ends.
-        try {
-            AUTH_EXECUTOR.execute(() -> {
+        if (!submitTask(() -> {
+            try {
+                handle(ctx, req, path);
+            } catch (Throwable t) {
+                LOGGER.error("Auth handler failed for {}", path, t);
                 try {
-                    handle(ctx, req, path);
-                } catch (Throwable t) {
-                    LOGGER.error("Auth handler failed for {}", path, t);
-                    try {
-                        sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Internal error."));
-                    } catch (Throwable ignored) {
-                        // response may already be partially written — nothing else to do
-                    }
-                } finally {
-                    ReferenceCountUtil.release(req);
+                    sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Internal error."));
+                } catch (Throwable ignored) {
+                    // response may already be partially written — nothing else to do
                 }
-            });
-        } catch (RejectedExecutionException rejected) {
+            } finally {
+                ReferenceCountUtil.release(req);
+            }
+        })) {
             try {
                 sendJson(ctx, req, HttpResponseStatus.SERVICE_UNAVAILABLE, errorPayload("Server busy, try again shortly."));
             } finally {

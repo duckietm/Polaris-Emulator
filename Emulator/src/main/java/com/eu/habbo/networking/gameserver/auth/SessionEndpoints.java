@@ -39,6 +39,10 @@ final class SessionEndpoints {
     private SessionEndpoints() {
     }
 
+    static boolean submitResetEmail(Runnable task) {
+        return AuthHttpHandler.submitTask(task);
+    }
+
     static void handleLogout(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body) {
         String ssoTicket = readString(body, "ssoTicket");
         String rememberToken = readString(body, "rememberToken").trim();
@@ -467,7 +471,15 @@ final class SessionEndpoints {
                             fullUrl + "\n\n" +
                             "If you didn't request this you can safely ignore this email.";
 
-                    Emulator.getThreading().getService().submit((Runnable) () -> SmtpMailService.send(email, subject, message));
+                    if (!submitResetEmail(
+                            () -> SmtpMailService.send(
+                                    email,
+                                    subject,
+                                    message))) {
+                        LOGGER.warn(
+                                "Reset email queue is full; "
+                                        + "dropping delivery task");
+                    }
                 }
             }
         } catch (Exception e) {

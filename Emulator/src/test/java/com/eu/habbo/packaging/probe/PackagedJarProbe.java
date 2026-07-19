@@ -69,39 +69,51 @@ public final class PackagedJarProbe {
         require(manager.getPlugins().size() == 1, "Expected one legacy plugin fixture");
         HabboPlugin plugin = manager.getPlugins().iterator().next();
 
-        require("Morningstar compatibility fixture".equals(plugin.configuration.name),
-                "plugin.json name was not preserved");
+        String pluginName = plugin.configuration.name;
+        require(
+                "Morningstar compatibility fixture".equals(pluginName)
+                        || "Released Polaris compatibility fixture".equals(pluginName),
+                "Unexpected plugin.json name: " + pluginName);
         require("Polaris tests".equals(plugin.configuration.author),
                 "plugin.json author was not preserved");
         require(plugin.getClass().getClassLoader() == plugin.classLoader,
                 "Plugin class was not owned by its plugin classloader");
         require((boolean) plugin.getClass().getMethod("isEnabled").invoke(plugin),
                 "Plugin onEnable was not called");
-        require("legacy-plugin-resource".equals(
-                        plugin.getClass().getMethod("readOwnResource").invoke(plugin)),
+        String expectedResource = pluginName.startsWith("Morningstar")
+                ? "legacy-plugin-resource"
+                : "released-plugin-resource";
+        require(expectedResource.equals(plugin.getClass().getMethod("readOwnResource").invoke(plugin)),
                 "Plugin-owned resource was not visible");
-        require((boolean) plugin.getClass().getMethod("bundledClasspathVisible").invoke(plugin),
-                "Bundled plugin classpath was not visible");
-        require((boolean) plugin.getClass().getMethod("databaseBridgeSignatureIsCompatible").invoke(plugin),
-                "Legacy database bridge signature changed");
         require(plugin.hasPermission(null, "fixture.allowed"),
                 "Legacy permission callback behavior changed");
 
-        manager.registerEvents(plugin, (EventListener) plugin);
-        Class<?> eventType = plugin.classLoader.loadClass(
-                "fixture.morningstar.LegacyBehaviorPlugin$FixtureEvent");
-        Event event = (Event) eventType.getConstructor().newInstance();
-        manager.fireEvent(event);
-        require((int) plugin.getClass().getMethod("getEventCount").invoke(plugin) == 1,
-                "Legacy plugin event callback was not dispatched");
+        if (pluginName.startsWith("Morningstar")) {
+            require((boolean) plugin.getClass().getMethod("bundledClasspathVisible").invoke(plugin),
+                    "Bundled plugin classpath was not visible");
+            require((boolean) plugin.getClass()
+                            .getMethod("databaseBridgeSignatureIsCompatible")
+                            .invoke(plugin),
+                    "Legacy database bridge signature changed");
+            manager.registerEvents(plugin, (EventListener) plugin);
+            Class<?> eventType = plugin.classLoader.loadClass(
+                    "fixture.morningstar.LegacyBehaviorPlugin$FixtureEvent");
+            Event event = (Event) eventType.getConstructor().newInstance();
+            manager.fireEvent(event);
+            require((int) plugin.getClass().getMethod("getEventCount").invoke(plugin) == 1,
+                    "Legacy plugin event callback was not dispatched");
 
-        try {
-            plugin.getClass().getMethod("useMorningstarTroveSurface").invoke(plugin);
-            throw new IllegalStateException("Morningstar-only Trove surface unexpectedly linked");
-        } catch (InvocationTargetException exception) {
-            Throwable cause = exception.getCause();
-            require(cause instanceof NoClassDefFoundError || cause instanceof NoSuchMethodError,
-                    "Unexpected Morningstar Trove linkage result: " + cause);
+            try {
+                plugin.getClass().getMethod("useMorningstarTroveSurface").invoke(plugin);
+                throw new IllegalStateException("Morningstar-only Trove surface unexpectedly linked");
+            } catch (InvocationTargetException exception) {
+                Throwable cause = exception.getCause();
+                require(cause instanceof NoClassDefFoundError || cause instanceof NoSuchMethodError,
+                        "Unexpected Morningstar Trove linkage result: " + cause);
+            }
+        } else {
+            require((boolean) plugin.getClass().getMethod("releasedCollectionBehavior").invoke(plugin),
+                    "Released Polaris collection behavior changed");
         }
 
         manager.dispose();

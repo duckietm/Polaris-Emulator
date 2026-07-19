@@ -68,14 +68,25 @@ class PackagedJarContractIT {
     }
 
     @Test
-    void morningstarPluginLoadsFromAssembledJarWithLegacyLifecycleAndResources(@TempDir Path temp)
+    void baselinePluginsLoadFromAssembledJarWithLegacyLifecycleAndResources(@TempDir Path temp)
             throws Exception {
-        Path fixture = LegacyPluginFixtureCompiler.compileMorningstarPlugin(
-                Files.createDirectories(temp.resolve("compile")));
-        Path plugins = Files.createDirectories(temp.resolve("plugins"));
-        Files.copy(fixture, plugins.resolve(fixture.getFileName()));
+        Path morningstar = Files.createDirectories(temp.resolve("morningstar"));
+        runPluginFixture(
+                LegacyPluginFixtureCompiler.compileMorningstarPlugin(
+                        Files.createDirectories(morningstar.resolve("compile"))),
+                morningstar);
 
-        Process process = packagedJarProbe(packagedJar(), temp, "plugin");
+        Path polaris = Files.createDirectories(temp.resolve("polaris"));
+        runPluginFixture(
+                LegacyPluginFixtureCompiler.compileReleasedPolarisPlugin(
+                        Files.createDirectories(polaris.resolve("compile"))),
+                polaris);
+    }
+
+    private static void runPluginFixture(Path fixture, Path workDirectory) throws Exception {
+        Path plugins = Files.createDirectories(workDirectory.resolve("plugins"));
+        Files.copy(fixture, plugins.resolve(fixture.getFileName()));
+        Process process = packagedJarProbe(packagedJar(), workDirectory, "plugin");
 
         assertTrue(process.waitFor(30, TimeUnit.SECONDS), "Legacy plugin probe timed out");
         String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);

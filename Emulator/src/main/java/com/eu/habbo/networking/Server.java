@@ -11,6 +11,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.MultiThreadIoEventLoopGroup;
+import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
@@ -21,6 +22,9 @@ import org.slf4j.LoggerFactory;
 public abstract class Server {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Server.class);
+    private static final int DEFAULT_WRITE_BUFFER_LOW_WATER_MARK = 32 * 1024;
+    private static final int DEFAULT_WRITE_BUFFER_HIGH_WATER_MARK = 64 * 1024;
+    private static final int DEFAULT_UNWRITABLE_TIMEOUT_SECONDS = 10;
 
     private static volatile ByteBufAllocator sharedAllocator;
 

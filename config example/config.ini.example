@@ -79,6 +79,9 @@ login.news.limit=5
 ## io.packet.handler.threads=24 #Game packet-handler pool size; runs game handlers OFF the Netty I/O loop. Default max(16, 2 x CPU cores).
 ## auth.http.pool.size=16 #Dedicated worker pool for the /api/auth/* HTTP endpoints (BCrypt/JDBC/Turnstile/SMTP run off the event loop). Default 16.
 ## io.netty.allocator.pooled=false #Set true to opt into Netty's pooled ByteBuf allocator. Default false (unpooled-heap).
+## io.netty.write_buffer.low_water_mark=32768 #Mark a channel writable again after queued outbound bytes drain below this value.
+## io.netty.write_buffer.high_water_mark=65536 #Mark a channel unwritable after queued outbound bytes exceed this value.
+## io.netty.unwritable.timeout.seconds=10 #Disconnect a channel that remains unwritable for this long.
 
 #Structured slow-query diagnostics. SQL literals and bound values are never logged.
 db.slow_query.enabled=true

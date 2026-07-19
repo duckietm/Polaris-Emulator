@@ -17,6 +17,7 @@ import com.eu.habbo.networking.gameserver.decoders.PacketDispatchMarker;
 import com.eu.habbo.networking.gameserver.encoders.GameServerMessageEncoder;
 import com.eu.habbo.networking.gameserver.encoders.GameServerMessageLogger;
 import com.eu.habbo.networking.gameserver.handlers.IdleTimeoutHandler;
+import com.eu.habbo.networking.gameserver.handlers.SustainedUnwritableHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -56,6 +57,10 @@ public class GameServer extends Server {
             @Override
             public void initChannel(SocketChannel ch) throws Exception {
                 ch.pipeline().addLast("logger", new LoggingHandler());
+                ch.pipeline().addLast(
+                        "outboundBackpressure",
+                        new SustainedUnwritableHandler(
+                                configuredUnwritableTimeoutSeconds(), TimeUnit.SECONDS));
 
                 // Decoders.
                 ch.pipeline().addLast(new GamePolicyDecoder());
@@ -96,7 +101,8 @@ public class GameServer extends Server {
         String wsHost = Emulator.getConfig().getValue("ws.host", "0.0.0.0");
         int wsPort = Emulator.getConfig().getInt("ws.port", 2096);
 
-        WebSocketChannelInitializer wsInitializer = new WebSocketChannelInitializer();
+        WebSocketChannelInitializer wsInitializer =
+                new WebSocketChannelInitializer(configuredUnwritableTimeoutSeconds());
 
         this.webSocketBootstrap = new ServerBootstrap();
         this.webSocketBootstrap.group(this.getBossGroup(), this.getWorkerGroup());

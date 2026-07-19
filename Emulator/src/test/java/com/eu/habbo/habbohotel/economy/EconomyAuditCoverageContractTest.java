@@ -65,7 +65,9 @@ class EconomyAuditCoverageContractTest {
                     continue;
                 }
                 String source = Files.readString(path);
-                if (source.contains(".addCredits(") || source.contains(".setCredits(")) {
+                if (source.contains(".addCredits(")
+                        || source.contains(".setCredits(")
+                        || source.contains(".tryAddCredits(")) {
                     callers.add(SOURCES.relativize(path).toString());
                 }
             }

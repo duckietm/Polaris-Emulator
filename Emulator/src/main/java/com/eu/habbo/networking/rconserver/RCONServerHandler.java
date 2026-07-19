@@ -100,10 +100,14 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
         return socketAddress == null ? "" : socketAddress.toString().replace("/", "");
     }
 
-    private static void writeAndClose(ChannelHandlerContext ctx, String response) {
-        ChannelFuture f = ctx.channel().write(Unpooled.copiedBuffer(response.getBytes(java.nio.charset.StandardCharsets.UTF_8)), ctx.channel().voidPromise());
+    static void writeAndClose(ChannelHandlerContext ctx, String response) {
+        ChannelFuture f = ctx.channel().write(responseBuffer(response), ctx.channel().voidPromise());
         ctx.channel().flush();
         ctx.flush();
         f.channel().close();
+    }
+
+    static ByteBuf responseBuffer(String response) {
+        return Unpooled.copiedBuffer(response.getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 }

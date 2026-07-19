@@ -77,7 +77,7 @@ final class LegacyPluginFixtureCompiler {
         try (JarOutputStream output = new JarOutputStream(Files.newOutputStream(jar))) {
             addClasses(output, classes);
             addResource(output, fixture.resolve("plugin.json"), "plugin.json");
-            addResource(output, fixture.resolve("plugin-resource.txt"), "fixture/plugin-resource.txt");
+            addResource(output, fixture.resolve("plugin-resource.fixture"), "fixture/plugin-resource.txt");
         }
         return jar;
     }

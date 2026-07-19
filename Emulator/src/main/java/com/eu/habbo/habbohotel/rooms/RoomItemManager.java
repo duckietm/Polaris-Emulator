@@ -32,11 +32,7 @@ import com.eu.habbo.messages.outgoing.rooms.items.*;
 import com.eu.habbo.plugin.Event;
 import com.eu.habbo.plugin.events.furniture.*;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
-import it.unimi.dsi.fastutil.ints.Int2IntMaps;
-import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import org.apache.commons.math3.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,25 +56,17 @@ public class RoomItemManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomItemManager.class);
 
     private final Room room;
+    private final RoomItemIndex index;
     private final RoomItemOperations operations;
-
-    // Item storage
-    private final Int2ObjectMap<HabboItem> roomItems;
-
-    // Furniture owner tracking
-    private final Int2ObjectMap<String> furniOwnerNames;
-    private final Int2IntMap furniOwnerCount;
 
     // Tile cache for item lookups
     public final ConcurrentHashMap<RoomTile, Set<HabboItem>> tileCache;
 
     public RoomItemManager(Room room) {
         this.room = room;
+        this.index = new RoomItemIndex(room);
         this.operations = new RoomItemOperations(room);
-        this.roomItems = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
-        this.furniOwnerNames = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
-        this.furniOwnerCount = Int2IntMaps.synchronize(new Int2IntOpenHashMap(0));
-        this.tileCache = new ConcurrentHashMap<>();
+        this.tileCache = this.index.tileCache();
     }
 
     // ==================== LOADING ====================
@@ -87,8 +75,8 @@ public class RoomItemManager {
      * Loads items from the database.
      */
     public void loadItems(Connection connection) {
-        synchronized (this.roomItems) {
-            this.roomItems.clear();
+        synchronized (this.index.items()) {
+            this.index.items().clear();
         }
 
         try (PreparedStatement statement = connection.prepareStatement(
@@ -143,86 +131,42 @@ public class RoomItemManager {
      * Gets an item by ID.
      */
     public HabboItem getHabboItem(int id) {
-        if (this.roomItems == null || this.room.getRoomSpecialTypes() == null) {
-            return null;
-        }
-
-        HabboItem item;
-        synchronized (this.roomItems) {
-            item = this.roomItems.get(id);
-        }
-
-        if (item == null) {
-            item = this.room.getRoomSpecialTypes().getSpecialItem(id);
-        }
-
-        return item;
+        return this.index.get(id);
     }
 
     /**
      * Gets the total item count.
      */
     public int itemCount() {
-        return this.roomItems.size();
+        return this.index.size();
     }
 
     /**
      * Gets all floor items.
      */
     public Set<HabboItem> getFloorItems() {
-        Set<HabboItem> items = new HashSet<>();
-        // roomItems is a synchronized map; its iterator is not safe
-        // against concurrent put/remove (item place/pickup), so hold the map
-        // monitor for the whole traversal, matching the mutation sites.
-        synchronized (this.roomItems) {
-            for (HabboItem item : this.roomItems.values()) {
-                if (item.getBaseItem().getType() == FurnitureType.FLOOR) {
-                    items.add(item);
-                }
-            }
-        }
-
-        return items;
+        return this.index.floorItems();
     }
 
     /**
      * Gets all wall items.
      */
     public Set<HabboItem> getWallItems() {
-        Set<HabboItem> items = new HashSet<>();
-        synchronized (this.roomItems) {
-            for (HabboItem item : this.roomItems.values()) {
-                if (item.getBaseItem().getType() == FurnitureType.WALL) {
-                    items.add(item);
-                }
-            }
-        }
-
-        return items;
+        return this.index.wallItems();
     }
 
     /**
      * Gets all post-it notes.
      */
     public Set<HabboItem> getPostItNotes() {
-        Set<HabboItem> items = new HashSet<>();
-        synchronized (this.roomItems) {
-            for (HabboItem item : this.roomItems.values()) {
-                if (item.getBaseItem().getInteractionType().getType()
-                        == InteractionPostIt.class) {
-                    items.add(item);
-                }
-            }
-        }
-
-        return items;
+        return this.index.postItNotes();
     }
 
     /**
      * Gets the room items map.
      */
     public Int2ObjectMap<HabboItem> getRoomItems() {
-        return this.roomItems;
+        return this.index.items();
     }
 
     // ==================== ITEM POSITION QUERIES ====================
@@ -252,60 +196,7 @@ public class RoomItemManager {
      * Gets items at a tile with option to return on first match.
      */
     public Set<HabboItem> getItemsAt(RoomTile tile, boolean returnOnFirst) {
-        Set<HabboItem> items = new HashSet<>(0);
-
-        if (tile == null) {
-            return items;
-        }
-
-        if (this.room.isLoaded()) {
-            Set<HabboItem> cachedItems = this.tileCache.get(tile);
-            if (cachedItems != null) {
-                return cachedItems;
-            }
-        }
-
-        // Cache miss: iterate roomItems under its monitor so a concurrent
-        // place/pickup can't rehash the map mid-traversal (which the per-advance
-        // try/catch would otherwise silently swallow into an incomplete result).
-        synchronized (this.roomItems) {
-            for (HabboItem item : this.roomItems.values()) {
-                if (item == null) {
-                    continue;
-                }
-
-                if (item.getBaseItem().getType() != FurnitureType.FLOOR) {
-                    continue;
-                }
-
-                int width, length;
-
-                if (item.getRotation() != 2 && item.getRotation() != 6) {
-                    width = item.getBaseItem().getWidth() > 0 ? item.getBaseItem().getWidth() : 1;
-                    length = item.getBaseItem().getLength() > 0 ? item.getBaseItem().getLength() : 1;
-                } else {
-                    width = item.getBaseItem().getLength() > 0 ? item.getBaseItem().getLength() : 1;
-                    length = item.getBaseItem().getWidth() > 0 ? item.getBaseItem().getWidth() : 1;
-                }
-
-                if (!(tile.x >= item.getX() && tile.x <= item.getX() + width - 1 && tile.y >= item.getY()
-                        && tile.y <= item.getY() + length - 1)) {
-                    continue;
-                }
-
-                items.add(item);
-
-                if (returnOnFirst) {
-                    return items;
-                }
-            }
-        }
-
-        if (this.room.isLoaded()) {
-            this.tileCache.put(tile, items);
-        }
-
-        return items;
+        return this.index.itemsAt(tile, returnOnFirst);
     }
 
     /**
@@ -550,9 +441,9 @@ public class RoomItemManager {
             return;
         }
 
-        synchronized (this.roomItems) {
+        synchronized (this.index.items()) {
             try {
-                this.roomItems.put(item.getId(), item);
+                this.index.items().put(item.getId(), item);
             } catch (Exception e) {
                 // Ignore
             }
@@ -563,19 +454,19 @@ public class RoomItemManager {
             item.needsUpdate(true);
         }
 
-        synchronized (this.furniOwnerCount) {
-            this.furniOwnerCount.put(item.getUserId(), this.furniOwnerCount.get(item.getUserId()) + 1);
+        synchronized (this.index.ownerCounts()) {
+            this.index.ownerCounts().put(item.getUserId(), this.index.ownerCounts().get(item.getUserId()) + 1);
         }
 
-        synchronized (this.furniOwnerNames) {
-            if (!this.furniOwnerNames.containsKey(item.getUserId())) {
+        synchronized (this.index.ownerNames()) {
+            if (!this.index.ownerNames().containsKey(item.getUserId())) {
                 if (item.getUserId() == BuildersClubRoomSupport.VIRTUAL_OWNER_ID && BuildersClubRoomSupport.isTrackedItem(item.getId())) {
-                    this.furniOwnerNames.put(item.getUserId(), BuildersClubRoomSupport.DISPLAY_OWNER_NAME);
+                    this.index.ownerNames().put(item.getUserId(), BuildersClubRoomSupport.DISPLAY_OWNER_NAME);
                 } else {
                     HabboInfo habbo = HabboManager.getOfflineHabboInfo(item.getUserId());
 
                     if (habbo != null) {
-                        this.furniOwnerNames.put(item.getUserId(), habbo.getUsername());
+                        this.index.ownerNames().put(item.getUserId(), habbo.getUsername());
                     } else {
                         LOGGER.error("Failed to find username for item (ID: {}, UserID: {})",
                                 item.getId(), item.getUserId());
@@ -693,20 +584,20 @@ public class RoomItemManager {
         int trackedUserId = trackedBuildersClubItem ? BuildersClubRoomSupport.getTrackedUserId(item.getId()) : item.getUserId();
 
         HabboItem i;
-        synchronized (this.roomItems) {
-            i = this.roomItems.remove(item.getId());
+        synchronized (this.index.items()) {
+            i = this.index.items().remove(item.getId());
         }
 
         if (i != null) {
-            synchronized (this.furniOwnerCount) {
-                synchronized (this.furniOwnerNames) {
-                    int count = this.furniOwnerCount.get(i.getUserId());
+            synchronized (this.index.ownerCounts()) {
+                synchronized (this.index.ownerNames()) {
+                    int count = this.index.ownerCounts().get(i.getUserId());
 
                     if (count > 1) {
-                        this.furniOwnerCount.put(i.getUserId(), count - 1);
+                        this.index.ownerCounts().put(i.getUserId(), count - 1);
                     } else {
-                        this.furniOwnerCount.remove(i.getUserId());
-                        this.furniOwnerNames.remove(i.getUserId());
+                        this.index.ownerCounts().remove(i.getUserId());
+                        this.index.ownerNames().remove(i.getUserId());
                     }
                 }
             }
@@ -877,28 +768,28 @@ public class RoomItemManager {
      * Gets furniture owner names map.
      */
     public Int2ObjectMap<String> getFurniOwnerNames() {
-        return this.furniOwnerNames;
+        return this.index.ownerNames();
     }
 
     /**
      * Gets furniture owner count map.
      */
     public Int2IntMap getFurniOwnerCount() {
-        return this.furniOwnerCount;
+        return this.index.ownerCounts();
     }
 
     /**
      * Gets the username for a furniture owner.
      */
     public String getFurniOwnerName(int oduserId) {
-        return this.furniOwnerNames.get(oduserId);
+        return this.index.ownerNames().get(oduserId);
     }
 
     /**
      * Gets the furniture count for a user.
      */
     public int getUserFurniCount(int userId) {
-        return this.furniOwnerCount.get(userId);
+        return this.index.ownerCounts().get(userId);
     }
 
     /**
@@ -907,8 +798,8 @@ public class RoomItemManager {
     public int getUserUniqueFurniCount(int userId) {
         Set<Item> items = new HashSet<>();
 
-        synchronized (this.roomItems) {
-            for (HabboItem item : this.roomItems.values()) {
+        synchronized (this.index.items()) {
+            for (HabboItem item : this.index.items().values()) {
                 if (!items.contains(item.getBaseItem()) && item.getUserId() == userId) {
                     items.add(item.getBaseItem());
                 }
@@ -934,8 +825,8 @@ public class RoomItemManager {
         Set<HabboItem> items = new HashSet<>();
         Set<HabboItem> inventoryItems = new HashSet<>();
 
-        synchronized (this.roomItems) {
-            for (HabboItem item : this.roomItems.values()) {
+        synchronized (this.index.items()) {
+            for (HabboItem item : this.index.items().values()) {
                 if (item.getUserId() == userId) {
                     items.add(item);
 
@@ -981,8 +872,8 @@ public class RoomItemManager {
     public void ejectAll(Habbo habbo) {
         Map<Integer, Set<HabboItem>> userItemsMap = new HashMap<>();
 
-        synchronized (this.roomItems) {
-            for (HabboItem item : this.roomItems.values()) {
+        synchronized (this.index.items()) {
+            for (HabboItem item : this.index.items().values()) {
                 if (habbo != null && item.getUserId() == habbo.getHabboInfo().getId()) {
                     continue;
                 }
@@ -1026,8 +917,8 @@ public class RoomItemManager {
     public Set<RoomTile> getLockedTiles() {
         Set<RoomTile> lockedTiles = new HashSet<>();
 
-        synchronized (this.roomItems) {
-            for (HabboItem item : this.roomItems.values()) {
+        synchronized (this.index.items()) {
+            for (HabboItem item : this.index.items().values()) {
                 if (item.getBaseItem().getType() != FurnitureType.FLOOR) {
                     continue;
                 }
@@ -1078,8 +969,8 @@ public class RoomItemManager {
      */
     public void saveAllPendingItems() {
         List<HabboItem> pendingItems;
-        synchronized (this.roomItems) {
-            pendingItems = this.roomItems.values().stream()
+        synchronized (this.index.items()) {
+            pendingItems = this.index.items().values().stream()
                     .filter(HabboItem::needsUpdate)
                     .toList();
         }
@@ -1091,16 +982,7 @@ public class RoomItemManager {
      * Clears the item manager state.
      */
     public void clear() {
-        synchronized (this.roomItems) {
-            this.roomItems.clear();
-        }
-        synchronized (this.furniOwnerCount) {
-            this.furniOwnerCount.clear();
-        }
-        synchronized (this.furniOwnerNames) {
-            this.furniOwnerNames.clear();
-        }
-        this.tileCache.clear();
+        this.index.clear();
     }
 
     /**
@@ -1399,8 +1281,8 @@ public class RoomItemManager {
         item.setX(tile.x);
         item.setY(tile.y);
         item.setRotation(rotation);
-        if (!this.furniOwnerNames.containsKey(item.getUserId()) && owner != null) {
-            this.furniOwnerNames.put(item.getUserId(), this.resolveOwnerName(item, owner));
+        if (!this.index.ownerNames().containsKey(item.getUserId()) && owner != null) {
+            this.index.ownerNames().put(item.getUserId(), this.resolveOwnerName(item, owner));
         }
 
         item.needsUpdate(true);
@@ -1451,8 +1333,8 @@ public class RoomItemManager {
         }
 
         item.setWallPosition(wallPosition);
-        if (!this.furniOwnerNames.containsKey(item.getUserId()) && owner != null) {
-            this.furniOwnerNames.put(item.getUserId(), this.resolveOwnerName(item, owner));
+        if (!this.index.ownerNames().containsKey(item.getUserId()) && owner != null) {
+            this.index.ownerNames().put(item.getUserId(), this.resolveOwnerName(item, owner));
         }
         this.room.sendComposer(
                 new AddWallItemComposer(item, this.getFurniOwnerName(item.getUserId())).compose());

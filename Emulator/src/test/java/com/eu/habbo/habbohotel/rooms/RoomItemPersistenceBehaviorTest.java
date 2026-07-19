@@ -5,7 +5,6 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -112,12 +111,8 @@ class RoomItemPersistenceBehaviorTest {
         return item;
     }
 
-    @SuppressWarnings("unchecked")
-    private static Int2ObjectMap<HabboItem> items(RoomItemManager manager)
-            throws ReflectiveOperationException {
-        Field field = RoomItemManager.class.getDeclaredField("roomItems");
-        field.setAccessible(true);
-        return (Int2ObjectMap<HabboItem>) field.get(manager);
+    private static Int2ObjectMap<HabboItem> items(RoomItemManager manager) {
+        return manager.getRoomItems();
     }
 
     private static final class TestItem extends HabboItem {

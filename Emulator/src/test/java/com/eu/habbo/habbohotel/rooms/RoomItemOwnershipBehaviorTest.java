@@ -4,9 +4,12 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RoomItemOwnershipBehaviorTest {
 
@@ -54,6 +57,32 @@ class RoomItemOwnershipBehaviorTest {
         assertEquals(0, room.getItemManager().itemCount());
         assertEquals(0, room.getFurniOwnerCount().size());
         assertEquals(0, room.getFurniOwnerNames().size());
+    }
+
+    @Test
+    void itemIndexesKeepTheirLiveIdentityWhenCleared() {
+        Room room = new Room(41, 7);
+        RoomItemManager manager = room.getItemManager();
+        var items = manager.getRoomItems();
+        var ownerNames = manager.getFurniOwnerNames();
+        var ownerCounts = manager.getFurniOwnerCount();
+        var tileCache = manager.tileCache;
+
+        items.put(1001, new TestItem(1001, 7));
+        ownerNames.put(7, "owner");
+        ownerCounts.put(7, 1);
+        tileCache.put(new RoomTile(), Set.of());
+
+        manager.clear();
+
+        assertSame(items, manager.getRoomItems());
+        assertSame(ownerNames, manager.getFurniOwnerNames());
+        assertSame(ownerCounts, manager.getFurniOwnerCount());
+        assertSame(tileCache, manager.tileCache);
+        assertTrue(items.isEmpty());
+        assertTrue(ownerNames.isEmpty());
+        assertTrue(ownerCounts.isEmpty());
+        assertTrue(tileCache.isEmpty());
     }
 
     private static final class TestItem extends HabboItem {

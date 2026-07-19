@@ -7212,6 +7212,98 @@
       ]
     },
     {
+      "name": "GET_TRAX_EDITOR_SONGS",
+      "direction": "client_to_server",
+      "header": 9330,
+      "java": {
+        "symbol": "TraxEditorRequestSongsEvent",
+        "className": "TraxEditorRequestSongsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/traxeditor/TraxEditorRequestSongsEvent.java"
+      },
+      "typescript": {
+        "symbol": "GET_TRAX_EDITOR_SONGS",
+        "className": "GetTraxEditorSongsComposer",
+        "path": "packages/communication/src/messages/outgoing/traxeditor/GetTraxEditorSongsComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "TRAX_EDITOR_BUY_SONG",
+      "direction": "client_to_server",
+      "header": 9331,
+      "java": {
+        "symbol": "TraxEditorBuySongEvent",
+        "className": "TraxEditorBuySongEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/traxeditor/TraxEditorBuySongEvent.java"
+      },
+      "typescript": {
+        "symbol": "TRAX_EDITOR_BUY_SONG",
+        "className": "TraxEditorBuySongComposer",
+        "path": "packages/communication/src/messages/outgoing/traxeditor/TraxEditorBuySongComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "name"
+        }
+      ]
+    },
+    {
+      "name": "TRAX_EDITOR_SAVE_SONG",
+      "direction": "client_to_server",
+      "header": 9332,
+      "java": {
+        "symbol": "TraxEditorSaveSongEvent",
+        "className": "TraxEditorSaveSongEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/traxeditor/TraxEditorSaveSongEvent.java"
+      },
+      "typescript": {
+        "symbol": "TRAX_EDITOR_SAVE_SONG",
+        "className": "TraxEditorSaveSongComposer",
+        "path": "packages/communication/src/messages/outgoing/traxeditor/TraxEditorSaveSongComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "songId"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "name"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "data"
+        }
+      ]
+    },
+    {
+      "name": "TRAX_EDITOR_DELETE_SONG",
+      "direction": "client_to_server",
+      "header": 9333,
+      "java": {
+        "symbol": "TraxEditorDeleteSongEvent",
+        "className": "TraxEditorDeleteSongEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/traxeditor/TraxEditorDeleteSongEvent.java"
+      },
+      "typescript": {
+        "symbol": "TRAX_EDITOR_DELETE_SONG",
+        "className": "TraxEditorDeleteSongComposer",
+        "path": "packages/communication/src/messages/outgoing/traxeditor/TraxEditorDeleteSongComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "songId"
+        }
+      ]
+    },
+    {
       "name": "DELETE_ITEM",
       "direction": "client_to_server",
       "header": 10018,
@@ -14921,6 +15013,28 @@
       ]
     },
     {
+      "name": "TRAX_EDITOR_ERROR",
+      "direction": "server_to_client",
+      "header": 9431,
+      "java": {
+        "symbol": "TraxEditorErrorComposer",
+        "className": "TraxEditorErrorComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/traxeditor/TraxEditorErrorComposer.java"
+      },
+      "typescript": {
+        "symbol": "TRAX_EDITOR_ERROR",
+        "className": "TraxEditorErrorParser",
+        "path": "packages/communication/src/messages/parser/traxeditor/TraxEditorErrorParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
       "name": "FURNI_EDITOR_RESULT",
       "direction": "server_to_client",
       "header": 10044,
@@ -17555,7 +17669,7 @@
         "className": "FurnitureExchangeComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/logic/FurnitureExchangeComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 145,col 16) Switch expressions are not supported. Pay attention that this feature is supported starting from \u0027JAVA_12\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\r\n(line 182,col 5) Record Declarations are not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\r\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 163,col 5) Record Declarations are not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "GROUP_SAVE_INFORMATION",
@@ -17715,7 +17829,7 @@
         "className": "RequestFurniInventoryWhenNotInRoomComposer",
         "path": "packages/communication/src/messages/outgoing/inventory/furni/RequestFurniInventoryWhenNotInRoomComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: Method handle not found in E:\\Users\\simol\\Desktop\\DEV\\emulatore\\Emulator\\src\\main\\java\\com\\eu\\habbo\\messages\\incoming\\inventory\\HotelViewInventoryEvent.java"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: Method handle not found in /home/user/Nitro-Cool-UI-Renderer/Gameserver/Emulator/src/main/java/com/eu/habbo/messages/incoming/inventory/HotelViewInventoryEvent.java"
     },
     {
       "name": "POLL_ANSWER",
@@ -17811,7 +17925,7 @@
         "className": "FriendFurniConfirmLockMessageComposer",
         "path": "packages/communication/src/messages/outgoing/friendfurni/FriendFurniConfirmLockMessageComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 27,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\r\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 27,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "COMPOST_PLANT",
@@ -17987,7 +18101,7 @@
         "className": "ChestDepositComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestDepositComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 39,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\r\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 39,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "CHEST_WITHDRAW",
@@ -18003,7 +18117,7 @@
         "className": "ChestWithdrawComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestWithdrawComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 36,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\r\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 36,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "CHEST_SAVE_SETTINGS",
@@ -18019,7 +18133,7 @@
         "className": "ChestSaveSettingsComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestSaveSettingsComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 37,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\r\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 37,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "CHEST_SAVE_NOTIFICATIONS",
@@ -18035,7 +18149,7 @@
         "className": "ChestSaveNotificationsComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestSaveNotificationsComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 37,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\r\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 37,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "CHEST_UPGRADE_CAPACITY",
@@ -18051,7 +18165,7 @@
         "className": "ChestUpgradeCapacityComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestUpgradeCapacityComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 41,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\r\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 41,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "CHEST_REQUEST_LOG",
@@ -18067,7 +18181,7 @@
         "className": "ChestRequestLogComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestRequestLogComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 30,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\r\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 30,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "CHEST_WITHDRAW_FURNI",
@@ -18083,7 +18197,7 @@
         "className": "ChestWithdrawFurniComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestWithdrawFurniComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 36,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\r\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 36,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "CHEST_DEPOSIT_FURNI",
@@ -18099,7 +18213,7 @@
         "className": "ChestDepositFurniComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestDepositFurniComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 50,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\r\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 50,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "CHEST_START_DEPOSIT",
@@ -18115,7 +18229,7 @@
         "className": "ChestStartDepositComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestStartDepositComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 25,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\r\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 25,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "CHEST_DEPOSIT_INVENTORY_ITEM",
@@ -18131,7 +18245,7 @@
         "className": "ChestDepositInventoryItemComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestDepositInventoryItemComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 33,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\r\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 33,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "CHEST_WITHDRAW_ALL_FURNI",
@@ -18147,7 +18261,7 @@
         "className": "ChestWithdrawAllFurniComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestWithdrawAllFurniComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 30,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\r\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 30,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "CHEST_OPEN",
@@ -18163,7 +18277,7 @@
         "className": "ChestOpenComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestOpenComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 30,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\r\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 30,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "FURNITURE_PICKUP_ALL",
@@ -21634,6 +21748,22 @@
         "symbol": "EARNINGS_CLAIM_RESULT",
         "className": "EarningsClaimResultParser",
         "path": "packages/communication/src/messages/parser/earnings/EarningsClaimResultParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
+      "name": "TRAX_EDITOR_SONGS",
+      "direction": "server_to_client",
+      "header": 9430,
+      "java": {
+        "symbol": "TraxEditorSongsComposer",
+        "className": "TraxEditorSongsComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/traxeditor/TraxEditorSongsComposer.java"
+      },
+      "typescript": {
+        "symbol": "TRAX_EDITOR_SONGS",
+        "className": "TraxEditorSongsParser",
+        "path": "packages/communication/src/messages/parser/traxeditor/TraxEditorSongsParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },

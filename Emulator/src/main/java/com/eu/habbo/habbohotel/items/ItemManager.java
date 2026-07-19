@@ -822,6 +822,24 @@ public class ItemManager {
         return null;
     }
 
+    public void addSoundTrack(SoundTrack track) {
+        this.soundTracks.put(track.getCode(), track);
+    }
+
+    public void removeSoundTrack(String code) {
+        this.soundTracks.remove(code);
+    }
+
+    public Item getFirstItemByInteraction(Class<? extends HabboItem> interactionClass) {
+        for (Item item : this.items.values()) {
+            if (item.getInteractionType() != null && item.getInteractionType().getType() == interactionClass) {
+                return item;
+            }
+        }
+
+        return null;
+    }
+
     public HabboItem createItem(int habboId, Item item, int limitedStack, int limitedSells, String extraData) {
         if (habboId <= 0 || item == null) {
             return null;

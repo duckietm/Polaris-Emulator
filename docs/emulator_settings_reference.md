@@ -763,6 +763,18 @@ HC scheduler, payday and discount configuration.
 | `subscriptions.scheduler.enabled` | `1` | `boolean` | Enable the subscription background scheduler. |
 | `subscriptions.scheduler.interval` | `10` | `integer` | Interval in minutes between subscription scheduler runs. |
 
+## `trax`
+
+Trax song editor: users compose their own jukebox songs.
+
+| Key | Default value | Type | Purpose |
+|---|---|---|---|
+| `trax.editor.enabled` | `1` | `boolean` | Master switch for the Trax song editor. |
+| `trax.editor.max_songs` | `5` | `integer` | How many own songs a user may own at once. |
+| `trax.editor.song.cost.currency` | `5` | `integer` | Currency charged for a new song: `-1` = credits, otherwise a `users_currency` type (0 = duckets, 5 = diamonds). |
+| `trax.editor.song.cost.amount` | `25` | `integer` | Price of one new song in the configured currency; `0` = free. |
+| `trax.editor.disk.base_item` | `0` | `integer` | `items_base` id used for the delivered music disc; `0` = first base item with interaction_type `musicdisc`. |
+
 ## `team`
 
 Compatibility markers for team or wired integrations.

@@ -615,6 +615,8 @@ public class Outgoing {
     public static final int SoundboardPlayComposer = 9406;
     public static final int EarningsCenterComposer = 9407;
     public static final int EarningsClaimResultComposer = 9408;
+    public static final int TraxEditorSongsComposer = 9430;
+    public static final int TraxEditorErrorComposer = 9431;
     public static final int MentionReceivedComposer = 4801;
     public static final int MentionsListComposer = 4802;
     public static final int MessengerConversationsComposer = 4900;

@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.campaign.calendar.CalendarManager;
 import com.eu.habbo.habbohotel.catalog.CatalogManager;
 import com.eu.habbo.habbohotel.wheel.WheelManager;
 import com.eu.habbo.habbohotel.soundboard.SoundboardManager;
+import com.eu.habbo.habbohotel.traxeditor.TraxEditorManager;
 import com.eu.habbo.habbohotel.mentions.MentionManager;
 import com.eu.habbo.habbohotel.commands.CommandHandler;
 import com.eu.habbo.habbohotel.crafting.CraftingManager;
@@ -71,6 +72,7 @@ public class GameEnvironment {
     private InfostandBackgroundManager infostandBackgroundManager;
     private WheelManager wheelManager;
     private SoundboardManager soundboardManager;
+    private TraxEditorManager traxEditorManager;
     private MentionManager mentionManager;
 
     public void load() throws Exception {
@@ -105,6 +107,7 @@ public class GameEnvironment {
         this.infostandBackgroundManager = new InfostandBackgroundManager();
         this.wheelManager = new WheelManager();
         this.soundboardManager = new SoundboardManager();
+        this.traxEditorManager = new TraxEditorManager();
         this.mentionManager = new MentionManager();
 
         this.roomManager.loadPublicRooms();
@@ -180,6 +183,10 @@ public class GameEnvironment {
 
     public SoundboardManager getSoundboardManager() {
         return this.soundboardManager;
+    }
+
+    public TraxEditorManager getTraxEditorManager() {
+        return this.traxEditorManager;
     }
 
     public HotelViewManager getHotelViewManager() {

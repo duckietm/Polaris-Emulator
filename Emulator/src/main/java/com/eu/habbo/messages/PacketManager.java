@@ -828,6 +828,11 @@ public class PacketManager {
 
         this.registerHandler(Incoming.SoundboardPlayEvent, com.eu.habbo.messages.incoming.soundboard.SoundboardPlayEvent.class);
         this.registerHandler(Incoming.SoundboardSetEnabledEvent, com.eu.habbo.messages.incoming.soundboard.SoundboardSetEnabledEvent.class);
+
+        this.registerHandler(Incoming.TraxEditorRequestSongsEvent, com.eu.habbo.messages.incoming.traxeditor.TraxEditorRequestSongsEvent.class);
+        this.registerHandler(Incoming.TraxEditorBuySongEvent, com.eu.habbo.messages.incoming.traxeditor.TraxEditorBuySongEvent.class);
+        this.registerHandler(Incoming.TraxEditorSaveSongEvent, com.eu.habbo.messages.incoming.traxeditor.TraxEditorSaveSongEvent.class);
+        this.registerHandler(Incoming.TraxEditorDeleteSongEvent, com.eu.habbo.messages.incoming.traxeditor.TraxEditorDeleteSongEvent.class);
     }
 
     void registerEarnings() throws Exception {

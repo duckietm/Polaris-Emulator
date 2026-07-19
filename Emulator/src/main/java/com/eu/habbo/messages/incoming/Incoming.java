@@ -519,6 +519,10 @@ public class Incoming {
     public static final int ClaimEarningsRewardEvent = 9309;
     public static final int ClaimAllEarningsRewardsEvent = 9310;
     public static final int PressKeybindEvent = 9311;
+    public static final int TraxEditorRequestSongsEvent = 9330;
+    public static final int TraxEditorBuySongEvent = 9331;
+    public static final int TraxEditorSaveSongEvent = 9332;
+    public static final int TraxEditorDeleteSongEvent = 9333;
     public static final int RequestMentionsEvent = 4803;
     public static final int MarkMentionsReadEvent = 4804;
     public static final int DeleteMentionEvent = 4805;

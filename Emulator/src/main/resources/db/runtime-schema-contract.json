@@ -147,6 +147,7 @@
     "users_remember_families": ["created_at", "current_version", "expires_at", "family_id", "last_ip", "revoked", "user_id"],
     "users_saved_searches": ["filter", "id", "search_code", "user_id"],
     "users_settings": ["achievement_score", "allow_name_change", "block_alerts", "block_camera_follow", "block_following", "block_friendrequests", "block_roominvites", "builders_club_bonus_furni", "can_change_name", "can_trade", "cfh_abusive", "cfh_bans", "cfh_send", "cfh_warnings", "chat_color", "citizen_level", "club_expire_timestamp", "credits", "daily_pet_respect_points", "daily_respect_points", "forums_post_count", "guild_id", "has_gotten_default_saved_searches", "hc_gifts_claimed", "helper_level", "hof_points", "home_room", "id", "ignore_bots", "ignore_pets", "is_citizen", "last_hc_payday", "login_streak", "mass_mentions_enabled", "max_friends", "max_rooms", "mentions_enabled", "mute_end_timestamp", "nux", "old_chat", "online_time", "perk_trade", "rent_space_endtime", "rent_space_id", "respects_given", "respects_received", "tags", "talent_track_citizenship_level", "talent_track_helpers_level", "tradelock_amount", "ui_flags", "user_id", "volume_furni", "volume_system", "volume_trax"],
+    "users_soundtracks": ["created_at", "id", "soundtrack_id", "updated_at", "user_id"],
     "users_subscriptions": ["active", "duration", "id", "subscription_type", "timestamp_start", "user_id"],
     "users_target_offer_purchases": ["amount", "last_purchase", "offer_id", "state", "user_id"],
     "users_wardrobe": ["gender", "id", "look", "slot_id", "user_id"],

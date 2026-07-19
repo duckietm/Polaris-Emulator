@@ -20,6 +20,21 @@ public class SoundTrack {
         this.length = set.getInt("length");
     }
 
+    public SoundTrack(int id, String code, String name, String author, String data, int length) {
+        this.id = id;
+        this.code = code;
+        this.name = name;
+        this.author = author;
+        this.data = data;
+        this.length = length;
+    }
+
+    public void update(String name, String data, int length) {
+        this.name = name;
+        this.data = data;
+        this.length = length;
+    }
+
     public int getId() {
         return this.id;
     }

@@ -10,6 +10,8 @@ import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.google.gson.Gson;
 import jakarta.validation.constraints.Positive;
 
+import java.util.Map;
+
 public class SendGift extends RCONMessage<SendGift.SendGiftJSON> {
     private static final int DEFAULT_MAX_MESSAGE_LENGTH = 300;
 
@@ -77,15 +79,17 @@ public class SendGift extends RCONMessage<SendGift.SendGiftJSON> {
     }
 
     private Item randomGiftItem() {
-        synchronized (Emulator.getGameEnvironment().getCatalogManager().giftFurnis) {
-            int size = Emulator.getGameEnvironment().getCatalogManager().giftFurnis.size();
-            if (size == 0) {
-                return null;
-            }
-
-            Object[] giftIds = Emulator.getGameEnvironment().getCatalogManager().giftFurnis.values().toArray();
-            return Emulator.getGameEnvironment().getItemManager().getItem((Integer) giftIds[Emulator.getRandom().nextInt(size)]);
+        Map<Integer, Integer> giftFurnis = Emulator.getGameEnvironment().getCatalogManager()
+                .getGiftWrappingSnapshot().furniture();
+        int size = giftFurnis.size();
+        if (size == 0) {
+            return null;
         }
+
+        Object[] giftIds = giftFurnis.values().toArray();
+        return Emulator.getGameEnvironment().getItemManager().getItem(
+                (Integer) giftIds[Emulator.getRandom().nextInt(size)]
+        );
     }
 
     static String sanitizeGiftMessage(String message) {

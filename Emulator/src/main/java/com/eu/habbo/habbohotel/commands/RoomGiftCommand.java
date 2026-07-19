@@ -9,6 +9,8 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.wired.WiredRewardAlertComposer;
 
+import java.util.Map;
+
 public class RoomGiftCommand extends Command {
     public RoomGiftCommand() {
         super("cmd_roomgift", Emulator.getTexts().getValue("commands.keys.cmd_roomgift").split(";"));
@@ -47,11 +49,15 @@ public class RoomGiftCommand extends Command {
             }
 
             final String finalMessage = message.toString();
+            Map<Integer, Integer> giftFurniture = Emulator.getGameEnvironment().getCatalogManager()
+                    .getGiftWrappingSnapshot().furniture();
 
             for (Habbo habbo : gameClient.getHabbo().getHabboInfo().getCurrentRoom().getHabbos()) {
                 HabboItem item = Emulator.getGameEnvironment().getItemManager().createItem(0, baseItem, 0, 0, "");
 
-                Item giftItem = Emulator.getGameEnvironment().getItemManager().getItem((Integer) Emulator.getGameEnvironment().getCatalogManager().giftFurnis.values().toArray()[Emulator.getRandom().nextInt(Emulator.getGameEnvironment().getCatalogManager().giftFurnis.size())]);
+                Item giftItem = Emulator.getGameEnvironment().getItemManager().getItem(
+                        (Integer) giftFurniture.values().toArray()[Emulator.getRandom().nextInt(giftFurniture.size())]
+                );
 
                 String extraData = "1\t" + item.getId();
                 extraData += "\t0\t0\t0\t" + finalMessage + "\t0\t0";

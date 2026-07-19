@@ -19,8 +19,10 @@ public class GiftConfigurationComposer extends MessageComposer {
         this.response.appendBoolean(true);
         this.response.appendInt(Emulator.getConfig().getInt("hotel.gifts.special.price", 2));
 
-        this.response.appendInt(Emulator.getGameEnvironment().getCatalogManager().giftWrappers.size());
-        for (Integer i : Emulator.getGameEnvironment().getCatalogManager().giftWrappers.keySet()) {
+        var giftWrapping = Emulator.getGameEnvironment().getCatalogManager().getGiftWrappingSnapshot();
+
+        this.response.appendInt(giftWrapping.wrappers().size());
+        for (Integer i : giftWrapping.wrappers().keySet()) {
             this.response.appendInt(i);
         }
 
@@ -34,9 +36,9 @@ public class GiftConfigurationComposer extends MessageComposer {
             this.response.appendInt(type);
         }
 
-        this.response.appendInt(Emulator.getGameEnvironment().getCatalogManager().giftFurnis.size());
+        this.response.appendInt(giftWrapping.furniture().size());
 
-        for (Map.Entry<Integer, Integer> set : Emulator.getGameEnvironment().getCatalogManager().giftFurnis.entrySet()) {
+        for (Map.Entry<Integer, Integer> set : giftWrapping.furniture().entrySet()) {
             this.response.appendInt(set.getKey());
         }
 

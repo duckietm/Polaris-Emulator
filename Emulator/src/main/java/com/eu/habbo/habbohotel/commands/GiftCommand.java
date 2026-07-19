@@ -64,7 +64,11 @@ public class GiftCommand extends Command {
 
             HabboItem item = Emulator.getGameEnvironment().getItemManager().createItem(0, baseItem, 0, 0, "");
 
-            Item giftItem = Emulator.getGameEnvironment().getItemManager().getItem((Integer) Emulator.getGameEnvironment().getCatalogManager().giftFurnis.values().toArray()[Emulator.getRandom().nextInt(Emulator.getGameEnvironment().getCatalogManager().giftFurnis.size())]);
+            Map<Integer, Integer> giftFurniture = Emulator.getGameEnvironment().getCatalogManager()
+                    .getGiftWrappingSnapshot().furniture();
+            Item giftItem = Emulator.getGameEnvironment().getItemManager().getItem(
+                    (Integer) giftFurniture.values().toArray()[Emulator.getRandom().nextInt(giftFurniture.size())]
+            );
 
             String extraData = "1\t" + item.getId();
             extraData += "\t0\t0\t0\t" + finalMessage + "\t0\t0";

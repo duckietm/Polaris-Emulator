@@ -62,9 +62,11 @@ public class CatalogPageComposer extends MessageComposer {
     }
 
     public void serializeExtra(ServerMessage message) {
-        message.appendInt(Emulator.getGameEnvironment().getCatalogManager().getCatalogFeaturedPages().size());
+        List<CatalogFeaturedPage> featuredPages = Emulator.getGameEnvironment().getCatalogManager()
+                .getCatalogFeaturedPagesSnapshot();
+        message.appendInt(featuredPages.size());
 
-        for (CatalogFeaturedPage page : Emulator.getGameEnvironment().getCatalogManager().getCatalogFeaturedPages().values()) {
+        for (CatalogFeaturedPage page : featuredPages) {
             page.serialize(message);
         }
     }

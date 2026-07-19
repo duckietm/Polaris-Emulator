@@ -628,7 +628,7 @@ public class Habbo implements Runnable {
     public Set<Integer> getForbiddenClothing() {
         IntCollection clothingIDs = this.getInventory().getWardrobeComponent().getClothing();
 
-        return Emulator.getGameEnvironment().getCatalogManager().clothing.values().stream()
+        return Emulator.getGameEnvironment().getCatalogManager().getClothingSnapshot().values().stream()
                 .filter(c -> !clothingIDs.contains(c.id))
                 .map(c -> c.setId)
                 .flatMap(c -> Arrays.stream(c).boxed())

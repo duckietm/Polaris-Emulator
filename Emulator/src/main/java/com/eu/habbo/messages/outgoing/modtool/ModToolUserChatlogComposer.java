@@ -7,10 +7,15 @@ import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
 
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
 public class ModToolUserChatlogComposer extends MessageComposer {
     public static SimpleDateFormat format = new SimpleDateFormat("HH:mm");
+    private static final DateTimeFormatter TIMESTAMP_FORMATTER =
+            DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneId.systemDefault());
     private final ArrayList<ModToolRoomVisit> set;
     private final int userId;
     private final String username;
@@ -51,7 +56,7 @@ public class ModToolUserChatlogComposer extends MessageComposer {
     }
 
     static String formatTimestamp(int timestamp) {
-        return format.format(timestamp * 1000L);
+        return TIMESTAMP_FORMATTER.format(Instant.ofEpochSecond(timestamp));
     }
 
     public ArrayList<ModToolRoomVisit> getSet() {

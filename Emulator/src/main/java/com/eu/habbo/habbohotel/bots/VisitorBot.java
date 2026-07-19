@@ -7,13 +7,14 @@ import com.eu.habbo.habbohotel.users.Habbo;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.Set;
 
 public class VisitorBot extends Bot {
-    private static SimpleDateFormat DATE_FORMAT;
+    private static DateTimeFormatter DATE_FORMAT;
     private boolean showedLog = false;
     private Set<ModToolRoomVisit> visits = new HashSet<>(3);
 
@@ -30,7 +31,7 @@ public class VisitorBot extends Bot {
     }
 
     static void initialise(String pattern) {
-        DATE_FORMAT = new SimpleDateFormat(pattern);
+        DATE_FORMAT = DateTimeFormatter.ofPattern(pattern).withZone(ZoneId.systemDefault());
     }
 
     @Override
@@ -73,7 +74,7 @@ public class VisitorBot extends Bot {
     }
 
     static String formatTimestamp(int timestamp) {
-        return DATE_FORMAT.format(new Date(timestamp * 1000L));
+        return DATE_FORMAT.format(Instant.ofEpochSecond(timestamp));
     }
 
 }

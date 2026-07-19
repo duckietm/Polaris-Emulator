@@ -8,11 +8,16 @@ import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
 
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 
 public class ModToolIssueChatlogComposer extends MessageComposer {
     public static SimpleDateFormat format = new SimpleDateFormat("HH:mm");
+    private static final DateTimeFormatter TIMESTAMP_FORMATTER =
+            DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneId.systemDefault());
     private final ModToolIssue issue;
     private final List<ModToolChatLog> chatlog;
     private final String roomName;
@@ -100,7 +105,7 @@ public class ModToolIssueChatlogComposer extends MessageComposer {
     }
 
     static String formatTimestamp(int timestamp) {
-        return format.format(timestamp * 1000L);
+        return TIMESTAMP_FORMATTER.format(Instant.ofEpochSecond(timestamp));
     }
 
     public ModToolIssue getIssue() {

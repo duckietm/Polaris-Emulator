@@ -9,9 +9,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 public class ModToolBan implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModToolBan.class);
+    private static final DateTimeFormatter TIMESTAMP_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
 
     public static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     public int userId;
@@ -85,6 +90,6 @@ public class ModToolBan implements Runnable {
     }
 
     static String formatTimestamp(int timestamp) {
-        return dateFormat.format(timestamp * 1000L);
+        return TIMESTAMP_FORMATTER.format(Instant.ofEpochSecond(timestamp));
     }
 }

@@ -11,14 +11,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Map;
 
 public class ModToolUserInfoComposer extends MessageComposer {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModToolUserInfoComposer.class);
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+    private static final DateTimeFormatter DATE_FORMAT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault());
 
     private final ResultSet set;
     private final boolean hideMail;
@@ -167,6 +169,6 @@ public class ModToolUserInfoComposer extends MessageComposer {
      */
     static String formatUnixTimestamp(int timestamp) {
         if (timestamp <= 0) return "";
-        return DATE_FORMAT.format(new Date(timestamp * 1000L));
+        return DATE_FORMAT.format(Instant.ofEpochSecond(timestamp));
     }
 }

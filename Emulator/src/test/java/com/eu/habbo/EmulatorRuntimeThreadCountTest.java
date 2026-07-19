@@ -22,4 +22,31 @@ class EmulatorRuntimeThreadCountTest {
 
         assertEquals(12, Emulator.runtimeThreadCount(config));
     }
+
+    @Test
+    void fallsBackWhenRuntimeThreadCountIsMissing() throws Exception {
+        Path configFile = tempDir.resolve("missing.ini");
+        Files.writeString(configFile, "");
+        ConfigurationManager config = new ConfigurationManager(configFile.toString());
+
+        assertEquals(8, Emulator.runtimeThreadCount(config));
+    }
+
+    @Test
+    void fallsBackWhenRuntimeThreadCountIsMalformed() throws Exception {
+        Path configFile = tempDir.resolve("malformed.ini");
+        Files.writeString(configFile, "runtime.threads=not-a-number");
+        ConfigurationManager config = new ConfigurationManager(configFile.toString());
+
+        assertEquals(8, Emulator.runtimeThreadCount(config));
+    }
+
+    @Test
+    void fallsBackWhenRuntimeThreadCountIsNotPositive() throws Exception {
+        Path configFile = tempDir.resolve("zero.ini");
+        Files.writeString(configFile, "runtime.threads=0");
+        ConfigurationManager config = new ConfigurationManager(configFile.toString());
+
+        assertEquals(8, Emulator.runtimeThreadCount(config));
+    }
 }

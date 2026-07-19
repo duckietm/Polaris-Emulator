@@ -37,6 +37,7 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -249,12 +250,9 @@ public final class Emulator {
 
                 while (!isShuttingDown && isReady) {
                     try {
-                        String line = reader.readLine();
-
-                        if (line != null) {
-                            ConsoleCommand.handle(line);
+                        if (!processConsoleInput(reader, ConsoleCommand::handle, System.out)) {
+                            break;
                         }
-                        System.out.println("Waiting for command: ");
                     } catch (Exception e) {
                         if (!(e instanceof IOException && e.getMessage().equals("Bad file descriptor"))) {
                             LOGGER.error("Error while reading command", e);
@@ -276,6 +274,20 @@ public final class Emulator {
             LOGGER.error("Caught exception", e);
             throw e;
         }
+    }
+
+    static boolean processConsoleInput(
+            BufferedReader reader,
+            Consumer<String> commandHandler,
+            PrintStream output) throws IOException {
+        String line = reader.readLine();
+
+        if (line != null) {
+            commandHandler.accept(line);
+        }
+
+        output.println("Waiting for command: ");
+        return true;
     }
 
     private static void setBuild() {

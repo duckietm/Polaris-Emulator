@@ -2,14 +2,39 @@ package com.eu.habbo;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EmulatorStartupConsoleTest {
+    @Test
+    void consoleInputDispatchesCommandAndKeepsLoopRunning() throws Exception {
+        List<String> commands = new ArrayList<>();
+        ByteArrayOutputStream outputBytes = new ByteArrayOutputStream();
+
+        boolean keepRunning;
+        try (BufferedReader reader = new BufferedReader(new StringReader("status\n"));
+             PrintStream output = new PrintStream(outputBytes, true, StandardCharsets.UTF_8)) {
+            keepRunning = Emulator.processConsoleInput(reader, commands::add, output);
+        }
+
+        assertTrue(keepRunning);
+        assertEquals(List.of("status"), commands);
+        assertEquals("Waiting for command: " + System.lineSeparator(),
+                outputBytes.toString(StandardCharsets.UTF_8));
+    }
+
     @Test
     void startupHeroUsesUniversalAsciiLayout() {
         String hero = Emulator.startupHero();

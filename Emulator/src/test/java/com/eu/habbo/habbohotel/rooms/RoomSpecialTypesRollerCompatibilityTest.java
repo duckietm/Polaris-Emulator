@@ -11,8 +11,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RoomSpecialTypesRollerCompatibilityTest {
@@ -27,6 +28,19 @@ class RoomSpecialTypesRollerCompatibilityTest {
         assertSame(rollers, specialTypes.getRollers());
         assertTrue(specialTypes.getRollers().containsKey(17));
         rollers.remove(17);
+    }
+
+    @Test
+    void internalSnapshotDoesNotChangeWithTheLiveMap() {
+        RoomSpecialTypes specialTypes = new RoomSpecialTypes();
+        Map<Integer, InteractionRoller> rollers = specialTypes.getRollers();
+        rollers.put(17, null);
+
+        Map<Integer, InteractionRoller> snapshot = specialTypes.rollerSnapshot();
+        rollers.remove(17);
+
+        assertTrue(snapshot.containsKey(17));
+        assertFalse(rollers.containsKey(17));
     }
 
     @Test

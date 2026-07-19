@@ -51,7 +51,7 @@ public class RoomRollerManager {
         Set<Integer> rollerFurniIds = new HashSet<>();
         Set<Integer> rolledUnitIds = new HashSet<>();
 
-        for (InteractionRoller roller : this.room.getRoomSpecialTypes().getRollers().values()) {
+        for (InteractionRoller roller : this.room.getRoomSpecialTypes().rollerSnapshot().values()) {
             processRoller(roller, messages, rollerFurniIds, rolledUnitIds, updatedUnit);
         }
 

@@ -325,6 +325,12 @@ public class RoomSpecialTypes {
         return this.rollers;
     }
 
+    Map<Integer, InteractionRoller> rollerSnapshot() {
+        synchronized (this.rollers) {
+            return new HashMap<>(this.rollers);
+        }
+    }
+
 
     /**
      * Finds a wired trigger by its item ID.
@@ -1186,7 +1192,9 @@ public class RoomSpecialTypes {
         this.petFoods.clear();
         this.petToys.clear();
         this.petTrees.clear();
-        this.rollers.clear();
+        synchronized (this.rollers) {
+            this.rollers.clear();
+        }
 
         this.wiredTriggers.clear();
         this.wiredEffects.clear();

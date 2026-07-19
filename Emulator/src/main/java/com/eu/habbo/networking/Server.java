@@ -82,21 +82,26 @@ public abstract class Server {
     }
 
     public void connect() {
-        ChannelFuture channelFuture = this.serverBootstrap.bind(this.host, this.port);
+        this.listening = false;
+        ChannelFuture channelFuture = this.bind(this.serverBootstrap, this.name, this.host, this.port);
+        this.serverChannel = channelFuture.channel();
+        this.listening = true;
+        channelFuture.channel().closeFuture().addListener(ignored -> this.listening = false);
+        LOGGER.info("Started {} on {}:{}", this.name, this.host, this.port);
+    }
 
-        while (!channelFuture.isDone()) {
-        }
+    protected final ChannelFuture bind(
+            ServerBootstrap bootstrap,
+            String serverName,
+            String host,
+            int port) {
+        ChannelFuture channelFuture = bootstrap.bind(host, port).awaitUninterruptibly();
 
         if (!channelFuture.isSuccess()) {
-            this.listening = false;
-            LOGGER.info("Failed to start {} on {}:{}", this.name, this.host, this.port);
-            System.exit(0);
-        } else {
-            this.serverChannel = channelFuture.channel();
-            this.listening = true;
-            channelFuture.channel().closeFuture().addListener(ignored -> this.listening = false);
-            LOGGER.info("Started {} on {}:{}", this.name, this.host, this.port);
+            throw new ServerBindException(serverName, host, port, channelFuture.cause());
         }
+
+        return channelFuture;
     }
 
     public void stop() {

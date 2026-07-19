@@ -44,13 +44,13 @@ class TraxSongDataValidatorTest {
 
     @Test
     void rejectsOverlongChannels() {
-        assertEquals(-1, TraxSongDataValidator.validatedLength("1:0,121:"));
-        assertEquals(240, TraxSongDataValidator.validatedLength("1:1,120:"));
+        assertEquals(-1, TraxSongDataValidator.validatedLength("1:0,301:"));
+        assertEquals(600, TraxSongDataValidator.validatedLength("1:1,300:"));
     }
 
     @Test
     void rejectsOversizedPayloads() {
-        String longSong = "1:" + "1,1;".repeat(2000);
+        String longSong = "1:" + "1,1;".repeat(4000);
         assertEquals(-1, TraxSongDataValidator.validatedLength(longSong));
     }
 }

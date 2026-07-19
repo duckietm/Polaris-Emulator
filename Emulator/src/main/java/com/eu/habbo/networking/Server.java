@@ -5,11 +5,11 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.UnpooledByteBufAllocator;
+import io.netty.channel.AdaptiveRecvByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.FixedRecvByteBufAllocator;
 import io.netty.channel.MultiThreadIoEventLoopGroup;
 import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -73,12 +73,22 @@ public abstract class Server {
     public void initializePipeline() {
         this.serverBootstrap.group(this.bossGroup, this.workerGroup);
         this.serverBootstrap.channel(NioServerSocketChannel.class);
-        this.serverBootstrap.childOption(ChannelOption.TCP_NODELAY, true);
-        this.serverBootstrap.childOption(ChannelOption.SO_KEEPALIVE, true);
-        this.serverBootstrap.childOption(ChannelOption.SO_REUSEADDR, true);
-        this.serverBootstrap.childOption(ChannelOption.SO_RCVBUF, 4096);
-        this.serverBootstrap.childOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(4096));
-        this.serverBootstrap.childOption(ChannelOption.ALLOCATOR, allocator());
+        configureTransportOptions(this.serverBootstrap);
+    }
+
+    protected static void configureTransportOptions(
+            ServerBootstrap bootstrap) {
+        bootstrap.option(ChannelOption.SO_BACKLOG, 1024);
+        bootstrap.childOption(ChannelOption.TCP_NODELAY, true);
+        bootstrap.childOption(ChannelOption.SO_KEEPALIVE, true);
+        bootstrap.childOption(ChannelOption.SO_REUSEADDR, true);
+        bootstrap.childOption(
+                ChannelOption.RCVBUF_ALLOCATOR,
+                new AdaptiveRecvByteBufAllocator(
+                        1024,
+                        8192,
+                        65536));
+        bootstrap.childOption(ChannelOption.ALLOCATOR, allocator());
     }
 
     public void connect() {

@@ -10,12 +10,9 @@ import com.eu.habbo.networking.gameserver.encoders.GameServerMessageEncoder;
 import com.eu.habbo.networking.gameserver.encoders.GameServerMessageLogger;
 import com.eu.habbo.networking.gameserver.handlers.IdleTimeoutHandler;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.FixedRecvByteBufAllocator;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
@@ -86,12 +83,7 @@ public class GameServer extends Server {
         this.webSocketBootstrap = new ServerBootstrap();
         this.webSocketBootstrap.group(this.getBossGroup(), this.getWorkerGroup());
         this.webSocketBootstrap.channel(NioServerSocketChannel.class);
-        this.webSocketBootstrap.childOption(ChannelOption.TCP_NODELAY, true);
-        this.webSocketBootstrap.childOption(ChannelOption.SO_KEEPALIVE, true);
-        this.webSocketBootstrap.childOption(ChannelOption.SO_REUSEADDR, true);
-        this.webSocketBootstrap.childOption(ChannelOption.SO_RCVBUF, 4096);
-        this.webSocketBootstrap.childOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(4096));
-        this.webSocketBootstrap.childOption(ChannelOption.ALLOCATOR, allocator());
+        configureTransportOptions(this.webSocketBootstrap);
         this.webSocketBootstrap.childHandler(wsInitializer);
 
         ChannelFuture wsFuture = this.webSocketBootstrap.bind(wsHost, wsPort);

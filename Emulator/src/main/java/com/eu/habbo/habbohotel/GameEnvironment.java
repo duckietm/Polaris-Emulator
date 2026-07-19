@@ -35,6 +35,9 @@ import com.eu.habbo.habbohotel.users.subscriptions.SubscriptionScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 public class GameEnvironment {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GameEnvironment.class);
@@ -132,25 +135,88 @@ public class GameEnvironment {
     }
 
     public void dispose() {
-        this.pointsScheduler.setDisposed(true);
-        this.pixelScheduler.setDisposed(true);
-        this.creditsScheduler.setDisposed(true);
-        this.gotwPointsScheduler.setDisposed(true);
-        this.subscriptionScheduler.setDisposed(true);
-        this.craftingManager.dispose();
-        this.habboManager.dispose();
-        this.commandHandler.dispose();
-        this.guildManager.dispose();
-        this.catalogManager.dispose();
-        this.roomManager.dispose();
-        this.itemManager.dispose();
-        this.hotelViewManager.dispose();
-        this.subscriptionManager.dispose();
-        this.calendarManager.dispose();
-        if (this.googleTranslateManager != null) {
-            this.googleTranslateManager.clearCache();
-        }
+        Map<String, Runnable> steps = new LinkedHashMap<>();
+        steps.put("points scheduler", this.pointsScheduler == null
+                ? null
+                : () -> {
+                    this.pointsScheduler.setDisposed(true);
+                });
+        steps.put("pixel scheduler", this.pixelScheduler == null
+                ? null
+                : () -> {
+                    this.pixelScheduler.setDisposed(true);
+                });
+        steps.put("credits scheduler", this.creditsScheduler == null
+                ? null
+                : () -> {
+                    this.creditsScheduler.setDisposed(true);
+                });
+        steps.put("gotw points scheduler", this.gotwPointsScheduler == null
+                ? null
+                : () -> {
+                    this.gotwPointsScheduler.setDisposed(true);
+                });
+        steps.put("subscription scheduler", this.subscriptionScheduler == null
+                ? null
+                : () -> {
+                    this.subscriptionScheduler.setDisposed(true);
+                });
+        steps.put("room cycles", this.roomManager == null
+                ? null
+                : () -> this.roomManager.quiesceRoomCycles());
+        steps.put("crafting manager", this.craftingManager == null
+                ? null
+                : () -> this.craftingManager.dispose());
+        steps.put("habbo manager", this.habboManager == null
+                ? null
+                : () -> this.habboManager.dispose());
+        steps.put("command handler", this.commandHandler == null
+                ? null
+                : () -> this.commandHandler.dispose());
+        steps.put("guild manager", this.guildManager == null
+                ? null
+                : () -> this.guildManager.dispose());
+        steps.put("catalog manager", this.catalogManager == null
+                ? null
+                : () -> this.catalogManager.dispose());
+        steps.put("room manager", this.roomManager == null
+                ? null
+                : () -> this.roomManager.dispose());
+        steps.put("bot manager", this.botManager == null
+                ? null
+                : () -> this.botManager.dispose());
+        steps.put("item manager", this.itemManager == null
+                ? null
+                : () -> this.itemManager.dispose());
+        steps.put("hotel view manager", this.hotelViewManager == null
+                ? null
+                : () -> this.hotelViewManager.dispose());
+        steps.put("subscription manager", this.subscriptionManager == null
+                ? null
+                : () -> this.subscriptionManager.dispose());
+        steps.put("calendar manager", this.calendarManager == null
+                ? null
+                : () -> this.calendarManager.dispose());
+        steps.put("Google Translate cache", this.googleTranslateManager == null
+                ? null
+                : () -> this.googleTranslateManager.clearCache());
+
+        disposeAll(steps);
         LOGGER.info("GameEnvironment -> Disposed!");
+    }
+
+    static void disposeAll(Map<String, Runnable> steps) {
+        for (Map.Entry<String, Runnable> step : steps.entrySet()) {
+            if (step.getValue() == null) {
+                continue;
+            }
+
+            try {
+                step.getValue().run();
+            } catch (Exception exception) {
+                LOGGER.error("GameEnvironment -> Failed to dispose {}", step.getKey(), exception);
+            }
+        }
     }
 
     public HabboManager getHabboManager() {

@@ -489,10 +489,10 @@ public final class Emulator {
     }
 
     private static void dispose() {
+        Emulator.isShuttingDown = true;
         if (Emulator.threading != null) {
             Emulator.threading.setCanAdd(false);
         }
-        Emulator.isShuttingDown = true;
         Emulator.isReady = false;
 
         LOGGER.info("Stopping Polaris {}", version);

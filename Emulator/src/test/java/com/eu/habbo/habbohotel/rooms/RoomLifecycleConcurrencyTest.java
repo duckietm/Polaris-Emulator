@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -92,6 +93,21 @@ class RoomLifecycleConcurrencyTest {
 
         assertTrue(room.isLoaded());
         assertSame(task, room.roomCycleTask);
+    }
+
+    @Test
+    void unloadTransitionCancelsThePublishedCycleBeforeClearingLoadedState() throws Exception {
+        Room room = new Room(41, 7);
+        setField(room, "preLoaded", true);
+        long load = room.beginLoadTransition();
+        FakeScheduledFuture task = new FakeScheduledFuture();
+        assertTrue(room.publishLoadTransition(load, () -> task));
+
+        assertTrue(room.beginUnloadTransition());
+
+        assertTrue(task.isCancelled());
+        assertFalse(room.isLoaded());
+        assertNull(room.roomCycleTask);
     }
 
     @Test

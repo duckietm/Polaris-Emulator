@@ -1642,6 +1642,8 @@ public class RoomManager {
     }
 
     public synchronized void dispose() {
+        this.quiesceRoomCycles();
+
         for (Room room : this.activeRooms.values()) {
             room.dispose();
             room.setOwnerChangeListener(null);
@@ -1652,6 +1654,12 @@ public class RoomManager {
         this.activeRooms.clear();
 
         LOGGER.info("Room Manager -> Disposed!");
+    }
+
+    public void quiesceRoomCycles() {
+        for (Room room : this.activeRooms.values()) {
+            room.quiesceCycleTask();
+        }
     }
 
     public CustomRoomLayout insertCustomLayout(Room room, String map, int doorX, int doorY, int doorDirection) {

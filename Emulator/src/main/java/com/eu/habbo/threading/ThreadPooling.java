@@ -51,6 +51,11 @@ public class ThreadPooling {
                         LOGGER.error("Caught exception", e);
                     }
                 }, delay, TimeUnit.MILLISECONDS);
+            } else {
+                LOGGER.warn(
+                        "Rejected delayed task during shutdown (delay: {} ms)",
+                        delay
+                );
             }
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);

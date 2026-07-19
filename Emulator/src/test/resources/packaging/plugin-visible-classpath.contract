@@ -1,0 +1,9 @@
+# The assembled JAR is the parent classpath for plugins. Changes require
+# semantic compatibility review, even when com.eu.habbo.* japicmp stays green.
++ com/google/gson/Gson.class
++ com/zaxxer/hikari/HikariDataSource.class
++ gnu/trove/map/hash/THashMap.class
++ io/netty/channel/Channel.class
++ it/unimi/dsi/fastutil/ints/Int2ObjectMap.class
++ org/apache/commons/lang3/StringUtils.class
+- gnu/trove/map/hash/TIntObjectHashMap.class

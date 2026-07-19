@@ -10,8 +10,8 @@ import java.util.List;
 import java.util.Map;
 
 public class GiftConfigurationComposer extends MessageComposer {
-    public static List<Integer> BOX_TYPES = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 8);
-    public static List<Integer> RIBBON_TYPES = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+    public static volatile List<Integer> BOX_TYPES = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 8);
+    public static volatile List<Integer> RIBBON_TYPES = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 
     @Override
     protected ServerMessage composeInternal() {

@@ -1,10 +1,15 @@
 package com.eu.habbo.plugin;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 final class NumericConfigurationParser {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(NumericConfigurationParser.class);
 
     private NumericConfigurationParser() {
     }
@@ -16,7 +21,15 @@ final class NumericConfigurationParser {
     }
 
     static int[] parseIntArray(String value, String delimiter, int[] currentValue, String configurationKey) {
-        return parseIntArray(value, delimiter);
+        try {
+            return parseIntArray(value, delimiter);
+        } catch (NumberFormatException exception) {
+            LOGGER.error(
+                    "Invalid integer list for configuration key '{}'; keeping the previous value",
+                    configurationKey
+            );
+            return currentValue;
+        }
     }
 
     static List<Integer> parseIntList(String value, String delimiter) {
@@ -32,6 +45,14 @@ final class NumericConfigurationParser {
             List<Integer> currentValue,
             String configurationKey
     ) {
-        return parseIntList(value, delimiter);
+        try {
+            return parseIntList(value, delimiter);
+        } catch (NumberFormatException exception) {
+            LOGGER.error(
+                    "Invalid integer list for configuration key '{}'; keeping the previous value",
+                    configurationKey
+            );
+            return currentValue;
+        }
     }
 }

@@ -26,7 +26,7 @@ public class RoomChatMessage implements Runnable, ISerialize, DatabaseLoggable {
     public static int MAXIMUM_LENGTH = 100;
     //Configuration. Loaded from database & updated accordingly.
     public static boolean SAVE_ROOM_CHATS = false;
-    public static int[] BANNED_BUBBLES = {};
+    public static volatile int[] BANNED_BUBBLES = {};
     private final Habbo habbo;
     public int roomId;
     public boolean isCommand = false;

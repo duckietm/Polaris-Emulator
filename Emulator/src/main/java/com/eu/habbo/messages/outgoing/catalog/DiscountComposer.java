@@ -9,7 +9,7 @@ public class DiscountComposer extends MessageComposer {
     public static int DISCOUNT_BATCH_SIZE = 6;
     public static int DISCOUNT_AMOUNT_PER_BATCH = 1;
     public static int MINIMUM_DISCOUNTS_FOR_BONUS = 1;
-    public static int[] ADDITIONAL_DISCOUNT_THRESHOLDS = new int[]{40, 99};
+    public static volatile int[] ADDITIONAL_DISCOUNT_THRESHOLDS = new int[]{40, 99};
 
     @Override
     protected ServerMessage composeInternal() {

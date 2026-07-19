@@ -56,12 +56,10 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class PluginManager {
 
@@ -95,7 +93,12 @@ public class PluginManager {
         DiscountComposer.DISCOUNT_BATCH_SIZE = Emulator.getConfig().getInt("discount.batch.size", 6);
         DiscountComposer.DISCOUNT_AMOUNT_PER_BATCH = Emulator.getConfig().getInt("discount.batch.free.items", 1);
         DiscountComposer.MINIMUM_DISCOUNTS_FOR_BONUS = Emulator.getConfig().getInt("discount.bonus.min.discounts", 1);
-        DiscountComposer.ADDITIONAL_DISCOUNT_THRESHOLDS = Arrays.stream(Emulator.getConfig().getValue("discount.additional.thresholds", "40;99").split(";")).mapToInt(Integer::parseInt).toArray();
+        DiscountComposer.ADDITIONAL_DISCOUNT_THRESHOLDS = NumericConfigurationParser.parseIntArray(
+                Emulator.getConfig().getValue("discount.additional.thresholds", "40;99"),
+                ";",
+                DiscountComposer.ADDITIONAL_DISCOUNT_THRESHOLDS,
+                "discount.additional.thresholds"
+        );
 
         BotManager.MINIMUM_CHAT_SPEED = Emulator.getConfig().getInt("hotel.bot.chat.minimum.interval");
         BotManager.MAXIMUM_CHAT_LENGTH = Emulator.getConfig().getInt("hotel.bot.max.chatlength");
@@ -146,15 +149,13 @@ public class PluginManager {
         TraxManager.LARGE_JUKEBOX_LIMIT = Emulator.getConfig().getInt("hotel.jukebox.limit.large");
         TraxManager.NORMAL_JUKEBOX_LIMIT = Emulator.getConfig().getInt("hotel.jukebox.limit.normal");
 
-        String[] bannedBubbles = Emulator.getConfig().getValue("commands.cmd_chatcolor.banned_numbers").split(";");
-        RoomChatMessage.BANNED_BUBBLES = new int[bannedBubbles.length];
-        for (int i = 0; i < RoomChatMessage.BANNED_BUBBLES.length; i++) {
-            try {
-                RoomChatMessage.BANNED_BUBBLES[i] = Integer.parseInt(bannedBubbles[i]);
-            } catch (Exception e) {
-                LOGGER.error("Caught exception", e);
-            }
-        }
+        int[] bannedBubbleSnapshot = NumericConfigurationParser.parseIntArray(
+                Emulator.getConfig().getValue("commands.cmd_chatcolor.banned_numbers"),
+                ";",
+                RoomChatMessage.BANNED_BUBBLES,
+                "commands.cmd_chatcolor.banned_numbers"
+        );
+        RoomChatMessage.BANNED_BUBBLES = bannedBubbleSnapshot;
 
         HabboManager.WELCOME_MESSAGE = Emulator.getConfig().getValue("hotel.welcome.alert.message").replace("<br>", "<br/>").replace("<br />", "<br/>").replace("\\r", "\r").replace("\\n", "\n").replace("\\t", "\t");
         Room.PREFIX_FORMAT = Emulator.getConfig().getValue("room.chat.prefix.format");
@@ -241,8 +242,18 @@ public class PluginManager {
         }
 
         if (Emulator.isReady) {
-            GiftConfigurationComposer.BOX_TYPES = Arrays.stream(Emulator.getConfig().getValue("hotel.gifts.box_types").split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
-            GiftConfigurationComposer.RIBBON_TYPES = Arrays.stream(Emulator.getConfig().getValue("hotel.gifts.ribbon_types").split(",")).mapToInt(Integer::parseInt).boxed().collect(Collectors.toList());
+            GiftConfigurationComposer.BOX_TYPES = NumericConfigurationParser.parseIntList(
+                    Emulator.getConfig().getValue("hotel.gifts.box_types"),
+                    ",",
+                    GiftConfigurationComposer.BOX_TYPES,
+                    "hotel.gifts.box_types"
+            );
+            GiftConfigurationComposer.RIBBON_TYPES = NumericConfigurationParser.parseIntList(
+                    Emulator.getConfig().getValue("hotel.gifts.ribbon_types"),
+                    ",",
+                    GiftConfigurationComposer.RIBBON_TYPES,
+                    "hotel.gifts.ribbon_types"
+            );
 
             Emulator.getGameEnvironment().getCreditsScheduler().reloadConfig();
             Emulator.getGameEnvironment().getPointsScheduler().reloadConfig();

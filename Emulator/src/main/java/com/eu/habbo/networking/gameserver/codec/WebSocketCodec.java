@@ -16,6 +16,11 @@ public class WebSocketCodec extends MessageToMessageCodec<WebSocketFrame, ByteBu
 
     @Override
     protected void decode(ChannelHandlerContext ctx, WebSocketFrame in, List<Object> out) {
+        if (!(in instanceof BinaryWebSocketFrame) || !in.isFinalFragment()) {
+            ctx.close();
+            return;
+        }
+
         out.add(in.content().retain());
     }
 }

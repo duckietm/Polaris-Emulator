@@ -6,7 +6,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
@@ -101,10 +101,7 @@ public class RCONServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     static void writeAndClose(ChannelHandlerContext ctx, String response) {
-        ChannelFuture f = ctx.channel().write(responseBuffer(response), ctx.channel().voidPromise());
-        ctx.channel().flush();
-        ctx.flush();
-        f.channel().close();
+        ctx.writeAndFlush(responseBuffer(response)).addListener(ChannelFutureListener.CLOSE);
     }
 
     static ByteBuf responseBuffer(String response) {

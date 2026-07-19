@@ -34,7 +34,7 @@ class PluginManagerPaydayDateTest {
             parser.setAccessible(true);
 
             assertEquals(
-                    1_706_746_923,
+                    1_706_749_323,
                     parser.invoke(null, "2024-02-01 01:02:03"));
             assertEquals(
                     Integer.MAX_VALUE,

@@ -38,6 +38,7 @@ import com.eu.habbo.messages.incoming.users.ChangeNameCheckUsernameEvent;
 import com.eu.habbo.messages.outgoing.catalog.DiscountComposer;
 import com.eu.habbo.messages.outgoing.catalog.GiftConfigurationComposer;
 import com.eu.habbo.messages.outgoing.navigator.NewNavigatorEventCategoriesComposer;
+import com.eu.habbo.util.HotelDateTimeUtil;
 import com.eu.habbo.plugin.events.emulator.EmulatorConfigUpdatedEvent;
 import com.eu.habbo.plugin.events.emulator.EmulatorLoadedEvent;
 import com.eu.habbo.plugin.events.roomunit.RoomUnitLookAtPointEvent;
@@ -187,10 +188,8 @@ public class PluginManager {
 
         SubscriptionHabboClub.HC_PAYDAY_ENABLED = Emulator.getConfig().getBoolean("subscriptions.hc.payday.enabled", false);
 
-        try {
-            SubscriptionHabboClub.HC_PAYDAY_NEXT_DATE = (int) (Emulator.stringToDate(Emulator.getConfig().getValue("subscriptions.hc.payday.next_date")).getTime() / 1000);
-        }
-        catch(Exception e) { SubscriptionHabboClub.HC_PAYDAY_NEXT_DATE = Integer.MAX_VALUE; }
+        SubscriptionHabboClub.HC_PAYDAY_NEXT_DATE = parsePaydayTimestamp(
+                Emulator.getConfig().getValue("subscriptions.hc.payday.next_date"));
 
         SubscriptionHabboClub.HC_PAYDAY_INTERVAL = Emulator.getConfig().getValue("subscriptions.hc.payday.interval");
         SubscriptionHabboClub.HC_PAYDAY_QUERY = Emulator.getConfig().getValue("subscriptions.hc.payday.query");
@@ -249,6 +248,22 @@ public class PluginManager {
             Emulator.getGameEnvironment().getPixelScheduler().reloadConfig();
             Emulator.getGameEnvironment().getGotwPointsScheduler().reloadConfig();
             Emulator.getGameEnvironment().subscriptionScheduler.reloadConfig();
+        }
+    }
+
+    static int parsePaydayTimestamp(String value) {
+        try {
+            long timestamp = HotelDateTimeUtil.toEpochSecond(
+                    HotelDateTimeUtil.parseDateTimeStrict(value));
+            if (timestamp > Integer.MAX_VALUE) {
+                return Integer.MAX_VALUE;
+            }
+            if (timestamp < Integer.MIN_VALUE) {
+                return Integer.MIN_VALUE;
+            }
+            return (int) timestamp;
+        } catch (Exception ignored) {
+            return Integer.MAX_VALUE;
         }
     }
 

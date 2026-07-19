@@ -9,10 +9,15 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.ResolverStyle;
 
 public final class HotelDateTimeUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(HotelDateTimeUtil.class);
     private static final String CONFIG_KEY = "hotel.timezone";
+    private static final DateTimeFormatter STRICT_TIMESTAMP_FORMAT =
+            DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss")
+                    .withResolverStyle(ResolverStyle.STRICT);
     private static volatile String lastInvalidTimezoneId = null;
 
     private HotelDateTimeUtil() {
@@ -57,5 +62,9 @@ public final class HotelDateTimeUtil {
 
     public static long toEpochSecond(LocalDateTime dateTime) {
         return dateTime.atZone(getZoneId()).toEpochSecond();
+    }
+
+    public static LocalDateTime parseDateTimeStrict(String value) {
+        return LocalDateTime.parse(value, STRICT_TIMESTAMP_FORMAT);
     }
 }

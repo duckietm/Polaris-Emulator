@@ -2,8 +2,9 @@ package com.eu.habbo;
 
 import org.junit.jupiter.api.Test;
 
-import java.text.SimpleDateFormat;
 import java.lang.reflect.Method;
+import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.TimeZone;
 
@@ -110,5 +111,28 @@ class EmulatorTimeUtilityTest {
         assertEquals(
                 Integer.MAX_VALUE,
                 elapsedSeconds.invoke(null, 0L, 3_000_000_000L));
+    }
+
+    @Test
+    void timestampParsingAndFormattingUseImmutableFormatters() throws Exception {
+        assertEquals(
+                DateTimeFormatter.class,
+                Emulator.class
+                        .getDeclaredField("BUILD_TIMESTAMP_FORMAT")
+                        .getType());
+        assertEquals(
+                DateTimeFormatter.class,
+                Emulator.class
+                        .getDeclaredField("LEGACY_TIMESTAMP_PARSER")
+                        .getType());
+
+        Method formatter =
+                Emulator.class.getDeclaredMethod(
+                        "formatBuildTimestamp", long.class, String.class);
+        formatter.setAccessible(true);
+        assertEquals(
+                "2023-11-14 22:13:20",
+                formatter.invoke(null, 1_700_000_000_000L, "UTC"));
+        assertEquals("UNKNOWN", formatter.invoke(null, -1L, "UTC"));
     }
 }

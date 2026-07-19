@@ -20,7 +20,7 @@ public class AboutCommand extends Command {
 
         Emulator.getRuntime().gc();
 
-        int seconds = Emulator.getIntUnixTimestamp() - Emulator.getTimeStarted();
+        int seconds = Emulator.getOnlineTime();
         int day = (int) TimeUnit.SECONDS.toDays(seconds);
         long hours = TimeUnit.SECONDS.toHours(seconds) - (day * 24L);
         long minute = TimeUnit.SECONDS.toMinutes(seconds) - (TimeUnit.SECONDS.toHours(seconds) * 60);

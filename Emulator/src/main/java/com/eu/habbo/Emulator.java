@@ -34,7 +34,14 @@ import java.net.URL;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
+import java.text.ParsePosition;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.ResolverStyle;
+import java.time.temporal.TemporalAccessor;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
@@ -51,6 +58,32 @@ public final class Emulator {
     private static final String ANSI_GREEN = "\u001B[32m";
     private static final String ANSI_YELLOW = "\u001B[33m";
     private static final String ANSI_DIM = "\u001B[2m";
+    private static final Pattern TIME_DURATION_PATTERN =
+            Pattern.compile("(([0-9]*) (second|minute|hour|day|week|month|year))");
+    private static final Map<String, Integer> TIME_DURATION_SECONDS = Map.of(
+            "second", 1,
+            "minute", 60,
+            "hour", 3600,
+            "day", 86400,
+            "week", 604800,
+            "month", 2628000,
+            "year", 31536000);
+    private static final Map<String, Integer> TIME_DURATION_CALENDAR_FIELDS = Map.of(
+            "second", Calendar.SECOND,
+            "minute", Calendar.MINUTE,
+            "hour", Calendar.HOUR,
+            "day", Calendar.DAY_OF_MONTH,
+            "week", Calendar.WEEK_OF_MONTH,
+            "month", Calendar.MONTH,
+            "year", Calendar.YEAR);
+    private static final DateTimeFormatter BUILD_TIMESTAMP_FORMAT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter LEGACY_TIMESTAMP_PARSER =
+            new DateTimeFormatterBuilder()
+                    .parseLenient()
+                    .appendPattern("uuuu-MM-dd HH:mm:ss")
+                    .toFormatter(Locale.ENGLISH)
+                    .withResolverStyle(ResolverStyle.LENIENT);
 
     // Fallback version, only used when running outside a packaged jar (e.g. from
     // the IDE). In production the version comes from the jar manifest below.
@@ -87,7 +120,7 @@ public final class Emulator {
     public static boolean isShuttingDown = false;
     public static boolean stopped = false;
     public static boolean debugging = false;
-    private static int timeStarted = 0;
+    private static long timeStarted = 0;
     private static Runtime runtime;
     private static ConfigurationManager config;
     private static CryptoConfig crypto;
@@ -227,7 +260,7 @@ public final class Emulator {
 
             Emulator.getPluginManager().fireEvent(new EmulatorLoadedEvent());
             Emulator.isReady = true;
-            Emulator.timeStarted = getIntUnixTimestamp();
+            Emulator.timeStarted = getLongUnixTimestamp();
 
             if (shouldLaunchGui()) {
                 EmulatorDashboard.launch();
@@ -477,15 +510,15 @@ public final class Emulator {
             return "UNKNOWN";
         }
 
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
+        ZoneId zoneId;
         try {
-            format.setTimeZone(TimeZone.getTimeZone(java.time.ZoneId.of(timezoneId)));
+            zoneId = ZoneId.of(timezoneId);
         } catch (Exception ignored) {
-            format.setTimeZone(TimeZone.getDefault());
+            zoneId = ZoneId.systemDefault();
         }
 
-        return format.format(new Timestamp(buildTimestamp));
+        return BUILD_TIMESTAMP_FORMAT.format(
+                Instant.ofEpochMilli(buildTimestamp).atZone(zoneId));
     }
 
     private static void dispose() {
@@ -635,11 +668,11 @@ public final class Emulator {
     }
 
     public static int getTimeStarted() {
-        return timeStarted;
+        return (int) timeStarted;
     }
 
     public static int getOnlineTime() {
-        return getIntUnixTimestamp() - timeStarted;
+        return elapsedSeconds(timeStarted, getLongUnixTimestamp());
     }
 
     public static void prepareShutdown() {
@@ -647,55 +680,36 @@ public final class Emulator {
     }
 
     public static int timeStringToSeconds(String timeString) {
-        int totalSeconds = 0;
-
-        Matcher m = Pattern.compile("(([0-9]*) (second|minute|hour|day|week|month|year))").matcher(timeString);
-        Map<String,Integer> map = new HashMap<String,Integer>() {
-            {
-                put("second", 1);
-                put("minute", 60);
-                put("hour", 3600);
-                put("day", 86400);
-                put("week", 604800);
-                put("month", 2628000);
-                put("year", 31536000);
-            }
-        };
+        long totalSeconds = 0;
+        Matcher m = TIME_DURATION_PATTERN.matcher(timeString);
 
         while (m.find()) {
             try {
                 int amount = Integer.parseInt(m.group(2));
                 String what = m.group(3);
-                totalSeconds += amount * map.get(what);
+                long seconds = (long) amount * TIME_DURATION_SECONDS.get(what);
+                if (totalSeconds > Integer.MAX_VALUE - seconds) {
+                    return Integer.MAX_VALUE;
+                }
+                totalSeconds += seconds;
             }
             catch (Exception ignored) { }
         }
 
-        return totalSeconds;
+        return (int) totalSeconds;
     }
 
     public static Date modifyDate(Date date, String timeString) {
         Calendar c = Calendar.getInstance();
         c.setTime(date);
 
-        Matcher m = Pattern.compile("(([0-9]*) (second|minute|hour|day|week|month|year))").matcher(timeString);
-        Map<String, Integer> map = new HashMap<String, Integer>() {
-            {
-                put("second", Calendar.SECOND);
-                put("minute", Calendar.MINUTE);
-                put("hour", Calendar.HOUR);
-                put("day", Calendar.DAY_OF_MONTH);
-                put("week", Calendar.WEEK_OF_MONTH);
-                put("month", Calendar.MONTH);
-                put("year", Calendar.YEAR);
-            }
-        };
+        Matcher m = TIME_DURATION_PATTERN.matcher(timeString);
 
         while (m.find()) {
             try {
                 int amount = Integer.parseInt(m.group(2));
                 String what = m.group(3);
-                c.add(map.get(what), amount);
+                c.add(TIME_DURATION_CALENDAR_FIELDS.get(what), amount);
             }
             catch (Exception ignored) { }
         }
@@ -704,24 +718,30 @@ public final class Emulator {
     }
 
     private static String dateToUnixTimestamp(Date date) {
-        String res = "";
-        Date aux = stringToDate("1970-01-01 00:00:00");
-        Timestamp aux1 = dateToTimeStamp(aux);
-        Timestamp aux2 = dateToTimeStamp(date);
-        long difference = aux2.getTime() - aux1.getTime();
+        Instant localEpoch = LocalDateTime.of(1970, 1, 1, 0, 0)
+                .atZone(ZoneId.systemDefault())
+                .toInstant();
+        long difference = date.getTime() - localEpoch.toEpochMilli();
         long seconds = difference / 1000L;
-        return res + seconds;
+        return Long.toString(seconds);
     }
 
     public static Date stringToDate(String date) {
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        Date res = null;
         try {
-            res = format.parse(date);
+            ParsePosition position = new ParsePosition(0);
+            TemporalAccessor parsed = LEGACY_TIMESTAMP_PARSER.parse(date, position);
+            if (parsed == null || position.getIndex() == 0) {
+                throw new IllegalArgumentException("Unparseable date: " + date);
+            }
+
+            return Date.from(
+                    LocalDateTime.from(parsed)
+                            .atZone(ZoneId.systemDefault())
+                            .toInstant());
         } catch (Exception e) {
             LOGGER.error("Error parsing date", e);
+            return null;
         }
-        return res;
     }
 
     public static Timestamp dateToTimeStamp(Date date) {
@@ -737,7 +757,22 @@ public final class Emulator {
     }
 
     public static int getIntUnixTimestamp() {
-        return (int) (System.currentTimeMillis() / 1000);
+        return (int) getLongUnixTimestamp();
+    }
+
+    public static long getLongUnixTimestamp() {
+        return Instant.now().getEpochSecond();
+    }
+
+    static int elapsedSeconds(long startTimestamp, long endTimestamp) {
+        long elapsed = endTimestamp - startTimestamp;
+        if (elapsed > Integer.MAX_VALUE) {
+            return Integer.MAX_VALUE;
+        }
+        if (elapsed < Integer.MIN_VALUE) {
+            return Integer.MIN_VALUE;
+        }
+        return (int) elapsed;
     }
 
     public static boolean isNumeric(String string)

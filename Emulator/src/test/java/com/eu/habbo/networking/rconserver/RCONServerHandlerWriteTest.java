@@ -1,22 +1,18 @@
 package com.eu.habbo.networking.rconserver;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RCONServerHandlerWriteTest {
 
@@ -32,28 +28,37 @@ class RCONServerHandlerWriteTest {
 
     @Test
     void connectionClosesOnlyAfterTheResponseWriteCompletes() {
-        ChannelHandlerContext context = mock(ChannelHandlerContext.class);
-        Channel channel = mock(Channel.class);
-        ChannelPromise voidPromise = mock(ChannelPromise.class);
-        ChannelFuture legacyFuture = mock(ChannelFuture.class);
-        ChannelFuture responseFuture = mock(ChannelFuture.class);
-        when(context.channel()).thenReturn(channel);
-        when(channel.voidPromise()).thenReturn(voidPromise);
-        when(channel.write(any(ByteBuf.class), eq(voidPromise))).thenAnswer(invocation -> {
-            ((ByteBuf) invocation.getArgument(0)).release();
-            return legacyFuture;
-        });
-        when(legacyFuture.channel()).thenReturn(channel);
-        when(context.writeAndFlush(any(ByteBuf.class))).thenAnswer(invocation -> {
-            ((ByteBuf) invocation.getArgument(0)).release();
-            return responseFuture;
-        });
+        DelayedWriteHandler delayedWrite = new DelayedWriteHandler();
+        ContextMarker marker = new ContextMarker();
+        EmbeddedChannel channel = new EmbeddedChannel(delayedWrite, marker);
 
-        RCONServerHandler.writeAndClose(context, "{\"status\":1}");
+        RCONServerHandler.writeAndClose(
+                channel.pipeline().context(marker), "{\"status\":1}");
 
-        verify(context).writeAndFlush(any(ByteBuf.class));
-        verify(responseFuture).addListener(ChannelFutureListener.CLOSE);
-        verify(channel, never()).voidPromise();
-        verify(channel, never()).close();
+        assertNotNull(delayedWrite.promise);
+        assertTrue(channel.isOpen());
+        assertEquals("{\"status\":1}",
+                delayedWrite.message.toString(StandardCharsets.UTF_8));
+
+        delayedWrite.promise.setSuccess();
+        channel.runPendingTasks();
+
+        assertFalse(channel.isOpen());
+        delayedWrite.message.release();
+        channel.finishAndReleaseAll();
+    }
+
+    private static final class ContextMarker extends io.netty.channel.ChannelInboundHandlerAdapter {
+    }
+
+    private static final class DelayedWriteHandler extends ChannelOutboundHandlerAdapter {
+        private ByteBuf message;
+        private ChannelPromise promise;
+
+        @Override
+        public void write(ChannelHandlerContext context, Object message, ChannelPromise promise) {
+            this.message = (ByteBuf) message;
+            this.promise = promise;
+        }
     }
 }

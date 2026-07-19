@@ -1,9 +1,14 @@
 name: Build & Release JAR
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
+
+env:
+  SOURCE_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -11,9 +16,17 @@ concurrency:
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 jobs:
   build-release:
+    if: >-
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main') ||
+      (github.event_name == 'workflow_dispatch' &&
+       github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     defaults:
@@ -26,6 +39,7 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ env.SOURCE_SHA }}
 
       - name: Set up JDK 25
         uses: actions/setup-java@v5
@@ -45,27 +59,41 @@ jobs:
           mvn -B versions:set -DnewVersion="$NEW" -DgenerateBackupPoms=false
           echo "new_version=$NEW" >> "$GITHUB_OUTPUT"
 
-      - name: Build JAR
-        run: mvn -B clean package -DskipTests
+      - name: Build and test release
+        run: mvn -B clean verify
 
       - name: Generate SHA-256 checksum
         run: |
-          JAR="target/Polaris-${{ steps.bump.outputs.new_version }}-jar-with-dependencies.jar"
+          cd target
+          JAR="Polaris-${{ steps.bump.outputs.new_version }}-jar-with-dependencies.jar"
           sha256sum "$JAR" > "$JAR.sha256"
 
       - name: Commit bumped pom.xml
+        id: commit
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add pom.xml
           git commit -m "🆙 Bump version to ${{ steps.bump.outputs.new_version }} [skip ci]"
+          echo "release_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           git push origin HEAD:main
+
+      - name: Attest release JAR provenance
+        uses: actions/attest@v4
+        with:
+          subject-path: Emulator/target/Polaris-${{ steps.bump.outputs.new_version }}-jar-with-dependencies.jar
+
+      - name: Attest release SBOM
+        uses: actions/attest@v4
+        with:
+          subject-path: Emulator/target/Polaris-${{ steps.bump.outputs.new_version }}-jar-with-dependencies.jar
+          sbom-path: Emulator/target/Polaris-${{ steps.bump.outputs.new_version }}-sbom.json
 
       - name: Generate release notes from latest commit
         working-directory: ${{ github.workspace }}
         env:
           NEW_TAG: v${{ steps.bump.outputs.new_version }}
-          TRIGGER_SHA: ${{ github.sha }}
+          TRIGGER_SHA: ${{ env.SOURCE_SHA }}
         run: |
           PREV_TAG=$(git tag --sort=-creatordate | head -n1 || true)
           {
@@ -85,7 +113,9 @@ jobs:
         with:
           tag_name: v${{ steps.bump.outputs.new_version }}
           name: Release v${{ steps.bump.outputs.new_version }}
+          target_commitish: ${{ steps.commit.outputs.release_sha }}
           body_path: release_notes.md
           files: |
             Emulator/target/Polaris-${{ steps.bump.outputs.new_version }}-jar-with-dependencies.jar
             Emulator/target/Polaris-${{ steps.bump.outputs.new_version }}-jar-with-dependencies.jar.sha256
+            Emulator/target/Polaris-${{ steps.bump.outputs.new_version }}-sbom.json

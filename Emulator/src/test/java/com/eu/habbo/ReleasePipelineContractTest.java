@@ -52,7 +52,8 @@ class ReleasePipelineContractTest {
         assertTrue(pom.contains(
                 "<artifactId>cyclonedx-maven-plugin</artifactId>"
         ));
-        assertTrue(workflow.contains("actions/attest-build-provenance@"));
+        assertTrue(workflow.contains("actions/attest@"));
+        assertTrue(workflow.contains("sbom-path:"));
         assertTrue(workflow.contains("attestations: write"));
         assertTrue(workflow.contains("id-token: write"));
         assertTrue(workflow.contains("-sbom.json"));

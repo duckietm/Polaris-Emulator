@@ -1,0 +1,3 @@
+# MigrationRunnerIT compares this file byte-for-byte against a generated
+# LF-terminated string; keep it LF on every platform and checkout mode.
+Emulator/src/main/resources/db/runtime-schema-contract.json text eol=lf

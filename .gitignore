@@ -9,6 +9,7 @@ src/test/
 target/
 config.ini
 *.txt
+!Emulator/abi-baseline/*.txt
 *.log
 *.zip
 .DS_Store

@@ -1,60 +1,25 @@
-# Versioned database migrations
+# Legacy database updates
 
-This directory is the authoritative source for Polaris schema migrations. Maven packages its top-level SQL files into the executable JAR; runtime migration behavior must not depend on a separate source checkout.
+The numbered production updates formerly stored at the top of this directory
+are now immutable Flyway migrations in:
 
-## Naming and ordering
+`Emulator/src/main/resources/db/migration/`
 
-- Use `NNN_lowercase_description.sql`.
-- The first managed migration after the historical baseline is `028`.
-- Every new version must use the next contiguous number. Do not fill the historical 013/014 gaps.
-- Descriptions for version 028 and later use only lowercase ASCII letters, digits and underscores.
-- Keep migration files at the top level of this directory.
+Polaris applies them automatically. **Do not run this directory manually on a
+new or existing hotel.**
 
-Applied migrations and their `schema_migrations` rows are immutable: they must not be edited, renamed, reordered or assigned a replacement checksum after merge. Add a new corrective migration instead.
+The remaining subdirectories are retained as historical source material:
 
-## SQL author checklist
+- `Own_Database_RunFirst/` contains old aggregates, duplicate scripts and manual
+  experiments whose required effects were reconciled into the timestamped chain.
+- `Items_Base/` contains old bulk reference-data maintenance scripts. The Polaris
+  base database already contains their stable mappings; later wired mappings and the
+  pet-breeding correction are versioned migrations.
+- `Set Rooms wallitems/` is an optional repair script, not a Polaris schema
+  migration.
 
-Before opening a pull request:
+The destructive room-207 wired laboratory script was moved to
+`Database/Dev Seeds/room_207_wiredlab.sql`; it is development-only.
 
-1. Choose the next contiguous version and a lowercase filename.
-2. Write retry-safe MariaDB SQL. MariaDB can auto-commit DDL, so a partially failed script may be retried.
-3. Do not use `DELIMITER`, stored-procedure bodies or another syntax unsupported by the migration splitter.
-4. Keep each statement deterministic and avoid production-specific data or credentials.
-5. Test explicit apply twice against a disposable existing database; the second run must be a no-op.
-6. Test a clean installation from `Database/Default Database/FullDatabase.sql`.
-7. When clean installs require the new schema immediately, update `FullDatabase.sql` in the same change.
-8. Confirm failure leaves the migration pending and does not insert its history row.
-9. Never log passwords or interpolate operator-provided identifiers into SQL.
-
-The runner computes the SHA-256 checksum from the exact packaged UTF-8 file. Changing whitespace or comments after application also changes the checksum and correctly blocks startup for review.
-
-## Local apply-only command
-
-Build the fat JAR, provide loopback database environment variables, and run:
-
-```powershell
-java -cp Emulator/target/Polaris-4.2.50-jar-with-dependencies.jar com.eu.habbo.database.migrations.MigrationTool --migrations=apply --migrations-only
-```
-
-Use `validate` during normal startup. Use `off` only as an explicit emergency compatibility escape hatch because it disables migration guarantees.
-
-## Operator workflow and recovery
-
-Normal startup uses `validate` and never applies pending SQL. Select the mode, in
-ascending precedence, with `db.migrations.mode`, `DB_MIGRATIONS_MODE`, or
-`--migrations=validate|apply|off`. Use `--migrations-only` with explicit apply
-for a controlled deployment step before starting the emulator.
-
-An existing recognizable Polaris database without `schema_migrations` receives
-one historical baseline row at version `027`; the runner never replays the old
-scripts against it. Managed history is protected by SHA-256 checksum validation,
-contiguous versions, and a database-scoped MariaDB `GET_LOCK`. A database newer
-than the packaged catalog, an altered applied script, or malformed history stops
-startup.
-
-For a clean installation, import `Database/Default Database/FullDatabase.sql`,
-then run explicit apply once. Back up the database before applying production
-migrations. If apply fails, fix the cause or restore the backup; do not insert,
-delete, or edit `schema_migrations` rows manually. Applied scripts must not be
-edited. Add a new corrective migration instead. The `off` mode is only for a
-time-bounded emergency and removes all schema compatibility guarantees.
+Future production database changes must be added as a new Flyway migration.
+Use a new UTC timestamp and never edit a released migration.

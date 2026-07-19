@@ -6,7 +6,11 @@ import ch.qos.logback.core.ConsoleAppender;
 import com.eu.habbo.core.*;
 import com.eu.habbo.core.consolecommands.ConsoleCommand;
 import com.eu.habbo.database.Database;
-import com.eu.habbo.database.migrations.MigrationOptions;
+import com.eu.habbo.database.integrity.DatabaseIntegrityAudit;
+import com.eu.habbo.database.integrity.IntegrityAuditOptions;
+import com.eu.habbo.database.migration.MigrationRunner;
+import com.eu.habbo.database.migration.MigrationException;
+import com.eu.habbo.database.migration.MigrationOptions;
 import com.eu.habbo.gui.EmulatorDashboard;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.gameclients.SessionResumeManager;
@@ -112,6 +116,8 @@ public final class Emulator {
 
     public static void main(String[] args) throws Exception {
         try {
+            MigrationOptions migrationOptions = MigrationOptions.parse(args);
+            IntegrityAuditOptions integrityAuditOptions = IntegrityAuditOptions.parse(args);
             boolean styledConsole = shouldStyleConsole(
                     System.getenv(),
                     System.console() != null,
@@ -131,22 +137,46 @@ public final class Emulator {
 
             Emulator.runtime = Runtime.getRuntime();
             Emulator.config = new ConfigurationManager("config.ini");
-            MigrationOptions migrationOptions = MigrationOptions.resolve(
-                    Emulator.config,
-                    args,
-                    System.getenv());
             Emulator.crypto = new CryptoConfig(
                     Emulator.getConfig().getBoolean("enc.enabled", false),
                     Emulator.getConfig().getValue("enc.e"),
                     Emulator.getConfig().getValue("enc.n"),
                     Emulator.getConfig().getValue("enc.d"));
-            Emulator.database = new Database(Emulator.getConfig(), migrationOptions);
-            if (migrationOptions.migrationsOnly()) {
-                Emulator.database.dispose();
-                Emulator.database = null;
-                Emulator.config = null;
-                return;
+            Emulator.database = new Database(Emulator.getConfig());
+            // Migrate before loading database-backed configuration.
+            if (Emulator.getDatabase() != null && Emulator.getDatabase().getDataSource() != null) {
+                if (migrationOptions.mode() == MigrationOptions.Mode.VALIDATE) {
+                    System.out.print(MigrationRunner.statusAtStartup(Emulator.getDatabase().getDataSource()));
+                    DatabaseIntegrityAudit.auditAtStartup(
+                            Emulator.getDatabase().getDataSource(),
+                            Emulator.getConfig(),
+                            integrityAuditOptions);
+                    Emulator.database.dispose();
+                    return;
+                }
+
+                if (migrationOptions.mode() == MigrationOptions.Mode.APPLY
+                        || migrationOptions.migrationsOnly()) {
+                    MigrationRunner.migrateAtStartup(
+                            Emulator.getDatabase().getDataSource(),
+                            Emulator.getConfig());
+                } else {
+                    MigrationRunner.runAtStartup(Emulator.getDatabase().getDataSource(), Emulator.getConfig());
+                }
+
+                DatabaseIntegrityAudit.auditAtStartup(
+                        Emulator.getDatabase().getDataSource(),
+                        Emulator.getConfig(),
+                        integrityAuditOptions);
+
+                if (migrationOptions.migrationsOnly()) {
+                    LOGGER.info("[migrate] Database migration completed; --migrations-only requested, so the emulator will not start.");
+                    Emulator.database.dispose();
+                    return;
+                }
             }
+            com.eu.habbo.database.indexing.DatabaseIndexAuditor.auditAtStartup(
+                    Emulator.getDatabase().getDataSource());
             Emulator.databaseLogger = new DatabaseLogger();
             Emulator.config.loaded = true;
             Emulator.config.loadFromDatabase();
@@ -232,6 +262,15 @@ public final class Emulator {
                 }
             }
 
+        } catch (IllegalArgumentException e) {
+            LOGGER.error("Invalid startup option: {}", e.getMessage());
+            throw e;
+        } catch (MigrationException e) {
+            LOGGER.error("Polaris could not safely prepare the database, so startup was aborted.", e);
+            if (Emulator.database != null) {
+                Emulator.database.dispose();
+            }
+            throw e;
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
             throw e;
@@ -465,7 +504,7 @@ public final class Emulator {
         if (Emulator.pluginManager != null)
             tryShutdown(() -> Emulator.pluginManager.fireEvent(new EmulatorStoppedEvent()));
         if (Emulator.pluginManager != null) tryShutdown(() -> Emulator.pluginManager.dispose());
-        if (Emulator.config != null && Emulator.database != null)
+        if (canPersistConfiguration())
             tryShutdown(() -> Emulator.config.saveToDatabase());
         if (Emulator.gameServer != null) tryShutdown(() -> Emulator.gameServer.stop());
         if (Emulator.threading != null) tryShutdown(() -> Emulator.threading.shutDown());
@@ -474,6 +513,13 @@ public final class Emulator {
         LOGGER.info("Stopped Polaris {}", version);
 
         Emulator.stopped = true;
+    }
+
+    private static boolean canPersistConfiguration() {
+        return Emulator.config != null
+                && Emulator.database != null
+                && Emulator.database.getDataSource() != null
+                && !Emulator.database.getDataSource().isClosed();
     }
 
     private static void tryShutdown(Runnable action) {
@@ -498,6 +544,11 @@ public final class Emulator {
 
     public static Database getDatabase() {
         return database;
+    }
+
+    /** Installs the integration-test database without exposing a public API. */
+    static void setDatabaseForTesting(Database database) {
+        Emulator.database = database;
     }
 
     public static DatabaseLogger getDatabaseLogger() {

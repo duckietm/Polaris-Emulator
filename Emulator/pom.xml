@@ -28,27 +28,26 @@
         <jansi.version>2.4.3</jansi.version>
         <bcrypt.version>0.10.2</bcrypt.version>
         <jakarta-mail.version>2.0.5</jakarta-mail.version>
-        <junit.version>6.1.1</junit.version>
+        <junit.version>6.1.2</junit.version>
         <javaparser.version>3.27.1</javaparser.version>
+        <flyway.version>11.10.0</flyway.version>
+        <testcontainers.version>1.21.4</testcontainers.version>
+        <mockito.version>5.14.2</mockito.version>
+        <datafaker.version>2.4.2</datafaker.version>
 
         <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
         <maven-assembly-plugin.version>3.8.0</maven-assembly-plugin.version>
         <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
         <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
+        <maven-failsafe-plugin.version>3.5.6</maven-failsafe-plugin.version>
+        <jacoco-plugin.version>0.8.12</jacoco-plugin.version>
+        <japicmp.version>0.23.1</japicmp.version>
     </properties>
 
     <build>
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
-            </resource>
-            <resource>
-                <directory>../Database/Database Updates</directory>
-                <targetPath>db/migrations</targetPath>
-                <includes>
-                    <include>*.sql</include>
-                </includes>
-                <filtering>false</filtering>
             </resource>
         </resources>
         <plugins>
@@ -101,9 +100,100 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-surefire-plugin.version}</version>
+                <configuration>
+                    <!-- Unit tests only; integration tests (*IT) run under Failsafe. -->
+                    <excludes>
+                        <exclude>**/*IT.java</exclude>
+                    </excludes>
+                </configuration>
             </plugin>
+
+            <!-- Failsafe runs integration tests (*IT) in the verify phase, so the
+                 fast unit loop (mvn test) never spins up a database container. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>${maven-failsafe-plugin.version}</version>
+                <configuration>
+                    <includes>
+                        <include>**/*IT.java</include>
+                    </includes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
+
+    <profiles>
+        <!-- Coverage is opt-in (mvn -Pcoverage verify) so the JaCoCo agent never
+             affects the default/fast build or a JDK the agent doesn't yet support. -->
+        <profile>
+            <id>coverage</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>${jacoco-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>prepare-agent</id>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>report</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>report</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Rebuilds the runtime schema contract from an actual migrated MariaDB.
+             Normal verification is check-only and never rewrites the worktree. -->
+        <profile>
+            <id>update-runtime-schema-contract</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${maven-surefire-plugin.version}</version>
+                        <configuration>
+                            <skipTests>true</skipTests>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <version>${maven-failsafe-plugin.version}</version>
+                        <configuration>
+                            <includes combine.self="override">
+                                <include>**/RuntimeSchemaContractGenerator.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <runtimeSchemaContract.output>${project.basedir}/src/main/resources/db/runtime-schema-contract.json</runtimeSchemaContract.output>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
     <repositories>
         <repository>
@@ -244,6 +334,21 @@
             <version>${jakarta-mail.version}</version>
         </dependency>
 
+        <!-- Flyway — versioned schema migrations run at startup and in CI.
+             flyway-mysql provides MariaDB/MySQL support (free / Apache-2.0). -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>${flyway.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+            <version>${flyway.version}</version>
+            <scope>compile</scope>
+        </dependency>
+
         <!-- JUnit Jupiter -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -252,11 +357,62 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- japicmp — test-only plugin ABI gate vs the Arcturus Morningstar 3.5.5
+             baseline (see abi-baseline/README.md and PluginAbiCompatibilityTest) -->
+        <dependency>
+            <groupId>com.github.siom79.japicmp</groupId>
+            <artifactId>japicmp</artifactId>
+            <version>${japicmp.version}</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- JavaParser - test-only packet contract source analysis -->
         <dependency>
             <groupId>com.github.javaparser</groupId>
             <artifactId>javaparser-core</artifactId>
             <version>${javaparser.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Testcontainers — throwaway MariaDB for integration (*IT) tests -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mariadb</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Mockito — collaborators that aren't the DB in unit tests -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- datafaker — seeded, deterministic random data for test factories -->
+        <dependency>
+            <groupId>net.datafaker</groupId>
+            <artifactId>datafaker</artifactId>
+            <version>${datafaker.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

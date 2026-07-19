@@ -5,12 +5,26 @@ db.database=ms
 db.username=root
 db.password=root
 db.params=
-# validate (default), apply, or off
-db.migrations.mode=validate
-# bounded MariaDB advisory-lock wait in seconds (1-60)
-db.migrations.lock_timeout_seconds=10
+# Automatically prepare empty databases and upgrade recognized Arcturus/Polaris hotels.
+db.migrate.on_startup=true
+# Required fail-closed backup before pending migrations are applied.
+db.migrations.backup.enabled=true
+db.migrations.backup.directory=backups/database
+db.migrations.backup.keep=7
+db.migrations.backup.timeout_seconds=900
+# Absolute path is recommended when mariadb-dump is not on PATH.
+db.migrations.backup.executable=mariadb-dump
 db.pool.minsize=25
 db.pool.maxsize=100
+
+# Read-only duplicate/orphan audit: off, warn (default) or strict.
+db.integrity.audit.mode=warn
+# Bounded sample rows logged for each finding (0 disables samples).
+db.integrity.audit.sample_limit=5
+# Per-check JDBC timeout. Timeouts are warnings in warn mode and fatal in strict mode.
+db.integrity.audit.query_timeout_seconds=30
+# Overall startup budget, checked between bounded audit queries.
+db.integrity.audit.max_duration_seconds=120
 
 #Game Configuration.
 #Host IP. Most likely just 0.0.0.0 Use 127.0.0.1 if you want to play on LAN.
@@ -65,3 +79,8 @@ login.news.limit=5
 ## io.packet.handler.threads=24 #Game packet-handler pool size; runs game handlers OFF the Netty I/O loop. Default max(16, 2 x CPU cores).
 ## auth.http.pool.size=16 #Dedicated worker pool for the /api/auth/* HTTP endpoints (BCrypt/JDBC/Turnstile/SMTP run off the event loop). Default 16.
 ## io.netty.allocator.pooled=false #Set true to opt into Netty's pooled ByteBuf allocator. Default false (unpooled-heap).
+
+#Structured slow-query diagnostics. SQL literals and bound values are never logged.
+db.slow_query.enabled=true
+db.slow_query.threshold_ms=250
+db.slow_query.max_sql_length=1024

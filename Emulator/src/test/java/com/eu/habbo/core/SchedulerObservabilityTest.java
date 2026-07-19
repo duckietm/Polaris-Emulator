@@ -46,14 +46,14 @@ class SchedulerObservabilityTest {
     }
 
     @Test
-    void emulatorStatsIncludesEveryCoreSchedulerSnapshot() throws Exception {
+    void emulatorStatsChecksEveryConfiguredCoreScheduler() throws Exception {
         String source = Files.readString(Path.of("src/main/java/com/eu/habbo/monitoring/EmulatorStatsService.java"));
 
-        assertTrue(source.contains("getCreditsScheduler().snapshot()"));
-        assertTrue(source.contains("getPixelScheduler().snapshot()"));
-        assertTrue(source.contains("getPointsScheduler().snapshot()"));
-        assertTrue(source.contains("getGotwPointsScheduler().snapshot()"));
-        assertTrue(source.contains("subscriptionScheduler.snapshot()"));
+        assertTrue(source.contains("getCreditsScheduler().isDisposed()"));
+        assertTrue(source.contains("getPixelScheduler().isDisposed()"));
+        assertTrue(source.contains("getPointsScheduler().isDisposed()"));
+        assertTrue(source.contains("getGotwPointsScheduler().isDisposed()"));
+        assertTrue(source.contains("subscriptionScheduler.isDisposed()"));
     }
 
     private static Object snapshot(Scheduler scheduler) {

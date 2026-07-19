@@ -9,8 +9,10 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MessengerHistorySchemaContractTest {
-    private static final Path MIGRATION = Path.of("../Database/Database Updates/025_messenger_history.sql");
-    private static final Path FULL_DATABASE = Path.of("../Database/Default Database/FullDatabase.sql");
+    private static final Path MIGRATION = Path.of(
+            "src/main/resources/db/migration/V20260710223458__messenger_history.sql");
+    private static final Path BASE_DATABASE = Path.of(
+            "src/main/resources/db/migration/V20260518000000__base_database.sql");
 
     @Test
     void migrationDefinesUtf8InnoDbMessengerTablesAndIndexes() throws Exception {
@@ -28,12 +30,12 @@ class MessengerHistorySchemaContractTest {
 
     @Test
     void cleanInstallSchemaMirrorsMessengerTables() throws Exception {
-        String sql = Files.readString(FULL_DATABASE);
+        String sql = Files.readString(BASE_DATABASE);
 
         assertAll(
-                () -> assertTrue(sql.contains("CREATE TABLE IF NOT EXISTS `messenger_conversations`")),
-                () -> assertTrue(sql.contains("CREATE TABLE IF NOT EXISTS `messenger_members`")),
-                () -> assertTrue(sql.contains("CREATE TABLE IF NOT EXISTS `messenger_messages`"))
+                () -> assertTrue(sql.contains("CREATE TABLE `messenger_conversations`")),
+                () -> assertTrue(sql.contains("CREATE TABLE `messenger_members`")),
+                () -> assertTrue(sql.contains("CREATE TABLE `messenger_messages`"))
         );
     }
 }

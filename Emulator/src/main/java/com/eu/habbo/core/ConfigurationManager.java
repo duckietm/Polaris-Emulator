@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.*;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
@@ -78,7 +79,7 @@ public class ConfigurationManager {
             envMapping.put("db.username", "DB_USERNAME");
             envMapping.put("db.password", "DB_PASSWORD");
             envMapping.put("db.params", "DB_PARAMS");
-            envMapping.put("db.migrations.mode", "DB_MIGRATIONS_MODE");
+            envMapping.put("db.migrate.on_startup", "DB_MIGRATE_ON_STARTUP");
 
             // Game Configuration
             envMapping.put("game.host", "EMU_HOST");
@@ -134,22 +135,24 @@ public class ConfigurationManager {
 
 
     public String getValue(String key) {
-        if (this.isLoading) return "";
-
-        String value = this.getValueIfPresent(key);
-        if (value != null) return value;
-
-        LOGGER.error("Config key not found {}", key);
-        return "";
+        return this.getValue(key, "", true);
     }
 
 
     public String getValue(String key, String defaultValue) {
+        return this.getValue(key, defaultValue, false);
+    }
+
+    private String getValue(String key, String defaultValue, boolean logMissing) {
         if (this.isLoading)
             return defaultValue;
 
         String value = this.getValueIfPresent(key);
         if (value != null) return value;
+
+        if (logMissing) {
+            LOGGER.error("Config key not found {}", key);
+        }
         return defaultValue;
     }
 
@@ -178,11 +181,14 @@ public class ConfigurationManager {
 
         String value = this.getValueIfPresent(key);
         if (value == null) return defaultValue;
-        if (value.equals("1") || value.equalsIgnoreCase("true")) return true;
-        if (value.equals("0") || value.equalsIgnoreCase("false")) return false;
-
-        LOGGER.error("Failed to parse key {} with value '{}' to type boolean.", key, value);
-        return defaultValue;
+        return switch (value.trim().toLowerCase(Locale.ROOT)) {
+            case "1", "true" -> true;
+            case "0", "false" -> false;
+            default -> {
+                LOGGER.error("Failed to parse key {} with value '{}' to type boolean.", key, value);
+                yield defaultValue;
+            }
+        };
     }
 
     public int getInt(String key) {

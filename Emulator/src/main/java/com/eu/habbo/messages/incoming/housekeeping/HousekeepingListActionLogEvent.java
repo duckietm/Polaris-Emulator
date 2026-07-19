@@ -14,7 +14,7 @@ import java.util.List;
 
 /**
  * Read the housekeeping_log audit table. The table isn't part of the
- * base FullDatabase.sql yet — operators who want audit have to create
+ * Polaris base database yet — operators who want audit have to create
  * it once:
  *
  *   CREATE TABLE IF NOT EXISTS `housekeeping_log` (

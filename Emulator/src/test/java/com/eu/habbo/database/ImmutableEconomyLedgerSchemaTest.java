@@ -10,7 +10,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ImmutableEconomyLedgerSchemaTest {
     @Test
     void migrationMakesEconomyAuditAppendOnlyAndSelfDescribing() throws Exception {
-        String sql = Files.readString(Path.of("../Database/Database Updates/028_immutable_economy_ledger.sql"));
+        String sql = Files.readString(Path.of(
+                "src/main/resources/db/migration/V20260717171358__immutable_economy_ledger.sql"));
 
         assertTrue(sql.contains("`actor_id` INT UNSIGNED NULL"));
         assertTrue(sql.contains("`reason` VARCHAR(96) NOT NULL"));

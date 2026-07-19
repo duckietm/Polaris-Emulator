@@ -15,8 +15,6 @@ final class MarketPlacePurchaseTransaction {
     private static final String SELL_OFFER = "UPDATE marketplace_items SET state = 2, sold_timestamp = ? WHERE id = ? AND state = 1";
     private static final String TRANSFER_ITEM =
             "UPDATE items SET user_id = ? WHERE id = ? AND user_id = -1";
-    private static final String CHARGE_CREDITS = "UPDATE users SET credits = credits - ? WHERE id = ? AND credits >= ?";
-    private static final String CHARGE_CURRENCY = "UPDATE users_currency SET amount = amount - ? WHERE user_id = ? AND type = ? AND amount >= ?";
 
     private MarketPlacePurchaseTransaction() {
     }

@@ -22,9 +22,11 @@ class CatalogPurchaseAtomicityContractTest {
         assertTrue(manager.contains("CatalogPurchaseTransaction.execute("),
                 "normal catalog assets and payment must use the transaction coordinator");
         assertTrue(transaction.contains("connection.setAutoCommit(false)"));
-        assertTrue(transaction.contains(
-                        "UPDATE users SET credits = credits - ? WHERE id = ? AND credits >= ?"),
-                "credit debit must reject insufficient concurrent balances");
+        assertTrue(transaction.contains("EconomyLedger.apply(connection"),
+                "credit debit must use the locked, audited economy ledger");
+        String ledger = source("com/eu/habbo/habbohotel/economy/EconomyLedger.java");
+        assertTrue(ledger.contains("int balanceAfter = checkedBalance(balanceBefore, operation.delta())"),
+                "the ledger must reject insufficient concurrent balances");
         assertTrue(transaction.contains("connection.commit()"));
         assertTrue(transaction.contains("connection.rollback()"));
         assertTrue(manager.contains("limitedConfiguration.restoreNumber(item.getId(), limitedNumber)"),

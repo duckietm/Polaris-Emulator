@@ -1,8 +1,8 @@
 # Polaris end-to-end runtime
 
-This directory provides the disposable Polaris side of the renderer end-to-end tests. It imports the default database into an isolated schema, applies the required migration, seeds a synthetic user, room and inventory item, then starts Polaris on dedicated loopback ports.
+This directory provides the disposable Polaris side of the renderer end-to-end tests. It recreates an isolated schema, imports the Polaris base database, seeds synthetic test data, then starts Polaris on dedicated loopback ports. Normal Polaris startup applies any migrations newer than the base database.
 
-The scripts never require production credentials or production data. `prepare-database` only accepts a loopback database host and an alphanumeric database name. Use a dedicated schema because every preparation imports the full default database again.
+The scripts never require production credentials or production data. `prepare-database` only accepts a loopback database host and a database name beginning with `polaris_e2e_`. It deletes and recreates that database on every run.
 
 ## Prerequisites
 
@@ -59,7 +59,7 @@ Stop-Process -Id $process.pid
 
 Use `try` / `finally` around test execution in automation so the recorded PID is always stopped. Do not stop Java processes by name.
 
-## Linux and CI
+## Linux and macOS
 
 ```bash
 mvn -B -f Emulator/pom.xml package -DskipTests
@@ -71,7 +71,7 @@ bash ../emulatore/e2e/verify-inventory-state.sh
 kill "$(cat "${E2E_RUNTIME_DIR}/polaris.pid")"
 ```
 
-The GitHub workflows provide MariaDB as a service and set all variables explicitly. No additional E2E-only migration is required: preparation imports `Database/Default Database/FullDatabase.sql`, applies `Database/Database Updates/002_backgounds_border.sql`, then loads `e2e/seed.sql`.
+No workflow in this repository currently invokes this harness. It is run with the companion renderer repository when a full client-to-database test is needed.
 
 ## Fixtures and diagnostics
 

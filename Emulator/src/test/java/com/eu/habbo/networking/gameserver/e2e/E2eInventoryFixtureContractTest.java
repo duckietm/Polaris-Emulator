@@ -22,7 +22,8 @@ class E2eInventoryFixtureContractTest {
 
     @Test
     void canonicalDumpContainsTheSelectedFloorItemBase() throws IOException {
-        String dump = Files.readString(REPOSITORY.resolve("Database/Default Database/FullDatabase.sql"));
+        String dump = Files.readString(REPOSITORY.resolve(
+                "Emulator/src/main/resources/db/migration/V20260518000000__base_database.sql"));
 
         assertTrue(dump.contains("(18, 18, 'Dining Chair', 'chair_polyfon', 's'"));
     }
@@ -37,6 +38,18 @@ class E2eInventoryFixtureContractTest {
             assertTrue(script.contains("900001:0"));
             assertTrue(script.contains("user_id"));
             assertTrue(script.contains("room_id"));
+        }
+    }
+
+    @Test
+    void preparationScriptsOnlyResetDisposableSchemas() throws IOException {
+        String shell = Files.readString(REPOSITORY.resolve("e2e/prepare-database.sh"));
+        String powershell = Files.readString(REPOSITORY.resolve("e2e/prepare-database.ps1"));
+
+        for (String script : new String[]{shell, powershell}) {
+            assertTrue(script.contains("polaris_e2e_"));
+            assertTrue(script.contains("DROP DATABASE IF EXISTS"));
+            assertTrue(script.contains("CREATE DATABASE"));
         }
     }
 }

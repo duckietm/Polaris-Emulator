@@ -2,15 +2,6 @@ package com.eu.habbo.database;
 
 import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.database.compat.LegacySqlBridge;
-import com.eu.habbo.database.migrations.DatabaseMigrationRunner;
-import com.eu.habbo.database.migrations.MigrationCatalog;
-import com.eu.habbo.database.migrations.MigrationMode;
-import com.eu.habbo.database.migrations.MigrationOptions;
-import com.eu.habbo.database.migrations.MigrationReport;
-import com.eu.habbo.database.schema.DatabaseSchemaValidator;
-import com.eu.habbo.database.schema.SchemaContract;
-import com.eu.habbo.database.schema.SchemaContractLoader;
-import com.eu.habbo.database.schema.SchemaValidationReport;
 import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,11 +21,12 @@ public class Database {
     private DatabasePool databasePool;
     private final LegacySqlBridge legacySqlBridge = new LegacySqlBridge();
 
-    public Database(ConfigurationManager config) {
-        this(config, MigrationOptions.resolve(config, new String[0], System.getenv()));
+    /** Wraps a caller-provided datasource for integration tests. */
+    Database(HikariDataSource dataSource) {
+        this.dataSource = dataSource;
     }
 
-    public Database(ConfigurationManager config, MigrationOptions migrationOptions) {
+    public Database(ConfigurationManager config) {
         long millis = System.currentTimeMillis();
 
         try {
@@ -44,7 +36,6 @@ public class Database {
                         "Failed to initialize the database pool; check config.ini and MariaDB availability");
             }
             this.dataSource = this.databasePool.getDatabase();
-            this.runMigrations(migrationOptions);
         } catch (Exception e) {
             this.dispose();
             LOGGER.error("Failed to connect to your database.", e);
@@ -53,37 +44,6 @@ public class Database {
         }
 
         LOGGER.info("Database -> Connected! ({} MS)", System.currentTimeMillis() - millis);
-    }
-
-    private void runMigrations(MigrationOptions migrationOptions) throws SQLException {
-        if (migrationOptions.mode() == MigrationMode.OFF) {
-            LOGGER.warn("Database migrations are OFF; schema compatibility is not verified.");
-            return;
-        }
-
-        MigrationCatalog catalog = MigrationCatalog.load(Database.class.getClassLoader());
-        SchemaContract schemaContract = SchemaContractLoader.load(Database.class.getClassLoader());
-        try (Connection connection = this.dataSource.getConnection()) {
-            MigrationReport report = new DatabaseMigrationRunner(
-                    connection,
-                    catalog,
-                    migrationOptions.lockTimeoutSeconds())
-                    .run(migrationOptions.mode());
-            LOGGER.info(
-                    "Database migrations -> database={}, mode={}, installed={}, packaged={}, pending={}, applied={}",
-                    connection.getCatalog(),
-                    report.mode().name().toLowerCase(),
-                    report.installedVersion(),
-                    report.packagedVersion(),
-                    report.pendingVersions(),
-                    report.appliedVersions());
-            SchemaValidationReport schema =
-                    new DatabaseSchemaValidator(connection, schemaContract).validate();
-            LOGGER.info(
-                    "Database schema -> validated {} required tables and {} required columns",
-                    schema.requiredTables(),
-                    schema.requiredColumns());
-        }
     }
 
     public void dispose() {

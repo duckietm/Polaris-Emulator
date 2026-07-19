@@ -18,16 +18,44 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 final class LegacyPluginFixtureCompiler {
 
     private static final Path FIXTURE_ROOT =
-            Path.of("src", "test", "resources", "plugin-fixtures", "morningstar");
+            Path.of("src", "test", "resources", "plugin-fixtures");
 
     private LegacyPluginFixtureCompiler() {
     }
 
     static Path compileMorningstarPlugin(Path workDirectory) throws Exception {
+        Path fixture = FIXTURE_ROOT.resolve("morningstar");
+        return compilePlugin(
+                workDirectory,
+                fixture,
+                "LegacyBehaviorPlugin.java",
+                "morningstar-compatibility-fixture.jar",
+                "8",
+                List.of(
+                        Path.of("abi-baseline", "arcturus-morningstar-3.5.5-api.jar"),
+                        codeSource("gnu.trove.map.TMap")));
+    }
+
+    static Path compileReleasedPolarisPlugin(Path workDirectory) throws Exception {
+        Path fixture = FIXTURE_ROOT.resolve("polaris");
+        return compilePlugin(
+                workDirectory,
+                fixture,
+                "ReleasedBehaviorPlugin.java",
+                "released-polaris-compatibility-fixture.jar",
+                "25",
+                List.of(Path.of("abi-baseline", "polaris-release-api.jar")));
+    }
+
+    private static Path compilePlugin(
+            Path workDirectory,
+            Path fixture,
+            String sourceName,
+            String jarName,
+            String release,
+            List<Path> classpath) throws Exception {
         Path classes = Files.createDirectories(workDirectory.resolve("classes"));
-        Path source = FIXTURE_ROOT.resolve("LegacyBehaviorPlugin.java");
-        Path api = Path.of("abi-baseline", "arcturus-morningstar-3.5.5-api.jar");
-        Path trove = codeSource("gnu.trove.map.TMap");
+        Path source = fixture.resolve(sourceName);
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         assertNotNull(compiler, "Legacy plugin fixtures require a full JDK");
 
@@ -36,17 +64,20 @@ final class LegacyPluginFixtureCompiler {
                 null,
                 diagnostics,
                 diagnostics,
-                "--release", "8",
-                "-classpath", api.toAbsolutePath() + java.io.File.pathSeparator + trove,
+                "--release", release,
+                "-classpath", classpath.stream()
+                        .map(Path::toAbsolutePath)
+                        .map(Path::toString)
+                        .collect(java.util.stream.Collectors.joining(java.io.File.pathSeparator)),
                 "-d", classes.toString(),
                 source.toString());
         assertEquals(0, result, diagnostics.toString(java.nio.charset.StandardCharsets.UTF_8));
 
-        Path jar = workDirectory.resolve("morningstar-compatibility-fixture.jar");
+        Path jar = workDirectory.resolve(jarName);
         try (JarOutputStream output = new JarOutputStream(Files.newOutputStream(jar))) {
             addClasses(output, classes);
-            addResource(output, FIXTURE_ROOT.resolve("plugin.json"), "plugin.json");
-            addResource(output, FIXTURE_ROOT.resolve("plugin-resource.txt"), "fixture/plugin-resource.txt");
+            addResource(output, fixture.resolve("plugin.json"), "plugin.json");
+            addResource(output, fixture.resolve("plugin-resource.txt"), "fixture/plugin-resource.txt");
         }
         return jar;
     }

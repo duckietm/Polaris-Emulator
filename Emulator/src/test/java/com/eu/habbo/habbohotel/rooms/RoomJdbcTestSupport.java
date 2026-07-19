@@ -11,11 +11,11 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 
 final class RoomJdbcTestSupport {
@@ -45,7 +45,7 @@ final class RoomJdbcTestSupport {
     }
 
     static final class RecordingDataSource extends HikariDataSource {
-        private final List<SqlCall> calls = new ArrayList<>();
+        private final List<SqlCall> calls = new CopyOnWriteArrayList<>();
         private Function<String, List<Map<String, Object>>> rows =
                 ignored -> List.of();
         private boolean failUpdates;

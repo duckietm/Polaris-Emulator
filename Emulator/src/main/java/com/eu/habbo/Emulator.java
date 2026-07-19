@@ -83,9 +83,9 @@ public final class Emulator {
     public static long buildTimestamp = -1L;
 
 
-    public static boolean isReady = false;
-    public static boolean isShuttingDown = false;
-    public static boolean stopped = false;
+    public static volatile boolean isReady = false;
+    public static volatile boolean isShuttingDown = false;
+    public static volatile boolean stopped = false;
     public static boolean debugging = false;
     private static int timeStarted = 0;
     private static Runtime runtime;

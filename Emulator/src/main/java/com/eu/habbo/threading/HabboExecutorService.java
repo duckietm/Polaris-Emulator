@@ -3,7 +3,6 @@ package com.eu.habbo.threading;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -17,7 +16,7 @@ public class HabboExecutorService extends ScheduledThreadPoolExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(HabboExecutorService.class);
 
     public HabboExecutorService(int corePoolSize, ThreadFactory threadFactory) {
-        super(corePoolSize, threadFactory);
+        super(corePoolSize, threadFactory, RejectedExecutionHandlerImpl.aborting());
     }
 
     @Override
@@ -65,8 +64,6 @@ public class HabboExecutorService extends ScheduledThreadPoolExecutor {
     }
 
     private void logFailure(Throwable failure) {
-        if (!(failure instanceof IOException)) {
-            LOGGER.error("Error in HabboExecutorService", failure);
-        }
+        LOGGER.error("Error in HabboExecutorService", failure);
     }
 }

@@ -82,7 +82,7 @@ class EconomyAuditCoverageContractTest {
         String service = Files.readString(SOURCES.resolve(
                 "com/eu/habbo/habbohotel/catalog/CatalogPaymentService.java"));
 
-        assertTrue(service.contains("EconomyLedger.apply(connection"),
+        assertTrue(service.contains("EconomyLedger.executeBatch(operations)"),
                 "catalog payment reservations and refunds must be durable ledger operations");
         assertTrue(service.contains("LedgerWalletMutation.applyCommitted("),
                 "online balances must publish the committed ledger result without a second snapshot save");

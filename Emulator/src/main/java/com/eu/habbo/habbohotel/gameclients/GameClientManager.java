@@ -121,6 +121,16 @@ public class GameClientManager {
 
 
     public Habbo getHabbo(int id) {
+        GameClient authenticatedClient = this.authenticatedClients.get(id);
+        if (authenticatedClient != null) {
+            Habbo authenticatedHabbo = authenticatedClient.getHabbo();
+            if (authenticatedHabbo != null
+                    && authenticatedHabbo.getHabboInfo() != null
+                    && authenticatedHabbo.getHabboInfo().getId() == id) {
+                return authenticatedHabbo;
+            }
+        }
+
         for (GameClient client : this.clients.values()) {
             if (client.getHabbo() == null)
                 continue;

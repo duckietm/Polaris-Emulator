@@ -43,7 +43,7 @@ class PackagedJarContractIT {
     @Test
     void assembledJarMatchesPluginVisibleClasspathAndMergedResourceManifests() throws Exception {
         try (JarFile archive = new JarFile(packagedJar().toFile())) {
-            for (String contract : resourceLines("/packaging/plugin-visible-classpath.txt")) {
+            for (String contract : resourceLines("/packaging/plugin-visible-classpath.contract")) {
                 boolean expected = contract.startsWith("+ ");
                 String entry = contract.substring(2);
                 if (expected) {
@@ -60,7 +60,9 @@ class PackagedJarContractIT {
                         .map(String::trim)
                         .filter(line -> !line.isEmpty() && !line.startsWith("#"))
                         .collect(Collectors.toCollection(TreeSet::new));
-                assertEquals(new TreeSet<>(resourceLines("/packaging/flyway-plugin-providers.txt")), actual);
+                assertEquals(
+                        new TreeSet<>(resourceLines("/packaging/flyway-plugin-providers.contract")),
+                        actual);
             }
         }
     }

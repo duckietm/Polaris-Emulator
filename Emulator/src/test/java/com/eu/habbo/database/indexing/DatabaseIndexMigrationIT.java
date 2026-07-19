@@ -1,45 +1,48 @@
 package com.eu.habbo.database.indexing;
 
-import org.junit.jupiter.api.Assumptions;
+import com.eu.habbo.database.TestDatabase;
+import com.zaxxer.hikari.HikariDataSource;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-class DatabaseIndexMigrationIntegrationTest {
+class DatabaseIndexMigrationIT {
+
+    private static void requireDocker() {
+        try {
+            TestDatabase.sharedDataSource();
+        } catch (Throwable error) {
+            if ("true".equalsIgnoreCase(System.getenv("CI"))) {
+                throw new AssertionError(
+                        "Docker/Testcontainers is required in CI",
+                        error);
+            }
+            assumeTrue(
+                    false,
+                    "Docker/Testcontainers is unavailable: " + error.getMessage());
+        }
+    }
+
     @Test
     void migrationReusesEquivalentIndexesAndIsIdempotentOnMariaDb() throws Exception {
-        String host = System.getenv("MIGRATION_TEST_DB_HOST");
-        Assumptions.assumeTrue(host != null && !host.isBlank(),
-                "Set MIGRATION_TEST_DB_HOST to opt into the MariaDB integration test");
-        assertTrue(isLoopback(host), "Migration integration tests require a loopback MariaDB host");
-
-        String port = environment("MIGRATION_TEST_DB_PORT", "3306");
-        String user = environment("MIGRATION_TEST_DB_USER", "root");
-        String password = environment("MIGRATION_TEST_DB_PASSWORD", "");
-        String schema = "polaris_index_test_" + UUID.randomUUID().toString().replace("-", "");
-        String serverUrl = "jdbc:mariadb://" + host + ":" + port + "/";
-
-        try (Connection admin = DriverManager.getConnection(serverUrl, user, password)) {
-            execute(admin, "CREATE DATABASE `" + schema
-                    + "` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-        }
-
-        try (Connection connection = DriverManager.getConnection(serverUrl + schema, user, password)) {
+        requireDocker();
+        try (HikariDataSource dataSource =
+                     TestDatabase.freshDatabase("index_migration");
+             Connection connection = dataSource.getConnection()) {
             IndexContract contract = IndexContractLoader.load(getClass().getClassLoader());
             createContractTables(connection, contract);
             execute(connection, "CREATE INDEX custom_badge_covering ON users_badges "
@@ -59,10 +62,6 @@ class DatabaseIndexMigrationIntegrationTest {
             executeMigration(connection, migration);
             assertEquals(indexCount, indexCount(connection),
                     "Applying the index migration twice must not add indexes");
-        } finally {
-            try (Connection admin = DriverManager.getConnection(serverUrl, user, password)) {
-                execute(admin, "DROP DATABASE IF EXISTS `" + schema + "`");
-            }
         }
     }
 
@@ -134,12 +133,4 @@ class DatabaseIndexMigrationIntegrationTest {
         }
     }
 
-    private static boolean isLoopback(String host) {
-        return host.equals("127.0.0.1") || host.equals("localhost") || host.equals("::1");
-    }
-
-    private static String environment(String name, String defaultValue) {
-        String value = System.getenv(name);
-        return value == null ? defaultValue : value;
-    }
 }

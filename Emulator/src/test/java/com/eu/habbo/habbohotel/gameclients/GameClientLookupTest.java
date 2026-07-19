@@ -12,6 +12,16 @@ import static org.mockito.Mockito.when;
 class GameClientLookupTest {
 
     @Test
+    void lookupUsesTheAuthenticatedClientIndex() {
+        GameClientManager manager = new GameClientManager();
+        GameClient client = clientFor(7);
+        Habbo habbo = client.getHabbo();
+        manager.claimAuthenticatedSession(7, client);
+
+        assertSame(habbo, manager.getHabbo(7));
+    }
+
+    @Test
     void lookupFallsBackToRegisteredClientsAfterIndexRelease() {
         GameClientManager manager = new GameClientManager();
         GameClient client = clientFor(7);

@@ -255,60 +255,50 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
   public Room(ResultSet set) throws SQLException {
     this.cache = new HashMap<>(1000);
-    this.id = set.getInt("id");
-    this.ownerId = set.getInt("owner_id");
-    this.ownerName = set.getString("owner_name");
-    this.name = set.getString("name");
-    this.description = set.getString("description");
-    this.password = set.getString("password");
-    this.state = RoomState.valueOf(set.getString("state").toUpperCase());
-    this.usersMax = set.getInt("users_max");
-    this.score = set.getInt("score");
-    this.category = set.getInt("category");
-    this.floorPaint = set.getString("paper_floor") == null ? "0.0" : set.getString("paper_floor");
-    this.wallPaint = set.getString("paper_wall") == null ? "0.0" : set.getString("paper_wall");
-    this.backgroundPaint = set.getString("paper_landscape") == null ? "0.0" : set.getString("paper_landscape");
-    this.wallSize = set.getInt("thickness_wall");
-    this.wallHeight = set.getInt("wall_height");
-    this.floorSize = set.getInt("thickness_floor");
-    this.tags = set.getString("tags");
-    this.publicRoom = set.getBoolean("is_public");
-    this.staffPromotedRoom = set.getBoolean("is_staff_picked");
-    this.allowPets = set.getBoolean("allow_other_pets");
-    this.allowPetsEat = set.getBoolean("allow_other_pets_eat");
-    this.allowWalkthrough = set.getBoolean("allow_walkthrough");
-    this.hideWall = set.getBoolean("allow_hidewall");
-    try { this.youtubeEnabled = set.getBoolean("youtube_enabled"); } catch (Exception e) { this.youtubeEnabled = false; }
-    try { this.soundboardEnabled = set.getBoolean("soundboard_enabled"); } catch (Exception e) { this.soundboardEnabled = false; }
-    this.chatMode = set.getInt("chat_mode");
-    this.chatWeight = set.getInt("chat_weight");
-    this.chatSpeed = set.getInt("chat_speed");
-    this.chatDistance = set.getInt("chat_hearing_distance");
-    this.chatProtection = set.getInt("chat_protection");
-    this.muteOption = set.getInt("who_can_mute");
-    this.kickOption = set.getInt("who_can_kick");
-    this.banOption = set.getInt("who_can_ban");
-    this.pollId = set.getInt("poll_id");
-    this.guild = set.getInt("guild_id");
-    this.rollerSpeed = set.getInt("roller_speed");
-    this.overrideModel = set.getString("override_model").equals("1");
-    this.layoutName = set.getString("model");
-    this.promoted = set.getString("promoted").equals("1");
-    this.jukeboxActive = set.getString("jukebox_active").equals("1");
-    this.hideWired = set.getString("hidewired").equals("1");
-    this.buildersClubTrialLocked = set.getBoolean("builders_club_trial_locked");
-
-    String buildersClubOriginalState = set.getString("builders_club_original_state");
-
-    if (buildersClubOriginalState != null && !buildersClubOriginalState.isEmpty()) {
-      try {
-        this.buildersClubOriginalState = RoomState.valueOf(buildersClubOriginalState.toUpperCase());
-      } catch (IllegalArgumentException e) {
-        this.buildersClubOriginalState = RoomState.OPEN;
-      }
-    } else {
-      this.buildersClubOriginalState = RoomState.OPEN;
-    }
+    RoomSnapshot.Initial initial = RoomSnapshot.readInitial(set);
+    this.id = initial.id();
+    this.ownerId = initial.ownerId();
+    this.ownerName = initial.ownerName();
+    this.name = initial.name();
+    this.description = initial.description();
+    this.password = initial.password();
+    this.state = initial.state();
+    this.usersMax = initial.usersMax();
+    this.score = initial.score();
+    this.category = initial.category();
+    this.floorPaint = initial.floorPaint();
+    this.wallPaint = initial.wallPaint();
+    this.backgroundPaint = initial.backgroundPaint();
+    this.wallSize = initial.wallSize();
+    this.wallHeight = initial.wallHeight();
+    this.floorSize = initial.floorSize();
+    this.tags = initial.tags();
+    this.publicRoom = initial.publicRoom();
+    this.staffPromotedRoom = initial.staffPromotedRoom();
+    this.allowPets = initial.allowPets();
+    this.allowPetsEat = initial.allowPetsEat();
+    this.allowWalkthrough = initial.allowWalkthrough();
+    this.hideWall = initial.hideWall();
+    this.youtubeEnabled = initial.youtubeEnabled();
+    this.soundboardEnabled = initial.soundboardEnabled();
+    this.chatMode = initial.chatMode();
+    this.chatWeight = initial.chatWeight();
+    this.chatSpeed = initial.chatSpeed();
+    this.chatDistance = initial.chatDistance();
+    this.chatProtection = initial.chatProtection();
+    this.muteOption = initial.muteOption();
+    this.kickOption = initial.kickOption();
+    this.banOption = initial.banOption();
+    this.pollId = initial.pollId();
+    this.guild = initial.guild();
+    this.rollerSpeed = initial.rollerSpeed();
+    this.overrideModel = initial.overrideModel();
+    this.layoutName = initial.layoutName();
+    this.promoted = initial.promoted();
+    this.jukeboxActive = initial.jukeboxActive();
+    this.hideWired = initial.hideWired();
+    this.buildersClubTrialLocked = initial.buildersClubTrialLocked();
+    this.buildersClubOriginalState = initial.buildersClubOriginalState();
 
     this.bannedHabbos = new Int2ObjectOpenHashMap<>();
 
@@ -319,16 +309,17 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
       LOGGER.error("Caught SQL exception", e);
     }
 
-    this.tradeMode = set.getInt("trade_mode");
-    this.moveDiagonally = set.getString("move_diagonally").equals("1");
-    this.allowUnderpass = set.getString("allow_underpass").equals("1");
+    RoomSnapshot snapshot = RoomSnapshot.complete(initial, set);
+    this.tradeMode = snapshot.postBanLoad().tradeMode();
+    this.moveDiagonally = snapshot.postBanLoad().moveDiagonally();
+    this.allowUnderpass = snapshot.postBanLoad().allowUnderpass();
 
     this.preLoaded = true;
     this.allowBotsWalk = true;
     this.allowEffects = true;
     this.moodlightData = new Int2ObjectOpenHashMap<>(defaultMoodData);
 
-    for (String s : set.getString("moodlight_data").split(";")) {
+    for (String s : snapshot.postBanLoad().moodlightData().split(";")) {
       RoomMoodlightData data = RoomMoodlightData.fromString(s);
       this.moodlightData.put(data.getId(), data);
     }

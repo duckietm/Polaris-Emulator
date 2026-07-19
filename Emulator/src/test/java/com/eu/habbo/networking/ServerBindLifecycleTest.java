@@ -49,6 +49,8 @@ class ServerBindLifecycleTest {
 
         String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
         assertTrue(finished, () -> "bind-failure probe did not terminate:\n" + output);
+        assertTrue(output.contains("ServerBindException"),
+                () -> "bind failure must surface a typed startup exception:\n" + output);
         assertNotEquals(0, process.exitValue(),
                 () -> "bind failure must terminate startup unsuccessfully:\n" + output);
     }

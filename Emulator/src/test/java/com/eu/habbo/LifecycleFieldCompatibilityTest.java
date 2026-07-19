@@ -44,6 +44,15 @@ class LifecycleFieldCompatibilityTest {
         assertPrivateMutableField("roomSpecialTypes", RoomSpecialTypes.class);
     }
 
+    @Test
+    void crossThreadControlFieldsAreVolatile() throws Exception {
+        assertVolatile(Emulator.class.getDeclaredField("isReady"));
+        assertVolatile(Emulator.class.getDeclaredField("isShuttingDown"));
+        assertVolatile(Emulator.class.getDeclaredField("stopped"));
+        assertVolatile(Room.class.getDeclaredField("layout"));
+        assertVolatile(Room.class.getDeclaredField("roomSpecialTypes"));
+    }
+
     private static void assertPublicStaticMutableBoolean(String name) throws Exception {
         Field field = Emulator.class.getDeclaredField(name);
         int modifiers = field.getModifiers();
@@ -62,5 +71,11 @@ class LifecycleFieldCompatibilityTest {
         assertTrue(Modifier.isPrivate(modifiers));
         assertFalse(Modifier.isStatic(modifiers));
         assertFalse(Modifier.isFinal(modifiers));
+    }
+
+    private static void assertVolatile(Field field) {
+        assertTrue(Modifier.isVolatile(field.getModifiers()),
+                () -> field.getDeclaringClass().getSimpleName() + "." + field.getName()
+                        + " must be volatile");
     }
 }

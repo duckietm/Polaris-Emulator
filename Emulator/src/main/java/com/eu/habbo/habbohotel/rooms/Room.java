@@ -762,7 +762,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     @Override
     public void loadPromotion() {
       try (Connection connection =
-                   Emulator.getDatabase().getDataSource().getConnection()) {
+                   Room.this.dependencies.database().openConnection()) {
         Room.this.promotionManager.loadPromotion(true, connection);
         Room.this.promotion = Room.this.promotionManager.getPromotion();
         Room.this.promoted =
@@ -822,7 +822,9 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
     @Override
     public boolean finish(long generation) {
-      Room.this.traxManager = new TraxManager(Room.this);
+      Room.this.traxManager = new TraxManager(
+              Room.this,
+              Room.this.dependencies.database());
 
       if (Room.this.jukeboxActive) {
         Room.this.traxManager.play(0);
@@ -870,7 +872,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
             String failureMessage,
             LoadWithConnection operation) {
       try (Connection connection =
-                   Emulator.getDatabase().getDataSource().getConnection()) {
+                   Room.this.dependencies.database().openConnection()) {
         operation.load(connection);
       } catch (Exception exception) {
         LOGGER.error(failureMessage, exception);

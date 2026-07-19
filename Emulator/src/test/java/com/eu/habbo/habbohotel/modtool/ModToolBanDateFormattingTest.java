@@ -27,4 +27,19 @@ class ModToolBanDateFormattingTest {
             ModToolBan.dateFormat = original;
         }
     }
+
+    @Test
+    void firstPartyBanFormattingDoesNotUseThePublicMutableFormatter() {
+        int timestamp = 1_700_000_000;
+        String expected = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+                .format(new Date(timestamp * 1000L));
+        SimpleDateFormat original = ModToolBan.dateFormat;
+        try {
+            ModToolBan.dateFormat = new SimpleDateFormat("ss");
+
+            assertEquals(expected, ModToolBan.formatTimestamp(timestamp));
+        } finally {
+            ModToolBan.dateFormat = original;
+        }
+    }
 }

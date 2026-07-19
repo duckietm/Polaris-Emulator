@@ -3,6 +3,7 @@ package com.eu.habbo.messages.outgoing.modtool;
 import org.junit.jupiter.api.Test;
 
 import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,6 +41,30 @@ class ModToolTimestampFormattingTest {
             ModToolUserChatlogComposer.format = userFormatter;
             ModToolIssueChatlogComposer.format = issueFormatter;
         }
+    }
+
+    @Test
+    void firstPartyChatFormattingDoesNotUsePublicMutableFormatters() {
+        SimpleDateFormat userFormatter = ModToolUserChatlogComposer.format;
+        SimpleDateFormat issueFormatter = ModToolIssueChatlogComposer.format;
+        try {
+            ModToolUserChatlogComposer.format = new SimpleDateFormat("ss");
+            ModToolIssueChatlogComposer.format = new SimpleDateFormat("ss");
+            String expected = format("HH:mm", TIMESTAMP);
+
+            assertEquals(expected, ModToolUserChatlogComposer.formatTimestamp(TIMESTAMP));
+            assertEquals(expected, ModToolIssueChatlogComposer.formatTimestamp(TIMESTAMP));
+        } finally {
+            ModToolUserChatlogComposer.format = userFormatter;
+            ModToolIssueChatlogComposer.format = issueFormatter;
+        }
+    }
+
+    @Test
+    void userInfoUsesAnImmutableFormatter() throws Exception {
+        assertEquals(
+                DateTimeFormatter.class,
+                ModToolUserInfoComposer.class.getDeclaredField("DATE_FORMAT").getType());
     }
 
     private static String format(String pattern, int timestamp) {

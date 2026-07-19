@@ -7,6 +7,7 @@ import com.eu.habbo.core.DatabaseLogger;
 import com.eu.habbo.core.Logging;
 import com.eu.habbo.core.TextsManager;
 import com.eu.habbo.database.Database;
+import com.eu.habbo.database.PersistenceExecutor;
 import com.eu.habbo.database.indexing.DatabaseIndexAuditor;
 import com.eu.habbo.database.integrity.DatabaseIntegrityAudit;
 import com.eu.habbo.database.integrity.IntegrityAuditOptions;
@@ -129,6 +130,9 @@ final class PolarisBootstrap {
 
         int runtimeThreads = configuration.getInt("runtime.threads");
         runtime.installThreading(new ThreadPooling(runtimeThreads));
+        runtime.installPersistenceExecutor(
+                PersistenceExecutor.forRuntimeThreads(
+                        runtimeThreads));
         Emulator.synchronizeLegacyFacade(runtime);
         database.getDataSource().setMaximumPoolSize(runtimeThreads * 2);
         database.getDataSource().setMinimumIdle(10);

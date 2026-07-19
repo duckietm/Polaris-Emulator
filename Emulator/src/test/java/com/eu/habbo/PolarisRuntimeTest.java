@@ -6,6 +6,7 @@ import com.eu.habbo.core.DatabaseLogger;
 import com.eu.habbo.core.Logging;
 import com.eu.habbo.core.TextsManager;
 import com.eu.habbo.database.Database;
+import com.eu.habbo.database.PersistenceExecutor;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.networking.gameserver.GameServer;
 import com.eu.habbo.networking.rconserver.RCONServer;
@@ -60,6 +61,11 @@ class PolarisRuntimeTest {
         services.put(
                 ThreadPooling.class,
                 service(runtime::installThreading, Emulator::getThreading));
+        services.put(
+                PersistenceExecutor.class,
+                service(
+                        runtime::installPersistenceExecutor,
+                        Emulator::getPersistenceExecutor));
         services.put(
                 GameEnvironment.class,
                 service(

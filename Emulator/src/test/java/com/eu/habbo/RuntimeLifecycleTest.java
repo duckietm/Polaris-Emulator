@@ -2,6 +2,7 @@ package com.eu.habbo;
 
 import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.database.Database;
+import com.eu.habbo.database.PersistenceExecutor;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.networking.gameserver.GameServer;
 import com.eu.habbo.networking.rconserver.RCONServer;
@@ -38,6 +39,8 @@ class RuntimeLifecycleTest {
         GameServer gameServer = mock(GameServer.class);
         RCONServer rconServer = mock(RCONServer.class);
         ThreadPooling threading = mock(ThreadPooling.class);
+        PersistenceExecutor persistence =
+                mock(PersistenceExecutor.class);
         GameEnvironment environment = mock(GameEnvironment.class);
         PluginManager plugins = mock(PluginManager.class);
 
@@ -77,6 +80,10 @@ class RuntimeLifecycleTest {
             return null;
         }).when(threading).shutDown();
         doAnswer(invocation -> {
+            calls.add("persistence.shutdown");
+            return null;
+        }).when(persistence).shutDown();
+        doAnswer(invocation -> {
             calls.add("configuration.save");
             return null;
         }).when(configuration).saveToDatabase();
@@ -88,6 +95,7 @@ class RuntimeLifecycleTest {
         runtime.installConfiguration(configuration);
         runtime.installDatabase(database);
         runtime.installThreading(threading);
+        runtime.installPersistenceExecutor(persistence);
         runtime.installPluginManager(plugins);
         runtime.installGameEnvironment(environment);
         runtime.installGameServer(gameServer);
@@ -106,6 +114,7 @@ class RuntimeLifecycleTest {
                 "plugins.after-hotel",
                 "plugins.dispose",
                 "threading.shutdown",
+                "persistence.shutdown",
                 "configuration.save",
                 "database.dispose"), calls);
     }

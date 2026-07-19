@@ -92,6 +92,11 @@ final class RuntimeLifecycle {
                     "stop scheduler",
                     () -> services.threading().shutDown());
         }
+        if (services.persistenceExecutor() != null) {
+            run(
+                    "drain persistence executor",
+                    () -> services.persistenceExecutor().shutDown());
+        }
         run("save configuration", () -> {
             if (canPersistConfiguration()) {
                 services.configuration().saveToDatabase();

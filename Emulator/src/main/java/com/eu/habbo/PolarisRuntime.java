@@ -6,6 +6,7 @@ import com.eu.habbo.core.DatabaseLogger;
 import com.eu.habbo.core.Logging;
 import com.eu.habbo.core.TextsManager;
 import com.eu.habbo.database.Database;
+import com.eu.habbo.database.PersistenceExecutor;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.networking.gameserver.GameServer;
 import com.eu.habbo.networking.rconserver.RCONServer;
@@ -33,6 +34,7 @@ final class PolarisRuntime {
     private RCONServer rconServer;
     private Logging logging;
     private ThreadPooling threading;
+    private PersistenceExecutor persistenceExecutor;
     private GameEnvironment gameEnvironment;
     private PluginManager pluginManager;
     private BadgeImager badgeImager;
@@ -115,6 +117,16 @@ final class PolarisRuntime {
 
     void installThreading(ThreadPooling threading) {
         this.threading = Objects.requireNonNull(threading);
+    }
+
+    PersistenceExecutor persistenceExecutor() {
+        return persistenceExecutor;
+    }
+
+    void installPersistenceExecutor(
+            PersistenceExecutor persistenceExecutor) {
+        this.persistenceExecutor =
+                Objects.requireNonNull(persistenceExecutor);
     }
 
     GameEnvironment gameEnvironment() {

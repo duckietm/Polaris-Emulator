@@ -6,6 +6,7 @@ import ch.qos.logback.core.ConsoleAppender;
 import com.eu.habbo.core.*;
 import com.eu.habbo.core.consolecommands.ConsoleCommand;
 import com.eu.habbo.database.Database;
+import com.eu.habbo.database.PersistenceExecutor;
 import com.eu.habbo.database.integrity.DatabaseIntegrityAudit;
 import com.eu.habbo.database.integrity.IntegrityAuditOptions;
 import com.eu.habbo.database.migration.MigrationRunner;
@@ -629,6 +630,13 @@ public final class Emulator {
         return polarisRuntime != null && polarisRuntime.threading() != null
                 ? polarisRuntime.threading()
                 : threading;
+    }
+
+    public static PersistenceExecutor getPersistenceExecutor() {
+        return polarisRuntime != null
+                && polarisRuntime.persistenceExecutor() != null
+                ? polarisRuntime.persistenceExecutor()
+                : null;
     }
 
     public static GameEnvironment getGameEnvironment() {

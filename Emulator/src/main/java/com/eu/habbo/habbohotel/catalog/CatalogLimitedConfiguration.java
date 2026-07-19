@@ -11,6 +11,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.LinkedList;
+import java.util.OptionalInt;
 
 public class CatalogLimitedConfiguration implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(CatalogLimitedConfiguration.class);
@@ -23,11 +24,25 @@ public class CatalogLimitedConfiguration implements Runnable {
     private int soldOutFromPageId = 0;
 
     public CatalogLimitedConfiguration(int itemId, LinkedList<Integer> availableNumbers, int totalSet) {
+        this(
+                itemId,
+                availableNumbers,
+                totalSet,
+                Emulator.getConfig().getBoolean("catalog.ltd.random", true)
+        );
+    }
+
+    CatalogLimitedConfiguration(
+            int itemId,
+            LinkedList<Integer> availableNumbers,
+            int totalSet,
+            boolean randomize
+    ) {
         this.itemId = itemId;
         this.totalSet = totalSet;
         this.limitedNumbers = availableNumbers;
 
-        if (Emulator.getConfig().getBoolean("catalog.ltd.random", true)) {
+        if (randomize) {
             Collections.shuffle(this.limitedNumbers);
         } else {
             Collections.reverse(this.limitedNumbers);
@@ -37,6 +52,12 @@ public class CatalogLimitedConfiguration implements Runnable {
     public int getNumber() {
         synchronized (this.limitedNumbers) {
             return this.limitedNumbers.pop();
+        }
+    }
+
+    OptionalInt pollNumber() {
+        synchronized (this.limitedNumbers) {
+            return OptionalInt.of(this.limitedNumbers.pop());
         }
     }
 

@@ -62,6 +62,9 @@ class GameClientOutgoingPacketCompatibilityTest {
 
     @Test
     void singleResponsePublishesTheExactPacketEventBeforeWriting() {
+        org.mockito.Mockito.when(this.pluginManager.isRegistered(
+                OutgoingPacketEvent.class,
+                false)).thenReturn(true);
         ServerMessage response = new ServerMessage(100);
 
         this.client.sendResponse(response);
@@ -75,6 +78,9 @@ class GameClientOutgoingPacketCompatibilityTest {
 
     @Test
     void cancellationSuppressesTheResponse() {
+        org.mockito.Mockito.when(this.pluginManager.isRegistered(
+                OutgoingPacketEvent.class,
+                false)).thenReturn(true);
         doAnswer(invocation -> {
             OutgoingPacketEvent event = invocation.getArgument(0);
             event.setCancelled(true);
@@ -89,6 +95,9 @@ class GameClientOutgoingPacketCompatibilityTest {
 
     @Test
     void batchResponsesApplyReplacementAndCancellationPerPacket() {
+        org.mockito.Mockito.when(this.pluginManager.isRegistered(
+                OutgoingPacketEvent.class,
+                false)).thenReturn(true);
         ServerMessage first = new ServerMessage(100);
         ServerMessage second = new ServerMessage(101);
         ServerMessage replacement = new ServerMessage(102);

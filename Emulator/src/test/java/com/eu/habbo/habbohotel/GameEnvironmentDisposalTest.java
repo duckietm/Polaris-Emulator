@@ -2,14 +2,16 @@ package com.eu.habbo.habbohotel;
 
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class GameEnvironmentDisposalTest {
 
@@ -34,16 +36,30 @@ class GameEnvironmentDisposalTest {
     }
 
     @Test
-    void roomsAreQuiescedBeforeTheRoomSavePassAndBotsAreDisposed() throws Exception {
-        String source = Files.readString(Path.of(
-                "src/main/java/com/eu/habbo/habbohotel/GameEnvironment.java"
-        ));
-        int quiesce = source.indexOf("this.roomManager.quiesceRoomCycles()");
-        int rooms = source.indexOf("this.roomManager.dispose()");
-        int bots = source.indexOf("this.botManager.dispose()");
+    void roomsAreQuiescedBeforeTheRoomSavePassAndBotsAreDisposed()
+            throws Exception {
+        GameEnvironment environment = new GameEnvironment();
+        com.eu.habbo.habbohotel.rooms.RoomManager rooms =
+                mock(com.eu.habbo.habbohotel.rooms.RoomManager.class);
+        com.eu.habbo.habbohotel.bots.BotManager bots =
+                mock(com.eu.habbo.habbohotel.bots.BotManager.class);
+        setField(environment, "roomManager", rooms);
+        setField(environment, "botManager", bots);
 
-        assertTrue(quiesce >= 0);
-        assertTrue(rooms > quiesce);
-        assertTrue(bots >= 0);
+        environment.dispose();
+
+        var order = inOrder(rooms);
+        order.verify(rooms).quiesceRoomCycles();
+        order.verify(rooms).dispose();
+        verify(bots).dispose();
+    }
+
+    private static void setField(
+            GameEnvironment environment,
+            String name,
+            Object value) throws Exception {
+        Field field = GameEnvironment.class.getDeclaredField(name);
+        field.setAccessible(true);
+        field.set(environment, value);
     }
 }

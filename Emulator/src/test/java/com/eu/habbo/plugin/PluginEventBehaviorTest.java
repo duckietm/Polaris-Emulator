@@ -75,6 +75,23 @@ class PluginEventBehaviorTest {
         assertEquals(List.of("completed"), calls);
     }
 
+    @Test
+    void legacyDirectRegistrationMutationsTakeEffectWithoutManagerRegistration() throws Exception {
+        List<String> calls = new ArrayList<>();
+        PluginManager manager = new PluginManager();
+        RecordingPlugin plugin = new RecordingPlugin(calls);
+        manager.getPlugins().add(plugin);
+        Method method = RecordingPlugin.class.getMethod("onDirectEvent", TestEvent.class);
+
+        plugin.registeredEvents.put(TestEvent.class, new HashSet<>(Set.of(method)));
+        manager.fireEvent(new TestEvent());
+
+        plugin.registeredEvents.get(TestEvent.class).clear();
+        manager.fireEvent(new TestEvent());
+
+        assertEquals(List.of("plugin"), calls);
+    }
+
     @SuppressWarnings("unchecked")
     private static Set<Method> defaultMethods(PluginManager manager) throws Exception {
         Field field = PluginManager.class.getDeclaredField("methods");
@@ -121,6 +138,10 @@ class PluginEventBehaviorTest {
 
         @EventHandler
         public void onEvent(TestEvent event) {
+            calls.add("plugin");
+        }
+
+        public void onDirectEvent(TestEvent event) {
             calls.add("plugin");
         }
     }

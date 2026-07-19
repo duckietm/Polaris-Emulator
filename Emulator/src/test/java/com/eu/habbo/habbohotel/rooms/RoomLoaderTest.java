@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -68,6 +69,29 @@ class RoomLoaderTest {
                 "wired",
                 "reset-idle",
                 "finish:19"), operations.calls);
+    }
+
+    @Test
+    void recordsLoadDurationPublicationAndFailureCount() {
+        RecordingOperations operations = new RecordingOperations();
+        operations.failItems = true;
+        List<RoomLoadMeasurement> measurements = new ArrayList<>();
+        long[] times = {100L, 175L};
+        AtomicInteger timeIndex = new AtomicInteger();
+        RoomLoader loader = new RoomLoader(
+                operations,
+                () -> Runnable::run,
+                () -> times[timeIndex.getAndIncrement()],
+                measurements::add);
+
+        loader.load(20);
+
+        assertEquals(List.of(new RoomLoadMeasurement(
+                41,
+                20,
+                75L,
+                1,
+                true)), measurements);
     }
 
     private static final class RecordingOperations
@@ -154,6 +178,10 @@ class RoomLoaderTest {
         @Override
         public void reportFailure(String message, Exception exception) {
             this.calls.add("failure:" + message);
+        }
+
+        public int roomId() {
+            return 41;
         }
     }
 }

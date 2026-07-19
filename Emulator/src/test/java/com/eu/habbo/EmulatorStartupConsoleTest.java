@@ -19,6 +19,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EmulatorStartupConsoleTest {
     @Test
+    void consoleInputStopsCleanlyAtEndOfFile() throws Exception {
+        List<String> commands = new ArrayList<>();
+        ByteArrayOutputStream outputBytes = new ByteArrayOutputStream();
+
+        boolean keepRunning;
+        try (BufferedReader reader = new BufferedReader(new StringReader(""));
+             PrintStream output = new PrintStream(outputBytes, true, StandardCharsets.UTF_8)) {
+            keepRunning = Emulator.processConsoleInput(reader, commands::add, output);
+        }
+
+        assertFalse(keepRunning);
+        assertTrue(commands.isEmpty());
+        assertEquals("", outputBytes.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
     void consoleInputDispatchesCommandAndKeepsLoopRunning() throws Exception {
         List<String> commands = new ArrayList<>();
         ByteArrayOutputStream outputBytes = new ByteArrayOutputStream();

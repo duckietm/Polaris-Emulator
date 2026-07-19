@@ -1130,7 +1130,14 @@ public class CatalogManager {
                 if (totalPoints > habbo.getHabboInfo().getCurrencyAmount(item.getPointsType()))
                     return;
 
-                if (limitedConfiguration != null) limitedNumber = limitedConfiguration.getNumber();
+                if (limitedConfiguration != null) {
+                    OptionalInt limitedNumberReservation = limitedConfiguration.pollNumber();
+                    if (limitedNumberReservation.isEmpty()) {
+                        habbo.getClient().sendResponse(new AlertLimitedSoldOutComposer());
+                        return;
+                    }
+                    limitedNumber = limitedNumberReservation.getAsInt();
+                }
 
                 if (this.isAtomicEntitlementPurchase(item)) {
                     this.purchaseEntitlementsAtomically(item, habbo, amount, free, totalCredits, totalPoints);

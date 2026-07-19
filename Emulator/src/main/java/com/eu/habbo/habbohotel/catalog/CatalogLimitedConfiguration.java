@@ -57,7 +57,8 @@ public class CatalogLimitedConfiguration implements Runnable {
 
     OptionalInt pollNumber() {
         synchronized (this.limitedNumbers) {
-            return OptionalInt.of(this.limitedNumbers.pop());
+            Integer number = this.limitedNumbers.pollFirst();
+            return number == null ? OptionalInt.empty() : OptionalInt.of(number);
         }
     }
 
@@ -163,7 +164,9 @@ public class CatalogLimitedConfiguration implements Runnable {
     }
 
     public int available() {
-        return this.limitedNumbers.size();
+        synchronized (this.limitedNumbers) {
+            return this.limitedNumbers.size();
+        }
     }
 
     public int getTotalSet() {

@@ -80,6 +80,8 @@ class MigrationRunnerIT {
             // The engine conversion took effect.
             assertEquals("InnoDB", tableEngine(ds, "marketplace_items"),
                     "marketplace_items must be InnoDB after migration");
+            assertEquals("InnoDB", tableEngine(ds, "users_currency"),
+                    "wallet currency rows must support ledger transaction rollback");
 
             // The dynamic Arc permissions conversion must produce usable Polaris
             // rows, not merely empty marker tables.

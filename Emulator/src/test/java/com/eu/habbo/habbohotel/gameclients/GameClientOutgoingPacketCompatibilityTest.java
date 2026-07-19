@@ -6,8 +6,10 @@ import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.ServerMessageFrame;
 import com.eu.habbo.plugin.PluginManager;
 import com.eu.habbo.plugin.events.emulator.OutgoingPacketEvent;
-import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
+import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +37,7 @@ class GameClientOutgoingPacketCompatibilityTest {
     private Object originalCrypto;
     private Object originalPluginManager;
     private PluginManager pluginManager;
+    private FlushCountingHandler flushCounter;
     private EmbeddedChannel channel;
     private GameClient client;
 
@@ -52,7 +55,9 @@ class GameClientOutgoingPacketCompatibilityTest {
                 new CryptoConfig(false, "", "", ""));
         this.pluginManager = mock(PluginManager.class);
         this.pluginManagerField.set(null, this.pluginManager);
-        this.channel = new EmbeddedChannel();
+        this.flushCounter = new FlushCountingHandler();
+        this.channel = new EmbeddedChannel(
+                this.flushCounter);
         this.client = new GameClient(this.channel);
     }
 
@@ -158,6 +163,24 @@ class GameClientOutgoingPacketCompatibilityTest {
     }
 
     @Test
+    void singleResponseFlushesImmediately() {
+        this.client.sendResponse(
+                new ServerMessage(100));
+
+        assertEquals(1, this.flushCounter.flushes);
+    }
+
+    @Test
+    void responseBatchUsesOneFlush() {
+        this.client.sendResponses(new ArrayList<>(
+                java.util.List.of(
+                        new ServerMessage(100),
+                        new ServerMessage(101))));
+
+        assertEquals(1, this.flushCounter.flushes);
+    }
+
+    @Test
     void preparedBroadcastWritesTheSharedFrameWithoutSubscribers() {
         ServerMessage response =
                 new ServerMessage(100);
@@ -225,5 +248,17 @@ class GameClientOutgoingPacketCompatibilityTest {
         Field field = Emulator.class.getDeclaredField(name);
         field.setAccessible(true);
         return field;
+    }
+
+    private static final class FlushCountingHandler
+            extends ChannelOutboundHandlerAdapter {
+        private int flushes;
+
+        @Override
+        public void flush(ChannelHandlerContext context)
+                throws Exception {
+            this.flushes++;
+            context.flush();
+        }
     }
 }

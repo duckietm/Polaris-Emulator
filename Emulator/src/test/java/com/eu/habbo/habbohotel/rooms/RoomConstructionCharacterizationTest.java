@@ -150,6 +150,43 @@ class RoomConstructionCharacterizationTest {
         assertEquals(1, Room.class.getConstructors().length);
     }
 
+    @Test
+    void packagePrivateSeamBuildsAUsableRoomWithoutGlobalBootstrap() throws Exception {
+        setEmulatorField("database", null);
+        setEmulatorField("config", null);
+
+        Room room = new Room(41, 7);
+
+        assertEquals(41, room.getId());
+        assertEquals(7, room.getOwnerId());
+        assertNotNull(room.getTileManager());
+        assertNotNull(room.getGameManager());
+        assertNotNull(room.getTradeManager());
+        assertNotNull(room.getPromotionManager());
+        assertNotNull(room.getWordQuizManager());
+        assertNotNull(room.getRightsManager());
+        assertNotNull(room.getUnitManager());
+        assertNotNull(room.getItemManager());
+        assertNotNull(room.getChatManager());
+        assertNotNull(room.getRollerManager());
+        assertNotNull(room.getMessagingManager());
+        assertNotNull(room.getCycleManager());
+        assertNotNull(room.getUserVariableManager());
+        assertNotNull(room.getFurniVariableManager());
+        assertNotNull(room.getRoomVariableManager());
+        assertSame(room.getGames(), room.getGames());
+        assertSame(room.getCurrentHabbos(), room.getCurrentHabbos());
+        assertSame(room.getFurniOwnerNames(), room.getFurniOwnerNames());
+        assertSame(room.getFurniOwnerCount(), room.getFurniOwnerCount());
+        assertSame(room.getWordFilterWords(), room.getWordFilterWords());
+    }
+
+    private static void setEmulatorField(String name, Object value) throws Exception {
+        Field field = Emulator.class.getDeclaredField(name);
+        field.setAccessible(true);
+        field.set(null, value);
+    }
+
     private static Database databaseUsing(HikariDataSource dataSource) throws Exception {
         Constructor<Database> constructor =
                 Database.class.getDeclaredConstructor(HikariDataSource.class);

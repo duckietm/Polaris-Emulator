@@ -11,6 +11,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.FixedRecvByteBufAllocator;
 import io.netty.channel.MultiThreadIoEventLoopGroup;
+import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
@@ -22,6 +23,9 @@ import java.util.concurrent.TimeUnit;
 public abstract class Server {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Server.class);
+    private static final int DEFAULT_WRITE_BUFFER_LOW_WATER_MARK = 32 * 1024;
+    private static final int DEFAULT_WRITE_BUFFER_HIGH_WATER_MARK = 64 * 1024;
+    private static final int DEFAULT_UNWRITABLE_TIMEOUT_SECONDS = 10;
 
     private static volatile ByteBufAllocator sharedAllocator;
 
@@ -79,6 +83,47 @@ public abstract class Server {
         this.serverBootstrap.childOption(ChannelOption.SO_RCVBUF, 4096);
         this.serverBootstrap.childOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(4096));
         this.serverBootstrap.childOption(ChannelOption.ALLOCATOR, allocator());
+        this.serverBootstrap.childOption(
+                ChannelOption.WRITE_BUFFER_WATER_MARK, configuredWriteBufferWaterMark());
+    }
+
+    protected static WriteBufferWaterMark configuredWriteBufferWaterMark() {
+        int low = DEFAULT_WRITE_BUFFER_LOW_WATER_MARK;
+        int high = DEFAULT_WRITE_BUFFER_HIGH_WATER_MARK;
+        if (Emulator.getConfig() != null) {
+            low = Emulator.getConfig().getInt(
+                    "io.netty.write_buffer.low_water_mark", low);
+            high = Emulator.getConfig().getInt(
+                    "io.netty.write_buffer.high_water_mark", high);
+        }
+
+        if (low < 0 || high <= low) {
+            LOGGER.warn(
+                    "Invalid Netty write-buffer water marks low={} high={}; using defaults low={} high={}",
+                    low,
+                    high,
+                    DEFAULT_WRITE_BUFFER_LOW_WATER_MARK,
+                    DEFAULT_WRITE_BUFFER_HIGH_WATER_MARK);
+            low = DEFAULT_WRITE_BUFFER_LOW_WATER_MARK;
+            high = DEFAULT_WRITE_BUFFER_HIGH_WATER_MARK;
+        }
+        return new WriteBufferWaterMark(low, high);
+    }
+
+    protected static int configuredUnwritableTimeoutSeconds() {
+        int timeout = Emulator.getConfig() == null
+                ? DEFAULT_UNWRITABLE_TIMEOUT_SECONDS
+                : Emulator.getConfig().getInt(
+                        "io.netty.unwritable.timeout.seconds",
+                        DEFAULT_UNWRITABLE_TIMEOUT_SECONDS);
+        if (timeout <= 0) {
+            LOGGER.warn(
+                    "Invalid Netty unwritable timeout {}; using default {} seconds",
+                    timeout,
+                    DEFAULT_UNWRITABLE_TIMEOUT_SECONDS);
+            return DEFAULT_UNWRITABLE_TIMEOUT_SECONDS;
+        }
+        return timeout;
     }
 
     public void connect() {

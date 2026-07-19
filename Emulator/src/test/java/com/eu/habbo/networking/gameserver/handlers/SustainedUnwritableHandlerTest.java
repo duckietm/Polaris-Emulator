@@ -56,6 +56,24 @@ class SustainedUnwritableHandlerTest {
         channel.finishAndReleaseAll();
     }
 
+    @Test
+    void repeatedRecoveryCyclesDoNotLeaveAStaleCloseTask() {
+        EmbeddedChannel channel = channelWithTimeout(5);
+
+        for (int cycle = 0; cycle < 1_000; cycle++) {
+            setWritable(channel, false);
+            channel.advanceTimeBy(1, TimeUnit.MILLISECONDS);
+            channel.runScheduledPendingTasks();
+            setWritable(channel, true);
+        }
+
+        channel.advanceTimeBy(5, TimeUnit.SECONDS);
+        channel.runScheduledPendingTasks();
+
+        assertTrue(channel.isOpen());
+        channel.finishAndReleaseAll();
+    }
+
     private static EmbeddedChannel channelWithTimeout(long seconds) {
         return new EmbeddedChannel(new SustainedUnwritableHandler(seconds, TimeUnit.SECONDS));
     }

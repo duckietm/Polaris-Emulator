@@ -9,6 +9,7 @@ import com.eu.habbo.networking.gameserver.decoders.*;
 import com.eu.habbo.networking.gameserver.encoders.GameServerMessageEncoder;
 import com.eu.habbo.networking.gameserver.encoders.GameServerMessageLogger;
 import com.eu.habbo.networking.gameserver.handlers.IdleTimeoutHandler;
+import com.eu.habbo.networking.gameserver.handlers.SustainedUnwritableHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
@@ -23,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 public class GameServer extends Server {
     private static final Logger LOGGER = LoggerFactory.getLogger(GameServer.class);
@@ -47,6 +49,10 @@ public class GameServer extends Server {
             @Override
             public void initChannel(SocketChannel ch) throws Exception {
                 ch.pipeline().addLast("logger", new LoggingHandler());
+                ch.pipeline().addLast(
+                        "outboundBackpressure",
+                        new SustainedUnwritableHandler(
+                                configuredUnwritableTimeoutSeconds(), TimeUnit.SECONDS));
 
                 // Decoders.
                 ch.pipeline().addLast(new GamePolicyDecoder());
@@ -81,7 +87,8 @@ public class GameServer extends Server {
         String wsHost = Emulator.getConfig().getValue("ws.host", "0.0.0.0");
         int wsPort = Emulator.getConfig().getInt("ws.port", 2096);
 
-        WebSocketChannelInitializer wsInitializer = new WebSocketChannelInitializer();
+        WebSocketChannelInitializer wsInitializer =
+                new WebSocketChannelInitializer(configuredUnwritableTimeoutSeconds());
 
         this.webSocketBootstrap = new ServerBootstrap();
         this.webSocketBootstrap.group(this.getBossGroup(), this.getWorkerGroup());
@@ -92,6 +99,8 @@ public class GameServer extends Server {
         this.webSocketBootstrap.childOption(ChannelOption.SO_RCVBUF, 4096);
         this.webSocketBootstrap.childOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(4096));
         this.webSocketBootstrap.childOption(ChannelOption.ALLOCATOR, allocator());
+        this.webSocketBootstrap.childOption(
+                ChannelOption.WRITE_BUFFER_WATER_MARK, configuredWriteBufferWaterMark());
         this.webSocketBootstrap.childHandler(wsInitializer);
 
         ChannelFuture wsFuture = this.webSocketBootstrap.bind(wsHost, wsPort);

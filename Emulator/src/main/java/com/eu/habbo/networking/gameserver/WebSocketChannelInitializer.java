@@ -13,6 +13,7 @@ import com.eu.habbo.networking.gameserver.decoders.*;
 import com.eu.habbo.networking.gameserver.encoders.GameServerMessageEncoder;
 import com.eu.habbo.networking.gameserver.encoders.GameServerMessageLogger;
 import com.eu.habbo.networking.gameserver.handlers.IdleTimeoutHandler;
+import com.eu.habbo.networking.gameserver.handlers.SustainedUnwritableHandler;
 import com.eu.habbo.networking.gameserver.handlers.WebSocketHttpHandler;
 import com.eu.habbo.networking.gameserver.stats.EmuStatsHttpHandler;
 import com.eu.habbo.networking.gameserver.ssl.SSLCertificateLoader;
@@ -30,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLEngine;
+import java.util.concurrent.TimeUnit;
 
 public class WebSocketChannelInitializer extends ChannelInitializer<SocketChannel> {
     private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketChannelInitializer.class);
@@ -38,8 +40,17 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
     private final SslContext sslContext;
     private final boolean sslEnabled;
     private final WebSocketServerProtocolConfig wsConfig;
+    private final int unwritableTimeoutSeconds;
 
     public WebSocketChannelInitializer() {
+        this(10);
+    }
+
+    WebSocketChannelInitializer(int unwritableTimeoutSeconds) {
+        if (unwritableTimeoutSeconds <= 0) {
+            throw new IllegalArgumentException("unwritableTimeoutSeconds must be positive");
+        }
+        this.unwritableTimeoutSeconds = unwritableTimeoutSeconds;
         this.sslContext = SSLCertificateLoader.getContext();
         this.sslEnabled = this.sslContext != null;
         this.wsConfig = WebSocketServerProtocolConfig.newBuilder()
@@ -52,6 +63,10 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
     @Override
     protected void initChannel(SocketChannel ch) {
         ch.pipeline().addLast("logger", new LoggingHandler());
+        ch.pipeline().addLast(
+                "outboundBackpressure",
+                new SustainedUnwritableHandler(
+                        this.unwritableTimeoutSeconds, TimeUnit.SECONDS));
 
         if (this.sslEnabled) {
             SSLEngine engine = this.sslContext.newEngine(ch.alloc());

@@ -44,6 +44,19 @@ class HabboInfoCreditCompatibilityTest {
         assertEquals(4, info.saveCount);
     }
 
+    @Test
+    void committedLedgerBalanceUpdatesMemoryWithoutRunningLegacyPersistence() {
+        RecordingHabboInfo info = new RecordingHabboInfo(100);
+
+        info.applyPersistedCredits(275);
+
+        assertEquals(275, info.getCredits());
+        assertEquals(0, info.saveCount);
+        assertThrows(IllegalArgumentException.class, () -> info.applyPersistedCredits(-1));
+        assertEquals(275, info.getCredits());
+        assertEquals(0, info.saveCount);
+    }
+
     private static final class RecordingHabboInfo extends HabboInfo {
         private int saveCount;
 

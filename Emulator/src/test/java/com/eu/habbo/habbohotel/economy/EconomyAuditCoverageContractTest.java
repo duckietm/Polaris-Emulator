@@ -55,4 +55,23 @@ class EconomyAuditCoverageContractTest {
         assertTrue(housekeepingCredits.contains("\"housekeeping.user.give_credits\""));
         assertTrue(housekeepingCurrency.contains("\"housekeeping.user.give_currency\""));
     }
+
+    @Test
+    void firstPartyCodeDoesNotUseLegacyDirectCreditMutators() throws Exception {
+        Set<String> callers = new HashSet<>();
+        try (var paths = Files.walk(SOURCES)) {
+            for (Path path : paths.filter(file -> file.toString().endsWith(".java")).toList()) {
+                if (path.getFileName().toString().equals("HabboInfo.java")) {
+                    continue;
+                }
+                String source = Files.readString(path);
+                if (source.contains(".addCredits(") || source.contains(".setCredits(")) {
+                    callers.add(SOURCES.relativize(path).toString());
+                }
+            }
+        }
+
+        assertEquals(Set.of(), callers,
+                "first-party credit changes must use explicit ledger operations or committed-balance publication");
+    }
 }

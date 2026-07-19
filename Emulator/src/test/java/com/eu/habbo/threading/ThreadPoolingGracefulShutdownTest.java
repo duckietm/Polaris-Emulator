@@ -1,6 +1,10 @@
 package com.eu.habbo.threading;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,6 +17,7 @@ import java.util.concurrent.TimeoutException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -114,5 +119,26 @@ class ThreadPoolingGracefulShutdownTest {
                 "tasks must finish before their database dependency is closed");
         assertTrue(stoppedLog > databaseShutdown,
                 "the emulator must only report stopped after dependencies are closed");
+    }
+
+    @Test
+    void rejectedDelayedShutdownTaskIsReported() {
+        ThreadPooling pooling = new ThreadPooling(1);
+        Logger logger = (Logger) LoggerFactory.getLogger(ThreadPooling.class);
+        ListAppender<ILoggingEvent> events = new ListAppender<>();
+        events.start();
+        logger.addAppender(events);
+
+        try {
+            pooling.setCanAdd(false);
+
+            assertNull(pooling.run(() -> { }, 500));
+            assertTrue(events.list.stream()
+                    .anyMatch(event -> event.getFormattedMessage()
+                            .contains("Rejected delayed task during shutdown")));
+        } finally {
+            logger.detachAppender(events);
+            pooling.getService().shutdownNow();
+        }
     }
 }

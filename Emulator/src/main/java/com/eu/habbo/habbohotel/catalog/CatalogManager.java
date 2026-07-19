@@ -530,7 +530,7 @@ public class CatalogManager {
     }
 
     private synchronized void loadCatalogFeaturedPages() {
-        this.catalogFeaturedPages.clear();
+        Int2ObjectMap<CatalogFeaturedPage> loadedFeaturedPages = new Int2ObjectOpenHashMap<>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 Statement statement = connection.createStatement();
@@ -552,6 +552,8 @@ public class CatalogManager {
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
         }
+
+        this.replaceFeaturedPages(loadedFeaturedPages);
     }
 
     private synchronized void loadCatalogItems() {
@@ -680,8 +682,7 @@ public class CatalogManager {
     }
 
     private void loadTargetOffers() {
-        synchronized (this.targetOffers) {
-            this.targetOffers.clear();
+        Map<Integer, TargetOffer> loadedTargetOffers = new HashMap<>();
 
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                     PreparedStatement statement = connection.prepareStatement(
@@ -692,10 +693,12 @@ public class CatalogManager {
                         this.targetOffers.put(set.getInt("id"), new TargetOffer(set));
                     }
                 }
-            } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
             }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
         }
+
+        replaceContents(this.targetOffers, loadedTargetOffers);
     }
 
     private void loadVouchers() {
@@ -723,23 +726,54 @@ public class CatalogManager {
                 while (set.next()) {
                     Item item = Emulator.getGameEnvironment().getItemManager().getItem(set.getInt("item_id"));
 
-                    if (item != null) {
-                        if (this.prizes.get(set.getInt("rarity")) == null) {
-                            this.prizes.put(set.getInt("rarity"), new HashSet<>());
-                        }
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery("SELECT * FROM recycler_prizes")) {
+            while (set.next()) {
+                Item item = Emulator.getGameEnvironment().getItemManager().getItem(set.getInt("item_id"));
 
-                        this.prizes.get(set.getInt("rarity")).add(item);
-                    } else {
-                        LOGGER.error("Cannot load item with ID: {} as recycler reward!", set.getInt("item_id"));
+                if (item != null) {
+                    if (loadedPrizes.get(set.getInt("rarity")) == null) {
+                        loadedPrizes.put(set.getInt("rarity"), new HashSet<>());
                     }
+
+                    loadedPrizes.get(set.getInt("rarity")).add(item);
+                } else {
+                    LOGGER.error("Cannot load item with ID: {} as recycler reward!", set.getInt("item_id"));
                 }
-            } catch (SQLException e) {
-                LOGGER.error("Caught SQL exception", e);
             }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
         }
+
+        replaceContents(this.prizes, loadedPrizes);
     }
 
     public void loadGiftWrappers() {
+        Map<Integer, Integer> loadedGiftWrappers = new HashMap<>();
+        Map<Integer, Integer> loadedGiftFurnis = new HashMap<>();
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery("SELECT * FROM gift_wrappers ORDER BY sprite_id DESC")) {
+            while (set.next()) {
+                switch (set.getString("type")) {
+                    case "wrapper":
+                        loadedGiftWrappers.put(set.getInt("sprite_id"), set.getInt("item_id"));
+                        break;
+
+                    case "gift":
+                        loadedGiftFurnis.put(set.getInt("sprite_id"), set.getInt("item_id"));
+                        break;
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+
+        this.replaceGiftWrapping(loadedGiftWrappers, loadedGiftFurnis);
+    }
+
+    void replaceGiftWrapping(
+            Map<Integer, Integer> loadedGiftWrappers,
+            Map<Integer, Integer> loadedGiftFurnis
+    ) {
         synchronized (this.giftWrappers) {
             synchronized (this.giftFurnis) {
                 this.giftWrappers.clear();
@@ -768,8 +802,7 @@ public class CatalogManager {
     }
 
     private void loadClothing() {
-        synchronized (this.clothing) {
-            this.clothing.clear();
+        Map<Integer, ClothItem> loadedClothing = new HashMap<>();
 
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                     Statement statement = connection.createStatement();
@@ -780,13 +813,19 @@ public class CatalogManager {
             } catch (SQLException e) {
                 LOGGER.error("Caught SQL exception", e);
             }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
         }
+
+        replaceContents(this.clothing, loadedClothing);
     }
 
     public ClothItem getClothing(String name) {
-        for (ClothItem item : this.clothing.values()) {
-            if (item.name.equalsIgnoreCase(name)) {
-                return item;
+        synchronized (this.clothing) {
+            for (ClothItem item : this.clothing.values()) {
+                if (item.name.equalsIgnoreCase(name)) {
+                    return item;
+                }
             }
         }
 
@@ -1008,6 +1047,7 @@ public class CatalogManager {
             LOGGER.error("No rewards specified for rarity level {}", level);
         }
 
+        LOGGER.error("No rewards specified for rarity level {}", level);
         return null;
     }
 
@@ -2415,7 +2455,23 @@ public class CatalogManager {
     }
 
     public TargetOffer getTargetOffer(int offerId) {
-        return this.targetOffers.get(offerId);
+        synchronized (this.targetOffers) {
+            return this.targetOffers.get(offerId);
+        }
+    }
+
+    void replaceFeaturedPages(Int2ObjectMap<CatalogFeaturedPage> loadedFeaturedPages) {
+        synchronized (this.catalogFeaturedPages) {
+            this.catalogFeaturedPages.clear();
+            this.catalogFeaturedPages.putAll(loadedFeaturedPages);
+        }
+    }
+
+    static <K, V> void replaceContents(Map<K, V> target, Map<K, V> loaded) {
+        synchronized (target) {
+            target.clear();
+            target.putAll(loaded);
+        }
     }
 
     private int calculateDiscountedPrice(int originalPrice, int amount, CatalogItem item) {

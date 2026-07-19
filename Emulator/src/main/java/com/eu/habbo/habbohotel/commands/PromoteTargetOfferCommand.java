@@ -27,7 +27,8 @@ public class PromoteTargetOfferCommand extends Command {
         String offerKey = params[1];
 
         if (offerKey.equalsIgnoreCase(Emulator.getTexts().getValue("commands.cmd_promote_offer.info"))) {
-            Map<Integer, TargetOffer> targetOffers = Emulator.getGameEnvironment().getCatalogManager().targetOffers;
+            Map<Integer, TargetOffer> targetOffers = Emulator.getGameEnvironment().getCatalogManager()
+                    .getTargetOffersSnapshot();
             String[] textConfig = Emulator.getTexts().getValue("commands.cmd_promote_offer.list").replace("%amount%", targetOffers.size() + "").split("<br>");
 
             String entryConfig = Emulator.getTexts().getValue("commands.cmd_promote_offer.list.entry");

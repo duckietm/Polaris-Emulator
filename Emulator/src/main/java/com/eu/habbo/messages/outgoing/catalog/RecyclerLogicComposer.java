@@ -13,8 +13,10 @@ public class RecyclerLogicComposer extends MessageComposer {
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.RecyclerLogicComposer);
-        this.response.appendInt(Emulator.getGameEnvironment().getCatalogManager().prizes.size());
-        for (Map.Entry<Integer, Set<Item>> map : Emulator.getGameEnvironment().getCatalogManager().prizes.entrySet()) {
+        Map<Integer, Set<Item>> prizes = Emulator.getGameEnvironment().getCatalogManager()
+                .getRecyclerPrizesSnapshot();
+        this.response.appendInt(prizes.size());
+        for (Map.Entry<Integer, Set<Item>> map : prizes.entrySet()) {
             this.response.appendInt(map.getKey());
             this.response.appendInt(Integer.valueOf(Emulator.getConfig().getValue("hotel.ecotron.rarity.chance." + map.getKey())));
             this.response.appendInt(map.getValue().size());

@@ -104,8 +104,12 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                     return;
                 }
 
-                if (!Emulator.getGameEnvironment().getCatalogManager().giftWrappers.containsKey(spriteId)
-                        && !Emulator.getGameEnvironment().getCatalogManager().giftFurnis.containsKey(spriteId)) {
+                CatalogManager.GiftWrappingSnapshot giftWrapping =
+                        Emulator.getGameEnvironment().getCatalogManager().getGiftWrappingSnapshot();
+                Map<Integer, Integer> giftWrappers = giftWrapping.wrappers();
+                Map<Integer, Integer> giftFurniture = giftWrapping.furniture();
+
+                if (!giftWrappers.containsKey(spriteId) && !giftFurniture.containsKey(spriteId)) {
                     LOGGER.debug("invalid spriteId for gift wrapper/furni -> {}", spriteId);
                     this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
                     return;
@@ -117,10 +121,10 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                     return;
                 }
 
-                Integer iItemId = Emulator.getGameEnvironment().getCatalogManager().giftWrappers.get(spriteId);
+                Integer iItemId = giftWrappers.get(spriteId);
 
                 if (iItemId == null) {
-                    iItemId = Emulator.getGameEnvironment().getCatalogManager().giftFurnis.get(spriteId);
+                    iItemId = giftFurniture.get(spriteId);
                 }
 
                 if (iItemId == null) {
@@ -133,11 +137,12 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
 
                 if (giftItem == null) {
                     LOGGER.debug("direct giftItem null, trying random fallback. iItemId={}", iItemId);
-                    giftItem = Emulator.getGameEnvironment().getItemManager().getItem(
-                            (Integer) Emulator.getGameEnvironment().getCatalogManager().giftFurnis.values().toArray()[
-                                    Emulator.getRandom().nextInt(Emulator.getGameEnvironment().getCatalogManager().giftFurnis.size())
-                                    ]
-                    );
+                    Object[] giftFurnitureIds = giftFurniture.values().toArray();
+                    if (giftFurnitureIds.length > 0) {
+                        giftItem = Emulator.getGameEnvironment().getItemManager().getItem(
+                                (Integer) giftFurnitureIds[Emulator.getRandom().nextInt(giftFurnitureIds.length)]
+                        );
+                    }
 
                     if (giftItem == null) {
                         LOGGER.debug("fallback giftItem also null");
@@ -230,7 +235,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                     }
 
                     // Paid wrapping (giftWrappers) costs hotel.gifts.special.price; default furni wrap is free.
-                    boolean isPaidWrap = Emulator.getGameEnvironment().getCatalogManager().giftWrappers.containsKey(spriteId);
+                    boolean isPaidWrap = giftWrappers.containsKey(spriteId);
                     int wrapFee = isPaidWrap ? Emulator.getConfig().getInt("hotel.gifts.special.price", 0) : 0;
                     int totalCredits;
                     int totalPoints;

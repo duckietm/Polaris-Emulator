@@ -5,11 +5,15 @@ import com.eu.habbo.crypto.HabboEncryption;
 import com.eu.habbo.habbohotel.LatencyTracker;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
+import com.eu.habbo.messages.ServerMessageFrame;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.MessageComposer;
+import com.eu.habbo.monitoring.EmulatorNetworkStats;
 import com.eu.habbo.plugin.PluginManager;
 import com.eu.habbo.plugin.events.emulator.OutgoingPacketEvent;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.util.ReferenceCountUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,17 +119,21 @@ public class GameClient {
             }
 
             PluginManager plugins = Emulator.getPluginManager();
+            boolean eventsRegistered = plugins.isRegistered(
+                    OutgoingPacketEvent.class,
+                    false);
             response = this.applyOutgoingPacketEvent(
                     response,
                     plugins,
-                    plugins.isRegistered(
-                            OutgoingPacketEvent.class,
-                            false));
+                    eventsRegistered);
             if (response == null) {
                 return;
             }
 
-            this.channel.write(response, this.channel.voidPromise());
+            this.writeResponse(
+                    response,
+                    !eventsRegistered,
+                    true);
             this.channel.flush();
         }
     }
@@ -149,7 +157,10 @@ public class GameClient {
                     continue;
                 }
 
-                this.channel.write(response);
+                this.writeResponse(
+                        response,
+                        !eventsRegistered,
+                        false);
             }
 
             this.channel.flush();
@@ -175,6 +186,40 @@ public class GameClient {
         return event.hasCustomMessage()
                 ? event.getCustomMessage()
                 : response;
+    }
+
+    private void writeResponse(
+            ServerMessage response,
+            boolean sharedBroadcastAllowed,
+            boolean useVoidPromise) {
+        if (!sharedBroadcastAllowed
+                || !ServerMessageFrame.isBroadcastPrepared(response)) {
+            if (useVoidPromise) {
+                this.channel.write(
+                        response,
+                        this.channel.voidPromise());
+            } else {
+                this.channel.write(response);
+            }
+            return;
+        }
+
+        ByteBuf frame =
+                ServerMessageFrame.retainedDuplicate(response);
+        try {
+            EmulatorNetworkStats.recordOutgoing(
+                    frame.readableBytes());
+            if (useVoidPromise) {
+                this.channel.write(
+                        frame,
+                        this.channel.voidPromise());
+            } else {
+                this.channel.write(frame);
+            }
+        } catch (RuntimeException | Error exception) {
+            ReferenceCountUtil.safeRelease(frame);
+            throw exception;
+        }
     }
 	
 	public void sendKeepAlive() {

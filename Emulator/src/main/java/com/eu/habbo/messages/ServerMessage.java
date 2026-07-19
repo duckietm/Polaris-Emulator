@@ -17,6 +17,8 @@ public class ServerMessage {
     private ByteBufOutputStream stream;
     private ByteBuf channelBuffer;
     private MessageComposer composer;
+    private volatile boolean broadcastPrepared;
+    private int framedWriterIndex = -1;
 
     public ServerMessage() {
 
@@ -177,10 +179,33 @@ public class ServerMessage {
         return this.header;
     }
 
-    public ByteBuf get() {
-        this.channelBuffer.setInt(0, this.channelBuffer.writerIndex() - 4);
-
+    public synchronized ByteBuf get() {
+        this.frameLength();
         return this.channelBuffer.copy();
+    }
+
+    synchronized void prepareBroadcast() {
+        this.broadcastPrepared = true;
+        this.frameLength();
+    }
+
+    synchronized ByteBuf retainedDuplicateForBroadcast() {
+        this.frameLength();
+        return this.channelBuffer.retainedDuplicate();
+    }
+
+    boolean isBroadcastPrepared() {
+        return this.broadcastPrepared;
+    }
+
+    private void frameLength() {
+        int writerIndex = this.channelBuffer.writerIndex();
+        if (this.framedWriterIndex == writerIndex) {
+            return;
+        }
+
+        this.channelBuffer.setInt(0, writerIndex - 4);
+        this.framedWriterIndex = writerIndex;
     }
 
     public MessageComposer getComposer() {

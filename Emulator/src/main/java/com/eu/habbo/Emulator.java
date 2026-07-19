@@ -51,6 +51,7 @@ public final class Emulator {
     private static final String ANSI_GREEN = "\u001B[32m";
     private static final String ANSI_YELLOW = "\u001B[33m";
     private static final String ANSI_DIM = "\u001B[2m";
+    private static final int DEFAULT_RUNTIME_THREADS = 8;
 
     // Fallback version, only used when running outside a packaged jar (e.g. from
     // the IDE). In production the version comes from the jar manifest below.
@@ -181,11 +182,9 @@ public final class Emulator {
             Emulator.databaseLogger = new DatabaseLogger();
             Emulator.config.loaded = true;
             Emulator.config.loadFromDatabase();
+            registerStartupConfigDefaults();
             int runtimeThreads = runtimeThreadCount(Emulator.getConfig());
             Emulator.threading = new ThreadPooling(runtimeThreads);
-            Emulator.getDatabase().getDataSource().setMaximumPoolSize(runtimeThreads * 2);
-            Emulator.getDatabase().getDataSource().setMinimumIdle(10);
-            registerStartupConfigDefaults();
             Emulator.pluginManager = new PluginManager();
             Emulator.pluginManager.reload();
             Emulator.getPluginManager().fireEvent(new EmulatorConfigUpdatedEvent());
@@ -435,10 +434,17 @@ public final class Emulator {
     }
 
     static int runtimeThreadCount(ConfigurationManager config) {
-        return config.getInt("runtime.threads");
+        int configuredThreads = config.getInt("runtime.threads", DEFAULT_RUNTIME_THREADS);
+        if (configuredThreads > 0) {
+            return configuredThreads;
+        }
+
+        LOGGER.warn("Invalid runtime.threads value {}; using {}.", configuredThreads, DEFAULT_RUNTIME_THREADS);
+        return DEFAULT_RUNTIME_THREADS;
     }
 
     private static void registerStartupConfigDefaults() {
+        Emulator.config.register("runtime.threads", Integer.toString(DEFAULT_RUNTIME_THREADS));
         Emulator.config.register("camera.url", "http://localhost/camera/");
         Emulator.config.register("imager.location.output.camera", "/public/camera/");
         Emulator.config.register("imager.location.output.thumbnail", "/public/camera/thumbnails/");

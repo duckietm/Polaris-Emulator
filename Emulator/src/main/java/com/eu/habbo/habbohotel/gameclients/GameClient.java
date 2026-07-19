@@ -134,7 +134,7 @@ public class GameClient {
                     response,
                     !eventsRegistered,
                     true);
-            this.channel.flush();
+            this.flushResponseWrites();
         }
     }
 
@@ -163,7 +163,7 @@ public class GameClient {
                         false);
             }
 
-            this.channel.flush();
+            this.flushResponseWrites();
         }
     }
 
@@ -219,6 +219,13 @@ public class GameClient {
         } catch (RuntimeException | Error exception) {
             ReferenceCountUtil.safeRelease(frame);
             throw exception;
+        }
+    }
+
+    private void flushResponseWrites() {
+        if (!GameClientFlushBatch.deferFlush(
+                this.channel)) {
+            this.channel.flush();
         }
     }
 	

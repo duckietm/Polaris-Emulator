@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.rooms;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.bots.Bot;
+import com.eu.habbo.habbohotel.gameclients.GameClientFlushBatch;
 import com.eu.habbo.habbohotel.items.ICycleable;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.pets.Pet;
@@ -50,6 +51,13 @@ public class RoomCycleManager {
     }
 
     public void cycle() {
+        try (GameClientFlushBatch ignored =
+                     GameClientFlushBatch.open()) {
+            this.cycleWithCoalescedFlushes();
+        }
+    }
+
+    private void cycleWithCoalescedFlushes() {
         this.cycleOdd = !this.cycleOdd;
         this.cycleTimestamp = System.currentTimeMillis();
         final boolean[] foundRightHolder = {false};

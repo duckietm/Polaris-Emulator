@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -176,6 +177,46 @@ class GameClientOutgoingPacketCompatibilityTest {
                 java.util.List.of(
                         new ServerMessage(100),
                         new ServerMessage(101))));
+
+        assertEquals(1, this.flushCounter.flushes);
+    }
+
+    @Test
+    void flushBatchWritesAndPublishesEventsBeforeOneClosingFlush() {
+        org.mockito.Mockito.when(this.pluginManager.isRegistered(
+                OutgoingPacketEvent.class,
+                false)).thenReturn(true);
+        ServerMessage first = new ServerMessage(100);
+        ServerMessage second = new ServerMessage(101);
+
+        try (GameClientFlushBatch ignored =
+                     GameClientFlushBatch.open()) {
+            this.client.sendResponse(first);
+            this.client.sendResponse(second);
+
+            assertEquals(0, this.flushCounter.flushes);
+            verify(this.pluginManager, times(2)).fireEvent(
+                    any(OutgoingPacketEvent.class));
+        }
+
+        assertEquals(1, this.flushCounter.flushes);
+        assertSame(first, this.channel.readOutbound());
+        assertSame(second, this.channel.readOutbound());
+    }
+
+    @Test
+    void flushBatchClosesAndFlushesWhenSendingFails() {
+        assertThrows(
+                IllegalStateException.class,
+                () -> {
+                    try (GameClientFlushBatch ignored =
+                                 GameClientFlushBatch.open()) {
+                        this.client.sendResponse(
+                                new ServerMessage(100));
+                        throw new IllegalStateException(
+                                "expected");
+                    }
+                });
 
         assertEquals(1, this.flushCounter.flushes);
     }

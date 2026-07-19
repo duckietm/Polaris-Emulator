@@ -13,7 +13,12 @@ class NumericConfigurationParserTest {
     void parsesSemicolonDelimitedIntegerArray() {
         assertArrayEquals(
                 new int[]{40, 99},
-                NumericConfigurationParser.parseIntArray("40;99", ";")
+                NumericConfigurationParser.parseIntArray(
+                        "40;99",
+                        ";",
+                        new int[]{1},
+                        "discount.additional.thresholds"
+                )
         );
     }
 
@@ -21,7 +26,12 @@ class NumericConfigurationParserTest {
     void parsesCommaDelimitedIntegerList() {
         assertEquals(
                 List.of(0, 2, 8),
-                NumericConfigurationParser.parseIntList("0,2,8", ",")
+                NumericConfigurationParser.parseIntList(
+                        "0,2,8",
+                        ",",
+                        List.of(1),
+                        "hotel.gifts.box_types"
+                )
         );
     }
 }

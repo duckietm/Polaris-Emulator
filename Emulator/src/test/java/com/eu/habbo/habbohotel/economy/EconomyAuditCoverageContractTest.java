@@ -76,4 +76,17 @@ class EconomyAuditCoverageContractTest {
         assertEquals(Set.of(), callers,
                 "first-party credit changes must use explicit ledger operations or committed-balance publication");
     }
+
+    @Test
+    void catalogPaymentReservationsUseAuditedLedgerMutations() throws Exception {
+        String service = Files.readString(SOURCES.resolve(
+                "com/eu/habbo/habbohotel/catalog/CatalogPaymentService.java"));
+
+        assertTrue(service.contains("EconomyLedger.apply(connection"),
+                "catalog payment reservations and refunds must be durable ledger operations");
+        assertTrue(service.contains("LedgerWalletMutation.applyCommitted("),
+                "online balances must publish the committed ledger result without a second snapshot save");
+        assertTrue(!service.contains(".tryDebitCatalogPayment("));
+        assertTrue(!service.contains(".refundCatalogPayment("));
+    }
 }

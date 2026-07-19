@@ -76,26 +76,33 @@ public class RoomManager {
     private final ArrayList<Class<? extends Game>> gameTypes;
 
     public RoomManager() {
+        this(true);
+    }
+
+    RoomManager(boolean initialize) {
         long millis = System.currentTimeMillis();
         this.roomCategories = new HashMap<>();
         this.mapNames = new ArrayList<>();
         this.layoutCache = new ConcurrentHashMap<>();
         this.activeRooms = new ConcurrentHashMap<>();
         this.roomsByOwner = new ConcurrentHashMap<>();
-        this.loadRoomCategories();
-        this.loadRoomModels();
 
         this.gameTypes = new ArrayList<>();
 
-        registerGameType(BattleBanzaiGame.class);
-        registerGameType(FreezeGame.class);
-        registerGameType(WiredGame.class);
-        registerGameType(FootballGame.class);
-        registerGameType(BunnyrunGame.class);
-        registerGameType(IceTagGame.class);
-        registerGameType(RollerskateGame.class);
+        if (initialize) {
+            this.loadRoomCategories();
+            this.loadRoomModels();
 
-        LOGGER.info("Room Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
+            registerGameType(BattleBanzaiGame.class);
+            registerGameType(FreezeGame.class);
+            registerGameType(WiredGame.class);
+            registerGameType(FootballGame.class);
+            registerGameType(BunnyrunGame.class);
+            registerGameType(IceTagGame.class);
+            registerGameType(RollerskateGame.class);
+
+            LOGGER.info("Room Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
+        }
     }
 
     private void trackRoomOwner(Room room) {
@@ -110,6 +117,11 @@ public class RoomManager {
                 this.roomsByOwner.remove(room.getOwnerId());
             }
         }
+    }
+
+    void registerActiveRoom(Room room) {
+        this.activeRooms.put(room.getId(), room);
+        this.trackRoomOwner(room);
     }
 
     public void loadRoomModels() {
@@ -162,8 +174,7 @@ public class RoomManager {
                 while (set.next()) {
                     Room room = new Room(set);
                     room.preventUncaching = true;
-                    this.activeRooms.put(set.getInt("id"), room);
-                    this.trackRoomOwner(room);
+                    this.registerActiveRoom(room);
                 }
             }
         } catch (SQLException e) {
@@ -393,8 +404,7 @@ public class RoomManager {
                 while (set.next()) {
                     if (!this.activeRooms.containsKey(set.getInt("id"))) {
                         Room room = new Room(set);
-                        this.activeRooms.put(room.getId(), room);
-                        this.trackRoomOwner(room);
+                        this.registerActiveRoom(room);
                     }
                 }
             }

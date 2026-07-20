@@ -71,4 +71,11 @@ class ReleasePipelineContractTest {
                 "target_commitish: ${{ steps.commit.outputs.release_sha }}"
         ));
     }
+
+    @Test
+    void releaseVersionCommitUsesConventionalCommitFormat() throws Exception {
+        String workflow = Files.readString(RELEASE_WORKFLOW);
+
+        assertTrue(workflow.contains("git commit -m \"chore(release): bump version to "));
+    }
 }

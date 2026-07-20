@@ -42,7 +42,7 @@ jobs:
           build-mode: manual
 
       - name: Build
-        run: mvn -B -DskipTests package
+        run: ./mvnw -B -DskipTests package
 
       - name: Analyze
         uses: github/codeql-action/analyze@v4

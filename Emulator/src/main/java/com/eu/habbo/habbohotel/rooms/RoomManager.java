@@ -63,6 +63,43 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class RoomManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomManager.class);
+    private static final String PUBLIC_ROOMS_SQL = """
+            SELECT id, owner_id, owner_name, name, description, password, state,
+                   users_max, score, category, paper_floor, paper_wall,
+                   paper_landscape, thickness_wall, wall_height, thickness_floor,
+                   tags, is_public, is_staff_picked, allow_other_pets,
+                   allow_other_pets_eat, allow_walkthrough, allow_hidewall,
+                   youtube_enabled, soundboard_enabled, chat_mode, chat_weight,
+                   chat_speed, chat_hearing_distance, chat_protection,
+                   who_can_mute, who_can_kick, who_can_ban, poll_id, guild_id,
+                   roller_speed, override_model, model, promoted, jukebox_active,
+                   hidewired, builders_club_trial_locked,
+                   builders_club_original_state, trade_mode, move_diagonally,
+                   allow_underpass, moodlight_data
+            FROM rooms
+            WHERE is_public = ? OR is_staff_picked = ? ORDER BY id DESC
+            """;
+    private static final String ROOM_IDS_BY_OWNER_NAME_SQL = """
+            SELECT id
+            FROM rooms
+            WHERE owner_name = ? ORDER BY id DESC LIMIT 25
+            """;
+    private static final String ROOMS_BY_OWNER_ID_SQL = """
+            SELECT id, owner_id, owner_name, name, description, password, state,
+                   users_max, score, category, paper_floor, paper_wall,
+                   paper_landscape, thickness_wall, wall_height, thickness_floor,
+                   tags, is_public, is_staff_picked, allow_other_pets,
+                   allow_other_pets_eat, allow_walkthrough, allow_hidewall,
+                   youtube_enabled, soundboard_enabled, chat_mode, chat_weight,
+                   chat_speed, chat_hearing_distance, chat_protection,
+                   who_can_mute, who_can_kick, who_can_ban, poll_id, guild_id,
+                   roller_speed, override_model, model, promoted, jukebox_active,
+                   hidewired, builders_club_trial_locked,
+                   builders_club_original_state, trade_mode, move_diagonally,
+                   allow_underpass, moodlight_data
+            FROM rooms
+            WHERE owner_id = ?
+            """;
 
     private static final int page = 0;
     //Configuration. Loaded from database & updated accordingly.
@@ -236,7 +273,7 @@ public class RoomManager {
     }
 
     public void loadPublicRooms() {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM rooms WHERE is_public = ? OR is_staff_picked = ? ORDER BY id DESC")) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement(PUBLIC_ROOMS_SQL)) {
             statement.setString(1, "1");
             statement.setString(2, "1");
             try (ResultSet set = statement.executeQuery()) {
@@ -360,7 +397,7 @@ public class RoomManager {
 
         List<Room> rooms = new ArrayList<>();
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM rooms WHERE owner_name = ? ORDER BY id DESC LIMIT 25")) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement(ROOM_IDS_BY_OWNER_NAME_SQL)) {
             statement.setString(1, username);
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
@@ -465,7 +502,7 @@ public class RoomManager {
     }
 
     public void loadRoomsForHabbo(Habbo habbo) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM rooms WHERE owner_id = ?")) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement(ROOMS_BY_OWNER_ID_SQL)) {
             statement.setInt(1, habbo.getHabboInfo().getId());
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {

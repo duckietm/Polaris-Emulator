@@ -36,6 +36,17 @@ import java.util.Set;
 
 public class MarketPlace {
     private static final Logger LOGGER = LoggerFactory.getLogger(MarketPlace.class);
+    private static final String PURCHASE_OFFER_SQL = """
+            SELECT item_id, user_id, price, state
+            FROM marketplace_items
+            WHERE id = ? LIMIT 1
+            """;
+    private static final String PURCHASE_ITEM_SQL = """
+            SELECT id, user_id, room_id, item_id, wall_pos, x, y, z, rot,
+                   extra_data, wired_data, limited_data, guild_id
+            FROM items
+            WHERE id = ? LIMIT 1
+            """;
     public static final int MINIMUM_LISTING_PRICE = 1;
     public static final int MAXIMUM_LISTING_PRICE = 1_000_000_000;
 
@@ -273,11 +284,11 @@ public class MarketPlace {
     public static void buyItem(int offerId, GameClient client) {
         RequestOffersEvent.cachedResults.clear();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-            try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM marketplace_items WHERE id = ? LIMIT 1")) {
+            try (PreparedStatement statement = connection.prepareStatement(PURCHASE_OFFER_SQL)) {
                 statement.setInt(1, offerId);
                 try (ResultSet set = statement.executeQuery()) {
                     if (set.next()) {
-                        try (PreparedStatement itemStatement = connection.prepareStatement("SELECT * FROM items WHERE id = ? LIMIT 1", ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
+                        try (PreparedStatement itemStatement = connection.prepareStatement(PURCHASE_ITEM_SQL, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
                             itemStatement.setInt(1, set.getInt("item_id"));
                             try (ResultSet itemSet = itemStatement.executeQuery()) {
                                 itemSet.first();

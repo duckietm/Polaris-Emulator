@@ -94,11 +94,11 @@ class HotQueryProjectionCoverageTest {
             String suffix,
             Set<String> required) {
         Pattern query = Pattern.compile(
-                "SELECT\\s+([^\"\\n]+?)\\s+FROM\\s+"
+                "SELECT\\s+([^\"]+?)\\s+FROM\\s+"
                         + Pattern.quote(table)
                         + "\\s+"
                         + suffix,
-                Pattern.CASE_INSENSITIVE);
+                Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
         Matcher matcher = query.matcher(source);
         assertTrue(matcher.find(), "Missing hot query for " + table);
 

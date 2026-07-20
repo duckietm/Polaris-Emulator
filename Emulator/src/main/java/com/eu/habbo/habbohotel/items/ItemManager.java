@@ -107,6 +107,17 @@ import java.util.*;
 public class ItemManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ItemManager.class);
+    private static final String BASE_ITEMS_SQL = """
+            SELECT id, sprite_id, public_name, item_name, type, width, length,
+                   stack_height, allow_stack, allow_sit, allow_lay, allow_walk,
+                   allow_gift, allow_trade, allow_recycle,
+                   allow_marketplace_sell, allow_inventory_stack,
+                   interaction_type, interaction_modes_count, vending_ids,
+                   multiheight, customparams, effect_id_male, effect_id_female,
+                   clothing_on_walk
+            FROM items_base
+            ORDER BY id DESC
+            """;
 
     //Configuration. Loaded from database & updated accordingly.
     public static boolean RECYCLER_ENABLED = true;
@@ -728,7 +739,7 @@ public class ItemManager {
         try (
                 Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 Statement statement = connection.createStatement();
-                ResultSet set = statement.executeQuery(("SELECT * FROM items_base ORDER BY id DESC"))
+                ResultSet set = statement.executeQuery(BASE_ITEMS_SQL)
         ) {
             while (set.next()) {
                 try {

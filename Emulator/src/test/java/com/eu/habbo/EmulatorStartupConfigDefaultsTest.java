@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class EmulatorStartupConfigDefaultsTest {
 
@@ -33,5 +34,17 @@ class EmulatorStartupConfigDefaultsTest {
         assertTrue(defaultsMethod > 0, "startup defaults helper must exist");
         assertTrue(guiEnabled > defaultsMethod, "gui.enabled must be registered by startup defaults");
         assertTrue(guiAutostart > defaultsMethod, "gui.autostart.enabled must be registered by startup defaults");
+    }
+
+    @Test
+    void bootstrapDoesNotOverrideOperatorDatabasePoolSizing()
+            throws Exception {
+        String source = Files.readString(Path.of(
+                "src/main/java/com/eu/habbo/PolarisBootstrap.java"));
+
+        assertFalse(source.contains(
+                "database.getDataSource().setMaximumPoolSize"));
+        assertFalse(source.contains(
+                "database.getDataSource().setMinimumIdle"));
     }
 }

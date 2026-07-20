@@ -31,7 +31,9 @@ public class CatalogBuyItemEvent extends MessageHandler {
             }
 
             CatalogPurchaseCommand command = CatalogPurchaseCommandReader.readFrom(this.packet);
-            new CatalogPurchaseApplicationService(this.client).purchase(command);
+            new CatalogPurchaseApplicationService(
+                            this.client, Emulator.getGameEnvironment(), Emulator.getTexts(), Emulator.getThreading())
+                    .purchase(command);
             return;
         }
 

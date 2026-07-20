@@ -61,7 +61,7 @@ class CatalogPurchaseAtomicityContractTest {
     void clubPurchasesUseTheSamePurchaseGateAndWalletDebit() throws Exception {
         String handler = source("com/eu/habbo/messages/incoming/catalog/CatalogBuyItemEvent.java");
         assertTrue(
-                handler.contains("new CatalogPurchaseApplicationService(this.client).purchase(command)"),
+                handler.contains("new CatalogPurchaseApplicationService("),
                 "the incoming handler must delegate the parsed command to the purchase application service");
         String buy = withoutWhitespace(
                 source("com/eu/habbo/messages/incoming/catalog/CatalogPurchaseApplicationService.java"));

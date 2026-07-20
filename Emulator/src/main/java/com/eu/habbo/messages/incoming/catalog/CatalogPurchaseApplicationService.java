@@ -3,7 +3,8 @@ package com.eu.habbo.messages.incoming.catalog;
 import static com.eu.habbo.messages.incoming.catalog.CheckPetNameEvent.PET_NAME_LENGTH_MAXIMUM;
 import static com.eu.habbo.messages.incoming.catalog.CheckPetNameEvent.PET_NAME_LENGTH_MINIMUM;
 
-import com.eu.habbo.Emulator;
+import com.eu.habbo.core.TextsManager;
+import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.bots.BotManager;
 import com.eu.habbo.habbohotel.catalog.CatalogItem;
 import com.eu.habbo.habbohotel.catalog.CatalogManager;
@@ -39,6 +40,7 @@ import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.navigator.CanCreateRoomComposer;
 import com.eu.habbo.messages.outgoing.users.AddUserBadgeComposer;
+import com.eu.habbo.threading.ThreadPooling;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
@@ -46,9 +48,16 @@ import org.apache.commons.lang3.StringUtils;
 final class CatalogPurchaseApplicationService {
 
     private final GameClient client;
+    private final GameEnvironment environment;
+    private final TextsManager texts;
+    private final ThreadPooling threading;
 
-    CatalogPurchaseApplicationService(GameClient client) {
+    CatalogPurchaseApplicationService(
+            GameClient client, GameEnvironment environment, TextsManager texts, ThreadPooling threading) {
         this.client = client;
+        this.environment = environment;
+        this.texts = texts;
+        this.threading = threading;
     }
 
     void purchase(CatalogPurchaseCommand command) {
@@ -61,7 +70,7 @@ final class CatalogPurchaseApplicationService {
             if (this.client.getHabbo().getInventory().getItemsComponent().itemCount() > HabboInventory.MAXIMUM_ITEMS) {
                 this.client.sendResponse(
                         new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
-                this.client.getHabbo().alert(Emulator.getTexts().getValue("inventory.full"));
+                this.client.getHabbo().alert(this.texts.getValue("inventory.full"));
                 return;
             }
         } catch (Exception e) {
@@ -69,7 +78,7 @@ final class CatalogPurchaseApplicationService {
                     new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
         }
 
-        CatalogManager catalogManager = Emulator.getGameEnvironment().getCatalogManager();
+        CatalogManager catalogManager = this.environment.getCatalogManager();
         CatalogPage page = new CatalogPurchasePageResolver(catalogManager)
                 .resolve(
                         command,
@@ -114,7 +123,7 @@ final class CatalogPurchaseApplicationService {
                     this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
                     return;
                 }
-                int roomCount = Emulator.getGameEnvironment()
+                int roomCount = this.environment
                         .getRoomManager()
                         .getRoomsForHabbo(this.client.getHabbo())
                         .size();
@@ -154,7 +163,7 @@ final class CatalogPurchaseApplicationService {
                                     .getBadgesComponent()
                                     .hasBadge(i.getName())) {
                                 HabboBadge badge = new HabboBadge(0, i.getName(), 0, this.client.getHabbo());
-                                Emulator.getThreading().run(badge);
+                                this.threading.run(badge);
                                 this.client
                                         .getHabbo()
                                         .getInventory()
@@ -164,8 +173,7 @@ final class CatalogPurchaseApplicationService {
                                 Map<String, String> keys = new HashMap<>();
                                 keys.put("display", "BUBBLE");
                                 keys.put("image", "${image.library.url}album1584/" + badge.getCode() + ".gif");
-                                keys.put(
-                                        "message", Emulator.getTexts().getValue("commands.generic.cmd_badge.received"));
+                                keys.put("message", this.texts.getValue("commands.generic.cmd_badge.received"));
                                 this.client.sendResponse(
                                         new BubbleAlertComposer(BubbleAlertKeys.RECEIVED_BADGE.key, keys));
                             }
@@ -196,10 +204,7 @@ final class CatalogPurchaseApplicationService {
             }
 
             try {
-                ClubOffer item = Emulator.getGameEnvironment()
-                        .getCatalogManager()
-                        .clubOffers
-                        .get(itemId);
+                ClubOffer item = this.environment.getCatalogManager().clubOffers.get(itemId);
 
                 if (item == null || !item.belongsToWindow(this.getClubOfferWindowId(page))) {
                     this.client.sendResponse(
@@ -315,7 +320,7 @@ final class CatalogPurchaseApplicationService {
                         >= BotManager.MAXIMUM_BOT_INVENTORY_SIZE) {
             this.client
                     .getHabbo()
-                    .alert(Emulator.getTexts()
+                    .alert(this.texts
                             .getValue("error.bots.max.inventory")
                             .replace("%amount%", BotManager.MAXIMUM_BOT_INVENTORY_SIZE + ""));
             return;
@@ -332,7 +337,7 @@ final class CatalogPurchaseApplicationService {
                             >= PetManager.MAXIMUM_PET_INVENTORY_SIZE) {
                 this.client
                         .getHabbo()
-                        .alert(Emulator.getTexts()
+                        .alert(this.texts
                                 .getValue("error.pets.max.inventory")
                                 .replace("%amount%", PetManager.MAXIMUM_PET_INVENTORY_SIZE + ""));
                 return;
@@ -346,9 +351,7 @@ final class CatalogPurchaseApplicationService {
             }
         }
 
-        Emulator.getGameEnvironment()
-                .getCatalogManager()
-                .purchaseItem(page, item, this.client.getHabbo(), count, extraData, false);
+        this.environment.getCatalogManager().purchaseItem(page, item, this.client.getHabbo(), count, extraData, false);
     }
 
     private boolean isClubOfferPage(CatalogPage page) {

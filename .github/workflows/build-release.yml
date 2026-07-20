@@ -37,11 +37,11 @@ jobs:
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
           NEW="$MAJOR.$MINOR.$((PATCH + 1))"
           echo "New version: $NEW"
-          mvn -B versions:set -DnewVersion="$NEW" -DgenerateBackupPoms=false
+          ./mvnw -B versions:set -DnewVersion="$NEW" -DgenerateBackupPoms=false
           echo "new_version=$NEW" >> "$GITHUB_OUTPUT"
 
       - name: Build JAR
-        run: mvn -B clean package -DskipTests
+        run: ./mvnw -B clean package -DskipTests
 
       - name: Generate SHA-256 checksum
         run: |

@@ -38,7 +38,7 @@ class QualityRatchetContractTest {
         assertTrue(workflow.contains("github/codeql-action/init@v4"));
         assertTrue(workflow.contains("languages: java-kotlin"));
         assertTrue(workflow.contains("build-mode: manual"));
-        assertTrue(workflow.contains("mvn -B -DskipTests package"));
+        assertTrue(workflow.contains("./mvnw -B -DskipTests package"));
         assertTrue(workflow.contains("github/codeql-action/analyze@v4"));
     }
 }

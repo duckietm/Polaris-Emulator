@@ -37,7 +37,7 @@ jobs:
       # (Failsafe), which build the schema by running the real timestamped migrations
       # against a Testcontainers MariaDB. A broken migration fails the build.
       - name: Build and test
-        run: mvn -B verify -Dspotless.ratchetFrom="${{ github.event.pull_request.base.sha || github.event.before }}"
+        run: ./mvnw -B verify -Dspotless.ratchetFrom="${{ github.event.pull_request.base.sha || github.event.before }}"
 
       - name: Upload furni consistency fixture report
         if: always()
@@ -76,7 +76,7 @@ jobs:
       - name: Verify migrations against ${{ matrix.mariadb }}
         env:
           POLARIS_TEST_MARIADB_IMAGE: ${{ matrix.mariadb }}
-        run: mvn -B test-compile failsafe:integration-test failsafe:verify -Dit.test=MigrationRunnerIT
+        run: ./mvnw -B test-compile failsafe:integration-test failsafe:verify -Dit.test=MigrationRunnerIT
 
   backup-restore:
     name: Migration backup + restore
@@ -119,4 +119,4 @@ jobs:
           MIGRATION_TEST_DB_PORT: 3306
           MIGRATION_TEST_DB_USER: root
           MIGRATION_TEST_DB_PASSWORD: root
-        run: mvn -B -Dtest=MariaDbMigrationBackupIntegrationTest test
+        run: ./mvnw -B -Dtest=MariaDbMigrationBackupIntegrationTest test

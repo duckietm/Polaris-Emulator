@@ -19,7 +19,7 @@ public class HabboExecutorService extends ScheduledThreadPoolExecutor {
         super(
                 corePoolSize,
                 threadFactory,
-                new RejectedExecutionHandlerImpl());
+                RejectedExecutionHandlerImpl.aborting());
     }
 
     @Override

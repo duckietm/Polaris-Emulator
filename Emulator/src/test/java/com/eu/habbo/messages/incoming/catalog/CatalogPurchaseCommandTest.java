@@ -3,6 +3,7 @@ package com.eu.habbo.messages.incoming.catalog;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.eu.habbo.habbohotel.catalog.CatalogPurchaseCommand;
 import com.eu.habbo.messages.ClientMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -13,7 +14,7 @@ class CatalogPurchaseCommandTest {
 
     @Test
     void readsPurchaseFieldsInProtocolOrder() {
-        CatalogPurchaseCommand command = CatalogPurchaseCommand.readFrom(packet(17, 42, "blue\npet", 3));
+        CatalogPurchaseCommand command = CatalogPurchaseCommandReader.readFrom(packet(17, 42, "blue\npet", 3));
 
         assertAll(
                 () -> assertEquals(17, command.pageId()),
@@ -26,17 +27,25 @@ class CatalogPurchaseCommandTest {
     void clampsRequestedCountToLegacyRange() {
         assertAll(
                 () -> assertEquals(
-                        1, CatalogPurchaseCommand.readFrom(packet(1, 2, "", -5)).count()),
+                        1,
+                        CatalogPurchaseCommandReader.readFrom(packet(1, 2, "", -5))
+                                .count()),
                 () -> assertEquals(
-                        1, CatalogPurchaseCommand.readFrom(packet(1, 2, "", 0)).count()),
+                        1,
+                        CatalogPurchaseCommandReader.readFrom(packet(1, 2, "", 0))
+                                .count()),
                 () -> assertEquals(
-                        1, CatalogPurchaseCommand.readFrom(packet(1, 2, "", 1)).count()),
+                        1,
+                        CatalogPurchaseCommandReader.readFrom(packet(1, 2, "", 1))
+                                .count()),
                 () -> assertEquals(
                         100,
-                        CatalogPurchaseCommand.readFrom(packet(1, 2, "", 100)).count()),
+                        CatalogPurchaseCommandReader.readFrom(packet(1, 2, "", 100))
+                                .count()),
                 () -> assertEquals(
                         100,
-                        CatalogPurchaseCommand.readFrom(packet(1, 2, "", 101)).count()));
+                        CatalogPurchaseCommandReader.readFrom(packet(1, 2, "", 101))
+                                .count()));
     }
 
     private static ClientMessage packet(int pageId, int itemId, String extraData, int count) {

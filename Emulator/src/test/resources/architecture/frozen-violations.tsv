@@ -53,9 +53,8 @@ U|com/eu/habbo/core/PointsScheduler.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/core/Scheduler.java|CALL|getThreading|1
 U|com/eu/habbo/core/TextsManager.java|CALL|getDatabase|2
 U|com/eu/habbo/core/consolecommands/ConsoleInfoCommand.java|CALL|getGameEnvironment|4
-U|com/eu/habbo/core/consolecommands/ConsoleInfoCommand.java|CALL|getIntUnixTimestamp|1
+U|com/eu/habbo/core/consolecommands/ConsoleInfoCommand.java|CALL|getOnlineTime|1
 U|com/eu/habbo/core/consolecommands/ConsoleInfoCommand.java|CALL|getRuntime|5
-U|com/eu/habbo/core/consolecommands/ConsoleInfoCommand.java|CALL|getTimeStarted|1
 U|com/eu/habbo/core/consolecommands/ConsoleInfoCommand.java|FIELD|build|1
 U|com/eu/habbo/core/consolecommands/ConsoleInfoCommand.java|FIELD|version|1
 U|com/eu/habbo/core/consolecommands/ConsoleTestCommand.java|CALL|getGameEnvironment|1
@@ -144,9 +143,8 @@ U|com/eu/habbo/habbohotel/catalog/marketplace/MarketPlaceOffer.java|CALL|getIntU
 U|com/eu/habbo/habbohotel/catalog/marketplace/MarketPlacePurchaseTransaction.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/commands/AboutCommand.java|CALL|getConfig|1
 U|com/eu/habbo/habbohotel/commands/AboutCommand.java|CALL|getGameEnvironment|4
-U|com/eu/habbo/habbohotel/commands/AboutCommand.java|CALL|getIntUnixTimestamp|1
+U|com/eu/habbo/habbohotel/commands/AboutCommand.java|CALL|getOnlineTime|1
 U|com/eu/habbo/habbohotel/commands/AboutCommand.java|CALL|getRuntime|6
-U|com/eu/habbo/habbohotel/commands/AboutCommand.java|CALL|getTimeStarted|1
 U|com/eu/habbo/habbohotel/commands/AboutCommand.java|FIELD|version|1
 U|com/eu/habbo/habbohotel/commands/AddYoutubePlaylistCommand.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/commands/AddYoutubePlaylistCommand.java|CALL|getGameEnvironment|3
@@ -932,8 +930,8 @@ U|com/eu/habbo/habbohotel/rooms/RoomUnit.java|CALL|getPluginManager|7
 U|com/eu/habbo/habbohotel/rooms/RoomUnit.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/rooms/RoomUnitManager.java|CALL|getGameEnvironment|3
 U|com/eu/habbo/habbohotel/rooms/RoomUnitManager.java|CALL|getIntUnixTimestamp|1
-U|com/eu/habbo/habbohotel/rooms/RoomUserVariableManager.java|CALL|getDatabase|4
-U|com/eu/habbo/habbohotel/rooms/RoomUserVariableManager.java|CALL|getIntUnixTimestamp|5
+U|com/eu/habbo/habbohotel/rooms/RoomUserVariableManager.java|CALL|getDatabase|1
+U|com/eu/habbo/habbohotel/rooms/RoomUserVariableManager.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/habbohotel/rooms/RoomUserVariableManager.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/rooms/RoomVariableManager.java|CALL|getDatabase|3
 U|com/eu/habbo/habbohotel/rooms/RoomVariableManager.java|CALL|getIntUnixTimestamp|3
@@ -1782,7 +1780,6 @@ U|com/eu/habbo/networking/rconserver/RCONServerHandler.java|CALL|getConfig|2
 U|com/eu/habbo/networking/rconserver/RCONServerHandler.java|CALL|getRconServer|2
 U|com/eu/habbo/plugin/PluginManager.java|CALL|getConfig|1
 U|com/eu/habbo/plugin/PluginManager.java|CALL|getGameEnvironment|5
-U|com/eu/habbo/plugin/PluginManager.java|CALL|stringToDate|1
 U|com/eu/habbo/plugin/PluginManager.java|FIELD|isReady|1
 U|com/eu/habbo/threading/ThreadPooling.java|FIELD|isShuttingDown|1
 U|com/eu/habbo/threading/runnables/AchievementUpdater.java|CALL|getGameEnvironment|2

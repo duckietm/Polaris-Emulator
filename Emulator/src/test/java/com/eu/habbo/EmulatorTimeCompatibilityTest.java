@@ -32,9 +32,7 @@ class EmulatorTimeCompatibilityTest {
     void durationParserBoundsInvalidDigitRuns() {
         String invalidDuration = "0".repeat(50_000) + " invalid";
 
-        assertTimeout(
-                Duration.ofMillis(500),
-                () -> assertEquals(0, Emulator.timeStringToSeconds(invalidDuration)));
+        assertTimeout(Duration.ofMillis(500), () -> assertEquals(0, Emulator.timeStringToSeconds(invalidDuration)));
     }
 
     @Test

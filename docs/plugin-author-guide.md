@@ -38,6 +38,19 @@ older table shapes, but unsafe translations deliberately pass through.
 Plugin-owned tables and columns are allowed. Do not edit Polaris migrations;
 ship separate idempotent setup owned by the plugin.
 
+## Bundled dependency policy
+
+The assembled jar currently keeps `netty-all` on the plugin-visible classpath.
+Slimming that surface would require the precompiled plugin corpus to prove
+compatibility first. The same rule keeps `resilience4j-circuitbreaker` even
+where Polaris has no direct import.
+
+Polaris deliberately uses Hibernate Validator without an Expression Language
+implementation and configures `ParameterMessageInterpolator`; plugins must not
+assume that the default EL-backed validator factory is available. Commons Math
+3.6.1 remains in use for compatibility and is tracked for opportunistic
+replacement rather than removal during routine modernization.
+
 ## Compatibility guidance
 
 - Compile against a released Polaris API or the intended Morningstar baseline.

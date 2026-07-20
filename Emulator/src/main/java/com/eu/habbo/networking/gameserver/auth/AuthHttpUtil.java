@@ -7,13 +7,7 @@ import com.google.gson.JsonObject;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaderValues;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -134,7 +128,7 @@ public final class AuthHttpUtil {
         // Only trust a client-supplied forwarded-IP header when the DIRECT peer
         // is a trusted reverse proxy; otherwise an attacker hitting the port
         // directly could spoof it to evade per-IP rate limiting and IP bans.
-        if (!ipHeader.isEmpty() && req.headers().contains(ipHeader) && isTrustedProxy(ctx)) {
+        if (!ipHeader.isEmpty() && req.headers().contains(ipHeader) && shouldHonorForwardedHeader(ctx, ipHeader)) {
             String hv = req.headers().get(ipHeader);
             if (hv != null && !hv.isEmpty()) {
                 int comma = hv.indexOf(',');
@@ -149,6 +143,29 @@ public final class AuthHttpUtil {
         }
         return "";
     }
+
+    /**
+     * Gate for honouring a forwarded-IP header, with operator feedback: when a
+     * request carries the configured header but the direct peer is not a
+     * trusted proxy, log a one-time warning naming the peer so "everyone has
+     * the proxy IP" is diagnosable instead of silent.
+     */
+    public static boolean shouldHonorForwardedHeader(ChannelHandlerContext ctx, String headerName) {
+        if (isTrustedProxy(ctx)) return true;
+
+        String peerIp = (ctx.channel().remoteAddress() instanceof InetSocketAddress a)
+                ? a.getAddress().getHostAddress() : null;
+        if (peerIp != null && WARNED_UNTRUSTED_PEERS.size() < MAX_WARNED_PEERS && WARNED_UNTRUSTED_PEERS.add(peerIp)) {
+            LOGGER.warn("Ignoring forwarded-IP header '{}' from untrusted peer {} — if this is your reverse proxy, "
+                            + "add its IP to the ws.ip.header.trusted setting (comma-separated; a trailing '.' or ':' makes it a prefix range).",
+                    headerName, peerIp);
+        }
+        return false;
+    }
+
+    private static final int MAX_WARNED_PEERS = 64;
+    private static final java.util.Set<String> WARNED_UNTRUSTED_PEERS =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     /**
      * Whether the channel's direct peer may set a forwarded-IP header. Loopback

@@ -102,7 +102,7 @@ public class GameEnvironment {
                 PermissionsManager::new);
         this.habboManager = this.services.create(
                 "habbo manager",
-                HabboManager::new,
+                () -> new HabboManager(this.persistenceExecutor),
                 HabboManager::dispose);
         this.hotelViewManager = this.services.create(
                 "hotel view manager",

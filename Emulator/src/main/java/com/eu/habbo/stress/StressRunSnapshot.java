@@ -1,0 +1,27 @@
+package com.eu.habbo.stress;
+
+public record StressRunSnapshot(
+        String runId,
+        String state,
+        int roomId,
+        String roomName,
+        int requestedBots,
+        int requestedItems,
+        int requestedRollers,
+        int requestedWiredStacks,
+        int activeBots,
+        int activeItems,
+        int activeRollers,
+        int activeWiredStacks,
+        int chatPerSecond,
+        long messagesSent,
+        int wiredEventsPerSecond,
+        long wiredEventsFired,
+        long wiredEffectsExecuted,
+        long startedAtEpochMs,
+        long elapsedSeconds,
+        int durationSeconds,
+        double roomCycleMs,
+        int memoryUsedMb,
+        double memoryUsagePercent,
+        String error) {}

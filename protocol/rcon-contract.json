@@ -14,6 +14,38 @@
     "error": 1,
     "systemError": 2
   },
+  "stressCommands": {
+    "enabledBy": "stress.enabled",
+    "start": {
+      "key": "stressstart",
+      "data": [
+        "room_id",
+        "bots",
+        "items",
+        "rollers",
+        "wired_stacks",
+        "wired_events_per_second",
+        "item_id",
+        "chat_per_second",
+        "duration_seconds",
+        "seed",
+        "movement"
+      ]
+    },
+    "status": {
+      "key": "stressstatus",
+      "data": [
+        "room_id"
+      ]
+    },
+    "stop": {
+      "key": "stressstop",
+      "data": [
+        "room_id"
+      ]
+    },
+    "successMessage": "JSON-encoded StressRunSnapshot"
+  },
   "commandNormalization": "remove underscores and lowercase",
   "commands": [
     "alertuser",
@@ -49,6 +81,9 @@
     "giveuserclothing",
     "modifysubscription",
     "changeusername",
-    "updateitems"
+    "updateitems",
+    "stressstart",
+    "stressstatus",
+    "stressstop"
   ]
 }

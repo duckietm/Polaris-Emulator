@@ -18,6 +18,9 @@ import com.eu.habbo.networking.gameserver.GameServer;
 import com.eu.habbo.networking.rconserver.RCONServer;
 import com.eu.habbo.plugin.PluginManager;
 import com.eu.habbo.plugin.events.emulator.EmulatorConfigUpdatedEvent;
+import com.eu.habbo.stress.StressLimits;
+import com.eu.habbo.stress.StressRunManager;
+import com.eu.habbo.stress.StressRunRegistry;
 import com.eu.habbo.threading.ThreadPooling;
 import com.eu.habbo.util.imager.badges.BadgeImager;
 import java.io.File;
@@ -154,8 +157,16 @@ final class PolarisBootstrap {
         GameServer gameServer = new GameServer(
                 configuration.getValue("game.host", "127.0.0.1"), configuration.getInt("game.port", 30000));
         runtime.installGameServer(gameServer);
+        boolean stressEnabled = configuration.getBoolean("stress.enabled", false);
+        StressRunRegistry.install(new StressRunManager(
+                runtime.gameEnvironment().getRoomManager(),
+                runtime.gameEnvironment().getItemManager(),
+                runtime.threading(),
+                StressLimits.configured(configuration)));
         RCONServer rconServer = new RCONServer(
-                configuration.getValue("rcon.host", "127.0.0.1"), configuration.getInt("rcon.port", 30001));
+                configuration.getValue("rcon.host", "127.0.0.1"),
+                configuration.getInt("rcon.port", 30001),
+                stressEnabled);
         runtime.installRconServer(rconServer);
         Emulator.synchronizeLegacyFacade(runtime);
 

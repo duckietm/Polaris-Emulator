@@ -61,6 +61,15 @@ Unknown keys remain allowed for plugins. Database-backed hotel settings are docu
 | `rcon.port` | integer | `0` | `RCON_PORT` | yes | no | RCON listener setting. |
 | `runtime.threads` | integer | `8` | — | yes | no | Polaris startup setting. |
 | `session.reconnect.grace.seconds` | integer | `0` | — | yes | no | Polaris startup setting. |
+| `stress.enabled` | boolean | `false` | — | yes | no | Opt-in transient room stress-lab setting. |
+| `stress.max_bots` | integer | `5000` | — | yes | no | Opt-in transient room stress-lab setting. |
+| `stress.max_chat_per_second` | integer | `10000` | — | yes | no | Opt-in transient room stress-lab setting. |
+| `stress.max_duration_seconds` | integer | `3600` | — | yes | no | Opt-in transient room stress-lab setting. |
+| `stress.max_items` | integer | `100000` | — | yes | no | Opt-in transient room stress-lab setting. |
+| `stress.max_rollers` | integer | `50000` | — | yes | no | Opt-in transient room stress-lab setting. |
+| `stress.max_total_entities` | integer | `200000` | — | yes | no | Opt-in transient room stress-lab setting. |
+| `stress.max_wired_events_per_second` | integer | `100` | — | yes | no | Opt-in transient room stress-lab setting. |
+| `stress.max_wired_stacks` | integer | `50000` | — | yes | no | Opt-in transient room stress-lab setting. |
 | `ws.enabled` | boolean | `false` | — | yes | no | WebSocket listener setting. |
 | `ws.host` | string | `` | — | yes | no | WebSocket listener setting. |
 | `ws.port` | integer | `0` | — | yes | no | WebSocket listener setting. |

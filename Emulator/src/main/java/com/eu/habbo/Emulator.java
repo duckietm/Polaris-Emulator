@@ -466,6 +466,16 @@ public final class Emulator {
         Emulator.config.register("rcon.execute_command.denied_permissions", "cmd_shutdown;cmd_give_rank");
         Emulator.config.register("rcon.execute_command.allowed_permissions", "");
         Emulator.config.register("rcon.max_payload_bytes", "65536");
+        configuration.register(
+                "stress.enabled", "0", "Enable transient room stress controls over the allowlisted RCON listener.");
+        configuration.register("stress.max_bots", "5000");
+        configuration.register("stress.max_items", "100000");
+        configuration.register("stress.max_rollers", "50000");
+        configuration.register("stress.max_wired_stacks", "50000");
+        configuration.register("stress.max_wired_events_per_second", "100");
+        configuration.register("stress.max_total_entities", "200000");
+        configuration.register("stress.max_chat_per_second", "10000");
+        configuration.register("stress.max_duration_seconds", "3600");
         Emulator.config.register("nitro.secure.api.max_payload_bytes", "65536");
         Emulator.config.register("nitro.secure.config.max_file_bytes", "2097152");
         Emulator.config.register("nitro.secure.gamedata.max_file_bytes", "16777216");

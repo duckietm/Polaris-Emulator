@@ -1,7 +1,44 @@
 package com.eu.habbo.networking.rconserver;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.messages.rcon.*;
+import com.eu.habbo.messages.rcon.AlertUser;
+import com.eu.habbo.messages.rcon.ChangeRoomOwner;
+import com.eu.habbo.messages.rcon.ChangeUsername;
+import com.eu.habbo.messages.rcon.CreateModToolTicket;
+import com.eu.habbo.messages.rcon.DisconnectUser;
+import com.eu.habbo.messages.rcon.ExecuteCommand;
+import com.eu.habbo.messages.rcon.ForwardUser;
+import com.eu.habbo.messages.rcon.FriendRequest;
+import com.eu.habbo.messages.rcon.GiveBadge;
+import com.eu.habbo.messages.rcon.GiveCredits;
+import com.eu.habbo.messages.rcon.GivePixels;
+import com.eu.habbo.messages.rcon.GivePoints;
+import com.eu.habbo.messages.rcon.GiveRespect;
+import com.eu.habbo.messages.rcon.GiveUserClothing;
+import com.eu.habbo.messages.rcon.HotelAlert;
+import com.eu.habbo.messages.rcon.IgnoreUser;
+import com.eu.habbo.messages.rcon.ImageAlertUser;
+import com.eu.habbo.messages.rcon.ImageHotelAlert;
+import com.eu.habbo.messages.rcon.ModifyUserSubscription;
+import com.eu.habbo.messages.rcon.MuteUser;
+import com.eu.habbo.messages.rcon.ProgressAchievement;
+import com.eu.habbo.messages.rcon.RCONMessage;
+import com.eu.habbo.messages.rcon.SendGift;
+import com.eu.habbo.messages.rcon.SendRoomBundle;
+import com.eu.habbo.messages.rcon.SetMotto;
+import com.eu.habbo.messages.rcon.SetRank;
+import com.eu.habbo.messages.rcon.StaffAlert;
+import com.eu.habbo.messages.rcon.StalkUser;
+import com.eu.habbo.messages.rcon.StressStart;
+import com.eu.habbo.messages.rcon.StressStatus;
+import com.eu.habbo.messages.rcon.StressStop;
+import com.eu.habbo.messages.rcon.TalkUser;
+import com.eu.habbo.messages.rcon.UpdateCatalog;
+import com.eu.habbo.messages.rcon.UpdateItems;
+import com.eu.habbo.messages.rcon.UpdateSoundboard;
+import com.eu.habbo.messages.rcon.UpdateUser;
+import com.eu.habbo.messages.rcon.UpdateWheel;
+import com.eu.habbo.messages.rcon.UpdateWordfilter;
 import com.eu.habbo.networking.Server;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
@@ -12,9 +49,6 @@ import io.github.resilience4j.ratelimiter.RateLimiterConfig;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -22,6 +56,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class RCONServer extends Server {
@@ -35,6 +71,10 @@ public class RCONServer extends Server {
     List<String> allowedAdresses = new ArrayList<>();
 
     public RCONServer(String host, int port) throws Exception {
+        this(host, port, false);
+    }
+
+    public RCONServer(String host, int port, boolean stressEnabled) throws Exception {
         super("RCON Server", host, port, 1, 2);
 
         this.messages = new HashMap<>();
@@ -44,8 +84,10 @@ public class RCONServer extends Server {
         this.rateLimitEnabled = Emulator.getConfig().getBoolean("rcon.rate_limit.enabled", true);
         RateLimiterConfig rateLimiterConfig = RateLimiterConfig.custom()
                 .limitForPeriod(Math.max(1, Emulator.getConfig().getInt("rcon.rate_limit.limit_for_period", 60)))
-                .limitRefreshPeriod(Duration.ofMillis(Math.max(100, Emulator.getConfig().getInt("rcon.rate_limit.refresh_period_ms", 1000))))
-                .timeoutDuration(Duration.ofMillis(Math.max(0, Emulator.getConfig().getInt("rcon.rate_limit.timeout_ms", 0))))
+                .limitRefreshPeriod(Duration.ofMillis(
+                        Math.max(100, Emulator.getConfig().getInt("rcon.rate_limit.refresh_period_ms", 1000))))
+                .timeoutDuration(
+                        Duration.ofMillis(Math.max(0, Emulator.getConfig().getInt("rcon.rate_limit.timeout_ms", 0))))
                 .build();
         this.rateLimiters = Caffeine.newBuilder()
                 .maximumSize(512)
@@ -86,8 +128,16 @@ public class RCONServer extends Server {
         this.addRCONMessage("modifysubscription", ModifyUserSubscription.class);
         this.addRCONMessage("changeusername", ChangeUsername.class);
         this.addRCONMessage("updateitems", UpdateItems.class);
+        if (stressEnabled) {
+            this.addRCONMessage("stressstart", StressStart.class);
+            this.addRCONMessage("stressstatus", StressStatus.class);
+            this.addRCONMessage("stressstop", StressStop.class);
+            LOGGER.warn("Polaris stress controls are ENABLED on the RCON listener");
+        }
 
-        Collections.addAll(this.allowedAdresses, Emulator.getConfig().getValue("rcon.allowed", "127.0.0.1").split(";"));
+        Collections.addAll(
+                this.allowedAdresses,
+                Emulator.getConfig().getValue("rcon.allowed", "127.0.0.1").split(";"));
     }
 
     @Override
@@ -102,7 +152,6 @@ public class RCONServer extends Server {
         });
     }
 
-
     public void addRCONMessage(String key, Class<? extends RCONMessage> clazz) {
         this.messages.put(key, clazz);
     }
@@ -113,7 +162,8 @@ public class RCONServer extends Server {
             return RconResponse.error(RCONMessage.STATUS_ERROR, "rate limited").toJson(this.gsonBuilder.create());
         }
 
-        Class<? extends RCONMessage> message = this.messages.get(key.replace("_", "").toLowerCase());
+        Class<? extends RCONMessage> message =
+                this.messages.get(key.replace("_", "").toLowerCase());
 
         String result;
         if (message != null) {
@@ -137,7 +187,8 @@ public class RCONServer extends Server {
             }
         } else {
             LOGGER.error("Couldn't find: {}", key);
-            return RconResponse.error(RCONMessage.STATUS_ERROR, "unknown command").toJson(this.gsonBuilder.create());
+            return RconResponse.error(RCONMessage.STATUS_ERROR, "unknown command")
+                    .toJson(this.gsonBuilder.create());
         }
 
         return RconResponse.error(RCONMessage.SYSTEM_ERROR, "command failed").toJson(this.gsonBuilder.create());
@@ -148,7 +199,8 @@ public class RCONServer extends Server {
     }
 
     private boolean acquirePermit(ChannelHandlerContext ctx) {
-        return !this.rateLimitEnabled || this.rateLimiters.get(remoteAddress(ctx)).acquirePermission();
+        return !this.rateLimitEnabled
+                || this.rateLimiters.get(remoteAddress(ctx)).acquirePermission();
     }
 
     private static String remoteAddress(ChannelHandlerContext ctx) {

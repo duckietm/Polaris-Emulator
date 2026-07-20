@@ -209,6 +209,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     private RoomPromotion promotion;
     private volatile boolean needsUpdate;
     private int rollerSpeed;
+    private volatile Integer transientRollerSpeedOverride;
     private int lastTimerReset = Emulator.getIntUnixTimestamp();
     private volatile boolean muted;
     private volatile RoomSpecialTypes roomSpecialTypes;
@@ -1731,6 +1732,14 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     public void setRollerSpeed(int rollerSpeed) {
         this.rollerSpeed = rollerSpeed;
         this.needsUpdate = true;
+    }
+
+    public Integer getTransientRollerSpeedOverride() {
+        return this.transientRollerSpeedOverride;
+    }
+
+    public void setTransientRollerSpeedOverride(Integer rollerSpeed) {
+        this.transientRollerSpeedOverride = rollerSpeed;
     }
 
     public String[] filterAnything() {

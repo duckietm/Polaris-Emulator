@@ -131,6 +131,14 @@ public final class ConfigRegistry {
                 "session.reconnect.grace.seconds");
         keys.add(definition("runtime.threads", ConfigKey.ValueType.INTEGER, "8", true));
         keys.add(definition("http.blocking.pool.size", ConfigKey.ValueType.INTEGER, "8", true));
+        keys.add(definition("stress.max_bots", ConfigKey.ValueType.INTEGER, "5000", true));
+        keys.add(definition("stress.max_items", ConfigKey.ValueType.INTEGER, "100000", true));
+        keys.add(definition("stress.max_rollers", ConfigKey.ValueType.INTEGER, "50000", true));
+        keys.add(definition("stress.max_wired_stacks", ConfigKey.ValueType.INTEGER, "50000", true));
+        keys.add(definition("stress.max_wired_events_per_second", ConfigKey.ValueType.INTEGER, "100", true));
+        keys.add(definition("stress.max_total_entities", ConfigKey.ValueType.INTEGER, "200000", true));
+        keys.add(definition("stress.max_chat_per_second", ConfigKey.ValueType.INTEGER, "10000", true));
+        keys.add(definition("stress.max_duration_seconds", ConfigKey.ValueType.INTEGER, "3600", true));
         keys.add(definition("io.netty.write_buffer.low_water_mark", ConfigKey.ValueType.INTEGER, "32768", true));
         keys.add(definition("io.netty.write_buffer.high_water_mark", ConfigKey.ValueType.INTEGER, "65536", true));
         keys.add(definition("io.netty.unwritable.timeout.seconds", ConfigKey.ValueType.INTEGER, "10", true));
@@ -158,6 +166,7 @@ public final class ConfigRegistry {
                 "db.slow_query.enabled",
                 "ws.enabled",
                 "crypto.ws.enabled",
+                "stress.enabled",
                 "e2e.enabled");
         keys.add(new ConfigKey(
                 "polaris.events.honor_priority",
@@ -240,6 +249,9 @@ public final class ConfigRegistry {
         }
         if (name.startsWith("rcon.")) {
             return "RCON listener setting.";
+        }
+        if (name.startsWith("stress.")) {
+            return "Opt-in transient room stress-lab setting.";
         }
         if (name.startsWith("game.")) {
             return "Game listener setting.";

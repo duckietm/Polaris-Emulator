@@ -315,8 +315,11 @@ public class RoomCycleManager {
     }
 
     private void processRollers(Set<RoomUnit> updatedUnit) {
+        Integer transientRollerSpeed = this.room.getTransientRollerSpeedOverride();
         Integer controlledRollerSpeed = RoomQueueSpeedControlSupport.getEffectiveRollerSpeed(this.room);
-        int rollerSpeed = (controlledRollerSpeed != null) ? controlledRollerSpeed : this.room.getRollerSpeed();
+        int rollerSpeed = transientRollerSpeed != null
+                ? transientRollerSpeed
+                : (controlledRollerSpeed != null) ? controlledRollerSpeed : this.room.getRollerSpeed();
         if (rollerSpeed != -1 && this.rollerCycle >= rollerSpeed) {
             this.rollerCycle = 0;
             this.room.getRollerManager().processRollerCycle(updatedUnit, this.cycleTimestamp);

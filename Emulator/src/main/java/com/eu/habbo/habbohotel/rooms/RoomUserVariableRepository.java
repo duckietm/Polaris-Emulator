@@ -7,6 +7,8 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Supplier;
 import javax.sql.DataSource;
 
 final class RoomUserVariableRepository {
@@ -20,15 +22,19 @@ final class RoomUserVariableRepository {
                     + "VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value), "
                     + "updated_at = VALUES(updated_at)";
 
-    private final DataSource dataSource;
+    private final Supplier<? extends DataSource> dataSource;
 
     RoomUserVariableRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
+        this(() -> dataSource);
+    }
+
+    RoomUserVariableRepository(Supplier<? extends DataSource> dataSource) {
+        this.dataSource = Objects.requireNonNull(dataSource);
     }
 
     List<StoredAssignment> findByUser(int roomId, int userId) throws SQLException {
         List<StoredAssignment> assignments = new ArrayList<>();
-        try (Connection connection = dataSource.getConnection();
+        try (Connection connection = dataSource.get().getConnection();
                 PreparedStatement statement = connection.prepareStatement(FIND_BY_USER_SQL)) {
             statement.setInt(1, roomId);
             statement.setInt(2, userId);
@@ -56,7 +62,7 @@ final class RoomUserVariableRepository {
             int createdAt,
             int updatedAt)
             throws SQLException {
-        try (Connection connection = dataSource.getConnection();
+        try (Connection connection = dataSource.get().getConnection();
                 PreparedStatement statement = connection.prepareStatement(UPSERT_SQL)) {
             statement.setInt(1, roomId);
             statement.setInt(2, userId);
@@ -73,7 +79,7 @@ final class RoomUserVariableRepository {
     }
 
     void delete(int roomId, int userId, int definitionItemId) throws SQLException {
-        try (Connection connection = dataSource.getConnection();
+        try (Connection connection = dataSource.get().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "DELETE FROM room_user_wired_variables "
                                 + "WHERE room_id = ? AND user_id = ? AND variable_item_id = ?")) {
@@ -85,7 +91,7 @@ final class RoomUserVariableRepository {
     }
 
     void deleteDefinition(int roomId, int definitionItemId) throws SQLException {
-        try (Connection connection = dataSource.getConnection();
+        try (Connection connection = dataSource.get().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "DELETE FROM room_user_wired_variables WHERE room_id = ? AND variable_item_id = ?")) {
             statement.setInt(1, roomId);

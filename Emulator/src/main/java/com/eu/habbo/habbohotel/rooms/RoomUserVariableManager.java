@@ -41,7 +41,7 @@ public class RoomUserVariableManager {
     public RoomUserVariableManager(Room room) {
         this(
                 room,
-                new RoomUserVariableRepository(Emulator.getDatabase().getDataSource()),
+                new RoomUserVariableRepository(() -> Emulator.getDatabase().getDataSource()),
                 () -> Emulator.getIntUnixTimestamp());
     }
 

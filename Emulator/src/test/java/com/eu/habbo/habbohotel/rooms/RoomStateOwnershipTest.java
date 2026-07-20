@@ -89,6 +89,24 @@ class RoomStateOwnershipTest {
     }
 
     @Test
+    void roomDisposalClearsTheSharedMuteState() throws Exception {
+        // Characterises the facade split: the single shared mute map is now cleared on unload,
+        // so room mutes no longer leak into the next load of the same room.
+        RoomJdbcTestSupport.RecordingDataSource dataSource = new RoomJdbcTestSupport.RecordingDataSource();
+        Room room = new Room(41, 7, new RoomDependencies(dataSource::getConnection));
+        room.getChatManager().getMutedHabbos().put(12, Integer.MAX_VALUE);
+        setField(room, "roomSpecialTypes", new RoomSpecialTypes());
+        assertFalse(room.getChatManager().getMutedHabbos().isEmpty());
+
+        try (RoomJdbcTestSupport.InstalledDatabase ignored = RoomJdbcTestSupport.install(dataSource)) {
+            new RoomDisposer(room).dispose(true);
+        }
+
+        assertTrue(room.getChatManager().getMutedHabbos().isEmpty());
+        assertTrue(room.getRightsManager().getMutedHabbos().isEmpty());
+    }
+
+    @Test
     void legacyRightsListAndManagerSetAreLiveViewsOfOneState() {
         Room room = new Room(41, 7);
         Habbo habbo = mock(Habbo.class);

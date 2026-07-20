@@ -1,8 +1,14 @@
 package com.eu.habbo.habbohotel.rooms;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.HabboInfo;
 import it.unimi.dsi.fastutil.ints.IntList;
 import java.sql.Connection;
 import java.util.LinkedHashMap;
@@ -33,6 +39,34 @@ class RoomRightsBehaviorTest {
         RoomJdbcTestSupport.SqlCall call = dataSource.calls().getFirst();
         assertEquals("SELECT user_id FROM room_rights WHERE room_id = ?", call.sql());
         assertEquals(41, call.parameters().get(1));
+    }
+
+    @Test
+    void databaseLoadedRightsAreImmediatelyRecognisedByHasRights() throws Exception {
+        // Characterises the facade split: rights read from the database now populate the same
+        // backing store that Room.hasRights() consults, so a rights holder is recognised as soon
+        // as the room finishes loading — without waiting for a runtime giveRights() re-sync.
+        RoomJdbcTestSupport.RecordingDataSource dataSource = new RoomJdbcTestSupport.RecordingDataSource();
+        dataSource.rows(sql -> sql.contains("FROM room_rights") ? List.of(row("user_id", 12)) : List.of());
+        Room room = new Room(41, 7);
+
+        try (Connection connection = dataSource.getConnection()) {
+            room.getRightsManager().loadRights(connection);
+        }
+
+        Habbo rightsHolder = mock(Habbo.class);
+        HabboInfo rightsHolderInfo = mock(HabboInfo.class);
+        when(rightsHolder.getHabboInfo()).thenReturn(rightsHolderInfo);
+        when(rightsHolderInfo.getId()).thenReturn(12);
+
+        Habbo stranger = mock(Habbo.class);
+        HabboInfo strangerInfo = mock(HabboInfo.class);
+        when(stranger.getHabboInfo()).thenReturn(strangerInfo);
+        when(strangerInfo.getId()).thenReturn(30);
+
+        assertTrue(room.hasRights(rightsHolder), "Database-loaded rights holder must have rights after load");
+        assertTrue(room.getRights().contains(12));
+        assertFalse(room.hasRights(stranger));
     }
 
     @Test

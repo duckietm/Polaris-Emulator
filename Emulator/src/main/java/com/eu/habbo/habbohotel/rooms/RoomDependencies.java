@@ -6,10 +6,17 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Objects;
 
-record RoomDependencies(ConnectionProvider database) {
+record RoomDependencies(
+        ConnectionProvider database,
+        PersistenceScheduler persistence) {
 
     RoomDependencies {
         Objects.requireNonNull(database, "database");
+        Objects.requireNonNull(persistence, "persistence");
+    }
+
+    RoomDependencies(ConnectionProvider database) {
+        this(database, Runnable::run);
     }
 
     static RoomDependencies runtime() {
@@ -20,5 +27,10 @@ record RoomDependencies(ConnectionProvider database) {
     @FunctionalInterface
     interface ConnectionProvider {
         Connection openConnection() throws SQLException;
+    }
+
+    @FunctionalInterface
+    interface PersistenceScheduler {
+        void execute(Runnable task);
     }
 }

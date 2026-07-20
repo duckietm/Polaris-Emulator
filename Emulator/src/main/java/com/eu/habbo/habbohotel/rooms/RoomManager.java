@@ -80,6 +80,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -89,7 +90,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -147,6 +147,7 @@ public class RoomManager {
     private final List<String> mapNames;
     private final ConcurrentHashMap<String, RoomLayoutData> layoutCache;
     private final RoomDirectory roomDirectory;
+    private final RoomSearchService roomSearchService;
     private final ConcurrentHashMap<Integer, Room> activeRooms;
     private final ConcurrentHashMap<Integer, Set<Integer>> roomsByOwner;
     private final AtomicInteger indexedRoomCount;
@@ -175,6 +176,7 @@ public class RoomManager {
         this.activeRooms = this.roomDirectory.activeRooms();
         this.roomsByOwner = this.roomDirectory.roomsByOwner();
         this.indexedRoomCount = this.roomDirectory.indexedRoomCount();
+        this.roomSearchService = new RoomSearchService(this.activeRooms::values, Duration.ofSeconds(1));
 
         this.gameTypes = new ArrayList<>();
 
@@ -208,6 +210,7 @@ public class RoomManager {
 
     private void untrackRoomOwner(Room room) {
         this.roomDirectory.untrack(room);
+        this.roomSearchService.invalidate();
     }
 
     private void removeRoomFromOwner(int ownerId, int roomId) {
@@ -216,6 +219,7 @@ public class RoomManager {
 
     void registerActiveRoom(Room room) {
         this.roomDirectory.register(room);
+        this.roomSearchService.invalidate();
     }
 
     private void reconcileOwnerIndex() {
@@ -1369,94 +1373,23 @@ public class RoomManager {
     }
 
     public Set<String> getTags() {
-        Map<String, Integer> tagCount = new HashMap<>();
-
-        for (Room room : this.activeRooms.values()) {
-            for (String s : room.getTags().split(";")) {
-                int i = 0;
-                if (tagCount.get(s) != null) i++;
-
-                tagCount.put(s, i++);
-            }
-        }
-        return new TreeMap<>(tagCount).keySet();
+        return this.roomSearchService.tags();
     }
 
     public ArrayList<Room> getPublicRooms() {
-        ArrayList<Room> rooms = new ArrayList<>();
-
-        for (Room room : this.activeRooms.values()) {
-            if (room.isPublicRoom()) {
-                rooms.add(room);
-            }
-        }
-        rooms.sort(Room.SORT_ID);
-        return rooms;
+        return this.roomSearchService.publicRooms();
     }
 
     public ArrayList<Room> getPopularRooms(int count) {
-        ArrayList<Room> rooms = new ArrayList<>();
-
-        for (Room room : this.activeRooms.values()) {
-            if (room.getUserCount() > 0) {
-                if (!room.isPublicRoom() || RoomManager.SHOW_PUBLIC_IN_POPULAR_TAB) rooms.add(room);
-            }
-        }
-
-        if (rooms.isEmpty()) {
-            return rooms;
-        }
-
-        Collections.sort(rooms);
-
-        return new ArrayList<>(rooms.subList(0, (Math.min(rooms.size(), count))));
+        return this.roomSearchService.popularRooms(count, RoomManager.SHOW_PUBLIC_IN_POPULAR_TAB);
     }
 
     public ArrayList<Room> getPopularRooms(int count, int category) {
-        ArrayList<Room> rooms = new ArrayList<>();
-
-        for (Room room : this.activeRooms.values()) {
-            if (!room.isPublicRoom() && room.getCategory() == category) {
-                rooms.add(room);
-            }
-        }
-
-        if (rooms.isEmpty()) {
-            return rooms;
-        }
-
-        Collections.sort(rooms);
-
-        return new ArrayList<>(rooms.subList(0, (Math.min(rooms.size(), count))));
+        return this.roomSearchService.popularRooms(count, category);
     }
 
     public Map<Integer, List<Room>> getPopularRoomsByCategory(int count) {
-        Map<Integer, List<Room>> rooms = new HashMap<>();
-
-        for (Room room : this.activeRooms.values()) {
-            if (!room.isPublicRoom()) {
-                if (!rooms.containsKey(room.getCategory())) {
-                    rooms.put(room.getCategory(), new ArrayList<>());
-                }
-
-                rooms.get(room.getCategory()).add(room);
-            }
-        }
-
-        Map<Integer, List<Room>> result = new HashMap<>();
-
-        for (Map.Entry<Integer, List<Room>> set : rooms.entrySet()) {
-            if (set.getValue().isEmpty()) continue;
-
-            Collections.sort(set.getValue());
-
-            result.put(
-                    set.getKey(),
-                    new ArrayList<>(
-                            set.getValue().subList(0, (Math.min(set.getValue().size(), count)))));
-        }
-
-        return result;
+        return this.roomSearchService.popularRoomsByCategory(count);
     }
 
     public ArrayList<Room> getRoomsWithName(String name) {
@@ -1501,20 +1434,7 @@ public class RoomManager {
     }
 
     public ArrayList<Room> getRoomsWithTag(String tag) {
-        ArrayList<Room> rooms = new ArrayList<>();
-
-        for (Room room : this.activeRooms.values()) {
-            for (String s : room.getTags().split(";")) {
-                if (s.equalsIgnoreCase(tag)) {
-                    rooms.add(room);
-                    break;
-                }
-            }
-        }
-
-        Collections.sort(rooms);
-
-        return rooms;
+        return this.roomSearchService.roomsWithTag(tag);
     }
 
     public ArrayList<Room> getGroupRoomsWithName(String name) {

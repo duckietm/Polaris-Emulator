@@ -1,8 +1,12 @@
 package com.eu.habbo.messages.incoming.inventory.prefixes;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.economy.EconomyLedger;
+import com.eu.habbo.habbohotel.economy.EconomyOperation;
+import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.modtool.WordFilterWord;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.LedgerWalletMutation;
 import com.eu.habbo.habbohotel.users.UserPrefix;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
@@ -22,7 +26,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class PurchasePrefixEvent extends MessageHandler {
@@ -147,18 +153,65 @@ public class PurchasePrefixEvent extends MessageHandler {
             return;
         }
 
+        String operationId = EconomyOperationId.create(
+                "prefix-purchase:" + habbo.getHabboInfo().getId());
+        List<EconomyOperation> paymentOperations = new ArrayList<>(3);
         if (totalPriceCredits > 0) {
-            habbo.getHabboInfo().addCredits(-totalPriceCredits);
+            paymentOperations.add(new EconomyOperation(
+                    operationId + ":credits",
+                    habbo.getHabboInfo().getId(),
+                    habbo.getHabboInfo().getId(),
+                    "prefix_purchase",
+                    "inventory.prefix.purchase",
+                    EconomyLedger.CREDITS,
+                    -totalPriceCredits,
+                    null,
+                    operationId));
+        }
+        if (totalPricePointsSameType > 0) {
+            paymentOperations.add(new EconomyOperation(
+                    operationId + ":points",
+                    habbo.getHabboInfo().getId(),
+                    habbo.getHabboInfo().getId(),
+                    "prefix_purchase",
+                    "inventory.prefix.purchase",
+                    pointsType,
+                    -totalPricePointsSameType,
+                    null,
+                    operationId));
+        }
+        if (!font.isEmpty() && fontPricePoints > 0 && fontPointsType != pointsType) {
+            paymentOperations.add(new EconomyOperation(
+                    operationId + ":font-points",
+                    habbo.getHabboInfo().getId(),
+                    habbo.getHabboInfo().getId(),
+                    "prefix_purchase",
+                    "inventory.prefix.purchase",
+                    fontPointsType,
+                    -fontPricePoints,
+                    null,
+                    operationId));
+        }
+        try {
+            if (!paymentOperations.isEmpty()) {
+                LedgerWalletMutation.executeBatch(habbo, paymentOperations);
+            }
+        } catch (IllegalArgumentException exception) {
+            this.fail(habbo, "Not enough currency.");
+            return;
+        } catch (SQLException exception) {
+            LOGGER.error("Unable to debit prefix purchase for user {}",
+                    habbo.getHabboInfo().getId(), exception);
+            this.fail(habbo, "Unable to complete the purchase.");
+            return;
+        }
+        if (totalPriceCredits > 0) {
             this.client.sendResponse(new UserCreditsComposer(habbo));
         }
-
-        if (totalPricePointsSameType > 0) {
-            habbo.getHabboInfo().addCurrencyAmount(pointsType, -totalPricePointsSameType);
-            this.client.sendResponse(new UserCurrencyComposer(habbo));
-        }
-
-        if (!font.isEmpty() && fontPricePoints > 0 && fontPointsType != pointsType) {
-            habbo.getHabboInfo().addCurrencyAmount(fontPointsType, -fontPricePoints);
+        if (totalPricePointsSameType > 0
+                || (!font.isEmpty()
+                && fontPricePoints > 0
+                && fontPointsType != pointsType)) {
             this.client.sendResponse(new UserCurrencyComposer(habbo));
         }
 

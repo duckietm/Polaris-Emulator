@@ -51,7 +51,8 @@ class EconomyAuditCoverageContractTest {
         String housekeepingCurrency = Files.readString(SOURCES.resolve(
                 "com/eu/habbo/messages/incoming/housekeeping/HousekeepingGiveCurrencyEvent.java"));
 
-        assertTrue(habbo.contains("EconomyLedger.execute(new EconomyOperation("));
+        assertTrue(habbo.contains(
+                "LedgerWalletMutation.execute(this, new EconomyOperation("));
         assertTrue(housekeepingCredits.contains("\"housekeeping.user.give_credits\""));
         assertTrue(housekeepingCurrency.contains("\"housekeeping.user.give_currency\""));
     }

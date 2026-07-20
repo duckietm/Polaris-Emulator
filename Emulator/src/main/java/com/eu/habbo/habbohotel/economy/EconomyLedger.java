@@ -6,6 +6,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class EconomyLedger {
     public static final int CREDITS = -1;
@@ -25,12 +27,20 @@ public final class EconomyLedger {
     }
 
     public static EconomyMutationResult execute(EconomyOperation operation) throws SQLException {
+        return executeBatch(List.of(operation)).getFirst();
+    }
+
+    public static List<EconomyMutationResult> executeBatch(
+            List<EconomyOperation> operations) throws SQLException {
+        validateBatch(operations);
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
             connection.setAutoCommit(false);
             try {
-                EconomyMutationResult result = apply(connection, operation);
+                List<EconomyMutationResult> results =
+                        applyBatch(connection, operations);
                 connection.commit();
-                return result;
+                return List.copyOf(results);
             } catch (SQLException | RuntimeException exception) {
                 try {
                     connection.rollback();
@@ -39,6 +49,36 @@ public final class EconomyLedger {
                 }
                 throw exception;
             }
+        }
+    }
+
+    public static List<EconomyMutationResult> applyBatch(
+            Connection connection,
+            List<EconomyOperation> operations) throws SQLException {
+        if (connection == null) {
+            throw new IllegalArgumentException("connection must not be null");
+        }
+        validateBatch(operations);
+        List<EconomyMutationResult> results =
+                new ArrayList<>(operations.size());
+        for (EconomyOperation operation : operations) {
+            results.add(apply(connection, operation));
+        }
+        return List.copyOf(results);
+    }
+
+    private static void validateBatch(List<EconomyOperation> operations) {
+        if (operations == null
+                || operations.isEmpty()
+                || operations.stream().anyMatch(operation -> operation == null)) {
+            throw new IllegalArgumentException(
+                    "economy operation batch must not be empty");
+        }
+        int userId = operations.getFirst().userId();
+        if (operations.stream().anyMatch(
+                operation -> operation.userId() != userId)) {
+            throw new IllegalArgumentException(
+                    "economy operation batch must target one user");
         }
     }
 

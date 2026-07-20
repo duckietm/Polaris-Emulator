@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.rooms;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.users.LedgerWalletMutation;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
@@ -217,13 +218,31 @@ public class RoomTrade {
 
         creditsForUserOne = resolveCredits(userOne.getHabbo(), creditsForUserOne);
         creditsForUserTwo = resolveCredits(userTwo.getHabbo(), creditsForUserTwo);
+        final int committedCreditsForUserOne = creditsForUserOne;
+        final int committedCreditsForUserTwo = creditsForUserTwo;
 
         try {
-            if (!RoomTradeTransaction.execute(userOne.getHabbo(), userTwo.getHabbo(),
-                    userOne.getItems(), userTwo.getItems(), creditsForUserOne, creditsForUserTwo,
-                    Emulator.getConfig().getBoolean("hotel.log.trades"))) {
-                return false;
-            }
+            LedgerWalletMutation.coordinated(
+                    userOne.getHabbo(),
+                    userTwo.getHabbo(),
+                    () -> {
+                        RoomTradeTransaction.CommitResult commit =
+                                RoomTradeTransaction.execute(
+                                        userOne.getHabbo(),
+                                        userTwo.getHabbo(),
+                                        userOne.getItems(),
+                                        userTwo.getItems(),
+                                        committedCreditsForUserOne,
+                                        committedCreditsForUserTwo,
+                                        Emulator.getConfig().getBoolean("hotel.log.trades"));
+                        applyCommittedCreditBalance(
+                                userOne.getHabbo(),
+                                commit.userOneCreditBalance());
+                        applyCommittedCreditBalance(
+                                userTwo.getHabbo(),
+                                commit.userTwoCreditBalance());
+                        return commit;
+                    });
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
             this.sendMessageToUsers(new TradeClosedComposer(userOne.getHabbo().getRoomUnit().getId(), TradeClosedComposer.ITEMS_NOT_FOUND));
@@ -236,8 +255,8 @@ public class RoomTrade {
         userOne.clearItems();
         userTwo.clearItems();
 
-        applyCommittedCredits(userOne.getHabbo(), creditsForUserOne);
-        applyCommittedCredits(userTwo.getHabbo(), creditsForUserTwo);
+        publishCommittedCredits(userOne.getHabbo(), committedCreditsForUserOne);
+        publishCommittedCredits(userTwo.getHabbo(), committedCreditsForUserTwo);
 
         userOne.getHabbo().getInventory().getItemsComponent().addItems(itemsUserTwo);
         userTwo.getHabbo().getInventory().getItemsComponent().addItems(itemsUserOne);
@@ -256,9 +275,18 @@ public class RoomTrade {
         return Emulator.getPluginManager().fireEvent(event).isCancelled() ? 0 : Math.max(0, event.credits);
     }
 
-    private static void applyCommittedCredits(Habbo habbo, int credits) {
+    private static void applyCommittedCreditBalance(
+            Habbo habbo,
+            Integer committedBalance) {
+        if (committedBalance == null) return;
+        LedgerWalletMutation.applyCommitted(
+                habbo,
+                com.eu.habbo.habbohotel.economy.EconomyLedger.CREDITS,
+                committedBalance);
+    }
+
+    private static void publishCommittedCredits(Habbo habbo, int credits) {
         if (credits <= 0) return;
-        habbo.getHabboInfo().addCredits(credits);
         if (habbo.getClient() != null) habbo.getClient().sendResponse(new UserCreditsComposer(habbo));
     }
 

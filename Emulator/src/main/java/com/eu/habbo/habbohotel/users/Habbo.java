@@ -5,7 +5,6 @@ import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.economy.EconomyLedger;
-import com.eu.habbo.habbohotel.economy.EconomyMutationResult;
 import com.eu.habbo.habbohotel.economy.EconomyOperation;
 import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.messenger.Messenger;
@@ -293,7 +292,7 @@ public class Habbo implements Runnable {
             return;
 
         try {
-            EconomyMutationResult result = EconomyLedger.execute(new EconomyOperation(
+            LedgerWalletMutation.execute(this, new EconomyOperation(
                     operationId,
                     this.getHabboInfo().getId(),
                     actorId,
@@ -303,7 +302,6 @@ public class Habbo implements Runnable {
                     event.credits,
                     null,
                     ""));
-            this.getHabboInfo().setCredits(result.balanceAfter());
         } catch (Exception exception) {
             LOGGER.error("Unable to apply audited credit mutation for user {}", this.getHabboInfo().getId(), exception);
             return;
@@ -313,6 +311,18 @@ public class Habbo implements Runnable {
     }
 
     public boolean tryTakeCredits(int credits) {
+        return this.tryTakeCredits(
+                credits,
+                "economy.api.credits",
+                EconomyOperationId.create("credits:" + this.getHabboInfo().getId()),
+                this.getHabboInfo().getId());
+    }
+
+    public boolean tryTakeCredits(
+            int credits,
+            String reason,
+            String operationId,
+            Integer actorId) {
         if (credits <= 0) {
             return false;
         }
@@ -322,7 +332,21 @@ public class Habbo implements Runnable {
             return false;
         }
 
-        if (!this.getHabboInfo().tryAddCredits(event.credits)) {
+        try {
+            LedgerWalletMutation.execute(this, new EconomyOperation(
+                    operationId,
+                    this.getHabboInfo().getId(),
+                    actorId,
+                    "credit_debit",
+                    reason,
+                    EconomyLedger.CREDITS,
+                    event.credits,
+                    null,
+                    ""));
+        } catch (IllegalArgumentException exception) {
+            return false;
+        } catch (Exception exception) {
+            LOGGER.error("Unable to apply audited credit debit for user {}", this.getHabboInfo().getId(), exception);
             return false;
         }
 
@@ -364,7 +388,7 @@ public class Habbo implements Runnable {
             return;
 
         try {
-            EconomyMutationResult result = EconomyLedger.execute(new EconomyOperation(
+            LedgerWalletMutation.execute(this, new EconomyOperation(
                     operationId,
                     this.getHabboInfo().getId(),
                     actorId,
@@ -374,7 +398,6 @@ public class Habbo implements Runnable {
                     event.points,
                     null,
                     ""));
-            this.getHabboInfo().setCurrencyAmount(event.type, result.balanceAfter());
         } catch (Exception exception) {
             LOGGER.error("Unable to apply audited currency mutation for user {}", this.getHabboInfo().getId(), exception);
             return;
@@ -387,6 +410,21 @@ public class Habbo implements Runnable {
     }
 
     public boolean tryTakePoints(int type, int points) {
+        return this.tryTakePoints(
+                type,
+                points,
+                "economy.api.currency",
+                EconomyOperationId.create(
+                        "currency:" + this.getHabboInfo().getId() + ":" + type),
+                this.getHabboInfo().getId());
+    }
+
+    public boolean tryTakePoints(
+            int type,
+            int points,
+            String reason,
+            String operationId,
+            Integer actorId) {
         if (points <= 0) {
             return false;
         }
@@ -397,7 +435,22 @@ public class Habbo implements Runnable {
             return false;
         }
 
-        if (!this.getHabboInfo().tryAddCurrencyAmount(event.type, event.points)) {
+        try {
+            LedgerWalletMutation.execute(this, new EconomyOperation(
+                    operationId,
+                    this.getHabboInfo().getId(),
+                    actorId,
+                    "currency_debit",
+                    reason,
+                    event.type,
+                    event.points,
+                    null,
+                    ""));
+        } catch (IllegalArgumentException exception) {
+            return false;
+        } catch (Exception exception) {
+            LOGGER.error("Unable to apply audited currency debit for user {}",
+                    this.getHabboInfo().getId(), exception);
             return false;
         }
 

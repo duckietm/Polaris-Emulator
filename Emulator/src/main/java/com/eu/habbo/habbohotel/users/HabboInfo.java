@@ -61,6 +61,7 @@ public class HabboInfo implements Runnable {
     // can't lose updates or rehash the Trove map mid-iteration. Never held
     // across run()'s DB I/O.
     private final Object currencyLock = new Object();
+    private final Object ledgerMutationLock = new Object();
     private GamePlayer gamePlayer;
     private int photoRoomId;
     private int photoTimestamp;
@@ -523,6 +524,22 @@ public class HabboInfo implements Runnable {
             this.credits = updated;
         }
         this.run();
+    }
+
+    void applyPersistedCredits(int credits) {
+        synchronized (this.currencyLock) {
+            this.credits = WalletBalanceMath.requireValidBalance(credits);
+        }
+    }
+
+    void applyPersistedCurrencyAmount(int type, int amount) {
+        synchronized (this.currencyLock) {
+            this.currencies.put(type, WalletBalanceMath.requireValidBalance(amount));
+        }
+    }
+
+    Object ledgerMutationLock() {
+        return this.ledgerMutationLock;
     }
 
     public boolean tryAddCredits(int credits) {

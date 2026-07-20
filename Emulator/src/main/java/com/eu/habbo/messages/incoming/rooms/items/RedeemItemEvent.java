@@ -1,9 +1,11 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.economy.EconomyMutationResult;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.users.LedgerWalletMutation;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.rooms.UpdateStackHeightComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.RemoveFloorItemComposer;
@@ -107,12 +109,26 @@ public class RedeemItemEvent extends MessageHandler {
                     if (room.getHabboItem(item.getId()) == null) // plugins may cause a lag between which time the item can be removed from the room
                         return;
 
-                    if (!RedeemItemTransaction.commit(
-                            item.getId(),
-                            this.client.getHabbo().getHabboInfo().getId(),
-                            currencyGrant.currencyType(),
-                            currencyGrant.amount(),
-                            item.getBaseItem().getName()))
+                    EconomyMutationResult walletMutation =
+                            LedgerWalletMutation.coordinated(
+                                    this.client.getHabbo(),
+                                    () -> {
+                                        EconomyMutationResult mutation =
+                                                RedeemItemTransaction.commit(
+                                                        item.getId(),
+                                                        this.client.getHabbo().getHabboInfo().getId(),
+                                                        currencyGrant.currencyType(),
+                                                        currencyGrant.amount(),
+                                                        item.getBaseItem().getName());
+                                        if (mutation != null) {
+                                            LedgerWalletMutation.applyCommitted(
+                                                    this.client.getHabbo(),
+                                                    currencyGrant.currencyType(),
+                                                    mutation.balanceAfter());
+                                        }
+                                        return mutation;
+                                    });
+                    if (walletMutation == null)
                         return;
 
                     room.removeHabboItem(item);
@@ -124,7 +140,7 @@ public class RedeemItemEvent extends MessageHandler {
                     t.setStackHeight(room.getStackHeight(item.getX(), item.getY(), false));
                     room.updateTile(t);
                     room.sendComposer(new UpdateStackHeightComposer(item.getX(), item.getY(), t.z, t.relativeHeight()).compose());
-                    applyCurrencyGrant(currencyGrant);
+                    publishCurrencyGrant(currencyGrant);
                 }
             }
         }
@@ -142,14 +158,12 @@ public class RedeemItemEvent extends MessageHandler {
         return new PreparedCurrencyGrant(event.type, event.points);
     }
 
-    private void applyCurrencyGrant(PreparedCurrencyGrant grant) {
+    private void publishCurrencyGrant(PreparedCurrencyGrant grant) {
         if (grant.currencyType() == FurnitureRedeemedEvent.CREDITS) {
-            this.client.getHabbo().getHabboInfo().addCredits(grant.amount());
             this.client.sendResponse(new UserCreditsComposer(this.client.getHabbo()));
             return;
         }
 
-        this.client.getHabbo().getHabboInfo().addCurrencyAmount(grant.currencyType(), grant.amount());
         if (grant.currencyType() == FurnitureRedeemedEvent.PIXELS) {
             this.client.sendResponse(new UserCurrencyComposer(this.client.getHabbo()));
         } else {

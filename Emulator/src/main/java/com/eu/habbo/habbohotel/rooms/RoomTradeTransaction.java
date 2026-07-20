@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.economy.EconomyLedger;
 import com.eu.habbo.habbohotel.economy.EconomyOperation;
 import com.eu.habbo.habbohotel.economy.EconomyOperationId;
+import com.eu.habbo.habbohotel.economy.EconomyMutationResult;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 
@@ -21,9 +22,14 @@ final class RoomTradeTransaction {
     private RoomTradeTransaction() {
     }
 
-    static boolean execute(Habbo userOne, Habbo userTwo,
-                           Collection<HabboItem> userOneItems, Collection<HabboItem> userTwoItems,
-                           int creditsForUserOne, int creditsForUserTwo, boolean logTrades) throws SQLException {
+    static CommitResult execute(
+            Habbo userOne,
+            Habbo userTwo,
+            Collection<HabboItem> userOneItems,
+            Collection<HabboItem> userTwoItems,
+            int creditsForUserOne,
+            int creditsForUserTwo,
+            boolean logTrades) throws SQLException {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
             connection.setAutoCommit(false);
             try {
@@ -36,13 +42,15 @@ final class RoomTradeTransaction {
                         userOneItems, logTrades);
                 persistItems(connection, tradeId, userTwo.getHabboInfo().getId(), userOne.getHabboInfo().getId(),
                         userTwoItems, logTrades);
-                creditUser(connection, operationId, userOne.getHabboInfo().getId(), creditsForUserOne,
+                Integer userOneBalance = creditUser(connection,
+                        operationId, userOne.getHabboInfo().getId(), creditsForUserOne,
                         userTwo.getHabboInfo().getId(), tradeId);
-                creditUser(connection, operationId, userTwo.getHabboInfo().getId(), creditsForUserTwo,
+                Integer userTwoBalance = creditUser(connection,
+                        operationId, userTwo.getHabboInfo().getId(), creditsForUserTwo,
                         userOne.getHabboInfo().getId(), tradeId);
 
                 connection.commit();
-                return true;
+                return new CommitResult(userOneBalance, userTwoBalance);
             } catch (SQLException | RuntimeException exception) {
                 connection.rollback();
                 throw exception;
@@ -104,10 +112,15 @@ final class RoomTradeTransaction {
         }
     }
 
-    private static void creditUser(Connection connection, String operationId, int userId, int credits,
-                                   int actorId, int tradeId) throws SQLException {
-        if (credits <= 0) return;
-        EconomyLedger.apply(connection, new EconomyOperation(
+    private static Integer creditUser(
+            Connection connection,
+            String operationId,
+            int userId,
+            int credits,
+            int actorId,
+            int tradeId) throws SQLException {
+        if (credits <= 0) return null;
+        EconomyMutationResult mutation = EconomyLedger.apply(connection, new EconomyOperation(
                 operationId + ":recipient:" + userId,
                 userId,
                 actorId,
@@ -117,5 +130,9 @@ final class RoomTradeTransaction {
                 credits,
                 null,
                 "tradeId=" + tradeId));
+        return mutation.balanceAfter();
+    }
+
+    record CommitResult(Integer userOneCreditBalance, Integer userTwoCreditBalance) {
     }
 }

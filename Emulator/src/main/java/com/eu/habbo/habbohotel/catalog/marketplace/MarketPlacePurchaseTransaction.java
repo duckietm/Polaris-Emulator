@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.catalog.marketplace;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.economy.EconomyLedger;
+import com.eu.habbo.habbohotel.economy.EconomyMutationResult;
 import com.eu.habbo.habbohotel.economy.EconomyOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,8 +20,14 @@ final class MarketPlacePurchaseTransaction {
     private MarketPlacePurchaseTransaction() {
     }
 
-    static boolean commit(int offerId, int itemId, int buyerId, int currencyType, int charge, int soldTimestamp) {
-        if (offerId <= 0 || itemId <= 0 || buyerId <= 0 || charge <= 0) return false;
+    static EconomyMutationResult commit(
+            int offerId,
+            int itemId,
+            int buyerId,
+            int currencyType,
+            int charge,
+            int soldTimestamp) {
+        if (offerId <= 0 || itemId <= 0 || buyerId <= 0 || charge <= 0) return null;
 
         Connection connection = null;
         try {
@@ -30,10 +37,10 @@ final class MarketPlacePurchaseTransaction {
             if (!executeOfferSale(connection, offerId, soldTimestamp)
                     || !executeItemTransfer(connection, itemId, buyerId)) {
                 connection.rollback();
-                return false;
+                return null;
             }
 
-            EconomyLedger.apply(connection, new EconomyOperation(
+            EconomyMutationResult walletMutation = EconomyLedger.apply(connection, new EconomyOperation(
                     "marketplace:offer:" + offerId + ":buyer",
                     buyerId,
                     buyerId,
@@ -45,13 +52,13 @@ final class MarketPlacePurchaseTransaction {
                     "offerId=" + offerId));
 
             connection.commit();
-            return true;
+            return walletMutation;
         } catch (SQLException e) {
             if (connection != null) {
                 try { connection.rollback(); } catch (SQLException rollbackError) { e.addSuppressed(rollbackError); }
             }
             LOGGER.error("Atomic marketplace purchase failed for offer {}", offerId, e);
-            return false;
+            return null;
         } finally {
             if (connection != null) {
                 try { connection.setAutoCommit(true); connection.close(); }

@@ -13,6 +13,8 @@ class CoverageRatchetContractTest {
         String pom = Files.readString(Path.of("pom.xml"));
 
         assertTrue(pom.contains("<jacoco-plugin.version>0.8.15</jacoco-plugin.version>"));
+        assertTrue(pom.contains(
+                "<jacoco.minimum.instruction.coveredratio>0.07</jacoco.minimum.instruction.coveredratio>"));
         assertTrue(pom.contains("<id>check-coverage-ratchet</id>"));
         assertTrue(pom.contains("<goal>check</goal>"));
         assertTrue(pom.contains("<counter>INSTRUCTION</counter>"));

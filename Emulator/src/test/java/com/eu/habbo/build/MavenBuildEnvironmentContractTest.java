@@ -51,7 +51,7 @@ class MavenBuildEnvironmentContractTest {
         String ci = Files.readString(Path.of("..", ".github", "workflows", "ci.yml"));
         String codeQl = Files.readString(Path.of("..", ".github", "workflows", "codeql.yml"));
 
-        assertTrue(ci.contains("run: ./mvnw -B verify"));
+        assertTrue(ci.contains("run: ./mvnw -B -Pcoverage verify"));
         assertFalse(ci.contains("run: mvn "));
         assertTrue(codeQl.contains("run: ./mvnw -B -DskipTests package"));
     }

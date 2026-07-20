@@ -41,8 +41,7 @@ class DatabasePool {
             HikariConfig databaseConfiguration = new HikariConfig();
 
             // Pool sizing
-            databaseConfiguration.setMaximumPoolSize(config.getInt(DB_POOL_MAX_SIZE, 50));
-            databaseConfiguration.setMinimumIdle(config.getInt(DB_POOL_MIN_SIZE, 10));
+            applyPoolSizing(databaseConfiguration, config);
 
             // Pool timeouts (milliseconds)
             databaseConfiguration.setConnectionTimeout(config.getInt(DB_POOL_CONNECTION_TIMEOUT, 10_000));
@@ -114,6 +113,15 @@ class DatabasePool {
             return false;
         }
         return true;
+    }
+
+    static void applyPoolSizing(
+            HikariConfig databaseConfiguration,
+            ConfigurationManager config) {
+        databaseConfiguration.setMaximumPoolSize(
+                config.getInt(DB_POOL_MAX_SIZE, 50));
+        databaseConfiguration.setMinimumIdle(
+                config.getInt(DB_POOL_MIN_SIZE, 10));
     }
 
     public HikariDataSource getDatabase() {

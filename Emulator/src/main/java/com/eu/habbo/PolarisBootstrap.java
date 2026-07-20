@@ -127,6 +127,7 @@ final class PolarisBootstrap {
         runtime.installDatabaseLogger(new DatabaseLogger());
         configuration.loaded = true;
         configuration.loadFromDatabase();
+        configuration.register("runtime.threads", "8");
 
         int runtimeThreads = resolveRuntimeThreads(configuration);
         PersistenceExecutor persistenceExecutor =

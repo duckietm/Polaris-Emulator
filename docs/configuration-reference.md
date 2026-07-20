@@ -54,6 +54,7 @@ Unknown keys remain allowed for plugins. Database-backed hotel settings are docu
 | `rcon.allowed` | string | `` | `RCON_ALLOWED` | yes | no | RCON listener setting. |
 | `rcon.host` | string | `` | `RCON_HOST` | yes | no | RCON listener setting. |
 | `rcon.port` | integer | `0` | `RCON_PORT` | yes | no | RCON listener setting. |
+| `runtime.threads` | integer | `8` | — | yes | no | Polaris startup setting. |
 | `session.reconnect.grace.seconds` | integer | `0` | — | yes | no | Polaris startup setting. |
 | `ws.enabled` | boolean | `false` | — | yes | no | WebSocket listener setting. |
 | `ws.host` | string | `` | — | yes | no | WebSocket listener setting. |

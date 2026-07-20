@@ -399,7 +399,6 @@ public final class Emulator {
     }
 
     private static void registerStartupConfigDefaults() {
-        Emulator.config.register("runtime.threads", "8");
         Emulator.config.register("camera.url", "http://localhost/camera/");
         Emulator.config.register("imager.location.output.camera", "/public/camera/");
         Emulator.config.register("imager.location.output.thumbnail", "/public/camera/thumbnails/");

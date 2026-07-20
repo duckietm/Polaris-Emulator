@@ -1,8 +1,10 @@
 package com.eu.habbo.plugin;
 
-import com.eu.habbo.habbohotel.users.Habbo;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.eu.habbo.habbohotel.users.Habbo;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
@@ -10,10 +12,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class PluginEventCorrectedBehaviorTest {
 
@@ -27,9 +26,7 @@ class PluginEventCorrectedBehaviorTest {
 
         manager.fireEvent(new TestEvent());
 
-        assertEquals(
-                List.of("lowest", "low", "normal", "high", "highest", "monitor"),
-                calls);
+        assertEquals(List.of("lowest", "low", "normal", "high", "highest", "monitor"), calls);
     }
 
     @Test
@@ -51,8 +48,7 @@ class PluginEventCorrectedBehaviorTest {
         List<String> calls = new ArrayList<>();
         PluginManager manager = new PluginManager(() -> true);
         DefaultHandlers.calls = calls;
-        defaultMethods(manager).add(
-                DefaultHandlers.class.getMethod("highDefault", TestEvent.class));
+        defaultMethods(manager).add(DefaultHandlers.class.getMethod("highDefault", TestEvent.class));
         PluginBeforeDefault plugin = new PluginBeforeDefault(calls);
         manager.getPlugins().add(plugin);
         manager.registerEvents(plugin, plugin);
@@ -75,14 +71,12 @@ class PluginEventCorrectedBehaviorTest {
 
     @Test
     void correctedDispatchIsDocumentedAsAnOptIn() throws Exception {
-        String example = Files.readString(
-                Path.of("..", "config example", "config.ini.example"));
-        String startup = Files.readString(
-                Path.of("src", "main", "java", "com", "eu", "habbo", "Emulator.java"));
+        String example = Files.readString(Path.of("..", "config example", "config.ini.example"));
+        String startup = Files.readString(Path.of("src", "main", "java", "com", "eu", "habbo", "Emulator.java"));
 
         assertTrue(example.contains("polaris.events.honor_priority=false"));
-        assertTrue(startup.contains(
-                "Emulator.config.register(\"polaris.events.honor_priority\", \"0\""));
+        assertTrue(startup.contains("\"polaris.events.honor_priority\""));
+        assertTrue(startup.contains("priority-ordered, cancellation-aware"));
     }
 
     @SuppressWarnings("unchecked")
@@ -122,12 +116,10 @@ class PluginEventCorrectedBehaviorTest {
         }
 
         @Override
-        public void onEnable() {
-        }
+        public void onEnable() {}
 
         @Override
-        public void onDisable() {
-        }
+        public void onDisable() {}
 
         @Override
         public boolean hasPermission(Habbo habbo, String key) {
@@ -204,6 +196,5 @@ class PluginEventCorrectedBehaviorTest {
         }
     }
 
-    private static final class TestEvent extends Event {
-    }
+    private static final class TestEvent extends Event {}
 }

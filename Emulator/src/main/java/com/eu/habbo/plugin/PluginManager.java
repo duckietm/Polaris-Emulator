@@ -1,6 +1,7 @@
 package com.eu.habbo.plugin;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.core.Easter;
 import com.eu.habbo.habbohotel.games.freeze.FreezeGame;
 import com.eu.habbo.habbohotel.games.tag.TagGame;
@@ -31,10 +32,10 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -44,8 +45,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BooleanSupplier;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,12 +64,20 @@ public class PluginManager {
     private volatile boolean reloading;
 
     public PluginManager() {
-        this(() -> Emulator.getConfig() != null
-                && Emulator.getConfig().getBoolean("polaris.events.honor_priority", false));
+        this(() -> false);
+    }
+
+    public PluginManager(ConfigurationManager configuration) {
+        this(prioritySetting(configuration));
     }
 
     PluginManager(BooleanSupplier honorPriority) {
         this.honorPriority = Objects.requireNonNull(honorPriority);
+    }
+
+    private static BooleanSupplier prioritySetting(ConfigurationManager configuration) {
+        ConfigurationManager requiredConfiguration = Objects.requireNonNull(configuration);
+        return () -> requiredConfiguration.getBoolean("polaris.events.honor_priority", false);
     }
 
     @EventHandler
@@ -227,7 +234,9 @@ public class PluginManager {
                                     plugin.registeredEvents.put(eventClass.asSubclass(Event.class), new HashSet<>());
                                 }
 
-                                plugin.registeredEvents.get(eventClass.asSubclass(Event.class)).add(method);
+                                plugin.registeredEvents
+                                        .get(eventClass.asSubclass(Event.class))
+                                        .add(method);
                             }
                         }
                     }
@@ -354,11 +363,11 @@ public class PluginManager {
         DispatchSnapshot snapshot = this.dispatchSnapshot;
         if (!this.reloading
                 && (snapshot.defaultHandlerCount() != this.methods.size()
-                || !snapshot.matchesPluginRegistrations(this.plugins, eventType))) {
+                        || !snapshot.matchesPluginRegistrations(this.plugins, eventType))) {
             synchronized (this.dispatchStateLock) {
                 if (!this.reloading
                         && (this.dispatchSnapshot.defaultHandlerCount() != this.methods.size()
-                        || !this.dispatchSnapshot.matchesPluginRegistrations(this.plugins, eventType))) {
+                                || !this.dispatchSnapshot.matchesPluginRegistrations(this.plugins, eventType))) {
                     this.publishDispatchSnapshot();
                 }
                 snapshot = this.dispatchSnapshot;
@@ -379,8 +388,7 @@ public class PluginManager {
             MethodHandle handle) {
 
         private static final Comparator<HandlerInvocation> CORRECTED_ORDER =
-                Comparator.comparingInt(HandlerInvocation::prioritySlot)
-                        .thenComparing(HandlerInvocation::stableKey);
+                Comparator.comparingInt(HandlerInvocation::prioritySlot).thenComparing(HandlerInvocation::stableKey);
 
         static HandlerInvocation defaultHandler(Method method) {
             return create(null, method);
@@ -410,9 +418,7 @@ public class PluginManager {
                 String pluginName = this.plugin.configuration == null
                         ? this.plugin.getClass().getName()
                         : this.plugin.configuration.name;
-                URL[] pluginUrls = this.plugin.classLoader == null
-                        ? new URL[0]
-                        : this.plugin.classLoader.getURLs();
+                URL[] pluginUrls = this.plugin.classLoader == null ? new URL[0] : this.plugin.classLoader.getURLs();
                 pluginKey = Objects.toString(pluginName, "") + Arrays.toString(pluginUrls);
             }
             return pluginKey
@@ -452,9 +458,7 @@ public class PluginManager {
                             ? this.plugin.getClass().getName()
                             : this.plugin.configuration.name;
                     LOGGER.error(
-                            "Could not pass event {} to {}",
-                            event.getClass().getName(),
-                            pluginName);
+                            "Could not pass event {} to {}", event.getClass().getName(), pluginName);
                 }
                 LOGGER.error("Caught exception", exception);
             }
@@ -469,12 +473,7 @@ public class PluginManager {
             ConcurrentMap<Class<? extends Event>, HandlerLists> handlersByEventType) {
 
         static DispatchSnapshot empty() {
-            return new DispatchSnapshot(
-                    List.of(),
-                    Map.of(),
-                    Map.of(),
-                    List.of(),
-                    new ConcurrentHashMap<>());
+            return new DispatchSnapshot(List.of(), Map.of(), Map.of(), List.of(), new ConcurrentHashMap<>());
         }
 
         static DispatchSnapshot capture(Set<Method> methods, Set<HabboPlugin> plugins) {
@@ -527,9 +526,7 @@ public class PluginManager {
                     .anyMatch(handler -> handler.eventType().isAssignableFrom(eventType));
         }
 
-        boolean matchesPluginRegistrations(
-                Set<HabboPlugin> plugins,
-                Class<? extends Event> eventType) {
+        boolean matchesPluginRegistrations(Set<HabboPlugin> plugins, Class<? extends Event> eventType) {
             if (plugins.size() != this.capturedPlugins.size()) {
                 return false;
             }
@@ -574,9 +571,7 @@ public class PluginManager {
 
         List<HandlerInvocation> handlersFor(Event event, boolean corrected) {
             Class<? extends Event> eventType = event.getClass().asSubclass(Event.class);
-            HandlerLists handlers = this.handlersByEventType.computeIfAbsent(
-                    eventType,
-                    this::buildHandlerLists);
+            HandlerLists handlers = this.handlersByEventType.computeIfAbsent(eventType, this::buildHandlerLists);
             return corrected ? handlers.corrected() : handlers.legacy();
         }
 
@@ -585,22 +580,14 @@ public class PluginManager {
             this.defaultHandlers.stream()
                     .filter(handler -> handler.eventType().isAssignableFrom(eventType))
                     .forEach(handlers::add);
-            handlers.addAll(this.pluginHandlers.getOrDefault(
-                    eventType,
-                    List.of()));
+            handlers.addAll(this.pluginHandlers.getOrDefault(eventType, List.of()));
             List<HandlerInvocation> legacy = List.copyOf(handlers);
             handlers.sort(HandlerInvocation.CORRECTED_ORDER);
             return new HandlerLists(legacy, List.copyOf(handlers));
         }
     }
 
-    private record RegistrationSource(
-            HabboPlugin plugin,
-            Set<Method> methods) {
-    }
+    private record RegistrationSource(HabboPlugin plugin, Set<Method> methods) {}
 
-    private record HandlerLists(
-            List<HandlerInvocation> legacy,
-            List<HandlerInvocation> corrected) {
-    }
+    private record HandlerLists(List<HandlerInvocation> legacy, List<HandlerInvocation> corrected) {}
 }

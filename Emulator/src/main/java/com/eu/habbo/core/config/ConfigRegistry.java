@@ -159,6 +159,16 @@ public final class ConfigRegistry {
                 "ws.enabled",
                 "crypto.ws.enabled",
                 "e2e.enabled");
+        keys.add(new ConfigKey(
+                "polaris.events.honor_priority",
+                ConfigKey.ValueType.BOOLEAN,
+                "false",
+                "",
+                ConfigKey.Source.STARTUP,
+                false,
+                true,
+                List.of(),
+                "Enables priority-ordered, cancellation-aware plugin event dispatch."));
         keys.add(definition("db.integrity.audit.mode", ConfigKey.ValueType.STRING, "warn", true));
         return List.copyOf(keys);
     }

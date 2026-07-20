@@ -1,19 +1,18 @@
 package com.eu.habbo.plugin;
 
-import com.eu.habbo.habbohotel.users.Habbo;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.eu.habbo.habbohotel.users.Habbo;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class PluginEventBehaviorTest {
 
@@ -118,12 +117,10 @@ class PluginEventBehaviorTest {
         }
 
         @Override
-        public void onEnable() {
-        }
+        public void onEnable() {}
 
         @Override
-        public void onDisable() {
-        }
+        public void onDisable() {}
 
         @Override
         public boolean hasPermission(Habbo habbo, String key) {
@@ -190,9 +187,7 @@ class PluginEventBehaviorTest {
         }
     }
 
-    private abstract static class BaseEvent extends Event {
-    }
+    private abstract static class BaseEvent extends Event {}
 
-    private static final class TestEvent extends BaseEvent {
-    }
+    private static final class TestEvent extends BaseEvent {}
 }

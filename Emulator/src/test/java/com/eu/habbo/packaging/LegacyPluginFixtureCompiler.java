@@ -1,7 +1,8 @@
 package com.eu.habbo.packaging;
 
-import javax.tools.JavaCompiler;
-import javax.tools.ToolProvider;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
@@ -11,17 +12,14 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
 
 final class LegacyPluginFixtureCompiler {
 
-    private static final Path FIXTURE_ROOT =
-            Path.of("src", "test", "resources", "plugin-fixtures");
+    private static final Path FIXTURE_ROOT = Path.of("src", "test", "resources", "plugin-fixtures");
 
-    private LegacyPluginFixtureCompiler() {
-    }
+    private LegacyPluginFixtureCompiler() {}
 
     static Path compileMorningstarPlugin(Path workDirectory) throws Exception {
         Path fixture = FIXTURE_ROOT.resolve("morningstar");
@@ -48,12 +46,8 @@ final class LegacyPluginFixtureCompiler {
     }
 
     private static Path compilePlugin(
-            Path workDirectory,
-            Path fixture,
-            String sourceName,
-            String jarName,
-            String release,
-            List<Path> classpath) throws Exception {
+            Path workDirectory, Path fixture, String sourceName, String jarName, String release, List<Path> classpath)
+            throws Exception {
         Path classes = Files.createDirectories(workDirectory.resolve("classes"));
         Path source = fixture.resolve(sourceName);
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
@@ -64,12 +58,15 @@ final class LegacyPluginFixtureCompiler {
                 null,
                 diagnostics,
                 diagnostics,
-                "--release", release,
-                "-classpath", classpath.stream()
+                "--release",
+                release,
+                "-classpath",
+                classpath.stream()
                         .map(Path::toAbsolutePath)
                         .map(Path::toString)
                         .collect(java.util.stream.Collectors.joining(java.io.File.pathSeparator)),
-                "-d", classes.toString(),
+                "-d",
+                classes.toString(),
                 source.toString());
         assertEquals(0, result, diagnostics.toString(java.nio.charset.StandardCharsets.UTF_8));
 
@@ -90,8 +87,7 @@ final class LegacyPluginFixtureCompiler {
 
     private static void addClasses(JarOutputStream output, Path classes) throws IOException {
         try (Stream<Path> files = Files.walk(classes)) {
-            List<Path> classFiles = files
-                    .filter(path -> path.toString().endsWith(".class"))
+            List<Path> classFiles = files.filter(path -> path.toString().endsWith(".class"))
                     .sorted()
                     .toList();
             for (Path classFile : classFiles) {

@@ -1,12 +1,11 @@
 package com.eu.habbo;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class CiReliabilityContractTest {
 
@@ -17,11 +16,8 @@ class CiReliabilityContractTest {
         assertTrue(ci.contains("cancel-in-progress: true"));
         assertTrue(occurrences(ci, "timeout-minutes:") >= 3);
 
-        String release =
-                Files.readString(Path.of("../.github/workflows/build-release.yml"));
-        assertTrue(
-                release.contains(
-                        "group: ${{ github.workflow }}-${{ github.ref }}"));
+        String release = Files.readString(Path.of("../.github/workflows/build-release.yml"));
+        assertTrue(release.contains("group: ${{ github.workflow }}-${{ github.ref }}"));
         assertTrue(release.contains("cancel-in-progress: false"));
         assertTrue(release.contains("timeout-minutes:"));
     }
@@ -30,10 +26,7 @@ class CiReliabilityContractTest {
     void integrationForksHaveAHardTimeout() throws Exception {
         String pom = Files.readString(Path.of("pom.xml"));
 
-        assertTrue(
-                pom.contains(
-                        "<forkedProcessTimeoutInSeconds>600"
-                                + "</forkedProcessTimeoutInSeconds>"));
+        assertTrue(pom.contains("<forkedProcessTimeoutInSeconds>600" + "</forkedProcessTimeoutInSeconds>"));
     }
 
     @Test

@@ -14,7 +14,7 @@ class EmulatorStartupConfigDefaultsTest {
         String source = Files.readString(Path.of("src/main/java/com/eu/habbo/PolarisBootstrap.java"));
 
         int defaults = source.indexOf("registerConfigurationDefaults.run()");
-        int plugins = source.indexOf("new PluginManager()");
+        int plugins = source.indexOf("new PluginManager(");
 
         assertTrue(defaults > 0, "bootstrap must register startup config defaults explicitly");
         assertTrue(plugins > 0, "bootstrap must initialize the plugin manager explicitly");

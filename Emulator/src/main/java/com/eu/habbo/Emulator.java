@@ -432,7 +432,8 @@ public final class Emulator {
     }
 
     private static void registerStartupConfigDefaults() {
-        Emulator.config.register("camera.url", "http://localhost/camera/");
+        ConfigurationManager configuration = Emulator.config;
+        configuration.register("camera.url", "http://localhost/camera/");
         Emulator.config.register("imager.location.output.camera", "/public/camera/");
         Emulator.config.register("imager.location.output.thumbnail", "/public/camera/thumbnails/");
         Emulator.config.register("camera.price.points.publish", "1");
@@ -452,7 +453,7 @@ public final class Emulator {
                 "polaris.legacy.bridge.log", "1", "Log every distinct legacy SQL statement the bridge translates.");
         Emulator.config.register(
                 "polaris.legacy.bridge.table_renames", "", "Extra legacy table renames, format old:new;old2:new2");
-        Emulator.config.register(
+        configuration.register(
                 "polaris.events.honor_priority",
                 "0",
                 "Opt in to priority-ordered, cancellation-aware plugin event dispatch.");

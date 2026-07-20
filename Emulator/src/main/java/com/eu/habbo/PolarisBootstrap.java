@@ -117,7 +117,7 @@ final class PolarisBootstrap {
     }
 
     private boolean initializePlugins() {
-        PluginManager plugins = new PluginManager();
+        PluginManager plugins = new PluginManager(runtime.configuration());
         runtime.installPluginManager(plugins);
         plugins.reload();
         plugins.fireEvent(new EmulatorConfigUpdatedEvent());

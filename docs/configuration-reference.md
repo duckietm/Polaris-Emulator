@@ -55,6 +55,7 @@ Unknown keys remain allowed for plugins. Database-backed hotel settings are docu
 | `nitro.secure.gamedata.root` | string | `` | — | yes | no | Nitro secure-asset runtime setting. |
 | `nitro.secure.master_key` | string | `` | — | yes | no | Nitro secure-asset runtime setting. |
 | `nitro.secure.session_ttl_sec` | integer | `0` | — | yes | no | Nitro secure-asset runtime setting. |
+| `polaris.events.honor_priority` | boolean | `false` | — | no | yes | Enables priority-ordered, cancellation-aware plugin event dispatch. |
 | `rcon.allowed` | string | `` | `RCON_ALLOWED` | yes | no | RCON listener setting. |
 | `rcon.host` | string | `` | `RCON_HOST` | yes | no | RCON listener setting. |
 | `rcon.port` | integer | `0` | `RCON_PORT` | yes | no | RCON listener setting. |

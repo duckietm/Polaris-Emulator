@@ -1,9 +1,10 @@
 package com.eu.habbo.packaging;
 
-import com.eu.habbo.packaging.probe.PackagedJarProbe;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.eu.habbo.packaging.probe.PackagedJarProbe;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -16,10 +17,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class PackagedJarContractIT {
 
@@ -60,16 +59,13 @@ class PackagedJarContractIT {
                         .map(String::trim)
                         .filter(line -> !line.isEmpty() && !line.startsWith("#"))
                         .collect(Collectors.toCollection(TreeSet::new));
-                assertEquals(
-                        new TreeSet<>(resourceLines("/packaging/flyway-plugin-providers.contract")),
-                        actual);
+                assertEquals(new TreeSet<>(resourceLines("/packaging/flyway-plugin-providers.contract")), actual);
             }
         }
     }
 
     @Test
-    void baselinePluginsLoadFromAssembledJarWithLegacyLifecycleAndResources(@TempDir Path temp)
-            throws Exception {
+    void baselinePluginsLoadFromAssembledJarWithLegacyLifecycleAndResources(@TempDir Path temp) throws Exception {
         Path morningstar = Files.createDirectories(temp.resolve("morningstar"));
         runPluginFixture(
                 LegacyPluginFixtureCompiler.compileMorningstarPlugin(
@@ -94,8 +90,7 @@ class PackagedJarContractIT {
         assertTrue(output.contains("Legacy plugin contract verified"), output);
     }
 
-    private static Process packagedJarProbe(Path jar, Path workingDirectory, String... arguments)
-            throws Exception {
+    private static Process packagedJarProbe(Path jar, Path workingDirectory, String... arguments) throws Exception {
         Path java = Path.of(
                 System.getProperty("java.home"),
                 "bin",
@@ -104,11 +99,8 @@ class PackagedJarContractIT {
                 File.pathSeparator,
                 Path.of("target", "test-classes").toAbsolutePath().toString(),
                 jar.toAbsolutePath().toString());
-        List<String> command = new java.util.ArrayList<>(List.of(
-                java.toString(),
-                "-cp",
-                classpath,
-                PackagedJarProbe.class.getName()));
+        List<String> command =
+                new java.util.ArrayList<>(List.of(java.toString(), "-cp", classpath, PackagedJarProbe.class.getName()));
         command.addAll(List.of(arguments));
         return new ProcessBuilder(command)
                 .directory(workingDirectory.toFile())
@@ -129,8 +121,8 @@ class PackagedJarContractIT {
 
     private static Path packagedJar() throws Exception {
         try (var files = Files.list(Path.of("target"))) {
-            List<Path> jars = files
-                    .filter(path -> path.getFileName().toString().matches("Polaris-.+-jar-with-dependencies\\.jar"))
+            List<Path> jars = files.filter(
+                            path -> path.getFileName().toString().matches("Polaris-.+-jar-with-dependencies\\.jar"))
                     .toList();
             assertEquals(1, jars.size(), "Expected one packaged Polaris executable JAR");
             return jars.getFirst();

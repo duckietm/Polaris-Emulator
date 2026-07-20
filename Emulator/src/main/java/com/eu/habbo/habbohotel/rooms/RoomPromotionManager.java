@@ -8,6 +8,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.function.IntSupplier;
 
 /**
  * Manages room promotions.
@@ -16,11 +17,17 @@ public class RoomPromotionManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomPromotionManager.class);
 
     private final Room room;
+    private final IntSupplier roomId;
     private RoomPromotion promotion;
     private volatile boolean promoted;
 
     public RoomPromotionManager(Room room) {
+        this(room, room::getId);
+    }
+
+    RoomPromotionManager(Room room, IntSupplier roomId) {
         this.room = room;
+        this.roomId = roomId;
         this.promoted = false;
         this.promotion = null;
     }
@@ -30,20 +37,22 @@ public class RoomPromotionManager {
      */
     public void loadPromotion(boolean isPromoted, Connection connection) throws SQLException {
         this.promoted = isPromoted;
-        
-        if (this.promoted) {
-            try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT * FROM room_promotions WHERE room_id = ? AND end_timestamp > ? LIMIT 1")) {
-                statement.setInt(1, this.room.getId());
-                statement.setInt(2, Emulator.getIntUnixTimestamp());
 
-                try (ResultSet promotionSet = statement.executeQuery()) {
-                    this.promoted = false;
-                    if (promotionSet.next()) {
-                        this.promoted = true;
-                        this.promotion = new RoomPromotion(this.room, promotionSet);
-                    }
-                }
+        if (!isPromoted) {
+            return;
+        }
+
+        try (PreparedStatement statement = connection.prepareStatement(
+            "SELECT * FROM room_promotions WHERE room_id = ? AND end_timestamp > ? LIMIT 1")) {
+            statement.setInt(1, this.roomId.getAsInt());
+            statement.setInt(2, Emulator.getIntUnixTimestamp());
+
+            try (ResultSet promotionSet = statement.executeQuery()) {
+                RoomPromotion loadedPromotion = promotionSet.next()
+                        ? new RoomPromotion(this.room, promotionSet)
+                        : null;
+                this.promotion = loadedPromotion;
+                this.promoted = loadedPromotion != null;
             }
         }
     }

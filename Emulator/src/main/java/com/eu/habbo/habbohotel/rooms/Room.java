@@ -56,14 +56,20 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ThreadFactory;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 public class Room implements Comparable<Room>, ISerialize, Runnable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Room.class);
+  private static final ThreadFactory LOAD_THREAD_FACTORY =
+          Thread.ofVirtual().name("room-load-", 0).factory();
+  private static final Executor LOAD_COORDINATOR =
+          task -> LOAD_THREAD_FACTORY.newThread(task).start();
 
   // Manager instances for better separation of concerns
   private RoomTileManager tileManager;
@@ -122,6 +128,8 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   private final Int2ObjectMap<RoomBan> bannedHabbos;
   private final Set<Game> games;
   private final Int2ObjectMap<RoomMoodlightData> moodlightData;
+  private final RoomDependencies dependencies;
+  private final RoomLoader loader;
   public volatile double lastCycleCpuMs = 0.0;
   public volatile String lastCycleThread = "N/A";
 
@@ -240,7 +248,12 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   }
 
   Room(int id, int ownerId) {
+    this(id, ownerId, RoomDependencies.runtime());
+  }
+
+  Room(int id, int ownerId, RoomDependencies dependencies) {
     this.cache = new HashMap<>();
+    this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
     this.id = id;
     this.ownerId = ownerId;
     this.bannedHabbos = new Int2ObjectOpenHashMap<>();
@@ -249,84 +262,83 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     this.games = ConcurrentHashMap.newKeySet();
     this.rights = new IntArrayList();
     this.userVotes = new ArrayList<>();
+    this.initializeManagers(
+        new RoomChatManager(this, RoomChatManager.DEFAULT_MUTE_TIME_SECONDS));
+    this.loader = this.createLoader();
   }
 
   public Room(ResultSet set) throws SQLException {
+    this(set, RoomDependencies.runtime());
+  }
+
+  Room(ResultSet set, RoomDependencies dependencies) throws SQLException {
     this.cache = new HashMap<>(1000);
-    this.id = set.getInt("id");
-    this.ownerId = set.getInt("owner_id");
-    this.ownerName = set.getString("owner_name");
-    this.name = set.getString("name");
-    this.description = set.getString("description");
-    this.password = set.getString("password");
-    this.state = RoomState.valueOf(set.getString("state").toUpperCase());
-    this.usersMax = set.getInt("users_max");
-    this.score = set.getInt("score");
-    this.category = set.getInt("category");
-    this.floorPaint = set.getString("paper_floor") == null ? "0.0" : set.getString("paper_floor");
-    this.wallPaint = set.getString("paper_wall") == null ? "0.0" : set.getString("paper_wall");
-    this.backgroundPaint = set.getString("paper_landscape") == null ? "0.0" : set.getString("paper_landscape");
-    this.wallSize = set.getInt("thickness_wall");
-    this.wallHeight = set.getInt("wall_height");
-    this.floorSize = set.getInt("thickness_floor");
-    this.tags = set.getString("tags");
-    this.publicRoom = set.getBoolean("is_public");
-    this.staffPromotedRoom = set.getBoolean("is_staff_picked");
-    this.allowPets = set.getBoolean("allow_other_pets");
-    this.allowPetsEat = set.getBoolean("allow_other_pets_eat");
-    this.allowWalkthrough = set.getBoolean("allow_walkthrough");
-    this.hideWall = set.getBoolean("allow_hidewall");
-    try { this.youtubeEnabled = set.getBoolean("youtube_enabled"); } catch (Exception e) { this.youtubeEnabled = false; }
-    try { this.soundboardEnabled = set.getBoolean("soundboard_enabled"); } catch (Exception e) { this.soundboardEnabled = false; }
-    this.chatMode = set.getInt("chat_mode");
-    this.chatWeight = set.getInt("chat_weight");
-    this.chatSpeed = set.getInt("chat_speed");
-    this.chatDistance = set.getInt("chat_hearing_distance");
-    this.chatProtection = set.getInt("chat_protection");
-    this.muteOption = set.getInt("who_can_mute");
-    this.kickOption = set.getInt("who_can_kick");
-    this.banOption = set.getInt("who_can_ban");
-    this.pollId = set.getInt("poll_id");
-    this.guild = set.getInt("guild_id");
-    this.rollerSpeed = set.getInt("roller_speed");
-    this.overrideModel = set.getString("override_model").equals("1");
-    this.layoutName = set.getString("model");
-    this.promoted = set.getString("promoted").equals("1");
-    this.jukeboxActive = set.getString("jukebox_active").equals("1");
-    this.hideWired = set.getString("hidewired").equals("1");
-    this.buildersClubTrialLocked = set.getBoolean("builders_club_trial_locked");
-
-    String buildersClubOriginalState = set.getString("builders_club_original_state");
-
-    if (buildersClubOriginalState != null && !buildersClubOriginalState.isEmpty()) {
-      try {
-        this.buildersClubOriginalState = RoomState.valueOf(buildersClubOriginalState.toUpperCase());
-      } catch (IllegalArgumentException e) {
-        this.buildersClubOriginalState = RoomState.OPEN;
-      }
-    } else {
-      this.buildersClubOriginalState = RoomState.OPEN;
-    }
+    this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
+    RoomSnapshot.Initial initial = RoomSnapshot.readInitial(set);
+    this.id = initial.id();
+    this.ownerId = initial.ownerId();
+    this.ownerName = initial.ownerName();
+    this.name = initial.name();
+    this.description = initial.description();
+    this.password = initial.password();
+    this.state = initial.state();
+    this.usersMax = initial.usersMax();
+    this.score = initial.score();
+    this.category = initial.category();
+    this.floorPaint = initial.floorPaint();
+    this.wallPaint = initial.wallPaint();
+    this.backgroundPaint = initial.backgroundPaint();
+    this.wallSize = initial.wallSize();
+    this.wallHeight = initial.wallHeight();
+    this.floorSize = initial.floorSize();
+    this.tags = initial.tags();
+    this.publicRoom = initial.publicRoom();
+    this.staffPromotedRoom = initial.staffPromotedRoom();
+    this.allowPets = initial.allowPets();
+    this.allowPetsEat = initial.allowPetsEat();
+    this.allowWalkthrough = initial.allowWalkthrough();
+    this.hideWall = initial.hideWall();
+    this.youtubeEnabled = initial.youtubeEnabled();
+    this.soundboardEnabled = initial.soundboardEnabled();
+    this.chatMode = initial.chatMode();
+    this.chatWeight = initial.chatWeight();
+    this.chatSpeed = initial.chatSpeed();
+    this.chatDistance = initial.chatDistance();
+    this.chatProtection = initial.chatProtection();
+    this.muteOption = initial.muteOption();
+    this.kickOption = initial.kickOption();
+    this.banOption = initial.banOption();
+    this.pollId = initial.pollId();
+    this.guild = initial.guild();
+    this.rollerSpeed = initial.rollerSpeed();
+    this.overrideModel = initial.overrideModel();
+    this.layoutName = initial.layoutName();
+    this.promoted = initial.promoted();
+    this.jukeboxActive = initial.jukeboxActive();
+    this.hideWired = initial.hideWired();
+    this.buildersClubTrialLocked = initial.buildersClubTrialLocked();
+    this.buildersClubOriginalState = initial.buildersClubOriginalState();
 
     this.bannedHabbos = new Int2ObjectOpenHashMap<>();
 
-    try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+    try (Connection connection = this.dependencies.database().openConnection()) {
       // Load bans eagerly (needed for entry check before loadData)
       this.loadBans(connection);
     } catch (SQLException e) {
       LOGGER.error("Caught SQL exception", e);
     }
 
-    this.tradeMode = set.getInt("trade_mode");
-    this.moveDiagonally = set.getString("move_diagonally").equals("1");
-    this.allowUnderpass = set.getString("allow_underpass").equals("1");
+    RoomSnapshot snapshot = RoomSnapshot.complete(initial, set);
+    this.tradeMode = snapshot.postBanLoad().tradeMode();
+    this.moveDiagonally = snapshot.postBanLoad().moveDiagonally();
+    this.allowUnderpass = snapshot.postBanLoad().allowUnderpass();
 
     this.preLoaded = true;
     this.allowBotsWalk = true;
     this.allowEffects = true;
     this.moodlightData = new Int2ObjectOpenHashMap<>(defaultMoodData);
 
-    for (String s : set.getString("moodlight_data").split(";")) {
+    for (String s : snapshot.postBanLoad().moodlightData().split(";")) {
       RoomMoodlightData data = RoomMoodlightData.fromString(s);
       this.moodlightData.put(data.getId(), data);
     }
@@ -339,12 +351,17 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
     // Initialize managers
     this.initializeManagers();
+    this.loader = this.createLoader();
   }
 
   /**
    * Initializes all manager instances for this room.
    */
   private void initializeManagers() {
+    this.initializeManagers(new RoomChatManager(this));
+  }
+
+  private void initializeManagers(RoomChatManager chatManager) {
     this.tileManager = new RoomTileManager(this);
     this.gameManager = new RoomGameManager(this);
     this.tradeManager = new RoomTradeManager(this);
@@ -353,7 +370,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     this.rightsManager = new RoomRightsManager(this);
     this.unitManager = new RoomUnitManager(this);
     this.itemManager = new RoomItemManager(this);
-    this.chatManager = new RoomChatManager(this);
+    this.chatManager = chatManager;
     this.rollerManager = new RoomRollerManager(this);
     this.messagingManager = new RoomMessagingManager(this);
     this.cycleManager = new RoomCycleManager(this);
@@ -615,7 +632,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
       try {
         this.loadingFuture = CompletableFuture.runAsync(
                 () -> this.loadDataInternal(generation),
-                Emulator.getThreading().getService()
+                LOAD_COORDINATOR
         );
       } catch (RuntimeException exception) {
         this.failLoadTransitionLocked(generation);
@@ -692,156 +709,180 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   }
 
   private void performLoadData(long generation) {
-    // Check if already loaded (with lock)
-    synchronized (this.loadLock) {
-      if (generation != this.lifecycleGeneration
-              || this.lifecycleState != LifecycleState.LOADING) {
-        return;
-      }
-      this.preLoaded = false;
+    this.loader.load(generation);
+  }
+
+  private RoomLoader createLoader() {
+    return new RoomLoader(
+            new RoomLoadOperations(),
+            () -> Emulator.getThreading().getService());
+  }
+
+  private final class RoomLoadOperations implements RoomLoader.Operations {
+
+    @Override
+    public int roomId() {
+      return Room.this.id;
     }
 
-    // Perform loading WITHOUT holding the lock to avoid deadlocks
-    try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-      synchronized (this.roomUnitLock) {
-        this.unitManager.clear();
-      }
-
-      this.roomSpecialTypes = new RoomSpecialTypes();
-
-      // Phase 1: Load layout first (required for bots/pets positioning)
-      try {
-        this.loadLayout();
-      } catch (Exception e) {
-        LOGGER.error("Caught exception loading layout", e);
-      }
-
-      if (this.promoted) {
-        CompletableFuture.runAsync(() -> {
-          try (Connection promoConnection = Emulator.getDatabase().getDataSource().getConnection();
-               PreparedStatement stmt = promoConnection.prepareStatement(
-                       "SELECT * FROM room_promotions WHERE room_id = ? AND end_timestamp > ? LIMIT 1")) {
-            stmt.setInt(1, this.id);
-            stmt.setInt(2, Emulator.getIntUnixTimestamp());
-            try (ResultSet promoSet = stmt.executeQuery()) {
-              this.promoted = false;
-              if (promoSet.next()) {
-                this.promoted = true;
-                this.promotion = new RoomPromotion(this, promoSet);
-              }
-            }
-          } catch (Exception e) {
-            LOGGER.error("Caught exception loading promotion", e);
-          }
-        }, Emulator.getThreading().getService());
-      }
-
-      CompletableFuture<Void> itemsFuture = CompletableFuture.runAsync(() -> {
-        try (Connection itemConnection = Emulator.getDatabase().getDataSource().getConnection()) {
-          this.loadItems(itemConnection);
-        } catch (Exception e) {
-          LOGGER.error("Caught exception loading items", e);
+    @Override
+    public boolean prepare(long generation) {
+      synchronized (Room.this.loadLock) {
+        if (generation != Room.this.lifecycleGeneration
+                || Room.this.lifecycleState != LifecycleState.LOADING) {
+          return false;
         }
-      }, Emulator.getThreading().getService());
-
-      CompletableFuture<Void> rightsFuture = CompletableFuture.runAsync(() -> {
-        try (Connection rightsConnection = Emulator.getDatabase().getDataSource().getConnection()) {
-          this.loadRights(rightsConnection);
-        } catch (Exception e) {
-          LOGGER.error("Caught exception loading rights", e);
-        }
-      }, Emulator.getThreading().getService());
-
-      CompletableFuture<Void> wordFilterFuture = CompletableFuture.runAsync(() -> {
-        try (Connection wordFilterConnection = Emulator.getDatabase().getDataSource().getConnection()) {
-          this.loadWordFilter(wordFilterConnection);
-        } catch (Exception e) {
-          LOGGER.error("Caught exception loading word filter", e);
-        }
-      }, Emulator.getThreading().getService());
-
-      // Bots and pets only need layout for positioning - start them now
-      CompletableFuture<Void> botsFuture = CompletableFuture.runAsync(() -> {
-        try (Connection botsConnection = Emulator.getDatabase().getDataSource().getConnection()) {
-          this.loadBots(botsConnection);
-        } catch (Exception e) {
-          LOGGER.error("Caught exception loading bots", e);
-        }
-      }, Emulator.getThreading().getService());
-
-      CompletableFuture<Void> petsFuture = CompletableFuture.runAsync(() -> {
-        try (Connection petsConnection = Emulator.getDatabase().getDataSource().getConnection()) {
-          this.loadPets(petsConnection);
-        } catch (Exception e) {
-          LOGGER.error("Caught exception loading pets", e);
-        }
-      }, Emulator.getThreading().getService());
-
-      // Wait for items (needed for heightmap + wired)
-      try {
-        itemsFuture.join();
-      } catch (Exception e) {
-        LOGGER.error("Error waiting for items to load", e);
-      }
-
-      // Phase 3: Heightmap and wired in parallel (both depend on items, not on each other)
-      CompletableFuture<Void> heightmapFuture = CompletableFuture.runAsync(() -> {
-        try {
-          this.loadHeightmap();
-        } catch (Exception e) {
-          LOGGER.error("Caught exception loading heightmap", e);
-        }
-      }, Emulator.getThreading().getService());
-
-      CompletableFuture<Void> wiredFuture = CompletableFuture.runAsync(() -> {
-        try (Connection wiredConnection = Emulator.getDatabase().getDataSource().getConnection()) {
-          this.loadWiredData(wiredConnection);
-        } catch (Exception e) {
-          LOGGER.error("Caught exception loading wired data", e);
-        }
-      }, Emulator.getThreading().getService());
-
-      // Wait for all remaining operations
-      try {
-        CompletableFuture.allOf(rightsFuture, wordFilterFuture, botsFuture, petsFuture, heightmapFuture, wiredFuture).join();
-      } catch (Exception e) {
-        LOGGER.error("Error waiting for parallel room data loading", e);
-      }
-
-      this.cycleManager.resetIdleCycles();
-    } catch (Exception e) {
-      LOGGER.error("Caught exception during room load", e);
-    }
-
-    this.traxManager = new TraxManager(this);
-
-    if (this.jukeboxActive) {
-      this.traxManager.play(0);
-      for (HabboItem item : this.roomSpecialTypes.getItemsOfType(InteractionJukeBox.class)) {
-        item.setExtradata("1");
-        this.updateItem(item);
+        Room.this.preLoaded = false;
+        return true;
       }
     }
 
-    for (HabboItem item : this.roomSpecialTypes.getItemsOfType(InteractionFireworks.class)) {
-      item.setExtradata("1");
-      this.updateItem(item);
+    @Override
+    public void initialize() {
+      synchronized (Room.this.roomUnitLock) {
+        Room.this.unitManager.clear();
+      }
+      Room.this.roomSpecialTypes = new RoomSpecialTypes();
     }
 
-    synchronized (this) {
+    @Override
+    public void loadLayout() {
       try {
-        if (this.publishLoadTransition(
-                generation,
-                () -> Emulator.getThreading().getService()
-                        .scheduleAtFixedRate(this, 500, 500, TimeUnit.MILLISECONDS)
-        )) {
-          Emulator.getPluginManager().fireEvent(new RoomLoadedEvent(this));
-        }
+        Room.this.loadLayout();
       } catch (Exception exception) {
-        this.failLoadTransition(generation);
-        LOGGER.error("Caught exception publishing room load", exception);
+        LOGGER.error("Caught exception loading layout", exception);
       }
     }
+
+    @Override
+    public boolean shouldLoadPromotion() {
+      return Room.this.promoted;
+    }
+
+    @Override
+    public void loadPromotion() {
+      try (Connection connection =
+                   Room.this.dependencies.database().openConnection()) {
+        Room.this.promotionManager.loadPromotion(true, connection);
+        Room.this.promotion = Room.this.promotionManager.getPromotion();
+        Room.this.promoted =
+                Room.this.promotionManager.getPromotedFlag();
+      } catch (Exception exception) {
+        LOGGER.error("Caught exception loading promotion", exception);
+      }
+    }
+
+    @Override
+    public void loadItems() {
+      withConnection("Caught exception loading items", Room.this::loadItems);
+    }
+
+    @Override
+    public void loadRights() {
+      withConnection("Caught exception loading rights", Room.this::loadRights);
+    }
+
+    @Override
+    public void loadWordFilter() {
+      withConnection(
+              "Caught exception loading word filter",
+              Room.this::loadWordFilter);
+    }
+
+    @Override
+    public void loadBots() {
+      withConnection("Caught exception loading bots", Room.this::loadBots);
+    }
+
+    @Override
+    public void loadPets() {
+      withConnection("Caught exception loading pets", Room.this::loadPets);
+    }
+
+    @Override
+    public void loadHeightmap() {
+      try {
+        Room.this.loadHeightmap();
+      } catch (Exception exception) {
+        LOGGER.error("Caught exception loading heightmap", exception);
+      }
+    }
+
+    @Override
+    public void loadWiredData() {
+      withConnection(
+              "Caught exception loading wired data",
+              Room.this::loadWiredData);
+    }
+
+    @Override
+    public void resetIdleCycles() {
+      Room.this.cycleManager.resetIdleCycles();
+    }
+
+    @Override
+    public boolean finish(long generation) {
+      Room.this.traxManager = new TraxManager(
+              Room.this,
+              Room.this.dependencies.database());
+
+      if (Room.this.jukeboxActive) {
+        Room.this.traxManager.play(0);
+        for (HabboItem item : Room.this.roomSpecialTypes
+                .getItemsOfType(InteractionJukeBox.class)) {
+          item.setExtradata("1");
+          Room.this.updateItem(item);
+        }
+      }
+
+      for (HabboItem item : Room.this.roomSpecialTypes
+              .getItemsOfType(InteractionFireworks.class)) {
+        item.setExtradata("1");
+        Room.this.updateItem(item);
+      }
+
+      synchronized (Room.this) {
+        try {
+          if (Room.this.publishLoadTransition(
+                  generation,
+                  () -> Emulator.getThreading().getService()
+                          .scheduleAtFixedRate(
+                                  Room.this,
+                                  500,
+                                  500,
+                                  TimeUnit.MILLISECONDS))) {
+            Emulator.getPluginManager()
+                    .fireEvent(new RoomLoadedEvent(Room.this));
+            return true;
+          }
+        } catch (Exception exception) {
+          Room.this.failLoadTransition(generation);
+          LOGGER.error("Caught exception publishing room load", exception);
+        }
+      }
+      return false;
+    }
+
+    @Override
+    public void reportFailure(String message, Exception exception) {
+      LOGGER.error(message, exception);
+    }
+
+    private void withConnection(
+            String failureMessage,
+            LoadWithConnection operation) {
+      try (Connection connection =
+                   Room.this.dependencies.database().openConnection()) {
+        operation.load(connection);
+      } catch (Exception exception) {
+        LOGGER.error(failureMessage, exception);
+      }
+    }
+  }
+
+  @FunctionalInterface
+  private interface LoadWithConnection {
+    void load(Connection connection);
   }
 
   private synchronized void loadLayout() {
@@ -1334,8 +1375,8 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
   public void save() {
     if (this.needsUpdate) {
-      try (Connection connection = Emulator.getDatabase().getDataSource()
-              .getConnection(); PreparedStatement statement = connection.prepareStatement(
+      try (Connection connection = this.dependencies.database().openConnection();
+           PreparedStatement statement = connection.prepareStatement(
               "UPDATE rooms SET name = ?, description = ?, password = ?, state = ?, users_max = ?, category = ?, score = ?, paper_floor = ?, paper_wall = ?, paper_landscape = ?, thickness_wall = ?, wall_height = ?, thickness_floor = ?, moodlight_data = ?, tags = ?, allow_other_pets = ?, allow_other_pets_eat = ?, allow_walkthrough = ?, allow_hidewall = ?, chat_mode = ?, chat_weight = ?, chat_speed = ?, chat_hearing_distance = ?, chat_protection =?, who_can_mute = ?, who_can_kick = ?, who_can_ban = ?, poll_id = ?, guild_id = ?, roller_speed = ?, override_model = ?, is_staff_picked = ?, promoted = ?, trade_mode = ?, move_diagonally = ?, owner_id = ?, owner_name = ?, jukebox_active = ?, hidewired = ?, allow_underpass = ?, youtube_enabled = ?, builders_club_trial_locked = ?, builders_club_original_state = ? WHERE id = ?")) {
         statement.setString(1, this.name);
         statement.setString(2, this.description);

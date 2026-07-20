@@ -40,6 +40,7 @@ import java.util.regex.Pattern;
  */
 public class RoomChatManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomChatManager.class);
+    static final int DEFAULT_MUTE_TIME_SECONDS = 30;
 
     private final Room room;
 
@@ -59,10 +60,15 @@ public class RoomChatManager {
     public static boolean MUTEAREA_CAN_WHISPER = false;
 
     public RoomChatManager(Room room) {
+        this(room, Emulator.getConfig().getInt(
+            "hotel.flood.mute.time", DEFAULT_MUTE_TIME_SECONDS));
+    }
+
+    RoomChatManager(Room room, int muteTime) {
         this.room = room;
         this.wordFilterWords = new HashSet<>(0);
         this.mutedHabbos = new Int2IntOpenHashMap();
-        this.muteTime = Emulator.getConfig().getInt("hotel.flood.mute.time", 30);
+        this.muteTime = muteTime;
     }
 
     // ==================== WORD FILTER ====================

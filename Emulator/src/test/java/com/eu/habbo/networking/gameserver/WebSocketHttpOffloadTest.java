@@ -1,7 +1,9 @@
 package com.eu.habbo.networking.gameserver;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.eu.habbo.Emulator;
@@ -10,6 +12,8 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.MultiThreadIoEventLoopGroup;
 import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.http.EmptyHttpHeaders;
+import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.util.concurrent.EventExecutor;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
@@ -60,6 +64,47 @@ class WebSocketHttpOffloadTest {
             assertSame(
                     socketExecutor,
                     channel.pipeline().context("authHttpHandler").executor());
+        } finally {
+            channel.close().syncUninterruptibly();
+            eventLoops.shutdownGracefully().syncUninterruptibly();
+            BlockingHttpExecutionGroup.shutdown();
+            configField.set(null, previousConfig);
+        }
+    }
+
+    @Test
+    void httpHandlersAreRemovedAfterTheWebSocketUpgrade() throws Exception {
+        Field configField = Emulator.class.getDeclaredField("config");
+        configField.setAccessible(true);
+        Object previousConfig = configField.get(null);
+        Path configFile = this.temporaryDirectory.resolve("config.ini");
+        Files.writeString(
+                configFile,
+                "nitro.secure.master_key=test-key\n"
+                        + "nitro.secure.assets.enabled=true\n"
+                        + "crypto.ws.enabled=false\n");
+        configField.set(null, new ConfigurationManager(configFile.toString()));
+
+        EventLoopGroup eventLoops = new MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory());
+        NioSocketChannel channel = new NioSocketChannel();
+        try {
+            eventLoops.register(channel).syncUninterruptibly();
+            new WebSocketChannelInitializer().initChannel(channel);
+
+            channel.eventLoop()
+                    .submit(() -> channel.pipeline()
+                            .fireUserEventTriggered(
+                                    new WebSocketServerProtocolHandler.HandshakeComplete(
+                                            "/", EmptyHttpHeaders.INSTANCE, null)))
+                    .syncUninterruptibly();
+
+            assertNull(channel.pipeline().context("nitroSecureAssetHandler"));
+            assertNull(channel.pipeline().context("nitroSecureApiHandler"));
+            assertNull(channel.pipeline().context("authHttpHandler"));
+            assertNull(channel.pipeline().context("badgeHttpHandler"));
+            assertNull(channel.pipeline().context("badgeLeaderboardHttpHandler"));
+            assertNull(channel.pipeline().context("emuStatsHttpHandler"));
+            assertNotNull(channel.pipeline().context("gameMessageHandler"));
         } finally {
             channel.close().syncUninterruptibly();
             eventLoops.shutdownGracefully().syncUninterruptibly();

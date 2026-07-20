@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.gameclients.GameClientManager;
 import com.eu.habbo.messages.PacketManager;
 import com.eu.habbo.networking.Server;
+import com.eu.habbo.networking.ServerBindException;
 import com.eu.habbo.networking.gameserver.decoders.*;
 import com.eu.habbo.networking.gameserver.encoders.GameServerMessageEncoder;
 import com.eu.habbo.networking.gameserver.encoders.GameServerMessageLogger;
@@ -95,12 +96,14 @@ public class GameServer extends Server {
 
         ChannelFuture wsFuture =
                 this.bind(this.webSocketBootstrap, wsHost, wsPort);
-
-        while (!wsFuture.isDone()) {
-        }
+        wsFuture.awaitUninterruptibly();
 
         if (!wsFuture.isSuccess()) {
-            LOGGER.error("Failed to start WebSocket server on {}:{}", wsHost, wsPort);
+            throw new ServerBindException(
+                    "WebSocket Server",
+                    wsHost,
+                    wsPort,
+                    wsFuture.cause());
         } else {
             this.webSocketChannel = wsFuture.channel();
             this.webSocketListening = true;

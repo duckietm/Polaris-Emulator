@@ -129,6 +129,11 @@ public final class ConfigRegistry {
                 "db.slow_query.max_sql_length",
                 "ws.port",
                 "session.reconnect.grace.seconds");
+        keys.add(definition(
+                "runtime.threads",
+                ConfigKey.ValueType.INTEGER,
+                "8",
+                true));
         add(
                 keys,
                 ConfigKey.ValueType.LONG,

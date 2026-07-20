@@ -5,6 +5,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -28,6 +29,23 @@ class ServerBindCompletionTest {
         try {
             server.connect();
             verify(bindFuture).awaitUninterruptibly();
+        } finally {
+            server.stop();
+        }
+    }
+
+    @Test
+    void bindFailurePropagatesAsStartupFailure() throws Exception {
+        ChannelFuture bindFuture = mock(ChannelFuture.class);
+        IllegalStateException cause =
+                new IllegalStateException("address already in use");
+        when(bindFuture.awaitUninterruptibly()).thenReturn(bindFuture);
+        when(bindFuture.isSuccess()).thenReturn(false);
+        when(bindFuture.cause()).thenReturn(cause);
+
+        TestServer server = new TestServer(bindFuture);
+        try {
+            assertThrows(ServerBindException.class, server::connect);
         } finally {
             server.stop();
         }

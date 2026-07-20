@@ -12,7 +12,7 @@ class PolarisBootstrapRuntimeThreadsTest {
     @Test
     void absentRuntimeThreadSettingUsesDefensiveDefault() {
         ConfigurationManager configuration = mock(ConfigurationManager.class);
-        when(configuration.getInt("runtime.threads")).thenReturn(0);
+        when(configuration.getInt("runtime.threads", 8)).thenReturn(0);
 
         assertEquals(8, PolarisBootstrap.resolveRuntimeThreads(configuration));
     }
@@ -20,7 +20,7 @@ class PolarisBootstrapRuntimeThreadsTest {
     @Test
     void positiveRuntimeThreadSettingRemainsAuthoritative() {
         ConfigurationManager configuration = mock(ConfigurationManager.class);
-        when(configuration.getInt("runtime.threads")).thenReturn(12);
+        when(configuration.getInt("runtime.threads", 8)).thenReturn(12);
 
         assertEquals(12, PolarisBootstrap.resolveRuntimeThreads(configuration));
     }

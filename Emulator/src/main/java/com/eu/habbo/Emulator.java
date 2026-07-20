@@ -84,9 +84,9 @@ public final class Emulator {
     public static long buildTimestamp = -1L;
 
 
-    public static boolean isReady = false;
-    public static boolean isShuttingDown = false;
-    public static boolean stopped = false;
+    public static volatile boolean isReady = false;
+    public static volatile boolean isShuttingDown = false;
+    public static volatile boolean stopped = false;
     public static boolean debugging = false;
     private static int timeStarted = 0;
     private static Runtime runtime;
@@ -187,7 +187,9 @@ public final class Emulator {
 
                 while (!isShuttingDown && isReady) {
                     try {
-                        readConsoleCommand(reader);
+                        if (!readConsoleCommand(reader)) {
+                            break;
+                        }
                         System.out.println("Waiting for command: ");
                     } catch (Exception e) {
                         if (!(e instanceof IOException && e.getMessage().equals("Bad file descriptor"))) {
@@ -217,8 +219,9 @@ public final class Emulator {
         String line = reader.readLine();
         if (line != null) {
             ConsoleCommand.handle(line);
+            return true;
         }
-        return true;
+        return false;
     }
 
     private static void setBuild() {
@@ -377,6 +380,7 @@ public final class Emulator {
     }
 
     private static void registerStartupConfigDefaults() {
+        Emulator.config.register("runtime.threads", "8");
         Emulator.config.register("camera.url", "http://localhost/camera/");
         Emulator.config.register("imager.location.output.camera", "/public/camera/");
         Emulator.config.register("imager.location.output.thumbnail", "/public/camera/thumbnails/");

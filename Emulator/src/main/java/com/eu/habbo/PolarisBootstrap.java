@@ -137,14 +137,13 @@ final class PolarisBootstrap {
                 runtimeThreads,
                 persistenceExecutor));
         Emulator.synchronizeLegacyFacade(runtime);
-        database.getDataSource().setMaximumPoolSize(runtimeThreads * 2);
-        database.getDataSource().setMinimumIdle(10);
         registerConfigurationDefaults.run();
         return true;
     }
 
     static int resolveRuntimeThreads(ConfigurationManager configuration) {
-        return configuration.getInt("runtime.threads");
+        int configured = configuration.getInt("runtime.threads", 8);
+        return configured > 0 ? configured : 8;
     }
 
     private boolean initializePlugins() {

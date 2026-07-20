@@ -165,7 +165,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     private String ownerName;
     private String name;
     private String description;
-    private RoomLayout layout;
+    private volatile RoomLayout layout;
     private boolean overrideModel;
     private String layoutName;
     private String password;
@@ -211,7 +211,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     private int rollerSpeed;
     private int lastTimerReset = Emulator.getIntUnixTimestamp();
     private volatile boolean muted;
-    private RoomSpecialTypes roomSpecialTypes;
+    private volatile RoomSpecialTypes roomSpecialTypes;
     private TraxManager traxManager;
     private final Object wiredSettingsLock = new Object();
     private volatile boolean wiredSettingsLoaded;

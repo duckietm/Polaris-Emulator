@@ -94,14 +94,15 @@ public abstract class Server {
     public void connect() {
         ChannelFuture channelFuture =
                 this.bind(this.serverBootstrap, this.host, this.port);
-
-        while (!channelFuture.isDone()) {
-        }
+        channelFuture.awaitUninterruptibly();
 
         if (!channelFuture.isSuccess()) {
             this.listening = false;
-            LOGGER.info("Failed to start {} on {}:{}", this.name, this.host, this.port);
-            System.exit(0);
+            throw new ServerBindException(
+                    this.name,
+                    this.host,
+                    this.port,
+                    channelFuture.cause());
         } else {
             this.serverChannel = channelFuture.channel();
             this.listening = true;

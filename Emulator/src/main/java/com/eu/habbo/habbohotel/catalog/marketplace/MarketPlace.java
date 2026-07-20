@@ -1,9 +1,11 @@
 package com.eu.habbo.habbohotel.catalog.marketplace;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.economy.EconomyMutationResult;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.users.LedgerWalletMutation;
 import com.eu.habbo.habbohotel.users.WalletBalanceMath;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.catalog.marketplace.RequestOffersEvent;
@@ -308,13 +310,27 @@ public class MarketPlace {
                                         PreparedCharge charge = prepareMarketplaceCharge(client.getHabbo(), event.price);
                                         if (charge == null) return;
 
-                                        if (!MarketPlacePurchaseTransaction.commit(
-                                                offerId,
-                                                item.getId(),
-                                                client.getHabbo().getHabboInfo().getId(),
-                                                charge.currencyType(),
-                                                -charge.delta(),
-                                                soldTimestamp)) {
+                                        EconomyMutationResult walletMutation =
+                                                LedgerWalletMutation.coordinated(
+                                                        client.getHabbo(),
+                                                        () -> {
+                                                            EconomyMutationResult mutation =
+                                                                    MarketPlacePurchaseTransaction.commit(
+                                                                            offerId,
+                                                                            item.getId(),
+                                                                            client.getHabbo().getHabboInfo().getId(),
+                                                                            charge.currencyType(),
+                                                                            -charge.delta(),
+                                                                            soldTimestamp);
+                                                            if (mutation != null) {
+                                                                LedgerWalletMutation.applyCommitted(
+                                                                        client.getHabbo(),
+                                                                        charge.currencyType(),
+                                                                        mutation.balanceAfter());
+                                                            }
+                                                            return mutation;
+                                                        });
+                                        if (walletMutation == null) {
                                             sendErrorMessage(client, item.getBaseItem().getId(), offerId);
                                             return;
                                         }
@@ -325,7 +341,7 @@ public class MarketPlace {
 
                                         client.getHabbo().getInventory().getItemsComponent().addItem(item);
 
-                                        applyMarketplaceCharge(client, charge);
+                                        publishMarketplaceCharge(client, charge);
 
                                         client.sendResponse(new AddHabboItemComposer(item));
                                         client.sendResponse(new InventoryRefreshComposer());
@@ -499,14 +515,14 @@ public class MarketPlace {
         return new PreparedCharge(event.type, event.points);
     }
 
-    private static void applyMarketplaceCharge(GameClient client, PreparedCharge charge) {
+    private static void publishMarketplaceCharge(
+            GameClient client,
+            PreparedCharge charge) {
         if (charge.currencyType() < 0) {
-            client.getHabbo().getHabboInfo().addCredits(charge.delta());
             client.sendResponse(new UserCreditsComposer(client.getHabbo()));
             return;
         }
 
-        client.getHabbo().getHabboInfo().addCurrencyAmount(charge.currencyType(), charge.delta());
         client.sendResponse(new UserPointsComposer(
                 client.getHabbo().getHabboInfo().getCurrencyAmount(charge.currencyType()),
                 charge.delta(),

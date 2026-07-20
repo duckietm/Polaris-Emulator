@@ -37,9 +37,12 @@ class LedgerWalletMutationCoordinationTest {
                     habbo,
                     () -> 2));
 
-            assertThrows(TimeoutException.class,
-                    () -> second.get(100, TimeUnit.MILLISECONDS));
-            releaseFirst.countDown();
+            try {
+                assertThrows(TimeoutException.class,
+                        () -> second.get(100, TimeUnit.MILLISECONDS));
+            } finally {
+                releaseFirst.countDown();
+            }
 
             assertEquals(1, first.get());
             assertEquals(2, second.get());

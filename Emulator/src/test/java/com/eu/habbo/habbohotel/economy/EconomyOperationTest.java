@@ -2,6 +2,8 @@ package com.eu.habbo.habbohotel.economy;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -45,5 +47,32 @@ class EconomyOperationTest {
         assertThrows(IllegalArgumentException.class, () -> EconomyLedger.checkedBalance(10, -11));
         assertThrows(IllegalArgumentException.class,
                 () -> EconomyLedger.checkedBalance(Integer.MAX_VALUE, 1));
+    }
+
+    @Test
+    void walletBatchCannotSpanUsersWithAnAmbiguousLockOrder() {
+        EconomyOperation first = new EconomyOperation(
+                "batch:user:1",
+                1,
+                1,
+                "test",
+                "test.batch",
+                EconomyLedger.CREDITS,
+                1,
+                null,
+                "");
+        EconomyOperation second = new EconomyOperation(
+                "batch:user:2",
+                2,
+                2,
+                "test",
+                "test.batch",
+                EconomyLedger.CREDITS,
+                1,
+                null,
+                "");
+
+        assertThrows(IllegalArgumentException.class,
+                () -> EconomyLedger.executeBatch(List.of(first, second)));
     }
 }

@@ -17,12 +17,14 @@ class AtomicRedeemItemContractTest {
         String source = read("src/main/java/com/eu/habbo/messages/incoming/rooms/items/RedeemItemEvent.java");
         int prepare = source.indexOf("prepareCurrencyGrant(");
         int commit = source.indexOf("RedeemItemTransaction.commit(");
+        int apply = source.indexOf("LedgerWalletMutation.applyCommitted(", commit);
         int roomRemoval = source.indexOf("room.removeHabboItem(item)");
-        int apply = source.indexOf("applyCurrencyGrant(");
+        int publish = source.indexOf("publishCurrencyGrant(", roomRemoval);
 
         assertTrue(prepare > -1 && prepare < commit, "plugin currency events must resolve before the transaction");
-        assertTrue(commit < roomRemoval, "database commit must precede room removal");
-        assertTrue(roomRemoval < apply, "memory balance must be synchronized only after commit");
+        assertTrue(commit < apply, "memory balance must use the committed transaction result");
+        assertTrue(apply < roomRemoval, "wallet memory must synchronize before later room publication");
+        assertTrue(roomRemoval < publish, "client balance publication must follow room removal");
         assertTrue(!source.contains("EconomyAuditLogger.record("),
                 "redemption audit must be committed inside the database transaction, not afterwards");
         assertTrue(source.contains("currencyGrant.currencyType()"),

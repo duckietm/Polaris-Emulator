@@ -1,7 +1,10 @@
 package com.eu.habbo.messages.incoming.inventory.prefixes;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.economy.EconomyOperation;
+import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.LedgerWalletMutation;
 import com.eu.habbo.habbohotel.users.UserPrefix;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
@@ -57,7 +60,25 @@ public class PurchaseCatalogPrefixEvent extends MessageHandler {
                 }
 
                 if (points > 0) {
-                    habbo.getHabboInfo().addCurrencyAmount(pointsType, -points);
+                    try {
+                        LedgerWalletMutation.execute(habbo, new EconomyOperation(
+                                EconomyOperationId.create(
+                                        "catalog-prefix:" + habbo.getHabboInfo().getId()
+                                                + ":" + catalogPrefixId),
+                                habbo.getHabboInfo().getId(),
+                                habbo.getHabboInfo().getId(),
+                                "catalog_prefix_purchase",
+                                "inventory.catalog_prefix.purchase",
+                                pointsType,
+                                -points,
+                                null,
+                                "catalogPrefixId=" + catalogPrefixId));
+                    } catch (IllegalArgumentException exception) {
+                        this.client.sendResponse(new BubbleAlertComposer(
+                                BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key,
+                                "Not enough points."));
+                        return;
+                    }
                     this.client.sendResponse(new UserCurrencyComposer(habbo));
                 }
 

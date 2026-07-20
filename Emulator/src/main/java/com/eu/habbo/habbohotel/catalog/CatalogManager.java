@@ -1539,7 +1539,7 @@ public class CatalogManager {
         String operationId = EconomyOperationId.create(
                 "catalog:" + habbo.getHabboInfo().getId() + ":" + item.getId());
         SpecialCompanionPurchase purchase = CatalogPurchaseTransaction.execute(
-                habbo.getHabboInfo().getId(), operationId, connection -> {
+                habbo, operationId, connection -> {
                     List<Bot> bots = new ArrayList<>();
                     List<Pet> pets = new ArrayList<>();
                     for (int index = 0; index < amount; index++) {
@@ -1638,7 +1638,7 @@ public class CatalogManager {
         String operationId = EconomyOperationId.create(
                 "catalog:" + habbo.getHabboInfo().getId() + ":" + item.getId());
         EntitlementPurchase purchase = CatalogPurchaseTransaction.execute(
-                habbo.getHabboInfo().getId(), operationId, connection -> {
+                habbo, operationId, connection -> {
             UserCatalogItemPurchasedEvent event = new UserCatalogItemPurchasedEvent(
                     habbo, item, new HashSet<>(), totalCredits, totalPoints, new ArrayList<>(requestedBadges));
             Emulator.getPluginManager().fireEvent(event);
@@ -1699,7 +1699,8 @@ public class CatalogManager {
         int userId = habbo.getHabboInfo().getId();
         try {
             String operationId = EconomyOperationId.create("catalog:" + userId + ":" + item.getId());
-            AtomicFurniturePurchase purchase = CatalogPurchaseTransaction.execute(userId, operationId, connection -> {
+            AtomicFurniturePurchase purchase = CatalogPurchaseTransaction.execute(
+                    habbo, operationId, connection -> {
                 Set<HabboItem> createdItems = new HashSet<>();
                 Map<InteractionGuildFurni, Guild> guildFurniture = new HashMap<>();
                 boolean includesMusicDisc = false;
@@ -1894,11 +1895,9 @@ public class CatalogManager {
 
     private void publishCommittedCharges(Habbo habbo, int credits, int points, int pointsType) {
         if (credits > 0) {
-            habbo.getHabboInfo().addCredits(-credits);
             habbo.getClient().sendResponse(new UserCreditsComposer(habbo));
         }
         if (points > 0) {
-            habbo.getHabboInfo().addCurrencyAmount(pointsType, -points);
             habbo.getClient().sendResponse(new UserPointsComposer(
                     habbo.getHabboInfo().getCurrencyAmount(pointsType), -points, pointsType));
         }

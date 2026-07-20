@@ -96,6 +96,20 @@ class AsyncLogbackConfigurationTest {
                 "root.setLevel(Level.DEBUG)"));
     }
 
+    @Test
+    void configurationStopsTheLoggerContextOnShutdown()
+            throws Exception {
+        Document document = configuration();
+
+        NodeList hooks =
+                document.getElementsByTagName("shutdownHook");
+        assertEquals(1, hooks.getLength());
+        Element hook = (Element) hooks.item(0);
+        assertEquals(
+                "ch.qos.logback.core.hook.DefaultShutdownHook",
+                hook.getAttribute("class"));
+    }
+
     private static void assertAsync(
             Document document,
             String name,

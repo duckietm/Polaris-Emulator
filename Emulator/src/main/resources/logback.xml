@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
+    <shutdownHook class="ch.qos.logback.core.hook.DefaultShutdownHook"/>
     <conversionRule conversionWord="morningstarLevel" class="com.eu.habbo.util.logback.ConsoleLevelConverter" />
     <conversionRule conversionWord="morningstarLogger" class="com.eu.habbo.util.logback.ConsoleLoggerConverter" />
 

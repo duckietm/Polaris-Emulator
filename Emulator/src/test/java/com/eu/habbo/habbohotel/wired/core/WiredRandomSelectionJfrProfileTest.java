@@ -30,10 +30,12 @@ class WiredRandomSelectionJfrProfileTest {
         runSelections(WARMUP_SELECTIONS);
         long startedAt = System.nanoTime();
         try (Recording recording = new Recording()) {
-            recording.enable("jdk.ObjectAllocationInNewTLAB")
+            recording
+                    .enable("jdk.ObjectAllocationInNewTLAB")
                     .withThreshold(Duration.ZERO)
                     .withStackTrace();
-            recording.enable("jdk.ObjectAllocationOutsideTLAB")
+            recording
+                    .enable("jdk.ObjectAllocationOutsideTLAB")
                     .withThreshold(Duration.ZERO)
                     .withStackTrace();
             recording.start();
@@ -44,8 +46,7 @@ class WiredRandomSelectionJfrProfileTest {
 
         ProfileSummary summary = summarize(recordingPath, System.nanoTime() - startedAt);
         Files.writeString(summaryPath, summary.format());
-        System.out.println("WIRED_RANDOM_JFR "
-                + summary.format().replace(System.lineSeparator(), " | "));
+        System.out.println("WIRED_RANDOM_JFR " + summary.format().replace(System.lineSeparator(), " | "));
 
         assertNotEquals(0, blackhole);
     }
@@ -58,8 +59,7 @@ class WiredRandomSelectionJfrProfileTest {
         blackhole = result;
     }
 
-    private static ProfileSummary summarize(Path recordingPath, long elapsedNanos)
-            throws Exception {
+    private static ProfileSummary summarize(Path recordingPath, long elapsedNanos) throws Exception {
         long randomAllocations = 0;
         long randomAllocationBytes = 0;
         long totalAllocations = 0;
@@ -108,8 +108,7 @@ class WiredRandomSelectionJfrProfileTest {
                     randomAllocationBytes=%d
                     totalAllocations=%d
                     totalAllocationBytes=%d
-                    """
-                    .formatted(
+                    """.formatted(
                             selections,
                             elapsedNanos,
                             randomAllocations,

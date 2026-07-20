@@ -37,12 +37,15 @@ import org.slf4j.LoggerFactory;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.Executor;
 
 public class GameEnvironment {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GameEnvironment.class);
     private final HotelServiceRegistry services =
             new HotelServiceRegistry();
+    private final Executor persistenceExecutor;
 
     public CreditsScheduler creditsScheduler;
     public PixelScheduler pixelScheduler;
@@ -79,6 +82,17 @@ public class GameEnvironment {
     private SoundboardManager soundboardManager;
     private TraxEditorManager traxEditorManager;
     private MentionManager mentionManager;
+
+    public GameEnvironment() {
+        this(Runnable::run);
+    }
+
+    public GameEnvironment(Executor persistenceExecutor) {
+        this.persistenceExecutor =
+                Objects.requireNonNull(
+                        persistenceExecutor,
+                        "persistenceExecutor");
+    }
 
     public void load() throws Exception {
         LOGGER.info("GameEnvironment -> Loading...");
@@ -120,7 +134,7 @@ public class GameEnvironment {
                 CatalogManager::dispose);
         this.roomManager = this.services.create(
                 "room manager",
-                RoomManager::new,
+                () -> new RoomManager(this.persistenceExecutor),
                 RoomManager::dispose);
         this.services.beforeDispose(
                 "room cycles",

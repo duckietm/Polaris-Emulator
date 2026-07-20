@@ -1,11 +1,18 @@
 package com.eu.habbo.habbohotel.rooms;
 
+import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.HabboInfo;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class RoomPersistenceBehaviorTest {
 
@@ -78,5 +85,44 @@ class RoomPersistenceBehaviorTest {
                 call.sql());
         assertEquals(Map.of(1, 0, 2, 41), call.parameters());
         assertEquals("update", call.operation());
+    }
+
+    @Test
+    void roomJoinSchedulesOneUserCountWriteOutsideTheRoomUnitLock()
+            throws Exception {
+        RoomJdbcTestSupport.RecordingDataSource dataSource =
+                new RoomJdbcTestSupport.RecordingDataSource();
+        List<Runnable> queued = new ArrayList<>();
+        AtomicBoolean scheduledUnderRoomUnitLock = new AtomicBoolean();
+        Room[] holder = new Room[1];
+        Room room = new Room(
+                41,
+                7,
+                new RoomDependencies(
+                        dataSource::getConnection,
+                        task -> {
+                            scheduledUnderRoomUnitLock.set(
+                                    Thread.holdsLock(holder[0].roomUnitLock));
+                            queued.add(task);
+                        }));
+        holder[0] = room;
+        Habbo habbo = mock(Habbo.class);
+        HabboInfo info = mock(HabboInfo.class);
+        RoomUnit roomUnit = mock(RoomUnit.class);
+        when(habbo.getHabboInfo()).thenReturn(info);
+        when(info.getId()).thenReturn(9);
+        when(habbo.getRoomUnit()).thenReturn(roomUnit);
+
+        room.getUnitManager().addHabbo(habbo);
+
+        assertFalse(scheduledUnderRoomUnitLock.get());
+        assertEquals(1, queued.size());
+        assertEquals(List.of(), dataSource.calls());
+
+        queued.removeFirst().run();
+        assertEquals(1, dataSource.calls().size());
+        assertEquals(
+                Map.of(1, 1, 2, 41),
+                dataSource.calls().getFirst().parameters());
     }
 }

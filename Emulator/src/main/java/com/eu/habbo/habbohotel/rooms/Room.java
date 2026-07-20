@@ -134,6 +134,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   private final RoomItemPersistence itemPersistence;
   private final RoomPersistence persistence;
   private final RoomRepository repository;
+  private final RoomUserCountPersistence userCountPersistence;
   public volatile double lastCycleCpuMs = 0.0;
   public volatile String lastCycleThread = "N/A";
 
@@ -250,6 +251,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     this.repository = new RoomRepository(this.dependencies.database());
     this.id = id;
     this.ownerId = ownerId;
+    this.userCountPersistence = this.createUserCountPersistence();
     this.bannedHabbos = new Int2ObjectOpenHashMap<>();
     this.moodlightData = new Int2ObjectOpenHashMap<>(defaultMoodData);
     this.mutedHabbos = new Int2IntOpenHashMap();
@@ -276,6 +278,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     RoomSnapshot.Initial initial = RoomSnapshot.readInitial(set);
     this.id = initial.id();
     this.ownerId = initial.ownerId();
+    this.userCountPersistence = this.createUserCountPersistence();
     this.ownerName = initial.ownerName();
     this.name = initial.name();
     this.description = initial.description();
@@ -1268,6 +1271,17 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     } catch (SQLException e) {
       LOGGER.error("Caught SQL exception", e);
     }
+  }
+
+  void scheduleDatabaseUserCountUpdate() {
+    this.userCountPersistence.schedule();
+  }
+
+  private RoomUserCountPersistence createUserCountPersistence() {
+    return new RoomUserCountPersistence(
+        this::getUserCount,
+        userCount -> this.repository.updateUserCount(this.id, userCount),
+        this.dependencies.persistence()::execute);
   }
 
   private void cycle() {

@@ -159,8 +159,8 @@ public class RoomUnitManager {
             habbo.getRoomUnit().setId(this.unitCounter);
             this.currentHabbos.put(habbo.getHabboInfo().getId(), habbo);
             this.unitCounter++;
-            this.room.updateDatabaseUserCount();
         }
+        this.room.scheduleDatabaseUserCountUpdate();
     }
 
     public void removeHabbo(Habbo habbo) {
@@ -223,7 +223,7 @@ public class RoomUnitManager {
             this.pickupPetsForHabbo(habbo);
         }
 
-        this.room.updateDatabaseUserCount();
+        this.room.scheduleDatabaseUserCountUpdate();
     }
 
      public void kickHabbo(Habbo habbo, boolean alert) {

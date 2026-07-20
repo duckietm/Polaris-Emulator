@@ -57,6 +57,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class RoomManager {
@@ -76,13 +77,28 @@ public class RoomManager {
     private final ConcurrentHashMap<Integer, Set<Integer>> roomsByOwner;
     private final AtomicInteger indexedRoomCount;
     private final ArrayList<Class<? extends Game>> gameTypes;
+    private final Executor persistenceExecutor;
 
     public RoomManager() {
-        this(true);
+        this(true, Runnable::run);
+    }
+
+    public RoomManager(Executor persistenceExecutor) {
+        this(true, persistenceExecutor);
     }
 
     RoomManager(boolean initialize) {
+        this(initialize, Runnable::run);
+    }
+
+    RoomManager(
+            boolean initialize,
+            Executor persistenceExecutor) {
         long millis = System.currentTimeMillis();
+        this.persistenceExecutor =
+                Objects.requireNonNull(
+                        persistenceExecutor,
+                        "persistenceExecutor");
         this.roomCategories = new HashMap<>();
         this.mapNames = new ArrayList<>();
         this.layoutCache = new ConcurrentHashMap<>();
@@ -112,6 +128,16 @@ public class RoomManager {
         if (this.roomsByOwner.computeIfAbsent(room.getOwnerId(), k -> ConcurrentHashMap.newKeySet()).add(room.getId())) {
             this.indexedRoomCount.incrementAndGet();
         }
+    }
+
+    private RoomDependencies roomDependencies() {
+        return new RoomDependencies(
+                this::openConnection,
+                this.persistenceExecutor::execute);
+    }
+
+    private Connection openConnection() throws SQLException {
+        return Emulator.getDatabase().getDataSource().getConnection();
     }
 
     private void untrackRoomOwner(Room room) {
@@ -200,7 +226,7 @@ public class RoomManager {
     private void loadRoomCategories() {
         this.roomCategories.clear();
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery("SELECT * FROM navigator_flatcats")) {
+        try (Connection connection = this.openConnection(); Statement statement = connection.createStatement(); ResultSet set = statement.executeQuery("SELECT * FROM navigator_flatcats")) {
             while (set.next()) {
                 this.roomCategories.put(set.getInt("id"), new RoomCategory(set));
             }
@@ -215,7 +241,7 @@ public class RoomManager {
             statement.setString(2, "1");
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
-                    Room room = new Room(set);
+                    Room room = new Room(set, this.roomDependencies());
                     room.preventUncaching = true;
                     this.registerActiveRoom(room);
                 }
@@ -235,7 +261,7 @@ public class RoomManager {
                     Room room = this.activeRooms.get(set.getInt("id"));
 
                     if (room == null) {
-                        room = new Room(set);
+                        room = new Room(set, this.roomDependencies());
                         this.registerActiveRoom(room);
                     }
 
@@ -387,7 +413,7 @@ public class RoomManager {
 
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
-                    room = new Room(set);
+                    room = new Room(set, this.roomDependencies());
                     if (loadData) {
                         room.loadData();
                     }
@@ -444,7 +470,7 @@ public class RoomManager {
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
                     if (!this.activeRooms.containsKey(set.getInt("id"))) {
-                        Room room = new Room(set);
+                        Room room = new Room(set, this.roomDependencies());
                         this.registerActiveRoom(room);
                     }
                 }
@@ -1283,7 +1309,7 @@ public class RoomManager {
                     if (this.activeRooms.containsKey(set.getInt("id")))
                         continue;
 
-                    Room r = new Room(set);
+                    Room r = new Room(set, this.roomDependencies());
                     rooms.add(r);
                     this.registerActiveRoom(r);
                 }
@@ -1342,7 +1368,7 @@ public class RoomManager {
                     if (this.activeRooms.containsKey(set.getInt("id")))
                         continue;
 
-                    Room r = new Room(set);
+                    Room r = new Room(set, this.roomDependencies());
                     rooms.add(r);
 
                     this.registerActiveRoom(r);
@@ -1406,7 +1432,7 @@ public class RoomManager {
                     Room room = this.activeRooms.get(set.getInt("id"));
 
                     if (room == null) {
-                        room = new Room(set);
+                        room = new Room(set, this.roomDependencies());
 
                         this.registerActiveRoom(room);
                     }
@@ -1452,7 +1478,7 @@ public class RoomManager {
                     if (this.activeRooms.containsKey(set.getInt("id"))) {
                         rooms.add(this.activeRooms.get(set.getInt("id")));
                     } else {
-                        rooms.add(new Room(set));
+                        rooms.add(new Room(set, this.roomDependencies()));
                     }
                 }
             }
@@ -1475,7 +1501,7 @@ public class RoomManager {
                     if (this.activeRooms.containsKey(set.getInt("id"))) {
                         rooms.add(this.activeRooms.get(set.getInt("id")));
                     } else {
-                        rooms.add(new Room(set));
+                        rooms.add(new Room(set, this.roomDependencies()));
                     }
                 }
             }
@@ -1517,7 +1543,7 @@ public class RoomManager {
                     if (this.activeRooms.containsKey(set.getInt("id"))) {
                         rooms.add(this.activeRooms.get(set.getInt("id")));
                     } else {
-                        rooms.add(new Room(set));
+                        rooms.add(new Room(set, this.roomDependencies()));
                     }
                 }
             }
@@ -1539,7 +1565,7 @@ public class RoomManager {
                     if (this.activeRooms.containsKey(set.getInt("id"))) {
                         rooms.add(this.activeRooms.get(set.getInt("id")));
                     } else {
-                        rooms.add(new Room(set));
+                        rooms.add(new Room(set, this.roomDependencies()));
                     }
                 }
             }

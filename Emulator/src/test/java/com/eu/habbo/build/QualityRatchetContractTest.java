@@ -1,11 +1,10 @@
 package com.eu.habbo.build;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class QualityRatchetContractTest {
 
@@ -24,8 +23,7 @@ class QualityRatchetContractTest {
 
     @Test
     void ciChecksFormattingFromTheExactChangeBase() throws Exception {
-        String workflow = Files.readString(
-                Path.of("..", ".github", "workflows", "ci.yml"));
+        String workflow = Files.readString(Path.of("..", ".github", "workflows", "ci.yml"));
 
         assertTrue(workflow.contains("fetch-depth: 0"));
         assertTrue(workflow.contains("-Dspotless.ratchetFrom="));
@@ -35,8 +33,7 @@ class QualityRatchetContractTest {
 
     @Test
     void codeQlBuildsAndAnalyzesJavaExplicitly() throws Exception {
-        String workflow = Files.readString(
-                Path.of("..", ".github", "workflows", "codeql.yml"));
+        String workflow = Files.readString(Path.of("..", ".github", "workflows", "codeql.yml"));
 
         assertTrue(workflow.contains("github/codeql-action/init@v4"));
         assertTrue(workflow.contains("languages: java-kotlin"));

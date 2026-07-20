@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Verify local build handoff
         shell: pwsh
@@ -35,7 +37,7 @@ jobs:
       # (Failsafe), which build the schema by running the real timestamped migrations
       # against a Testcontainers MariaDB. A broken migration fails the build.
       - name: Build and test
-        run: mvn -B verify
+        run: mvn -B verify -Dspotless.ratchetFrom="${{ github.event.pull_request.base.sha || github.event.before }}"
 
       - name: Upload furni consistency fixture report
         if: always()

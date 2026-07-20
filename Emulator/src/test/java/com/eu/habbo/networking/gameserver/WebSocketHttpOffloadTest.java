@@ -1,5 +1,6 @@
 package com.eu.habbo.networking.gameserver;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
@@ -62,7 +63,22 @@ class WebSocketHttpOffloadTest {
         } finally {
             channel.close().syncUninterruptibly();
             eventLoops.shutdownGracefully().syncUninterruptibly();
+            BlockingHttpExecutionGroup.shutdown();
             configField.set(null, previousConfig);
+        }
+    }
+
+    @Test
+    void blockingHttpWorkerCountUsesTheConfiguredValue() {
+        BlockingHttpExecutionGroup.shutdown();
+        try {
+            int executors = 0;
+            for (EventExecutor ignored : BlockingHttpExecutionGroup.get(3)) {
+                executors++;
+            }
+            assertEquals(3, executors);
+        } finally {
+            BlockingHttpExecutionGroup.shutdown();
         }
     }
 }

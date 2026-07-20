@@ -1,6 +1,7 @@
 package com.eu.habbo.networking;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.core.ConfigurationManager;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -40,10 +41,9 @@ public abstract class Server {
         if (sharedAllocator == null) {
             synchronized (Server.class) {
                 if (sharedAllocator == null) {
-                    boolean pooled = Emulator.getConfig() != null
-                            && "true"
-                                    .equalsIgnoreCase(
-                                            Emulator.getConfig().getValue("io.netty.allocator.pooled", "false"));
+                    ConfigurationManager configuration = configuration();
+                    boolean pooled = configuration != null
+                            && "true".equalsIgnoreCase(configuration.getValue("io.netty.allocator.pooled", "false"));
                     sharedAllocator = pooled ? new PooledByteBufAllocator(false) : new UnpooledByteBufAllocator(false);
                     LOGGER.info("Netty ByteBuf allocator: {}", pooled ? "pooled-heap" : "unpooled-heap");
                 }
@@ -96,9 +96,10 @@ public abstract class Server {
     protected static WriteBufferWaterMark configuredWriteBufferWaterMark() {
         int low = DEFAULT_WRITE_BUFFER_LOW_WATER_MARK;
         int high = DEFAULT_WRITE_BUFFER_HIGH_WATER_MARK;
-        if (Emulator.getConfig() != null) {
-            low = Emulator.getConfig().getInt("io.netty.write_buffer.low_water_mark", low);
-            high = Emulator.getConfig().getInt("io.netty.write_buffer.high_water_mark", high);
+        ConfigurationManager configuration = configuration();
+        if (configuration != null) {
+            low = configuration.getInt("io.netty.write_buffer.low_water_mark", low);
+            high = configuration.getInt("io.netty.write_buffer.high_water_mark", high);
         }
 
         if (low < 0 || high <= low) {
@@ -115,10 +116,10 @@ public abstract class Server {
     }
 
     protected static int configuredUnwritableTimeoutSeconds() {
-        int timeout = Emulator.getConfig() == null
+        ConfigurationManager configuration = configuration();
+        int timeout = configuration == null
                 ? DEFAULT_UNWRITABLE_TIMEOUT_SECONDS
-                : Emulator.getConfig()
-                        .getInt("io.netty.unwritable.timeout.seconds", DEFAULT_UNWRITABLE_TIMEOUT_SECONDS);
+                : configuration.getInt("io.netty.unwritable.timeout.seconds", DEFAULT_UNWRITABLE_TIMEOUT_SECONDS);
         if (timeout <= 0) {
             LOGGER.warn(
                     "Invalid Netty unwritable timeout {}; using default {} seconds",
@@ -127,6 +128,10 @@ public abstract class Server {
             return DEFAULT_UNWRITABLE_TIMEOUT_SECONDS;
         }
         return timeout;
+    }
+
+    private static ConfigurationManager configuration() {
+        return Emulator.getConfig();
     }
 
     public void connect() {

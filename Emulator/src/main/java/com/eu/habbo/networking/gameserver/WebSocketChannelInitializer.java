@@ -48,16 +48,22 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
     private final boolean sslEnabled;
     private final WebSocketServerProtocolConfig wsConfig;
     private final int unwritableTimeoutSeconds;
+    private final int blockingHttpThreads;
 
     public WebSocketChannelInitializer() {
-        this(10);
+        this(10, 8);
     }
 
     WebSocketChannelInitializer(int unwritableTimeoutSeconds) {
+        this(unwritableTimeoutSeconds, 8);
+    }
+
+    WebSocketChannelInitializer(int unwritableTimeoutSeconds, int blockingHttpThreads) {
         if (unwritableTimeoutSeconds <= 0) {
             throw new IllegalArgumentException("unwritableTimeoutSeconds must be positive");
         }
         this.unwritableTimeoutSeconds = unwritableTimeoutSeconds;
+        this.blockingHttpThreads = blockingHttpThreads;
         this.sslContext = SSLCertificateLoader.getContext();
         this.sslEnabled = this.sslContext != null;
         this.wsConfig = WebSocketServerProtocolConfig.newBuilder()
@@ -83,7 +89,7 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
         ch.pipeline().addLast("httpCodec", new HttpServerCodec());
         ch.pipeline().addLast("httpAggregator", new HttpObjectAggregator(MAX_FRAME_SIZE));
         ch.pipeline().addLast("wsHttpHandler", new WebSocketHttpHandler());
-        EventExecutorGroup blockingHttp = BlockingHttpExecutionGroup.get();
+        EventExecutorGroup blockingHttp = BlockingHttpExecutionGroup.get(this.blockingHttpThreads);
         ch.pipeline().addLast(blockingHttp, "nitroSecureAssetHandler", new NitroSecureAssetHandler());
         ch.pipeline().addLast("nitroSecureApiHandler", new NitroSecureApiHandler());
         ch.pipeline().addLast("authHttpHandler", new AuthHttpHandler());

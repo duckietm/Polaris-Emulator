@@ -1,6 +1,7 @@
 package com.eu.habbo.networking.gameserver;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.gameclients.GameClientManager;
 import com.eu.habbo.messages.PacketManager;
@@ -44,8 +45,8 @@ public class GameServer extends Server {
                 "Game Server",
                 host,
                 port,
-                Emulator.getConfig().getInt("io.bossgroup.threads"),
-                Emulator.getConfig().getInt("io.workergroup.threads"));
+                configuration().getInt("io.bossgroup.threads"),
+                configuration().getInt("io.workergroup.threads"));
         this.packetManager = new PacketManager();
         this.gameClientManager = new GameClientManager();
     }
@@ -95,15 +96,15 @@ public class GameServer extends Server {
 
     private void initializeWebSocketServer() {
         this.webSocketListening = false;
-        if (!Emulator.getConfig().getBoolean("ws.enabled", false)) {
+        if (!configuration().getBoolean("ws.enabled", false)) {
             return;
         }
 
-        String wsHost = Emulator.getConfig().getValue("ws.host", "0.0.0.0");
-        int wsPort = Emulator.getConfig().getInt("ws.port", 2096);
+        String wsHost = configuration().getValue("ws.host", "0.0.0.0");
+        int wsPort = configuration().getInt("ws.port", 2096);
 
-        WebSocketChannelInitializer wsInitializer =
-                new WebSocketChannelInitializer(configuredUnwritableTimeoutSeconds());
+        WebSocketChannelInitializer wsInitializer = new WebSocketChannelInitializer(
+                configuredUnwritableTimeoutSeconds(), configuration().getInt("http.blocking.pool.size", 8));
 
         this.webSocketBootstrap = new ServerBootstrap();
         this.webSocketBootstrap.group(this.getBossGroup(), this.getWorkerGroup());
@@ -122,7 +123,7 @@ public class GameServer extends Server {
             wsFuture.channel().closeFuture().addListener(ignored -> this.webSocketListening = false);
             LOGGER.info("WebSocket server started on {}:{} (SSL: {})", wsHost, wsPort, wsInitializer.isSslEnabled());
 
-            if (com.eu.habbo.Emulator.getConfig().getBoolean("crypto.ws.signing.enabled", false)) {
+            if (configuration().getBoolean("crypto.ws.signing.enabled", false)) {
                 try {
                     com.eu.habbo.networking.gameserver.crypto.CryptoSigningKeyManager.get();
                     LOGGER.info(
@@ -133,6 +134,10 @@ public class GameServer extends Server {
                 }
             }
         }
+    }
+
+    private static ConfigurationManager configuration() {
+        return Emulator.getConfig();
     }
 
     public PacketManager getPacketManager() {

@@ -3,7 +3,6 @@ package com.eu.habbo.messages.incoming.catalog;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.eu.habbo.habbohotel.catalog.CatalogPurchaseCommand;
 import com.eu.habbo.messages.ClientMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;

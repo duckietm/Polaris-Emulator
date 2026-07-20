@@ -15,7 +15,7 @@ class CiReliabilityContractTest {
         String ci = Files.readString(Path.of("../.github/workflows/ci.yml"));
         assertTrue(ci.contains("group: ${{ github.workflow }}-${{ github.ref }}"));
         assertTrue(ci.contains("cancel-in-progress: true"));
-        assertTrue(occurrences(ci, "timeout-minutes:") >= 2);
+        assertTrue(occurrences(ci, "timeout-minutes:") >= 3);
 
         String release =
                 Files.readString(Path.of("../.github/workflows/build-release.yml"));

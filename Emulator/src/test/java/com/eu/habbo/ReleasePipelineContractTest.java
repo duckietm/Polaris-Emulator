@@ -26,19 +26,22 @@ class ReleasePipelineContractTest {
         assertTrue(triggers.contains("types: [completed]"));
         assertTrue(triggers.contains("branches: [main]"));
         assertFalse(triggers.contains("push:"));
+        assertTrue(workflow.contains("github.event.workflow_run.conclusion == 'success'"));
+        assertTrue(workflow.contains("github.event.workflow_run.head_branch == 'main'"));
+        // A fork can open a pull request from a branch it named "main"; its CI runs
+        // as a pull_request event from another repository. Releasing must be gated on
+        // the run being a push from this repository, or that fork's commit could be
+        // pushed to main and published as a signed release.
+        assertTrue(workflow.contains("github.event.workflow_run.event == 'push'"));
         assertTrue(workflow.contains(
-                "github.event.workflow_run.conclusion == 'success'"
-        ));
-        assertTrue(workflow.contains(
-                "github.event.workflow_run.head_branch == 'main'"
-        ));
+                "github.event.workflow_run.head_repository.full_name == github.repository"));
     }
 
     @Test
     void releaseBuildRunsTheCompleteVerificationLifecycle() throws Exception {
         String workflow = Files.readString(RELEASE_WORKFLOW);
 
-        assertTrue(workflow.contains("run: mvn -B clean verify"));
+        assertTrue(workflow.matches("(?s).*run: (?:mvn|\\./mvnw) -B clean verify.*"));
         assertFalse(workflow.contains("-DskipTests"));
         assertTrue(workflow.contains("github.event.workflow_run.head_sha"));
         assertTrue(workflow.contains("ref: ${{ env.SOURCE_SHA }}"));

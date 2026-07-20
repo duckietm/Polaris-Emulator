@@ -5,6 +5,10 @@ on:
   push:
     branches: [main, dev]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -12,6 +16,7 @@ jobs:
   build:
     name: Build + unit + integration
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: Emulator
@@ -49,6 +54,7 @@ jobs:
   migration-matrix:
     name: Migrations on MariaDB ${{ matrix.mariadb }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:

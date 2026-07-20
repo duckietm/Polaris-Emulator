@@ -37,6 +37,10 @@ rcon.host=127.0.0.1
 rcon.port=3001
 rcon.allowed=127.0.0.1;127.0.0.2
 
+# Plugin events keep legacy unordered/all-handlers dispatch by default.
+# Set true only when plugins are ready for annotation priority and ignoreCancelled semantics.
+polaris.events.honor_priority=false
+
 # Databse configuration
 db.pool.connection_timeout_ms = 10000
 db.pool.idle_timeout_ms       = 600000

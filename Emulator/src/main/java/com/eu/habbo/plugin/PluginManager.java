@@ -23,6 +23,8 @@ import com.google.gson.GsonBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -30,9 +32,20 @@ import java.net.URLClassLoader;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.BooleanSupplier;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +59,19 @@ public class PluginManager {
 
     private final Set<HabboPlugin> plugins = new HashSet<>();
     private final Set<Method> methods = new HashSet<>();
+    private final BooleanSupplier honorPriority;
+    private final Object dispatchStateLock = new Object();
+    private volatile DispatchSnapshot dispatchSnapshot = DispatchSnapshot.empty();
+    private volatile boolean reloading;
+
+    public PluginManager() {
+        this(() -> Emulator.getConfig() != null
+                && Emulator.getConfig().getBoolean("polaris.events.honor_priority", false));
+    }
+
+    PluginManager(BooleanSupplier honorPriority) {
+        this.honorPriority = Objects.requireNonNull(honorPriority);
+    }
 
     @EventHandler
     public static void globalOnConfigurationUpdated(EmulatorConfigUpdatedEvent event) {
@@ -87,7 +113,22 @@ public class PluginManager {
     }
 
     public void loadPlugins() {
-        this.disposePlugins();
+        synchronized (this.dispatchStateLock) {
+            this.reloading = true;
+            try {
+                this.loadPluginsInternal();
+            } finally {
+                try {
+                    this.publishDispatchSnapshot();
+                } finally {
+                    this.reloading = false;
+                }
+            }
+        }
+    }
+
+    private void loadPluginsInternal() {
+        this.disposePluginsInternal();
 
         File loc = new File("plugins");
 
@@ -172,96 +213,76 @@ public class PluginManager {
     }
 
     public void registerEvents(HabboPlugin plugin, EventListener listener) {
-        synchronized (plugin.registeredEvents) {
-            Method[] methods = listener.getClass().getMethods();
+        synchronized (this.dispatchStateLock) {
+            synchronized (plugin.registeredEvents) {
+                Method[] methods = listener.getClass().getMethods();
 
-            for (Method method : methods) {
-                if (method.getAnnotation(EventHandler.class) != null) {
-                    if (method.getParameterTypes().length == 1) {
-                        if (Event.class.isAssignableFrom(method.getParameterTypes()[0])) {
-                            final Class<?> eventClass = method.getParameterTypes()[0];
+                for (Method method : methods) {
+                    if (method.getAnnotation(EventHandler.class) != null) {
+                        if (method.getParameterTypes().length == 1) {
+                            if (Event.class.isAssignableFrom(method.getParameterTypes()[0])) {
+                                final Class<?> eventClass = method.getParameterTypes()[0];
 
-                            if (!plugin.registeredEvents.containsKey(eventClass.asSubclass(Event.class))) {
-                                plugin.registeredEvents.put(eventClass.asSubclass(Event.class), new HashSet<>());
+                                if (!plugin.registeredEvents.containsKey(eventClass.asSubclass(Event.class))) {
+                                    plugin.registeredEvents.put(eventClass.asSubclass(Event.class), new HashSet<>());
+                                }
+
+                                plugin.registeredEvents.get(eventClass.asSubclass(Event.class)).add(method);
                             }
-
-                            plugin.registeredEvents
-                                    .get(eventClass.asSubclass(Event.class))
-                                    .add(method);
                         }
                     }
                 }
+            }
+
+            if (!this.reloading) {
+                this.publishDispatchSnapshot();
             }
         }
     }
 
     public <T extends Event> T fireEvent(T event) {
-        for (Method method : this.methods) {
-            if (method.getParameterTypes().length == 1
-                    && method.getParameterTypes()[0].isAssignableFrom(event.getClass())) {
-                try {
-                    method.invoke(null, event);
-                } catch (Exception e) {
-                    LOGGER.error(
-                            "Could not pass default event {} to {}: {}!",
-                            event.getClass().getName(),
-                            method.getClass().getName(),
-                            method.getName());
-                    LOGGER.error("Caught exception", e);
-                }
+        Class<? extends Event> eventType = event.getClass().asSubclass(Event.class);
+        DispatchSnapshot snapshot = this.currentDispatchSnapshot(eventType);
+        boolean corrected = this.honorPriority.getAsBoolean();
+        List<HandlerInvocation> handlers = snapshot.handlersFor(event, corrected);
+
+        for (HandlerInvocation handler : handlers) {
+            if (corrected && event.isCancelled() && handler.ignoresCancelled()) {
+                continue;
             }
-        }
-
-        for (HabboPlugin plugin : this.plugins) {
-
-            if (plugin != null) {
-                Set<Method> methods =
-                        plugin.registeredEvents.get(event.getClass().asSubclass(Event.class));
-
-                if (methods != null) {
-                    for (Method method : methods) {
-                        try {
-                            method.invoke(plugin, event);
-                        } catch (Exception e) {
-                            LOGGER.error(
-                                    "Could not pass event {} to {}",
-                                    event.getClass().getName(),
-                                    plugin.configuration.name);
-                            LOGGER.error("Caught exception", e);
-                        }
-                    }
-                }
-            }
+            handler.invoke(event);
         }
 
         return event;
     }
 
     public boolean isRegistered(Class<? extends Event> clazz, boolean pluginsOnly) {
-        for (HabboPlugin plugin : this.plugins) {
-            if (plugin != null && plugin.isRegistered(clazz)) {
-                return true;
-            }
+        DispatchSnapshot snapshot = this.currentDispatchSnapshot(clazz);
+        if (snapshot.hasPluginHandler(clazz)) {
+            return true;
         }
 
-        if (!pluginsOnly) {
-            for (Method method : this.methods) {
-                if (method.getParameterTypes().length == 1 && method.getParameterTypes()[0].isAssignableFrom(clazz)) {
-                    return true;
+        return !pluginsOnly && snapshot.hasDefaultHandler(clazz);
+    }
+
+    public void dispose() {
+        synchronized (this.dispatchStateLock) {
+            this.reloading = true;
+            try {
+                this.disposePluginsInternal();
+            } finally {
+                try {
+                    this.publishDispatchSnapshot();
+                } finally {
+                    this.reloading = false;
                 }
             }
         }
 
-        return false;
-    }
-
-    public void dispose() {
-        this.disposePlugins();
-
         LOGGER.info("Disposed Plugin Manager!");
     }
 
-    private void disposePlugins() {
+    private void disposePluginsInternal() {
         for (HabboPlugin p : this.plugins) {
             if (p != null) {
 
@@ -282,16 +303,25 @@ public class PluginManager {
     public void reload() {
         long millis = System.currentTimeMillis();
 
-        this.methods.clear();
-
-        this.loadPlugins();
+        synchronized (this.dispatchStateLock) {
+            this.reloading = true;
+            try {
+                this.methods.clear();
+                this.loadPluginsInternal();
+                this.registerDefaultEvents();
+            } finally {
+                try {
+                    this.publishDispatchSnapshot();
+                } finally {
+                    this.reloading = false;
+                }
+            }
+        }
 
         LOGGER.info(
                 "Plugin Manager -> Loaded! {} plugins! ({} MS)",
                 this.plugins.size(),
                 System.currentTimeMillis() - millis);
-
-        this.registerDefaultEvents();
     }
 
     private void registerDefaultEvents() {
@@ -318,5 +348,259 @@ public class PluginManager {
 
     public Set<HabboPlugin> getPlugins() {
         return this.plugins;
+    }
+
+    private DispatchSnapshot currentDispatchSnapshot(Class<? extends Event> eventType) {
+        DispatchSnapshot snapshot = this.dispatchSnapshot;
+        if (!this.reloading
+                && (snapshot.defaultHandlerCount() != this.methods.size()
+                || !snapshot.matchesPluginRegistrations(this.plugins, eventType))) {
+            synchronized (this.dispatchStateLock) {
+                if (!this.reloading
+                        && (this.dispatchSnapshot.defaultHandlerCount() != this.methods.size()
+                        || !this.dispatchSnapshot.matchesPluginRegistrations(this.plugins, eventType))) {
+                    this.publishDispatchSnapshot();
+                }
+                snapshot = this.dispatchSnapshot;
+            }
+        }
+        return snapshot;
+    }
+
+    private void publishDispatchSnapshot() {
+        this.dispatchSnapshot = DispatchSnapshot.capture(this.methods, this.plugins);
+    }
+
+    private record HandlerInvocation(
+            HabboPlugin plugin,
+            Method method,
+            EventHandler annotation,
+            Class<? extends Event> eventType,
+            MethodHandle handle) {
+
+        private static final Comparator<HandlerInvocation> CORRECTED_ORDER =
+                Comparator.comparingInt(HandlerInvocation::prioritySlot)
+                        .thenComparing(HandlerInvocation::stableKey);
+
+        static HandlerInvocation defaultHandler(Method method) {
+            return create(null, method);
+        }
+
+        static HandlerInvocation pluginHandler(HabboPlugin plugin, Method method) {
+            return create(plugin, method);
+        }
+
+        private static HandlerInvocation create(HabboPlugin plugin, Method method) {
+            try {
+                method.trySetAccessible();
+                return new HandlerInvocation(
+                        plugin,
+                        method,
+                        method.getAnnotation(EventHandler.class),
+                        method.getParameterTypes()[0].asSubclass(Event.class),
+                        MethodHandles.lookup().unreflect(method));
+            } catch (IllegalAccessException exception) {
+                throw new IllegalStateException("Unable to cache plugin event handler " + method, exception);
+            }
+        }
+
+        private String stableKey() {
+            String pluginKey = "";
+            if (this.plugin != null) {
+                String pluginName = this.plugin.configuration == null
+                        ? this.plugin.getClass().getName()
+                        : this.plugin.configuration.name;
+                URL[] pluginUrls = this.plugin.classLoader == null
+                        ? new URL[0]
+                        : this.plugin.classLoader.getURLs();
+                pluginKey = Objects.toString(pluginName, "") + Arrays.toString(pluginUrls);
+            }
+            return pluginKey
+                    + '|'
+                    + this.method.getDeclaringClass().getName()
+                    + '#'
+                    + this.method.getName()
+                    + Arrays.toString(this.method.getParameterTypes());
+        }
+
+        private int prioritySlot() {
+            return this.annotation == null
+                    ? EventPriority.NORMAL.getSlot()
+                    : this.annotation.priority().getSlot();
+        }
+
+        private boolean ignoresCancelled() {
+            return this.annotation != null && this.annotation.ignoreCancelled();
+        }
+
+        void invoke(Event event) {
+            try {
+                if (this.plugin == null) {
+                    this.handle.invoke(event);
+                } else {
+                    this.handle.invoke(this.plugin, event);
+                }
+            } catch (Throwable exception) {
+                if (this.plugin == null) {
+                    LOGGER.error(
+                            "Could not pass default event {} to {}:{}!",
+                            event.getClass().getName(),
+                            this.method.getDeclaringClass().getName(),
+                            this.method.getName());
+                } else {
+                    String pluginName = this.plugin.configuration == null
+                            ? this.plugin.getClass().getName()
+                            : this.plugin.configuration.name;
+                    LOGGER.error(
+                            "Could not pass event {} to {}",
+                            event.getClass().getName(),
+                            pluginName);
+                }
+                LOGGER.error("Caught exception", exception);
+            }
+        }
+    }
+
+    private record DispatchSnapshot(
+            List<HandlerInvocation> defaultHandlers,
+            Map<Class<? extends Event>, List<HandlerInvocation>> pluginHandlers,
+            Map<Class<? extends Event>, List<RegistrationSource>> pluginRegistrationSources,
+            List<HabboPlugin> capturedPlugins,
+            ConcurrentMap<Class<? extends Event>, HandlerLists> handlersByEventType) {
+
+        static DispatchSnapshot empty() {
+            return new DispatchSnapshot(
+                    List.of(),
+                    Map.of(),
+                    Map.of(),
+                    List.of(),
+                    new ConcurrentHashMap<>());
+        }
+
+        static DispatchSnapshot capture(Set<Method> methods, Set<HabboPlugin> plugins) {
+            List<HandlerInvocation> defaults = methods.stream()
+                    .filter(method -> method.getAnnotation(EventHandler.class) != null)
+                    .map(HandlerInvocation::defaultHandler)
+                    .toList();
+            Map<Class<? extends Event>, List<HandlerInvocation>> handlers = new HashMap<>();
+            Map<Class<? extends Event>, List<RegistrationSource>> registrationSources = new HashMap<>();
+
+            for (HabboPlugin plugin : plugins) {
+                if (plugin == null) {
+                    continue;
+                }
+                synchronized (plugin.registeredEvents) {
+                    plugin.registeredEvents.forEach((eventType, registeredMethods) -> {
+                        Set<Method> registeredMethodsSnapshot = Set.copyOf(registeredMethods);
+                        registrationSources
+                                .computeIfAbsent(eventType, ignored -> new ArrayList<>())
+                                .add(new RegistrationSource(plugin, registeredMethodsSnapshot));
+                        List<HandlerInvocation> eventHandlers =
+                                handlers.computeIfAbsent(eventType, ignored -> new ArrayList<>());
+                        registeredMethodsSnapshot.stream()
+                                .map(method -> HandlerInvocation.pluginHandler(plugin, method))
+                                .forEach(eventHandlers::add);
+                    });
+                }
+            }
+
+            handlers.replaceAll((ignored, eventHandlers) -> List.copyOf(eventHandlers));
+            registrationSources.replaceAll((ignored, sources) -> List.copyOf(sources));
+            return new DispatchSnapshot(
+                    List.copyOf(defaults),
+                    Map.copyOf(handlers),
+                    Map.copyOf(registrationSources),
+                    plugins.stream().toList(),
+                    new ConcurrentHashMap<>());
+        }
+
+        int defaultHandlerCount() {
+            return this.defaultHandlers.size();
+        }
+
+        boolean hasPluginHandler(Class<? extends Event> eventType) {
+            return this.pluginHandlers.containsKey(eventType);
+        }
+
+        boolean hasDefaultHandler(Class<? extends Event> eventType) {
+            return this.defaultHandlers.stream()
+                    .anyMatch(handler -> handler.eventType().isAssignableFrom(eventType));
+        }
+
+        boolean matchesPluginRegistrations(
+                Set<HabboPlugin> plugins,
+                Class<? extends Event> eventType) {
+            if (plugins.size() != this.capturedPlugins.size()) {
+                return false;
+            }
+            for (HabboPlugin plugin : this.capturedPlugins) {
+                if (!plugins.contains(plugin)) {
+                    return false;
+                }
+            }
+
+            List<RegistrationSource> expectedSources =
+                    this.pluginRegistrationSources.getOrDefault(eventType, List.of());
+            int sourceCount = 0;
+
+            for (HabboPlugin plugin : this.capturedPlugins) {
+                if (plugin == null) {
+                    continue;
+                }
+
+                Set<Method> registeredMethods;
+                synchronized (plugin.registeredEvents) {
+                    registeredMethods = plugin.registeredEvents.get(eventType);
+                    if (registeredMethods == null) {
+                        continue;
+                    }
+
+                    RegistrationSource source = null;
+                    for (RegistrationSource candidate : expectedSources) {
+                        if (candidate.plugin() == plugin) {
+                            source = candidate;
+                            break;
+                        }
+                    }
+                    if (source == null || !source.methods().equals(registeredMethods)) {
+                        return false;
+                    }
+                }
+                sourceCount++;
+            }
+
+            return sourceCount == expectedSources.size();
+        }
+
+        List<HandlerInvocation> handlersFor(Event event, boolean corrected) {
+            Class<? extends Event> eventType = event.getClass().asSubclass(Event.class);
+            HandlerLists handlers = this.handlersByEventType.computeIfAbsent(
+                    eventType,
+                    this::buildHandlerLists);
+            return corrected ? handlers.corrected() : handlers.legacy();
+        }
+
+        private HandlerLists buildHandlerLists(Class<? extends Event> eventType) {
+            List<HandlerInvocation> handlers = new ArrayList<>();
+            this.defaultHandlers.stream()
+                    .filter(handler -> handler.eventType().isAssignableFrom(eventType))
+                    .forEach(handlers::add);
+            handlers.addAll(this.pluginHandlers.getOrDefault(
+                    eventType,
+                    List.of()));
+            List<HandlerInvocation> legacy = List.copyOf(handlers);
+            handlers.sort(HandlerInvocation.CORRECTED_ORDER);
+            return new HandlerLists(legacy, List.copyOf(handlers));
+        }
+    }
+
+    private record RegistrationSource(
+            HabboPlugin plugin,
+            Set<Method> methods) {
+    }
+
+    private record HandlerLists(
+            List<HandlerInvocation> legacy,
+            List<HandlerInvocation> corrected) {
     }
 }

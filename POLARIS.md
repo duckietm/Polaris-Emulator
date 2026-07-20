@@ -103,6 +103,20 @@ Polaris legacy bridge -> translated legacy SQL from an old plugin.
     new: INSERT INTO permission_definitions (permission_key, max_value, comment) VALUES ('cmd_randomword', 1, ...)
 ```
 
+## Plugin event dispatch
+
+Plugin events keep the legacy unordered, all-handlers behavior by default.
+Hotels can opt into the corrected annotation contract with:
+
+```
+polaris.events.honor_priority=true
+```
+
+In corrected mode, handlers run from `LOWEST` through `MONITOR`, and a handler
+with `ignoreCancelled = true` is skipped once the event is cancelled. Reloads
+publish a complete handler table atomically, so dispatch observes either the
+old table or the new one rather than a partially rebuilt set.
+
 ### Writing new plugins
 
 The bridge exists for backwards compatibility — it is not the recommended

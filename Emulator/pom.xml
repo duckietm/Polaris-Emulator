@@ -35,6 +35,7 @@
         <flyway.version>12.11.0</flyway.version>
         <testcontainers.version>1.21.4</testcontainers.version>
         <mockito.version>5.23.0</mockito.version>
+        <trove4j.reference.version>3.0.3</trove4j.reference.version>
 
         <maven-clean-plugin.version>3.5.0</maven-clean-plugin.version>
         <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
@@ -49,6 +50,7 @@
         <maven-site-plugin.version>3.22.0</maven-site-plugin.version>
         <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
         <versions-maven-plugin.version>2.21.0</versions-maven-plugin.version>
+        <cyclonedx-maven-plugin.version>2.9.2</cyclonedx-maven-plugin.version>
         <jacoco-plugin.version>0.8.15</jacoco-plugin.version>
         <jacoco.minimum.instruction.coveredratio>0.07</jacoco.minimum.instruction.coveredratio>
         <japicmp.version>0.23.1</japicmp.version>
@@ -197,6 +199,26 @@
             </plugin>
 
             <plugin>
+                <groupId>org.cyclonedx</groupId>
+                <artifactId>cyclonedx-maven-plugin</artifactId>
+                <version>${cyclonedx-maven-plugin.version}</version>
+                <configuration>
+                    <schemaVersion>1.6</schemaVersion>
+                    <outputFormat>json</outputFormat>
+                    <outputName>${project.artifactId}-${project.version}-sbom</outputName>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-cyclonedx-sbom</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>makeBom</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-surefire-plugin.version}</version>
@@ -215,6 +237,7 @@
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>${maven-failsafe-plugin.version}</version>
                 <configuration>
+                    <forkedProcessTimeoutInSeconds>600</forkedProcessTimeoutInSeconds>
                     <includes>
                         <include>**/*IT.java</include>
                     </includes>
@@ -577,6 +600,16 @@
             <groupId>com.github.siom79.japicmp</groupId>
             <artifactId>japicmp</artifactId>
             <version>${japicmp.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Compile-only reference for Morningstar plugin fixtures. Polaris
+             intentionally does not bundle this dependency until the dual
+             baseline compatibility design is resolved. -->
+        <dependency>
+            <groupId>net.sf.trove4j</groupId>
+            <artifactId>trove4j</artifactId>
+            <version>${trove4j.reference.version}</version>
             <scope>test</scope>
         </dependency>
 

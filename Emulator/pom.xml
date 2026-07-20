@@ -42,6 +42,10 @@
         <maven-failsafe-plugin.version>3.5.6</maven-failsafe-plugin.version>
         <jacoco-plugin.version>0.8.12</jacoco-plugin.version>
         <japicmp.version>0.23.1</japicmp.version>
+        <spotless-maven-plugin.version>3.8.0</spotless-maven-plugin.version>
+        <palantir-java-format.version>2.96.0</palantir-java-format.version>
+        <spotbugs-maven-plugin.version>4.10.3.0</spotbugs-maven-plugin.version>
+        <spotless.ratchetFrom>HEAD^</spotless.ratchetFrom>
     </properties>
 
     <build>
@@ -144,6 +148,53 @@
                         <goals>
                             <goal>integration-test</goal>
                             <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>${spotless-maven-plugin.version}</version>
+                <configuration>
+                    <ratchetFrom>${spotless.ratchetFrom}</ratchetFrom>
+                    <java>
+                        <palantirJavaFormat>
+                            <version>${palantir-java-format.version}</version>
+                            <style>PALANTIR</style>
+                            <formatJavadoc>false</formatJavadoc>
+                        </palantirJavaFormat>
+                        <forbidWildcardImports/>
+                    </java>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>check-changed-java-formatting</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <version>${spotbugs-maven-plugin.version}</version>
+                <configuration>
+                    <effort>Max</effort>
+                    <threshold>High</threshold>
+                    <excludeFilterFile>${project.basedir}/config/spotbugs-exclude.xml</excludeFilterFile>
+                    <failOnError>true</failOnError>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>check-new-high-confidence-findings</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
                         </goals>
                     </execution>
                 </executions>

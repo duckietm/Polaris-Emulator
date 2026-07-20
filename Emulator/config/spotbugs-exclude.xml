@@ -1,0 +1,550 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Existing high-confidence findings. Keep matches member-specific so new findings fail the build. -->
+    <Match>
+        <Bug pattern="CN_IMPLEMENTS_CLONE_BUT_NOT_CLONEABLE"/>
+        <Class name="com.eu.habbo.messages.ClientMessage"/>
+        <Method name="clone"/>
+    </Match>
+    <Match>
+        <Bug pattern="DE_MIGHT_IGNORE"/>
+        <Class name="com.eu.habbo.habbohotel.pets.Pet"/>
+        <Method name="findPetItem"/>
+    </Match>
+    <Match>
+        <Bug pattern="DE_MIGHT_IGNORE"/>
+        <Class name="com.eu.habbo.habbohotel.rooms.RoomItemMovementService"/>
+        <Method name="moveFurniTo"/>
+    </Match>
+    <Match>
+        <Bug pattern="DMI_RANDOM_USED_ONLY_ONCE"/>
+        <Class name="com.eu.habbo.habbohotel.wired.core.WiredEngine"/>
+        <Method name="executeEffects"/>
+    </Match>
+    <Match>
+        <Bug pattern="DMI_RANDOM_USED_ONLY_ONCE"/>
+        <Class name="com.eu.habbo.messages.outgoing.users.ProfileFriendsComposer"/>
+        <Method name="composeInternal"/>
+    </Match>
+    <Match>
+        <Bug pattern="DM_BOXED_PRIMITIVE_TOSTRING"/>
+        <Class name="com.eu.habbo.habbohotel.items.interactions.InteractionEffectGate"/>
+        <Method name="canWalkOn"/>
+    </Match>
+    <Match>
+        <Bug pattern="DM_GC"/>
+        <Class name="com.eu.habbo.habbohotel.commands.AboutCommand"/>
+        <Method name="handle"/>
+    </Match>
+    <Match>
+        <Bug pattern="EQ_DONT_DEFINE_EQUALS_FOR_ENUM"/>
+        <Class name="com.eu.habbo.habbohotel.rooms.RoomRightLevels"/>
+        <Method name="equals"/>
+    </Match>
+    <Match>
+        <Bug pattern="HE_EQUALS_USE_HASHCODE"/>
+        <Class name="com.eu.habbo.habbohotel.guides.GuardianVote"/>
+        <Method name="equals"/>
+    </Match>
+    <Match>
+        <Bug pattern="HE_EQUALS_USE_HASHCODE"/>
+        <Class name="com.eu.habbo.habbohotel.rooms.RoomTile"/>
+        <Method name="equals"/>
+    </Match>
+    <Match>
+        <Bug pattern="HE_SIGNATURE_DECLARES_HASHING_OF_UNHASHABLE_CLASS"/>
+        <Class name="com.eu.habbo.habbohotel.rooms.pathfinding.impl.PathfinderImpl"/>
+        <Method name="processAdjacent"/>
+    </Match>
+    <Match>
+        <Bug pattern="HE_USE_OF_UNHASHABLE_CLASS"/>
+        <Class name="com.eu.habbo.habbohotel.rooms.RoomTileManager"/>
+        <Method name="loadHeightmap"/>
+    </Match>
+    <Match>
+        <Bug pattern="ICAST_INTEGER_MULTIPLY_CAST_TO_LONG"/>
+        <Class name="com.eu.habbo.habbohotel.catalog.ClubOffer"/>
+        <Method name="serialize"/>
+    </Match>
+    <Match>
+        <Bug pattern="MF_CLASS_MASKS_FIELD"/>
+        <Class name="com.eu.habbo.habbohotel.games.wired.WiredGame"/>
+        <Field name="state"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_MUTABLE_ARRAY"/>
+        <Class name="com.eu.habbo.habbohotel.bots.Bot"/>
+        <Field name="PLACEMENT_MESSAGES"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_MUTABLE_ARRAY"/>
+        <Class name="com.eu.habbo.habbohotel.rooms.RoomChatMessage"/>
+        <Field name="BANNED_BUBBLES"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_MUTABLE_ARRAY"/>
+        <Class name="com.eu.habbo.messages.outgoing.catalog.DiscountComposer"/>
+        <Field name="ADDITIONAL_DISCOUNT_THRESHOLDS"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.items.interactions.InteractionBuildArea"/>
+        <Field name="defaultValues"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.items.interactions.InteractionMuteArea"/>
+        <Field name="defaultValues"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.items.interactions.InteractionRoller"/>
+        <Field name="DELAY"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.items.interactions.InteractionTileEffectProvider"/>
+        <Field name="defaultValues"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.modtool.ModToolBan"/>
+        <Field name="dateFormat"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_AMBASSADOR"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_ANYCHATCOLOR"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_ANYROOMOWNER"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_CATALOGFURNI"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_CATALOG_IDS"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_CHAT_NO_FILTER"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_CHAT_NO_FLOOD"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_CHAT_NO_LIMIT"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_EMPTY_OTHERS"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_ENABLE_OTHERS"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_ENTERANYROOM"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_FLOORPLAN_EDITOR"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_FULLROOMS"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_GUILDGATE"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_GUILD_ADMIN"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_HELPER_GIVE_GUIDE_TOURS"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_HELPER_JUDGE_CHAT_REVIEWS"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_HELPER_USE_GUIDE_TOOL"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_HIDE_IP"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_HIDE_MAIL"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_HOUSEKEEPING"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_INFINITE_CREDITS"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_INFINITE_PIXELS"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_INFINITE_POINTS"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_MODTOOL_ROOM_INFO"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_MODTOOL_ROOM_LOGS"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_MODTOOL_TICKET_Q"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_MODTOOL_USER_ALERT"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_MODTOOL_USER_BAN"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_MODTOOL_USER_KICK"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_MODTOOL_USER_LOGS"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_MOVEROTATE"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_NOMUTE"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_NOT_MIMICED"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_PLACEFURNI"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_SEE_TENTCHAT"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_SEE_WHISPERS"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_STAFF_PICK"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_SUPERWIRED"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_SUPPORTTOOL"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_TRADE_ANYWHERE"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_UNIGNORABLE"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_UNKICKABLE"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_UNLIMITED_BOTS"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.permissions.Permission"/>
+        <Field name="ACC_UNLIMITED_PETS"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.rooms.Room"/>
+        <Field name="MAXIMUM_FURNI_HEIGHT"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.rooms.RoomChatManager"/>
+        <Field name="HABBO_CHAT_DELAY"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.rooms.RoomChatManager"/>
+        <Field name="MUTEAREA_CAN_WHISPER"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.rooms.RoomLayout"/>
+        <Field name="UNDERPASS_HEIGHT"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.habbohotel.users.subscriptions.SubscriptionHabboClub"/>
+        <Field name="HC_PAYDAY_STREAK"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.incoming.camera.CameraPublishToWebEvent"/>
+        <Field name="CAMERA_PUBLISH_DELAY"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.incoming.camera.CameraPublishToWebEvent"/>
+        <Field name="CAMERA_PUBLISH_POINTS"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.incoming.camera.CameraPublishToWebEvent"/>
+        <Field name="CAMERA_PUBLISH_POINTS_TYPE"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.incoming.camera.CameraPurchaseEvent"/>
+        <Field name="CAMERA_PURCHASE_CREDITS"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.incoming.camera.CameraPurchaseEvent"/>
+        <Field name="CAMERA_PURCHASE_POINTS"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.incoming.camera.CameraPurchaseEvent"/>
+        <Field name="CAMERA_PURCHASE_POINTS_TYPE"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.incoming.camera.CameraRoomPictureEvent"/>
+        <Field name="CAMERA_RENDER_DELAY"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.incoming.camera.CameraRoomPictureEvent"/>
+        <Field name="MAX_DAILY_RENDERS"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.incoming.camera.CameraRoomPictureEvent"/>
+        <Field name="MAX_IMAGE_BYTES"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.incoming.camera.CameraRoomPictureEvent"/>
+        <Field name="MAX_IMAGE_HEIGHT"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.incoming.camera.CameraRoomPictureEvent"/>
+        <Field name="MAX_IMAGE_WIDTH"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.incoming.camera.CameraRoomThumbnailEvent"/>
+        <Field name="CAMERA_RENDER_DELAY"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.incoming.camera.CameraRoomThumbnailEvent"/>
+        <Field name="MAX_THUMBNAIL_BYTES"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.incoming.camera.CameraRoomThumbnailEvent"/>
+        <Field name="MAX_THUMBNAIL_HEIGHT"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.incoming.camera.CameraRoomThumbnailEvent"/>
+        <Field name="MAX_THUMBNAIL_WIDTH"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.incoming.rooms.items.MoodLightSaveSettingsEvent"/>
+        <Field name="MIN_BRIGHTNESS"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.incoming.rooms.items.MoodLightSaveSettingsEvent"/>
+        <Field name="MOODLIGHT_AVAILABLE_COLORS"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.incoming.users.UserNuxEvent"/>
+        <Field name="keys"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.outgoing.gamecenter.basejump.BaseJumpLoadGameComposer"/>
+        <Field name="FASTFOOD_KEY"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.outgoing.modtool.ModToolIssueChatlogComposer"/>
+        <Field name="format"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.outgoing.modtool.ModToolUserChatlogComposer"/>
+        <Field name="format"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.outgoing.navigator.NewNavigatorEventCategoriesComposer"/>
+        <Field name="CATEGORIES"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.outgoing.users.UserClubComposer"/>
+        <Field name="RESPONSE_TYPE_DISCOUNT_AVAILABLE"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.outgoing.users.UserClubComposer"/>
+        <Field name="RESPONSE_TYPE_LOGIN"/>
+    </Match>
+    <Match>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+        <Class name="com.eu.habbo.messages.outgoing.users.UserClubComposer"/>
+        <Field name="RESPONSE_TYPE_NORMAL"/>
+    </Match>
+    <Match>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
+        <Class name="com.eu.habbo.habbohotel.catalog.CatalogManager"/>
+        <Method name="purchaseItem"/>
+    </Match>
+    <Match>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
+        <Class name="com.eu.habbo.habbohotel.modtool.ModToolManager"/>
+        <Method name="ban"/>
+    </Match>
+    <Match>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
+        <Class name="com.eu.habbo.habbohotel.wired.core.WiredTextInputCaptureSupport"/>
+        <Method name="resolve"/>
+    </Match>
+    <Match>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
+        <Class name="com.eu.habbo.habbohotel.wired.tick.WiredTickService"/>
+        <Method name="resetRoomTimers"/>
+    </Match>
+    <Match>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
+        <Class name="com.eu.habbo.habbohotel.wired.tick.WiredTickService"/>
+        <Method name="unregisterRoom"/>
+    </Match>
+    <Match>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
+        <Class name="com.eu.habbo.messages.incoming.floorplaneditor.FloorPlanEditorSaveEvent"/>
+        <Method name="handle"/>
+    </Match>
+    <Match>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
+        <Class name="com.eu.habbo.habbohotel.modtool.ModToolManager"/>
+        <Method name="ban"/>
+    </Match>
+    <Match>
+        <Bug pattern="RV_RETURN_VALUE_OF_PUTIFABSENT_IGNORED"/>
+        <Class name="com.eu.habbo.habbohotel.messenger.Messenger"/>
+        <Method name="acceptFriendRequest"/>
+    </Match>
+    <Match>
+        <Bug pattern="RV_RETURN_VALUE_OF_PUTIFABSENT_IGNORED"/>
+        <Class name="com.eu.habbo.habbohotel.messenger.Messenger"/>
+        <Method name="loadFriend"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_PREPARED_STATEMENT_GENERATED_FROM_NONCONSTANT_STRING"/>
+        <Class name="com.eu.habbo.database.Database"/>
+        <Method name="preparedStatementWithParams"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_PREPARED_STATEMENT_GENERATED_FROM_NONCONSTANT_STRING"/>
+        <Class name="com.eu.habbo.habbohotel.rooms.RoomManager"/>
+        <Method name="findRooms"/>
+    </Match>
+    <Match>
+        <Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD"/>
+        <Class name="com.eu.habbo.threading.runnables.RoomTrashing"/>
+        <Method name="&lt;init&gt;"/>
+        <Field name="INSTANCE"/>
+    </Match>
+</FindBugsFilter>

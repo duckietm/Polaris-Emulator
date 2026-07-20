@@ -23,8 +23,10 @@ class UserCustomizationPurchaseServiceTest {
         when(repository.findNickIcon("star")).thenReturn(Optional.empty());
         Habbo habbo = mock(Habbo.class, RETURNS_DEEP_STUBS);
         when(habbo.getInventory().getPrefixesComponent().getPrefixes()).thenReturn(List.of());
-        when(habbo.getInventory().getPrefixesComponent().getPrefixByCatalogId(17)).thenReturn(null);
-        when(habbo.getInventory().getNickIconsComponent().getNickIconByKey("star")).thenReturn(null);
+        when(habbo.getInventory().getPrefixesComponent().getPrefixByCatalogId(17))
+                .thenReturn(null);
+        when(habbo.getInventory().getNickIconsComponent().getNickIconByKey("star"))
+                .thenReturn(null);
         when(habbo.getHabboInfo().getRank().getId()).thenReturn(1);
 
         UserCustomizationPurchaseService service = new UserCustomizationPurchaseService(repository, List.of());

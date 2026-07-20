@@ -18,7 +18,6 @@ import com.eu.habbo.plugin.events.users.UserSavedLookEvent;
 import com.eu.habbo.plugin.events.users.UserSavedMottoEvent;
 import com.eu.habbo.plugin.events.users.UserTakeStepEvent;
 import com.eu.habbo.threading.runnables.RoomTrashing;
-import com.eu.habbo.util.HotelDateTimeUtil;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.io.File;
@@ -28,6 +27,9 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.text.ParsePosition;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -49,10 +51,7 @@ public class PluginManager {
     public static void globalOnConfigurationUpdated(EmulatorConfigUpdatedEvent event) {
         var configuration = Emulator.getConfig();
         boolean runtimeReady = Emulator.isReady;
-        new RoomConfigurationBinder(
-                        configuration,
-                        PluginManager::parsePaydayTimestamp)
-                .bind();
+        new RoomConfigurationBinder(configuration, PluginManager::parsePaydayTimestamp).bind();
         new WiredConfigurationBinder(configuration).bind();
         new NetworkConfigurationBinder(configuration).bind();
         new CatalogConfigurationBinder(configuration, runtimeReady).bind();
@@ -67,8 +66,24 @@ public class PluginManager {
     }
 
     static long parsePaydayTimestamp(String value) {
-        return HotelDateTimeUtil.toEpochSecond(
-                HotelDateTimeUtil.parseDateTimeStrict(value));
+        ParsePosition position = new ParsePosition(0);
+        Date parsed = value == null ? null : new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(value, position);
+        if (parsed == null) {
+            LOGGER.warn(
+                    "Invalid subscriptions.hc.payday.next_date '{}' "
+                            + "(expected yyyy-MM-dd HH:mm:ss); "
+                            + "HC payday is paused until it is corrected.",
+                    value);
+            return Integer.MAX_VALUE;
+        }
+        long timestamp = parsed.getTime() / 1000L;
+        if (timestamp > Integer.MAX_VALUE) {
+            return Integer.MAX_VALUE;
+        }
+        if (timestamp < Integer.MIN_VALUE) {
+            return Integer.MIN_VALUE;
+        }
+        return timestamp;
     }
 
     public void loadPlugins() {

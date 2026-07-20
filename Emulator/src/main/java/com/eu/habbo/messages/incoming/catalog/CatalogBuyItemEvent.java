@@ -9,9 +9,10 @@ import com.eu.habbo.habbohotel.catalog.CatalogItem;
 import com.eu.habbo.habbohotel.catalog.CatalogManager;
 import com.eu.habbo.habbohotel.catalog.CatalogPage;
 import com.eu.habbo.habbohotel.catalog.CatalogPageAccessPolicy;
-import com.eu.habbo.habbohotel.catalog.CatalogPageLayouts;
 import com.eu.habbo.habbohotel.catalog.CatalogPaymentService;
+import com.eu.habbo.habbohotel.catalog.CatalogPurchaseCommand;
 import com.eu.habbo.habbohotel.catalog.CatalogPurchaseMath;
+import com.eu.habbo.habbohotel.catalog.CatalogPurchasePageService;
 import com.eu.habbo.habbohotel.catalog.ClubOffer;
 import com.eu.habbo.habbohotel.catalog.layouts.BuildersClubAddonsLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.BuildersClubFrontPageLayout;
@@ -69,7 +70,7 @@ public class CatalogBuyItemEvent extends MessageHandler {
                 return;
             }
 
-            CatalogPurchaseCommand command = CatalogPurchaseCommand.readFrom(this.packet);
+            CatalogPurchaseCommand command = CatalogPurchaseCommandReader.readFrom(this.packet);
             int pageId = command.pageId();
             int itemId = command.itemId();
             String extraData = command.extraData();
@@ -88,40 +89,20 @@ public class CatalogBuyItemEvent extends MessageHandler {
                         new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR).compose());
             }
 
-            CatalogPage page = null;
+            CatalogManager catalogManager = Emulator.getGameEnvironment().getCatalogManager();
+            CatalogPage page = new CatalogPurchasePageService(catalogManager)
+                    .resolve(
+                            command,
+                            candidate -> CatalogPageAccessPolicy.canAccess(
+                                    candidate,
+                                    this.client
+                                            .getHabbo()
+                                            .getHabboInfo()
+                                            .getRank()
+                                            .getId(),
+                                    this.client.getHabbo().getHabboStats().hasActiveClub()));
 
-            if (pageId == -12345678 || pageId == -1) {
-                CatalogItem searchedItem =
-                        Emulator.getGameEnvironment().getCatalogManager().getCatalogItem(itemId);
-
-                if (searchedItem != null && searchedItem.getOfferId() > 0) {
-                    page = Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(searchedItem.getPageId());
-
-                    if (page != null) {
-                        if (!this.canAccessPage(page)) {
-                            page = null;
-                        } else if (page.getLayout() != null
-                                && page.getLayout().equalsIgnoreCase(CatalogPageLayouts.club_gift.name())) {
-                            page = null;
-                        }
-                    }
-                }
-            } else {
-                page = Emulator.getGameEnvironment()
-                        .getCatalogManager()
-                        .catalogPages
-                        .get(pageId);
-
-                if (page != null
-                        && page.getLayout() != null
-                        && page.getLayout().equalsIgnoreCase(CatalogPageLayouts.club_gift.name())) {
-                    page = null;
-                }
-
-                if (page != null && !this.canAccessPage(page)) {
-                    page = null;
-                }
-
+            if (pageId != -12345678 && pageId != -1) {
                 if (page instanceof RoomBundleLayout) {
                     final CatalogItem[] item = new CatalogItem[1];
                     for (CatalogItem object : page.getCatalogItems().values()) {
@@ -419,13 +400,6 @@ public class CatalogBuyItemEvent extends MessageHandler {
                 || page instanceof BuildersClubFrontPageLayout
                 || page instanceof BuildersClubAddonsLayout
                 || page instanceof BuildersClubLoyaltyLayout;
-    }
-
-    private boolean canAccessPage(CatalogPage page) {
-        return CatalogPageAccessPolicy.canAccess(
-                page,
-                this.client.getHabbo().getHabboInfo().getRank().getId(),
-                this.client.getHabbo().getHabboStats().hasActiveClub());
     }
 
     private int getClubOfferWindowId(CatalogPage page) {

@@ -1,8 +1,11 @@
 package com.eu.habbo.messages.incoming.catalog;
 
+import com.eu.habbo.habbohotel.catalog.CatalogPurchaseCommand;
 import com.eu.habbo.messages.ClientMessage;
 
-record CatalogPurchaseCommand(int pageId, int itemId, String extraData, int count) {
+final class CatalogPurchaseCommandReader {
+
+    private CatalogPurchaseCommandReader() {}
 
     static CatalogPurchaseCommand readFrom(ClientMessage packet) {
         int pageId = packet.readInt();

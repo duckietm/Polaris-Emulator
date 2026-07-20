@@ -31,8 +31,6 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.incoming.users.UserNuxEvent;
-import com.eu.habbo.messages.outgoing.generic.alerts.GenericErrorCode;
-import com.eu.habbo.messages.outgoing.generic.alerts.GenericErrorMessagesComposer;
 import com.eu.habbo.messages.outgoing.hotelview.HotelViewComposer;
 import com.eu.habbo.messages.outgoing.polls.PollStartComposer;
 import com.eu.habbo.messages.outgoing.polls.infobus.SimplePollAnswersComposer;
@@ -40,7 +38,6 @@ import com.eu.habbo.messages.outgoing.polls.infobus.SimplePollStartComposer;
 import com.eu.habbo.messages.outgoing.rooms.DoorbellAddUserComposer;
 import com.eu.habbo.messages.outgoing.rooms.FloodCounterComposer;
 import com.eu.habbo.messages.outgoing.rooms.HideDoorbellComposer;
-import com.eu.habbo.messages.outgoing.rooms.RoomAccessDeniedComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomDataComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomEnterErrorComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomModelComposer;
@@ -150,6 +147,7 @@ public class RoomManager {
     private final RoomSearchService roomSearchService;
     private final RoomModerationService roomModerationService;
     private final RoomLifecycleService roomLifecycleService;
+    private final RoomEntryService roomEntryService;
     private final ConcurrentHashMap<Integer, Room> activeRooms;
     private final ConcurrentHashMap<Integer, Set<Integer>> roomsByOwner;
     private final AtomicInteger indexedRoomCount;
@@ -194,6 +192,13 @@ public class RoomManager {
                 HabboManager::getOfflineHabboInfo,
                 () -> Emulator.getIntUnixTimestamp(),
                 RoomBan::insert);
+        this.roomEntryService = new RoomEntryService(
+                roomId -> this.loadRoom(roomId, true),
+                this::getRoom,
+                (habbo, room) -> !Emulator.getPluginManager()
+                        .fireEvent(new UserEnterRoomEvent(habbo, room))
+                        .isCancelled(),
+                this::openRoom);
 
         this.gameTypes = new ArrayList<>();
 
@@ -621,105 +626,7 @@ public class RoomManager {
             boolean overrideChecks,
             RoomTile doorLocation,
             boolean isReconnectSpawn) {
-        Room room = this.loadRoom(roomId, true);
-
-        if (room == null) return;
-
-        if (habbo.getHabboInfo().getLoadingRoom() != 0
-                && room.getId() != habbo.getHabboInfo().getLoadingRoom()) {
-            habbo.getClient().sendResponse(new HotelViewComposer());
-            habbo.getHabboInfo().setLoadingRoom(0);
-            return;
-        }
-
-        if (Emulator.getPluginManager()
-                .fireEvent(new UserEnterRoomEvent(habbo, room))
-                .isCancelled()) {
-            if (habbo.getHabboInfo().getCurrentRoom() == null) {
-                habbo.getClient().sendResponse(new HotelViewComposer());
-                habbo.getHabboInfo().setLoadingRoom(0);
-                return;
-            }
-        }
-
-        if (room.isBanned(habbo)
-                && !habbo.hasPermission(Permission.ACC_ANYROOMOWNER)
-                && !habbo.hasPermission(Permission.ACC_ENTERANYROOM)) {
-            habbo.getClient().sendResponse(new RoomEnterErrorComposer(RoomEnterErrorComposer.ROOM_ERROR_BANNED));
-            return;
-        }
-
-        if (room.isBuildersClubTrialLocked()
-                && habbo.getHabboInfo().getId() != room.getOwnerId()
-                && !overrideChecks
-                && !habbo.hasPermission(Permission.ACC_ANYROOMOWNER)
-                && !habbo.hasPermission(Permission.ACC_ENTERANYROOM)) {
-            BuildersClubRoomSupport.sendVisitDeniedOwnerBubble(
-                    room.getOwnerId(), habbo.getHabboInfo().getUsername());
-            BuildersClubRoomSupport.sendVisitDeniedVisitorAlert(
-                    habbo.getHabboInfo().getId());
-            habbo.getClient().sendResponse(new HotelViewComposer());
-            habbo.getHabboInfo().setLoadingRoom(0);
-            return;
-        }
-
-        if (habbo.getHabboInfo().getRoomQueueId() != roomId) {
-            Room queRoom = Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
-
-            if (queRoom != null) {
-                queRoom.removeFromQueue(habbo);
-            }
-        }
-
-        if (overrideChecks
-                || room.isOwner(habbo)
-                || room.getState() == RoomState.OPEN
-                || habbo.hasPermission(Permission.ACC_ANYROOMOWNER)
-                || habbo.hasPermission(Permission.ACC_ENTERANYROOM)
-                || room.hasRights(habbo)
-                || (room.getState().equals(RoomState.INVISIBLE) && room.hasRights(habbo))
-                || (room.hasGuild() && room.getGuildRightLevel(habbo).isGreaterThan(RoomRightLevels.GUILD_RIGHTS))) {
-            this.openRoom(habbo, room, doorLocation, isReconnectSpawn);
-        } else if (room.getState() == RoomState.LOCKED) {
-            boolean rightsFound = false;
-
-            synchronized (room.roomUnitLock) {
-                for (Habbo current : room.getHabbos()) {
-                    if (room.hasRights(current)
-                            || current.getHabboInfo().getId() == room.getOwnerId()
-                            || (room.hasGuild()
-                                    && room.getGuildRightLevel(current)
-                                            .isEqualOrGreaterThan(RoomRightLevels.GUILD_RIGHTS))) {
-                        current.getClient()
-                                .sendResponse(new DoorbellAddUserComposer(
-                                        habbo.getHabboInfo().getUsername()));
-                        rightsFound = true;
-                    }
-                }
-            }
-
-            if (!rightsFound) {
-                habbo.getClient().sendResponse(new RoomAccessDeniedComposer(""));
-                habbo.getClient().sendResponse(new HotelViewComposer());
-                habbo.getHabboInfo().setLoadingRoom(0);
-                return;
-            }
-
-            habbo.getHabboInfo().setRoomQueueId(roomId);
-            habbo.getClient().sendResponse(new DoorbellAddUserComposer(""));
-            room.addToQueue(habbo);
-        } else if (room.getState() == RoomState.PASSWORD) {
-            if (room.getPassword().equalsIgnoreCase(password))
-                this.openRoom(habbo, room, doorLocation, isReconnectSpawn);
-            else {
-                habbo.getClient().sendResponse(new GenericErrorMessagesComposer(GenericErrorCode.WRONG_ROOM_PASSWORD));
-                habbo.getClient().sendResponse(new HotelViewComposer());
-                habbo.getHabboInfo().setLoadingRoom(0);
-            }
-        } else {
-            habbo.getClient().sendResponse(new HotelViewComposer());
-            habbo.getHabboInfo().setLoadingRoom(0);
-        }
+        this.roomEntryService.enter(habbo, roomId, password, overrideChecks, doorLocation, isReconnectSpawn);
     }
 
     void openRoom(Habbo habbo, Room room, RoomTile doorLocation) {

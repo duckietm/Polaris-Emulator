@@ -15,9 +15,6 @@ import com.eu.habbo.messages.outgoing.wired.WiredUserVariablesDataComposer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,16 +27,29 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.IntSupplier;
 
 public class RoomUserVariableManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomUserVariableManager.class);
 
     private final Room room;
+    private final RoomUserVariableRepository repository;
+    private final IntSupplier currentTimestamp;
     private final ConcurrentHashMap<Integer, ConcurrentHashMap<Integer, VariableAssignment>> activeAssignmentsByUserId;
     private final java.util.concurrent.atomic.AtomicBoolean broadcastRequested = new java.util.concurrent.atomic.AtomicBoolean(false);
 
     public RoomUserVariableManager(Room room) {
+        this(
+                room,
+                new RoomUserVariableRepository(Emulator.getDatabase().getDataSource()),
+                () -> Emulator.getIntUnixTimestamp());
+    }
+
+    RoomUserVariableManager(
+            Room room, RoomUserVariableRepository repository, IntSupplier currentTimestamp) {
         this.room = room;
+        this.repository = repository;
+        this.currentTimestamp = currentTimestamp;
         this.activeAssignmentsByUserId = new ConcurrentHashMap<>();
     }
 
@@ -52,32 +62,22 @@ public class RoomUserVariableManager {
         ConcurrentHashMap<Integer, VariableAssignment> restoredAssignments = new ConcurrentHashMap<>();
         List<Integer> staleDefinitionIds = new ArrayList<>();
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT variable_item_id, value, created_at, updated_at FROM room_user_wired_variables WHERE room_id = ? AND user_id = ?")) {
-            statement.setInt(1, this.room.getId());
-            statement.setInt(2, userId);
+        try {
+            for (RoomUserVariableRepository.StoredAssignment stored :
+                    this.repository.findByUser(this.room.getId(), userId)) {
+                int definitionItemId = stored.definitionItemId();
+                WiredExtraUserVariable definition = this.getDefinition(definitionItemId);
 
-            try (ResultSet set = statement.executeQuery()) {
-                while (set.next()) {
-                    int definitionItemId = set.getInt("variable_item_id");
-                    WiredExtraUserVariable definition = this.getDefinition(definitionItemId);
-
-                    if (definition == null || !definition.isPermanentAvailability()) {
-                        staleDefinitionIds.add(definitionItemId);
-                        continue;
-                    }
-
-                    Integer value = null;
-                    int rawValue = set.getInt("value");
-                    if (!set.wasNull()) {
-                        value = rawValue;
-                    }
-
-                    int createdAt = normalizeTimestamp(set.getInt("created_at"), 0);
-                    int updatedAt = normalizeTimestamp(set.getInt("updated_at"), createdAt);
-
-                    restoredAssignments.put(definitionItemId, new VariableAssignment(value, createdAt, updatedAt));
+                if (definition == null || !definition.isPermanentAvailability()) {
+                    staleDefinitionIds.add(definitionItemId);
+                    continue;
                 }
+
+                int createdAt = normalizeTimestamp(stored.createdAt(), 0);
+                int updatedAt = normalizeTimestamp(stored.updatedAt(), createdAt);
+                restoredAssignments.put(
+                        definitionItemId,
+                        new VariableAssignment(stored.value(), createdAt, updatedAt));
             }
         } catch (SQLException e) {
             LOGGER.error("Failed to restore wired user variables for room {} and user {}", this.room.getId(), userId, e);
@@ -165,10 +165,10 @@ public class RoomUserVariableManager {
         boolean changed = overwritten || valueChanged;
 
         if (existingAssignment == null || overwritten) {
-            int now = Emulator.getIntUnixTimestamp();
+            int now = this.currentTimestamp.getAsInt();
             assignments.put(definitionItemId, new VariableAssignment(normalizedValue, now, now));
         } else if (valueChanged) {
-            existingAssignment.setValue(normalizedValue, Emulator.getIntUnixTimestamp());
+            existingAssignment.setValue(normalizedValue, this.currentTimestamp.getAsInt());
         }
 
         WiredExtraUserVariable definition = (WiredExtraUserVariable) extra;
@@ -270,7 +270,7 @@ public class RoomUserVariableManager {
             return false;
         }
 
-        assignment.setValue(normalizedValue, Emulator.getIntUnixTimestamp());
+        assignment.setValue(normalizedValue, this.currentTimestamp.getAsInt());
 
         WiredExtraUserVariable definition = (WiredExtraUserVariable) extra;
 
@@ -953,46 +953,31 @@ public class RoomUserVariableManager {
     }
 
     private void upsertPersistentAssignment(int userId, int definitionItemId, VariableAssignment assignment) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("INSERT INTO room_user_wired_variables (room_id, user_id, variable_item_id, value, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = VALUES(updated_at)")) {
-            statement.setInt(1, this.room.getId());
-            statement.setInt(2, userId);
-            statement.setInt(3, definitionItemId);
-
-            if (assignment == null || assignment.getValue() == null) {
-                statement.setNull(4, java.sql.Types.INTEGER);
-            } else {
-                statement.setInt(4, assignment.getValue());
-            }
-
-            int now = Emulator.getIntUnixTimestamp();
-            statement.setInt(5, (assignment != null) ? assignment.getCreatedAt() : now);
-            statement.setInt(6, (assignment != null) ? assignment.getUpdatedAt() : now);
-
-            statement.executeUpdate();
+        try {
+            int now = this.currentTimestamp.getAsInt();
+            this.repository.upsert(
+                    this.room.getId(),
+                    userId,
+                    definitionItemId,
+                    assignment != null ? assignment.getValue() : null,
+                    assignment != null ? assignment.getCreatedAt() : now,
+                    assignment != null ? assignment.getUpdatedAt() : now);
         } catch (SQLException e) {
             LOGGER.error("Failed to store permanent wired user variable for room {}, user {}, item {}", this.room.getId(), userId, definitionItemId, e);
         }
     }
 
     private void deletePersistentAssignment(int userId, int definitionItemId) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("DELETE FROM room_user_wired_variables WHERE room_id = ? AND user_id = ? AND variable_item_id = ?")) {
-            statement.setInt(1, this.room.getId());
-            statement.setInt(2, userId);
-            statement.setInt(3, definitionItemId);
-            statement.executeUpdate();
+        try {
+            this.repository.delete(this.room.getId(), userId, definitionItemId);
         } catch (SQLException e) {
             LOGGER.error("Failed to delete permanent wired user variable for room {}, user {}, item {}", this.room.getId(), userId, definitionItemId, e);
         }
     }
 
     private void deletePersistentAssignmentsForDefinition(int definitionItemId) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("DELETE FROM room_user_wired_variables WHERE room_id = ? AND variable_item_id = ?")) {
-            statement.setInt(1, this.room.getId());
-            statement.setInt(2, definitionItemId);
-            statement.executeUpdate();
+        try {
+            this.repository.deleteDefinition(this.room.getId(), definitionItemId);
         } catch (SQLException e) {
             LOGGER.error("Failed to delete permanent wired user variables for room {} and item {}", this.room.getId(), definitionItemId, e);
         }
@@ -1145,9 +1130,9 @@ public class RoomUserVariableManager {
         }
     }
 
-    private static int normalizeTimestamp(int value, int fallback) {
+    private int normalizeTimestamp(int value, int fallback) {
         if (value > 0) return value;
         if (fallback > 0) return fallback;
-        return Emulator.getIntUnixTimestamp();
+        return this.currentTimestamp.getAsInt();
     }
 }

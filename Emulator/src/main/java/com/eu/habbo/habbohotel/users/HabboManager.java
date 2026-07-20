@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 
 public class HabboManager {
 
@@ -42,12 +43,19 @@ public class HabboManager {
     private final ConcurrentHashMap<Integer, Habbo> onlineHabbos;
     private final ConcurrentHashMap<String, Habbo> onlineHabbosByName;
     private final ConcurrentHashMap<Integer, String> usernameCache = new ConcurrentHashMap<>();
+    private final DisconnectPersistenceGate disconnectPersistence;
 
     public HabboManager() {
+        this(Runnable::run);
+    }
+
+    public HabboManager(Executor persistenceExecutor) {
         long millis = System.currentTimeMillis();
 
         this.onlineHabbos = new ConcurrentHashMap<>();
         this.onlineHabbosByName = new ConcurrentHashMap<>();
+        this.disconnectPersistence =
+                new DisconnectPersistenceGate(persistenceExecutor);
 
         LOGGER.info("Habbo Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
     }
@@ -111,11 +119,19 @@ public class HabboManager {
             LOGGER.error("Caught SQL exception", e);
         }
 
+        if (!this.awaitDisconnectPersistence(userId)) {
+            return null;
+        }
+
         habbo = this.cloneCheck(userId);
         if (habbo != null) {
             habbo.alert(Emulator.getTexts().getValue("loggedin.elsewhere"));
             Emulator.getGameServer().getGameClientManager().forceDisposeClient(habbo.getClient());
             habbo = null;
+        }
+
+        if (!this.awaitDisconnectPersistence(userId)) {
+            return null;
         }
 
         ModToolBan ban = Emulator.getGameEnvironment().getModToolManager().checkForBan(userId);
@@ -150,6 +166,32 @@ public class HabboManager {
         }
 
         return habbo;
+    }
+
+    private boolean awaitDisconnectPersistence(int userId) {
+        if (this.disconnectPersistence.await(userId)) {
+            return true;
+        }
+        LOGGER.warn(
+                "Interrupted while waiting for disconnect persistence for user {}",
+                userId);
+        return false;
+    }
+
+    DisconnectPersistenceGate.Registration beginDisconnectPersistence(
+            int userId) {
+        return this.disconnectPersistence.begin(userId);
+    }
+
+    void submitDisconnectPersistence(
+            DisconnectPersistenceGate.Registration registration,
+            Runnable persistence) {
+        this.disconnectPersistence.submit(registration, persistence);
+    }
+
+    void cancelDisconnectPersistence(
+            DisconnectPersistenceGate.Registration registration) {
+        this.disconnectPersistence.cancel(registration);
     }
 
     public HabboInfo getHabboInfo(int id) {

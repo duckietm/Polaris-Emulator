@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.users;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
@@ -206,52 +207,95 @@ public class Habbo implements Runnable {
     }
 
 
-    public synchronized void disconnect() {
-        if (!Emulator.isShuttingDown) {
-            if (Emulator.getPluginManager().fireEvent(new UserDisconnectEvent(this)).isCancelled()) return;
-        }
-
-        if (this.disconnected || this.disconnecting)
-            return;
-
-        this.disconnecting = true;
-
-        try {
-            if (this.getHabboInfo().getCurrentRoom() != null) {
-                Emulator.getGameEnvironment().getRoomManager().leaveRoom(this, this.getHabboInfo().getCurrentRoom());
-            }
-            if (this.getHabboInfo().getRoomQueueId() > 0) {
-                Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getHabboInfo().getRoomQueueId());
-
-                if (room != null) {
-                    room.removeFromQueue(this);
+    public void disconnect() {
+        GameEnvironment environment = Emulator.getGameEnvironment();
+        HabboManager habboManager = environment.getHabboManager();
+        boolean shuttingDown = Emulator.isShuttingDown;
+        var pluginManager = Emulator.getPluginManager();
+        DisconnectPersistenceGate.Registration persistenceRegistration;
+        synchronized (this) {
+            if (this.disconnected || this.disconnecting) {
+                if (!shuttingDown) {
+                    pluginManager.fireEvent(
+                            new UserDisconnectEvent(this));
                 }
+                return;
             }
-        } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+
+            persistenceRegistration =
+                    habboManager.beginDisconnectPersistence(
+                            this.habboInfo.getId());
+            boolean cancelled;
+            try {
+                cancelled = !shuttingDown
+                        && pluginManager
+                        .fireEvent(new UserDisconnectEvent(this))
+                        .isCancelled();
+            } catch (RuntimeException exception) {
+                habboManager.cancelDisconnectPersistence(
+                        persistenceRegistration);
+                throw exception;
+            }
+            if (cancelled) {
+                habboManager.cancelDisconnectPersistence(
+                        persistenceRegistration);
+                return;
+            }
+            this.disconnecting = true;
+
+            try {
+                if (this.getHabboInfo().getCurrentRoom() != null) {
+                    environment.getRoomManager().leaveRoom(
+                            this,
+                            this.getHabboInfo().getCurrentRoom());
+                }
+                if (this.getHabboInfo().getRoomQueueId() > 0) {
+                    Room room = environment.getRoomManager().getRoom(
+                            this.getHabboInfo().getRoomQueueId());
+
+                    if (room != null) {
+                        room.removeFromQueue(this);
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.error("Caught exception", e);
+            }
+
+            try {
+                environment.getGuideManager().userLogsOut(this);
+                this.habboInfo.setOnline(false);
+                this.needsUpdate(true);
+                this.messenger.connectionChanged(this, false, false);
+                this.messenger.dispose();
+            } catch (Exception e) {
+                LOGGER.error("Caught exception", e);
+            } finally {
+                this.disconnected = true;
+                try {
+                    environment.getRoomManager().unloadRoomsForHabbo(this);
+                } catch (Exception e) {
+                    LOGGER.error("Unable to unload owned rooms during disconnect", e);
+                }
+                try {
+                    habboManager.removeHabbo(this);
+                } catch (Exception e) {
+                    LOGGER.error("Unable to remove disconnected user", e);
+                }
+                this.client = null;
+            }
         }
 
-        try {
-            Emulator.getGameEnvironment().getGuideManager().userLogsOut(this);
-            this.isOnline(false);
-            this.needsUpdate(true);
-            this.run();
-            this.getInventory().dispose();
-            this.messenger.connectionChanged(this, false, false);
-            this.messenger.dispose();
-            this.disconnected = true;
-            AchievementManager.saveAchievements(this);
+        habboManager.submitDisconnectPersistence(
+                persistenceRegistration,
+                this::persistDisconnect);
+    }
 
-            this.habboStats.dispose();
-        } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
-            return;
-        } finally {
-            Emulator.getGameEnvironment().getRoomManager().unloadRoomsForHabbo(this);
-            Emulator.getGameEnvironment().getHabboManager().removeHabbo(this);
-        }
+    private void persistDisconnect() {
+        this.run();
+        this.getInventory().dispose();
+        AchievementManager.saveAchievements(this);
+        this.habboStats.dispose();
         LOGGER.info("{} disconnected.", this.habboInfo.getUsername());
-        this.client = null;
     }
 
     @Override

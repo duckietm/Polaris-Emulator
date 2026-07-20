@@ -6,26 +6,24 @@ import com.eu.habbo.habbohotel.guilds.Guild;
 import com.eu.habbo.habbohotel.guilds.GuildMember;
 import com.eu.habbo.habbohotel.guilds.GuildMembershipStatus;
 import com.eu.habbo.habbohotel.guilds.GuildRank;
+import com.eu.habbo.habbohotel.messenger.MessengerBuddy;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.outgoing.rooms.RoomAddRightsListComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomOwnerComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomRemoveRightsListComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomRightsComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomRightsListComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserUnbannedComposer;
-import com.eu.habbo.habbohotel.messenger.MessengerBuddy;
-import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.plugin.events.users.UserRightsTakenEvent;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -33,6 +31,8 @@ import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Manages room rights, bans, and mutes.
@@ -41,15 +41,30 @@ public class RoomRightsManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomRightsManager.class);
 
     private final Room room;
+    private final IntList legacyRights;
     private final IntSet rights;
     private final Int2ObjectMap<RoomBan> bannedHabbos;
     private final Int2IntMap mutedHabbos;
 
     public RoomRightsManager(Room room) {
+        this(room, null, new IntOpenHashSet(), new Int2ObjectOpenHashMap<>(), new Int2IntOpenHashMap());
+    }
+
+    RoomRightsManager(Room room, IntList legacyRights, Int2ObjectMap<RoomBan> bannedHabbos, Int2IntMap mutedHabbos) {
+        this(room, legacyRights, new RoomRightsSetView(legacyRights), bannedHabbos, mutedHabbos);
+    }
+
+    private RoomRightsManager(
+            Room room,
+            IntList legacyRights,
+            IntSet rights,
+            Int2ObjectMap<RoomBan> bannedHabbos,
+            Int2IntMap mutedHabbos) {
         this.room = room;
-        this.rights = new IntOpenHashSet();
-        this.bannedHabbos = new Int2ObjectOpenHashMap<>();
-        this.mutedHabbos = new Int2IntOpenHashMap();
+        this.legacyRights = legacyRights;
+        this.rights = rights;
+        this.bannedHabbos = bannedHabbos;
+        this.mutedHabbos = mutedHabbos;
     }
 
     /**
@@ -57,12 +72,17 @@ public class RoomRightsManager {
      */
     public void loadRights(Connection connection) {
         this.rights.clear();
-        try (PreparedStatement statement = connection.prepareStatement(
-            "SELECT user_id FROM room_rights WHERE room_id = ?")) {
+        try (PreparedStatement statement =
+                connection.prepareStatement("SELECT user_id FROM room_rights WHERE room_id = ?")) {
             statement.setInt(1, this.room.getId());
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
-                    this.rights.add(set.getInt("user_id"));
+                    int userId = set.getInt("user_id");
+                    if (this.legacyRights != null) {
+                        this.legacyRights.add(userId);
+                    } else {
+                        this.rights.add(userId);
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -74,24 +94,7 @@ public class RoomRightsManager {
      * Loads bans from database.
      */
     public void loadBans(Connection connection) {
-        this.bannedHabbos.clear();
-
-        try (PreparedStatement statement = connection.prepareStatement(
-            "SELECT users.username, users.id, room_bans.* FROM room_bans INNER JOIN users ON room_bans.user_id = users.id WHERE ends > ? AND room_bans.room_id = ?")) {
-            statement.setInt(1, Emulator.getIntUnixTimestamp());
-            statement.setInt(2, this.room.getId());
-            try (ResultSet set = statement.executeQuery()) {
-                while (set.next()) {
-                    if (this.bannedHabbos.containsKey(set.getInt("user_id"))) {
-                        continue;
-                    }
-
-                    this.bannedHabbos.put(set.getInt("user_id"), new RoomBan(set));
-                }
-            }
-        } catch (SQLException e) {
-            LOGGER.error("Caught SQL exception", e);
-        }
+        RoomBanLoader.load(connection, this.room, this.bannedHabbos);
     }
 
     /**
@@ -106,14 +109,15 @@ public class RoomRightsManager {
                 return RoomRightLevels.NONE;
             }
 
-            GuildMember member = Emulator.getGameEnvironment().getGuildManager().getGuildMember(guild.getId(), habbo.getHabboInfo().getId());
+            GuildMember member = Emulator.getGameEnvironment()
+                    .getGuildManager()
+                    .getGuildMember(guild.getId(), habbo.getHabboInfo().getId());
 
             if ((member != null) && (member.getRank() == GuildRank.ADMIN || member.getRank() == GuildRank.OWNER)) {
                 return RoomRightLevels.GUILD_ADMIN;
             }
 
-            if ((member != null) && member.getMembershipStatus() == GuildMembershipStatus.MEMBER
-                && guild.getRights()) {
+            if ((member != null) && member.getMembershipStatus() == GuildMembershipStatus.MEMBER && guild.getRights()) {
                 return RoomRightLevels.GUILD_RIGHTS;
             }
         }
@@ -133,17 +137,20 @@ public class RoomRightsManager {
      * Checks if a habbo is the room owner.
      */
     public boolean isOwner(Habbo habbo) {
-        return habbo.getHabboInfo().getId() == this.room.getOwnerId() || habbo.hasPermission(
-            Permission.ACC_ANYROOMOWNER);
+        return habbo.getHabboInfo().getId() == this.room.getOwnerId()
+                || habbo.hasPermission(Permission.ACC_ANYROOMOWNER);
     }
 
     /**
      * Checks if a habbo has rights in the room.
      */
     public boolean hasRights(Habbo habbo) {
-        return this.isOwner(habbo) || this.rights.contains(habbo.getHabboInfo().getId()) || (
-            habbo.getRoomUnit().getRightsLevel() != RoomRightLevels.NONE
-                && this.room.getCurrentHabbos().containsKey(habbo.getHabboInfo().getId()));
+        int userId = habbo.getHabboInfo().getId();
+        return this.isOwner(habbo)
+                || this.rights.contains(userId)
+                || (habbo.getRoomUnit() != null
+                        && habbo.getRoomUnit().getRightsLevel() != RoomRightLevels.NONE
+                        && this.room.getCurrentHabbos().containsKey(userId));
     }
 
     /**
@@ -166,20 +173,21 @@ public class RoomRightsManager {
         if (this.rights.add(userId)) {
             try {
                 SqlQueries.update(
-                    "INSERT INTO room_rights (room_id, user_id) VALUES (?, ?)",
-                    this.room.getId(), userId);
+                        "INSERT INTO room_rights (room_id, user_id) VALUES (?, ?)", this.room.getId(), userId);
             } catch (SqlQueries.DataAccessException e) {
                 LOGGER.error("Caught SQL exception", e);
             }
         }
-
         Habbo habbo = this.room.getHabbo(userId);
 
         if (habbo != null) {
             this.refreshRightsForHabbo(habbo);
 
-            this.room.sendComposer(new RoomAddRightsListComposer(this.room, habbo.getHabboInfo().getId(),
-                habbo.getHabboInfo().getUsername()).compose());
+            this.room.sendComposer(new RoomAddRightsListComposer(
+                            this.room,
+                            habbo.getHabboInfo().getId(),
+                            habbo.getHabboInfo().getUsername())
+                    .compose());
         } else {
             Habbo owner = Emulator.getGameEnvironment().getHabboManager().getHabbo(this.room.getOwnerId());
 
@@ -188,7 +196,7 @@ public class RoomRightsManager {
 
                 if (buddy != null) {
                     this.room.sendComposer(
-                        new RoomAddRightsListComposer(this.room, userId, buddy.getUsername()).compose());
+                            new RoomAddRightsListComposer(this.room, userId, buddy.getUsername()).compose());
                 }
             }
         }
@@ -201,8 +209,8 @@ public class RoomRightsManager {
         Habbo habbo = this.room.getHabbo(userId);
 
         if (Emulator.getPluginManager()
-            .fireEvent(new UserRightsTakenEvent(this.room.getHabbo(this.room.getOwnerId()), userId, habbo))
-            .isCancelled()) {
+                .fireEvent(new UserRightsTakenEvent(this.room.getHabbo(this.room.getOwnerId()), userId, habbo))
+                .isCancelled()) {
             return;
         }
 
@@ -211,13 +219,11 @@ public class RoomRightsManager {
         if (this.rights.remove(userId)) {
             try {
                 SqlQueries.update(
-                    "DELETE FROM room_rights WHERE room_id = ? AND user_id = ?",
-                    this.room.getId(), userId);
+                        "DELETE FROM room_rights WHERE room_id = ? AND user_id = ?", this.room.getId(), userId);
             } catch (SqlQueries.DataAccessException e) {
                 LOGGER.error("Caught SQL exception", e);
             }
         }
-
         if (habbo != null) {
             this.room.getItemManager().ejectUserFurni(habbo.getHabboInfo().getId());
             habbo.getRoomUnit().setRightsLevel(RoomRightLevels.NONE);
@@ -309,11 +315,11 @@ public class RoomRightsManager {
 
         try {
             return SqlQueries.query(
-                "SELECT users.username AS username, users.id as user_id FROM room_rights INNER JOIN users ON room_rights.user_id = users.id WHERE room_id = ?",
-                rs -> Map.entry(rs.getInt("user_id"), rs.getString("username")),
-                this.room.getId())
-                .stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> b));
+                            "SELECT users.username AS username, users.id as user_id FROM room_rights INNER JOIN users ON room_rights.user_id = users.id WHERE room_id = ?",
+                            rs -> Map.entry(rs.getInt("user_id"), rs.getString("username")),
+                            this.room.getId())
+                    .stream()
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> b));
         } catch (SqlQueries.DataAccessException e) {
             LOGGER.error("Caught SQL exception", e);
             return Collections.emptyMap();
@@ -339,9 +345,10 @@ public class RoomRightsManager {
     public boolean isBanned(Habbo habbo) {
         RoomBan ban = this.bannedHabbos.get(habbo.getHabboInfo().getId());
 
-        boolean banned =
-            ban != null && ban.endTimestamp > Emulator.getIntUnixTimestamp() && !habbo.hasPermission(
-                Permission.ACC_ANYROOMOWNER) && !habbo.hasPermission("acc_enteranyroom");
+        boolean banned = ban != null
+                && ban.endTimestamp > Emulator.getIntUnixTimestamp()
+                && !habbo.hasPermission(Permission.ACC_ANYROOMOWNER)
+                && !habbo.hasPermission("acc_enteranyroom");
 
         if (!banned && ban != null) {
             this.unbanHabbo(habbo.getHabboInfo().getId());
@@ -369,8 +376,7 @@ public class RoomRightsManager {
      */
     public void muteHabbo(Habbo habbo, int minutes) {
         synchronized (this.mutedHabbos) {
-            this.mutedHabbos.put(habbo.getHabboInfo().getId(),
-                Emulator.getIntUnixTimestamp() + (minutes * 60));
+            this.mutedHabbos.put(habbo.getHabboInfo().getId(), Emulator.getIntUnixTimestamp() + (minutes * 60));
         }
     }
 
@@ -383,8 +389,7 @@ public class RoomRightsManager {
         }
 
         if (this.mutedHabbos.containsKey(habbo.getHabboInfo().getId())) {
-            boolean time =
-                this.mutedHabbos.get(habbo.getHabboInfo().getId()) > Emulator.getIntUnixTimestamp();
+            boolean time = this.mutedHabbos.get(habbo.getHabboInfo().getId()) > Emulator.getIntUnixTimestamp();
 
             if (!time) {
                 this.mutedHabbos.remove(habbo.getHabboInfo().getId());
@@ -433,8 +438,8 @@ public class RoomRightsManager {
         for (Habbo habbo : this.room.getHabbos()) {
             if (habbo.getHabboInfo().getCurrentRoom() == this.room) {
                 if (habbo.getHabboInfo().getId() != this.room.getOwnerId()) {
-                    if (!(habbo.hasPermission(Permission.ACC_ANYROOMOWNER) || habbo.hasPermission(
-                        Permission.ACC_MOVEROTATE))) {
+                    if (!(habbo.hasPermission(Permission.ACC_ANYROOMOWNER)
+                            || habbo.hasPermission(Permission.ACC_MOVEROTATE))) {
                         this.refreshRightsForHabbo(habbo);
                     }
                 }

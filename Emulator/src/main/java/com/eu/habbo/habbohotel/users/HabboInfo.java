@@ -16,12 +16,15 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HabboInfo implements Runnable {
 
@@ -86,9 +89,12 @@ public class HabboInfo implements Runnable {
             this.rank = Emulator.getGameEnvironment().getPermissionsManager().getRank(set.getInt("rank"));
 
             if (this.rank == null) {
-                LOGGER.error("No existing rank found with id " + set.getInt("rank") + ". Make sure an entry in the permissions table exists.");
-                LOGGER.warn(this.username + " has an invalid rank with id " + set.getInt("rank") + ". Make sure an entry in the permissions table exists.");
-                this.rank = Emulator.getGameEnvironment().getPermissionsManager().getRank(1);
+                LOGGER.error("No existing rank found with id " + set.getInt("rank")
+                        + ". Make sure an entry in the permissions table exists.");
+                LOGGER.warn(this.username + " has an invalid rank with id " + set.getInt("rank")
+                        + ". Make sure an entry in the permissions table exists.");
+                this.rank =
+                        Emulator.getGameEnvironment().getPermissionsManager().getRank(1);
             }
 
             this.accountCreated = set.getInt("account_created");
@@ -143,7 +149,7 @@ public class HabboInfo implements Runnable {
         synchronized (this.currencyLock) {
             entries = new ArrayList<>(this.currencies.size());
             for (Int2IntMap.Entry entry : this.currencies.int2IntEntrySet()) {
-                entries.add(new int[]{entry.getIntKey(), entry.getIntValue()});
+                entries.add(new int[] {entry.getIntKey(), entry.getIntValue()});
             }
         }
 
@@ -166,7 +172,8 @@ public class HabboInfo implements Runnable {
         try {
             this.savedSearches = SqlQueries.query(
                     "SELECT * FROM users_saved_searches WHERE user_id = ?",
-                    rs -> new NavigatorSavedSearch(rs.getString("search_code"), rs.getString("filter"), rs.getInt("id")),
+                    rs -> new NavigatorSavedSearch(
+                            rs.getString("search_code"), rs.getString("filter"), rs.getInt("id")),
                     this.id);
         } catch (SqlQueries.DataAccessException e) {
             LOGGER.error("Caught SQL exception", e);
@@ -177,7 +184,10 @@ public class HabboInfo implements Runnable {
     public void addSavedSearch(NavigatorSavedSearch search) {
         this.savedSearches.add(search);
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO users_saved_searches (search_code, filter, user_id) VALUES (?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO users_saved_searches (search_code, filter, user_id) VALUES (?, ?, ?)",
+                        Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, search.getSearchCode());
             statement.setString(2, search.getFilter());
             statement.setInt(3, this.id);
@@ -224,7 +234,10 @@ public class HabboInfo implements Runnable {
     public void addMessengerCategory(MessengerCategory category) {
         this.messengerCategories.add(category);
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO messenger_categories (name, user_id) VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO messenger_categories (name, user_id) VALUES (?, ?)",
+                        Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, category.getName());
             statement.setInt(2, this.id);
             int affectedRows = statement.executeUpdate();
@@ -247,8 +260,13 @@ public class HabboInfo implements Runnable {
 
     public void deleteMessengerCategory(MessengerCategory category) {
         try {
-            SqlQueries.update("UPDATE messenger_friendships SET category = 0 WHERE user_one_id = ? AND category = ?", this.id, category.getId());
-            if (SqlQueries.update("DELETE FROM messenger_categories WHERE id = ? AND user_id = ?", category.getId(), this.id) > 0) {
+            SqlQueries.update(
+                    "UPDATE messenger_friendships SET category = 0 WHERE user_one_id = ? AND category = ?",
+                    this.id,
+                    category.getId());
+            if (SqlQueries.update(
+                            "DELETE FROM messenger_categories WHERE id = ? AND user_id = ?", category.getId(), this.id)
+                    > 0) {
                 this.messengerCategories.remove(category);
             }
         } catch (SqlQueries.DataAccessException e) {
@@ -257,12 +275,20 @@ public class HabboInfo implements Runnable {
     }
 
     public MessengerCategory getMessengerCategory(int categoryId) {
-        return this.messengerCategories.stream().filter(category -> category.getId() == categoryId).findFirst().orElse(null);
+        return this.messengerCategories.stream()
+                .filter(category -> category.getId() == categoryId)
+                .findFirst()
+                .orElse(null);
     }
 
     public boolean renameMessengerCategory(MessengerCategory category, String name) {
         try {
-            if (SqlQueries.update("UPDATE messenger_categories SET name = ? WHERE id = ? AND user_id = ?", name, category.getId(), this.id) <= 0) return false;
+            if (SqlQueries.update(
+                            "UPDATE messenger_categories SET name = ? WHERE id = ? AND user_id = ?",
+                            name,
+                            category.getId(),
+                            this.id)
+                    <= 0) return false;
             category.setName(name);
             return true;
         } catch (SqlQueries.DataAccessException e) {
@@ -273,7 +299,12 @@ public class HabboInfo implements Runnable {
 
     public boolean moveMessengerFriendToCategory(int friendId, int categoryId) {
         try {
-            return SqlQueries.update("UPDATE messenger_friendships SET category = ? WHERE user_one_id = ? AND user_two_id = ?", categoryId, this.id, friendId) > 0;
+            return SqlQueries.update(
+                            "UPDATE messenger_friendships SET category = ? WHERE user_one_id = ? AND user_two_id = ?",
+                            categoryId,
+                            this.id,
+                            friendId)
+                    > 0;
         } catch (SqlQueries.DataAccessException e) {
             LOGGER.error("Caught SQL exception", e);
             return false;
@@ -304,8 +335,13 @@ public class HabboInfo implements Runnable {
             int current = this.currencies.get(type);
             int updated = WalletBalanceMath.clampedBalance(current, amount);
             if ((long) Math.max(0, current) + amount != updated) {
-                LOGGER.warn("Clamped out-of-range point balance for user {} (currency type {}): {} + {} -> {}",
-                        this.id, type, current, amount, updated);
+                LOGGER.warn(
+                        "Clamped out-of-range point balance for user {} (currency type {}): {} + {} -> {}",
+                        this.id,
+                        type,
+                        current,
+                        amount,
+                        updated);
             }
             this.currencies.put(type, updated);
         }
@@ -495,7 +531,8 @@ public class HabboInfo implements Runnable {
     }
 
     public boolean canBuy(CatalogItem item) {
-        return this.getCredits() >= item.getCredits() && this.getCurrencyAmount(item.getPointsType()) >= item.getPoints();
+        return this.getCredits() >= item.getCredits()
+                && this.getCurrencyAmount(item.getPointsType()) >= item.getPoints();
     }
 
     public int getCredits() {
@@ -518,8 +555,12 @@ public class HabboInfo implements Runnable {
         synchronized (this.currencyLock) {
             int updated = WalletBalanceMath.clampedBalance(this.credits, credits);
             if ((long) Math.max(0, this.credits) + credits != updated) {
-                LOGGER.warn("Clamped out-of-range credit balance for user {}: {} + {} -> {}",
-                        this.id, this.credits, credits, updated);
+                LOGGER.warn(
+                        "Clamped out-of-range credit balance for user {}: {} + {} -> {}",
+                        this.id,
+                        this.credits,
+                        credits,
+                        updated);
             }
             this.credits = updated;
         }
@@ -643,12 +684,10 @@ public class HabboInfo implements Runnable {
     }
 
     public void dismountPet(boolean isRemoving) {
-        if (this.getRiding() == null)
-            return;
+        if (this.getRiding() == null) return;
 
         Habbo habbo = this.getCurrentRoom().getHabbo(this.getId());
-        if (habbo == null)
-            return;
+        if (habbo == null) return;
 
         RideablePet riding = this.getRiding();
 
@@ -657,12 +696,10 @@ public class HabboInfo implements Runnable {
         this.setRiding(null);
 
         Room room = this.getCurrentRoom();
-        if (room != null)
-            room.giveEffect(habbo, 0, -1);
+        if (room != null) room.giveEffect(habbo, 0, -1);
 
         RoomUnit roomUnit = habbo.getRoomUnit();
-        if (roomUnit == null)
-            return;
+        if (roomUnit == null) return;
 
         roomUnit.setZ(riding.getRoomUnit().getZ());
         roomUnit.setPreviousLocationZ(riding.getRoomUnit().getZ());
@@ -672,7 +709,9 @@ public class HabboInfo implements Runnable {
             room.sendComposer(new RoomUserStatusComposer(riding.getRoomUnit()).compose());
         }
         room.sendComposer(new RoomUserStatusComposer(roomUnit).compose());
-        List<RoomTile> availableTiles = isRemoving ? new ArrayList<>() : this.getCurrentRoom().getLayout().getWalkableTilesAround(roomUnit.getCurrentLocation());
+        List<RoomTile> availableTiles = isRemoving
+                ? new ArrayList<>()
+                : this.getCurrentRoom().getLayout().getWalkableTilesAround(roomUnit.getCurrentLocation());
 
         RoomTile tile = availableTiles.isEmpty() ? roomUnit.getCurrentLocation() : availableTiles.get(0);
         roomUnit.setGoalLocation(tile);
@@ -751,7 +790,9 @@ public class HabboInfo implements Runnable {
         return this.savedSearches;
     }
 
-    public List<MessengerCategory> getMessengerCategories() { return this.messengerCategories; }
+    public List<MessengerCategory> getMessengerCategories() {
+        return this.messengerCategories;
+    }
 
     @Override
     public void run() {

@@ -1,14 +1,13 @@
 package com.eu.habbo;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.jupiter.api.Test;
 
 class StartupPhasesTest {
 
@@ -24,12 +23,7 @@ class StartupPhasesTest {
                 phase("network", calls)));
 
         assertTrue(started);
-        assertEquals(List.of(
-                "configuration",
-                "database",
-                "plugins",
-                "hotel",
-                "network"), calls);
+        assertEquals(List.of("configuration", "database", "plugins", "hotel", "network"), calls);
     }
 
     @Test
@@ -67,9 +61,7 @@ class StartupPhasesTest {
         assertEquals(List.of("configuration", "database"), calls);
     }
 
-    private static StartupPhases.Phase phase(
-            String name,
-            List<String> calls) {
+    private static StartupPhases.Phase phase(String name, List<String> calls) {
         return new StartupPhases.Phase(name, () -> {
             calls.add(name);
             return true;

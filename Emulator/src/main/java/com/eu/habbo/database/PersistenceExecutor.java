@@ -1,8 +1,5 @@
 package com.eu.habbo.database;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -10,37 +7,30 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Bounded executor for blocking database writes that must not compete with
  * room and wired scheduling.
  */
 public final class PersistenceExecutor {
-    private static final Logger LOGGER =
-            LoggerFactory.getLogger(
-                    PersistenceExecutor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PersistenceExecutor.class);
     private static final int DEFAULT_QUEUE_CAPACITY = 2_048;
 
     private final ThreadPoolExecutor executor;
-    private final AtomicBoolean accepting =
-            new AtomicBoolean(true);
+    private final AtomicBoolean accepting = new AtomicBoolean(true);
 
-    public PersistenceExecutor(
-            int threads,
-            int queueCapacity) {
+    public PersistenceExecutor(int threads, int queueCapacity) {
         if (threads < 1) {
-            throw new IllegalArgumentException(
-                    "threads must be positive");
+            throw new IllegalArgumentException("threads must be positive");
         }
         if (queueCapacity < 1) {
-            throw new IllegalArgumentException(
-                    "queueCapacity must be positive");
+            throw new IllegalArgumentException("queueCapacity must be positive");
         }
 
         ThreadFactory threadFactory =
-                Thread.ofPlatform()
-                        .name("Polaris-JDBC-", 0)
-                        .factory();
+                Thread.ofPlatform().name("Polaris-JDBC-", 0).factory();
         this.executor = new ThreadPoolExecutor(
                 threads,
                 threads,
@@ -52,19 +42,13 @@ public final class PersistenceExecutor {
         this.executor.prestartAllCoreThreads();
     }
 
-    public static PersistenceExecutor forRuntimeThreads(
-            int runtimeThreads) {
-        int threads = Math.max(
-                2,
-                Math.min(8, runtimeThreads));
-        return new PersistenceExecutor(
-                threads,
-                DEFAULT_QUEUE_CAPACITY);
+    public static PersistenceExecutor forRuntimeThreads(int runtimeThreads) {
+        int threads = Math.max(2, Math.min(8, runtimeThreads));
+        return new PersistenceExecutor(threads, DEFAULT_QUEUE_CAPACITY);
     }
 
     public void execute(Runnable task) {
-        Runnable guarded = guard(
-                Objects.requireNonNull(task, "task"));
+        Runnable guarded = guard(Objects.requireNonNull(task, "task"));
         if (!this.accepting.get()) {
             guarded.run();
             return;
@@ -92,25 +76,19 @@ public final class PersistenceExecutor {
         boolean interrupted = false;
         boolean terminated = false;
         try {
-            terminated = this.executor.awaitTermination(
-                    Math.max(0L, timeout),
-                    unit);
+            terminated = this.executor.awaitTermination(Math.max(0L, timeout), unit);
         } catch (InterruptedException exception) {
             interrupted = true;
         }
 
         if (!terminated) {
-            List<Runnable> queued =
-                    this.executor.shutdownNow();
+            List<Runnable> queued = this.executor.shutdownNow();
             for (Runnable task : queued) {
                 task.run();
             }
             if (!interrupted) {
                 try {
-                    terminated =
-                            this.executor.awaitTermination(
-                                    Math.max(0L, timeout),
-                                    unit);
+                    terminated = this.executor.awaitTermination(Math.max(0L, timeout), unit);
                 } catch (InterruptedException exception) {
                     interrupted = true;
                 }
@@ -121,11 +99,9 @@ public final class PersistenceExecutor {
             Thread.currentThread().interrupt();
         }
         if (terminated) {
-            LOGGER.info(
-                    "Persistence executor stopped after draining accepted work");
+            LOGGER.info("Persistence executor stopped after draining accepted work");
         } else {
-            LOGGER.error(
-                    "Persistence executor workers remained active during shutdown");
+            LOGGER.error("Persistence executor workers remained active during shutdown");
         }
     }
 
@@ -134,9 +110,7 @@ public final class PersistenceExecutor {
             try {
                 task.run();
             } catch (Exception exception) {
-                LOGGER.error(
-                        "Persistence task failed",
-                        exception);
+                LOGGER.error("Persistence task failed", exception);
             }
         };
     }

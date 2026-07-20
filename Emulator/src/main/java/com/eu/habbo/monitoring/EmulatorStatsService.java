@@ -10,7 +10,6 @@ import com.eu.habbo.habbohotel.wired.tick.WiredTickService;
 import com.eu.habbo.networking.gameserver.GameServer;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.HikariPoolMXBean;
-
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
@@ -38,8 +37,7 @@ public final class EmulatorStatsService {
     private static volatile long previousGcTimeMs = 0L;
     private static volatile long previousTelemetryAt = 0L;
 
-    private EmulatorStatsService() {
-    }
+    private EmulatorStatsService() {}
 
     public static Snapshot collectSnapshot() {
         long now = System.currentTimeMillis();
@@ -82,9 +80,7 @@ public final class EmulatorStatsService {
         int usedMemMb = (int) (usedMemBytes / 1024L / 1024L);
         int maxMemMb = (int) (maxMemBytes / 1024L / 1024L);
         int estimatedAllocMb = (int) (totalMemBytes / 1024L / 1024L);
-        double memoryUsagePercent = maxMemBytes > 0
-                ? (usedMemBytes * 100D) / maxMemBytes
-                : 0D;
+        double memoryUsagePercent = maxMemBytes > 0 ? (usedMemBytes * 100D) / maxMemBytes : 0D;
 
         OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
         double cpuLoadPercent = 0D;
@@ -101,7 +97,8 @@ public final class EmulatorStatsService {
 
         if (Emulator.getGameEnvironment() != null) {
             if (Emulator.getGameEnvironment().getHabboManager() != null) {
-                habbos = Emulator.getGameEnvironment().getHabboManager().getOnlineHabbos().values().stream().toList();
+                habbos = Emulator.getGameEnvironment().getHabboManager().getOnlineHabbos().values().stream()
+                        .toList();
             }
 
             if (Emulator.getGameEnvironment().getRoomManager() != null) {
@@ -110,7 +107,10 @@ public final class EmulatorStatsService {
         }
 
         if (Emulator.getGameServer() != null && Emulator.getGameServer().getGameClientManager() != null) {
-            webSocketSessions = Emulator.getGameServer().getGameClientManager().getSessions().size();
+            webSocketSessions = Emulator.getGameServer()
+                    .getGameClientManager()
+                    .getSessions()
+                    .size();
         }
 
         peakPlayers = Math.max(peakPlayers, habbos.size());
@@ -133,15 +133,16 @@ public final class EmulatorStatsService {
 
         List<OnlineUserRow> users = new ArrayList<>(habbos.size());
         for (Habbo habbo : habbos) {
-            int roomId = (habbo.getHabboInfo().getCurrentRoom() != null) ? habbo.getHabboInfo().getCurrentRoom().getId() : 0;
+            int roomId = (habbo.getHabboInfo().getCurrentRoom() != null)
+                    ? habbo.getHabboInfo().getCurrentRoom().getId()
+                    : 0;
 
             users.add(new OnlineUserRow(
                     habbo.getHabboInfo().getId(),
                     habbo.getHabboInfo().getUsername(),
                     habbo.getHabboInfo().getRank().getName(),
                     habbo.getHabboInfo().getCurrencyAmount(0),
-                    roomId
-            ));
+                    roomId));
         }
 
         List<ActiveRoomRow> activeRooms = new ArrayList<>(rooms.size());
@@ -172,8 +173,7 @@ public final class EmulatorStatsService {
                     tickables,
                     room.lastCycleCpuMs,
                     room.getEstimatedMemoryUsage() / 1024L,
-                    room.lastCycleThread
-            ));
+                    room.lastCycleThread));
 
             WiredRoomDiagnostics.Snapshot diagnostics = WiredManager.getDiagnosticsSnapshot(room.getId());
 
@@ -190,8 +190,10 @@ public final class EmulatorStatsService {
                 continue;
             }
 
-            int usagePercent = (int) Math.round((diagnostics.getUsageCurrentWindow() * 100D) / Math.max(1, diagnostics.getUsageLimitPerWindow()));
-            double roomActivityPerSecond = (diagnostics.getUsageCurrentWindow() * 1000D) / Math.max(1, diagnostics.getUsageWindowMs());
+            int usagePercent = (int) Math.round(
+                    (diagnostics.getUsageCurrentWindow() * 100D) / Math.max(1, diagnostics.getUsageLimitPerWindow()));
+            double roomActivityPerSecond =
+                    (diagnostics.getUsageCurrentWindow() * 1000D) / Math.max(1, diagnostics.getUsageWindowMs());
 
             totalDelayedEventsPending += diagnostics.getDelayedEventsPending();
             wiredActivityPerSecond += roomActivityPerSecond;
@@ -211,8 +213,7 @@ public final class EmulatorStatsService {
                     usagePercent,
                     diagnostics.getDelayedEventsPending(),
                     diagnostics.getAverageExecutionMs() >= diagnostics.getOverloadAverageThresholdMs(),
-                    diagnostics.isHeavy()
-            ));
+                    diagnostics.isHeavy()));
 
             wiredTopRooms.add(new WiredTopRoomRow(
                     room.getId(),
@@ -222,18 +223,19 @@ public final class EmulatorStatsService {
                     diagnostics.getPeakExecutionMs(),
                     diagnostics.getDelayedEventsPending(),
                     roomActivityPerSecond,
-                    diagnostics.isHeavy()
-            ));
+                    diagnostics.isHeavy()));
         }
 
         if (roomCycleSamples > 0) {
             averageRoomCycleMs = roomCycleAccumulator / roomCycleSamples;
         }
 
-        wiredTopRooms.sort(Comparator
-                .comparingInt((WiredTopRoomRow row) -> row.usagePercent).reversed()
-                .thenComparingInt(row -> row.averageTickMs).reversed()
-                .thenComparingInt(row -> row.peakTickMs).reversed());
+        wiredTopRooms.sort(Comparator.comparingInt((WiredTopRoomRow row) -> row.usagePercent)
+                .reversed()
+                .thenComparingInt(row -> row.averageTickMs)
+                .reversed()
+                .thenComparingInt(row -> row.peakTickMs)
+                .reversed());
 
         if (wiredTopRooms.size() > 5) {
             wiredTopRooms = new ArrayList<>(wiredTopRooms.subList(0, 5));
@@ -243,13 +245,8 @@ public final class EmulatorStatsService {
         SchedulerMetrics schedulerMetrics = collectSchedulerMetrics();
         NetworkMetrics networkMetrics = collectNetworkMetrics(now);
         GarbageCollectorMetrics garbageCollectorMetrics = collectGarbageCollectorMetrics(now);
-        HealthSnapshot health = collectHealth(
-                now,
-                hikariPoolMetrics,
-                schedulerMetrics,
-                memoryUsagePercent,
-                cpuLoadPercent
-        );
+        HealthSnapshot health =
+                collectHealth(now, hikariPoolMetrics, schedulerMetrics, memoryUsagePercent, cpuLoadPercent);
 
         Overview overview = new Overview(
                 Emulator.getOnlineTime(),
@@ -274,8 +271,7 @@ public final class EmulatorStatsService {
                 totalDelayedEventsPending,
                 overloadedWiredRooms,
                 heavyWiredRooms,
-                wiredActivityPerSecond
-        );
+                wiredActivityPerSecond);
 
         return new Snapshot(
                 overview,
@@ -288,12 +284,12 @@ public final class EmulatorStatsService {
                 schedulerMetrics,
                 networkMetrics,
                 garbageCollectorMetrics,
-                health
-        );
+                health);
     }
 
     private static HikariPoolMetrics collectHikariPoolMetrics() {
-        HikariDataSource dataSource = (Emulator.getDatabase() != null) ? Emulator.getDatabase().getDataSource() : null;
+        HikariDataSource dataSource =
+                (Emulator.getDatabase() != null) ? Emulator.getDatabase().getDataSource() : null;
         HikariPoolMXBean poolMxBean = (dataSource != null) ? dataSource.getHikariPoolMXBean() : null;
 
         if (poolMxBean == null) {
@@ -305,8 +301,7 @@ public final class EmulatorStatsService {
                 poolMxBean.getIdleConnections(),
                 poolMxBean.getTotalConnections(),
                 poolMxBean.getThreadsAwaitingConnection(),
-                dataSource.getMaximumPoolSize()
-        );
+                dataSource.getMaximumPoolSize());
     }
 
     private static SchedulerMetrics collectSchedulerMetrics() {
@@ -323,32 +318,36 @@ public final class EmulatorStatsService {
                 executor.getActiveCount(),
                 executor.getPoolSize(),
                 executor.getCompletedTaskCount(),
-                !executor.isShutdown()
-        );
+                !executor.isShutdown());
     }
 
-    private static HealthSnapshot collectHealth(long now, HikariPoolMetrics databasePool, SchedulerMetrics executor, double memoryUsagePercent, double cpuLoadPercent) {
+    private static HealthSnapshot collectHealth(
+            long now,
+            HikariPoolMetrics databasePool,
+            SchedulerMetrics executor,
+            double memoryUsagePercent,
+            double cpuLoadPercent) {
         List<HealthCheck> checks = new ArrayList<>(7);
 
         if (Emulator.isReady && !Emulator.isShuttingDown) {
             checks.add(HealthCheck.healthy("runtime", true, "ready"));
         } else {
-            checks.add(HealthCheck.unhealthy("runtime", true,
-                    Emulator.isShuttingDown ? "shutting down" : "not ready"));
+            checks.add(HealthCheck.unhealthy("runtime", true, Emulator.isShuttingDown ? "shutting down" : "not ready"));
         }
 
-        HikariDataSource dataSource = Emulator.getDatabase() != null
-                ? Emulator.getDatabase().getDataSource()
-                : null;
+        HikariDataSource dataSource =
+                Emulator.getDatabase() != null ? Emulator.getDatabase().getDataSource() : null;
         if (dataSource == null || dataSource.isClosed()) {
             checks.add(HealthCheck.unhealthy("database", true, "pool unavailable"));
         } else if (databasePool.maxConnections > 0
                 && databasePool.activeConnections >= databasePool.maxConnections
                 && databasePool.waitingThreads > 0) {
-            checks.add(HealthCheck.degraded("database", true,
-                    databasePool.waitingThreads + " threads waiting for a connection"));
+            checks.add(HealthCheck.degraded(
+                    "database", true, databasePool.waitingThreads + " threads waiting for a connection"));
         } else {
-            checks.add(HealthCheck.healthy("database", true,
+            checks.add(HealthCheck.healthy(
+                    "database",
+                    true,
                     databasePool.activeConnections + "/" + databasePool.maxConnections + " connections active"));
         }
 
@@ -359,8 +358,8 @@ public final class EmulatorStatsService {
             checks.add(HealthCheck.unhealthy("tcp", true, "listener unavailable"));
         }
 
-        boolean webSocketEnabled = Emulator.getConfig() != null
-                && Emulator.getConfig().getBoolean("ws.enabled", false);
+        boolean webSocketEnabled =
+                Emulator.getConfig() != null && Emulator.getConfig().getBoolean("ws.enabled", false);
         if (!webSocketEnabled) {
             checks.add(HealthCheck.healthy("websocket", false, "disabled by configuration"));
         } else if (gameServer != null && gameServer.isWebSocketListening()) {
@@ -370,8 +369,8 @@ public final class EmulatorStatsService {
         }
 
         if (executor.running) {
-            checks.add(HealthCheck.healthy("executor", true,
-                    executor.activeThreads + " active, " + executor.queuedTasks + " queued"));
+            checks.add(HealthCheck.healthy(
+                    "executor", true, executor.activeThreads + " active, " + executor.queuedTasks + " queued"));
         } else {
             checks.add(HealthCheck.unhealthy("executor", true, "thread pool unavailable"));
         }
@@ -379,11 +378,11 @@ public final class EmulatorStatsService {
         addSchedulerHealth(checks);
 
         if (memoryUsagePercent >= 95D || cpuLoadPercent >= 95D) {
-            checks.add(HealthCheck.degraded("jvm", false,
-                    String.format("memory %.1f%%, cpu %.1f%%", memoryUsagePercent, cpuLoadPercent)));
+            checks.add(HealthCheck.degraded(
+                    "jvm", false, String.format("memory %.1f%%, cpu %.1f%%", memoryUsagePercent, cpuLoadPercent)));
         } else {
-            checks.add(HealthCheck.healthy("jvm", false,
-                    String.format("memory %.1f%%, cpu %.1f%%", memoryUsagePercent, cpuLoadPercent)));
+            checks.add(HealthCheck.healthy(
+                    "jvm", false, String.format("memory %.1f%%, cpu %.1f%%", memoryUsagePercent, cpuLoadPercent)));
         }
 
         return assessHealth(now, checks);
@@ -401,31 +400,35 @@ public final class EmulatorStatsService {
 
         if (Emulator.getConfig().getBoolean("hotel.auto.credits.enabled", false)) {
             enabled++;
-            if (environment.getCreditsScheduler() == null || environment.getCreditsScheduler().isDisposed()) unavailable++;
+            if (environment.getCreditsScheduler() == null
+                    || environment.getCreditsScheduler().isDisposed()) unavailable++;
         }
         if (Emulator.getConfig().getBoolean("hotel.auto.pixels.enabled", false)) {
             enabled++;
-            if (environment.getPixelScheduler() == null || environment.getPixelScheduler().isDisposed()) unavailable++;
+            if (environment.getPixelScheduler() == null
+                    || environment.getPixelScheduler().isDisposed()) unavailable++;
         }
         if (Emulator.getConfig().getBoolean("hotel.auto.points.enabled", false)) {
             enabled++;
-            if (environment.getPointsScheduler() == null || environment.getPointsScheduler().isDisposed()) unavailable++;
+            if (environment.getPointsScheduler() == null
+                    || environment.getPointsScheduler().isDisposed()) unavailable++;
         }
         if (Emulator.getConfig().getBoolean("hotel.auto.gotwpoints.enabled", false)) {
             enabled++;
-            if (environment.getGotwPointsScheduler() == null || environment.getGotwPointsScheduler().isDisposed()) unavailable++;
+            if (environment.getGotwPointsScheduler() == null
+                    || environment.getGotwPointsScheduler().isDisposed()) unavailable++;
         }
         if (Emulator.getConfig().getBoolean("subscriptions.scheduler.enabled", true)) {
             enabled++;
-            if (environment.subscriptionScheduler == null || environment.subscriptionScheduler.isDisposed()) unavailable++;
+            if (environment.subscriptionScheduler == null || environment.subscriptionScheduler.isDisposed())
+                unavailable++;
         }
 
         if (unavailable > 0) {
-            checks.add(HealthCheck.degraded("schedulers", false,
-                    unavailable + " of " + enabled + " configured schedulers unavailable"));
+            checks.add(HealthCheck.degraded(
+                    "schedulers", false, unavailable + " of " + enabled + " configured schedulers unavailable"));
         } else {
-            checks.add(HealthCheck.healthy("schedulers", false,
-                    enabled + " configured schedulers active"));
+            checks.add(HealthCheck.healthy("schedulers", false, enabled + " configured schedulers active"));
         }
     }
 
@@ -448,8 +451,7 @@ public final class EmulatorStatsService {
         previousIncomingBytes = incomingBytes;
         previousOutgoingBytes = outgoingBytes;
         previousTelemetryAt = now;
-        PacketDispatchLatencyMetrics.Snapshot dispatch =
-                PacketDispatchLatencyMetrics.snapshot();
+        PacketDispatchLatencyMetrics.Snapshot dispatch = PacketDispatchLatencyMetrics.snapshot();
 
         return new NetworkMetrics(
                 Math.max(0D, incomingPacketsPerSecond),
@@ -461,8 +463,7 @@ public final class EmulatorStatsService {
                 dispatch.samples(),
                 dispatch.averageMs(),
                 dispatch.p95Ms(),
-                dispatch.maxMs()
-        );
+                dispatch.maxMs());
     }
 
     private static GarbageCollectorMetrics collectGarbageCollectorMetrics(long now) {
@@ -489,12 +490,7 @@ public final class EmulatorStatsService {
         previousGcTimeMs = totalCollectionTimeMs;
 
         return new GarbageCollectorMetrics(
-                totalCollections,
-                totalCollectionTimeMs,
-                collectionsSinceLastSample,
-                lastObservedPauseMs,
-                now
-        );
+                totalCollections, totalCollectionTimeMs, collectionsSinceLastSample, lastObservedPauseMs, now);
     }
 
     private static void appendMemoryHistory(long timestamp, int usedMemMb, int maxMemMb, double usagePercent) {
@@ -565,7 +561,8 @@ public final class EmulatorStatsService {
         public final List<HealthCheck> checks;
         public final List<String> reasons;
 
-        public HealthSnapshot(HealthStatus status, long checkedAtEpochMs, List<HealthCheck> checks, List<String> reasons) {
+        public HealthSnapshot(
+                HealthStatus status, long checkedAtEpochMs, List<HealthCheck> checks, List<String> reasons) {
             this.status = status;
             this.checkedAtEpochMs = checkedAtEpochMs;
             this.checks = List.copyOf(checks);
@@ -586,12 +583,47 @@ public final class EmulatorStatsService {
         public final GarbageCollectorMetrics garbageCollector;
         public final HealthSnapshot health;
 
-        public Snapshot(Overview overview, List<MemoryPoint> memoryHistory, List<OnlineUserRow> users, List<ActiveRoomRow> rooms, List<WiredRoomRow> wired, List<WiredTopRoomRow> wiredTopRooms, HikariPoolMetrics databasePool, SchedulerMetrics scheduler, NetworkMetrics network, GarbageCollectorMetrics garbageCollector) {
-            this(overview, memoryHistory, users, rooms, wired, wiredTopRooms, databasePool, scheduler, network, garbageCollector,
-                    new HealthSnapshot(HealthStatus.DEGRADED, System.currentTimeMillis(), List.of(), List.of("health: not collected")));
+        public Snapshot(
+                Overview overview,
+                List<MemoryPoint> memoryHistory,
+                List<OnlineUserRow> users,
+                List<ActiveRoomRow> rooms,
+                List<WiredRoomRow> wired,
+                List<WiredTopRoomRow> wiredTopRooms,
+                HikariPoolMetrics databasePool,
+                SchedulerMetrics scheduler,
+                NetworkMetrics network,
+                GarbageCollectorMetrics garbageCollector) {
+            this(
+                    overview,
+                    memoryHistory,
+                    users,
+                    rooms,
+                    wired,
+                    wiredTopRooms,
+                    databasePool,
+                    scheduler,
+                    network,
+                    garbageCollector,
+                    new HealthSnapshot(
+                            HealthStatus.DEGRADED,
+                            System.currentTimeMillis(),
+                            List.of(),
+                            List.of("health: not collected")));
         }
 
-        public Snapshot(Overview overview, List<MemoryPoint> memoryHistory, List<OnlineUserRow> users, List<ActiveRoomRow> rooms, List<WiredRoomRow> wired, List<WiredTopRoomRow> wiredTopRooms, HikariPoolMetrics databasePool, SchedulerMetrics scheduler, NetworkMetrics network, GarbageCollectorMetrics garbageCollector, HealthSnapshot health) {
+        public Snapshot(
+                Overview overview,
+                List<MemoryPoint> memoryHistory,
+                List<OnlineUserRow> users,
+                List<ActiveRoomRow> rooms,
+                List<WiredRoomRow> wired,
+                List<WiredTopRoomRow> wiredTopRooms,
+                HikariPoolMetrics databasePool,
+                SchedulerMetrics scheduler,
+                NetworkMetrics network,
+                GarbageCollectorMetrics garbageCollector,
+                HealthSnapshot health) {
             this.overview = overview;
             this.memoryHistory = memoryHistory;
             this.users = users;
@@ -631,7 +663,30 @@ public final class EmulatorStatsService {
         public final int heavyWiredRooms;
         public final double wiredActivityPerSecond;
 
-        public Overview(long uptimeSeconds, long lastRefreshEpochMs, String guiStatus, int memoryUsedMb, int memoryMaxMb, int memoryAllocatedMb, double memoryUsagePercent, double cpuLoadPercent, int activeOsThreads, int connectedPlayers, int loadedRooms, int wiredTickables, int peakPlayers, int activeWebSocketSessions, int peakWebSocketSessions, double averageRoomCycleMs, double worstRoomCycleMs, int worstRoomCycleRoomId, String worstRoomCycleRoomName, long delayedEventsPending, int overloadedWiredRooms, int heavyWiredRooms, double wiredActivityPerSecond) {
+        public Overview(
+                long uptimeSeconds,
+                long lastRefreshEpochMs,
+                String guiStatus,
+                int memoryUsedMb,
+                int memoryMaxMb,
+                int memoryAllocatedMb,
+                double memoryUsagePercent,
+                double cpuLoadPercent,
+                int activeOsThreads,
+                int connectedPlayers,
+                int loadedRooms,
+                int wiredTickables,
+                int peakPlayers,
+                int activeWebSocketSessions,
+                int peakWebSocketSessions,
+                double averageRoomCycleMs,
+                double worstRoomCycleMs,
+                int worstRoomCycleRoomId,
+                String worstRoomCycleRoomName,
+                long delayedEventsPending,
+                int overloadedWiredRooms,
+                int heavyWiredRooms,
+                double wiredActivityPerSecond) {
             this.uptimeSeconds = uptimeSeconds;
             this.lastRefreshEpochMs = lastRefreshEpochMs;
             this.guiStatus = guiStatus;
@@ -698,7 +753,15 @@ public final class EmulatorStatsService {
         public final long estimatedRamKb;
         public final String thread;
 
-        public ActiveRoomRow(int roomId, String name, int players, int items, int tickables, double cpuMs, long estimatedRamKb, String thread) {
+        public ActiveRoomRow(
+                int roomId,
+                String name,
+                int players,
+                int items,
+                int tickables,
+                double cpuMs,
+                long estimatedRamKb,
+                String thread) {
             this.roomId = roomId;
             this.name = name;
             this.players = players;
@@ -719,7 +782,14 @@ public final class EmulatorStatsService {
         public final boolean overloaded;
         public final boolean heavy;
 
-        public WiredRoomRow(int roomId, long averageTickMs, long peakTickMs, int usagePercent, int delayedEventsPending, boolean overloaded, boolean heavy) {
+        public WiredRoomRow(
+                int roomId,
+                long averageTickMs,
+                long peakTickMs,
+                int usagePercent,
+                int delayedEventsPending,
+                boolean overloaded,
+                boolean heavy) {
             this.roomId = roomId;
             this.averageTickMs = averageTickMs;
             this.peakTickMs = peakTickMs;
@@ -740,7 +810,15 @@ public final class EmulatorStatsService {
         public final double activityPerSecond;
         public final boolean heavy;
 
-        public WiredTopRoomRow(int roomId, String name, int usagePercent, int averageTickMs, int peakTickMs, int delayedEventsPending, double activityPerSecond, boolean heavy) {
+        public WiredTopRoomRow(
+                int roomId,
+                String name,
+                int usagePercent,
+                int averageTickMs,
+                int peakTickMs,
+                int delayedEventsPending,
+                double activityPerSecond,
+                boolean heavy) {
             this.roomId = roomId;
             this.name = name;
             this.usagePercent = usagePercent;
@@ -759,7 +837,12 @@ public final class EmulatorStatsService {
         public final int waitingThreads;
         public final int maxConnections;
 
-        public HikariPoolMetrics(int activeConnections, int idleConnections, int totalConnections, int waitingThreads, int maxConnections) {
+        public HikariPoolMetrics(
+                int activeConnections,
+                int idleConnections,
+                int totalConnections,
+                int waitingThreads,
+                int maxConnections) {
             this.activeConnections = activeConnections;
             this.idleConnections = idleConnections;
             this.totalConnections = totalConnections;
@@ -775,7 +858,8 @@ public final class EmulatorStatsService {
         public final long completedTasks;
         public final boolean running;
 
-        public SchedulerMetrics(int queuedTasks, int activeThreads, int poolSize, long completedTasks, boolean running) {
+        public SchedulerMetrics(
+                int queuedTasks, int activeThreads, int poolSize, long completedTasks, boolean running) {
             this.queuedTasks = queuedTasks;
             this.activeThreads = activeThreads;
             this.poolSize = poolSize;
@@ -796,7 +880,13 @@ public final class EmulatorStatsService {
         public final double dispatchP95Ms;
         public final double dispatchMaxMs;
 
-        public NetworkMetrics(double incomingPacketsPerSecond, double outgoingPacketsPerSecond, double incomingKilobytesPerSecond, double outgoingKilobytesPerSecond, long totalIncomingPackets, long totalOutgoingPackets) {
+        public NetworkMetrics(
+                double incomingPacketsPerSecond,
+                double outgoingPacketsPerSecond,
+                double incomingKilobytesPerSecond,
+                double outgoingKilobytesPerSecond,
+                long totalIncomingPackets,
+                long totalOutgoingPackets) {
             this(
                     incomingPacketsPerSecond,
                     outgoingPacketsPerSecond,
@@ -841,7 +931,12 @@ public final class EmulatorStatsService {
         public final long lastObservedPauseMs;
         public final long sampledAtEpochMs;
 
-        public GarbageCollectorMetrics(long totalCollections, long totalCollectionTimeMs, long collectionsSinceLastSample, long lastObservedPauseMs, long sampledAtEpochMs) {
+        public GarbageCollectorMetrics(
+                long totalCollections,
+                long totalCollectionTimeMs,
+                long collectionsSinceLastSample,
+                long lastObservedPauseMs,
+                long sampledAtEpochMs) {
             this.totalCollections = totalCollections;
             this.totalCollectionTimeMs = totalCollectionTimeMs;
             this.collectionsSinceLastSample = collectionsSinceLastSample;

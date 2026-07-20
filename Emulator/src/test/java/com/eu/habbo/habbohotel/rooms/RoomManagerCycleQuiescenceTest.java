@@ -1,6 +1,8 @@
 package com.eu.habbo.habbohotel.rooms;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Field;
 import java.util.concurrent.CountDownLatch;
@@ -10,10 +12,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class RoomManagerCycleQuiescenceTest {
 
@@ -44,14 +43,8 @@ class RoomManagerCycleQuiescenceTest {
         CountDownLatch cycleStarted = new CountDownLatch(1);
         CountDownLatch releaseCycle = new CountDownLatch(1);
         long load = room.beginLoadTransition();
-        assertTrue(room.publishLoadTransition(
-                load,
-                TestScheduledFuture::new));
-        setField(room, "cycleManager", new BlockingCycleManager(
-                room,
-                cycleStarted,
-                releaseCycle
-        ));
+        assertTrue(room.publishLoadTransition(load, TestScheduledFuture::new));
+        setField(room, "cycleManager", new BlockingCycleManager(room, cycleStarted, releaseCycle));
         manager.registerActiveRoom(room);
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
@@ -60,10 +53,7 @@ class RoomManagerCycleQuiescenceTest {
             assertTrue(cycleStarted.await(1, TimeUnit.SECONDS));
             Future<?> quiesce = executor.submit(manager::quiesceRoomCycles);
 
-            assertThrows(
-                    TimeoutException.class,
-                    () -> quiesce.get(100, TimeUnit.MILLISECONDS)
-            );
+            assertThrows(TimeoutException.class, () -> quiesce.get(100, TimeUnit.MILLISECONDS));
             releaseCycle.countDown();
             cycle.get(1, TimeUnit.SECONDS);
             quiesce.get(1, TimeUnit.SECONDS);
@@ -83,11 +73,7 @@ class RoomManagerCycleQuiescenceTest {
         private final CountDownLatch started;
         private final CountDownLatch release;
 
-        private BlockingCycleManager(
-                Room room,
-                CountDownLatch started,
-                CountDownLatch release
-        ) {
+        private BlockingCycleManager(Room room, CountDownLatch started, CountDownLatch release) {
             super(room);
             this.started = started;
             this.release = release;

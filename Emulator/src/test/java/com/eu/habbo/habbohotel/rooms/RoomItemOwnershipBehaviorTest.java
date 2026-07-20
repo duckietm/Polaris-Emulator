@@ -1,14 +1,5 @@
 package com.eu.habbo.habbohotel.rooms;
 
-import com.eu.habbo.habbohotel.items.Item;
-import com.eu.habbo.habbohotel.items.interactions.InteractionPostIt;
-import com.eu.habbo.habbohotel.users.Habbo;
-import com.eu.habbo.habbohotel.users.HabboInfo;
-import com.eu.habbo.habbohotel.users.HabboItem;
-import org.junit.jupiter.api.Test;
-
-import java.util.Set;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -16,14 +7,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.InteractionPostIt;
+import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.HabboInfo;
+import com.eu.habbo.habbohotel.users.HabboItem;
+import java.util.Set;
+import org.junit.jupiter.api.Test;
+
 class RoomItemOwnershipBehaviorTest {
 
     @Test
     void addingAndRemovingItemsMaintainsTheLiveOwnerIndexes() throws Exception {
-        RoomJdbcTestSupport.RecordingDataSource dataSource =
-                new RoomJdbcTestSupport.RecordingDataSource();
-        try (RoomJdbcTestSupport.InstalledDatabase ignored =
-                     RoomJdbcTestSupport.install(dataSource)) {
+        RoomJdbcTestSupport.RecordingDataSource dataSource = new RoomJdbcTestSupport.RecordingDataSource();
+        try (RoomJdbcTestSupport.InstalledDatabase ignored = RoomJdbcTestSupport.install(dataSource)) {
             Room room = new Room(41, 7);
             HabboItem first = new TestItem(1001, 7);
             HabboItem second = new TestItem(1002, 7);
@@ -129,7 +126,6 @@ class RoomItemOwnershipBehaviorTest {
         }
 
         @Override
-        public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {
-        }
+        public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {}
     }
 }

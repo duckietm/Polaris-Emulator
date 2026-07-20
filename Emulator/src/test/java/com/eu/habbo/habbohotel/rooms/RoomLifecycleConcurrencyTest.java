@@ -1,12 +1,13 @@
 package com.eu.habbo.habbohotel.rooms;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.eu.habbo.Emulator;
 import com.eu.habbo.plugin.Event;
 import com.eu.habbo.plugin.PluginManager;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.concurrent.CountDownLatch;
@@ -15,11 +16,9 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class RoomLifecycleConcurrencyTest {
 
@@ -46,14 +45,8 @@ class RoomLifecycleConcurrencyTest {
         CountDownLatch cycleEntered = new CountDownLatch(1);
         CountDownLatch disposerStarted = new CountDownLatch(1);
         long load = room.beginLoadTransition();
-        assertTrue(room.publishLoadTransition(
-                load,
-                FakeScheduledFuture::new));
-        setField(room, "cycleManager", new CoordinatedCycleManager(
-                room,
-                cycleEntered,
-                disposerStarted
-        ));
+        assertTrue(room.publishLoadTransition(load, FakeScheduledFuture::new));
+        setField(room, "cycleManager", new CoordinatedCycleManager(room, cycleEntered, disposerStarted));
 
         FutureTask<Void> cycle = daemonTask("room-cycle-test", room::run);
         assertTrue(cycleEntered.await(1, TimeUnit.SECONDS));
@@ -112,9 +105,7 @@ class RoomLifecycleConcurrencyTest {
 
     @Test
     void recurringTaskReferenceIsVisibleAcrossLifecycleThreads() throws Exception {
-        assertTrue(Modifier.isVolatile(
-                Room.class.getField("roomCycleTask").getModifiers()
-        ));
+        assertTrue(Modifier.isVolatile(Room.class.getField("roomCycleTask").getModifiers()));
     }
 
     private static FutureTask<Void> daemonTask(String name, Runnable action) {
@@ -136,11 +127,7 @@ class RoomLifecycleConcurrencyTest {
         private final CountDownLatch cycleEntered;
         private final CountDownLatch disposerStarted;
 
-        private CoordinatedCycleManager(
-                Room room,
-                CountDownLatch cycleEntered,
-                CountDownLatch disposerStarted
-        ) {
+        private CoordinatedCycleManager(Room room, CountDownLatch cycleEntered, CountDownLatch disposerStarted) {
             super(room);
             this.room = room;
             this.cycleEntered = cycleEntered;

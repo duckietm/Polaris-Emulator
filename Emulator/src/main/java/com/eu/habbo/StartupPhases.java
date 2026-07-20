@@ -9,8 +9,7 @@ import java.util.Objects;
  */
 final class StartupPhases {
 
-    private StartupPhases() {
-    }
+    private StartupPhases() {}
 
     static boolean run(List<Phase> phases) throws Exception {
         for (Phase phase : phases) {

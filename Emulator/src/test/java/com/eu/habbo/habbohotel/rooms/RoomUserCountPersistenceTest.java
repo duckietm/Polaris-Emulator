@@ -1,12 +1,11 @@
 package com.eu.habbo.habbohotel.rooms;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
 
 class RoomUserCountPersistenceTest {
 
@@ -16,10 +15,7 @@ class RoomUserCountPersistenceTest {
         List<Integer> persistedCounts = new ArrayList<>();
         List<Runnable> queued = new ArrayList<>();
         RoomUserCountPersistence persistence =
-                new RoomUserCountPersistence(
-                        userCount::get,
-                        persistedCounts::add,
-                        queued::add);
+                new RoomUserCountPersistence(userCount::get, persistedCounts::add, queued::add);
 
         persistence.schedule();
         userCount.set(2);
@@ -62,10 +58,7 @@ class RoomUserCountPersistenceTest {
         List<Integer> persistedCounts = new ArrayList<>();
         List<Runnable> queued = new ArrayList<>();
         RoomUserCountPersistence persistence =
-                new RoomUserCountPersistence(
-                        userCount::get,
-                        persistedCounts::add,
-                        queued::add);
+                new RoomUserCountPersistence(userCount::get, persistedCounts::add, queued::add);
 
         persistence.schedule();
         queued.removeFirst().run();

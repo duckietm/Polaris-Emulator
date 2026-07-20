@@ -9,25 +9,30 @@ import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemComposer;
 import com.eu.habbo.threading.runnables.QueryDeleteHabboItems;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 public final class ChestWiredFurniUtil {
-    private ChestWiredFurniUtil() {
-    }
+    private ChestWiredFurniUtil() {}
 
     public static int giveFromChest(Habbo habbo, InteractionWiredChest chest, int amount) {
         return giveFromChestByType(habbo, chest, false, 0, "", amount);
     }
 
-    public static int giveFromChestByType(Habbo habbo, InteractionWiredChest chest, boolean wallItem, int baseItemId, String legacyPosterId, int amount) {
+    public static int giveFromChestByType(
+            Habbo habbo,
+            InteractionWiredChest chest,
+            boolean wallItem,
+            int baseItemId,
+            String legacyPosterId,
+            int amount) {
         if (habbo == null || chest == null || amount <= 0 || habbo.getClient() == null || baseItemId <= 0) {
             return 0;
         }
 
-        List<ChestFurniStoredItem> removed = chest.getContents().removeFurniByType(wallItem, baseItemId, legacyPosterId, amount);
+        List<ChestFurniStoredItem> removed =
+                chest.getContents().removeFurniByType(wallItem, baseItemId, legacyPosterId, amount);
         int given = giveStoredItemsToInventory(habbo, removed);
         if (given > 0) {
             chest.persistContents();
@@ -50,8 +55,9 @@ public final class ChestWiredFurniUtil {
 
         int given = 0;
         for (int i = 0; i < amount; i++) {
-            HabboItem created = Emulator.getGameEnvironment().getItemManager().createItem(
-                    habbo.getHabboInfo().getId(), baseItem, 0, 0, "0");
+            HabboItem created = Emulator.getGameEnvironment()
+                    .getItemManager()
+                    .createItem(habbo.getHabboInfo().getId(), baseItem, 0, 0, "0");
             if (created == null) {
                 continue;
             }
@@ -79,7 +85,8 @@ public final class ChestWiredFurniUtil {
         return count;
     }
 
-    public static List<ChestFurniStoredItem> takeFromInventory(Habbo habbo, boolean wallItem, int baseItemId, String legacyPosterId, int amount) {
+    public static List<ChestFurniStoredItem> takeFromInventory(
+            Habbo habbo, boolean wallItem, int baseItemId, String legacyPosterId, int amount) {
         List<ChestFurniStoredItem> taken = new ArrayList<>();
         if (habbo == null || habbo.getClient() == null || baseItemId <= 0 || amount <= 0) {
             return taken;
@@ -136,8 +143,14 @@ public final class ChestWiredFurniUtil {
             if (baseItem == null) {
                 continue;
             }
-            HabboItem created = Emulator.getGameEnvironment().getItemManager().createItem(
-                    habbo.getHabboInfo().getId(), baseItem, stored.limitedStack, stored.limitedSells, stored.extradata);
+            HabboItem created = Emulator.getGameEnvironment()
+                    .getItemManager()
+                    .createItem(
+                            habbo.getHabboInfo().getId(),
+                            baseItem,
+                            stored.limitedStack,
+                            stored.limitedSells,
+                            stored.extradata);
             if (created == null) {
                 continue;
             }

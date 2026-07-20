@@ -4,7 +4,6 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.ServerMessageFrame;
 import com.eu.habbo.messages.outgoing.generic.alerts.GenericAlertComposer;
-
 import java.util.ArrayList;
 import java.util.Collection;
 

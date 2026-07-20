@@ -15,18 +15,19 @@ public class PostItDeleteEvent extends MessageHandler {
     public void handle() throws Exception {
         int itemId = this.packet.readInt();
 
-        if (!RoomItemInputGuard.isPositiveId(itemId))
-            return;
+        if (!RoomItemInputGuard.isPositiveId(itemId)) return;
 
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
-        if (room == null)
-            return;
+        if (room == null) return;
 
         HabboItem item = room.getHabboItem(itemId);
 
         if (item instanceof InteractionPostIt || item instanceof InteractionExternalImage) {
-            if (item.getUserId() == this.client.getHabbo().getHabboInfo().getId() || room.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() || this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)) {
+            if (item.getUserId() == this.client.getHabbo().getHabboInfo().getId()
+                    || room.getOwnerId()
+                            == this.client.getHabbo().getHabboInfo().getId()
+                    || this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)) {
                 item.setRoomId(0);
                 room.removeHabboItem(item);
                 room.sendComposer(new RemoveWallItemComposer(item).compose());

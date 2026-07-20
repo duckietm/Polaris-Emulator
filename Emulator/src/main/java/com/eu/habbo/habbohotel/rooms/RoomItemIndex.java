@@ -9,7 +9,6 @@ import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,14 +16,10 @@ import java.util.concurrent.ConcurrentHashMap;
 final class RoomItemIndex {
 
     private final Room room;
-    private final Int2ObjectMap<HabboItem> items =
-            Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
-    private final Int2ObjectMap<String> ownerNames =
-            Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
-    private final Int2IntMap ownerCounts =
-            Int2IntMaps.synchronize(new Int2IntOpenHashMap(0));
-    private final ConcurrentHashMap<RoomTile, Set<HabboItem>> tileCache =
-            new ConcurrentHashMap<>();
+    private final Int2ObjectMap<HabboItem> items = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
+    private final Int2ObjectMap<String> ownerNames = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
+    private final Int2IntMap ownerCounts = Int2IntMaps.synchronize(new Int2IntOpenHashMap(0));
+    private final ConcurrentHashMap<RoomTile, Set<HabboItem>> tileCache = new ConcurrentHashMap<>();
 
     RoomItemIndex(Room room) {
         this.room = room;
@@ -56,9 +51,7 @@ final class RoomItemIndex {
             item = this.items.get(id);
         }
 
-        return item != null
-                ? item
-                : this.room.getRoomSpecialTypes().getSpecialItem(id);
+        return item != null ? item : this.room.getRoomSpecialTypes().getSpecialItem(id);
     }
 
     int size() {
@@ -77,8 +70,7 @@ final class RoomItemIndex {
         Set<HabboItem> result = new HashSet<>();
         synchronized (this.items) {
             for (HabboItem item : this.items.values()) {
-                if (item.getBaseItem().getInteractionType().getType()
-                        == InteractionPostIt.class) {
+                if (item.getBaseItem().getInteractionType().getType() == InteractionPostIt.class) {
                     result.add(item);
                 }
             }
@@ -101,9 +93,7 @@ final class RoomItemIndex {
 
         synchronized (this.items) {
             for (HabboItem item : this.items.values()) {
-                if (item == null
-                        || item.getBaseItem().getType()
-                        != FurnitureType.FLOOR) {
+                if (item == null || item.getBaseItem().getType() != FurnitureType.FLOOR) {
                     continue;
                 }
 

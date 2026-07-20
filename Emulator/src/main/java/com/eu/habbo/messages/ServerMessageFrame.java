@@ -1,7 +1,6 @@
 package com.eu.habbo.messages;
 
 import io.netty.buffer.ByteBuf;
-
 import java.util.Objects;
 
 /**
@@ -10,8 +9,7 @@ import java.util.Objects;
  */
 public final class ServerMessageFrame {
 
-    private ServerMessageFrame() {
-    }
+    private ServerMessageFrame() {}
 
     public static void prepareBroadcast(ServerMessage message) {
         Objects.requireNonNull(message, "message").prepareBroadcast();
@@ -22,8 +20,6 @@ public final class ServerMessageFrame {
     }
 
     public static ByteBuf retainedDuplicate(ServerMessage message) {
-        return Objects.requireNonNull(
-                message,
-                "message").retainedDuplicateForBroadcast();
+        return Objects.requireNonNull(message, "message").retainedDuplicateForBroadcast();
     }
 }

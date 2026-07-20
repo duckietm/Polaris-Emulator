@@ -3,14 +3,10 @@ package com.eu.habbo.networking.gameserver.crypto;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.networking.gameserver.GameServerAttributes;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -18,6 +14,8 @@ import java.util.ArrayDeque;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WsHandshakeHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOGGER = LoggerFactory.getLogger(WsHandshakeHandler.class);
@@ -35,26 +33,17 @@ public class WsHandshakeHandler extends ChannelInboundHandlerAdapter {
     private int pendingFrameBytes;
 
     public WsHandshakeHandler() {
-        this(
-                WsCryptoExecutor.executor(),
-                signingEnabled());
+        this(WsCryptoExecutor.executor(), signingEnabled());
     }
 
-    WsHandshakeHandler(
-            Executor cryptoExecutor,
-            boolean signingEnabled) {
-        this.cryptoExecutor = Objects.requireNonNull(
-                cryptoExecutor,
-                "cryptoExecutor");
+    WsHandshakeHandler(Executor cryptoExecutor, boolean signingEnabled) {
+        this.cryptoExecutor = Objects.requireNonNull(cryptoExecutor, "cryptoExecutor");
         this.signingEnabled = signingEnabled;
     }
 
     private static boolean signingEnabled() {
         var configuration = Emulator.getConfig();
-        return configuration != null
-                && configuration.getBoolean(
-                "crypto.ws.signing.enabled",
-                false);
+        return configuration != null && configuration.getBoolean("crypto.ws.signing.enabled", false);
     }
 
     @Override
@@ -66,76 +55,42 @@ public class WsHandshakeHandler extends ChannelInboundHandlerAdapter {
         super.userEventTriggered(ctx, evt);
     }
 
-    private void sendServerHello(
-            ChannelHandlerContext ctx,
-            Object handshakeEvent) throws Exception {
+    private void sendServerHello(ChannelHandlerContext ctx, Object handshakeEvent) throws Exception {
         if (helloStarted) {
             if (helloSent) {
-                super.userEventTriggered(
-                        ctx,
-                        handshakeEvent);
+                super.userEventTriggered(ctx, handshakeEvent);
             }
             return;
         }
         helloStarted = true;
 
         try {
-            this.cryptoExecutor.execute(() ->
-                    createServerHello(
-                            ctx,
-                            handshakeEvent));
+            this.cryptoExecutor.execute(() -> createServerHello(ctx, handshakeEvent));
         } catch (RejectedExecutionException rejected) {
-            LOGGER.warn(
-                    "[ws-crypto] handshake executor is full; "
-                            + "closing {}",
-                    clientAddress(ctx));
+            LOGGER.warn("[ws-crypto] handshake executor is full; " + "closing {}", clientAddress(ctx));
             ctx.close();
         }
     }
 
-    private void createServerHello(
-            ChannelHandlerContext ctx,
-            Object handshakeEvent) {
+    private void createServerHello(ChannelHandlerContext ctx, Object handshakeEvent) {
         try {
-            KeyPair keyPair =
-                    WsSessionCrypto.generateEphemeralKeyPair();
-            byte[] spki =
-                    WsSessionCrypto.encodePublicKeySpki(
-                            keyPair.getPublic());
+            KeyPair keyPair = WsSessionCrypto.generateEphemeralKeyPair();
+            byte[] spki = WsSessionCrypto.encodePublicKeySpki(keyPair.getPublic());
             byte[] signature = null;
             if (this.signingEnabled) {
-                KeyPair signingKeyPair =
-                        CryptoSigningKeyManager.get();
-                byte[] der =
-                        WsSessionCrypto.signEcdsaSha256(
-                                signingKeyPair.getPrivate(),
-                                spki);
-                signature =
-                        WsSessionCrypto.derToIeee1363(der);
+                KeyPair signingKeyPair = CryptoSigningKeyManager.get();
+                byte[] der = WsSessionCrypto.signEcdsaSha256(signingKeyPair.getPrivate(), spki);
+                signature = WsSessionCrypto.derToIeee1363(der);
             }
 
-            ServerHello serverHello =
-                    new ServerHello(
-                            keyPair,
-                            spki,
-                            signature);
-            executeOnIoThread(
-                    ctx,
-                    () -> finishServerHello(
-                            ctx,
-                            handshakeEvent,
-                            serverHello));
+            ServerHello serverHello = new ServerHello(keyPair, spki, signature);
+            executeOnIoThread(ctx, () -> finishServerHello(ctx, handshakeEvent, serverHello));
         } catch (Exception exception) {
-            executeOnIoThread(
-                    ctx,
-                    () -> failServerHello(ctx, exception));
+            executeOnIoThread(ctx, () -> failServerHello(ctx, exception));
         }
     }
 
-    private void finishServerHello(
-            ChannelHandlerContext ctx,
-            Object handshakeEvent,
-            ServerHello serverHello) {
+    private void finishServerHello(ChannelHandlerContext ctx, Object handshakeEvent, ServerHello serverHello) {
         if (!ctx.channel().isActive()) {
             return;
         }
@@ -143,10 +98,7 @@ public class WsHandshakeHandler extends ChannelInboundHandlerAdapter {
         this.serverKeyPair = serverHello.keyPair();
         byte[] spki = serverHello.spki();
         byte[] signature = serverHello.signature();
-        int frameLength = 4 + 1 + 2 + spki.length
-                + (signature != null
-                ? 2 + signature.length
-                : 0);
+        int frameLength = 4 + 1 + 2 + spki.length + (signature != null ? 2 + signature.length : 0);
         ByteBuf buffer = ctx.alloc().buffer(frameLength);
         buffer.writeInt(WsSessionCrypto.HANDSHAKE_MAGIC);
         buffer.writeByte(WsSessionCrypto.TYPE_SERVER_HELLO);
@@ -162,12 +114,8 @@ public class WsHandshakeHandler extends ChannelInboundHandlerAdapter {
         ctx.fireUserEventTriggered(handshakeEvent);
     }
 
-    private static void failServerHello(
-            ChannelHandlerContext ctx,
-            Exception exception) {
-        LOGGER.error(
-                "[ws-crypto] failed to send server_hello",
-                exception);
+    private static void failServerHello(ChannelHandlerContext ctx, Exception exception) {
+        LOGGER.error("[ws-crypto] failed to send server_hello", exception);
         ctx.close();
     }
 
@@ -212,21 +160,30 @@ public class WsHandshakeHandler extends ChannelInboundHandlerAdapter {
         ByteBuf in = (ByteBuf) msg;
         try {
             if (in.readableBytes() < 7) {
-                LOGGER.warn("[ws-crypto] handshake frame too short ({} bytes) from {}", in.readableBytes(), clientAddress(ctx));
+                LOGGER.warn(
+                        "[ws-crypto] handshake frame too short ({} bytes) from {}",
+                        in.readableBytes(),
+                        clientAddress(ctx));
                 ctx.close();
                 return;
             }
 
             int magic = in.readInt();
             if (magic != WsSessionCrypto.HANDSHAKE_MAGIC) {
-                LOGGER.warn("[ws-crypto] handshake magic mismatch: 0x{} from {}", Integer.toHexString(magic), clientAddress(ctx));
+                LOGGER.warn(
+                        "[ws-crypto] handshake magic mismatch: 0x{} from {}",
+                        Integer.toHexString(magic),
+                        clientAddress(ctx));
                 ctx.close();
                 return;
             }
 
             byte type = in.readByte();
             if (type != WsSessionCrypto.TYPE_CLIENT_HELLO) {
-                LOGGER.warn("[ws-crypto] expected client_hello, got type=0x{} from {}", Integer.toHexString(type & 0xff), clientAddress(ctx));
+                LOGGER.warn(
+                        "[ws-crypto] expected client_hello, got type=0x{} from {}",
+                        Integer.toHexString(type & 0xff),
+                        clientAddress(ctx));
                 ctx.close();
                 return;
             }
@@ -241,22 +198,14 @@ public class WsHandshakeHandler extends ChannelInboundHandlerAdapter {
             byte[] clientSpki = new byte[keyLen];
             in.readBytes(clientSpki);
 
-            if (!helloSent || serverKeyPair == null
-                    || agreementStarted) {
-                LOGGER.warn(
-                        "[ws-crypto] unexpected client_hello "
-                                + "state from {}",
-                        clientAddress(ctx));
+            if (!helloSent || serverKeyPair == null || agreementStarted) {
+                LOGGER.warn("[ws-crypto] unexpected client_hello " + "state from {}", clientAddress(ctx));
                 ctx.close();
                 return;
             }
             this.agreementStarted = true;
-            PrivateKey serverPrivate =
-                    this.serverKeyPair.getPrivate();
-            submitAgreement(
-                    ctx,
-                    serverPrivate,
-                    clientSpki);
+            PrivateKey serverPrivate = this.serverKeyPair.getPrivate();
+            submitAgreement(ctx, serverPrivate, clientSpki);
         } catch (Exception e) {
             LOGGER.warn("[ws-crypto] handshake failed from {} : {}", clientAddress(ctx), friendlyReason(e));
             ctx.close();
@@ -265,75 +214,40 @@ public class WsHandshakeHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    private void submitAgreement(
-            ChannelHandlerContext ctx,
-            PrivateKey serverPrivate,
-            byte[] clientSpki) {
+    private void submitAgreement(ChannelHandlerContext ctx, PrivateKey serverPrivate, byte[] clientSpki) {
         try {
-            this.cryptoExecutor.execute(() ->
-                    deriveSessionKey(
-                            ctx,
-                            serverPrivate,
-                            clientSpki));
+            this.cryptoExecutor.execute(() -> deriveSessionKey(ctx, serverPrivate, clientSpki));
         } catch (RejectedExecutionException rejected) {
-            LOGGER.warn(
-                    "[ws-crypto] handshake executor is full; "
-                            + "closing {}",
-                    clientAddress(ctx));
+            LOGGER.warn("[ws-crypto] handshake executor is full; " + "closing {}", clientAddress(ctx));
             ctx.close();
         }
     }
 
-    private void deriveSessionKey(
-            ChannelHandlerContext ctx,
-            PrivateKey serverPrivate,
-            byte[] clientSpki) {
+    private void deriveSessionKey(ChannelHandlerContext ctx, PrivateKey serverPrivate, byte[] clientSpki) {
         try {
-            PublicKey clientPublic =
-                    WsSessionCrypto.decodePublicKeySpki(
-                            clientSpki);
-            byte[] sharedSecret =
-                    WsSessionCrypto.deriveSharedSecret(
-                            serverPrivate,
-                            clientPublic);
-            byte[] sessionKey =
-                    WsSessionCrypto.deriveAesKey(sharedSecret);
-            executeOnIoThread(
-                    ctx,
-                    () -> finishAgreement(ctx, sessionKey));
+            PublicKey clientPublic = WsSessionCrypto.decodePublicKeySpki(clientSpki);
+            byte[] sharedSecret = WsSessionCrypto.deriveSharedSecret(serverPrivate, clientPublic);
+            byte[] sessionKey = WsSessionCrypto.deriveAesKey(sharedSecret);
+            executeOnIoThread(ctx, () -> finishAgreement(ctx, sessionKey));
         } catch (Exception exception) {
-            executeOnIoThread(
-                    ctx,
-                    () -> failAgreement(ctx, exception));
+            executeOnIoThread(ctx, () -> failAgreement(ctx, exception));
         }
     }
 
-    private void finishAgreement(
-            ChannelHandlerContext ctx,
-            byte[] sessionKey) {
+    private void finishAgreement(ChannelHandlerContext ctx, byte[] sessionKey) {
         if (!ctx.channel().isActive()) {
             return;
         }
 
-        ctx.channel()
-                .attr(GameServerAttributes.WS_AES_KEY)
-                .set(sessionKey);
+        ctx.channel().attr(GameServerAttributes.WS_AES_KEY).set(sessionKey);
         ChannelPipeline pipeline = ctx.pipeline();
-        pipeline.addAfter(
-                HANDLER_NAME,
-                "wsAesDecoder",
-                new WsAesDecoder());
-        pipeline.addAfter(
-                HANDLER_NAME,
-                "wsAesEncoder",
-                new WsAesEncoder());
+        pipeline.addAfter(HANDLER_NAME, "wsAesDecoder", new WsAesDecoder());
+        pipeline.addAfter(HANDLER_NAME, "wsAesEncoder", new WsAesEncoder());
         this.handshakeComplete = true;
         replayPendingFrames(ctx);
         pipeline.remove(this);
 
-        LOGGER.debug(
-                "[ws-crypto] handshake complete for {}",
-                clientAddress(ctx));
+        LOGGER.debug("[ws-crypto] handshake complete for {}", clientAddress(ctx));
     }
 
     private void replayPendingFrames(ChannelHandlerContext ctx) {
@@ -375,19 +289,12 @@ public class WsHandshakeHandler extends ChannelInboundHandlerAdapter {
         releasePendingFrames();
     }
 
-    private static void failAgreement(
-            ChannelHandlerContext ctx,
-            Exception exception) {
-        LOGGER.warn(
-                "[ws-crypto] handshake failed from {} : {}",
-                clientAddress(ctx),
-                friendlyReason(exception));
+    private static void failAgreement(ChannelHandlerContext ctx, Exception exception) {
+        LOGGER.warn("[ws-crypto] handshake failed from {} : {}", clientAddress(ctx), friendlyReason(exception));
         ctx.close();
     }
 
-    private static void executeOnIoThread(
-            ChannelHandlerContext ctx,
-            Runnable task) {
+    private static void executeOnIoThread(ChannelHandlerContext ctx, Runnable task) {
         try {
             ctx.executor().execute(task);
         } catch (RejectedExecutionException rejected) {
@@ -411,17 +318,15 @@ public class WsHandshakeHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         if (cause instanceof java.io.IOException) {
-            LOGGER.debug("[ws-crypto] client disconnected during handshake ({}): {}",
-                    clientAddress(ctx), friendlyReason(cause));
+            LOGGER.debug(
+                    "[ws-crypto] client disconnected during handshake ({}): {}",
+                    clientAddress(ctx),
+                    friendlyReason(cause));
         } else {
             LOGGER.error("[ws-crypto] handshake handler error from " + clientAddress(ctx), cause);
         }
         ctx.close();
     }
 
-    private record ServerHello(
-            KeyPair keyPair,
-            byte[] spki,
-            byte[] signature) {
-    }
+    private record ServerHello(KeyPair keyPair, byte[] spki, byte[] signature) {}
 }

@@ -1,5 +1,12 @@
 package com.eu.habbo.habbohotel;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import com.eu.habbo.core.CreditsScheduler;
 import com.eu.habbo.core.GotwPointsScheduler;
 import com.eu.habbo.core.PixelScheduler;
@@ -17,19 +24,11 @@ import com.eu.habbo.habbohotel.translations.GoogleTranslateManager;
 import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.habbohotel.users.subscriptions.SubscriptionManager;
 import com.eu.habbo.habbohotel.users.subscriptions.SubscriptionScheduler;
-import org.junit.jupiter.api.Test;
-
 import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import org.junit.jupiter.api.Test;
 
 class GameEnvironmentDisposalTest {
 
@@ -54,13 +53,10 @@ class GameEnvironmentDisposalTest {
     }
 
     @Test
-    void roomsAreQuiescedBeforeTheRoomSavePassAndBotsAreDisposed()
-            throws Exception {
+    void roomsAreQuiescedBeforeTheRoomSavePassAndBotsAreDisposed() throws Exception {
         GameEnvironment environment = new GameEnvironment();
-        com.eu.habbo.habbohotel.rooms.RoomManager rooms =
-                mock(com.eu.habbo.habbohotel.rooms.RoomManager.class);
-        com.eu.habbo.habbohotel.bots.BotManager bots =
-                mock(com.eu.habbo.habbohotel.bots.BotManager.class);
+        com.eu.habbo.habbohotel.rooms.RoomManager rooms = mock(com.eu.habbo.habbohotel.rooms.RoomManager.class);
+        com.eu.habbo.habbohotel.bots.BotManager bots = mock(com.eu.habbo.habbohotel.bots.BotManager.class);
         setField(environment, "roomManager", rooms);
         setField(environment, "botManager", bots);
 
@@ -73,69 +69,32 @@ class GameEnvironmentDisposalTest {
     }
 
     @Test
-    void disposesEveryResourceWithAnEstablishedLifecycleContract()
-            throws Exception {
+    void disposesEveryResourceWithAnEstablishedLifecycleContract() throws Exception {
         GameEnvironment environment = new GameEnvironment();
         CreditsScheduler credits = mock(CreditsScheduler.class);
         PixelScheduler pixels = mock(PixelScheduler.class);
         PointsScheduler points = mock(PointsScheduler.class);
         GotwPointsScheduler gotw = mock(GotwPointsScheduler.class);
-        SubscriptionScheduler subscriptions =
-                mock(SubscriptionScheduler.class);
+        SubscriptionScheduler subscriptions = mock(SubscriptionScheduler.class);
         environment.creditsScheduler = credits;
         environment.pixelScheduler = pixels;
         environment.pointsScheduler = points;
         environment.gotwPointsScheduler = gotw;
         environment.subscriptionScheduler = subscriptions;
 
-        HabboManager habbos = install(
-                environment,
-                "habboManager",
-                HabboManager.class);
-        HotelViewManager hotelView = install(
-                environment,
-                "hotelViewManager",
-                HotelViewManager.class);
-        ItemManager items = install(
-                environment,
-                "itemManager",
-                ItemManager.class);
-        BotManager bots = install(
-                environment,
-                "botManager",
-                BotManager.class);
-        GuildManager guilds = install(
-                environment,
-                "guildManager",
-                GuildManager.class);
-        CatalogManager catalog = install(
-                environment,
-                "catalogManager",
-                CatalogManager.class);
-        RoomManager rooms = install(
-                environment,
-                "roomManager",
-                RoomManager.class);
-        CommandHandler commands = install(
-                environment,
-                "commandHandler",
-                CommandHandler.class);
-        CraftingManager crafting = install(
-                environment,
-                "craftingManager",
-                CraftingManager.class);
-        SubscriptionManager subscriptionManager = install(
-                environment,
-                "subscriptionManager",
-                SubscriptionManager.class);
-        CalendarManager calendar = install(
-                environment,
-                "calendarManager",
-                CalendarManager.class);
-        GoogleTranslateManager translate = install(
-                environment,
-                "googleTranslateManager",
-                GoogleTranslateManager.class);
+        HabboManager habbos = install(environment, "habboManager", HabboManager.class);
+        HotelViewManager hotelView = install(environment, "hotelViewManager", HotelViewManager.class);
+        ItemManager items = install(environment, "itemManager", ItemManager.class);
+        BotManager bots = install(environment, "botManager", BotManager.class);
+        GuildManager guilds = install(environment, "guildManager", GuildManager.class);
+        CatalogManager catalog = install(environment, "catalogManager", CatalogManager.class);
+        RoomManager rooms = install(environment, "roomManager", RoomManager.class);
+        CommandHandler commands = install(environment, "commandHandler", CommandHandler.class);
+        CraftingManager crafting = install(environment, "craftingManager", CraftingManager.class);
+        SubscriptionManager subscriptionManager =
+                install(environment, "subscriptionManager", SubscriptionManager.class);
+        CalendarManager calendar = install(environment, "calendarManager", CalendarManager.class);
+        GoogleTranslateManager translate = install(environment, "googleTranslateManager", GoogleTranslateManager.class);
 
         environment.dispose();
 
@@ -160,39 +119,24 @@ class GameEnvironmentDisposalTest {
     }
 
     @Test
-    void oneResourceFailureDoesNotPreventLaterLegacyResourceDisposal()
-            throws Exception {
+    void oneResourceFailureDoesNotPreventLaterLegacyResourceDisposal() throws Exception {
         GameEnvironment environment = new GameEnvironment();
-        CraftingManager crafting = install(
-                environment,
-                "craftingManager",
-                CraftingManager.class);
-        GoogleTranslateManager translate = install(
-                environment,
-                "googleTranslateManager",
-                GoogleTranslateManager.class);
-        doThrow(new IllegalStateException("expected"))
-                .when(crafting)
-                .dispose();
+        CraftingManager crafting = install(environment, "craftingManager", CraftingManager.class);
+        GoogleTranslateManager translate = install(environment, "googleTranslateManager", GoogleTranslateManager.class);
+        doThrow(new IllegalStateException("expected")).when(crafting).dispose();
 
         environment.dispose();
 
         verify(translate).clearCache();
     }
 
-    private static void setField(
-            GameEnvironment environment,
-            String name,
-            Object value) throws Exception {
+    private static void setField(GameEnvironment environment, String name, Object value) throws Exception {
         Field field = GameEnvironment.class.getDeclaredField(name);
         field.setAccessible(true);
         field.set(environment, value);
     }
 
-    private static <T> T install(
-            GameEnvironment environment,
-            String name,
-            Class<T> type) throws Exception {
+    private static <T> T install(GameEnvironment environment, String name, Class<T> type) throws Exception {
         T resource = mock(type);
         setField(environment, name, resource);
         return resource;

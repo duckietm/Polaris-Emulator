@@ -8,7 +8,6 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemComposer;
 import com.eu.habbo.threading.runnables.QueryDeleteHabboItems;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,25 +22,21 @@ public class RequestInventoryItemsDelete extends MessageHandler {
         int itemId = this.packet.readInt();
         int amount = this.packet.readInt();
 
-        if (amount <= 0 || amount > MAX_DELETE_AMOUNT)
-            return;
+        if (amount <= 0 || amount > MAX_DELETE_AMOUNT) return;
 
-        HabboItem habboItem = this.client.getHabbo().getInventory().getItemsComponent().getHabboItem(itemId);
-        if (habboItem == null)
-            return;
+        HabboItem habboItem =
+                this.client.getHabbo().getInventory().getItemsComponent().getHabboItem(itemId);
+        if (habboItem == null) return;
         Item item = habboItem.getBaseItem();
-        if (item == null)
-            return;
-        if (!hasFurnitureInInventory(this.client.getHabbo(), item, amount))
-            return;
+        if (item == null) return;
+        if (!hasFurnitureInInventory(this.client.getHabbo(), item, amount)) return;
         final Habbo habbo = this.client.getHabbo();
-        if (habbo == null)
-            return;
+        if (habbo == null) return;
         Map<Integer, HabboItem> toRemove = new HashMap<>();
         for (int i = 0; i < amount; i++) {
-            HabboItem habboInventoryItem = habbo.getInventory().getItemsComponent().getAndRemoveHabboItem(item);
-            if (habboInventoryItem != null)
-                toRemove.put(habboInventoryItem.getId(), habboInventoryItem);
+            HabboItem habboInventoryItem =
+                    habbo.getInventory().getItemsComponent().getAndRemoveHabboItem(item);
+            if (habboInventoryItem != null) toRemove.put(habboInventoryItem.getId(), habboInventoryItem);
         }
         toRemove.values().forEach(object -> {
             habbo.getClient().sendResponse(new RemoveHabboItemComposer(object.getGiftAdjustedId()));
@@ -53,8 +48,7 @@ public class RequestInventoryItemsDelete extends MessageHandler {
     private boolean hasFurnitureInInventory(Habbo habbo, Item item, Integer amount) {
         int count = 0;
         for (HabboItem habboItem : habbo.getInventory().getItemsComponent().getItemsAsValueCollection()) {
-            if (habboItem.getBaseItem().getId() == item.getId())
-                count++;
+            if (habboItem.getBaseItem().getId() == item.getId()) count++;
         }
         return count >= amount;
     }

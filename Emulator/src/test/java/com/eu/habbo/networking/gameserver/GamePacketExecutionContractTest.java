@@ -1,11 +1,10 @@
 package com.eu.habbo.networking.gameserver;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class GamePacketExecutionContractTest {
 
@@ -14,8 +13,11 @@ class GamePacketExecutionContractTest {
         String tcp = source("GameServer.java");
         String webSocket = source("WebSocketChannelInitializer.java");
 
-        assertTrue(tcp.contains("GamePacketExecutionGroup.get()"), "TCP packet handlers must be off the Netty I/O loop");
-        assertTrue(webSocket.contains("GamePacketExecutionGroup.get()"), "WebSocket packet handlers must use the shared execution group");
+        assertTrue(
+                tcp.contains("GamePacketExecutionGroup.get()"), "TCP packet handlers must be off the Netty I/O loop");
+        assertTrue(
+                webSocket.contains("GamePacketExecutionGroup.get()"),
+                "WebSocket packet handlers must use the shared execution group");
         assertLatencyProbeOrder(tcp);
         assertLatencyProbeOrder(webSocket);
     }
@@ -34,21 +36,13 @@ class GamePacketExecutionContractTest {
         return Files.readString(Path.of("src/main/java/com/eu/habbo/networking/gameserver/" + file));
     }
 
-    private static void assertLatencyProbeOrder(
-            String pipelineSource) {
-        int marker = pipelineSource.indexOf(
-                "new PacketDispatchMarker()");
-        int latency = pipelineSource.indexOf(
-                "\"packetDispatchLatency\"");
-        int handler = pipelineSource.indexOf(
-                "\"gameMessageHandler\"");
+    private static void assertLatencyProbeOrder(String pipelineSource) {
+        int marker = pipelineSource.indexOf("new PacketDispatchMarker()");
+        int latency = pipelineSource.indexOf("\"packetDispatchLatency\"");
+        int handler = pipelineSource.indexOf("\"gameMessageHandler\"");
 
         assertTrue(marker >= 0);
-        assertTrue(
-                latency > marker,
-                "dispatch latency must start after the I/O marker");
-        assertTrue(
-                handler > latency,
-                "dispatch latency must be observed before packet handling");
+        assertTrue(latency > marker, "dispatch latency must start after the I/O marker");
+        assertTrue(handler > latency, "dispatch latency must be observed before packet handling");
     }
 }

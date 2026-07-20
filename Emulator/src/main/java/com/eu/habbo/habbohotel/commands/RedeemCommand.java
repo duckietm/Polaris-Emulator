@@ -6,7 +6,6 @@ import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.threading.runnables.QueryDeleteHabboItems;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,7 +13,9 @@ import java.util.Map;
 
 public class RedeemCommand extends Command {
     public RedeemCommand() {
-        super("cmd_redeem", Emulator.getTexts().getValue("commands.keys.cmd_redeem").split(";"));
+        super(
+                "cmd_redeem",
+                Emulator.getTexts().getValue("commands.keys.cmd_redeem").split(";"));
     }
 
     @Override
@@ -28,12 +29,19 @@ public class RedeemCommand extends Command {
 
         Map<Integer, Integer> points = new HashMap<>();
 
-        for (HabboItem item : gameClient.getHabbo().getInventory().getItemsComponent().getItemsAsValueCollection()) {
-            if (item.getBaseItem().getName().startsWith("CF_") || item.getBaseItem().getName().startsWith("CFC_") || item.getBaseItem().getName().startsWith("DF_") || item.getBaseItem().getName().startsWith("PF_")) {
+        for (HabboItem item :
+                gameClient.getHabbo().getInventory().getItemsComponent().getItemsAsValueCollection()) {
+            if (item.getBaseItem().getName().startsWith("CF_")
+                    || item.getBaseItem().getName().startsWith("CFC_")
+                    || item.getBaseItem().getName().startsWith("DF_")
+                    || item.getBaseItem().getName().startsWith("PF_")) {
                 if (item.getUserId() == gameClient.getHabbo().getHabboInfo().getId()) {
                     boolean redeemable = false;
-                    if ((item.getBaseItem().getName().startsWith("CF_") || item.getBaseItem().getName().startsWith("CFC_")) && !item.getBaseItem().getName().contains("_diamond_")) {
-                        Integer amount = parsePositiveRedeemValue(item.getBaseItem().getName(), 1);
+                    if ((item.getBaseItem().getName().startsWith("CF_")
+                                    || item.getBaseItem().getName().startsWith("CFC_"))
+                            && !item.getBaseItem().getName().contains("_diamond_")) {
+                        Integer amount =
+                                parsePositiveRedeemValue(item.getBaseItem().getName(), 1);
                         if (amount != null) {
                             Integer total = addRedeemValue(credits, amount);
                             if (total != null) {
@@ -43,7 +51,8 @@ public class RedeemCommand extends Command {
                         }
 
                     } else if (item.getBaseItem().getName().startsWith("PF_")) {
-                        Integer amount = parsePositiveRedeemValue(item.getBaseItem().getName(), 1);
+                        Integer amount =
+                                parsePositiveRedeemValue(item.getBaseItem().getName(), 1);
                         if (amount != null) {
                             Integer total = addRedeemValue(pixels, amount);
                             if (total != null) {
@@ -52,15 +61,19 @@ public class RedeemCommand extends Command {
                             }
                         }
                     } else if (item.getBaseItem().getName().startsWith("DF_")) {
-                        Integer pointsType = parsePositiveRedeemValue(item.getBaseItem().getName(), 1);
-                        Integer pointsAmount = parsePositiveRedeemValue(item.getBaseItem().getName(), 2);
+                        Integer pointsType =
+                                parsePositiveRedeemValue(item.getBaseItem().getName(), 1);
+                        Integer pointsAmount =
+                                parsePositiveRedeemValue(item.getBaseItem().getName(), 2);
 
-                        if (pointsType != null && pointsAmount != null && addRedeemPoints(points, pointsType, pointsAmount)) {
+                        if (pointsType != null
+                                && pointsAmount != null
+                                && addRedeemPoints(points, pointsType, pointsAmount)) {
                             redeemable = true;
                         }
-                    }
-                    else if (item.getBaseItem().getName().startsWith("CF_diamond_")) {
-                        Integer pointsAmount = parsePositiveRedeemValue(item.getBaseItem().getName(), 2);
+                    } else if (item.getBaseItem().getName().startsWith("CF_diamond_")) {
+                        Integer pointsAmount =
+                                parsePositiveRedeemValue(item.getBaseItem().getName(), 2);
 
                         if (pointsAmount != null && addRedeemPoints(points, 5, pointsAmount)) {
                             redeemable = true;
@@ -99,7 +112,8 @@ public class RedeemCommand extends Command {
         if (!points.isEmpty()) {
             for (Map.Entry<Integer, Integer> entry : points.entrySet()) {
                 gameClient.getHabbo().givePoints(entry.getKey(), entry.getValue());
-                message[0] += " ," + Emulator.getTexts().getValue("seasonal.name." + entry.getKey()) + ": " + entry.getValue();
+                message[0] += " ," + Emulator.getTexts().getValue("seasonal.name." + entry.getKey()) + ": "
+                        + entry.getValue();
             }
         }
 

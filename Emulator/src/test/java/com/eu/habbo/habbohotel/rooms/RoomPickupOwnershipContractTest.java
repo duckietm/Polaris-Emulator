@@ -1,5 +1,12 @@
 package com.eu.habbo.habbohotel.rooms;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.FurnitureType;
@@ -11,17 +18,9 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.users.inventory.ItemsComponent;
 import com.eu.habbo.plugin.PluginManager;
 import com.eu.habbo.threading.ThreadPooling;
+import java.lang.reflect.Field;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
-
-import java.lang.reflect.Field;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 class RoomPickupOwnershipContractTest {
 
@@ -31,13 +30,11 @@ class RoomPickupOwnershipContractTest {
     }
 
     @Test
-    void managerPickupMatchesTheCanonicalOwnerReturnBehavior()
-            throws Exception {
+    void managerPickupMatchesTheCanonicalOwnerReturnBehavior() throws Exception {
         assertPickupReturnsItemToOwner(true);
     }
 
-    private static void assertPickupReturnsItemToOwner(
-            boolean throughManager) throws Exception {
+    private static void assertPickupReturnsItemToOwner(boolean throughManager) throws Exception {
         RecordingRoom room = new RecordingRoom();
         RoomLayout layout = mock(RoomLayout.class);
         setField(room, "layout", layout);
@@ -64,13 +61,10 @@ class RoomPickupOwnershipContractTest {
         PluginManager plugins = mock(PluginManager.class);
         ThreadPooling threading = mock(ThreadPooling.class);
         try (MockedStatic<Emulator> emulator = mockStatic(Emulator.class);
-             MockedStatic<BuildersClubRoomSupport> buildersClub =
-                     mockStatic(BuildersClubRoomSupport.class)) {
+                MockedStatic<BuildersClubRoomSupport> buildersClub = mockStatic(BuildersClubRoomSupport.class)) {
             emulator.when(Emulator::getPluginManager).thenReturn(plugins);
             emulator.when(Emulator::getThreading).thenReturn(threading);
-            buildersClub.when(() ->
-                    BuildersClubRoomSupport.isTrackedItem(1001))
-                    .thenReturn(false);
+            buildersClub.when(() -> BuildersClubRoomSupport.isTrackedItem(1001)).thenReturn(false);
 
             if (throughManager) {
                 room.getItemManager().pickUpItem(item, picker);
@@ -84,15 +78,12 @@ class RoomPickupOwnershipContractTest {
         verify(item).setRoomId(0);
         verify(item).needsUpdate(true);
         verify(items).addItem(item);
-        verify(client).sendResponse(any(
-                com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer.class));
-        verify(client).sendResponse(any(
-                com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer.class));
+        verify(client).sendResponse(any(com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer.class));
+        verify(client).sendResponse(any(com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer.class));
         verify(threading).run(item);
     }
 
-    private static void setField(Room room, String name, Object value)
-            throws ReflectiveOperationException {
+    private static void setField(Room room, String name, Object value) throws ReflectiveOperationException {
         Field field = Room.class.getDeclaredField(name);
         field.setAccessible(true);
         field.set(room, value);
@@ -111,20 +102,14 @@ class RoomPickupOwnershipContractTest {
         }
 
         @Override
-        public double getStackHeight(
-                short x,
-                short y,
-                boolean calculateHeightmap) {
+        public double getStackHeight(short x, short y, boolean calculateHeightmap) {
             return 0;
         }
 
         @Override
-        public void updateTiles(java.util.Collection<RoomTile> tiles) {
-        }
+        public void updateTiles(java.util.Collection<RoomTile> tiles) {}
 
         @Override
-        public void sendComposer(
-                com.eu.habbo.messages.ServerMessage message) {
-        }
+        public void sendComposer(com.eu.habbo.messages.ServerMessage message) {}
     }
 }

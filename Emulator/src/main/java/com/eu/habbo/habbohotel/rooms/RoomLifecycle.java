@@ -57,10 +57,7 @@ final class RoomLifecycle {
     }
 
     private long beginLoadLocked() {
-        if (this.loaded
-                || this.loading
-                || !this.preloaded
-                || this.state == State.DISPOSING) {
+        if (this.loaded || this.loading || !this.preloaded || this.state == State.DISPOSING) {
             return -1L;
         }
 
@@ -73,8 +70,7 @@ final class RoomLifecycle {
 
     boolean prepareLoad(long loadGeneration) {
         synchronized (this.lock) {
-            if (loadGeneration != this.generation
-                    || this.state != State.LOADING) {
+            if (loadGeneration != this.generation || this.state != State.LOADING) {
                 return false;
             }
 
@@ -83,9 +79,7 @@ final class RoomLifecycle {
         }
     }
 
-    boolean publishLoad(
-            long loadGeneration,
-            Supplier<ScheduledFuture<?>> cycleScheduler) {
+    boolean publishLoad(long loadGeneration, Supplier<ScheduledFuture<?>> cycleScheduler) {
         synchronized (this.lock) {
             if (loadGeneration != this.generation
                     || loadGeneration != this.activeLoadGeneration
@@ -176,11 +170,7 @@ final class RoomLifecycle {
         return true;
     }
 
-    void dispose(
-            boolean prevented,
-            BooleanSupplier cancellationCheck,
-            Consumer<Boolean> cleanup,
-            Runnable completion) {
+    void dispose(boolean prevented, BooleanSupplier cancellationCheck, Consumer<Boolean> cleanup, Runnable completion) {
         if (prevented || cancellationCheck.getAsBoolean()) {
             return;
         }
@@ -210,8 +200,7 @@ final class RoomLifecycle {
             return;
         }
 
-        if (loadGeneration == this.generation
-                && this.state == State.LOADING) {
+        if (loadGeneration == this.generation && this.state == State.LOADING) {
             this.preloaded = true;
             this.state = State.PRELOADED;
         }
@@ -226,9 +215,7 @@ final class RoomLifecycle {
         }
     }
 
-    void startBackgroundLoad(
-            Executor executor,
-            LongConsumer loadOperation) {
+    void startBackgroundLoad(Executor executor, LongConsumer loadOperation) {
         synchronized (this.lock) {
             long loadGeneration = this.beginLoadLocked();
             if (loadGeneration < 0L) {
@@ -236,9 +223,7 @@ final class RoomLifecycle {
             }
 
             try {
-                this.loadingFuture = CompletableFuture.runAsync(
-                        () -> loadOperation.accept(loadGeneration),
-                        executor);
+                this.loadingFuture = CompletableFuture.runAsync(() -> loadOperation.accept(loadGeneration), executor);
             } catch (RuntimeException exception) {
                 this.failLoadLocked(loadGeneration);
                 throw exception;
@@ -262,10 +247,7 @@ final class RoomLifecycle {
         }
     }
 
-    record LoadAttempt(
-            CompletableFuture<Void> future,
-            long generation) {
-    }
+    record LoadAttempt(CompletableFuture<Void> future, long generation) {}
 
     interface CycleTaskSlot {
 

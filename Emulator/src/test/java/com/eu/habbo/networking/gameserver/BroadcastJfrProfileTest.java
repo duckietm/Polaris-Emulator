@@ -1,10 +1,17 @@
 package com.eu.habbo.networking.gameserver;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.ServerMessageFrame;
 import com.eu.habbo.networking.gameserver.encoders.GameServerMessageEncoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.List;
+import java.util.Locale;
 import jdk.jfr.Recording;
 import jdk.jfr.consumer.RecordedEvent;
 import jdk.jfr.consumer.RecordedFrame;
@@ -12,17 +19,7 @@ import jdk.jfr.consumer.RecordingFile;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.List;
-import java.util.Locale;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-@EnabledIfSystemProperty(
-        named = "polaris.profile.broadcast",
-        matches = "true")
+@EnabledIfSystemProperty(named = "polaris.profile.broadcast", matches = "true")
 class BroadcastJfrProfileTest {
 
     private static final int RECIPIENTS = 50;
@@ -31,121 +28,66 @@ class BroadcastJfrProfileTest {
     private static volatile long blackhole;
 
     @Test
-    void capturesRepresentativeRoomBroadcastAllocationProfile()
-            throws Exception {
-        Path profileDirectory =
-                Path.of("target", "profiles");
+    void capturesRepresentativeRoomBroadcastAllocationProfile() throws Exception {
+        Path profileDirectory = Path.of("target", "profiles");
         Files.createDirectories(profileDirectory);
-        boolean sharedFrame =
-                Boolean.getBoolean(
-                        "polaris.profile.broadcast.shared");
-        String profileName = sharedFrame
-                ? "broadcast-shared-frame"
-                : "broadcast-baseline";
-        Path recordingPath =
-                profileDirectory.resolve(
-                        profileName + ".jfr");
-        Path summaryPath =
-                profileDirectory.resolve(
-                        profileName + ".txt");
+        boolean sharedFrame = Boolean.getBoolean("polaris.profile.broadcast.shared");
+        String profileName = sharedFrame ? "broadcast-shared-frame" : "broadcast-baseline";
+        Path recordingPath = profileDirectory.resolve(profileName + ".jfr");
+        Path summaryPath = profileDirectory.resolve(profileName + ".txt");
 
-        EmbeddedChannel channel =
-                new EmbeddedChannel(
-                        new GameServerMessageEncoder());
+        EmbeddedChannel channel = new EmbeddedChannel(new GameServerMessageEncoder());
         ServerMessage message = representativeMessage();
         if (sharedFrame) {
             ServerMessageFrame.prepareBroadcast(message);
         }
         try {
-            runBroadcasts(
-                    channel,
-                    message,
-                    WARMUP_BROADCASTS,
-                    sharedFrame);
+            runBroadcasts(channel, message, WARMUP_BROADCASTS, sharedFrame);
 
             long startedAt = System.nanoTime();
             try (Recording recording = new Recording()) {
-                recording.enable(
-                                "jdk.ObjectAllocationSample")
-                        .withStackTrace();
-                recording.enable("jdk.ExecutionSample")
-                        .withPeriod(
-                                Duration.ofMillis(10));
-                recording.enable(
-                        "jdk.GarbageCollection");
+                recording.enable("jdk.ObjectAllocationSample").withStackTrace();
+                recording.enable("jdk.ExecutionSample").withPeriod(Duration.ofMillis(10));
+                recording.enable("jdk.GarbageCollection");
                 recording.start();
-                runBroadcasts(
-                        channel,
-                        message,
-                        PROFILE_BROADCASTS,
-                        sharedFrame);
+                runBroadcasts(channel, message, PROFILE_BROADCASTS, sharedFrame);
                 recording.stop();
                 recording.dump(recordingPath);
             }
-            long elapsedNanos =
-                    System.nanoTime() - startedAt;
+            long elapsedNanos = System.nanoTime() - startedAt;
 
-            ProfileSummary summary =
-                    summarize(
-                            recordingPath,
-                            elapsedNanos);
-            Files.writeString(
-                    summaryPath,
-                    summary.format());
+            ProfileSummary summary = summarize(recordingPath, elapsedNanos);
+            Files.writeString(summaryPath, summary.format());
 
-            System.out.println(
-                    "BROADCAST_JFR "
-                            + summary.format()
-                            .replace(
-                                    System.lineSeparator(),
-                                    " "));
-            assertTrue(
-                    summary.totalSampledBytes() > 0L);
-            assertTrue(
-                    summary.serverMessageSampledBytes()
-                            > 0L);
+            System.out.println("BROADCAST_JFR " + summary.format().replace(System.lineSeparator(), " "));
+            assertTrue(summary.totalSampledBytes() > 0L);
+            assertTrue(summary.serverMessageSampledBytes() > 0L);
         } finally {
             channel.finishAndReleaseAll();
         }
     }
 
     private static ServerMessage representativeMessage() {
-        ServerMessage message =
-                new ServerMessage(1_234);
+        ServerMessage message = new ServerMessage(1_234);
         message.appendString("room-cycle-broadcast");
         message.appendRawBytes(new byte[1_024]);
         return message;
     }
 
     private static void runBroadcasts(
-            EmbeddedChannel channel,
-            ServerMessage message,
-            int broadcasts,
-            boolean sharedFrame) {
-        for (int broadcast = 0;
-             broadcast < broadcasts;
-             broadcast++) {
-            for (int recipient = 0;
-                 recipient < RECIPIENTS;
-                 recipient++) {
+            EmbeddedChannel channel, ServerMessage message, int broadcasts, boolean sharedFrame) {
+        for (int broadcast = 0; broadcast < broadcasts; broadcast++) {
+            for (int recipient = 0; recipient < RECIPIENTS; recipient++) {
                 assertTrue(
-                        channel.writeOutbound(
-                                sharedFrame
-                                        ? ServerMessageFrame
-                                                .retainedDuplicate(
-                                                        message)
-                                        : message));
+                        channel.writeOutbound(sharedFrame ? ServerMessageFrame.retainedDuplicate(message) : message));
                 ByteBuf encoded = channel.readOutbound();
-                blackhole += encoded.getByte(
-                        encoded.readerIndex());
+                blackhole += encoded.getByte(encoded.readerIndex());
                 encoded.release();
             }
         }
     }
 
-    private static ProfileSummary summarize(
-            Path recordingPath,
-            long elapsedNanos) throws Exception {
+    private static ProfileSummary summarize(Path recordingPath, long elapsedNanos) throws Exception {
         long totalSampledBytes = 0L;
         long serverMessageSampledBytes = 0L;
         long allocationSamples = 0L;
@@ -154,9 +96,7 @@ class BroadcastJfrProfileTest {
         long serverMessageExecutionSamples = 0L;
         long garbageCollections = 0L;
 
-        List<RecordedEvent> events =
-                RecordingFile.readAllEvents(
-                        recordingPath);
+        List<RecordedEvent> events = RecordingFile.readAllEvents(recordingPath);
         for (RecordedEvent event : events) {
             switch (event.getEventType().getName()) {
                 case "jdk.ObjectAllocationSample" -> {
@@ -174,10 +114,8 @@ class BroadcastJfrProfileTest {
                         serverMessageExecutionSamples++;
                     }
                 }
-                case "jdk.GarbageCollection" ->
-                        garbageCollections++;
-                default -> {
-                }
+                case "jdk.GarbageCollection" -> garbageCollections++;
+                default -> {}
             }
         }
 
@@ -194,24 +132,15 @@ class BroadcastJfrProfileTest {
                 garbageCollections);
     }
 
-    private static boolean hasServerMessageFrame(
-            RecordedEvent event) {
+    private static boolean hasServerMessageFrame(RecordedEvent event) {
         if (event.getStackTrace() == null) {
             return false;
         }
-        for (RecordedFrame frame
-                : event.getStackTrace().getFrames()) {
-            String type =
-                    frame.getMethod()
-                            .getType()
-                            .getName();
-            if (type.equals(
-                    "com.eu.habbo.messages.ServerMessage")
-                    || type.equals(
-                    "com.eu.habbo.messages.ServerMessageFrame")
-                    || type.equals(
-                    "com.eu.habbo.networking.gameserver."
-                            + "encoders.GameServerMessageEncoder")) {
+        for (RecordedFrame frame : event.getStackTrace().getFrames()) {
+            String type = frame.getMethod().getType().getName();
+            if (type.equals("com.eu.habbo.messages.ServerMessage")
+                    || type.equals("com.eu.habbo.messages.ServerMessageFrame")
+                    || type.equals("com.eu.habbo.networking.gameserver." + "encoders.GameServerMessageEncoder")) {
                 return true;
             }
         }

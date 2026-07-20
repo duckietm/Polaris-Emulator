@@ -1,12 +1,11 @@
 package com.eu.habbo.habbohotel.users;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class AsyncDisconnectPersistenceContractTest {
 
@@ -21,9 +20,7 @@ class AsyncDisconnectPersistenceContractTest {
         int persistence = source.indexOf("private void persistDisconnect()", submit);
         int userSave = source.indexOf("this.run()", persistence);
         int inventorySave = source.indexOf("this.getInventory().dispose()", userSave);
-        int achievementSave = source.indexOf(
-                "AchievementManager.saveAchievements(this)",
-                inventorySave);
+        int achievementSave = source.indexOf("AchievementManager.saveAchievements(this)", inventorySave);
         int statsSave = source.indexOf("this.habboStats.dispose()", achievementSave);
 
         assertTrue(disconnect > -1);
@@ -41,17 +38,11 @@ class AsyncDisconnectPersistenceContractTest {
     void loginWaitsAgainAfterItDisposesADuplicateSession() throws Exception {
         String source = source("HabboManager.java");
         int load = source.indexOf("public Habbo loadHabbo(");
-        int firstWait = source.indexOf(
-                "awaitDisconnectPersistence(userId)",
-                load);
+        int firstWait = source.indexOf("awaitDisconnectPersistence(userId)", load);
         int cloneCheck = source.indexOf("this.cloneCheck(userId)", firstWait);
         int forceDispose = source.indexOf("forceDisposeClient(", cloneCheck);
-        int secondWait = source.indexOf(
-                "awaitDisconnectPersistence(userId)",
-                forceDispose);
-        int reload = source.indexOf(
-                "SELECT * FROM users WHERE auth_ticket",
-                secondWait);
+        int secondWait = source.indexOf("awaitDisconnectPersistence(userId)", forceDispose);
+        int reload = source.indexOf("SELECT * FROM users WHERE auth_ticket", secondWait);
 
         assertTrue(firstWait > load);
         assertTrue(cloneCheck > firstWait);
@@ -61,8 +52,6 @@ class AsyncDisconnectPersistenceContractTest {
     }
 
     private static String source(String file) throws Exception {
-        return Files.readString(Path.of(
-                "src/main/java/com/eu/habbo/habbohotel/users",
-                file));
+        return Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/users", file));
     }
 }

@@ -15,7 +15,6 @@ import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.ChestDataComposer;
 import com.eu.habbo.threading.runnables.QueryDeleteHabboItems;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -85,7 +84,8 @@ public class ChestDepositFurniEvent extends MessageHandler {
         int deposited = toRemove.size();
         if (deposited <= 0) return;
 
-        contents.addLog(new ChestStorage.LogEntry("deposit", System.currentTimeMillis(), habbo.getHabboInfo().getUsername(), 0, deposited));
+        contents.addLog(new ChestStorage.LogEntry(
+                "deposit", System.currentTimeMillis(), habbo.getHabboInfo().getUsername(), 0, deposited));
         chest.persistContents();
 
         for (HabboItem removed : toRemove) {

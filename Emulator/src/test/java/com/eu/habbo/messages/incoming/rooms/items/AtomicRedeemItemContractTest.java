@@ -1,11 +1,10 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class AtomicRedeemItemContractTest {
     private static String read(String relativePath) throws Exception {
@@ -25,9 +24,11 @@ class AtomicRedeemItemContractTest {
         assertTrue(commit < apply, "memory balance must use the committed transaction result");
         assertTrue(apply < roomRemoval, "wallet memory must synchronize before later room publication");
         assertTrue(roomRemoval < publish, "client balance publication must follow room removal");
-        assertTrue(!source.contains("EconomyAuditLogger.record("),
+        assertTrue(
+                !source.contains("EconomyAuditLogger.record("),
                 "redemption audit must be committed inside the database transaction, not afterwards");
-        assertTrue(source.contains("currencyGrant.currencyType()"),
+        assertTrue(
+                source.contains("currencyGrant.currencyType()"),
                 "audit and balance updates must use the plugin-resolved currency type");
     }
 

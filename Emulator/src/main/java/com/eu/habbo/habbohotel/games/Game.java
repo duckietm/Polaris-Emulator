@@ -5,11 +5,11 @@ import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredHighscore;
 import com.eu.habbo.habbohotel.items.interactions.games.InteractionGameTimer;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredBlob;
-import com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreDataEntry;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreDataEntry;
 import com.eu.habbo.messages.outgoing.guides.GuideSessionPartnerIsPlayingComposer;
 import com.eu.habbo.plugin.Event;
 import com.eu.habbo.plugin.events.games.GameHabboJoinEvent;
@@ -17,12 +17,11 @@ import com.eu.habbo.plugin.events.games.GameHabboLeaveEvent;
 import com.eu.habbo.plugin.events.games.GameStartedEvent;
 import com.eu.habbo.plugin.events.games.GameStoppedEvent;
 import com.eu.habbo.threading.runnables.SaveScoreForTeam;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class Game implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(Game.class);
@@ -36,16 +35,18 @@ public abstract class Game implements Runnable {
     private int startTime;
     private int endTime;
 
-    public Game(Class<? extends GameTeam> gameTeamClazz, Class<? extends GamePlayer> gamePlayerClazz, Room room, boolean countsAchievements) {
+    public Game(
+            Class<? extends GameTeam> gameTeamClazz,
+            Class<? extends GamePlayer> gamePlayerClazz,
+            Room room,
+            boolean countsAchievements) {
         this.gameTeamClazz = gameTeamClazz;
         this.gamePlayerClazz = gamePlayerClazz;
         this.room = room;
         this.countsAchievements = countsAchievements;
     }
 
-
     public abstract void initialise();
-
 
     public boolean addHabbo(Habbo habbo, GameTeamColors teamColor) {
         try {
@@ -53,18 +54,21 @@ public abstract class Game implements Runnable {
                 if (Emulator.getPluginManager().isRegistered(GameHabboJoinEvent.class, true)) {
                     Event gameHabboJoinEvent = new GameHabboJoinEvent(this, habbo);
                     Emulator.getPluginManager().fireEvent(gameHabboJoinEvent);
-                    if (gameHabboJoinEvent.isCancelled())
-                        return false;
+                    if (gameHabboJoinEvent.isCancelled()) return false;
                 }
 
                 synchronized (this.teams) {
                     GameTeam team = this.getTeam(teamColor);
                     if (team == null) {
-                        team = this.gameTeamClazz.getDeclaredConstructor(GameTeamColors.class).newInstance(teamColor);
+                        team = this.gameTeamClazz
+                                .getDeclaredConstructor(GameTeamColors.class)
+                                .newInstance(teamColor);
                         this.addTeam(team);
                     }
 
-                    GamePlayer player = this.gamePlayerClazz.getDeclaredConstructor(Habbo.class, GameTeamColors.class).newInstance(habbo, teamColor);
+                    GamePlayer player = this.gamePlayerClazz
+                            .getDeclaredConstructor(Habbo.class, GameTeamColors.class)
+                            .newInstance(habbo, teamColor);
                     team.addMember(player);
                     habbo.getHabboInfo().setCurrentGame(this.getClass());
                     habbo.getHabboInfo().setGamePlayer(player);
@@ -79,14 +83,12 @@ public abstract class Game implements Runnable {
         return false;
     }
 
-
     public void removeHabbo(Habbo habbo) {
         if (habbo != null) {
             if (Emulator.getPluginManager().isRegistered(GameHabboLeaveEvent.class, true)) {
                 Event gameHabboLeaveEvent = new GameHabboLeaveEvent(this, habbo);
                 Emulator.getPluginManager().fireEvent(gameHabboLeaveEvent);
-                if (gameHabboLeaveEvent.isCancelled())
-                    return;
+                if (gameHabboLeaveEvent.isCancelled()) return;
             }
 
             GameTeam team = this.getTeamForHabbo(habbo);
@@ -102,12 +104,15 @@ public abstract class Game implements Runnable {
                 habbo.getHabboInfo().setGamePlayer(null);
                 habbo.getClient().sendResponse(new GuideSessionPartnerIsPlayingComposer(false));
                 if (this.countsAchievements && this.endTime > this.startTime) {
-                    AchievementManager.progressAchievement(habbo, Emulator.getGameEnvironment().getAchievementManager().getAchievement("GamePlayed"));
+                    AchievementManager.progressAchievement(
+                            habbo,
+                            Emulator.getGameEnvironment()
+                                    .getAchievementManager()
+                                    .getAchievement("GamePlayed"));
                 }
             }
         }
     }
-
 
     public void start() {
         this.isRunning = false;
@@ -133,15 +138,19 @@ public abstract class Game implements Runnable {
 
         this.saveScores();
 
-        int totalPointsGained = this.teams.values().stream().mapToInt(GameTeam::getTotalScore).sum();
+        int totalPointsGained =
+                this.teams.values().stream().mapToInt(GameTeam::getTotalScore).sum();
 
         Habbo roomOwner = Emulator.getGameEnvironment().getHabboManager().getHabbo(this.room.getOwnerId());
         if (roomOwner != null) {
-            AchievementManager.progressAchievement(roomOwner, Emulator.getGameEnvironment().getAchievementManager().getAchievement("GameAuthorExperience"), totalPointsGained);
+            AchievementManager.progressAchievement(
+                    roomOwner,
+                    Emulator.getGameEnvironment().getAchievementManager().getAchievement("GameAuthorExperience"),
+                    totalPointsGained);
         }
 
         GameTeam winningTeam = null;
-        if(totalPointsGained > 0) {
+        if (totalPointsGained > 0) {
             for (GameTeam team : this.teams.values()) {
                 if (winningTeam == null || team.getTotalScore() > winningTeam.getTotalScore()) {
                     winningTeam = team;
@@ -155,13 +164,28 @@ public abstract class Game implements Runnable {
 
                 Habbo winner = player.getHabbo();
                 if (winner != null) {
-                    AchievementManager.progressAchievement(roomOwner, Emulator.getGameEnvironment().getAchievementManager().getAchievement("GamePlayerExperience"));
+                    AchievementManager.progressAchievement(
+                            roomOwner,
+                            Emulator.getGameEnvironment()
+                                    .getAchievementManager()
+                                    .getAchievement("GamePlayerExperience"));
                 }
             }
 
             if (winningTeam.getMembers().size() > 0) {
                 for (HabboItem item : this.room.getRoomSpecialTypes().getItemsOfType(InteractionWiredHighscore.class)) {
-                    Emulator.getGameEnvironment().getItemManager().getHighscoreManager().addHighscoreData(new WiredHighscoreDataEntry(item.getId(), winningTeam.getMembers().stream().map(m -> m.getHabbo().getHabboInfo().getId()).collect(Collectors.toList()), winningTeam.getTotalScore(), true, Emulator.getIntUnixTimestamp()));
+                    Emulator.getGameEnvironment()
+                            .getItemManager()
+                            .getHighscoreManager()
+                            .addHighscoreData(new WiredHighscoreDataEntry(
+                                    item.getId(),
+                                    winningTeam.getMembers().stream()
+                                            .map(m ->
+                                                    m.getHabbo().getHabboInfo().getId())
+                                            .collect(Collectors.toList()),
+                                    winningTeam.getTotalScore(),
+                                    true,
+                                    Emulator.getIntUnixTimestamp()));
                 }
             }
 
@@ -173,8 +197,21 @@ public abstract class Game implements Runnable {
                 }
 
                 if (team.getMembers().size() > 0 && team.getTotalScore() > 0) {
-                    for (HabboItem item : this.room.getRoomSpecialTypes().getItemsOfType(InteractionWiredHighscore.class)) {
-                        Emulator.getGameEnvironment().getItemManager().getHighscoreManager().addHighscoreData(new WiredHighscoreDataEntry(item.getId(), team.getMembers().stream().map(m -> m.getHabbo().getHabboInfo().getId()).collect(Collectors.toList()), team.getTotalScore(), false, Emulator.getIntUnixTimestamp()));
+                    for (HabboItem item :
+                            this.room.getRoomSpecialTypes().getItemsOfType(InteractionWiredHighscore.class)) {
+                        Emulator.getGameEnvironment()
+                                .getItemManager()
+                                .getHighscoreManager()
+                                .addHighscoreData(new WiredHighscoreDataEntry(
+                                        item.getId(),
+                                        team.getMembers().stream()
+                                                .map(m -> m.getHabbo()
+                                                        .getHabboInfo()
+                                                        .getId())
+                                                .collect(Collectors.toList()),
+                                        team.getTotalScore(),
+                                        false,
+                                        Emulator.getIntUnixTimestamp()));
                     }
                 }
             }
@@ -208,7 +245,8 @@ public abstract class Game implements Runnable {
         this.state = GameState.IDLE;
 
         boolean gamesActive = false;
-        for (InteractionGameTimer timer : room.getRoomSpecialTypes().getGameTimers().values()) {
+        for (InteractionGameTimer timer :
+                room.getRoomSpecialTypes().getGameTimers().values()) {
             if (timer.isRunning()) {
                 gamesActive = true;
                 break;
@@ -235,8 +273,7 @@ public abstract class Game implements Runnable {
     }
 
     private void saveScores() {
-        if (this.room == null)
-            return;
+        if (this.room == null) return;
 
         Map<GameTeamColors, GameTeam> teamsCopy = new HashMap<>();
         teamsCopy.putAll(this.teams);
@@ -245,7 +282,6 @@ public abstract class Game implements Runnable {
             Emulator.getThreading().runPersistence(new SaveScoreForTeam(teamEntry.getValue(), this));
         }
     }
-
 
     public GameTeam getTeamForHabbo(Habbo habbo) {
         if (habbo != null) {
@@ -261,13 +297,11 @@ public abstract class Game implements Runnable {
         return null;
     }
 
-
     public GameTeam getTeam(GameTeamColors teamColor) {
         synchronized (this.teams) {
             return this.teams.get(teamColor);
         }
     }
-
 
     public void addTeam(GameTeam team) {
         synchronized (this.teams) {

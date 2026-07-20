@@ -3,27 +3,23 @@ package com.eu.habbo;
 import com.eu.habbo.database.Database;
 import com.eu.habbo.plugin.events.emulator.EmulatorStartShutdownEvent;
 import com.eu.habbo.plugin.events.emulator.EmulatorStoppedEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Coordinates process teardown in the reverse of the runtime startup phases.
  */
 final class RuntimeLifecycle {
 
-    private static final Logger LOGGER =
-            LoggerFactory.getLogger(RuntimeLifecycle.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RuntimeLifecycle.class);
 
     private final PolarisRuntime services;
     private final Runnable sessionCleanup;
     private final AtomicBoolean shutdownStarted = new AtomicBoolean();
 
-    RuntimeLifecycle(
-            PolarisRuntime services,
-            Runnable sessionCleanup) {
+    RuntimeLifecycle(PolarisRuntime services, Runnable sessionCleanup) {
         this.services = Objects.requireNonNull(services);
         this.sessionCleanup = Objects.requireNonNull(sessionCleanup);
     }
@@ -42,15 +38,12 @@ final class RuntimeLifecycle {
 
     private void quiesceRuntime() {
         if (services.threading() != null) {
-            run(
-                    "reject new scheduled work",
-                    () -> services.threading().setCanAdd(false));
+            run("reject new scheduled work", () -> services.threading().setCanAdd(false));
         }
         if (services.pluginManager() != null) {
             run(
                     "publish pre-shutdown event",
-                    () -> services.pluginManager().fireEvent(
-                            new EmulatorStartShutdownEvent()));
+                    () -> services.pluginManager().fireEvent(new EmulatorStartShutdownEvent()));
         }
     }
 
@@ -66,9 +59,7 @@ final class RuntimeLifecycle {
 
     private void stopHotelPhase() {
         if (services.gameEnvironment() != null) {
-            run(
-                    "dispose hotel services",
-                    () -> services.gameEnvironment().dispose());
+            run("dispose hotel services", () -> services.gameEnvironment().dispose());
         }
     }
 
@@ -77,20 +68,13 @@ final class RuntimeLifecycle {
             return;
         }
 
-        run(
-                "publish hotel-stopped event",
-                () -> services.pluginManager().fireEvent(
-                        new EmulatorStoppedEvent()));
-        run(
-                "dispose plugins",
-                () -> services.pluginManager().dispose());
+        run("publish hotel-stopped event", () -> services.pluginManager().fireEvent(new EmulatorStoppedEvent()));
+        run("dispose plugins", () -> services.pluginManager().dispose());
     }
 
     private void stopFoundationPhase() {
         if (services.threading() != null) {
-            run(
-                    "stop scheduler",
-                    () -> services.threading().shutDown());
+            run("stop scheduler", () -> services.threading().shutDown());
         }
         if (services.persistenceExecutor() != null) {
             run(
@@ -120,10 +104,7 @@ final class RuntimeLifecycle {
         try {
             action.run();
         } catch (Exception exception) {
-            LOGGER.error(
-                    "Runtime shutdown action failed: {}",
-                    actionName,
-                    exception);
+            LOGGER.error("Runtime shutdown action failed: {}", actionName, exception);
         }
     }
 }

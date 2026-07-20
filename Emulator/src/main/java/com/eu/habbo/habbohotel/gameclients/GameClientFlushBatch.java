@@ -1,7 +1,6 @@
 package com.eu.habbo.habbohotel.gameclients;
 
 import io.netty.channel.Channel;
-
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Set;
@@ -11,8 +10,7 @@ import java.util.Set;
  * the timing and order of each write.
  */
 public final class GameClientFlushBatch implements AutoCloseable {
-    private static final ThreadLocal<State> CURRENT =
-            new ThreadLocal<>();
+    private static final ThreadLocal<State> CURRENT = new ThreadLocal<>();
 
     private final State state;
     private final Thread owner;
@@ -48,10 +46,8 @@ public final class GameClientFlushBatch implements AutoCloseable {
         if (this.closed) {
             return;
         }
-        if (Thread.currentThread() != this.owner
-                || CURRENT.get() != this.state) {
-            throw new IllegalStateException(
-                    "Flush batches must close on their opening thread");
+        if (Thread.currentThread() != this.owner || CURRENT.get() != this.state) {
+            throw new IllegalStateException("Flush batches must close on their opening thread");
         }
 
         this.closed = true;
@@ -93,9 +89,7 @@ public final class GameClientFlushBatch implements AutoCloseable {
     }
 
     private static final class State {
-        private final Set<Channel> channels =
-                Collections.newSetFromMap(
-                        new IdentityHashMap<>());
+        private final Set<Channel> channels = Collections.newSetFromMap(new IdentityHashMap<>());
         private int depth;
     }
 }

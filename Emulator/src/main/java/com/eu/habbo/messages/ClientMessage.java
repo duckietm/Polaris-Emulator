@@ -3,7 +3,6 @@ package com.eu.habbo.messages;
 import com.eu.habbo.util.PacketUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-
 import java.nio.charset.StandardCharsets;
 
 public class ClientMessage {
@@ -23,8 +22,7 @@ public class ClientMessage {
     public int getMessageId() {
         return this.header;
     }
-    
-    
+
     /**
      *
      * @return
@@ -91,5 +89,4 @@ public class ClientMessage {
     public boolean release() {
         return this.buffer.release();
     }
-
 }

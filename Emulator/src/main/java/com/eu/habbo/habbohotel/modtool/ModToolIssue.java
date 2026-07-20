@@ -5,7 +5,6 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ISerialize;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.threading.runnables.UpdateModToolIssue;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -61,7 +60,14 @@ public class ModToolIssue implements ISerialize {
         }
     }
 
-    public ModToolIssue(int senderId, String senderUserName, int reportedId, String reportedUsername, int reportedRoomId, String message, ModToolTicketType type) {
+    public ModToolIssue(
+            int senderId,
+            String senderUserName,
+            int reportedId,
+            String reportedUsername,
+            int reportedRoomId,
+            String message,
+            ModToolTicketType type) {
         this.state = ModToolTicketState.OPEN;
         this.timestamp = Emulator.getIntUnixTimestamp();
         this.priority = 0;
@@ -77,19 +83,19 @@ public class ModToolIssue implements ISerialize {
 
     @Override
     public void serialize(ServerMessage message) {
-        message.appendInt(this.id); //ID
-        message.appendInt(this.state.getState()); //STATE
-        message.appendInt(this.type.getType()); //TYPE
-        message.appendInt(this.category); //CATEGORY ID
-        message.appendInt(((Emulator.getIntUnixTimestamp() - this.timestamp))); //TIME IN MS AGO
-        message.appendInt(this.priority); //PRIORITY
+        message.appendInt(this.id); // ID
+        message.appendInt(this.state.getState()); // STATE
+        message.appendInt(this.type.getType()); // TYPE
+        message.appendInt(this.category); // CATEGORY ID
+        message.appendInt(((Emulator.getIntUnixTimestamp() - this.timestamp))); // TIME IN MS AGO
+        message.appendInt(this.priority); // PRIORITY
         message.appendInt(1);
-        message.appendInt(this.senderId); //Reporter user ID
-        message.appendString(this.senderUsername); //Reporter user name.
-        message.appendInt(this.reportedId); //Reported user ID.
-        message.appendString(this.reportedUsername); //Reported user name.
-        message.appendInt(this.modId); //ADMIN User ID?
-        message.appendString(this.modName); //ADMIN User name?
+        message.appendInt(this.senderId); // Reporter user ID
+        message.appendString(this.senderUsername); // Reporter user name.
+        message.appendInt(this.reportedId); // Reported user ID.
+        message.appendString(this.reportedUsername); // Reported user name.
+        message.appendInt(this.modId); // ADMIN User ID?
+        message.appendString(this.modName); // ADMIN User name?
         message.appendString(this.message);
         message.appendInt(0);
 

@@ -1,5 +1,12 @@
 package com.eu.habbo;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.database.Database;
 import com.eu.habbo.habbohotel.GameEnvironment;
@@ -10,8 +17,6 @@ import com.eu.habbo.plugin.events.emulator.EmulatorStartShutdownEvent;
 import com.eu.habbo.plugin.events.emulator.EmulatorStoppedEvent;
 import com.eu.habbo.threading.ThreadPooling;
 import com.zaxxer.hikari.HikariDataSource;
-import org.junit.jupiter.api.Test;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -19,29 +24,23 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.junit.jupiter.api.Test;
 
 class EmulatorLifecycleCompatibilityTest {
 
     @Test
-    void stoppedIsPublishedOnlyAfterRuntimeResourcesClose()
-            throws Exception {
+    void stoppedIsPublishedOnlyAfterRuntimeResourcesClose() throws Exception {
         AtomicBoolean databaseClosed = new AtomicBoolean();
-        PolarisRuntime runtime = new PolarisRuntime(() -> {
-        });
+        PolarisRuntime runtime = new PolarisRuntime(() -> {});
         Database database = mock(Database.class);
         when(database.getDataSource()).thenReturn(null);
         doAnswer(invocation -> {
-            assertFalse(Emulator.stopped);
-            databaseClosed.set(true);
-            return null;
-        }).when(database).dispose();
+                    assertFalse(Emulator.stopped);
+                    databaseClosed.set(true);
+                    return null;
+                })
+                .when(database)
+                .dispose();
         runtime.installDatabase(database);
 
         Map<Field, Object> originalFields = new LinkedHashMap<>();
@@ -63,11 +62,9 @@ class EmulatorLifecycleCompatibilityTest {
     }
 
     @Test
-    void shutdownKeepsItsObservableOrderAndContinuesAfterFailure()
-            throws Exception {
+    void shutdownKeepsItsObservableOrderAndContinuesAfterFailure() throws Exception {
         List<String> calls = new ArrayList<>();
-        ConfigurationManager configuration =
-                mock(ConfigurationManager.class);
+        ConfigurationManager configuration = mock(ConfigurationManager.class);
         Database database = mock(Database.class);
         HikariDataSource dataSource = mock(HikariDataSource.class);
         GameServer gameServer = mock(GameServer.class);
@@ -79,46 +76,64 @@ class EmulatorLifecycleCompatibilityTest {
         when(database.getDataSource()).thenReturn(dataSource);
         when(dataSource.isClosed()).thenReturn(false);
         doAnswer(invocation -> {
-            calls.add("threading.reject-new-work");
-            return null;
-        }).when(threading).setCanAdd(false);
+                    calls.add("threading.reject-new-work");
+                    return null;
+                })
+                .when(threading)
+                .setCanAdd(false);
         doAnswer(invocation -> {
-            Object event = invocation.getArgument(0);
-            if (event instanceof EmulatorStartShutdownEvent) {
-                calls.add("plugins.before-shutdown");
-            } else if (event instanceof EmulatorStoppedEvent) {
-                calls.add("plugins.after-hotel");
-            }
-            return event;
-        }).when(plugins).fireEvent(any());
+                    Object event = invocation.getArgument(0);
+                    if (event instanceof EmulatorStartShutdownEvent) {
+                        calls.add("plugins.before-shutdown");
+                    } else if (event instanceof EmulatorStoppedEvent) {
+                        calls.add("plugins.after-hotel");
+                    }
+                    return event;
+                })
+                .when(plugins)
+                .fireEvent(any());
         doAnswer(invocation -> {
-            calls.add("rcon.stop");
-            throw new IllegalStateException("expected bind teardown failure");
-        }).when(rconServer).stop();
+                    calls.add("rcon.stop");
+                    throw new IllegalStateException("expected bind teardown failure");
+                })
+                .when(rconServer)
+                .stop();
         doAnswer(invocation -> {
-            calls.add("hotel.dispose");
-            return null;
-        }).when(environment).dispose();
+                    calls.add("hotel.dispose");
+                    return null;
+                })
+                .when(environment)
+                .dispose();
         doAnswer(invocation -> {
-            calls.add("plugins.dispose");
-            return null;
-        }).when(plugins).dispose();
+                    calls.add("plugins.dispose");
+                    return null;
+                })
+                .when(plugins)
+                .dispose();
         doAnswer(invocation -> {
-            calls.add("configuration.save");
-            return null;
-        }).when(configuration).saveToDatabase();
+                    calls.add("configuration.save");
+                    return null;
+                })
+                .when(configuration)
+                .saveToDatabase();
         doAnswer(invocation -> {
-            calls.add("game.stop");
-            return null;
-        }).when(gameServer).stop();
+                    calls.add("game.stop");
+                    return null;
+                })
+                .when(gameServer)
+                .stop();
         doAnswer(invocation -> {
-            calls.add("threading.shutdown");
-            return null;
-        }).when(threading).shutDown();
+                    calls.add("threading.shutdown");
+                    return null;
+                })
+                .when(threading)
+                .shutDown();
         doAnswer(invocation -> {
-            calls.add("database.dispose");
-            return null;
-        }).when(database).dispose();
+                    calls.add("database.dispose");
+                    return null;
+                })
+                .when(database)
+                .dispose();
 
         Map<Field, Object> originalFields = new LinkedHashMap<>();
         Map<Field, Boolean> originalFlags = new LinkedHashMap<>();
@@ -139,22 +154,13 @@ class EmulatorLifecycleCompatibilityTest {
             dispose.setAccessible(true);
             dispose.invoke(null);
 
-            assertTrue(indexOf(calls, "threading.reject-new-work")
-                    < indexOf(calls, "plugins.before-shutdown"));
-            assertTrue(indexOf(calls, "plugins.before-shutdown")
-                    < indexOf(calls, "hotel.dispose"));
-            assertTrue(indexOf(calls, "hotel.dispose")
-                    < indexOf(calls, "plugins.after-hotel"));
-            assertTrue(indexOf(calls, "plugins.after-hotel")
-                    < indexOf(calls, "plugins.dispose"));
-            assertTrue(indexOf(calls, "rcon.stop")
-                    < indexOf(calls, "database.dispose"));
-            assertTrue(calls.containsAll(List.of(
-                    "rcon.stop",
-                    "configuration.save",
-                    "game.stop",
-                    "threading.shutdown",
-                    "database.dispose")));
+            assertTrue(indexOf(calls, "threading.reject-new-work") < indexOf(calls, "plugins.before-shutdown"));
+            assertTrue(indexOf(calls, "plugins.before-shutdown") < indexOf(calls, "hotel.dispose"));
+            assertTrue(indexOf(calls, "hotel.dispose") < indexOf(calls, "plugins.after-hotel"));
+            assertTrue(indexOf(calls, "plugins.after-hotel") < indexOf(calls, "plugins.dispose"));
+            assertTrue(indexOf(calls, "rcon.stop") < indexOf(calls, "database.dispose"));
+            assertTrue(calls.containsAll(
+                    List.of("rcon.stop", "configuration.save", "game.stop", "threading.shutdown", "database.dispose")));
         } finally {
             restore(originalFields);
             restoreFlags(originalFlags);
@@ -167,35 +173,27 @@ class EmulatorLifecycleCompatibilityTest {
         return index;
     }
 
-    private static void install(
-            Map<Field, Object> originals,
-            String name,
-            Object value) throws Exception {
+    private static void install(Map<Field, Object> originals, String name, Object value) throws Exception {
         Field field = Emulator.class.getDeclaredField(name);
         field.setAccessible(true);
         originals.put(field, field.get(null));
         field.set(null, value);
     }
 
-    private static void installFlag(
-            Map<Field, Boolean> originals,
-            String name,
-            boolean value) throws Exception {
+    private static void installFlag(Map<Field, Boolean> originals, String name, boolean value) throws Exception {
         Field field = Emulator.class.getDeclaredField(name);
         field.setAccessible(true);
         originals.put(field, field.getBoolean(null));
         field.setBoolean(null, value);
     }
 
-    private static void restore(Map<Field, Object> originals)
-            throws IllegalAccessException {
+    private static void restore(Map<Field, Object> originals) throws IllegalAccessException {
         for (Map.Entry<Field, Object> entry : originals.entrySet()) {
             entry.getKey().set(null, entry.getValue());
         }
     }
 
-    private static void restoreFlags(Map<Field, Boolean> originals)
-            throws IllegalAccessException {
+    private static void restoreFlags(Map<Field, Boolean> originals) throws IllegalAccessException {
         for (Map.Entry<Field, Boolean> entry : originals.entrySet()) {
             entry.getKey().setBoolean(null, entry.getValue());
         }

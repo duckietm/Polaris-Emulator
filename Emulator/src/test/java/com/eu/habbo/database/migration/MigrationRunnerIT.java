@@ -1,5 +1,10 @@
 package com.eu.habbo.database.migration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.database.TestDatabase;
 import com.eu.habbo.database.compat.LegacyBridgeDataSource;
@@ -7,9 +12,6 @@ import com.eu.habbo.database.compat.LegacySqlBridge;
 import com.eu.habbo.database.compat.LegacySqlTranslator;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.flywaydb.core.Flyway;
-import org.junit.jupiter.api.Test;
-
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -22,11 +24,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import org.flywaydb.core.Flyway;
+import org.junit.jupiter.api.Test;
 
 /** Verifies the packaged migration chain against a real MariaDB. */
 class MigrationRunnerIT {
@@ -70,25 +69,28 @@ class MigrationRunnerIT {
             assertTrue(tableExists(ds, "logs_economy"), "dev economy audit schema must exist");
 
             // Polaris-added column on a shared table.
-            assertTrue(columnExists(ds, "users", "auth_ticket_expires_at"),
+            assertTrue(
+                    columnExists(ds, "users", "auth_ticket_expires_at"),
                     "Polaris column users.auth_ticket_expires_at must exist");
-            assertTrue(columnExists(ds, "users", "background_border_id"),
-                    "current profile background schema must exist");
-            assertTrue(columnExists(ds, "users", "access_token_version"),
-                    "credential revocation state must exist");
+            assertTrue(
+                    columnExists(ds, "users", "background_border_id"), "current profile background schema must exist");
+            assertTrue(columnExists(ds, "users", "access_token_version"), "credential revocation state must exist");
 
             // The engine conversion took effect.
-            assertEquals("InnoDB", tableEngine(ds, "marketplace_items"),
-                    "marketplace_items must be InnoDB after migration");
-            assertEquals("InnoDB", tableEngine(ds, "users_currency"),
+            assertEquals(
+                    "InnoDB", tableEngine(ds, "marketplace_items"), "marketplace_items must be InnoDB after migration");
+            assertEquals(
+                    "InnoDB",
+                    tableEngine(ds, "users_currency"),
                     "wallet currency rows must support ledger transaction rollback");
 
             // The dynamic Arc permissions conversion must produce usable Polaris
             // rows, not merely empty marker tables.
             assertEquals(7, intValue(ds, "SELECT COUNT(*) FROM permission_ranks"));
             assertTrue(intValue(ds, "SELECT COUNT(*) FROM permission_definitions") >= 200);
-            assertEquals(1, intValue(ds,
-                    "SELECT rank_7 FROM permission_definitions WHERE permission_key = 'acc_supporttool'"));
+            assertEquals(
+                    1,
+                    intValue(ds, "SELECT rank_7 FROM permission_definitions WHERE permission_key = 'acc_supporttool'"));
             assertEquals(5, intValue(ds, "SELECT COUNT(*) FROM pet_breeding"));
             assertEquals(100, intValue(ds, """
                     SELECT COUNT(*) FROM pet_breeding_races
@@ -103,7 +105,8 @@ class MigrationRunnerIT {
             assertEquals(SchemaPreflight.State.MANAGED, SchemaPreflight.detect(ds));
             String managedStatus = MigrationRunner.status(ds);
             assertTrue(managedStatus.contains("Pending migrations: 0"));
-            assertTrue(managedStatus.contains("Runtime schema: compatible"),
+            assertTrue(
+                    managedStatus.contains("Runtime schema: compatible"),
                     "a fully migrated status must confirm the runtime contract");
             MigrationRunner.migrate(ds);
         }
@@ -118,18 +121,18 @@ class MigrationRunnerIT {
 
             assertEquals(SchemaPreflight.State.RECOGNISED_EXISTING, SchemaPreflight.detect(ds));
             String status = MigrationRunner.status(ds);
-            assertTrue(status.contains(
-                    "Adoption: record baseline V" + MigrationRunner.BASELINE_VERSION));
+            assertTrue(status.contains("Adoption: record baseline V" + MigrationRunner.BASELINE_VERSION));
             // Adoption applies every packaged migration except the skipped baseline.
             assertTrue(status.contains("Pending migrations: " + (packagedMigrationCount() - 1)));
-            assertTrue(!tableExists(ds, "flyway_schema_history"),
-                    "read-only status must not adopt or mutate the hotel");
+            assertTrue(
+                    !tableExists(ds, "flyway_schema_history"), "read-only status must not adopt or mutate the hotel");
             MigrationRunner.migrate(ds);
 
             assertEquals(SchemaPreflight.State.MANAGED, SchemaPreflight.detect(ds));
             assertTrue(tableExists(ds, "flyway_schema_history"), "adoption must create the Flyway history");
             assertTrue(tableExists(ds, "old_guilds_forums"), "unused Arc tables must be tolerated and preserved");
-            assertTrue(tableExists(ds, "old_guilds_forums_comments"), "unused Arc tables must be tolerated and preserved");
+            assertTrue(
+                    tableExists(ds, "old_guilds_forums_comments"), "unused Arc tables must be tolerated and preserved");
 
             // Conversion guarantees the schema Polaris requires without rewriting
             // unrelated legacy defaults, collations or storage engines.
@@ -146,17 +149,13 @@ class MigrationRunnerIT {
             assertTrue(intValue(ds, "SELECT COUNT(*) FROM permission_definitions") >= 200);
 
             // Representative operator-owned hotel data survives the conversion.
-            assertEquals("Keep this hotel data",
-                    stringValue(ds, "SELECT motto FROM users WHERE id = 4242"));
-            assertEquals(98765,
-                    intValue(ds, "SELECT credits FROM users WHERE id = 4242"));
-            assertEquals("Existing Arcturus Room",
-                    stringValue(ds, "SELECT name FROM rooms WHERE id = 4242"));
-            assertEquals("existing-item-data",
-                    stringValue(ds, "SELECT extra_data FROM items WHERE id = 4242"));
-            assertEquals(777,
-                    intValue(ds, "SELECT amount FROM users_currency WHERE user_id = 4242 AND type = 5"));
-            assertEquals("keep-me",
+            assertEquals("Keep this hotel data", stringValue(ds, "SELECT motto FROM users WHERE id = 4242"));
+            assertEquals(98765, intValue(ds, "SELECT credits FROM users WHERE id = 4242"));
+            assertEquals("Existing Arcturus Room", stringValue(ds, "SELECT name FROM rooms WHERE id = 4242"));
+            assertEquals("existing-item-data", stringValue(ds, "SELECT extra_data FROM items WHERE id = 4242"));
+            assertEquals(777, intValue(ds, "SELECT amount FROM users_currency WHERE user_id = 4242 AND type = 5"));
+            assertEquals(
+                    "keep-me",
                     stringValue(ds, "SELECT value FROM emulator_settings WHERE `key` = 'fixture.operator.setting'"));
         }
     }
@@ -174,7 +173,8 @@ class MigrationRunnerIT {
                     .migrate();
 
             int existingFrankResponses;
-            try (Connection c = ds.getConnection(); Statement s = c.createStatement()) {
+            try (Connection c = ds.getConnection();
+                    Statement s = c.createStatement()) {
                 s.execute("UPDATE permission_ranks SET rank_name = 'Custom Member' WHERE id = 1");
                 s.execute("""
                         INSERT INTO permission_definitions
@@ -204,8 +204,8 @@ class MigrationRunnerIT {
                         INSERT INTO pet_breeding_races (pet_type, rarity_level, breed)
                         VALUES (99, 9, 999)
                         """);
-                existingFrankResponses = intValue(ds,
-                        "SELECT COUNT(*) FROM bot_chat_responses WHERE bot_type = 'frank'");
+                existingFrankResponses =
+                        intValue(ds, "SELECT COUNT(*) FROM bot_chat_responses WHERE bot_type = 'frank'");
                 s.execute("DROP TABLE flyway_schema_history");
                 s.execute("""
                         CREATE TABLE schema_migrations (
@@ -223,10 +223,8 @@ class MigrationRunnerIT {
             assertEquals(SchemaPreflight.State.RECOGNISED_EXISTING, SchemaPreflight.detect(ds));
             MigrationRunner.migrate(ds);
 
-            assertEquals("Custom Member",
-                    stringValue(ds, "SELECT rank_name FROM permission_ranks WHERE id = 1"));
-            assertEquals("keep this canonical definition",
-                    stringValue(ds, """
+            assertEquals("Custom Member", stringValue(ds, "SELECT rank_name FROM permission_ranks WHERE id = 1"));
+            assertEquals("keep this canonical definition", stringValue(ds, """
                             SELECT comment FROM permission_definitions
                             WHERE permission_key = 'custom_operator_permission'
                             """));
@@ -242,15 +240,16 @@ class MigrationRunnerIT {
                     SELECT value FROM emulator_settings
                     WHERE `key` = 'ws.whitelist'
                     """));
-            assertEquals(existingFrankResponses, intValue(ds,
-                    "SELECT COUNT(*) FROM bot_chat_responses WHERE bot_type = 'frank'"));
-            assertEquals(123, intValue(ds,
-                    "SELECT offspring_type FROM pet_actions WHERE pet_type = 99"));
+            assertEquals(
+                    existingFrankResponses,
+                    intValue(ds, "SELECT COUNT(*) FROM bot_chat_responses WHERE bot_type = 'frank'"));
+            assertEquals(123, intValue(ds, "SELECT offspring_type FROM pet_actions WHERE pet_type = 99"));
             assertEquals(1, intValue(ds, """
                     SELECT COUNT(*) FROM pet_breeding_races
                     WHERE pet_type = 99 AND rarity_level = 9 AND breed = 999
                     """));
-            assertTrue(tableExists(ds, "schema_migrations"),
+            assertTrue(
+                    tableExists(ds, "schema_migrations"),
                     "the prior custom runner history must remain harmless and untouched");
         }
     }
@@ -260,7 +259,8 @@ class MigrationRunnerIT {
         requireDocker();
         try (HikariDataSource ds = TestDatabase.freshDatabase("mig_password_resets")) {
             installArcturusFixture(ds);
-            try (Connection c = ds.getConnection(); Statement s = c.createStatement()) {
+            try (Connection c = ds.getConnection();
+                    Statement s = c.createStatement()) {
                 s.execute("""
                         CREATE TABLE password_resets (
                             email VARCHAR(255) NOT NULL,
@@ -280,8 +280,7 @@ class MigrationRunnerIT {
             assertTrue(columnExists(ds, "password_resets", "user_id"));
             assertTrue(columnExists(ds, "password_resets", "created_ip"));
             assertEquals(1, intValue(ds, "SELECT COUNT(*) FROM password_resets"));
-            assertEquals("keep-this-token",
-                    stringValue(ds, "SELECT token FROM password_resets"));
+            assertEquals("keep-this-token", stringValue(ds, "SELECT token FROM password_resets"));
             assertEquals(1, singleColumnUniqueKeyCount(ds, "password_resets", "user_id"));
             assertEquals(1, singleColumnUniqueKeyCount(ds, "password_resets", "token"));
 
@@ -296,22 +295,23 @@ class MigrationRunnerIT {
         requireDocker();
         try (HikariDataSource ds = TestDatabase.freshDatabase("mig_runtime_contract")) {
             MigrationRunner.migrate(ds);
-            try (Connection c = ds.getConnection(); Statement s = c.createStatement()) {
+            try (Connection c = ds.getConnection();
+                    Statement s = c.createStatement()) {
                 s.execute("CREATE TABLE plugin_extension (id INT PRIMARY KEY, custom_value TEXT)");
             }
 
             MigrationRunner.migrate(ds);
             assertTrue(tableExists(ds, "plugin_extension"));
 
-            try (Connection c = ds.getConnection(); Statement s = c.createStatement()) {
+            try (Connection c = ds.getConnection();
+                    Statement s = c.createStatement()) {
                 s.execute("DROP TABLE messenger_offline");
             }
-            MigrationException error = assertThrows(
-                    MigrationException.class,
-                    () -> MigrationRunner.migrate(ds));
+            MigrationException error = assertThrows(MigrationException.class, () -> MigrationRunner.migrate(ds));
             assertTrue(error.getMessage().contains("missing table messenger_offline"));
 
-            try (Connection c = ds.getConnection(); Statement s = c.createStatement()) {
+            try (Connection c = ds.getConnection();
+                    Statement s = c.createStatement()) {
                 s.execute("""
                         CREATE TABLE messenger_offline (
                             id INT, message TEXT, sended_on INT, user_from_id INT, user_id INT
@@ -319,32 +319,27 @@ class MigrationRunnerIT {
                         """);
                 s.execute("ALTER TABLE messenger_offline DROP COLUMN message");
             }
-            error = assertThrows(
-                    MigrationException.class,
-                    () -> MigrationRunner.migrate(ds));
+            error = assertThrows(MigrationException.class, () -> MigrationRunner.migrate(ds));
             assertTrue(error.getMessage().contains("missing column messenger_offline.message"));
 
-            try (Connection c = ds.getConnection(); Statement s = c.createStatement()) {
+            try (Connection c = ds.getConnection();
+                    Statement s = c.createStatement()) {
                 s.execute("ALTER TABLE messenger_offline ADD COLUMN message TEXT");
                 s.execute("ALTER TABLE password_resets DROP INDEX idx_token");
             }
-            error = assertThrows(
-                    MigrationException.class,
-                    () -> MigrationRunner.migrate(ds));
+            error = assertThrows(MigrationException.class, () -> MigrationRunner.migrate(ds));
             assertTrue(error.getMessage().contains("missing unique key password_resets(token)"));
 
-            try (Connection c = ds.getConnection(); Statement s = c.createStatement()) {
+            try (Connection c = ds.getConnection();
+                    Statement s = c.createStatement()) {
                 s.execute("ALTER TABLE password_resets ADD UNIQUE INDEX restored_token (token)");
                 s.execute("""
                         ALTER TABLE password_resets
                         MODIFY COLUMN created_ip VARCHAR(16) NOT NULL DEFAULT ''
                         """);
             }
-            error = assertThrows(
-                    MigrationException.class,
-                    () -> MigrationRunner.migrate(ds));
-            assertTrue(error.getMessage().contains(
-                    "password_resets.created_ip has length 16; expected at least 45"));
+            error = assertThrows(MigrationException.class, () -> MigrationRunner.migrate(ds));
+            assertTrue(error.getMessage().contains("password_resets.created_ip has length 16; expected at least 45"));
         }
     }
 
@@ -352,7 +347,8 @@ class MigrationRunnerIT {
     void unknownNonEmptyDatabaseIsRefusedWithoutMutation() throws Exception {
         requireDocker();
         try (HikariDataSource ds = TestDatabase.freshDatabase("mig_unknown")) {
-            try (Connection c = ds.getConnection(); Statement s = c.createStatement()) {
+            try (Connection c = ds.getConnection();
+                    Statement s = c.createStatement()) {
                 s.execute("CREATE TABLE `something_unrelated` (`id` INT PRIMARY KEY)");
             }
             assertEquals(SchemaPreflight.State.UNKNOWN, SchemaPreflight.detect(ds));
@@ -401,15 +397,15 @@ class MigrationRunnerIT {
                 Files.deleteIfExists(configFile);
             }
 
-            assertEquals(0, translatedStatements.get(),
-                    "Flyway SQL must never be offered to the legacy plugin bridge");
+            assertEquals(0, translatedStatements.get(), "Flyway SQL must never be offered to the legacy plugin bridge");
             assertEquals(SchemaPreflight.State.MANAGED, SchemaPreflight.detect(database));
         }
     }
 
     private static boolean tableExists(HikariDataSource ds, String table) throws Exception {
         try (Connection c = ds.getConnection();
-             var st = c.prepareStatement("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?")) {
+                var st = c.prepareStatement(
+                        "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?")) {
             st.setString(1, table);
             try (ResultSet rs = st.executeQuery()) {
                 return rs.next() && rs.getInt(1) > 0;
@@ -419,7 +415,8 @@ class MigrationRunnerIT {
 
     private static boolean columnExists(HikariDataSource ds, String table, String column) throws Exception {
         try (Connection c = ds.getConnection();
-             var st = c.prepareStatement("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND COLUMN_NAME=?")) {
+                var st = c.prepareStatement(
+                        "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND COLUMN_NAME=?")) {
             st.setString(1, table);
             st.setString(2, column);
             try (ResultSet rs = st.executeQuery()) {
@@ -430,7 +427,8 @@ class MigrationRunnerIT {
 
     private static String tableEngine(HikariDataSource ds, String table) throws Exception {
         try (Connection c = ds.getConnection();
-             var st = c.prepareStatement("SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?")) {
+                var st = c.prepareStatement(
+                        "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?")) {
             st.setString(1, table);
             try (ResultSet rs = st.executeQuery()) {
                 return rs.next() ? rs.getString(1) : null;
@@ -438,12 +436,9 @@ class MigrationRunnerIT {
         }
     }
 
-    private static int singleColumnUniqueKeyCount(
-            HikariDataSource ds,
-            String table,
-            String column) throws Exception {
+    private static int singleColumnUniqueKeyCount(HikariDataSource ds, String table, String column) throws Exception {
         try (Connection c = ds.getConnection();
-             var st = c.prepareStatement("""
+                var st = c.prepareStatement("""
                      SELECT COUNT(*)
                      FROM (
                          SELECT INDEX_NAME
@@ -467,12 +462,10 @@ class MigrationRunnerIT {
     /** Counts the packaged SQL and Java migrations from the source tree. */
     private static long packagedMigrationCount() throws Exception {
         long count = 0;
-        for (Path directory : List.of(
-                Path.of("src/main/resources/db/migration"),
-                Path.of("src/main/java/db/migration"))) {
+        for (Path directory :
+                List.of(Path.of("src/main/resources/db/migration"), Path.of("src/main/java/db/migration"))) {
             try (var files = Files.list(directory)) {
-                count += files
-                        .filter(p -> p.getFileName().toString().matches("V\\d{14}__\\w+\\.(sql|java)"))
+                count += files.filter(p -> p.getFileName().toString().matches("V\\d{14}__\\w+\\.(sql|java)"))
                         .count();
             }
         }
@@ -500,7 +493,8 @@ class MigrationRunnerIT {
             }
         }
 
-        try (Connection c = ds.getConnection(); Statement s = c.createStatement()) {
+        try (Connection c = ds.getConnection();
+                Statement s = c.createStatement()) {
             for (String statement : splitSqlStatements(sql.toString())) {
                 if (!statement.isBlank()) {
                     s.execute(statement);
@@ -544,16 +538,16 @@ class MigrationRunnerIT {
 
     private static String stringValue(HikariDataSource ds, String query) throws Exception {
         try (Connection c = ds.getConnection();
-             Statement s = c.createStatement();
-             ResultSet rs = s.executeQuery(query)) {
+                Statement s = c.createStatement();
+                ResultSet rs = s.executeQuery(query)) {
             return rs.next() ? rs.getString(1) : null;
         }
     }
 
     private static int intValue(HikariDataSource ds, String query) throws Exception {
         try (Connection c = ds.getConnection();
-             Statement s = c.createStatement();
-             ResultSet rs = s.executeQuery(query)) {
+                Statement s = c.createStatement();
+                ResultSet rs = s.executeQuery(query)) {
             return rs.next() ? rs.getInt(1) : Integer.MIN_VALUE;
         }
     }

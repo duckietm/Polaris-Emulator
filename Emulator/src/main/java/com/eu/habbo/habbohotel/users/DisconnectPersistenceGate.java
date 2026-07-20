@@ -1,20 +1,17 @@
 package com.eu.habbo.habbohotel.users;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class DisconnectPersistenceGate {
-    private static final Logger LOGGER =
-            LoggerFactory.getLogger(DisconnectPersistenceGate.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DisconnectPersistenceGate.class);
 
     private final Executor executor;
-    private final ConcurrentHashMap<Integer, CompletableFuture<Void>> pending =
-            new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, CompletableFuture<Void>> pending = new ConcurrentHashMap<>();
 
     DisconnectPersistenceGate(Executor executor) {
         this.executor = Objects.requireNonNull(executor, "executor");
@@ -26,8 +23,7 @@ final class DisconnectPersistenceGate {
         }
         CompletableFuture<Void> completion = new CompletableFuture<>();
         if (this.pending.putIfAbsent(userId, completion) != null) {
-            throw new IllegalStateException(
-                    "disconnect persistence already pending for user " + userId);
+            throw new IllegalStateException("disconnect persistence already pending for user " + userId);
         }
         return new Registration(userId, completion);
     }
@@ -39,10 +35,7 @@ final class DisconnectPersistenceGate {
             try {
                 persistence.run();
             } catch (Exception exception) {
-                LOGGER.error(
-                        "Disconnect persistence failed for user {}",
-                        registration.userId(),
-                        exception);
+                LOGGER.error("Disconnect persistence failed for user {}", registration.userId(), exception);
             } finally {
                 this.complete(registration);
             }
@@ -80,14 +73,9 @@ final class DisconnectPersistenceGate {
     }
 
     private void complete(Registration registration) {
-        this.pending.remove(
-                registration.userId(),
-                registration.completion());
+        this.pending.remove(registration.userId(), registration.completion());
         registration.completion().complete(null);
     }
 
-    record Registration(
-            int userId,
-            CompletableFuture<Void> completion) {
-    }
+    record Registration(int userId, CompletableFuture<Void> completion) {}
 }

@@ -1,11 +1,14 @@
 package com.eu.habbo.threading;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import org.junit.jupiter.api.Test;
-import org.slf4j.LoggerFactory;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
@@ -14,12 +17,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
 class ThreadPoolingGracefulShutdownTest {
 
@@ -43,9 +42,8 @@ class ThreadPoolingGracefulShutdownTest {
             });
             assertTrue(started.await(1, TimeUnit.SECONDS));
 
-            Future<ThreadPooling.ShutdownResult> shutdown = shutdownCaller.submit(
-                    () -> pooling.shutDown(2, TimeUnit.SECONDS)
-            );
+            Future<ThreadPooling.ShutdownResult> shutdown =
+                    shutdownCaller.submit(() -> pooling.shutDown(2, TimeUnit.SECONDS));
 
             assertThrows(TimeoutException.class, () -> shutdown.get(100, TimeUnit.MILLISECONDS));
             release.countDown();
@@ -78,7 +76,7 @@ class ThreadPoolingGracefulShutdownTest {
                     Thread.currentThread().interrupt();
                 }
             });
-            pooling.run(() -> { }, TimeUnit.MINUTES.toMillis(1));
+            pooling.run(() -> {}, TimeUnit.MINUTES.toMillis(1));
             assertTrue(started.await(1, TimeUnit.SECONDS));
 
             ThreadPooling.ShutdownResult result = pooling.shutDown(50, TimeUnit.MILLISECONDS);
@@ -95,9 +93,7 @@ class ThreadPoolingGracefulShutdownTest {
 
     @Test
     void gameEnvironmentDisposesEveryCoreScheduler() throws Exception {
-        String source = Files.readString(Path.of(
-                "src/main/java/com/eu/habbo/habbohotel/GameEnvironment.java"
-        ));
+        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/GameEnvironment.java"));
 
         assertTrue(source.contains("this.pointsScheduler.setDisposed(true);"));
         assertTrue(source.contains("this.pixelScheduler.setDisposed(true);"));
@@ -117,10 +113,9 @@ class ThreadPoolingGracefulShutdownTest {
         try {
             pooling.setCanAdd(false);
 
-            assertNull(pooling.run(() -> { }, 500));
+            assertNull(pooling.run(() -> {}, 500));
             assertTrue(events.list.stream()
-                    .anyMatch(event -> event.getFormattedMessage()
-                            .contains("Rejected delayed task during shutdown")));
+                    .anyMatch(event -> event.getFormattedMessage().contains("Rejected delayed task during shutdown")));
         } finally {
             logger.detachAppender(events);
             pooling.getService().shutdownNow();

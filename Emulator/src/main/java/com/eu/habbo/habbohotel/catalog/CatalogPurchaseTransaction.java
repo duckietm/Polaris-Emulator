@@ -6,28 +6,18 @@ import com.eu.habbo.habbohotel.economy.EconomyMutationResult;
 import com.eu.habbo.habbohotel.economy.EconomyOperation;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.LedgerWalletMutation;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 
 final class CatalogPurchaseTransaction {
-    private CatalogPurchaseTransaction() {
-    }
+    private CatalogPurchaseTransaction() {}
 
-    static <T> T execute(
-            Habbo habbo,
-            String operationId,
-            PurchaseWork<T> work) throws SQLException {
+    static <T> T execute(Habbo habbo, String operationId, PurchaseWork<T> work) throws SQLException {
         return LedgerWalletMutation.coordinated(habbo, () -> {
-            Commit<PreparedPurchase<T>> commit = commit(
-                    habbo.getHabboInfo().getId(),
-                    operationId,
-                    work);
+            Commit<PreparedPurchase<T>> commit = commit(habbo.getHabboInfo().getId(), operationId, work);
             if (commit.creditMutation() != null) {
                 LedgerWalletMutation.applyCommitted(
-                        habbo,
-                        EconomyLedger.CREDITS,
-                        commit.creditMutation().balanceAfter());
+                        habbo, EconomyLedger.CREDITS, commit.creditMutation().balanceAfter());
             }
             if (commit.pointsMutation() != null) {
                 LedgerWalletMutation.applyCommitted(
@@ -39,10 +29,8 @@ final class CatalogPurchaseTransaction {
         });
     }
 
-    private static <T> Commit<PreparedPurchase<T>> commit(
-            int userId,
-            String operationId,
-            PurchaseWork<T> work) throws SQLException {
+    private static <T> Commit<PreparedPurchase<T>> commit(int userId, String operationId, PurchaseWork<T> work)
+            throws SQLException {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
             connection.setAutoCommit(false);
             try {
@@ -66,28 +54,37 @@ final class CatalogPurchaseTransaction {
     }
 
     private static EconomyMutationResult chargeCredits(
-            Connection connection,
-            String operationId,
-            int userId,
-            int credits)
-            throws SQLException {
+            Connection connection, String operationId, int userId, int credits) throws SQLException {
         if (credits == 0) return null;
-        return EconomyLedger.apply(connection, new EconomyOperation(
-                operationId + ":credits", userId, userId, "catalog_purchase", "catalog.purchase",
-                EconomyLedger.CREDITS, -credits, null, operationId));
+        return EconomyLedger.apply(
+                connection,
+                new EconomyOperation(
+                        operationId + ":credits",
+                        userId,
+                        userId,
+                        "catalog_purchase",
+                        "catalog.purchase",
+                        EconomyLedger.CREDITS,
+                        -credits,
+                        null,
+                        operationId));
     }
 
     private static EconomyMutationResult chargePoints(
-            Connection connection,
-            String operationId,
-            int userId,
-            int pointsType,
-            int points)
-            throws SQLException {
+            Connection connection, String operationId, int userId, int pointsType, int points) throws SQLException {
         if (points == 0) return null;
-        return EconomyLedger.apply(connection, new EconomyOperation(
-                operationId + ":points", userId, userId, "catalog_purchase", "catalog.purchase",
-                pointsType, -points, null, operationId));
+        return EconomyLedger.apply(
+                connection,
+                new EconomyOperation(
+                        operationId + ":points",
+                        userId,
+                        userId,
+                        "catalog_purchase",
+                        "catalog.purchase",
+                        pointsType,
+                        -points,
+                        null,
+                        operationId));
     }
 
     @FunctionalInterface
@@ -101,9 +98,5 @@ final class CatalogPurchaseTransaction {
         }
     }
 
-    private record Commit<T>(
-            T value,
-            EconomyMutationResult creditMutation,
-            EconomyMutationResult pointsMutation) {
-    }
+    private record Commit<T>(T value, EconomyMutationResult creditMutation, EconomyMutationResult pointsMutation) {}
 }

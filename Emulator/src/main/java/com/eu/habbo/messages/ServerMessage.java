@@ -5,7 +5,6 @@ import com.eu.habbo.util.PacketUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.Unpooled;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
@@ -20,9 +19,7 @@ public class ServerMessage {
     private volatile boolean broadcastPrepared;
     private int framedWriterIndex = -1;
 
-    public ServerMessage() {
-
-    }
+    public ServerMessage() {}
 
     public ServerMessage(int header) {
         this.init(header);
@@ -215,5 +212,4 @@ public class ServerMessage {
     public void setComposer(MessageComposer composer) {
         this.composer = composer;
     }
-
 }

@@ -2,7 +2,6 @@ package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.habbohotel.items.interactions.InteractionGuildGate;
 import com.eu.habbo.habbohotel.users.HabboItem;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -11,12 +10,10 @@ import java.util.Objects;
 
 final class RoomItemPersistence {
 
-    private static final String DELETE_ITEM_SQL =
-            "DELETE FROM items WHERE id = ?";
-    private static final String UPDATE_ITEM_SQL =
-            "UPDATE items SET user_id = ?, room_id = ?, wall_pos = ?, "
-                    + "x = ?, y = ?, z = ?, rot = ?, extra_data = ?, "
-                    + "limited_data = ? WHERE id = ?";
+    private static final String DELETE_ITEM_SQL = "DELETE FROM items WHERE id = ?";
+    private static final String UPDATE_ITEM_SQL = "UPDATE items SET user_id = ?, room_id = ?, wall_pos = ?, "
+            + "x = ?, y = ?, z = ?, rot = ?, extra_data = ?, "
+            + "limited_data = ? WHERE id = ?";
 
     private final RoomDependencies.ConnectionProvider database;
 
@@ -29,9 +26,8 @@ final class RoomItemPersistence {
             return;
         }
 
-        List<HabboItem> deletedItems = items.stream()
-                .filter(HabboItem::needsDelete)
-                .toList();
+        List<HabboItem> deletedItems =
+                items.stream().filter(HabboItem::needsDelete).toList();
         List<HabboItem> updatedItems = items.stream()
                 .filter(item -> !item.needsDelete() && item.needsUpdate())
                 .toList();
@@ -42,15 +38,12 @@ final class RoomItemPersistence {
         }
     }
 
-    private void deleteItems(
-            Connection connection,
-            List<HabboItem> items) throws SQLException {
+    private void deleteItems(Connection connection, List<HabboItem> items) throws SQLException {
         if (items.isEmpty()) {
             return;
         }
 
-        try (PreparedStatement statement =
-                     connection.prepareStatement(DELETE_ITEM_SQL)) {
+        try (PreparedStatement statement = connection.prepareStatement(DELETE_ITEM_SQL)) {
             for (HabboItem item : items) {
                 statement.setInt(1, item.getId());
                 statement.addBatch();
@@ -65,15 +58,12 @@ final class RoomItemPersistence {
         }
     }
 
-    private void updateItems(
-            Connection connection,
-            List<HabboItem> items) throws SQLException {
+    private void updateItems(Connection connection, List<HabboItem> items) throws SQLException {
         if (items.isEmpty()) {
             return;
         }
 
-        try (PreparedStatement statement =
-                     connection.prepareStatement(UPDATE_ITEM_SQL)) {
+        try (PreparedStatement statement = connection.prepareStatement(UPDATE_ITEM_SQL)) {
             for (HabboItem item : items) {
                 statement.setInt(1, item.getDatabaseUserId());
                 statement.setInt(2, item.getRoomId());
@@ -82,16 +72,8 @@ final class RoomItemPersistence {
                 statement.setInt(5, item.getY());
                 statement.setDouble(6, persistedHeight(item.getZ()));
                 statement.setInt(7, item.getRotation());
-                statement.setString(
-                        8,
-                        item instanceof InteractionGuildGate
-                                ? ""
-                                : item.getDatabaseExtraData());
-                statement.setString(
-                        9,
-                        item.getLimitedStack()
-                                + ":"
-                                + item.getLimitedSells());
+                statement.setString(8, item instanceof InteractionGuildGate ? "" : item.getDatabaseExtraData());
+                statement.setString(9, item.getLimitedStack() + ":" + item.getLimitedSells());
                 statement.setInt(10, item.getId());
                 statement.addBatch();
             }

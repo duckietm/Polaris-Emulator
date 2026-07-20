@@ -5,8 +5,8 @@ import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import com.eu.habbo.messages.incoming.catalog.CheckPetNameEvent;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.messages.incoming.catalog.CheckPetNameEvent;
 import com.eu.habbo.messages.incoming.rooms.items.RoomItemInputGuard;
 import com.eu.habbo.messages.outgoing.catalog.AlertPurchaseFailedComposer;
 import com.eu.habbo.messages.outgoing.rooms.UpdateStackHeightComposer;
@@ -35,7 +35,8 @@ public class PetPackageNameEvent extends MessageHandler {
                     if (nameError == PetPackageNameValidationComposer.CLOSE_WIDGET) {
                         RoomTile tile = room.getLayout().getTile(item.getX(), item.getY());
                         if (tile == null) {
-                            this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                            this.client.sendResponse(
+                                    new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
                             return;
                         }
 
@@ -46,11 +47,15 @@ public class PetPackageNameEvent extends MessageHandler {
                         }
 
                         if (item.getBaseItem().getName().equalsIgnoreCase("gnome_box")) {
-                            pet = Emulator.getGameEnvironment().getPetManager().createGnome(name, room, this.client.getHabbo());
+                            pet = Emulator.getGameEnvironment()
+                                    .getPetManager()
+                                    .createGnome(name, room, this.client.getHabbo());
                         }
 
                         if (item.getBaseItem().getName().equalsIgnoreCase("leprechaun_box")) {
-                            pet = Emulator.getGameEnvironment().getPetManager().createLeprechaun(name, room, this.client.getHabbo());
+                            pet = Emulator.getGameEnvironment()
+                                    .getPetManager()
+                                    .createLeprechaun(name, room, this.client.getHabbo());
                         }
 
                         if (item.getBaseItem().getName().equalsIgnoreCase("velociraptor_egg")) {
@@ -75,21 +80,25 @@ public class PetPackageNameEvent extends MessageHandler {
                             room.removeHabboItem(item);
                             room.sendComposer(new RemoveFloorItemComposer(item).compose());
                             room.updateTile(tile);
-                            room.sendComposer(new UpdateStackHeightComposer(tile.x, tile.y, tile.z, tile.relativeHeight()).compose());
+                            room.sendComposer(
+                                    new UpdateStackHeightComposer(tile.x, tile.y, tile.z, tile.relativeHeight())
+                                            .compose());
                             item.setUserId(0);
                         } else {
-                            this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
+                            this.client.sendResponse(
+                                    new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
                         }
                     } else {
-                        this.client.sendResponse(new PetPackageNameValidationComposer(itemId, nameError, name == null ? "" : name));
+                        this.client.sendResponse(
+                                new PetPackageNameValidationComposer(itemId, nameError, name == null ? "" : name));
                         return;
                     }
                 }
             }
         }
 
-
-        this.client.sendResponse(new PetPackageNameValidationComposer(itemId, PetPackageNameValidationComposer.CLOSE_WIDGET, ""));
+        this.client.sendResponse(
+                new PetPackageNameValidationComposer(itemId, PetPackageNameValidationComposer.CLOSE_WIDGET, ""));
     }
 
     static int validatePetPackageName(String name) {

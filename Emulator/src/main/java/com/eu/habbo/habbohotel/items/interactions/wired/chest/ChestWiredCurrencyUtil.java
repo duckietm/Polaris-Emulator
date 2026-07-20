@@ -14,8 +14,7 @@ import org.slf4j.LoggerFactory;
 public final class ChestWiredCurrencyUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(ChestWiredCurrencyUtil.class);
 
-    private ChestWiredCurrencyUtil() {
-    }
+    private ChestWiredCurrencyUtil() {}
 
     public static int getBalance(Habbo habbo, int currencyType) {
         if (habbo == null) {
@@ -38,23 +37,26 @@ public final class ChestWiredCurrencyUtil {
         if (!has(habbo, currencyType, amount)) {
             return false;
         }
-        int ledgerCurrencyType =
-                currencyType < 0 ? EconomyLedger.CREDITS : currencyType;
+        int ledgerCurrencyType = currencyType < 0 ? EconomyLedger.CREDITS : currencyType;
         try {
-            LedgerWalletMutation.execute(habbo, new EconomyOperation(
-                    EconomyOperationId.create(
-                            "wired-contract:" + habbo.getHabboInfo().getId()),
-                    habbo.getHabboInfo().getId(),
-                    habbo.getHabboInfo().getId(),
-                    "wired_contract_debit",
-                    "wired.contract.currency",
-                    ledgerCurrencyType,
-                    -amount,
-                    null,
-                    ""));
+            LedgerWalletMutation.execute(
+                    habbo,
+                    new EconomyOperation(
+                            EconomyOperationId.create(
+                                    "wired-contract:" + habbo.getHabboInfo().getId()),
+                            habbo.getHabboInfo().getId(),
+                            habbo.getHabboInfo().getId(),
+                            "wired_contract_debit",
+                            "wired.contract.currency",
+                            ledgerCurrencyType,
+                            -amount,
+                            null,
+                            ""));
         } catch (Exception exception) {
-            LOGGER.error("Unable to debit wired contract currency for user {}",
-                    habbo.getHabboInfo().getId(), exception);
+            LOGGER.error(
+                    "Unable to debit wired contract currency for user {}",
+                    habbo.getHabboInfo().getId(),
+                    exception);
             return false;
         }
         return true;

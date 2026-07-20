@@ -1,7 +1,27 @@
 package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.habbohotel.items.ICycleable;
-import com.eu.habbo.habbohotel.items.interactions.*;
+import com.eu.habbo.habbohotel.items.interactions.InteractionBlackHole;
+import com.eu.habbo.habbohotel.items.interactions.InteractionBuildArea;
+import com.eu.habbo.habbohotel.items.interactions.InteractionFireworks;
+import com.eu.habbo.habbohotel.items.interactions.InteractionJukeBox;
+import com.eu.habbo.habbohotel.items.interactions.InteractionMoodLight;
+import com.eu.habbo.habbohotel.items.interactions.InteractionMusicDisc;
+import com.eu.habbo.habbohotel.items.interactions.InteractionMuteArea;
+import com.eu.habbo.habbohotel.items.interactions.InteractionPyramid;
+import com.eu.habbo.habbohotel.items.interactions.InteractionRoller;
+import com.eu.habbo.habbohotel.items.interactions.InteractionSnowboardSlope;
+import com.eu.habbo.habbohotel.items.interactions.InteractionStickyPole;
+import com.eu.habbo.habbohotel.items.interactions.InteractionTalkingFurniture;
+import com.eu.habbo.habbohotel.items.interactions.InteractionTent;
+import com.eu.habbo.habbohotel.items.interactions.InteractionVoteCounter;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWater;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWaterItem;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWiredHighscore;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.games.InteractionGameGate;
 import com.eu.habbo.habbohotel.items.interactions.games.InteractionGameScoreboard;
 import com.eu.habbo.habbohotel.items.interactions.games.InteractionGameTimer;
@@ -10,8 +30,20 @@ import com.eu.habbo.habbohotel.items.interactions.games.battlebanzai.Interaction
 import com.eu.habbo.habbohotel.items.interactions.games.freeze.InteractionFreezeExitTile;
 import com.eu.habbo.habbohotel.items.interactions.games.tag.InteractionTagField;
 import com.eu.habbo.habbohotel.items.interactions.games.tag.InteractionTagPole;
-import com.eu.habbo.habbohotel.items.interactions.pets.*;
-import com.eu.habbo.habbohotel.items.interactions.wired.extra.*;
+import com.eu.habbo.habbohotel.items.interactions.pets.InteractionNest;
+import com.eu.habbo.habbohotel.items.interactions.pets.InteractionPetBreedingNest;
+import com.eu.habbo.habbohotel.items.interactions.pets.InteractionPetDrink;
+import com.eu.habbo.habbohotel.items.interactions.pets.InteractionPetFood;
+import com.eu.habbo.habbohotel.items.interactions.pets.InteractionPetToy;
+import com.eu.habbo.habbohotel.items.interactions.pets.InteractionPetTree;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredBlob;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextVariable;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRoomVariable;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableEcho;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableReference;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableTextConnector;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
@@ -89,10 +121,9 @@ final class RoomItemRegistry {
             return;
         }
 
-        boolean cleanedSignalAntennaReferences = isAntennaItem(item)
-                && specialTypes.unlinkSignalAntennaReferences(item.getId());
-        this.room.getFurniVariableManager()
-                .removeAssignmentsForFurni(item.getId());
+        boolean cleanedSignalAntennaReferences =
+                isAntennaItem(item) && specialTypes.unlinkSignalAntennaReferences(item.getId());
+        this.room.getFurniVariableManager().removeAssignmentsForFurni(item.getId());
 
         boolean wiredItem = false;
         if (item instanceof WiredTickable tickable) {
@@ -113,8 +144,7 @@ final class RoomItemRegistry {
             specialTypes.removeCondition(condition);
             wiredItem = true;
         } else if (item instanceof InteractionWiredExtra extra) {
-            boolean broadcastDefinitions =
-                    this.removeExtraDefinitions(item);
+            boolean broadcastDefinitions = this.removeExtraDefinitions(item);
             specialTypes.removeExtra(extra);
             if (broadcastDefinitions) {
                 WiredContextVariableSupport.broadcastDefinitions(this.room);
@@ -157,8 +187,7 @@ final class RoomItemRegistry {
             this.room.getFurniVariableManager().removeDefinition(item.getId());
         } else if (item instanceof WiredExtraRoomVariable) {
             this.room.getRoomVariableManager().removeDefinition(item.getId());
-        } else if (item instanceof WiredExtraContextVariable
-                || item instanceof WiredExtraVariableTextConnector) {
+        } else if (item instanceof WiredExtraContextVariable || item instanceof WiredExtraVariableTextConnector) {
             broadcastDefinitions = true;
         } else if (item instanceof WiredExtraVariableReference reference) {
             if (reference.isRoomReference()) {
@@ -180,16 +209,12 @@ final class RoomItemRegistry {
     }
 
     private static boolean isAntennaItem(HabboItem item) {
-        if (item == null
-                || item.getBaseItem() == null
-                || item.getBaseItem().getInteractionType() == null) {
+        if (item == null || item.getBaseItem() == null || item.getBaseItem().getInteractionType() == null) {
             return false;
         }
 
-        String interactionType =
-                item.getBaseItem().getInteractionType().getName();
-        return interactionType != null
-                && interactionType.equalsIgnoreCase("antenna");
+        String interactionType = item.getBaseItem().getInteractionType().getName();
+        return interactionType != null && interactionType.equalsIgnoreCase("antenna");
     }
 
     private static boolean isUndefinedSpecialType(HabboItem item) {

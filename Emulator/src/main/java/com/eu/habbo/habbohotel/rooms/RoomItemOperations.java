@@ -24,13 +24,11 @@ final class RoomItemOperations {
         }
 
         if (item.getBaseItem().getType() == FurnitureType.FLOOR) {
-            this.room.sendComposer(
-                    new FloorItemUpdateComposer(item).compose());
-            this.room.updateTiles(this.room.getLayout()
+            this.room.sendComposer(new FloorItemUpdateComposer(item).compose());
+            this.room.updateTiles(this.room
+                    .getLayout()
                     .getTilesAt(
-                            this.room.currentLayout().getTile(
-                                    item.getX(),
-                                    item.getY()),
+                            this.room.currentLayout().getTile(item.getX(), item.getY()),
                             item.getBaseItem().getWidth(),
                             item.getBaseItem().getLength(),
                             item.getRotation()));
@@ -39,8 +37,7 @@ final class RoomItemOperations {
                 RoomAreaHideSupport.sendState(this.room, item);
             }
         } else if (item.getBaseItem().getType() == FurnitureType.WALL) {
-            this.room.sendComposer(
-                    new WallItemUpdateComposer(item).compose());
+            this.room.sendComposer(new WallItemUpdateComposer(item).compose());
         }
     }
 
@@ -57,8 +54,7 @@ final class RoomItemOperations {
         if (!item.isLimited()) {
             this.room.sendComposer(new ItemStateComposer(item).compose());
         } else {
-            this.room.sendComposer(
-                    new FloorItemUpdateComposer(item).compose());
+            this.room.sendComposer(new FloorItemUpdateComposer(item).compose());
         }
 
         if (item.getBaseItem().getType() == FurnitureType.FLOOR) {
@@ -66,11 +62,10 @@ final class RoomItemOperations {
                 return;
             }
 
-            this.room.updateTiles(this.room.getLayout()
+            this.room.updateTiles(this.room
+                    .getLayout()
                     .getTilesAt(
-                            this.room.currentLayout().getTile(
-                                    item.getX(),
-                                    item.getY()),
+                            this.room.currentLayout().getTile(item.getX(), item.getY()),
                             item.getBaseItem().getWidth(),
                             item.getBaseItem().getLength(),
                             item.getRotation()));
@@ -81,13 +76,11 @@ final class RoomItemOperations {
         }
 
         if (item.getBaseItem().getType() == FurnitureType.FLOOR
-                && (RoomConfInvisSupport.isControllerItem(item)
-                || RoomConfInvisSupport.isTarget(item))) {
+                && (RoomConfInvisSupport.isControllerItem(item) || RoomConfInvisSupport.isTarget(item))) {
             RoomConfInvisSupport.sendState(this.room);
         }
 
-        if (item.getBaseItem().getType() == FurnitureType.FLOOR
-                && RoomHanditemBlockSupport.isControllerItem(item)) {
+        if (item.getBaseItem().getType() == FurnitureType.FLOOR && RoomHanditemBlockSupport.isControllerItem(item)) {
             RoomHanditemBlockSupport.sendState(this.room);
         }
     }

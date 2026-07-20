@@ -8,12 +8,11 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.LedgerWalletMutation;
 import com.eu.habbo.messages.outgoing.users.UserCreditsComposer;
 import com.eu.habbo.messages.outgoing.users.UserPointsComposer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Catalog-only facade for one atomic credits-plus-points wallet mutation.
@@ -29,8 +28,7 @@ import java.util.List;
 public final class CatalogPaymentService {
     private static final Logger LOGGER = LoggerFactory.getLogger(CatalogPaymentService.class);
 
-    private CatalogPaymentService() {
-    }
+    private CatalogPaymentService() {}
 
     public static boolean tryTake(Habbo habbo, int credits, int pointsType, int points) {
         if (habbo == null || credits < 0 || points < 0) {
@@ -38,27 +36,19 @@ public final class CatalogPaymentService {
         }
 
         try {
-            LedgerWalletMutation.coordinated(
-                    habbo,
-                    () -> {
-                        WalletCommit result = mutate(
-                                habbo,
-                                -credits,
-                                pointsType,
-                                -points,
-                                "catalog_payment_reserve",
-                                "catalog.payment.reserve");
-                        applyCommittedBalances(
-                                habbo,
-                                pointsType,
-                                result);
-                        return result;
-                    });
+            LedgerWalletMutation.coordinated(habbo, () -> {
+                WalletCommit result = mutate(
+                        habbo, -credits, pointsType, -points, "catalog_payment_reserve", "catalog.payment.reserve");
+                applyCommittedBalances(habbo, pointsType, result);
+                return result;
+            });
         } catch (IllegalArgumentException exception) {
             return false;
         } catch (SQLException exception) {
-            LOGGER.error("Unable to reserve catalog payment for user {}",
-                    habbo.getHabboInfo().getId(), exception);
+            LOGGER.error(
+                    "Unable to reserve catalog payment for user {}",
+                    habbo.getHabboInfo().getId(),
+                    exception);
             return false;
         }
 
@@ -72,25 +62,17 @@ public final class CatalogPaymentService {
         }
 
         try {
-            LedgerWalletMutation.coordinated(
-                    habbo,
-                    () -> {
-                        WalletCommit result = mutate(
-                                habbo,
-                                credits,
-                                pointsType,
-                                points,
-                                "catalog_payment_refund",
-                                "catalog.payment.refund");
-                        applyCommittedBalances(
-                                habbo,
-                                pointsType,
-                                result);
-                        return result;
-                    });
+            LedgerWalletMutation.coordinated(habbo, () -> {
+                WalletCommit result =
+                        mutate(habbo, credits, pointsType, points, "catalog_payment_refund", "catalog.payment.refund");
+                applyCommittedBalances(habbo, pointsType, result);
+                return result;
+            });
         } catch (SQLException | IllegalArgumentException exception) {
-            LOGGER.error("Unable to refund catalog payment for user {}",
-                    habbo.getHabboInfo().getId(), exception);
+            LOGGER.error(
+                    "Unable to refund catalog payment for user {}",
+                    habbo.getHabboInfo().getId(),
+                    exception);
             return;
         }
 
@@ -98,15 +80,10 @@ public final class CatalogPaymentService {
     }
 
     private static WalletCommit mutate(
-            Habbo habbo,
-            int creditDelta,
-            int pointsType,
-            int pointsDelta,
-            String operation,
-            String reason) throws SQLException {
+            Habbo habbo, int creditDelta, int pointsType, int pointsDelta, String operation, String reason)
+            throws SQLException {
         int userId = habbo.getHabboInfo().getId();
-        String operationId = EconomyOperationId.create(
-                "catalog-payment:" + userId);
+        String operationId = EconomyOperationId.create("catalog-payment:" + userId);
         List<EconomyOperation> operations = new ArrayList<>(2);
         if (creditDelta != 0) {
             operations.add(new EconomyOperation(
@@ -136,54 +113,36 @@ public final class CatalogPaymentService {
             return new WalletCommit(null, null);
         }
 
-        List<EconomyMutationResult> results =
-                EconomyLedger.executeBatch(operations);
+        List<EconomyMutationResult> results = EconomyLedger.executeBatch(operations);
         int resultIndex = 0;
-        EconomyMutationResult creditMutation =
-                creditDelta == 0 ? null : results.get(resultIndex++);
-        EconomyMutationResult pointsMutation =
-                pointsDelta == 0 ? null : results.get(resultIndex);
+        EconomyMutationResult creditMutation = creditDelta == 0 ? null : results.get(resultIndex++);
+        EconomyMutationResult pointsMutation = pointsDelta == 0 ? null : results.get(resultIndex);
         return new WalletCommit(creditMutation, pointsMutation);
     }
 
-    private static void publish(
-            Habbo habbo,
-            int credits,
-            int pointsType,
-            int pointsDelta) {
+    private static void publish(Habbo habbo, int credits, int pointsType, int pointsDelta) {
         if (habbo.getClient() != null) {
             if (credits > 0) {
                 habbo.getClient().sendResponse(new UserCreditsComposer(habbo));
             }
             if (pointsDelta != 0) {
-                habbo.getClient().sendResponse(new UserPointsComposer(
-                        habbo.getHabboInfo().getCurrencyAmount(pointsType),
-                        pointsDelta,
-                        pointsType));
+                habbo.getClient()
+                        .sendResponse(new UserPointsComposer(
+                                habbo.getHabboInfo().getCurrencyAmount(pointsType), pointsDelta, pointsType));
             }
         }
     }
 
-    private static void applyCommittedBalances(
-            Habbo habbo,
-            int pointsType,
-            WalletCommit commit) {
+    private static void applyCommittedBalances(Habbo habbo, int pointsType, WalletCommit commit) {
         if (commit.creditMutation() != null) {
             LedgerWalletMutation.applyCommitted(
-                    habbo,
-                    EconomyLedger.CREDITS,
-                    commit.creditMutation().balanceAfter());
+                    habbo, EconomyLedger.CREDITS, commit.creditMutation().balanceAfter());
         }
         if (commit.pointsMutation() != null) {
             LedgerWalletMutation.applyCommitted(
-                    habbo,
-                    pointsType,
-                    commit.pointsMutation().balanceAfter());
+                    habbo, pointsType, commit.pointsMutation().balanceAfter());
         }
     }
 
-    private record WalletCommit(
-            EconomyMutationResult creditMutation,
-            EconomyMutationResult pointsMutation) {
-    }
+    private record WalletCommit(EconomyMutationResult creditMutation, EconomyMutationResult pointsMutation) {}
 }

@@ -1,11 +1,10 @@
 package com.eu.habbo.habbohotel.economy;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.List;
+import org.junit.jupiter.api.Test;
 
 class EconomyOperationTest {
     @Test
@@ -29,50 +28,37 @@ class EconomyOperationTest {
 
     @Test
     void rejectsAmbiguousOrUnsafeOperations() {
-        assertThrows(IllegalArgumentException.class, () -> new EconomyOperation(
-                "", 42, null, "grant", "admin.grant", -1, 5, null, ""));
-        assertThrows(IllegalArgumentException.class, () -> new EconomyOperation(
-                "grant:1", 0, null, "grant", "admin.grant", -1, 5, null, ""));
-        assertThrows(IllegalArgumentException.class, () -> new EconomyOperation(
-                "grant:1", 42, null, "grant", "", -1, 5, null, ""));
-        assertThrows(IllegalArgumentException.class, () -> new EconomyOperation(
-                "grant:1", 42, null, "grant", "admin.grant", -1, 0, null, ""));
-        assertThrows(IllegalArgumentException.class, () -> new EconomyOperation(
-                "grant:1", 42, null, "grant", "admin.grant", -2, 5, null, ""));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new EconomyOperation("", 42, null, "grant", "admin.grant", -1, 5, null, ""));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new EconomyOperation("grant:1", 0, null, "grant", "admin.grant", -1, 5, null, ""));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new EconomyOperation("grant:1", 42, null, "grant", "", -1, 5, null, ""));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new EconomyOperation("grant:1", 42, null, "grant", "admin.grant", -1, 0, null, ""));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new EconomyOperation("grant:1", 42, null, "grant", "admin.grant", -2, 5, null, ""));
     }
 
     @Test
     void checkedBalanceRejectsOverdraftAndOverflow() {
         assertEquals(125, EconomyLedger.checkedBalance(100, 25));
         assertThrows(IllegalArgumentException.class, () -> EconomyLedger.checkedBalance(10, -11));
-        assertThrows(IllegalArgumentException.class,
-                () -> EconomyLedger.checkedBalance(Integer.MAX_VALUE, 1));
+        assertThrows(IllegalArgumentException.class, () -> EconomyLedger.checkedBalance(Integer.MAX_VALUE, 1));
     }
 
     @Test
     void walletBatchCannotSpanUsersWithAnAmbiguousLockOrder() {
-        EconomyOperation first = new EconomyOperation(
-                "batch:user:1",
-                1,
-                1,
-                "test",
-                "test.batch",
-                EconomyLedger.CREDITS,
-                1,
-                null,
-                "");
-        EconomyOperation second = new EconomyOperation(
-                "batch:user:2",
-                2,
-                2,
-                "test",
-                "test.batch",
-                EconomyLedger.CREDITS,
-                1,
-                null,
-                "");
+        EconomyOperation first =
+                new EconomyOperation("batch:user:1", 1, 1, "test", "test.batch", EconomyLedger.CREDITS, 1, null, "");
+        EconomyOperation second =
+                new EconomyOperation("batch:user:2", 2, 2, "test", "test.batch", EconomyLedger.CREDITS, 1, null, "");
 
-        assertThrows(IllegalArgumentException.class,
-                () -> EconomyLedger.executeBatch(List.of(first, second)));
+        assertThrows(IllegalArgumentException.class, () -> EconomyLedger.executeBatch(List.of(first, second)));
     }
 }

@@ -4,26 +4,19 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.economy.EconomyLedger;
 import com.eu.habbo.habbohotel.economy.EconomyMutationResult;
 import com.eu.habbo.habbohotel.economy.EconomyOperation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class RedeemItemTransaction {
     private static final Logger LOGGER = LoggerFactory.getLogger(RedeemItemTransaction.class);
     private static final String DELETE_ITEM = "DELETE FROM items WHERE id = ? AND user_id = ? LIMIT 1";
 
-    private RedeemItemTransaction() {
-    }
+    private RedeemItemTransaction() {}
 
-    static EconomyMutationResult commit(
-            int itemId,
-            int userId,
-            int currencyType,
-            int amount,
-            String itemName) {
+    static EconomyMutationResult commit(int itemId, int userId, int currencyType, int amount, String itemName) {
         if (itemId <= 0 || userId <= 0 || amount <= 0) return null;
 
         Connection connection = null;
@@ -40,16 +33,18 @@ final class RedeemItemTransaction {
                 }
             }
 
-            EconomyMutationResult walletMutation = EconomyLedger.apply(connection, new EconomyOperation(
-                    "furniture-redeem:" + itemId,
-                    userId,
-                    userId,
-                    "furniture_redeem",
-                    "furniture.redeem",
-                    currencyType,
-                    amount,
-                    itemId,
-                    itemName));
+            EconomyMutationResult walletMutation = EconomyLedger.apply(
+                    connection,
+                    new EconomyOperation(
+                            "furniture-redeem:" + itemId,
+                            userId,
+                            userId,
+                            "furniture_redeem",
+                            "furniture.redeem",
+                            currencyType,
+                            amount,
+                            itemId,
+                            itemName));
 
             connection.commit();
             return walletMutation;

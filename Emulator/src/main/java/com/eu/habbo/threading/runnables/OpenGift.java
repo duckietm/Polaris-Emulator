@@ -10,14 +10,13 @@ import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryUpdateItemComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.PresentItemOpenedComposer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class OpenGift implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenGift.class);
@@ -39,8 +38,7 @@ public class OpenGift implements Runnable {
 
             Collection<HabboItem> items = ((InteractionGift) this.item).loadItems();
             for (HabboItem i : items) {
-                if (inside == null)
-                    inside = i;
+                if (inside == null) inside = i;
 
                 i.setUserId(this.habbo.getHabboInfo().getId());
                 i.needsUpdate(true);
@@ -57,7 +55,10 @@ public class OpenGift implements Runnable {
             }
 
             Emulator.getThreading().runPersistence(new QueryDeleteHabboItem(this.item.getId()));
-            Emulator.getThreading().run(new RemoveFloorItemTask(this.room, this.item), this.item.getBaseItem().getName().contains("present_wrap") ? 5000 : 0);
+            Emulator.getThreading()
+                    .run(
+                            new RemoveFloorItemTask(this.room, this.item),
+                            this.item.getBaseItem().getName().contains("present_wrap") ? 5000 : 0);
 
             this.habbo.getClient().sendResponse(new InventoryRefreshComposer());
 
@@ -70,7 +71,9 @@ public class OpenGift implements Runnable {
                         if (!unseenItems.containsKey(AddHabboItemComposer.AddHabboItemCategory.OWNED_FURNI))
                             unseenItems.put(AddHabboItemComposer.AddHabboItemCategory.OWNED_FURNI, new ArrayList<>());
 
-                        unseenItems.get(AddHabboItemComposer.AddHabboItemCategory.OWNED_FURNI).add(item.getGiftAdjustedId());
+                        unseenItems
+                                .get(AddHabboItemComposer.AddHabboItemCategory.OWNED_FURNI)
+                                .add(item.getGiftAdjustedId());
 
                         break;
 
@@ -78,21 +81,27 @@ public class OpenGift implements Runnable {
                         if (!unseenItems.containsKey(AddHabboItemComposer.AddHabboItemCategory.BADGE))
                             unseenItems.put(AddHabboItemComposer.AddHabboItemCategory.BADGE, new ArrayList<>());
 
-                        unseenItems.get(AddHabboItemComposer.AddHabboItemCategory.BADGE).add(item.getId()); // badges cannot be placed so no need for gift adjusted ID
+                        unseenItems
+                                .get(AddHabboItemComposer.AddHabboItemCategory.BADGE)
+                                .add(item.getId()); // badges cannot be placed so no need for gift adjusted ID
                         break;
 
                     case PET:
                         if (!unseenItems.containsKey(AddHabboItemComposer.AddHabboItemCategory.PET))
                             unseenItems.put(AddHabboItemComposer.AddHabboItemCategory.PET, new ArrayList<>());
 
-                        unseenItems.get(AddHabboItemComposer.AddHabboItemCategory.PET).add(item.getGiftAdjustedId());
+                        unseenItems
+                                .get(AddHabboItemComposer.AddHabboItemCategory.PET)
+                                .add(item.getGiftAdjustedId());
                         break;
 
                     case ROBOT:
                         if (!unseenItems.containsKey(AddHabboItemComposer.AddHabboItemCategory.BOT))
                             unseenItems.put(AddHabboItemComposer.AddHabboItemCategory.BOT, new ArrayList<>());
 
-                        unseenItems.get(AddHabboItemComposer.AddHabboItemCategory.BOT).add(item.getGiftAdjustedId());
+                        unseenItems
+                                .get(AddHabboItemComposer.AddHabboItemCategory.BOT)
+                                .add(item.getGiftAdjustedId());
                         break;
 
                     default:

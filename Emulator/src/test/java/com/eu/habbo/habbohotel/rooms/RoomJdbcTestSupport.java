@@ -3,7 +3,6 @@ package com.eu.habbo.habbohotel.rooms;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.database.Database;
 import com.zaxxer.hikari.HikariDataSource;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
@@ -22,8 +21,7 @@ import java.util.function.Function;
 
 final class RoomJdbcTestSupport {
 
-    private RoomJdbcTestSupport() {
-    }
+    private RoomJdbcTestSupport() {}
 
     static InstalledDatabase install(RecordingDataSource dataSource) throws Exception {
         Field field = Emulator.class.getDeclaredField("database");
@@ -34,25 +32,18 @@ final class RoomJdbcTestSupport {
     }
 
     private static Database databaseUsing(HikariDataSource dataSource) throws Exception {
-        Constructor<Database> constructor =
-                Database.class.getDeclaredConstructor(HikariDataSource.class);
+        Constructor<Database> constructor = Database.class.getDeclaredConstructor(HikariDataSource.class);
         constructor.setAccessible(true);
         return constructor.newInstance(dataSource);
     }
 
-    record SqlCall(
-            String sql,
-            Map<Integer, Object> parameters,
-            String operation) {
-    }
+    record SqlCall(String sql, Map<Integer, Object> parameters, String operation) {}
 
     static final class RecordingDataSource extends HikariDataSource {
         private final List<SqlCall> calls = new CopyOnWriteArrayList<>();
         private final AtomicInteger connectionCount = new AtomicInteger();
-        private Function<String, List<Map<String, Object>>> rows =
-                ignored -> List.of();
-        private Consumer<String> beforeExecution = ignored -> {
-        };
+        private Function<String, List<Map<String, Object>>> rows = ignored -> List.of();
+        private Consumer<String> beforeExecution = ignored -> {};
         private volatile boolean failQueries;
         private volatile boolean failUpdates;
 
@@ -119,10 +110,7 @@ final class RoomJdbcTestSupport {
                     }
                     case "executeQuery" -> {
                         this.beforeExecution.accept(sql);
-                        this.calls.add(new SqlCall(
-                                sql,
-                                Map.copyOf(parameters),
-                                "query"));
+                        this.calls.add(new SqlCall(sql, Map.copyOf(parameters), "query"));
                         if (this.failQueries) {
                             throw new SQLException("fixture query failure");
                         }
@@ -130,10 +118,7 @@ final class RoomJdbcTestSupport {
                     }
                     case "executeUpdate" -> {
                         this.beforeExecution.accept(sql);
-                        this.calls.add(new SqlCall(
-                                sql,
-                                Map.copyOf(parameters),
-                                "update"));
+                        this.calls.add(new SqlCall(sql, Map.copyOf(parameters), "update"));
                         if (this.failUpdates) {
                             throw new SQLException("fixture update failure");
                         }
@@ -141,10 +126,7 @@ final class RoomJdbcTestSupport {
                     }
                     case "execute" -> {
                         this.beforeExecution.accept(sql);
-                        this.calls.add(new SqlCall(
-                                sql,
-                                Map.copyOf(parameters),
-                                "execute"));
+                        this.calls.add(new SqlCall(sql, Map.copyOf(parameters), "execute"));
                         if (this.failUpdates) {
                             throw new SQLException("fixture update failure");
                         }
@@ -174,10 +156,8 @@ final class RoomJdbcTestSupport {
     }
 
     private static ResultSet resultSet(List<Map<String, Object>> rows) {
-        List<Map<String, Object>> copiedRows = rows.stream()
-                .map(HashMap::new)
-                .map(Map::copyOf)
-                .toList();
+        List<Map<String, Object>> copiedRows =
+                rows.stream().map(HashMap::new).map(Map::copyOf).toList();
         int[] index = {-1};
         boolean[] wasNull = {false};
 
@@ -204,9 +184,8 @@ final class RoomJdbcTestSupport {
                 case "getInt" -> value == null ? 0 : ((Number) value).intValue();
                 case "getShort" -> value == null ? (short) 0 : ((Number) value).shortValue();
                 case "getDouble" -> value == null ? 0D : ((Number) value).doubleValue();
-                case "getBoolean" -> value instanceof Boolean flag
-                        ? flag
-                        : value != null && ((Number) value).intValue() != 0;
+                case "getBoolean" ->
+                    value instanceof Boolean flag ? flag : value != null && ((Number) value).intValue() != 0;
                 case "getString" -> value == null ? null : String.valueOf(value);
                 default -> defaultValue(method.getReturnType());
             };
@@ -225,10 +204,7 @@ final class RoomJdbcTestSupport {
 
     @SuppressWarnings("unchecked")
     private static <T> T proxy(Class<T> type, java.lang.reflect.InvocationHandler handler) {
-        return (T) Proxy.newProxyInstance(
-                type.getClassLoader(),
-                new Class<?>[]{type},
-                handler);
+        return (T) Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] {type}, handler);
     }
 
     private static Object defaultValue(Class<?> type) {

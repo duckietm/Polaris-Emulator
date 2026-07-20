@@ -1,23 +1,20 @@
 package com.eu.habbo.habbohotel.rooms;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import org.junit.jupiter.api.Test;
-
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import org.junit.jupiter.api.Test;
 
 class RoomItemPersistenceBehaviorTest {
 
     @Test
-    void pendingItemsShareOneConnectionAndReleaseTheRegistryBeforeJdbc()
-            throws Exception {
-        RoomJdbcTestSupport.RecordingDataSource dataSource =
-                new RoomJdbcTestSupport.RecordingDataSource();
+    void pendingItemsShareOneConnectionAndReleaseTheRegistryBeforeJdbc() throws Exception {
+        RoomJdbcTestSupport.RecordingDataSource dataSource = new RoomJdbcTestSupport.RecordingDataSource();
         RoomItemManager manager = new RoomItemManager(new Room(41, 7));
         Int2ObjectMap<HabboItem> items = items(manager);
         TestItem first = item(1001, "first");
@@ -27,13 +24,9 @@ class RoomItemPersistenceBehaviorTest {
         items.put(first.getId(), first);
         items.put(second.getId(), second);
         AtomicBoolean registryHeldDuringJdbc = new AtomicBoolean();
-        dataSource.beforeExecution(ignored ->
-                registryHeldDuringJdbc.compareAndSet(
-                        false,
-                        Thread.holdsLock(items)));
+        dataSource.beforeExecution(ignored -> registryHeldDuringJdbc.compareAndSet(false, Thread.holdsLock(items)));
 
-        try (RoomJdbcTestSupport.InstalledDatabase ignored =
-                     RoomJdbcTestSupport.install(dataSource)) {
+        try (RoomJdbcTestSupport.InstalledDatabase ignored = RoomJdbcTestSupport.install(dataSource)) {
             manager.saveAllPendingItems();
         }
 
@@ -42,10 +35,8 @@ class RoomItemPersistenceBehaviorTest {
     }
 
     @Test
-    void pendingItemSaveRetainsUpdateDeleteAndDirtyStateContracts()
-            throws Exception {
-        RoomJdbcTestSupport.RecordingDataSource dataSource =
-                new RoomJdbcTestSupport.RecordingDataSource();
+    void pendingItemSaveRetainsUpdateDeleteAndDirtyStateContracts() throws Exception {
+        RoomJdbcTestSupport.RecordingDataSource dataSource = new RoomJdbcTestSupport.RecordingDataSource();
         RoomItemManager manager = new RoomItemManager(new Room(41, 7));
         TestItem updated = item(1001, "updated");
         TestItem deleted = item(1002, "deleted");
@@ -57,8 +48,7 @@ class RoomItemPersistenceBehaviorTest {
         items(manager).put(deleted.getId(), deleted);
         items(manager).put(clean.getId(), clean);
 
-        try (RoomJdbcTestSupport.InstalledDatabase ignored =
-                     RoomJdbcTestSupport.install(dataSource)) {
+        try (RoomJdbcTestSupport.InstalledDatabase ignored = RoomJdbcTestSupport.install(dataSource)) {
             manager.saveAllPendingItems();
             manager.saveAllPendingItems();
         }
@@ -122,10 +112,7 @@ class RoomItemPersistenceBehaviorTest {
         }
 
         @Override
-        public boolean canWalkOn(
-                RoomUnit roomUnit,
-                Room room,
-                Object[] objects) {
+        public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
             return false;
         }
 
@@ -135,10 +122,6 @@ class RoomItemPersistenceBehaviorTest {
         }
 
         @Override
-        public void onWalk(
-                RoomUnit roomUnit,
-                Room room,
-                Object[] objects) {
-        }
+        public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {}
     }
 }

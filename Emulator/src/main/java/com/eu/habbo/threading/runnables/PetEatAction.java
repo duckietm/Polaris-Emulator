@@ -30,13 +30,15 @@ public class PetEatAction implements Runnable {
             } catch (NumberFormatException e) {
                 currentState = 0;
             }
-            
-            if (this.pet.levelHunger >= 10 && this.food != null && currentState < this.food.getBaseItem().getStateCount()) {
+
+            if (this.pet.levelHunger >= 10
+                    && this.food != null
+                    && currentState < this.food.getBaseItem().getStateCount()) {
                 // Say eating vocal on first bite
                 if (currentState == 0 || Emulator.getRandom().nextInt(3) == 0) {
                     this.pet.say(this.pet.getPetData().randomVocal(PetVocalsType.EATING));
                 }
-                
+
                 // Faster eating: reduce 40 hunger per bite instead of 20
                 this.pet.addHunger(-40);
                 this.pet.setTask(PetTasks.EAT);
@@ -48,12 +50,27 @@ public class PetEatAction implements Runnable {
 
                 if (this.pet instanceof GnomePet) {
                     if (this.pet.getPetData().getType() == 26) {
-                        AchievementManager.progressAchievement(Emulator.getGameEnvironment().getHabboManager().getHabbo(this.pet.getUserId()), Emulator.getGameEnvironment().getAchievementManager().getAchievement("GnomeFeeding"), 40);
+                        AchievementManager.progressAchievement(
+                                Emulator.getGameEnvironment().getHabboManager().getHabbo(this.pet.getUserId()),
+                                Emulator.getGameEnvironment()
+                                        .getAchievementManager()
+                                        .getAchievement("GnomeFeeding"),
+                                40);
                     } else {
-                        AchievementManager.progressAchievement(Emulator.getGameEnvironment().getHabboManager().getHabbo(this.pet.getUserId()), Emulator.getGameEnvironment().getAchievementManager().getAchievement("LeprechaunFeeding"), 40);
+                        AchievementManager.progressAchievement(
+                                Emulator.getGameEnvironment().getHabboManager().getHabbo(this.pet.getUserId()),
+                                Emulator.getGameEnvironment()
+                                        .getAchievementManager()
+                                        .getAchievement("LeprechaunFeeding"),
+                                40);
                     }
                 } else {
-                    AchievementManager.progressAchievement(Emulator.getGameEnvironment().getHabboManager().getHabbo(this.pet.getUserId()), Emulator.getGameEnvironment().getAchievementManager().getAchievement("PetFeeding"), 40);
+                    AchievementManager.progressAchievement(
+                            Emulator.getGameEnvironment().getHabboManager().getHabbo(this.pet.getUserId()),
+                            Emulator.getGameEnvironment()
+                                    .getAchievementManager()
+                                    .getAchievement("PetFeeding"),
+                            40);
                 }
 
                 // Faster eating: 500ms between bites instead of 1000ms
@@ -62,11 +79,7 @@ public class PetEatAction implements Runnable {
                 // Food is empty - remove it
                 if (this.food != null && currentState >= this.food.getBaseItem().getStateCount()) {
                     var threading = Emulator.getThreading();
-                    threading.run(
-                            () -> threading.runPersistence(
-                                    new QueryDeleteHabboItem(
-                                            this.food.getId())),
-                            250);
+                    threading.run(() -> threading.runPersistence(new QueryDeleteHabboItem(this.food.getId())), 250);
                     if (this.pet.getRoom() != null) {
                         this.pet.getRoom().removeHabboItem(this.food);
                         this.pet.getRoom().sendComposer(new RemoveFloorItemComposer(this.food, true).compose());

@@ -15,16 +15,16 @@ import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
 import com.eu.habbo.plugin.Event;
 import com.eu.habbo.plugin.events.furniture.FurnitureToggleEvent;
 import com.eu.habbo.threading.runnables.QueryDeleteHabboItem;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Arrays;
 import java.util.HashSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ToggleFloorItemEvent extends MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(ToggleFloorItemEvent.class);
 
-    private static HashSet<String> PET_BOXES = new HashSet<>(Arrays.asList("val11_present", "gnome_box", "leprechaun_box", "velociraptor_egg", "pterosaur_egg", "petbox_epic"));
+    private static HashSet<String> PET_BOXES = new HashSet<>(Arrays.asList(
+            "val11_present", "gnome_box", "leprechaun_box", "velociraptor_egg", "pterosaur_egg", "petbox_epic"));
 
     @Override
     public int getRatelimit() {
@@ -36,32 +36,29 @@ public class ToggleFloorItemEvent extends MessageHandler {
         try {
             Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
-            if (room == null)
-                return;
+            if (room == null) return;
 
             int itemId = this.packet.readInt();
             int state = this.packet.readInt();
 
-            if (!RoomItemInputGuard.isPositiveId(itemId))
-                return;
+            if (!RoomItemInputGuard.isPositiveId(itemId)) return;
 
             HabboItem item = room.getHabboItem(itemId);
 
-            if (item == null || item instanceof InteractionDice)
-                return;
+            if (item == null || item instanceof InteractionDice) return;
 
             if (FurniDataCommand.isInspecting(this.client.getHabbo())) {
                 this.client.getHabbo().alert(FurniDataCommand.buildItemInfo(item, state));
                 return;
             }
 
-            WiredManager.cancelPendingUserClicksFurni(room, this.client.getHabbo().getRoomUnit(), item);
+            WiredManager.cancelPendingUserClicksFurni(
+                    room, this.client.getHabbo().getRoomUnit(), item);
 
             Event furnitureToggleEvent = new FurnitureToggleEvent(item, this.client.getHabbo(), state);
             Emulator.getPluginManager().fireEvent(furnitureToggleEvent);
 
-            if (furnitureToggleEvent.isCancelled())
-                return;
+            if (furnitureToggleEvent.isCancelled()) return;
 
             /*
             if (item.getBaseItem().getName().equalsIgnoreCase("totem_planet")) {
@@ -122,14 +119,23 @@ public class ToggleFloorItemEvent extends MessageHandler {
                 int rarity = 0;
 
                 if (item.getExtradata().isEmpty() || Integer.parseInt(item.getExtradata()) - 1 < 0) {
-                    rarity = isRare ? InteractionMonsterPlantSeed.randomGoldenRarityLevel() : InteractionMonsterPlantSeed.randomRarityLevel();
+                    rarity = isRare
+                            ? InteractionMonsterPlantSeed.randomGoldenRarityLevel()
+                            : InteractionMonsterPlantSeed.randomRarityLevel();
                 } else {
                     try {
                         rarity = Integer.parseInt(item.getExtradata()) - 1;
                     } catch (Exception e) {
                     }
                 }
-                MonsterplantPet pet = Emulator.getGameEnvironment().getPetManager().createMonsterplant(room, this.client.getHabbo(), isRare, room.getLayout().getTile(item.getX(), item.getY()), rarity);
+                MonsterplantPet pet = Emulator.getGameEnvironment()
+                        .getPetManager()
+                        .createMonsterplant(
+                                room,
+                                this.client.getHabbo(),
+                                isRare,
+                                room.getLayout().getTile(item.getX(), item.getY()),
+                                rarity);
                 room.sendComposer(new RemoveFloorItemComposer(item, true).compose());
                 room.removeHabboItem(item);
                 room.updateTile(room.getLayout().getTile(item.getX(), item.getY()));
@@ -139,12 +145,13 @@ public class ToggleFloorItemEvent extends MessageHandler {
                 return;
             }
 
-            if (PET_BOXES.contains(item.getBaseItem().getName()) && room.getCurrentPets().size() < Room.MAXIMUM_PETS) {
+            if (PET_BOXES.contains(item.getBaseItem().getName())
+                    && room.getCurrentPets().size() < Room.MAXIMUM_PETS) {
                 this.client.sendResponse(new PetPackageComposer(item));
                 return;
             }
 
-            item.onClick(this.client, room, new Object[]{state});
+            item.onClick(this.client, room, new Object[] {state});
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
         }

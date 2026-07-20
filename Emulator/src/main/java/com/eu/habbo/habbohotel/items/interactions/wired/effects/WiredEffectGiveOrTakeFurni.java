@@ -21,7 +21,6 @@ import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemComposer;
 import com.eu.habbo.threading.runnables.QueryDeleteHabboItems;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -61,7 +60,8 @@ public class WiredEffectGiveOrTakeFurni extends InteractionWiredEffect {
         super(set, baseItem);
     }
 
-    public WiredEffectGiveOrTakeFurni(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectGiveOrTakeFurni(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -89,7 +89,9 @@ public class WiredEffectGiveOrTakeFurni extends InteractionWiredEffect {
         boolean changed = false;
 
         for (int i = 0; i < this.quantity; i++) {
-            HabboItem item = Emulator.getGameEnvironment().getItemManager().createItem(habbo.getHabboInfo().getId(), baseItem, 0, 0, "");
+            HabboItem item = Emulator.getGameEnvironment()
+                    .getItemManager()
+                    .createItem(habbo.getHabboInfo().getId(), baseItem, 0, 0, "");
             if (item == null) {
                 continue;
             }
@@ -175,7 +177,8 @@ public class WiredEffectGiveOrTakeFurni extends InteractionWiredEffect {
         }
 
         int nextBaseItemId = params[0];
-        if (nextBaseItemId <= 0 || Emulator.getGameEnvironment().getItemManager().getItem(nextBaseItemId) == null) {
+        if (nextBaseItemId <= 0
+                || Emulator.getGameEnvironment().getItemManager().getItem(nextBaseItemId) == null) {
             throw new WiredSaveException("Invalid furni");
         }
 
@@ -199,7 +202,9 @@ public class WiredEffectGiveOrTakeFurni extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(this.baseItemId, this.quantity, this.giveOrTake, this.userSource, this.getDelay()));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.baseItemId, this.quantity, this.giveOrTake, this.userSource, this.getDelay()));
     }
 
     @Override

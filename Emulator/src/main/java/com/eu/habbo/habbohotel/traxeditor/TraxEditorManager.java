@@ -10,9 +10,6 @@ import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemComposer;
 import com.eu.habbo.threading.runnables.QueryDeleteHabboItem;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -21,6 +18,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TraxEditorManager {
 
@@ -53,12 +52,13 @@ public class TraxEditorManager {
         List<SoundTrack> songs = new ArrayList<>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "SELECT soundtrack_id FROM users_soundtracks WHERE user_id = ? ORDER BY id")) {
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT soundtrack_id FROM users_soundtracks WHERE user_id = ? ORDER BY id")) {
             statement.setInt(1, userId);
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
-                    SoundTrack track = Emulator.getGameEnvironment().getItemManager().getSoundTrack(set.getInt("soundtrack_id"));
+                    SoundTrack track =
+                            Emulator.getGameEnvironment().getItemManager().getSoundTrack(set.getInt("soundtrack_id"));
                     if (track != null) {
                         songs.add(track);
                     }
@@ -73,8 +73,8 @@ public class TraxEditorManager {
 
     public boolean ownsSong(int userId, int soundTrackId) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "SELECT id FROM users_soundtracks WHERE user_id = ? AND soundtrack_id = ? LIMIT 1")) {
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT id FROM users_soundtracks WHERE user_id = ? AND soundtrack_id = ? LIMIT 1")) {
             statement.setInt(1, userId);
             statement.setInt(2, soundTrackId);
             try (ResultSet set = statement.executeQuery()) {
@@ -89,8 +89,8 @@ public class TraxEditorManager {
 
     private int countSongs(int userId) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "SELECT COUNT(*) FROM users_soundtracks WHERE user_id = ?")) {
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT COUNT(*) FROM users_soundtracks WHERE user_id = ?")) {
             statement.setInt(1, userId);
             try (ResultSet set = statement.executeQuery()) {
                 return set.next() ? set.getInt(1) : 0;
@@ -148,8 +148,8 @@ public class TraxEditorManager {
         if (track == null) return ERROR_NOT_FOUND;
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "UPDATE soundtracks SET name = ?, track = ?, length = ? WHERE id = ?")) {
+                PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE soundtracks SET name = ?, track = ?, length = ? WHERE id = ?")) {
             statement.setString(1, songName);
             statement.setString(2, data);
             statement.setInt(3, length);
@@ -186,8 +186,7 @@ public class TraxEditorManager {
                 statement.setInt(2, soundTrackId);
                 statement.execute();
             }
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "DELETE FROM soundtracks WHERE id = ?")) {
+            try (PreparedStatement statement = connection.prepareStatement("DELETE FROM soundtracks WHERE id = ?")) {
                 statement.setInt(1, soundTrackId);
                 statement.execute();
             }
@@ -213,7 +212,9 @@ public class TraxEditorManager {
         List<HabboItem> discs = new ArrayList<>();
 
         for (HabboItem item : habbo.getInventory().getItemsComponent().getItemsAsValueCollection()) {
-            if (item instanceof InteractionMusicDisc && ((InteractionMusicDisc) item).getSongId() == soundTrackId && item.getRoomId() == 0) {
+            if (item instanceof InteractionMusicDisc
+                    && ((InteractionMusicDisc) item).getSongId() == soundTrackId
+                    && item.getRoomId() == 0) {
                 discs.add(item);
             }
         }
@@ -284,8 +285,8 @@ public class TraxEditorManager {
 
                 String code = "usr_" + songId;
 
-                try (PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE soundtracks SET code = ? WHERE id = ?")) {
+                try (PreparedStatement statement =
+                        connection.prepareStatement("UPDATE soundtracks SET code = ? WHERE id = ?")) {
                     statement.setString(1, code);
                     statement.setInt(2, songId);
                     statement.execute();
@@ -317,8 +318,8 @@ public class TraxEditorManager {
 
     private void touchSong(int soundTrackId) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "UPDATE users_soundtracks SET updated_at = ? WHERE soundtrack_id = ?")) {
+                PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE users_soundtracks SET updated_at = ? WHERE soundtrack_id = ?")) {
             statement.setInt(1, Emulator.getIntUnixTimestamp());
             statement.setInt(2, soundTrackId);
             statement.execute();
@@ -331,12 +332,15 @@ public class TraxEditorManager {
         Item baseItem = this.resolveDiscBaseItem();
 
         if (baseItem == null) {
-            LOGGER.error("Trax editor: no items_base with interaction_type musicdisc found; song {} was created without a disc.", track.getId());
+            LOGGER.error(
+                    "Trax editor: no items_base with interaction_type musicdisc found; song {} was created without a disc.",
+                    track.getId());
             return;
         }
 
-        HabboItem disc = Emulator.getGameEnvironment().getItemManager().createItem(
-                habbo.getHabboInfo().getId(), baseItem, 0, 0, createDiscExtraData(habbo, track));
+        HabboItem disc = Emulator.getGameEnvironment()
+                .getItemManager()
+                .createItem(habbo.getHabboInfo().getId(), baseItem, 0, 0, createDiscExtraData(habbo, track));
 
         if (disc == null) return;
 
@@ -350,10 +354,14 @@ public class TraxEditorManager {
 
         if (configured > 0) {
             Item item = Emulator.getGameEnvironment().getItemManager().getItem(configured);
-            if (item != null && item.getInteractionType() != null && item.getInteractionType().getType() == InteractionMusicDisc.class) {
+            if (item != null
+                    && item.getInteractionType() != null
+                    && item.getInteractionType().getType() == InteractionMusicDisc.class) {
                 return item;
             }
-            LOGGER.warn("Trax editor: trax.editor.disk.base_item={} is not a musicdisc base item; falling back to auto-detection.", configured);
+            LOGGER.warn(
+                    "Trax editor: trax.editor.disk.base_item={} is not a musicdisc base item; falling back to auto-detection.",
+                    configured);
         }
 
         return Emulator.getGameEnvironment().getItemManager().getFirstItemByInteraction(InteractionMusicDisc.class);
@@ -372,7 +380,8 @@ public class TraxEditorManager {
     private static String sanitizeName(String name, Habbo habbo) {
         if (name == null) return null;
 
-        String cleaned = Emulator.getGameEnvironment().getWordFilter()
+        String cleaned = Emulator.getGameEnvironment()
+                .getWordFilter()
                 .filter(name.replaceAll("\\p{Cntrl}", " ").trim(), habbo);
 
         if (cleaned.isEmpty() || cleaned.length() > 64) return null;

@@ -14,12 +14,11 @@ import com.eu.habbo.plugin.events.emulator.OutgoingPacketEvent;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.util.ReferenceCountUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class GameClient {
 
@@ -27,7 +26,7 @@ public class GameClient {
 
     private final Channel channel;
     private final HabboEncryption encryption;
-	private final LatencyTracker latencyTracker;
+    private final LatencyTracker latencyTracker;
 
     private Habbo habbo;
     private final AtomicBoolean disposed = new AtomicBoolean(false);
@@ -45,11 +44,11 @@ public class GameClient {
         this.channel = channel;
         this.encryption = Emulator.getCrypto().isEnabled()
                 ? new HabboEncryption(
-                    Emulator.getCrypto().getExponent(),
-                    Emulator.getCrypto().getModulus(),
-                    Emulator.getCrypto().getPrivateExponent())
+                        Emulator.getCrypto().getExponent(),
+                        Emulator.getCrypto().getModulus(),
+                        Emulator.getCrypto().getPrivateExponent())
                 : null;
-			this.latencyTracker = new LatencyTracker();
+        this.latencyTracker = new LatencyTracker();
     }
 
     public Channel getChannel() {
@@ -59,10 +58,10 @@ public class GameClient {
     public HabboEncryption getEncryption() {
         return encryption;
     }
-	
-	public LatencyTracker getLatencyTracker() { 
-		return latencyTracker;
-	}
+
+    public LatencyTracker getLatencyTracker() {
+        return latencyTracker;
+    }
 
     public Habbo getHabbo() {
         return this.habbo;
@@ -119,21 +118,13 @@ public class GameClient {
             }
 
             PluginManager plugins = Emulator.getPluginManager();
-            boolean eventsRegistered = plugins.isRegistered(
-                    OutgoingPacketEvent.class,
-                    false);
-            response = this.applyOutgoingPacketEvent(
-                    response,
-                    plugins,
-                    eventsRegistered);
+            boolean eventsRegistered = plugins.isRegistered(OutgoingPacketEvent.class, false);
+            response = this.applyOutgoingPacketEvent(response, plugins, eventsRegistered);
             if (response == null) {
                 return;
             }
 
-            this.writeResponse(
-                    response,
-                    !eventsRegistered,
-                    true);
+            this.writeResponse(response, !eventsRegistered, true);
             this.flushResponseWrites();
         }
     }
@@ -141,26 +132,18 @@ public class GameClient {
     public void sendResponses(ArrayList<ServerMessage> responses) {
         if (this.channel.isOpen()) {
             PluginManager plugins = Emulator.getPluginManager();
-            boolean eventsRegistered = plugins.isRegistered(
-                    OutgoingPacketEvent.class,
-                    false);
+            boolean eventsRegistered = plugins.isRegistered(OutgoingPacketEvent.class, false);
             for (ServerMessage response : responses) {
                 if (response == null || response.getHeader() <= 0) {
                     return;
                 }
 
-                response = this.applyOutgoingPacketEvent(
-                        response,
-                        plugins,
-                        eventsRegistered);
+                response = this.applyOutgoingPacketEvent(response, plugins, eventsRegistered);
                 if (response == null) {
                     continue;
                 }
 
-                this.writeResponse(
-                        response,
-                        !eventsRegistered,
-                        false);
+                this.writeResponse(response, !eventsRegistered, false);
             }
 
             this.flushResponseWrites();
@@ -168,51 +151,34 @@ public class GameClient {
     }
 
     private ServerMessage applyOutgoingPacketEvent(
-            ServerMessage response,
-            PluginManager plugins,
-            boolean eventsRegistered) {
+            ServerMessage response, PluginManager plugins, boolean eventsRegistered) {
         if (!eventsRegistered) {
             return response;
         }
 
-        OutgoingPacketEvent event = new OutgoingPacketEvent(
-                this.habbo,
-                response.getComposer(),
-                response);
+        OutgoingPacketEvent event = new OutgoingPacketEvent(this.habbo, response.getComposer(), response);
         plugins.fireEvent(event);
         if (event.isCancelled()) {
             return null;
         }
-        return event.hasCustomMessage()
-                ? event.getCustomMessage()
-                : response;
+        return event.hasCustomMessage() ? event.getCustomMessage() : response;
     }
 
-    private void writeResponse(
-            ServerMessage response,
-            boolean sharedBroadcastAllowed,
-            boolean useVoidPromise) {
-        if (!sharedBroadcastAllowed
-                || !ServerMessageFrame.isBroadcastPrepared(response)) {
+    private void writeResponse(ServerMessage response, boolean sharedBroadcastAllowed, boolean useVoidPromise) {
+        if (!sharedBroadcastAllowed || !ServerMessageFrame.isBroadcastPrepared(response)) {
             if (useVoidPromise) {
-                this.channel.write(
-                        response,
-                        this.channel.voidPromise());
+                this.channel.write(response, this.channel.voidPromise());
             } else {
                 this.channel.write(response);
             }
             return;
         }
 
-        ByteBuf frame =
-                ServerMessageFrame.retainedDuplicate(response);
+        ByteBuf frame = ServerMessageFrame.retainedDuplicate(response);
         try {
-            EmulatorNetworkStats.recordOutgoing(
-                    frame.readableBytes());
+            EmulatorNetworkStats.recordOutgoing(frame.readableBytes());
             if (useVoidPromise) {
-                this.channel.write(
-                        frame,
-                        this.channel.voidPromise());
+                this.channel.write(frame, this.channel.voidPromise());
             } else {
                 this.channel.write(frame);
             }
@@ -223,13 +189,12 @@ public class GameClient {
     }
 
     private void flushResponseWrites() {
-        if (!GameClientFlushBatch.deferFlush(
-                this.channel)) {
+        if (!GameClientFlushBatch.deferFlush(this.channel)) {
             this.channel.flush();
         }
     }
-	
-	public void sendKeepAlive() {
+
+    public void sendKeepAlive() {
         if (this.channel != null && this.channel.isOpen()) {
             this.channel.writeAndFlush(new ServerMessage(-1));
         }
@@ -256,7 +221,8 @@ public class GameClient {
                 // appena ripristinata (era la causa del "Bye"/kick al 2° reconnect).
                 if (this.habbo.getClient() == this && this.habbo.isOnline()) {
                     // Try to park the habbo in the grace period instead of immediate disconnect
-                    boolean parked = allowSessionResume && SessionResumeManager.getInstance().parkHabbo(this.habbo, this.ssoTicket);
+                    boolean parked = allowSessionResume
+                            && SessionResumeManager.getInstance().parkHabbo(this.habbo, this.ssoTicket);
 
                     if (!parked) {
                         // No grace period configured — immediate disconnect as before

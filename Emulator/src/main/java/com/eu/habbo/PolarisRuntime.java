@@ -13,7 +13,6 @@ import com.eu.habbo.networking.rconserver.RCONServer;
 import com.eu.habbo.plugin.PluginManager;
 import com.eu.habbo.threading.ThreadPooling;
 import com.eu.habbo.util.imager.badges.BadgeImager;
-
 import java.util.Objects;
 
 /**
@@ -123,10 +122,8 @@ final class PolarisRuntime {
         return persistenceExecutor;
     }
 
-    void installPersistenceExecutor(
-            PersistenceExecutor persistenceExecutor) {
-        this.persistenceExecutor =
-                Objects.requireNonNull(persistenceExecutor);
+    void installPersistenceExecutor(PersistenceExecutor persistenceExecutor) {
+        this.persistenceExecutor = Objects.requireNonNull(persistenceExecutor);
     }
 
     GameEnvironment gameEnvironment() {

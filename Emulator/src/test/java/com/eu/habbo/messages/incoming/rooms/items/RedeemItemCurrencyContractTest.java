@@ -1,15 +1,15 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class RedeemItemCurrencyContractTest {
     private static String source() throws Exception {
-        return Files.readString(Path.of("src/main/java/com/eu/habbo/messages/incoming/rooms/items/RedeemItemEvent.java"));
+        return Files.readString(
+                Path.of("src/main/java/com/eu/habbo/messages/incoming/rooms/items/RedeemItemEvent.java"));
     }
 
     @Test
@@ -23,12 +23,12 @@ class RedeemItemCurrencyContractTest {
         int committedBalance = source.indexOf("mutation.balanceAfter()", apply);
         int publish = source.indexOf("publishCurrencyGrant(currencyGrant)", committedBalance);
 
-        assertTrue(diamondFurniture > -1 && diamondType > diamondFurniture,
+        assertTrue(
+                diamondFurniture > -1 && diamondType > diamondFurniture,
                 "diamond furniture must resolve explicitly to the diamond currency type");
-        assertTrue(transactionType > transaction,
-                "the resolved diamond type must be persisted by the atomic transaction");
-        assertTrue(apply > transactionType,
-                "the client balance must use the transaction's committed wallet result");
+        assertTrue(
+                transactionType > transaction, "the resolved diamond type must be persisted by the atomic transaction");
+        assertTrue(apply > transactionType, "the client balance must use the transaction's committed wallet result");
         assertTrue(committedBalance > apply);
         assertTrue(publish > committedBalance);
     }

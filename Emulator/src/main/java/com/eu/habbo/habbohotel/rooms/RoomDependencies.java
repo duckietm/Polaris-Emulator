@@ -1,14 +1,11 @@
 package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.Emulator;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Objects;
 
-record RoomDependencies(
-        ConnectionProvider database,
-        PersistenceScheduler persistence) {
+record RoomDependencies(ConnectionProvider database, PersistenceScheduler persistence) {
 
     RoomDependencies {
         Objects.requireNonNull(database, "database");
@@ -20,8 +17,7 @@ record RoomDependencies(
     }
 
     static RoomDependencies runtime() {
-        return new RoomDependencies(
-                () -> Emulator.getDatabase().getDataSource().getConnection());
+        return new RoomDependencies(() -> Emulator.getDatabase().getDataSource().getConnection());
     }
 
     @FunctionalInterface

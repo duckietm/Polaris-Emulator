@@ -13,7 +13,6 @@ import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemComposer;
 import com.eu.habbo.threading.runnables.QueryDeleteHabboItem;
 import com.eu.habbo.threading.runnables.ShutdownEmulator;
-
 import java.util.HashSet;
 import java.util.Set;
 
@@ -21,7 +20,8 @@ public class RecycleEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         if (ShutdownEmulator.timestamp > 0) {
-            this.client.sendResponse(new HotelWillCloseInMinutesComposer((ShutdownEmulator.timestamp - Emulator.getIntUnixTimestamp()) / 60));
+            this.client.sendResponse(new HotelWillCloseInMinutesComposer(
+                    (ShutdownEmulator.timestamp - Emulator.getIntUnixTimestamp()) / 60));
             return;
         }
 
@@ -32,10 +32,13 @@ public class RecycleEvent extends MessageHandler {
             if (count != Emulator.getConfig().getInt("recycler.value", 8)) return;
 
             for (int i = 0; i < count; i++) {
-                HabboItem item = this.client.getHabbo().getInventory().getItemsComponent().getHabboItem(this.packet.readInt());
+                HabboItem item = this.client
+                        .getHabbo()
+                        .getInventory()
+                        .getItemsComponent()
+                        .getHabboItem(this.packet.readInt());
 
-                if (item == null)
-                    return;
+                if (item == null) return;
 
                 if (item.getBaseItem().allowRecyle()) {
                     items.add(item);
@@ -50,7 +53,14 @@ public class RecycleEvent extends MessageHandler {
             // Compute the reward BEFORE consuming the inputs. Previously the
             // inputs were deleted first, so a null reward (misconfiguration)
             // permanently destroyed the 8 furni with nothing in return.
-            HabboItem reward = Emulator.getGameEnvironment().getItemManager().handleRecycle(this.client.getHabbo(), Emulator.getGameEnvironment().getCatalogManager().getRandomRecyclerPrize().getId() + "");
+            HabboItem reward = Emulator.getGameEnvironment()
+                    .getItemManager()
+                    .handleRecycle(
+                            this.client.getHabbo(),
+                            Emulator.getGameEnvironment()
+                                            .getCatalogManager()
+                                            .getRandomRecyclerPrize()
+                                            .getId() + "");
             if (reward == null) {
                 this.client.sendResponse(new AlertPurchaseFailedComposer(AlertPurchaseFailedComposer.SERVER_ERROR));
                 return;
@@ -67,7 +77,9 @@ public class RecycleEvent extends MessageHandler {
             this.client.sendResponse(new RecyclerCompleteComposer(RecyclerCompleteComposer.RECYCLING_COMPLETE));
             this.client.sendResponse(new InventoryRefreshComposer());
 
-            AchievementManager.progressAchievement(this.client.getHabbo(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("FurnimaticQuest"));
+            AchievementManager.progressAchievement(
+                    this.client.getHabbo(),
+                    Emulator.getGameEnvironment().getAchievementManager().getAchievement("FurnimaticQuest"));
         } else {
             this.client.sendResponse(new RecyclerCompleteComposer(RecyclerCompleteComposer.RECYCLING_CLOSED));
         }

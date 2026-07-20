@@ -1,17 +1,15 @@
 package com.eu.habbo.habbohotel.rooms;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.SQLException;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntSupplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class RoomUserCountPersistence {
-    private static final Logger LOGGER =
-            LoggerFactory.getLogger(RoomUserCountPersistence.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RoomUserCountPersistence.class);
 
     private final IntSupplier userCount;
     private final CountWriter writer;
@@ -19,10 +17,7 @@ final class RoomUserCountPersistence {
     private final AtomicBoolean dirty = new AtomicBoolean();
     private final AtomicBoolean scheduled = new AtomicBoolean();
 
-    RoomUserCountPersistence(
-            IntSupplier userCount,
-            CountWriter writer,
-            Executor executor) {
+    RoomUserCountPersistence(IntSupplier userCount, CountWriter writer, Executor executor) {
         this.userCount = Objects.requireNonNull(userCount, "userCount");
         this.writer = Objects.requireNonNull(writer, "writer");
         this.executor = Objects.requireNonNull(executor, "executor");
@@ -44,8 +39,7 @@ final class RoomUserCountPersistence {
             LOGGER.error("Unable to persist room user count", exception);
         } finally {
             this.scheduled.set(false);
-            if (this.dirty.get()
-                    && this.scheduled.compareAndSet(false, true)) {
+            if (this.dirty.get() && this.scheduled.compareAndSet(false, true)) {
                 this.executor.execute(this::flush);
             }
         }

@@ -19,12 +19,11 @@ import com.eu.habbo.messages.outgoing.rooms.users.RoomUserIgnoredComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
 import com.eu.habbo.plugin.events.users.UserExitRoomEvent;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RoomCycleManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomCycleManager.class);
@@ -51,8 +50,7 @@ public class RoomCycleManager {
     }
 
     public void cycle() {
-        try (GameClientFlushBatch ignored =
-                     GameClientFlushBatch.open()) {
+        try (GameClientFlushBatch ignored = GameClientFlushBatch.open()) {
             this.cycleWithCoalescedFlushes();
         }
     }
@@ -157,25 +155,31 @@ public class RoomCycleManager {
                 this.idleHostingCycles = 0;
 
                 int amount = (int) this.room.getCurrentHabbos().values().stream()
-                        .filter(habbo -> habbo.getHabboInfo().getId() != this.room.getOwnerId()).count();
+                        .filter(habbo -> habbo.getHabboInfo().getId() != this.room.getOwnerId())
+                        .count();
                 if (amount > 0) {
-                    AchievementManager.progressAchievement(this.room.getOwnerId(),
-                            Emulator.getGameEnvironment().getAchievementManager()
-                                    .getAchievement("RoomDecoHosting"), amount);
+                    AchievementManager.progressAchievement(
+                            this.room.getOwnerId(),
+                            Emulator.getGameEnvironment()
+                                    .getAchievementManager()
+                                    .getAchievement("RoomDecoHosting"),
+                            amount);
                 }
             }
         }
     }
 
     private void processHabboHandItem(Habbo habbo, long millis) {
-        if (Room.HAND_ITEM_TIME > 0 && habbo.getRoomUnit().getHandItem() > 0
+        if (Room.HAND_ITEM_TIME > 0
+                && habbo.getRoomUnit().getHandItem() > 0
                 && millis - habbo.getRoomUnit().getHandItemTimestamp() > (Room.HAND_ITEM_TIME * 1000L)) {
             this.room.giveHandItem(habbo, 0);
         }
     }
 
     private void processHabboEffect(Habbo habbo, long millis) {
-        if (habbo.getRoomUnit().getEffectId() > 0 && millis / 1000 > habbo.getRoomUnit().getEffectEndTimestamp()) {
+        if (habbo.getRoomUnit().getEffectId() > 0
+                && millis / 1000 > habbo.getRoomUnit().getEffectEndTimestamp()) {
             this.room.giveEffect(habbo, 0, -1);
         }
     }
@@ -202,18 +206,17 @@ public class RoomCycleManager {
                     if (danceIsNone) {
                         this.room.sendComposer(new RoomUnitIdleComposer(habbo.getRoomUnit()).compose());
                     }
-                    if (danceIsNone && !Emulator.getConfig()
-                            .getBoolean("hotel.roomuser.idle.not_dancing.ignore.wired_idle")) {
+                    if (danceIsNone
+                            && !Emulator.getConfig().getBoolean("hotel.roomuser.idle.not_dancing.ignore.wired_idle")) {
                         WiredManager.triggerUserIdles(this.room, habbo.getRoomUnit());
                     }
                 }
             } else {
                 habbo.getRoomUnit().increaseIdleTimer();
 
-                if (!this.room.isOwner(habbo)
-                        && habbo.getRoomUnit().getIdleTimer() >= Room.IDLE_CYCLES_KICK) {
-                    UserExitRoomEvent event = new UserExitRoomEvent(habbo,
-                            UserExitRoomEvent.UserExitRoomReason.KICKED_IDLE);
+                if (!this.room.isOwner(habbo) && habbo.getRoomUnit().getIdleTimer() >= Room.IDLE_CYCLES_KICK) {
+                    UserExitRoomEvent event =
+                            new UserExitRoomEvent(habbo, UserExitRoomEvent.UserExitRoomReason.KICKED_IDLE);
                     Emulator.getPluginManager().fireEvent(event);
 
                     if (!event.isCancelled()) {
@@ -227,8 +230,7 @@ public class RoomCycleManager {
     private void processHabboMute(Habbo habbo) {
         if (habbo.getHabboStats().mutedBubbleTracker && habbo.getHabboStats().allowTalk()) {
             habbo.getHabboStats().mutedBubbleTracker = false;
-            this.room.sendComposer(
-                    new RoomUserIgnoredComposer(habbo, RoomUserIgnoredComposer.UNIGNORED).compose());
+            this.room.sendComposer(new RoomUserIgnoredComposer(habbo, RoomUserIgnoredComposer.UNIGNORED).compose());
         }
     }
 
@@ -300,7 +302,8 @@ public class RoomCycleManager {
                     pet.packetUpdate = false;
                 }
 
-                if (pet.getRoomUnit().isWalking() && pet.getRoomUnit().getPath().size() == 1
+                if (pet.getRoomUnit().isWalking()
+                        && pet.getRoomUnit().getPath().size() == 1
                         && pet.getRoomUnit().hasStatus(RoomUnitStatus.GESTURE)) {
                     pet.getRoomUnit().removeStatus(RoomUnitStatus.GESTURE);
                     updatedUnit.add(pet.getRoomUnit());
@@ -350,7 +353,9 @@ public class RoomCycleManager {
 
     public boolean cycleRoomUnit(RoomUnit unit, RoomUnitType type, Habbo habbo) {
         boolean update = unit.needsStatusUpdate();
-        boolean isRiding = type == RoomUnitType.USER && habbo != null && habbo.getHabboInfo() != null
+        boolean isRiding = type == RoomUnitType.USER
+                && habbo != null
+                && habbo.getHabboInfo() != null
                 && habbo.getHabboInfo().getRiding() != null;
 
         if (unit.hasStatus(RoomUnitStatus.SIGN)) {
@@ -374,8 +379,8 @@ public class RoomCycleManager {
                 if (ridingUnit != null && unit.getCurrentLocation() != null) {
                     boolean horseMoving = ridingUnit.hasStatus(RoomUnitStatus.MOVE);
                     RoomTile horseTile = ridingUnit.getCurrentLocation();
-                    boolean horseMisplaced = horseTile == null
-                            || horseTile.x != unit.getX() || horseTile.y != unit.getY();
+                    boolean horseMisplaced =
+                            horseTile == null || horseTile.x != unit.getX() || horseTile.y != unit.getY();
 
                     if (horseMoving || horseMisplaced) {
                         ridingUnit.setPreviousLocation(horseTile != null ? horseTile : unit.getCurrentLocation());
@@ -405,8 +410,9 @@ public class RoomCycleManager {
                         unit.removeStatus(RoomUnitStatus.SIT);
                         update = true;
                     }
-                } else if (!hasSpecialPetStatus && thisTile.state == RoomTileState.SIT && (!unit.hasStatus(RoomUnitStatus.SIT)
-                        || unit.sitUpdate)) {
+                } else if (!hasSpecialPetStatus
+                        && thisTile.state == RoomTileState.SIT
+                        && (!unit.hasStatus(RoomUnitStatus.SIT) || unit.sitUpdate)) {
                     this.room.dance(unit, DanceType.NONE);
                     unit.setStatus(RoomUnitStatus.SIT, (Item.getCurrentHeight(topItem) * 1.0D) + "");
                     unit.setZ(topItem.getZ());
@@ -429,11 +435,18 @@ public class RoomCycleManager {
                 if (!unit.hasStatus(RoomUnitStatus.LAY)) {
                     BedProfile bedProfile = new BedProfile(topItem);
                     double layHeight = Item.getCurrentHeight(topItem) * 1.0D + bedProfile.getLayZOffset();
-                    LOGGER.debug("[BedProfile] item={} stackHeight={} isFlat={} isDouble={} X={} Y={} Z={}",
-                            topItem.getBaseItem().getName(), topItem.getBaseItem().getHeight(),
-                            bedProfile.isFlat(), bedProfile.isDouble(),
-                            bedProfile.getLayXOffset(), bedProfile.getLayYOffset(), bedProfile.getLayZOffset());
-                    unit.setStatus(RoomUnitStatus.LAY, layHeight + ";" + bedProfile.getLayXOffset() + ";" + bedProfile.getLayYOffset());
+                    LOGGER.debug(
+                            "[BedProfile] item={} stackHeight={} isFlat={} isDouble={} X={} Y={} Z={}",
+                            topItem.getBaseItem().getName(),
+                            topItem.getBaseItem().getHeight(),
+                            bedProfile.isFlat(),
+                            bedProfile.isDouble(),
+                            bedProfile.getLayXOffset(),
+                            bedProfile.getLayYOffset(),
+                            bedProfile.getLayZOffset());
+                    unit.setStatus(
+                            RoomUnitStatus.LAY,
+                            layHeight + ";" + bedProfile.getLayXOffset() + ";" + bedProfile.getLayYOffset());
                     unit.setRotation(RoomUserRotation.values()[topItem.getRotation() % 4]);
                     unit.setLocation(bedProfile.snapToLay(this.room, topItem, unit.getX(), unit.getY()));
 

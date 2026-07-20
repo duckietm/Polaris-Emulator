@@ -2,18 +2,26 @@ package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.Item;
-import com.eu.habbo.habbohotel.items.interactions.*;
+import com.eu.habbo.habbohotel.items.interactions.InteractionStackHelper;
+import com.eu.habbo.habbohotel.items.interactions.InteractionStackWalkHelper;
+import com.eu.habbo.habbohotel.items.interactions.InteractionTileWalkMagic;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredMovementPhysics;
-import com.eu.habbo.messages.outgoing.rooms.items.*;
+import com.eu.habbo.messages.outgoing.rooms.items.FloorItemOnRollerComposer;
+import com.eu.habbo.messages.outgoing.rooms.items.FloorItemUpdateComposer;
 import com.eu.habbo.plugin.Event;
-import com.eu.habbo.plugin.events.furniture.*;
-import org.apache.commons.math3.util.Pair;
-
+import com.eu.habbo.plugin.events.furniture.FurnitureBuildheightEvent;
+import com.eu.habbo.plugin.events.furniture.FurnitureMovedEvent;
+import com.eu.habbo.plugin.events.furniture.FurnitureRotatedEvent;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.commons.math3.util.Pair;
 
 final class RoomItemMovementService {
 
@@ -21,22 +29,21 @@ final class RoomItemMovementService {
     private final RoomItemManager facade;
     private final RoomItemPlacementService placement;
 
-    RoomItemMovementService(
-            Room room,
-            RoomItemManager facade,
-            RoomItemPlacementService placement) {
+    RoomItemMovementService(Room room, RoomItemManager facade, RoomItemPlacementService placement) {
         this.room = room;
         this.facade = facade;
         this.placement = placement;
     }
 
-    public FurnitureMovementError furnitureFitsAtWithPhysics(RoomTile tile, HabboItem item, int rotation, boolean checkForUnits, WiredMovementPhysics physics) {
+    public FurnitureMovementError furnitureFitsAtWithPhysics(
+            RoomTile tile, HabboItem item, int rotation, boolean checkForUnits, WiredMovementPhysics physics) {
         if (physics == null || !physics.isActive()) {
             return this.placement.furnitureFitsAt(tile, item, rotation, checkForUnits);
         }
 
         RoomLayout layout = this.room.getLayout();
-        if (!layout.fitsOnMap(tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation)) {
+        if (!layout.fitsOnMap(
+                tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation)) {
             return FurnitureMovementError.INVALID_MOVE;
         }
 
@@ -44,8 +51,8 @@ final class RoomItemMovementService {
             return FurnitureMovementError.NONE;
         }
 
-        Set<RoomTile> occupiedTiles = layout.getTilesAt(tile, item.getBaseItem().getWidth(),
-                item.getBaseItem().getLength(), rotation);
+        Set<RoomTile> occupiedTiles = layout.getTilesAt(
+                tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation);
         for (RoomTile t : occupiedTiles) {
             if (t.state == RoomTileState.INVALID) {
                 return FurnitureMovementError.INVALID_MOVE;
@@ -80,7 +87,14 @@ final class RoomItemMovementService {
         return FurnitureMovementError.NONE;
     }
 
-    public FurnitureMovementError moveFurniTo(HabboItem item, RoomTile tile, int rotation, double z, Habbo actor, boolean sendUpdates, boolean checkForUnits) {
+    public FurnitureMovementError moveFurniTo(
+            HabboItem item,
+            RoomTile tile,
+            int rotation,
+            double z,
+            Habbo actor,
+            boolean sendUpdates,
+            boolean checkForUnits) {
         if (item == null || tile == null) {
             return FurnitureMovementError.INVALID_MOVE;
         }
@@ -91,8 +105,8 @@ final class RoomItemMovementService {
         boolean pluginHelper = false;
 
         if (Emulator.getPluginManager().isRegistered(FurnitureMovedEvent.class, true)) {
-            FurnitureMovedEvent event = Emulator.getPluginManager()
-                    .fireEvent(new FurnitureMovedEvent(item, actor, oldLocation, tile));
+            FurnitureMovedEvent event =
+                    Emulator.getPluginManager().fireEvent(new FurnitureMovedEvent(item, actor, oldLocation, tile));
 
             if (event.isCancelled()) {
                 return FurnitureMovementError.CANCEL_PLUGIN_MOVE;
@@ -106,18 +120,13 @@ final class RoomItemMovementService {
         boolean magicTile = this.placement.isStackPlacementBypassItem(item);
 
         Set<RoomTile> occupiedTiles = layout.getTilesAt(
-                tile,
-                item.getBaseItem().getWidth(),
-                item.getBaseItem().getLength(),
-                rotation
-        );
+                tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation);
 
         Set<RoomTile> oldOccupiedTiles = layout.getTilesAt(
                 layout.getTile(item.getX(), item.getY()),
                 item.getBaseItem().getWidth(),
                 item.getBaseItem().getLength(),
-                item.getRotation()
-        );
+                item.getRotation());
 
         if (!pluginHelper) {
             FurnitureMovementError fits = this.placement.furnitureFitsAt(tile, item, rotation, checkForUnits);
@@ -154,8 +163,8 @@ final class RoomItemMovementService {
 
         // Plugin height override (match your NEW behavior: base + updatedHeight)
         if (Emulator.getPluginManager().isRegistered(FurnitureBuildheightEvent.class, true)) {
-            FurnitureBuildheightEvent event = Emulator.getPluginManager()
-                    .fireEvent(new FurnitureBuildheightEvent(item, actor, 0.00, z));
+            FurnitureBuildheightEvent event =
+                    Emulator.getPluginManager().fireEvent(new FurnitureBuildheightEvent(item, actor, 0.00, z));
 
             if (event.hasChangedHeight()) {
                 z = layout.getHeightAtSquare(tile.x, tile.y) + event.getUpdatedHeight();
@@ -180,16 +189,24 @@ final class RoomItemMovementService {
         // Update wired spatial index + invalidate cache
         if (oldLocation != null) {
             if (item instanceof InteractionWiredTrigger) {
-                this.room.getRoomSpecialTypes().updateTriggerLocation((InteractionWiredTrigger) item, oldLocation.x, oldLocation.y);
+                this.room
+                        .getRoomSpecialTypes()
+                        .updateTriggerLocation((InteractionWiredTrigger) item, oldLocation.x, oldLocation.y);
                 WiredManager.invalidateRoom(this.room);
             } else if (item instanceof InteractionWiredEffect) {
-                this.room.getRoomSpecialTypes().updateEffectLocation((InteractionWiredEffect) item, oldLocation.x, oldLocation.y);
+                this.room
+                        .getRoomSpecialTypes()
+                        .updateEffectLocation((InteractionWiredEffect) item, oldLocation.x, oldLocation.y);
                 WiredManager.invalidateRoom(this.room);
             } else if (item instanceof InteractionWiredCondition) {
-                this.room.getRoomSpecialTypes().updateConditionLocation((InteractionWiredCondition) item, oldLocation.x, oldLocation.y);
+                this.room
+                        .getRoomSpecialTypes()
+                        .updateConditionLocation((InteractionWiredCondition) item, oldLocation.x, oldLocation.y);
                 WiredManager.invalidateRoom(this.room);
             } else if (item instanceof InteractionWiredExtra) {
-                this.room.getRoomSpecialTypes().updateExtraLocation((InteractionWiredExtra) item, oldLocation.x, oldLocation.y);
+                this.room
+                        .getRoomSpecialTypes()
+                        .updateExtraLocation((InteractionWiredExtra) item, oldLocation.x, oldLocation.y);
                 WiredManager.invalidateRoom(this.room);
             }
         }
@@ -217,17 +234,14 @@ final class RoomItemMovementService {
         // Preserve your newer "place under" behavior if enabled
         if (Emulator.getConfig().getBoolean("wired.place.under", false)) {
             Set<RoomTile> newOccupiedTiles = layout.getTilesAt(
-                    tile,
-                    item.getBaseItem().getWidth(),
-                    item.getBaseItem().getLength(),
-                    rotation
-            );
+                    tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation);
 
             for (RoomTile t : newOccupiedTiles) {
                 for (Habbo h : this.room.getHabbosAt(t.x, t.y)) {
                     try {
                         item.onWalkOn(h.getRoomUnit(), this.room, null);
-                    } catch (Exception ignored) { }
+                    } catch (Exception ignored) {
+                    }
                 }
             }
         }
@@ -235,7 +249,15 @@ final class RoomItemMovementService {
         return FurnitureMovementError.NONE;
     }
 
-    public FurnitureMovementError moveFurniToWithPhysics(HabboItem item, RoomTile tile, int rotation, double z, Habbo actor, boolean sendUpdates, boolean checkForUnits, WiredMovementPhysics physics) {
+    public FurnitureMovementError moveFurniToWithPhysics(
+            HabboItem item,
+            RoomTile tile,
+            int rotation,
+            double z,
+            Habbo actor,
+            boolean sendUpdates,
+            boolean checkForUnits,
+            WiredMovementPhysics physics) {
         if (physics == null || !physics.isActive()) {
             return moveFurniTo(item, tile, rotation, z, actor, sendUpdates, checkForUnits);
         }
@@ -250,8 +272,8 @@ final class RoomItemMovementService {
         boolean pluginHelper = false;
 
         if (Emulator.getPluginManager().isRegistered(FurnitureMovedEvent.class, true)) {
-            FurnitureMovedEvent event = Emulator.getPluginManager()
-                    .fireEvent(new FurnitureMovedEvent(item, actor, oldLocation, tile));
+            FurnitureMovedEvent event =
+                    Emulator.getPluginManager().fireEvent(new FurnitureMovedEvent(item, actor, oldLocation, tile));
 
             if (event.isCancelled()) {
                 return FurnitureMovementError.CANCEL_PLUGIN_MOVE;
@@ -265,18 +287,13 @@ final class RoomItemMovementService {
         boolean magicTile = this.placement.isStackPlacementBypassItem(item);
 
         Set<RoomTile> occupiedTiles = layout.getTilesAt(
-                tile,
-                item.getBaseItem().getWidth(),
-                item.getBaseItem().getLength(),
-                rotation
-        );
+                tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation);
 
         Set<RoomTile> oldOccupiedTiles = layout.getTilesAt(
                 layout.getTile(item.getX(), item.getY()),
                 item.getBaseItem().getWidth(),
                 item.getBaseItem().getLength(),
-                item.getRotation()
-        );
+                item.getRotation());
 
         if (!pluginHelper) {
             FurnitureMovementError fits = furnitureFitsAtWithPhysics(tile, item, rotation, checkForUnits, physics);
@@ -310,8 +327,8 @@ final class RoomItemMovementService {
         }
 
         if (Emulator.getPluginManager().isRegistered(FurnitureBuildheightEvent.class, true)) {
-            FurnitureBuildheightEvent event = Emulator.getPluginManager()
-                    .fireEvent(new FurnitureBuildheightEvent(item, actor, 0.00, z));
+            FurnitureBuildheightEvent event =
+                    Emulator.getPluginManager().fireEvent(new FurnitureBuildheightEvent(item, actor, 0.00, z));
 
             if (event.hasChangedHeight()) {
                 z = layout.getHeightAtSquare(tile.x, tile.y) + event.getUpdatedHeight();
@@ -335,16 +352,24 @@ final class RoomItemMovementService {
 
         if (oldLocation != null) {
             if (item instanceof InteractionWiredTrigger) {
-                this.room.getRoomSpecialTypes().updateTriggerLocation((InteractionWiredTrigger) item, oldLocation.x, oldLocation.y);
+                this.room
+                        .getRoomSpecialTypes()
+                        .updateTriggerLocation((InteractionWiredTrigger) item, oldLocation.x, oldLocation.y);
                 WiredManager.invalidateRoom(this.room);
             } else if (item instanceof InteractionWiredEffect) {
-                this.room.getRoomSpecialTypes().updateEffectLocation((InteractionWiredEffect) item, oldLocation.x, oldLocation.y);
+                this.room
+                        .getRoomSpecialTypes()
+                        .updateEffectLocation((InteractionWiredEffect) item, oldLocation.x, oldLocation.y);
                 WiredManager.invalidateRoom(this.room);
             } else if (item instanceof InteractionWiredCondition) {
-                this.room.getRoomSpecialTypes().updateConditionLocation((InteractionWiredCondition) item, oldLocation.x, oldLocation.y);
+                this.room
+                        .getRoomSpecialTypes()
+                        .updateConditionLocation((InteractionWiredCondition) item, oldLocation.x, oldLocation.y);
                 WiredManager.invalidateRoom(this.room);
             } else if (item instanceof InteractionWiredExtra) {
-                this.room.getRoomSpecialTypes().updateExtraLocation((InteractionWiredExtra) item, oldLocation.x, oldLocation.y);
+                this.room
+                        .getRoomSpecialTypes()
+                        .updateExtraLocation((InteractionWiredExtra) item, oldLocation.x, oldLocation.y);
                 WiredManager.invalidateRoom(this.room);
             }
         }
@@ -368,11 +393,7 @@ final class RoomItemMovementService {
 
         if (Emulator.getConfig().getBoolean("wired.place.under", false)) {
             Set<RoomTile> newOccupiedTiles = layout.getTilesAt(
-                    tile,
-                    item.getBaseItem().getWidth(),
-                    item.getBaseItem().getLength(),
-                    rotation
-            );
+                    tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation);
 
             for (RoomTile t : newOccupiedTiles) {
                 for (Habbo h : this.room.getHabbosAt(t.x, t.y)) {
@@ -391,18 +412,20 @@ final class RoomItemMovementService {
         return moveFurniTo(item, tile, rotation, actor, true, true);
     }
 
-    public FurnitureMovementError moveFurniTo(HabboItem item, RoomTile tile, int rotation, Habbo actor, boolean sendUpdates) {
+    public FurnitureMovementError moveFurniTo(
+            HabboItem item, RoomTile tile, int rotation, Habbo actor, boolean sendUpdates) {
         return moveFurniTo(item, tile, rotation, actor, sendUpdates, true);
     }
 
-    public FurnitureMovementError moveFurniTo(HabboItem item, RoomTile tile, int rotation, Habbo actor, boolean sendUpdates, boolean checkForUnits) {
+    public FurnitureMovementError moveFurniTo(
+            HabboItem item, RoomTile tile, int rotation, Habbo actor, boolean sendUpdates, boolean checkForUnits) {
         RoomLayout layout = this.room.getLayout();
         RoomTile oldLocation = layout.getTile(item.getX(), item.getY());
 
         boolean pluginHelper = false;
         if (Emulator.getPluginManager().isRegistered(FurnitureMovedEvent.class, true)) {
-            FurnitureMovedEvent event = Emulator.getPluginManager()
-                    .fireEvent(new FurnitureMovedEvent(item, actor, oldLocation, tile));
+            FurnitureMovedEvent event =
+                    Emulator.getPluginManager().fireEvent(new FurnitureMovedEvent(item, actor, oldLocation, tile));
             if (event.isCancelled()) {
                 return FurnitureMovementError.CANCEL_PLUGIN_MOVE;
             }
@@ -414,10 +437,10 @@ final class RoomItemMovementService {
         HabboItem stackHelper = this.placement.findStackHeightHelperAt(tile, item);
 
         // Check if can be placed at new position
-        Set<RoomTile> occupiedTiles = layout.getTilesAt(tile, item.getBaseItem().getWidth(),
-                item.getBaseItem().getLength(), rotation);
-        Set<RoomTile> newOccupiedTiles = layout.getTilesAt(tile,
-                item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation);
+        Set<RoomTile> occupiedTiles = layout.getTilesAt(
+                tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation);
+        Set<RoomTile> newOccupiedTiles = layout.getTilesAt(
+                tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation);
 
         HabboItem topItem = this.facade.getTopItemAt(occupiedTiles, null);
 
@@ -425,16 +448,20 @@ final class RoomItemMovementService {
             if (oldLocation != tile) {
                 for (RoomTile t : occupiedTiles) {
                     HabboItem tileTopItem = this.facade.getTopItemAt(t.x, t.y);
-                    if (!magicTile && ((tileTopItem != null && tileTopItem != item ? (
-                            t.state.equals(RoomTileState.INVALID) || !t.getAllowStack()
-                            || !tileTopItem.getBaseItem().allowStack())
-                            : this.room.calculateTileState(t, item).equals(RoomTileState.INVALID)))) {
+                    if (!magicTile
+                            && ((tileTopItem != null && tileTopItem != item
+                                    ? (t.state.equals(RoomTileState.INVALID)
+                                            || !t.getAllowStack()
+                                            || !tileTopItem.getBaseItem().allowStack())
+                                    : this.room.calculateTileState(t, item).equals(RoomTileState.INVALID)))) {
                         return FurnitureMovementError.CANT_STACK;
                     }
 
-                    if (!Emulator.getConfig().getBoolean("wired.place.under", false) || (
-                            Emulator.getConfig().getBoolean("wired.place.under", false) && !item.isWalkable()
-                                    && !item.getBaseItem().allowSit() && !item.getBaseItem().allowLay())) {
+                    if (!Emulator.getConfig().getBoolean("wired.place.under", false)
+                            || (Emulator.getConfig().getBoolean("wired.place.under", false)
+                                    && !item.isWalkable()
+                                    && !item.getBaseItem().allowSit()
+                                    && !item.getBaseItem().allowLay())) {
                         if (checkForUnits) {
                             if (!magicTile && this.room.hasHabbosAt(t.x, t.y)) {
                                 return FurnitureMovementError.TILE_HAS_HABBOS;
@@ -478,10 +505,14 @@ final class RoomItemMovementService {
                 }
             }
 
-            if ((stackHelper == null && topItem != null && topItem != item && !topItem.getBaseItem()
-                    .allowStack()) || (topItem != null && topItem != item
-                    && topItem.getZ() + Item.getCurrentHeight(topItem) + Item.getCurrentHeight(item)
-                    > Room.MAXIMUM_FURNI_HEIGHT)) {
+            if ((stackHelper == null
+                            && topItem != null
+                            && topItem != item
+                            && !topItem.getBaseItem().allowStack())
+                    || (topItem != null
+                            && topItem != item
+                            && topItem.getZ() + Item.getCurrentHeight(topItem) + Item.getCurrentHeight(item)
+                                    > Room.MAXIMUM_FURNI_HEIGHT)) {
                 item.setRotation(oldRotation);
                 return FurnitureMovementError.CANT_STACK;
             }
@@ -529,8 +560,8 @@ final class RoomItemMovementService {
         }
 
         if (Emulator.getPluginManager().isRegistered(FurnitureBuildheightEvent.class, true)) {
-            FurnitureBuildheightEvent event = Emulator.getPluginManager()
-                    .fireEvent(new FurnitureBuildheightEvent(item, actor, 0.00, height));
+            FurnitureBuildheightEvent event =
+                    Emulator.getPluginManager().fireEvent(new FurnitureBuildheightEvent(item, actor, 0.00, height));
             if (event.hasChangedHeight()) {
                 height = layout.getHeightAtSquare(tile.x, tile.y) + event.getUpdatedHeight();
                 pluginHeight = true;
@@ -554,16 +585,24 @@ final class RoomItemMovementService {
 
         // Update wired spatial index and invalidate cache when wired items are moved
         if (item instanceof InteractionWiredTrigger) {
-            this.room.getRoomSpecialTypes().updateTriggerLocation((InteractionWiredTrigger) item, oldLocation.x, oldLocation.y);
+            this.room
+                    .getRoomSpecialTypes()
+                    .updateTriggerLocation((InteractionWiredTrigger) item, oldLocation.x, oldLocation.y);
             WiredManager.invalidateRoom(this.room);
         } else if (item instanceof InteractionWiredEffect) {
-            this.room.getRoomSpecialTypes().updateEffectLocation((InteractionWiredEffect) item, oldLocation.x, oldLocation.y);
+            this.room
+                    .getRoomSpecialTypes()
+                    .updateEffectLocation((InteractionWiredEffect) item, oldLocation.x, oldLocation.y);
             WiredManager.invalidateRoom(this.room);
         } else if (item instanceof InteractionWiredCondition) {
-            this.room.getRoomSpecialTypes().updateConditionLocation((InteractionWiredCondition) item, oldLocation.x, oldLocation.y);
+            this.room
+                    .getRoomSpecialTypes()
+                    .updateConditionLocation((InteractionWiredCondition) item, oldLocation.x, oldLocation.y);
             WiredManager.invalidateRoom(this.room);
         } else if (item instanceof InteractionWiredExtra) {
-            this.room.getRoomSpecialTypes().updateExtraLocation((InteractionWiredExtra) item, oldLocation.x, oldLocation.y);
+            this.room
+                    .getRoomSpecialTypes()
+                    .updateExtraLocation((InteractionWiredExtra) item, oldLocation.x, oldLocation.y);
             WiredManager.invalidateRoom(this.room);
         }
 
@@ -600,7 +639,14 @@ final class RoomItemMovementService {
         return FurnitureMovementError.NONE;
     }
 
-    public FurnitureMovementError moveFurniToWithPhysics(HabboItem item, RoomTile tile, int rotation, Habbo actor, boolean sendUpdates, boolean checkForUnits, WiredMovementPhysics physics) {
+    public FurnitureMovementError moveFurniToWithPhysics(
+            HabboItem item,
+            RoomTile tile,
+            int rotation,
+            Habbo actor,
+            boolean sendUpdates,
+            boolean checkForUnits,
+            WiredMovementPhysics physics) {
         if (physics == null || !physics.isActive()) {
             return moveFurniTo(item, tile, rotation, actor, sendUpdates, checkForUnits);
         }
@@ -610,8 +656,8 @@ final class RoomItemMovementService {
 
         boolean pluginHelper = false;
         if (Emulator.getPluginManager().isRegistered(FurnitureMovedEvent.class, true)) {
-            FurnitureMovedEvent event = Emulator.getPluginManager()
-                    .fireEvent(new FurnitureMovedEvent(item, actor, oldLocation, tile));
+            FurnitureMovedEvent event =
+                    Emulator.getPluginManager().fireEvent(new FurnitureMovedEvent(item, actor, oldLocation, tile));
             if (event.isCancelled()) {
                 return FurnitureMovementError.CANCEL_PLUGIN_MOVE;
             }
@@ -622,10 +668,10 @@ final class RoomItemMovementService {
 
         HabboItem stackHelper = this.placement.findStackHeightHelperAt(tile, item);
 
-        Set<RoomTile> occupiedTiles = layout.getTilesAt(tile, item.getBaseItem().getWidth(),
-                item.getBaseItem().getLength(), rotation);
-        Set<RoomTile> newOccupiedTiles = layout.getTilesAt(tile,
-                item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation);
+        Set<RoomTile> occupiedTiles = layout.getTilesAt(
+                tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation);
+        Set<RoomTile> newOccupiedTiles = layout.getTilesAt(
+                tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation);
 
         HabboItem topItem = this.getTopPhysicsItemAt(occupiedTiles, null, physics);
 
@@ -633,10 +679,12 @@ final class RoomItemMovementService {
             if (oldLocation != tile) {
                 for (RoomTile t : occupiedTiles) {
                     HabboItem tileTopItem = this.getTopPhysicsItemAt(t.x, t.y, item, physics);
-                    if (!magicTile && ((tileTopItem != null && tileTopItem != item ? (
-                            t.state.equals(RoomTileState.INVALID) || !t.getAllowStack()
-                            || !tileTopItem.getBaseItem().allowStack())
-                            : this.room.calculateTileState(t, item).equals(RoomTileState.INVALID)))) {
+                    if (!magicTile
+                            && ((tileTopItem != null && tileTopItem != item
+                                    ? (t.state.equals(RoomTileState.INVALID)
+                                            || !t.getAllowStack()
+                                            || !tileTopItem.getBaseItem().allowStack())
+                                    : this.room.calculateTileState(t, item).equals(RoomTileState.INVALID)))) {
                         return FurnitureMovementError.CANT_STACK;
                     }
 
@@ -681,10 +729,14 @@ final class RoomItemMovementService {
                 }
             }
 
-            if ((stackHelper == null && topItem != null && topItem != item && !topItem.getBaseItem()
-                    .allowStack()) || (topItem != null && topItem != item
-                    && topItem.getZ() + Item.getCurrentHeight(topItem) + Item.getCurrentHeight(item)
-                    > Room.MAXIMUM_FURNI_HEIGHT)) {
+            if ((stackHelper == null
+                            && topItem != null
+                            && topItem != item
+                            && !topItem.getBaseItem().allowStack())
+                    || (topItem != null
+                            && topItem != item
+                            && topItem.getZ() + Item.getCurrentHeight(topItem) + Item.getCurrentHeight(item)
+                                    > Room.MAXIMUM_FURNI_HEIGHT)) {
                 item.setRotation(oldRotation);
                 return FurnitureMovementError.CANT_STACK;
             }
@@ -731,8 +783,8 @@ final class RoomItemMovementService {
         }
 
         if (Emulator.getPluginManager().isRegistered(FurnitureBuildheightEvent.class, true)) {
-            FurnitureBuildheightEvent event = Emulator.getPluginManager()
-                    .fireEvent(new FurnitureBuildheightEvent(item, actor, 0.00, height));
+            FurnitureBuildheightEvent event =
+                    Emulator.getPluginManager().fireEvent(new FurnitureBuildheightEvent(item, actor, 0.00, height));
             if (event.hasChangedHeight()) {
                 height = layout.getHeightAtSquare(tile.x, tile.y) + event.getUpdatedHeight();
                 pluginHeight = true;
@@ -755,16 +807,24 @@ final class RoomItemMovementService {
         }
 
         if (item instanceof InteractionWiredTrigger) {
-            this.room.getRoomSpecialTypes().updateTriggerLocation((InteractionWiredTrigger) item, oldLocation.x, oldLocation.y);
+            this.room
+                    .getRoomSpecialTypes()
+                    .updateTriggerLocation((InteractionWiredTrigger) item, oldLocation.x, oldLocation.y);
             WiredManager.invalidateRoom(this.room);
         } else if (item instanceof InteractionWiredEffect) {
-            this.room.getRoomSpecialTypes().updateEffectLocation((InteractionWiredEffect) item, oldLocation.x, oldLocation.y);
+            this.room
+                    .getRoomSpecialTypes()
+                    .updateEffectLocation((InteractionWiredEffect) item, oldLocation.x, oldLocation.y);
             WiredManager.invalidateRoom(this.room);
         } else if (item instanceof InteractionWiredCondition) {
-            this.room.getRoomSpecialTypes().updateConditionLocation((InteractionWiredCondition) item, oldLocation.x, oldLocation.y);
+            this.room
+                    .getRoomSpecialTypes()
+                    .updateConditionLocation((InteractionWiredCondition) item, oldLocation.x, oldLocation.y);
             WiredManager.invalidateRoom(this.room);
         } else if (item instanceof InteractionWiredExtra) {
-            this.room.getRoomSpecialTypes().updateExtraLocation((InteractionWiredExtra) item, oldLocation.x, oldLocation.y);
+            this.room
+                    .getRoomSpecialTypes()
+                    .updateExtraLocation((InteractionWiredExtra) item, oldLocation.x, oldLocation.y);
             WiredManager.invalidateRoom(this.room);
         }
 
@@ -803,8 +863,8 @@ final class RoomItemMovementService {
         RoomLayout layout = this.room.getLayout();
 
         // Check if can be placed at new position
-        Set<RoomTile> occupiedTiles = layout.getTilesAt(tile, item.getBaseItem().getWidth(),
-                item.getBaseItem().getLength(), rotation);
+        Set<RoomTile> occupiedTiles = layout.getTilesAt(
+                tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation);
 
         java.util.List<Pair<RoomTile, Set<HabboItem>>> tileFurniList = new java.util.ArrayList<>();
         for (RoomTile t : occupiedTiles) {
@@ -876,7 +936,8 @@ final class RoomItemMovementService {
         return FurnitureMovementError.NONE;
     }
 
-    private boolean hasBlockingPhysicsFurni(Set<RoomTile> occupiedTiles, HabboItem exclude, WiredMovementPhysics physics) {
+    private boolean hasBlockingPhysicsFurni(
+            Set<RoomTile> occupiedTiles, HabboItem exclude, WiredMovementPhysics physics) {
         if (physics == null || !physics.hasBlockingFurni()) {
             return false;
         }
@@ -924,8 +985,9 @@ final class RoomItemMovementService {
         HabboItem highestItem = null;
 
         for (HabboItem item : this.getPhysicsItemsAt(tile, exclude, physics)) {
-            if (highestItem != null && highestItem.getZ() + Item.getCurrentHeight(highestItem)
-                    > item.getZ() + Item.getCurrentHeight(item)) {
+            if (highestItem != null
+                    && highestItem.getZ() + Item.getCurrentHeight(highestItem)
+                            > item.getZ() + Item.getCurrentHeight(item)) {
                 continue;
             }
 
@@ -948,8 +1010,9 @@ final class RoomItemMovementService {
                 continue;
             }
 
-            if (highestItem != null && highestItem.getZ() + Item.getCurrentHeight(highestItem)
-                    > topItem.getZ() + Item.getCurrentHeight(topItem)) {
+            if (highestItem != null
+                    && highestItem.getZ() + Item.getCurrentHeight(highestItem)
+                            > topItem.getZ() + Item.getCurrentHeight(topItem)) {
                 continue;
             }
 
@@ -975,7 +1038,9 @@ final class RoomItemMovementService {
 
         double helperHeight = Double.NEGATIVE_INFINITY;
         for (HabboItem item : this.getPhysicsItemsAt(tile, exclude, physics)) {
-            if (item instanceof InteractionStackHelper || item instanceof InteractionTileWalkMagic || item instanceof InteractionStackWalkHelper) {
+            if (item instanceof InteractionStackHelper
+                    || item instanceof InteractionTileWalkMagic
+                    || item instanceof InteractionStackWalkHelper) {
                 helperHeight = Math.max(helperHeight, item.getZ());
             }
         }

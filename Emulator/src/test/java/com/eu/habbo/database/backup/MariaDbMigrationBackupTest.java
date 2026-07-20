@@ -5,6 +5,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -155,6 +156,56 @@ class MariaDbMigrationBackupTest {
         assertEquals(List.of(), files(".part"));
         assertEquals(List.of(), files(".cnf"));
         assertEquals(List.of(), files(".sql.gz"));
+    }
+
+    @Test
+    void missingExplicitExecutableFailsBeforeLaunchWithRemedies() throws Exception {
+        String executable = tempDir.resolve("tools").resolve("mariadb-dump").toString();
+        DatabaseBackupOptions options = new DatabaseBackupOptions(
+                true, tempDir, 3, Duration.ofSeconds(30), executable);
+        MariaDbMigrationBackup backup = new MariaDbMigrationBackup(
+                options,
+                new DatabaseBackupRequest("localhost", 3306, "polaris", "user", "password"),
+                command -> {
+                    throw new AssertionError("the dump process must not be launched");
+                },
+                Clock.systemUTC());
+
+        MigrationBackupException error = assertThrows(
+                MigrationBackupException.class,
+                () -> backup.beforeMigrations(migrations()));
+
+        assertTrue(error.getMessage().contains(executable));
+        assertTrue(error.getMessage().contains("MariaDB client tools"));
+        assertTrue(error.getMessage().contains("db.migrations.backup.executable"));
+        assertTrue(error.getMessage().contains("db.migrations.backup.enabled=0"));
+        assertEquals(List.of(), files(".cnf"));
+        assertEquals(List.of(), files(".part"));
+    }
+
+    @Test
+    void unresolvableCommandLaunchFailureExplainsRemedies() {
+        DatabaseBackupOptions options = new DatabaseBackupOptions(
+                true, tempDir, 3, Duration.ofSeconds(30), "mariadb-dump");
+        IOException launchFailure = new IOException(
+                "Cannot run program \"mariadb-dump\": CreateProcess error=2");
+        MariaDbMigrationBackup backup = new MariaDbMigrationBackup(
+                options,
+                new DatabaseBackupRequest("localhost", 3306, "polaris", "user", "password"),
+                command -> {
+                    throw launchFailure;
+                },
+                Clock.systemUTC());
+
+        MigrationBackupException error = assertThrows(
+                MigrationBackupException.class,
+                () -> backup.beforeMigrations(migrations()));
+
+        assertTrue(error.getMessage().contains("'mariadb-dump'"));
+        assertTrue(error.getMessage().contains("MariaDB client tools"));
+        assertTrue(error.getMessage().contains("db.migrations.backup.executable"));
+        assertTrue(error.getMessage().contains("db.migrations.backup.enabled=0"));
+        assertEquals(launchFailure, error.getCause());
     }
 
     private List<String> migrations() {

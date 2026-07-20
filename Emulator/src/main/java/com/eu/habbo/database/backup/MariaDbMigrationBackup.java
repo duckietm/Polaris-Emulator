@@ -91,6 +91,8 @@ public final class MariaDbMigrationBackup implements MigrationBackup {
         List<String> pending = List.copyOf(pendingVersions);
         if (!options.enabled() || pending.isEmpty()) return;
 
+        requireResolvableExecutable();
+
         Path credentials = null;
         Path archivePart = null;
         Path archive = null;
@@ -120,7 +122,7 @@ public final class MariaDbMigrationBackup implements MigrationBackup {
             manifestPart = options.directory().resolve(baseName + ".sql.gz.json.part");
 
             List<String> command = command(credentials);
-            Process process = processStarter.start(command);
+            Process process = startDump(command);
             ProcessResult result = collect(process, archivePart);
             if (result.exitCode() != 0) {
                 throw new MigrationBackupException(
@@ -187,6 +189,34 @@ public final class MariaDbMigrationBackup implements MigrationBackup {
             deleteQuietly(checksumPart);
             deleteQuietly(manifestPart);
         }
+    }
+
+    private void requireResolvableExecutable() {
+        String executable = options.executable();
+        boolean explicitPath = executable.indexOf('/') >= 0 || executable.indexOf('\\') >= 0;
+        if (!explicitPath) return;
+        try {
+            if (Files.isRegularFile(Path.of(executable))) return;
+        } catch (java.nio.file.InvalidPathException ignored) {
+            // Fall through to the unavailable-executable failure below.
+        }
+        throw new MigrationBackupException(executableUnavailableMessage());
+    }
+
+    private Process startDump(List<String> command) {
+        try {
+            return processStarter.start(command);
+        } catch (IOException launchFailure) {
+            throw new MigrationBackupException(executableUnavailableMessage(), launchFailure);
+        }
+    }
+
+    private String executableUnavailableMessage() {
+        return "The migration backup tool '" + options.executable() + "' could not be found or executed. "
+                + "Polaris takes a fail-closed database backup before applying pending migrations, so startup stops here. "
+                + "Fix one of: (1) install the MariaDB client tools so 'mariadb-dump' is on PATH, "
+                + "(2) set db.migrations.backup.executable=<full path to mariadb-dump> in config.ini, or "
+                + "(3) take a manual database backup first and set db.migrations.backup.enabled=0.";
     }
 
     private ProcessResult collect(Process process, Path archivePart) throws IOException {

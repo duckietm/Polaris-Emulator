@@ -18,7 +18,8 @@ class MavenBuildEnvironmentContractTest {
         assertTrue(pom.contains("<project.build.outputTimestamp>"));
         assertTrue(pom.contains("<artifactId>maven-enforcer-plugin</artifactId>"));
         assertTrue(pom.contains("<requireJavaVersion>"));
-        assertTrue(pom.contains("<version>[25,26)</version>"));
+        assertTrue(pom.contains("<maven.build.java.version>[25,27)</maven.build.java.version>"));
+        assertTrue(pom.contains("<version>${maven.build.java.version}</version>"));
         assertTrue(pom.contains("<requireMavenVersion>"));
         assertTrue(pom.contains("<version>[3.9.11,4)</version>"));
         assertTrue(pom.contains("<dependencyConvergence/>"));
@@ -52,6 +53,9 @@ class MavenBuildEnvironmentContractTest {
         String codeQl = Files.readString(Path.of("..", ".github", "workflows", "codeql.yml"));
 
         assertTrue(ci.contains("run: ./mvnw -B -Pcoverage verify"));
+        assertTrue(ci.contains("name: JDK 26 package compatibility"));
+        assertTrue(ci.contains("java-version: \"26\""));
+        assertTrue(ci.contains("run: ./mvnw -B clean package"));
         assertFalse(ci.contains("run: mvn "));
         assertTrue(codeQl.contains("run: ./mvnw -B -DskipTests package"));
     }

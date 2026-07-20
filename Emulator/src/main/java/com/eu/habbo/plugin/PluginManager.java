@@ -51,7 +51,7 @@ public class PluginManager {
         boolean runtimeReady = Emulator.isReady;
         new RoomConfigurationBinder(
                         configuration,
-                        value -> HotelDateTimeUtil.toEpochSecond(HotelDateTimeUtil.parseDateTimeStrict(value)))
+                        PluginManager::parsePaydayTimestamp)
                 .bind();
         new WiredConfigurationBinder(configuration).bind();
         new NetworkConfigurationBinder(configuration).bind();
@@ -64,6 +64,11 @@ public class PluginManager {
             Emulator.getGameEnvironment().getGotwPointsScheduler().reloadConfig();
             Emulator.getGameEnvironment().subscriptionScheduler.reloadConfig();
         }
+    }
+
+    static long parsePaydayTimestamp(String value) {
+        return HotelDateTimeUtil.toEpochSecond(
+                HotelDateTimeUtil.parseDateTimeStrict(value));
     }
 
     public void loadPlugins() {

@@ -28,6 +28,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.text.ParsePosition;
@@ -385,7 +386,8 @@ public class PluginManager {
             Method method,
             EventHandler annotation,
             Class<? extends Event> eventType,
-            MethodHandle handle) {
+            MethodHandle handle,
+            boolean staticMethod) {
 
         private static final Comparator<HandlerInvocation> CORRECTED_ORDER =
                 Comparator.comparingInt(HandlerInvocation::prioritySlot).thenComparing(HandlerInvocation::stableKey);
@@ -406,7 +408,8 @@ public class PluginManager {
                         method,
                         method.getAnnotation(EventHandler.class),
                         method.getParameterTypes()[0].asSubclass(Event.class),
-                        MethodHandles.lookup().unreflect(method));
+                        MethodHandles.lookup().unreflect(method),
+                        Modifier.isStatic(method.getModifiers()));
             } catch (IllegalAccessException exception) {
                 throw new IllegalStateException("Unable to cache plugin event handler " + method, exception);
             }
@@ -441,7 +444,11 @@ public class PluginManager {
 
         void invoke(Event event) {
             try {
-                if (this.plugin == null) {
+                // The receiver is bound only for instance methods. A static @EventHandler
+                // (the classic Arcturus/Morningstar pattern) unreflects to a no-receiver
+                // handle, so passing this.plugin would raise WrongMethodTypeException.
+                // Legacy reflection ignored the receiver for static methods; preserve that.
+                if (this.staticMethod) {
                     this.handle.invoke(event);
                 } else {
                     this.handle.invoke(this.plugin, event);

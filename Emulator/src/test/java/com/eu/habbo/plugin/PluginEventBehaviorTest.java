@@ -75,6 +75,18 @@ class PluginEventBehaviorTest {
     }
 
     @Test
+    void legacyDispatchInvokesStaticPluginHandlers() {
+        List<String> calls = new ArrayList<>();
+        PluginManager manager = new PluginManager();
+        StaticHandlerPlugin plugin = new StaticHandlerPlugin(calls);
+        manager.getPlugins().add(plugin);
+        manager.registerEvents(plugin, plugin);
+
+        assertSame(TestEvent.class, manager.fireEvent(new TestEvent()).getClass());
+        assertEquals(List.of("static-plugin"), calls);
+    }
+
+    @Test
     void legacyDirectRegistrationMutationsTakeEffectWithoutManagerRegistration() throws Exception {
         List<String> calls = new ArrayList<>();
         PluginManager manager = new PluginManager();
@@ -140,6 +152,20 @@ class PluginEventBehaviorTest {
 
         public void onDirectEvent(TestEvent event) {
             calls.add("plugin");
+        }
+    }
+
+    private static final class StaticHandlerPlugin extends TestPlugin {
+        private static List<String> staticCalls;
+
+        StaticHandlerPlugin(List<String> calls) {
+            super(calls);
+            staticCalls = calls;
+        }
+
+        @EventHandler
+        public static void onEvent(TestEvent event) {
+            staticCalls.add("static-plugin");
         }
     }
 

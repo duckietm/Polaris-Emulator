@@ -1,18 +1,20 @@
 package com.eu.habbo.habbohotel.catalog;
 
-import com.eu.habbo.messages.incoming.catalog.CatalogBuyItemAsGiftEvent;
-import com.eu.habbo.messages.incoming.catalog.CatalogBuyItemEvent;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.eu.habbo.messages.incoming.catalog.CatalogBuyItemAsGiftEvent;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class CatalogPageAccessPolicyContractTest {
     @Test
     void purchaseHandlersApplyTheSharedPageAccessPolicy() throws Exception {
-        assertUsesPolicy(CatalogBuyItemEvent.class);
+        Path purchaseService = Path.of(
+                "src/main/java", "com/eu/habbo/messages/incoming/catalog/CatalogPurchaseApplicationService.java");
+        assertTrue(
+                Files.readString(purchaseService).contains("CatalogPageAccessPolicy.canAccess("),
+                "catalog purchases must reject disabled, rank-restricted, and club-only pages");
         assertUsesPolicy(CatalogBuyItemAsGiftEvent.class);
     }
 
@@ -20,7 +22,8 @@ class CatalogPageAccessPolicyContractTest {
         Path source = Path.of("src/main/java", handler.getName().replace('.', '/') + ".java");
         String code = Files.readString(source);
 
-        assertTrue(code.contains("CatalogPageAccessPolicy.canAccess("),
+        assertTrue(
+                code.contains("CatalogPageAccessPolicy.canAccess("),
                 () -> handler.getSimpleName() + " must reject disabled, rank-restricted, and club-only pages");
     }
 }

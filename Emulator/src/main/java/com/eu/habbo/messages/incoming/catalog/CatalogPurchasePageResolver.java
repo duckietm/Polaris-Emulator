@@ -1,9 +1,13 @@
-package com.eu.habbo.habbohotel.catalog;
+package com.eu.habbo.messages.incoming.catalog;
 
+import com.eu.habbo.habbohotel.catalog.CatalogItem;
+import com.eu.habbo.habbohotel.catalog.CatalogManager;
+import com.eu.habbo.habbohotel.catalog.CatalogPage;
+import com.eu.habbo.habbohotel.catalog.CatalogPageLayouts;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-public final class CatalogPurchasePageService {
+final class CatalogPurchasePageResolver {
 
     interface CatalogLookup {
         CatalogItem findItem(int itemId);
@@ -13,7 +17,7 @@ public final class CatalogPurchasePageService {
 
     private final CatalogLookup catalog;
 
-    public CatalogPurchasePageService(CatalogManager catalogManager) {
+    CatalogPurchasePageResolver(CatalogManager catalogManager) {
         Objects.requireNonNull(catalogManager);
         this.catalog = new CatalogLookup() {
             @Override
@@ -28,11 +32,11 @@ public final class CatalogPurchasePageService {
         };
     }
 
-    CatalogPurchasePageService(CatalogLookup catalog) {
+    CatalogPurchasePageResolver(CatalogLookup catalog) {
         this.catalog = Objects.requireNonNull(catalog);
     }
 
-    public CatalogPage resolve(CatalogPurchaseCommand command, Predicate<CatalogPage> canAccess) {
+    CatalogPage resolve(CatalogPurchaseCommand command, Predicate<CatalogPage> canAccess) {
         CatalogPage page;
         if (command.pageId() == -12345678 || command.pageId() == -1) {
             CatalogItem searchedItem = this.catalog.findItem(command.itemId());

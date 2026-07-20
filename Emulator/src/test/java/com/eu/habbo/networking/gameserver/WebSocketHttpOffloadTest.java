@@ -93,17 +93,18 @@ class WebSocketHttpOffloadTest {
 
             channel.eventLoop()
                     .submit(() -> channel.pipeline()
-                            .fireUserEventTriggered(
-                                    new WebSocketServerProtocolHandler.HandshakeComplete(
-                                            "/", EmptyHttpHeaders.INSTANCE, null)))
+                            .fireUserEventTriggered(new WebSocketServerProtocolHandler.HandshakeComplete(
+                                    "/", EmptyHttpHeaders.INSTANCE, null)))
                     .syncUninterruptibly();
 
-            assertNull(channel.pipeline().context("nitroSecureAssetHandler"));
-            assertNull(channel.pipeline().context("nitroSecureApiHandler"));
-            assertNull(channel.pipeline().context("authHttpHandler"));
-            assertNull(channel.pipeline().context("badgeHttpHandler"));
-            assertNull(channel.pipeline().context("badgeLeaderboardHttpHandler"));
-            assertNull(channel.pipeline().context("emuStatsHttpHandler"));
+            // Handlers bound to the blocking HTTP executor are unlinked on that
+            // executor, so wait for the removals to settle.
+            awaitRemoved(channel, "nitroSecureAssetHandler");
+            awaitRemoved(channel, "nitroSecureApiHandler");
+            awaitRemoved(channel, "authHttpHandler");
+            awaitRemoved(channel, "badgeHttpHandler");
+            awaitRemoved(channel, "badgeLeaderboardHttpHandler");
+            awaitRemoved(channel, "emuStatsHttpHandler");
             assertNotNull(channel.pipeline().context("gameMessageHandler"));
         } finally {
             channel.close().syncUninterruptibly();
@@ -111,6 +112,17 @@ class WebSocketHttpOffloadTest {
             BlockingHttpExecutionGroup.shutdown();
             configField.set(null, previousConfig);
         }
+    }
+
+    private static void awaitRemoved(NioSocketChannel channel, String handlerName) throws InterruptedException {
+        long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(2);
+        while (channel.pipeline().context(handlerName) != null) {
+            if (System.nanoTime() > deadline) {
+                break;
+            }
+            Thread.sleep(5);
+        }
+        assertNull(channel.pipeline().context(handlerName));
     }
 
     @Test

@@ -21,6 +21,7 @@ import com.eu.habbo.networking.gameserver.encoders.GameServerMessageEncoder;
 import com.eu.habbo.networking.gameserver.encoders.GameServerMessageLogger;
 import com.eu.habbo.networking.gameserver.handlers.IdleTimeoutHandler;
 import com.eu.habbo.networking.gameserver.handlers.SustainedUnwritableHandler;
+import com.eu.habbo.networking.gameserver.handlers.WebSocketHttpCleanupHandler;
 import com.eu.habbo.networking.gameserver.handlers.WebSocketHttpHandler;
 import com.eu.habbo.networking.gameserver.ssl.SSLCertificateLoader;
 import com.eu.habbo.networking.gameserver.stats.EmuStatsHttpHandler;
@@ -97,6 +98,7 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
         ch.pipeline().addLast(blockingHttp, "badgeLeaderboardHttpHandler", new BadgeLeaderboardHttpHandler());
         ch.pipeline().addLast(blockingHttp, "emuStatsHttpHandler", new EmuStatsHttpHandler());
         ch.pipeline().addLast("wsProtocolHandler", new WebSocketServerProtocolHandler(this.wsConfig));
+        ch.pipeline().addLast("wsHttpCleanup", new WebSocketHttpCleanupHandler());
         ch.pipeline().addLast("wsFrameAggregator", new WebSocketFrameAggregator(MAX_FRAME_SIZE));
         ch.pipeline().addLast("wsCodec", new WebSocketCodec());
 

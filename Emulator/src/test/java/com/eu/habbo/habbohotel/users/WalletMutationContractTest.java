@@ -46,16 +46,17 @@ class WalletMutationContractTest {
 
     @Test
     void debitPluginsCannotSilentlyReduceTheAmountCharged() throws Exception {
-        String habbo = Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/users/Habbo.java"));
+        String habbo = Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/users/Habbo.java"))
+                .replaceAll("\\s+", "");
         String marketplace = Files.readString(
                         Path.of("src/main/java/com/eu/habbo/habbohotel/catalog/marketplace/MarketPlace.java"))
                 .replaceAll("\\s+", "");
 
         assertTrue(
-                habbo.contains("event.credits != -credits"),
+                habbo.contains("event.credits!=-credits"),
                 "a successful exact credit debit must remove the requested amount");
         assertTrue(
-                habbo.contains("event.type != type || event.points != -points"),
+                habbo.contains("event.type!=type||event.points!=-points"),
                 "a successful exact points debit must preserve currency type and amount");
         assertTrue(marketplace.contains("event.credits!=-price"));
         assertTrue(marketplace.contains("event.type!=MARKETPLACE_CURRENCY||event.points!=-price"));

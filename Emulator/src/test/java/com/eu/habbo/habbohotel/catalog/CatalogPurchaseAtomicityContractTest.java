@@ -43,17 +43,18 @@ class CatalogPurchaseAtomicityContractTest {
 
     @Test
     void giftsDebitBeforeCreationAndCompensateOnFailure() throws Exception {
-        String gift = source("com/eu/habbo/messages/incoming/catalog/CatalogBuyItemAsGiftEvent.java");
+        String gift =
+                withoutWhitespace(source("com/eu/habbo/messages/incoming/catalog/CatalogBuyItemAsGiftEvent.java"));
 
         int debit = gift.indexOf(
-                "CatalogPaymentService.tryTake(this.client.getHabbo(), chargeCredits, item.getPointsType(), chargePoints)");
+                "CatalogPaymentService.tryTake(this.client.getHabbo(),chargeCredits,item.getPointsType(),chargePoints)");
         int create = gift.indexOf("getItemManager().createItem(userId", debit);
         assertTrue(
                 debit > -1 && create > debit, "gift payment must be reserved before recipient-owned rows are created");
-        assertTrue(gift.contains("if (!giftDelivered)"), "failed gift delivery must enter compensating cleanup");
+        assertTrue(gift.contains("if(!giftDelivered)"), "failed gift delivery must enter compensating cleanup");
         assertTrue(
                 gift.contains(
-                        "CatalogPaymentService.refund(this.client.getHabbo(), paidCredits, paidPointsType, paidPoints)"),
+                        "CatalogPaymentService.refund(this.client.getHabbo(),paidCredits,paidPointsType,paidPoints)"),
                 "failed gift delivery must restore the exact reserved payment");
     }
 

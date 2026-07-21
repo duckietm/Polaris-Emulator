@@ -490,6 +490,7 @@ public class PacketManager {
         this.registerCrafting();
         this.registerCamera();
         this.registerGameCenter();
+        this.registerSnowWar();
         this.registerEarnings();
 
         RuntimeValidationReport report = PacketRuntimeValidator.validateHandlers(this.incoming);
@@ -1140,6 +1141,42 @@ public class PacketManager {
         this.registerHandler(Incoming.CameraPurchaseEvent, CameraPurchaseEvent.class);
         this.registerHandler(Incoming.CameraRoomThumbnailEvent, CameraRoomThumbnailEvent.class);
         this.registerHandler(Incoming.CameraPublishToWebEvent, CameraPublishToWebEvent.class);
+    }
+
+    void registerSnowWar() throws Exception {
+        this.registerHandler(
+                Incoming.SnowStormLoadStageReadyEvent,
+                com.eu.habbo.messages.incoming.snowwar.SnowStormLoadStageReadyEvent.class);
+        this.registerHandler(
+                Incoming.SnowStormExitGameEvent,
+                com.eu.habbo.messages.incoming.snowwar.SnowStormExitGameEvent.class);
+        this.registerHandler(
+                Incoming.SnowStormWalkEvent,
+                com.eu.habbo.messages.incoming.snowwar.SnowStormWalkEvent.class);
+        this.registerHandler(
+                Incoming.SnowStormThrowAtLocationEvent,
+                com.eu.habbo.messages.incoming.snowwar.SnowStormThrowAtLocationEvent.class);
+        this.registerHandler(
+                Incoming.SnowStormThrowAtPlayerEvent,
+                com.eu.habbo.messages.incoming.snowwar.SnowStormThrowAtPlayerEvent.class);
+        this.registerHandler(
+                Incoming.SnowStormCreateSnowballEvent,
+                com.eu.habbo.messages.incoming.snowwar.SnowStormCreateSnowballEvent.class);
+        this.registerHandler(
+                Incoming.SnowStormRequestFullGameStatusEvent,
+                com.eu.habbo.messages.incoming.snowwar.SnowStormRequestFullGameStatusEvent.class);
+        this.registerHandler(
+                Incoming.SnowStormPlayAgainEvent,
+                com.eu.habbo.messages.incoming.snowwar.SnowStormPlayAgainEvent.class);
+        this.registerHandler(
+                Incoming.SnowStormGameChatEvent,
+                com.eu.habbo.messages.incoming.snowwar.SnowStormGameChatEvent.class);
+        this.registerHandler(
+                Incoming.SnowStormJoinQueueEvent,
+                com.eu.habbo.messages.incoming.snowwar.SnowStormJoinQueueEvent.class);
+        this.registerHandler(
+                Incoming.SnowStormLeaveQueueEvent,
+                com.eu.habbo.messages.incoming.snowwar.SnowStormLeaveQueueEvent.class);
     }
 
     void registerGameCenter() throws Exception {

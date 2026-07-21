@@ -13,6 +13,10 @@ public class SoundboardPlayComposer extends MessageComposer {
     private final int actorRoomIndex;
     private final String username;
 
+    public SoundboardPlayComposer(int soundId, String url, String username) {
+        this(soundId, url, "", 0, 0, username);
+    }
+
     public SoundboardPlayComposer(
             int soundId,
             String url,

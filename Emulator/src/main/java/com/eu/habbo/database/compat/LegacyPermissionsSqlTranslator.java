@@ -42,7 +42,8 @@ public class LegacyPermissionsSqlTranslator implements LegacySqlTranslator {
             "id", "rank_name", "hidden_rank", "badge", "job_description",
             "staff_color", "staff_background", "level", "room_effect",
             "log_commands", "prefix", "prefix_color", "auto_credits_amount",
-            "auto_pixels_amount", "auto_gotw_amount", "auto_points_amount");
+            "auto_pixels_amount", "auto_gotw_amount", "auto_points_amount",
+            "soundboard_cooldown_seconds");
 
     private static final Pattern IDENTIFIER = Pattern.compile("^[A-Za-z_][A-Za-z0-9_]*$");
 

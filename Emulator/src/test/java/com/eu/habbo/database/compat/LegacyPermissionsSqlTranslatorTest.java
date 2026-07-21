@@ -95,6 +95,15 @@ class LegacyPermissionsSqlTranslatorTest {
     }
 
     @Test
+    void soundboardCooldownIsRankMetadata() throws SQLException {
+        assertEquals(
+                "ALTER TABLE `permission_ranks` ADD COLUMN IF NOT EXISTS `soundboard_cooldown_seconds` INT NOT NULL DEFAULT 60",
+                translator.translate(
+                        "ALTER TABLE `permissions` ADD COLUMN IF NOT EXISTS `soundboard_cooldown_seconds` INT NOT NULL DEFAULT 60",
+                        context));
+    }
+
+    @Test
     void grantUpdateBecomesRankColumnCaseUpdate() throws SQLException {
         String translated = translator.translate("UPDATE permissions SET cmd_randomword = '1' WHERE id >= 6", context);
 

@@ -8,10 +8,20 @@ public class SoundboardSound {
     public final int id;
     public final String name;
     public final String url;
+    public final int minRank;
 
     public SoundboardSound(ResultSet set) throws SQLException {
-        this.id = set.getInt("id");
-        this.name = set.getString("name");
-        this.url = set.getString("url");
+        this(set.getInt("id"), set.getString("name"), set.getString("url"), set.getInt("min_rank"));
+    }
+
+    public SoundboardSound(int id, String name, String url, int minRank) {
+        this.id = id;
+        this.name = name == null ? "" : name;
+        this.url = url == null ? "" : url;
+        this.minRank = Math.max(1, minRank);
+    }
+
+    public boolean isAvailableTo(int rankId) {
+        return rankId >= this.minRank;
     }
 }

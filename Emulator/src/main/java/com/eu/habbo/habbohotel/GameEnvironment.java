@@ -129,7 +129,8 @@ public class GameEnvironment {
         this.infostandBackgroundManager =
                 this.services.create("infostand backgrounds", InfostandBackgroundManager::new);
         this.wheelManager = this.services.create("wheel manager", WheelManager::new);
-        this.soundboardManager = this.services.create("soundboard manager", SoundboardManager::new);
+        this.soundboardManager = this.services.create(
+                "soundboard manager", () -> new SoundboardManager(this.permissionsManager));
         this.traxEditorManager = this.services.create("trax editor manager", TraxEditorManager::new);
         this.mentionManager = this.services.create("mention manager", MentionManager::new);
 

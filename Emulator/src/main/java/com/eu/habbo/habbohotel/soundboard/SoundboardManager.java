@@ -1,6 +1,8 @@
 package com.eu.habbo.habbohotel.soundboard;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.permissions.PermissionsManager;
+import com.eu.habbo.habbohotel.permissions.Rank;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +23,15 @@ public class SoundboardManager {
     private volatile List<SoundboardSound> sounds = List.of();
 
     public SoundboardManager() {
-        this.cooldownByRank = SoundboardManager::loadCooldownFromPermissions;
+        this(rankId -> 60);
+    }
+
+    public SoundboardManager(PermissionsManager permissionsManager) {
+        this(rankId -> loadCooldownFromPermissions(permissionsManager, rankId));
+    }
+
+    private SoundboardManager(IntUnaryOperator cooldownByRank) {
+        this.cooldownByRank = cooldownByRank;
         long millis = System.currentTimeMillis();
         this.bootstrap();
         this.reload();
@@ -109,17 +119,13 @@ public class SoundboardManager {
         return new PlayDecision(true, sound, DenialReason.NONE, 0);
     }
 
-    private static int loadCooldownFromPermissions(int rankId) {
-        if (Emulator.getGameEnvironment() == null
-                || Emulator.getGameEnvironment().getPermissionsManager() == null
-                || Emulator.getGameEnvironment().getPermissionsManager().getRank(rankId) == null) {
+    private static int loadCooldownFromPermissions(PermissionsManager permissionsManager, int rankId) {
+        if (permissionsManager == null) {
             return -1;
         }
 
-        return Emulator.getGameEnvironment()
-                .getPermissionsManager()
-                .getRank(rankId)
-                .getSoundboardCooldownSeconds();
+        Rank rank = permissionsManager.getRank(rankId);
+        return rank == null ? -1 : rank.getSoundboardCooldownSeconds();
     }
 
     public enum DenialReason {

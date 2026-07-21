@@ -33,10 +33,10 @@ public class SoundboardPlayEvent extends MessageHandler {
                         System.currentTimeMillis());
         if (!decision.allowed()) {
             if (decision.denialReason() == SoundboardManager.DenialReason.COOLDOWN) {
-                habbo.whisper(
-                        Emulator.getTexts()
-                                .getValue("soundboard.cooldown.remaining")
-                                .replace("%seconds%", Integer.toString(decision.remainingSeconds())),
+                habbo.whisperLocalized(
+                        "soundboard.cooldown.remaining",
+                        "%seconds%",
+                        Integer.toString(decision.remainingSeconds()),
                         RoomChatMessageBubbles.ALERT);
             }
             return;

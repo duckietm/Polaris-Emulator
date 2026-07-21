@@ -14,6 +14,10 @@ public class SoundboardSettingsComposer extends MessageComposer {
     private final int cooldownSeconds;
     private final List<SoundboardSound> sounds;
 
+    public SoundboardSettingsComposer(boolean enabled, List<SoundboardSound> sounds) {
+        this(enabled, 60, sounds);
+    }
+
     public SoundboardSettingsComposer(boolean enabled, int cooldownSeconds, List<SoundboardSound> sounds) {
         this.enabled = enabled;
         this.cooldownSeconds = Math.max(0, cooldownSeconds);

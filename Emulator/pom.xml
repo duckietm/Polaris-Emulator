@@ -32,7 +32,7 @@
         <bcrypt.version>0.10.2</bcrypt.version>
         <jakarta-mail.version>2.0.5</jakarta-mail.version>
         <junit.version>6.1.2</junit.version>
-        <javaparser.version>3.27.1</javaparser.version>
+        <javaparser.version>3.28.2</javaparser.version>
         <flyway.version>12.11.0</flyway.version>
         <testcontainers.version>1.21.4</testcontainers.version>
         <mockito.version>5.23.0</mockito.version>

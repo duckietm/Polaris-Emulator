@@ -33,6 +33,7 @@ public class Rank {
     private int creditsTimerAmount;
     private int pixelsTimerAmount;
     private int gotwTimerAmount;
+    private int soundboardCooldownSeconds;
 
     public Rank(ResultSet set) throws SQLException {
         this(set.getInt("id"));
@@ -48,6 +49,7 @@ public class Rank {
         this.creditsTimerAmount = 1;
         this.pixelsTimerAmount = 1;
         this.gotwTimerAmount = 1;
+        this.soundboardCooldownSeconds = 60;
     }
 
     public void load(ResultSet set) throws SQLException {
@@ -91,6 +93,10 @@ public class Rank {
         this.creditsTimerAmount = set.getInt("auto_credits_amount");
         this.pixelsTimerAmount = set.getInt("auto_pixels_amount");
         this.gotwTimerAmount = set.getInt("auto_gotw_amount");
+        int loadedSoundboardCooldown = set.getInt("soundboard_cooldown_seconds");
+        this.soundboardCooldownSeconds = set.wasNull() || loadedSoundboardCooldown < 0
+                ? 60
+                : loadedSoundboardCooldown;
         this.hasPrefix = !this.prefix.isEmpty();
     }
 
@@ -107,6 +113,7 @@ public class Rank {
         this.variables.put("auto_credits_amount", Integer.toString(this.creditsTimerAmount));
         this.variables.put("auto_pixels_amount", Integer.toString(this.pixelsTimerAmount));
         this.variables.put("auto_gotw_amount", Integer.toString(this.gotwTimerAmount));
+        this.variables.put("soundboard_cooldown_seconds", Integer.toString(this.soundboardCooldownSeconds));
     }
 
     private String safeString(String value) {
@@ -182,5 +189,7 @@ public class Rank {
     public int getPixelsTimerAmount() { return this.pixelsTimerAmount; }
 
     public int getGotwTimerAmount() { return this.gotwTimerAmount; }
+
+    public int getSoundboardCooldownSeconds() { return this.soundboardCooldownSeconds; }
 }
 

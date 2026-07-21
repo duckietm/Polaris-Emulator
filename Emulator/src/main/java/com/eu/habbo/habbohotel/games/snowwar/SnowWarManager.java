@@ -23,17 +23,13 @@ public class SnowWarManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SnowWarManager.class);
 
-    private static volatile SnowWarManager instance;
+    // Eager, immutable singleton: construction is cheap (collections only,
+    // config is read lazily per use) and a final field keeps the class free
+    // of mutable statics (FrozenArchitectureBaselineTest).
+    private static final SnowWarManager INSTANCE = new SnowWarManager();
 
     public static SnowWarManager getInstance() {
-        if (instance == null) {
-            synchronized (SnowWarManager.class) {
-                if (instance == null) {
-                    instance = new SnowWarManager();
-                }
-            }
-        }
-        return instance;
+        return INSTANCE;
     }
 
     /**
@@ -57,7 +53,7 @@ public class SnowWarManager {
         return Emulator.getConfig().getBoolean("gamecenter.snowwar.enabled", true);
     }
 
-    private int getMinimumPlayers() {
+    public int getMinimumPlayers() {
         return Math.max(1, Emulator.getConfig().getInt("gamecenter.snowwar.players.min", 2));
     }
 

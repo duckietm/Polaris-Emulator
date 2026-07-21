@@ -395,20 +395,20 @@ public class Incoming {
     public static final int GuildForumMarkAsReadEvent = 1855;
 
 
-    public static final int SnowStormLoadStageReadyEvent = 6000;
-    public static final int SnowStormExitGameEvent = 6001;
+    public static final int UNKNOWN_SNOWSTORM_6000 = 6000;
+    public static final int UNKNOWN_SNOWSTORM_6001 = 6001;
     // public static final int UNKNOWN_SNOWSTORM_6002 = 6002;
-    public static final int SnowStormWalkEvent = 6003;
-    public static final int SnowStormThrowAtLocationEvent = 6004;
-    public static final int SnowStormThrowAtPlayerEvent = 6005;
-    public static final int SnowStormCreateSnowballEvent = 6006;
-    public static final int SnowStormRequestFullGameStatusEvent = 6007;
-    public static final int SnowStormPlayAgainEvent = 6008;
-    public static final int SnowStormGameChatEvent = 6009;
+    public static final int UNKNOWN_SNOWSTORM_6003 = 6003;
+    public static final int UNKNOWN_SNOWSTORM_6004 = 6004;
+    public static final int UNKNOWN_SNOWSTORM_6005 = 6005;
+    public static final int UNKNOWN_SNOWSTORM_6006 = 6006;
+    public static final int UNKNOWN_SNOWSTORM_6007 = 6007;
+    public static final int UNKNOWN_SNOWSTORM_6008 = 6008;
+    public static final int UNKNOWN_SNOWSTORM_6009 = 6009;
     public static final int UNKNOWN_SNOWSTORM_6010 = 6010;
     public static final int UNKNOWN_SNOWSTORM_6011 = 6011;
     public static final int SnowStormJoinQueueEvent = 6012;
-    public static final int SnowStormLeaveQueueEvent = 6013;
+    public static final int UNKNOWN_SNOWSTORM_6013 = 6013;
     public static final int UNKNOWN_SNOWSTORM_6014 = 6014;
     public static final int UNKNOWN_SNOWSTORM_6015 = 6015;
     public static final int UNKNOWN_SNOWSTORM_6016 = 6016;

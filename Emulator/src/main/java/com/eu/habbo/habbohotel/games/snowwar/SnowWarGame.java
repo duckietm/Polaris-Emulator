@@ -86,7 +86,7 @@ public class SnowWarGame {
         if (this.map != null) {
             for (SnowWarPoint machinePosition : this.map.getMachinePositions()) {
                 this.machines.add(new SnowWarMachineObject(this.nextObjectId(),
-                    machinePosition.getX(), machinePosition.getY()));
+                        machinePosition.getX(), machinePosition.getY()));
             }
         }
     }
@@ -243,8 +243,8 @@ public class SnowWarGame {
 
             // Face the middle of the arena.
             int direction = SnowWarMath.getAngleFromComponents(
-                SnowWarMath.tileToWorld(centerX) - attr.getWorldPosition().getX(),
-                SnowWarMath.tileToWorld(centerY) - attr.getWorldPosition().getY());
+                    SnowWarMath.tileToWorld(centerX) - attr.getWorldPosition().getX(),
+                    SnowWarMath.tileToWorld(centerY) - attr.getWorldPosition().getY());
             attr.setRotation(SnowWarMath.direction360To8(direction));
 
             player.setAvatar(new SnowWarAvatarObject(this, player));
@@ -329,12 +329,11 @@ public class SnowWarGame {
         // A match normally needs 2+ players to continue, but when the hotel
         // configures gamecenter.snowwar.players.min=1 (solo testing) a lone
         // player may keep playing until they leave.
-        int endThreshold = Math.min(2,
-            Math.max(1, Emulator.getConfig().getInt("gamecenter.snowwar.players.min", 2)));
+        int endThreshold = Math.min(2, SnowWarManager.getInstance().getMinimumPlayers());
 
         if (remainingPlayers < endThreshold && (this.state == SnowWarGameState.WAITING_FOR_PLAYERS
-            || this.state == SnowWarGameState.PREPARING
-            || this.state == SnowWarGameState.RUNNING)) {
+                || this.state == SnowWarGameState.PREPARING
+                || this.state == SnowWarGameState.RUNNING)) {
             this.endGame();
             return;
         }
@@ -437,14 +436,14 @@ public class SnowWarGame {
         int targetTileY = SnowWarMath.convertToGameCoordinate(worldY);
 
         SnowWarSnowballObject snowball = new SnowWarSnowballObject(
-            objectId,
-            this.map,
-            player,
-            attr.getCurrentPosition().getX(),
-            attr.getCurrentPosition().getY(),
-            targetTileX,
-            targetTileY,
-            trajectory);
+                objectId,
+                this.map,
+                player,
+                attr.getCurrentPosition().getX(),
+                attr.getCurrentPosition().getY(),
+                targetTileX,
+                targetTileY,
+                trajectory);
 
         this.task.addSnowball(snowball);
         attr.getSnowballCount().decrementAndGet();
@@ -460,7 +459,7 @@ public class SnowWarGame {
         int convertedTargetY = SnowWarMath.convertToWorldCoordinate(targetTileY);
 
         this.task.queueEvent(new SnowWarLaunchSnowballEvent(
-            objectId, player.getObjectId(), convertedTargetX, convertedTargetY, trajectory));
+                objectId, player.getObjectId(), convertedTargetX, convertedTargetY, trajectory));
     }
 
     public void handleCreateSnowball(SnowWarGamePlayer player) {

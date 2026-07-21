@@ -54,7 +54,7 @@
         <cyclonedx-maven-plugin.version>2.9.2</cyclonedx-maven-plugin.version>
         <jacoco-plugin.version>0.8.15</jacoco-plugin.version>
         <jacoco.minimum.instruction.coveredratio>0.07</jacoco.minimum.instruction.coveredratio>
-        <japicmp.version>0.23.1</japicmp.version>
+        <japicmp.version>0.26.1</japicmp.version>
         <spotless-maven-plugin.version>3.8.0</spotless-maven-plugin.version>
         <palantir-java-format.version>2.96.0</palantir-java-format.version>
         <spotbugs-maven-plugin.version>4.10.3.0</spotbugs-maven-plugin.version>

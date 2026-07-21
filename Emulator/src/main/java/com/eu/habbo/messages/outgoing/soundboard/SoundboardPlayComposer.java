@@ -8,11 +8,23 @@ import com.eu.habbo.messages.outgoing.Outgoing;
 public class SoundboardPlayComposer extends MessageComposer {
     private final int soundId;
     private final String url;
+    private final String soundName;
+    private final int actorUserId;
+    private final int actorRoomIndex;
     private final String username;
 
-    public SoundboardPlayComposer(int soundId, String url, String username) {
+    public SoundboardPlayComposer(
+            int soundId,
+            String url,
+            String soundName,
+            int actorUserId,
+            int actorRoomIndex,
+            String username) {
         this.soundId = soundId;
         this.url = url != null ? url : "";
+        this.soundName = soundName != null ? soundName : "";
+        this.actorUserId = actorUserId;
+        this.actorRoomIndex = actorRoomIndex;
         this.username = username != null ? username : "";
     }
 
@@ -21,6 +33,9 @@ public class SoundboardPlayComposer extends MessageComposer {
         this.response.init(Outgoing.SoundboardPlayComposer);
         this.response.appendInt(this.soundId);
         this.response.appendString(this.url);
+        this.response.appendString(this.soundName);
+        this.response.appendInt(this.actorUserId);
+        this.response.appendInt(this.actorRoomIndex);
         this.response.appendString(this.username);
         return this.response;
     }

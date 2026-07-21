@@ -14998,17 +14998,32 @@
         {
           "kind": "scalar",
           "type": "int",
-          "name": ""
+          "name": "soundId"
         },
         {
           "kind": "scalar",
           "type": "string",
-          "name": ""
+          "name": "url"
         },
         {
           "kind": "scalar",
           "type": "string",
-          "name": ""
+          "name": "soundName"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "actorUserId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "actorRoomIndex"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "username"
         }
       ]
     },

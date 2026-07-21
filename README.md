@@ -14,8 +14,8 @@ online.
 
 ## Requirements
 
-- **Emulator:** Java 21 (JDK) and Maven
-- **Database:** MariaDB
+- **Emulator:** Java 25 (JDK) and Maven
+- **Database:** MariaDB (12.3.1)
 
 ## Quick start
 

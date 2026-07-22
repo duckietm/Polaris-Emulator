@@ -117,6 +117,11 @@ public class ConfigurationManager {
     }
 
     public void loadFromDatabase() {
+        if (!this.hasDatabase()) {
+            LOGGER.warn("Skipping configuration database load: database is not available.");
+            return;
+        }
+
         LOGGER.info("Loading configuration from database...");
 
         long millis = System.currentTimeMillis();
@@ -127,6 +132,11 @@ public class ConfigurationManager {
     }
 
     public void saveToDatabase() {
+        if (!this.hasDatabase()) {
+            LOGGER.warn("Skipping configuration database save: database is not available.");
+            return;
+        }
+
         this.saveSettingsTable(EMULATOR_SETTINGS_TABLE, this.properties);
         this.saveSettingsTable(WIRED_SETTINGS_TABLE, this.wiredProperties);
     }
@@ -264,6 +274,11 @@ public class ConfigurationManager {
     }
 
     private void insertSetting(String key, String value, String comment) {
+        if (!this.hasDatabase()) {
+            LOGGER.warn("Unable to insert setting {}: database is not available.", key);
+            return;
+        }
+
         String tableName = this.isWiredSettingKey(key) ? WIRED_SETTINGS_TABLE : EMULATOR_SETTINGS_TABLE;
         String sql = this.isWiredSettingKey(key)
                 ? "INSERT INTO " + tableName + " (`key`, `value`, `comment`) VALUES (?, ?, ?)"
@@ -294,5 +309,9 @@ public class ConfigurationManager {
 
     private boolean isWiredSettingKey(String key) {
         return key != null && (key.startsWith("wired.") || key.startsWith("hotel.wired."));
+    }
+
+    private boolean hasDatabase() {
+        return Emulator.getDatabase() != null && Emulator.getDatabase().getDataSource() != null;
     }
 }

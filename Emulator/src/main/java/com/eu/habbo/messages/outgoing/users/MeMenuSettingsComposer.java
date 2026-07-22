@@ -23,6 +23,9 @@ public class MeMenuSettingsComposer extends MessageComposer {
         this.response.appendBoolean(this.habbo.getHabboStats().blockCameraFollow);
         this.response.appendInt(this.habbo.getHabboStats().uiFlags);
         this.response.appendInt(this.habbo.getHabboStats().chatColor.getType());
+        this.response.appendBoolean(!this.habbo.getHabboStats().hideOnline);
+        this.response.appendBoolean(!this.habbo.getHabboStats().blockFollowing);
+        this.response.appendBoolean(!this.habbo.getHabboStats().blockFriendRequests);
         return this.response;
     }
 

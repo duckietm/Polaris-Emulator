@@ -1,8 +1,10 @@
 package com.eu.habbo.messages.incoming.friends;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.messenger.Message;
 import com.eu.habbo.habbohotel.messenger.MessengerBuddy;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.messages.outgoing.friends.FriendChatMessageComposer;
 import com.eu.habbo.plugin.events.users.friends.UserFriendChatEvent;
 
 public class FriendPrivateMessageEvent extends MessageHandler {
@@ -33,6 +35,11 @@ public class FriendPrivateMessageEvent extends MessageHandler {
         if (Emulator.getPluginManager().fireEvent(event).isCancelled())
             return;
 
-        buddy.onMessageReceived(this.client.getHabbo(), message);
+        if (userId <= 0) {
+            buddy.onMessageReceived(this.client.getHabbo(), message);
+        } else if (buddy.onMessageReceivedWithDeliveryStatus(this.client.getHabbo(), message)) {
+            Message confirmation = new Message(userId, this.client.getHabbo().getHabboInfo().getId(), "");
+            this.client.sendResponse(new FriendChatMessageComposer(confirmation, userId, userId, "offline-sent"));
+        }
     }
 }

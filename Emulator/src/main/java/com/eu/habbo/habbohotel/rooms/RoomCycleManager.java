@@ -13,7 +13,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.RoomAccessDeniedComposer;
-import com.eu.habbo.messages.outgoing.rooms.users.RoomUnitIdleComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserIgnoredComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
 import com.eu.habbo.plugin.events.users.UserExitRoomEvent;
@@ -187,32 +186,33 @@ public class RoomCycleManager {
     }
 
     private void processHabboIdle(Habbo habbo, ArrayList<Habbo> toKick) {
-        if (Emulator.getConfig().getBoolean("hotel.rooms.auto.idle")) {
-            if (!habbo.getRoomUnit().isIdle()) {
-                habbo.getRoomUnit().increaseIdleTimer();
+        boolean roomIdleBehaviorEnabled = this.room.isIdleSleepEnabled() || this.room.isIdleAutokickEnabled();
 
-                if (habbo.getRoomUnit().isIdle()) {
-                    boolean danceIsNone = (habbo.getRoomUnit().getDanceType() == DanceType.NONE);
-                    if (danceIsNone) {
-                        this.room.sendComposer(new RoomUnitIdleComposer(habbo.getRoomUnit()).compose());
-                    }
-                    if (danceIsNone && !Emulator.getConfig()
-                            .getBoolean("hotel.roomuser.idle.not_dancing.ignore.wired_idle")) {
-                        WiredManager.triggerUserIdles(this.room, habbo.getRoomUnit());
-                    }
+        if (Emulator.getConfig().getBoolean("hotel.rooms.auto.idle") || roomIdleBehaviorEnabled) {
+            int sleepCycles = this.room.isIdleSleepEnabled()
+                    ? this.room.getIdleSleepTimeoutSeconds() * 2
+                    : Room.IDLE_CYCLES;
+            int kickCycles = this.room.isIdleAutokickEnabled()
+                    ? this.room.getIdleAutokickTimeoutSeconds() * 2
+                    : Room.IDLE_CYCLES_KICK;
+            int previousIdleCycles = habbo.getRoomUnit().getIdleTimer();
+            habbo.getRoomUnit().increaseIdleTimer();
+
+            if (previousIdleCycles <= sleepCycles && habbo.getRoomUnit().getIdleTimer() > sleepCycles) {
+                boolean danceIsNone = (habbo.getRoomUnit().getDanceType() == DanceType.NONE);
+                if (danceIsNone) {
+                    this.room.getUnitManager().idle(habbo);
                 }
-            } else {
-                habbo.getRoomUnit().increaseIdleTimer();
+            }
 
-                if (!this.room.isOwner(habbo)
-                        && habbo.getRoomUnit().getIdleTimer() >= Room.IDLE_CYCLES_KICK) {
-                    UserExitRoomEvent event = new UserExitRoomEvent(habbo,
-                            UserExitRoomEvent.UserExitRoomReason.KICKED_IDLE);
-                    Emulator.getPluginManager().fireEvent(event);
+            if (!this.room.isOwner(habbo)
+                    && habbo.getRoomUnit().getIdleTimer() >= kickCycles) {
+                UserExitRoomEvent event = new UserExitRoomEvent(habbo,
+                        UserExitRoomEvent.UserExitRoomReason.KICKED_IDLE);
+                Emulator.getPluginManager().fireEvent(event);
 
-                    if (!event.isCancelled()) {
-                        toKick.add(habbo);
-                    }
+                if (!event.isCancelled()) {
+                    toKick.add(habbo);
                 }
             }
         }

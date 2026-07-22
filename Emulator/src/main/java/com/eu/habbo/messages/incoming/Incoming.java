@@ -2,6 +2,8 @@ package com.eu.habbo.messages.incoming;
 
 public class Incoming {
     public static final int PongEvent = 2596;
+    public static final int DisconnectEvent = 2445;
+    public static final int RoomUserHabbiconEvent = 6010;
     // Player-facing wired chest (Scrigno)
     public static final int ChestDepositEvent = 9313;
     public static final int ChestWithdrawEvent = 9314;
@@ -519,6 +521,13 @@ public class Incoming {
     public static final int ClaimEarningsRewardEvent = 9309;
     public static final int ClaimAllEarningsRewardsEvent = 9310;
     public static final int PressKeybindEvent = 9311;
+    public static final int HotelViewLandingRequestEvent = 9410;
+    public static final int HotelViewLandingSaveEvent = 9411;
+    public static final int HotelViewLandingSaveSceneEvent = 9412;
+    public static final int HotelViewLandingVoteEvent = 9413;
+    public static final int HotelViewLandingResetVotesEvent = 9414;
+    public static final int SaveGamePrivacySettingsEvent = 9415;
+    public static final int RequestOfflineMessagesEvent = 9416;
     public static final int RequestMentionsEvent = 4803;
     public static final int MarkMentionsReadEvent = 4804;
     public static final int DeleteMentionEvent = 4805;

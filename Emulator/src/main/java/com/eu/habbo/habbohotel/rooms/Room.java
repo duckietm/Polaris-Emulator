@@ -176,6 +176,12 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
   private int tradeMode;
   private boolean moveDiagonally;
   private boolean allowUnderpass;
+  private boolean muteAllPets;
+  private boolean leaveOnDoorTileEnabled;
+  private boolean idleSleepEnabled;
+  private int idleSleepTimeoutSeconds;
+  private boolean idleAutokickEnabled;
+  private int idleAutokickTimeoutSeconds;
   private boolean jukeboxActive;
   private boolean hideWired;
   private boolean buildersClubTrialLocked;
@@ -295,6 +301,12 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     this.tradeMode = set.getInt("trade_mode");
     this.moveDiagonally = set.getString("move_diagonally").equals("1");
     this.allowUnderpass = set.getString("allow_underpass").equals("1");
+    this.muteAllPets = set.getBoolean("mute_all_pets");
+    this.leaveOnDoorTileEnabled = set.getBoolean("leave_on_door_tile");
+    this.idleSleepEnabled = set.getBoolean("idle_sleep_enabled");
+    this.idleSleepTimeoutSeconds = set.getInt("idle_sleep_timeout_seconds");
+    this.idleAutokickEnabled = set.getBoolean("idle_autokick_enabled");
+    this.idleAutokickTimeoutSeconds = set.getInt("idle_autokick_timeout_seconds");
 
     this.preLoaded = true;
     this.allowBotsWalk = true;
@@ -1168,7 +1180,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     if (this.needsUpdate) {
       try (Connection connection = Emulator.getDatabase().getDataSource()
               .getConnection(); PreparedStatement statement = connection.prepareStatement(
-              "UPDATE rooms SET name = ?, description = ?, password = ?, state = ?, users_max = ?, category = ?, score = ?, paper_floor = ?, paper_wall = ?, paper_landscape = ?, thickness_wall = ?, wall_height = ?, thickness_floor = ?, moodlight_data = ?, tags = ?, allow_other_pets = ?, allow_other_pets_eat = ?, allow_walkthrough = ?, allow_hidewall = ?, chat_mode = ?, chat_weight = ?, chat_speed = ?, chat_hearing_distance = ?, chat_protection =?, who_can_mute = ?, who_can_kick = ?, who_can_ban = ?, poll_id = ?, guild_id = ?, roller_speed = ?, override_model = ?, is_staff_picked = ?, promoted = ?, trade_mode = ?, move_diagonally = ?, owner_id = ?, owner_name = ?, jukebox_active = ?, hidewired = ?, allow_underpass = ?, youtube_enabled = ?, builders_club_trial_locked = ?, builders_club_original_state = ? WHERE id = ?")) {
+              "UPDATE rooms SET name = ?, description = ?, password = ?, state = ?, users_max = ?, category = ?, score = ?, paper_floor = ?, paper_wall = ?, paper_landscape = ?, thickness_wall = ?, wall_height = ?, thickness_floor = ?, moodlight_data = ?, tags = ?, allow_other_pets = ?, allow_other_pets_eat = ?, allow_walkthrough = ?, allow_hidewall = ?, chat_mode = ?, chat_weight = ?, chat_speed = ?, chat_hearing_distance = ?, chat_protection =?, who_can_mute = ?, who_can_kick = ?, who_can_ban = ?, poll_id = ?, guild_id = ?, roller_speed = ?, override_model = ?, is_staff_picked = ?, promoted = ?, trade_mode = ?, move_diagonally = ?, owner_id = ?, owner_name = ?, jukebox_active = ?, hidewired = ?, allow_underpass = ?, youtube_enabled = ?, builders_club_trial_locked = ?, builders_club_original_state = ?, mute_all_pets = ?, leave_on_door_tile = ?, idle_sleep_enabled = ?, idle_sleep_timeout_seconds = ?, idle_autokick_enabled = ?, idle_autokick_timeout_seconds = ? WHERE id = ?")) {
         statement.setString(1, this.name);
         statement.setString(2, this.description);
         statement.setString(3, this.password);
@@ -1221,7 +1233,13 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         statement.setString(41, this.youtubeEnabled ? "1" : "0");
         statement.setString(42, this.buildersClubTrialLocked ? "1" : "0");
         statement.setString(43, (this.buildersClubOriginalState != null ? this.buildersClubOriginalState : RoomState.OPEN).name().toLowerCase());
-        statement.setInt(44, this.id);
+        statement.setString(44, this.muteAllPets ? "1" : "0");
+        statement.setString(45, this.leaveOnDoorTileEnabled ? "1" : "0");
+        statement.setString(46, this.idleSleepEnabled ? "1" : "0");
+        statement.setInt(47, this.idleSleepTimeoutSeconds);
+        statement.setString(48, this.idleAutokickEnabled ? "1" : "0");
+        statement.setInt(49, this.idleAutokickTimeoutSeconds);
+        statement.setInt(50, this.id);
         statement.executeUpdate();
         this.needsUpdate = false;
       } catch (SQLException e) {
@@ -1546,6 +1564,54 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
   public void setAllowUnderpass(boolean allowUnderpass) {
     this.allowUnderpass = allowUnderpass;
+  }
+
+  public boolean isMuteAllPets() {
+    return this.muteAllPets;
+  }
+
+  public void setMuteAllPets(boolean muteAllPets) {
+    this.muteAllPets = muteAllPets;
+  }
+
+  public boolean isLeaveOnDoorTileEnabled() {
+    return this.leaveOnDoorTileEnabled;
+  }
+
+  public void setLeaveOnDoorTileEnabled(boolean leaveOnDoorTileEnabled) {
+    this.leaveOnDoorTileEnabled = leaveOnDoorTileEnabled;
+  }
+
+  public boolean isIdleSleepEnabled() {
+    return this.idleSleepEnabled;
+  }
+
+  public void setIdleSleepEnabled(boolean idleSleepEnabled) {
+    this.idleSleepEnabled = idleSleepEnabled;
+  }
+
+  public int getIdleSleepTimeoutSeconds() {
+    return this.idleSleepTimeoutSeconds;
+  }
+
+  public void setIdleSleepTimeoutSeconds(int idleSleepTimeoutSeconds) {
+    this.idleSleepTimeoutSeconds = idleSleepTimeoutSeconds;
+  }
+
+  public boolean isIdleAutokickEnabled() {
+    return this.idleAutokickEnabled;
+  }
+
+  public void setIdleAutokickEnabled(boolean idleAutokickEnabled) {
+    this.idleAutokickEnabled = idleAutokickEnabled;
+  }
+
+  public int getIdleAutokickTimeoutSeconds() {
+    return this.idleAutokickTimeoutSeconds;
+  }
+
+  public void setIdleAutokickTimeoutSeconds(int idleAutokickTimeoutSeconds) {
+    this.idleAutokickTimeoutSeconds = idleAutokickTimeoutSeconds;
   }
 
   public boolean isAllowBotsWalk() {

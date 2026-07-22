@@ -2,6 +2,7 @@ package com.eu.habbo.messages.outgoing;
 
 public class Outgoing {
     public static final int PetStatusUpdateComposer = 1907;//error 404
+    public final static int RoomUserHabbiconComposer = 6011;
 
     public final static int CfhTopicsMessageComposer = 325;
     // Player-facing wired chest (Scrigno)
@@ -615,6 +616,7 @@ public class Outgoing {
     public static final int SoundboardPlayComposer = 9406;
     public static final int EarningsCenterComposer = 9407;
     public static final int EarningsClaimResultComposer = 9408;
+    public static final int HotelViewLandingComposer = 9409;
     public static final int MentionReceivedComposer = 4801;
     public static final int MentionsListComposer = 4802;
 

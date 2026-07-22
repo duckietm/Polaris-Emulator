@@ -62,7 +62,7 @@ public class UserSearchResultComposer extends MessageComposer {
             this.response.appendBoolean(false);
             this.response.appendString("");
             this.response.appendInt(1);
-            this.response.appendString(buddy.getOnline() == 1 ? buddy.getLook() : "");
+            this.response.appendString(buddy.isVisibleOnline() ? buddy.getLook() : "");
             this.response.appendString("");
         }
 

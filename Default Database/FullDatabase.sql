@@ -30995,6 +30995,7 @@ CREATE TABLE IF NOT EXISTS `users_settings` (
   `cfh_bans` int(11) NOT NULL DEFAULT 0 COMMENT 'Amount of bans a user has received.',
   `block_following` enum('0','1') CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT '0',
   `block_friendrequests` enum('0','1') CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT '0',
+  `hide_online` enum('0','1') CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT '0',
   `block_roominvites` enum('0','1') NOT NULL DEFAULT '0',
   `volume_system` int(11) NOT NULL DEFAULT 100,
   `volume_furni` int(11) NOT NULL DEFAULT 100,

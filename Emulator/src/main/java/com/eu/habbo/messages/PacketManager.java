@@ -324,6 +324,7 @@ public class PacketManager {
         this.registerHandler(Incoming.MachineIDEvent, MachineIDEvent.class);
         this.registerHandler(Incoming.UsernameEvent, UsernameEvent.class);
         this.registerHandler(Incoming.PingEvent, PingEvent.class);
+        this.registerHandler(Incoming.DisconnectEvent, DisconnectEvent.class);
     }
 
     private void registerFriends() throws Exception {
@@ -335,6 +336,7 @@ public class PacketManager {
         this.registerHandler(Incoming.AcceptFriendRequest, AcceptFriendRequestEvent.class);
         this.registerHandler(Incoming.DeclineFriendRequest, DeclineFriendRequestEvent.class);
         this.registerHandler(Incoming.FriendPrivateMessageEvent, FriendPrivateMessageEvent.class);
+        this.registerHandler(Incoming.RequestOfflineMessagesEvent, RequestOfflineMessagesEvent.class);
         this.registerHandler(Incoming.RequestFriendRequestEvent, RequestFriendRequestsEvent.class);
         this.registerHandler(Incoming.StalkFriendEvent, StalkFriendEvent.class);
         this.registerHandler(Incoming.RequestInitFriendsEvent, RequestInitFriendsEvent.class);
@@ -360,6 +362,7 @@ public class PacketManager {
         this.registerHandler(Incoming.SaveBlockCameraFollowEvent, SaveBlockCameraFollowEvent.class);
         this.registerHandler(Incoming.SaveIgnoreRoomInvitesEvent, SaveIgnoreRoomInvitesEvent.class);
         this.registerHandler(Incoming.SavePreferOldChatEvent, SavePreferOldChatEvent.class);
+        this.registerHandler(Incoming.SaveGamePrivacySettingsEvent, SaveGamePrivacySettingsEvent.class);
         this.registerHandler(Incoming.ActivateEffectEvent, ActivateEffectEvent.class);
         this.registerHandler(Incoming.EnableEffectEvent, EnableEffectEvent.class);
         this.registerHandler(Incoming.UserActivityEvent, UserActivityEvent.class);
@@ -412,6 +415,11 @@ public class PacketManager {
         this.registerHandler(Incoming.HotelViewClaimBadgeRewardEvent, HotelViewClaimBadgeRewardEvent.class);
         this.registerHandler(Incoming.HotelViewRequestLTDAvailabilityEvent, HotelViewRequestLTDAvailabilityEvent.class);
         this.registerHandler(Incoming.HotelViewRequestSecondsUntilEvent, HotelViewRequestSecondsUntilEvent.class);
+        this.registerHandler(Incoming.HotelViewLandingRequestEvent, HotelViewLandingRequestEvent.class);
+        this.registerHandler(Incoming.HotelViewLandingSaveEvent, HotelViewLandingSaveEvent.class);
+        this.registerHandler(Incoming.HotelViewLandingSaveSceneEvent, HotelViewLandingSaveSceneEvent.class);
+        this.registerHandler(Incoming.HotelViewLandingVoteEvent, HotelViewLandingVoteEvent.class);
+        this.registerHandler(Incoming.HotelViewLandingResetVotesEvent, HotelViewLandingResetVotesEvent.class);
     }
 
     private void registerInventory() throws Exception {
@@ -486,6 +494,7 @@ public class PacketManager {
         this.registerHandler(Incoming.RoomUserShoutEvent, RoomUserShoutEvent.class);
         this.registerHandler(Incoming.RoomUserWhisperEvent, RoomUserWhisperEvent.class);
         this.registerHandler(Incoming.RoomUserActionEvent, RoomUserActionEvent.class);
+        this.registerHandler(Incoming.RoomUserHabbiconEvent, RoomUserHabbiconEvent.class);
         this.registerHandler(Incoming.RoomUserSitEvent, RoomUserSitEvent.class);
         this.registerHandler(Incoming.RoomUserDanceEvent, RoomUserDanceEvent.class);
         this.registerHandler(Incoming.RoomUserSignEvent, RoomUserSignEvent.class);

@@ -6,6 +6,7 @@ import ch.qos.logback.core.ConsoleAppender;
 import com.eu.habbo.core.*;
 import com.eu.habbo.core.consolecommands.ConsoleCommand;
 import com.eu.habbo.database.Database;
+import com.eu.habbo.database.DatabaseSchemaRepairer;
 import com.eu.habbo.gui.EmulatorDashboard;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.gameclients.SessionResumeManager;
@@ -129,7 +130,7 @@ public final class Emulator {
             long startTime = System.nanoTime();
 
             Emulator.runtime = Runtime.getRuntime();
-            Emulator.config = new ConfigurationManager("config.ini");
+            Emulator.config = new ConfigurationManager(resolveConfigPath());
             Emulator.crypto = new CryptoConfig(
                     Emulator.getConfig().getBoolean("enc.enabled", false),
                     Emulator.getConfig().getValue("enc.e"),
@@ -143,6 +144,9 @@ public final class Emulator {
             Emulator.getDatabase().getDataSource().setMaximumPoolSize(Emulator.getConfig().getInt("runtime.threads") * 2);
             Emulator.getDatabase().getDataSource().setMinimumIdle(10);
             registerStartupConfigDefaults();
+            if (Emulator.getConfig().getBoolean("database.schema.autorepair.enabled", true)) {
+                DatabaseSchemaRepairer.repairKnownSchemaIssues();
+            }
             Emulator.pluginManager = new PluginManager();
             Emulator.pluginManager.reload();
             Emulator.getPluginManager().fireEvent(new EmulatorConfigUpdatedEvent());
@@ -405,7 +409,28 @@ public final class Emulator {
         Emulator.config.register("nitro.secure.api.max_payload_bytes", "65536");
         Emulator.config.register("nitro.secure.config.max_file_bytes", "2097152");
         Emulator.config.register("nitro.secure.gamedata.max_file_bytes", "16777216");
+        Emulator.config.register("database.schema.autorepair.enabled", "1");
         registerEarningsSettings();
+    }
+
+    private static String resolveConfigPath() {
+        String defaultPath = "config.ini";
+        if (new File(defaultPath).isFile()) {
+            return defaultPath;
+        }
+
+        String[] fallbackPaths = {
+                "Emulator" + File.separator + defaultPath,
+                "Arcturus-Morningstar-Extended" + File.separator + "Emulator" + File.separator + defaultPath
+        };
+
+        for (String fallbackPath : fallbackPaths) {
+            if (new File(fallbackPath).isFile()) {
+                return fallbackPath;
+            }
+        }
+
+        return defaultPath;
     }
 
     private static String fit(String value, int width) {

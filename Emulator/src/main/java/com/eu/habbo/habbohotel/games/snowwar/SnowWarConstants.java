@@ -38,6 +38,11 @@ public final class SnowWarConstants {
     // Cooldowns (real milliseconds)
     public static final int THROW_COOLDOWN_MS = 300;
 
+    // Throw ranges, in tiles, as a circle around the thrower: a normal
+    // throw covers up to 5 tiles, the long (high-arc) throw up to 15.
+    public static final int THROW_RANGE_NORMAL_TILES = 5;
+    public static final int THROW_RANGE_LONG_TILES = 15;
+
     // Snowball machine (timers in subturns/frames)
     public static final int MACHINE_SNOWBALL_GENERATOR_TIME = 100;
     public static final int MACHINE_MAX_SNOWBALL_CAPACITY = 5;

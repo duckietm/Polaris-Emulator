@@ -85,6 +85,13 @@ public final class SnowWarPathfinder {
         SnowWarPoint goal = attr.getWalkGoal();
         positions.sort((a, b) -> Integer.compare(a.getDistanceSquared(goal), b.getDistanceSquared(goal)));
 
+        // Only step if it brings us strictly closer to the goal; otherwise
+        // stop where we are. Without this, an unreachable goal makes the
+        // greedy step oscillate between two equally-close tiles.
+        if (positions.get(0).getDistanceSquared(goal) >= attr.getCurrentPosition().getDistanceSquared(goal)) {
+            return null;
+        }
+
         return positions.get(0);
     }
 }

@@ -427,6 +427,17 @@ public class SnowWarGame {
         if (attr.getLastThrowTime() + SnowWarConstants.THROW_COOLDOWN_MS > System.currentTimeMillis()) {
             return;
         }
+        // Range gate: normal throws reach 5 tiles, long throws 15. Outside
+        // that the client must use a long throw or move closer.
+        int maxRangeTiles = trajectory == 2
+                ? SnowWarConstants.THROW_RANGE_LONG_TILES
+                : SnowWarConstants.THROW_RANGE_NORMAL_TILES;
+        int deltaTileX = SnowWarMath.convertToGameCoordinate(worldX) - attr.getCurrentPosition().getX();
+        int deltaTileY = SnowWarMath.convertToGameCoordinate(worldY) - attr.getCurrentPosition().getY();
+        if ((deltaTileX * deltaTileX) + (deltaTileY * deltaTileY) > maxRangeTiles * maxRangeTiles) {
+            return;
+        }
+
         if (attr.getSnowballCount().get() <= 0) {
             return;
         }

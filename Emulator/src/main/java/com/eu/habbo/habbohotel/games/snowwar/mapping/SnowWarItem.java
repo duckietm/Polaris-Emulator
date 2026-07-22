@@ -13,19 +13,26 @@ public class SnowWarItem {
     private final int walkableHeight;
     private final int collisionHeight;
     private final boolean hidden;
+    private final String imageUrl;
 
     public SnowWarItem(String name, int x, int y, int rotation) {
         this(name, x, y, rotation,
                 SnowWarItemProperties.getWalkableHeight(name),
-                SnowWarItemProperties.getCollisionHeight(name));
+                SnowWarItemProperties.getCollisionHeight(name), "");
+    }
+
+    public SnowWarItem(String name, int x, int y, int rotation, int walkableHeight, int collisionHeight) {
+        this(name, x, y, rotation, walkableHeight, collisionHeight, "");
     }
 
     /**
-     * Explicit collision properties - used for arbitrary hotel furniture
-     * saved into room_models.public_items by the arena editor, where the
-     * classname is not in the built-in SnowWarItemProperties registry.
+     * Explicit collision properties + optional room-ad image URL - used for
+     * arbitrary hotel furniture saved into room_models.public_items by the
+     * arena editor, where the classname is not in the built-in
+     * SnowWarItemProperties registry. imageUrl is non-empty only for
+     * room-ad (ads_bg) furni so the arena can draw the ad image.
      */
-    public SnowWarItem(String name, int x, int y, int rotation, int walkableHeight, int collisionHeight) {
+    public SnowWarItem(String name, int x, int y, int rotation, int walkableHeight, int collisionHeight, String imageUrl) {
         this.name = name;
         this.x = x;
         this.y = y;
@@ -33,6 +40,7 @@ public class SnowWarItem {
         this.walkableHeight = walkableHeight;
         this.collisionHeight = collisionHeight;
         this.hidden = name.equals("snowball_machine") || name.equals("snowball_machine_hidden");
+        this.imageUrl = imageUrl != null ? imageUrl : "";
     }
 
     public String getName() {
@@ -57,6 +65,10 @@ public class SnowWarItem {
 
     public int getCollisionHeight() {
         return this.collisionHeight;
+    }
+
+    public String getImageUrl() {
+        return this.imageUrl;
     }
 
     /**

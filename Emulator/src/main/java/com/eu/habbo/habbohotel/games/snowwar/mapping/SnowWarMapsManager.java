@@ -143,9 +143,11 @@ public final class SnowWarMapsManager {
                 int rotation = Integer.parseInt(parts[3]);
 
                 if (parts.length >= 6) {
-                    // Editor-saved hotel furniture carries explicit heights.
+                    // Editor-saved hotel furniture carries explicit heights and,
+                    // for room-ad furni, a trailing image URL (7th token).
+                    String imageUrl = parts.length >= 7 ? parts[6] : "";
                     items.add(new SnowWarItem(name, x, y, rotation,
-                            Integer.parseInt(parts[4]), Integer.parseInt(parts[5])));
+                            Integer.parseInt(parts[4]), Integer.parseInt(parts[5]), imageUrl));
                 } else if (SnowWarItemProperties.isKnownItem(name)) {
                     items.add(new SnowWarItem(name, x, y, rotation));
                 } else {

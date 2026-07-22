@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.commands;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.games.snowwar.mapping.SnowWarMapsManager;
+import com.eu.habbo.habbohotel.items.interactions.InteractionCustomValues;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -66,6 +67,7 @@ public class SnowWarSaveCommand extends Command {
         }
 
         int saved = 0;
+        int adImages = 0;
         for (HabboItem item : room.getFloorItems()) {
             String name = item.getBaseItem().getName();
             boolean walkable = item.getBaseItem().allowWalk() || item.getBaseItem().allowSit();
@@ -77,7 +79,18 @@ public class SnowWarSaveCommand extends Command {
                     .append(item.getY()).append(' ')
                     .append(item.getRotation()).append(' ')
                     .append(walkableHeight).append(' ')
-                    .append(collisionHeight).append("\r\n");
+                    .append(collisionHeight);
+
+            // Room-ad (ads_bg) furni carry an imageUrl in their custom values;
+            // save it as a 7th token so the arena can draw the ad. URLs have
+            // no whitespace, so they stay a single space-delimited token.
+            String imageUrl = extractImageUrl(item);
+            if (!imageUrl.isEmpty()) {
+                builder.append(' ').append(imageUrl);
+                adImages++;
+            }
+
+            builder.append("\r\n");
             saved++;
         }
 
@@ -113,10 +126,30 @@ public class SnowWarSaveCommand extends Command {
 
         gameClient.getHabbo().whisper(
                 Emulator.getTexts().getValue("commands.success.cmd_snowwar_save",
-                        "SnowWar arena saved (%count% items). The next game uses the new layout.")
-                        .replace("%count%", Integer.toString(saved)),
+                        "SnowWar arena saved (%count% items, %ads% ad images). The next game uses the new layout.")
+                        .replace("%count%", Integer.toString(saved))
+                        .replace("%ads%", Integer.toString(adImages)),
                 RoomChatMessageBubbles.ALERT);
         return true;
+    }
+
+    /**
+     * Room-ad furni store their image behind an "imageUrl" custom value; be
+     * lenient about key casing across furnidata variants.
+     */
+    private String extractImageUrl(HabboItem item) {
+        if (!(item instanceof InteractionCustomValues)) {
+            return "";
+        }
+
+        java.util.Map<String, String> values = ((InteractionCustomValues) item).values;
+        for (java.util.Map.Entry<String, String> entry : values.entrySet()) {
+            if (entry.getKey() != null && entry.getKey().equalsIgnoreCase("imageUrl")) {
+                String value = entry.getValue();
+                return (value != null && !value.trim().isEmpty()) ? value.trim() : "";
+            }
+        }
+        return "";
     }
 
     /**

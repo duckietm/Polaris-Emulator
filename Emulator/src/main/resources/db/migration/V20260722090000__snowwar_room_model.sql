@@ -24,7 +24,7 @@ ON DUPLICATE KEY UPDATE `comment` = VALUES(`comment`);
 INSERT INTO `emulator_texts` (`key`, `value`) VALUES
 	('commands.keys.cmd_snowwar_save', 'snowwarsave'),
 	('commands.description.cmd_snowwar_save', ':snowwarsave - publish the SnowWar editor room layout'),
-	('commands.success.cmd_snowwar_save', 'SnowWar arena saved (%count% items). The next game uses the new layout.'),
+	('commands.success.cmd_snowwar_save', 'SnowWar arena saved (%count% items, %ads% ad images). The next game uses the new layout.'),
 	('commands.error.cmd_snowwar_save.wrong_room', 'This room does not use the SnowWar arena model.'),
 	('commands.error.cmd_snowwar_save.no_model', 'The SnowWar room model row is missing in room_models.')
 ON DUPLICATE KEY UPDATE `value` = `value`;

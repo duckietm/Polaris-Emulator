@@ -417,7 +417,7 @@ U|com/eu/habbo/habbohotel/games/snowwar/SnowWarGame.java|CALL|getGameEnvironment
 U|com/eu/habbo/habbohotel/games/snowwar/SnowWarGame.java|CALL|getThreading|4
 U|com/eu/habbo/habbohotel/games/snowwar/SnowWarGameTask.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/games/snowwar/SnowWarGameTask.java|CALL|getThreading|1
-U|com/eu/habbo/habbohotel/games/snowwar/SnowWarManager.java|CALL|getConfig|4
+U|com/eu/habbo/habbohotel/games/snowwar/SnowWarManager.java|CALL|getConfig|5
 U|com/eu/habbo/habbohotel/games/snowwar/SnowWarManager.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/games/snowwar/SnowWarManager.java|CALL|getGameEnvironment|6
 U|com/eu/habbo/habbohotel/games/snowwar/SnowWarManager.java|CALL|getThreading|2

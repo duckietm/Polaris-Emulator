@@ -68,6 +68,10 @@ public class SnowWarManager {
         return Math.max(2, Emulator.getConfig().getInt("gamecenter.snowwar.queue.match.max", 8));
     }
 
+    private int getMaxConcurrentGames() {
+        return Math.max(1, Emulator.getConfig().getInt("gamecenter.snowwar.games.max.concurrent", 1));
+    }
+
     private int getLobbyCountdownSeconds() {
         return Math.max(1, Emulator.getConfig().getInt("gamecenter.snowwar.game.start.time", 15));
     }
@@ -186,6 +190,12 @@ public class SnowWarManager {
             return;
         }
 
+        // Concurrent session cap (default 1): while it is reached the queue
+        // holds and matching resumes from onGameFinished.
+        if (this.games.size() >= this.getMaxConcurrentGames()) {
+            return;
+        }
+
         this.countdownRunning = true;
         this.countdownSeconds = this.getLobbyCountdownSeconds();
 
@@ -230,6 +240,12 @@ public class SnowWarManager {
     // ========================================================================
 
     private void createMatch() {
+        // Re-check the cap: a game may have started while we counted down.
+        if (this.games.size() >= this.getMaxConcurrentGames()) {
+            this.broadcastQueuePositions();
+            return;
+        }
+
         List<Habbo> participants = new ArrayList<>();
 
         synchronized (this.queue) {
@@ -324,6 +340,9 @@ public class SnowWarManager {
     public void onGameFinished(SnowWarGame game) {
         this.games.remove(game.getId());
         this.userGames.entrySet().removeIf(entry -> entry.getValue() == game);
+
+        // A session slot freed up - resume matching for waiting players.
+        this.maybeStartCountdown();
     }
 
     private void send(Habbo habbo, com.eu.habbo.messages.outgoing.MessageComposer composer) {

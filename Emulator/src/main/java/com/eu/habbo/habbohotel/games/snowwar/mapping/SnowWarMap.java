@@ -113,17 +113,21 @@ public class SnowWarMap {
      * Picks a random walkable spawn tile inside the given spawn cluster,
      * avoiding already occupied tiles.
      */
-    public SnowWarPoint generateSpawn(int clusterIndex, Collection<SnowWarPoint> occupied, Random random) {
-        if (!this.spawnClusters.isEmpty()) {
-            SnowWarSpawnCluster cluster = this.spawnClusters.get(clusterIndex % this.spawnClusters.size());
-
+    /**
+     * Random spawn tile, spread out from already-assigned spawns: starts by
+     * demanding a generous distance between players and relaxes the
+     * requirement until candidates exist. Runs before the deterministic tick
+     * loop starts and the resulting positions are transmitted in the full
+     * game status, so server-side randomness is safe here.
+     */
+    public SnowWarPoint generateSpawn(Collection<SnowWarPoint> occupied, Random random) {
+        for (int minDistance = 12; minDistance >= 0; minDistance -= 2) {
+            int minDistanceSquared = minDistance * minDistance;
             List<SnowWarPoint> candidates = new ArrayList<>();
-            int minDistanceSquared = cluster.getMinDistance() * cluster.getMinDistance();
 
-            for (int y = cluster.getY() - cluster.getRadius(); y <= cluster.getY() + cluster.getRadius(); y++) {
-                for (int x = cluster.getX() - cluster.getRadius(); x <= cluster.getX() + cluster.getRadius(); x++) {
-                    SnowWarTile tile = this.getTile(x, y);
-                    if (tile == null || !tile.isWalkable()) {
+            for (int y = 0; y < this.sizeY; y++) {
+                for (int x = 0; x < this.sizeX; x++) {
+                    if (!this.tiles[x][y].isWalkable()) {
                         continue;
                     }
 
@@ -144,16 +148,6 @@ public class SnowWarMap {
 
             if (!candidates.isEmpty()) {
                 return candidates.get(random.nextInt(candidates.size()));
-            }
-        }
-
-        // Fallback: any free walkable tile on the map.
-        for (int y = 0; y < this.sizeY; y++) {
-            for (int x = 0; x < this.sizeX; x++) {
-                SnowWarTile tile = this.tiles[x][y];
-                if (tile.isWalkable() && !occupied.contains(new SnowWarPoint(x, y))) {
-                    return new SnowWarPoint(x, y);
-                }
             }
         }
 

@@ -305,6 +305,8 @@ U|com/eu/habbo/habbohotel/commands/ShutdownCommand.java|CALL|getTexts|4
 U|com/eu/habbo/habbohotel/commands/ShutdownCommand.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/commands/SitCommand.java|CALL|getTexts|1
 U|com/eu/habbo/habbohotel/commands/SitDownCommand.java|CALL|getTexts|1
+U|com/eu/habbo/habbohotel/commands/SnowWarSaveCommand.java|CALL|getDatabase|3
+U|com/eu/habbo/habbohotel/commands/SnowWarSaveCommand.java|CALL|getTexts|4
 U|com/eu/habbo/habbohotel/commands/SoftKickCommand.java|CALL|getTexts|3
 U|com/eu/habbo/habbohotel/commands/StaffAlertCommand.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/commands/StaffAlertCommand.java|CALL|getGameServer|1
@@ -416,8 +418,11 @@ U|com/eu/habbo/habbohotel/games/snowwar/SnowWarGame.java|CALL|getThreading|4
 U|com/eu/habbo/habbohotel/games/snowwar/SnowWarGameTask.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/games/snowwar/SnowWarGameTask.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/games/snowwar/SnowWarManager.java|CALL|getConfig|4
-U|com/eu/habbo/habbohotel/games/snowwar/SnowWarManager.java|CALL|getGameEnvironment|4
+U|com/eu/habbo/habbohotel/games/snowwar/SnowWarManager.java|CALL|getDatabase|1
+U|com/eu/habbo/habbohotel/games/snowwar/SnowWarManager.java|CALL|getGameEnvironment|6
 U|com/eu/habbo/habbohotel/games/snowwar/SnowWarManager.java|CALL|getThreading|2
+U|com/eu/habbo/habbohotel/games/snowwar/mapping/SnowWarMapsManager.java|CALL|getConfig|1
+U|com/eu/habbo/habbohotel/games/snowwar/mapping/SnowWarMapsManager.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/games/tag/TagGame.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/guides/GuardianTicket.java|CALL|getConfig|4
 U|com/eu/habbo/habbohotel/guides/GuardianTicket.java|CALL|getGameEnvironment|6

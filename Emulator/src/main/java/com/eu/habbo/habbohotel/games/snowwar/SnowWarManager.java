@@ -1,6 +1,8 @@
 package com.eu.habbo.habbohotel.games.snowwar;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.games.snowwar.mapping.SnowWarMapsManager;
+import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.snowwar.SnowStormGamesInformationComposer;
 import com.eu.habbo.messages.outgoing.snowwar.SnowStormGamesLeftComposer;
@@ -22,6 +24,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class SnowWarManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SnowWarManager.class);
+
+    /**
+     * permission_definitions key gating the arena editor (rank 7 by default).
+     */
+    public static final String EDIT_PERMISSION = "acc_snowwar_edit";
 
     // Eager, immutable singleton: construction is cheap (collections only,
     // config is read lazily per use) and a final field keeps the class free
@@ -268,6 +275,50 @@ public class SnowWarManager {
         LOGGER.info("SnowWar game {} created with {} players.", game.getId(), participants.size());
 
         game.start();
+    }
+
+    /**
+     * The arena editor is a normal room built on the SnowWar room model, so
+     * furniture can be placed with the standard room tools. The first room
+     * using the model is reused; otherwise one is created for the editor.
+     */
+    public Room getOrCreateEditorRoom(Habbo habbo, int mapId) {
+        String modelName = SnowWarMapsManager.getModelName(mapId);
+
+        int roomId = 0;
+        try (java.sql.Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                java.sql.PreparedStatement statement = connection.prepareStatement(
+                        "SELECT id FROM rooms WHERE model = ? ORDER BY id LIMIT 1")) {
+            statement.setString(1, modelName);
+            try (java.sql.ResultSet set = statement.executeQuery()) {
+                if (set.next()) {
+                    roomId = set.getInt("id");
+                }
+            }
+        } catch (java.sql.SQLException e) {
+            LOGGER.error("Failed to look up the SnowWar editor room.", e);
+            return null;
+        }
+
+        if (roomId > 0) {
+            return Emulator.getGameEnvironment().getRoomManager().loadRoom(roomId);
+        }
+
+        Room room = Emulator.getGameEnvironment().getRoomManager().createRoom(
+                habbo.getHabboInfo().getId(),
+                habbo.getHabboInfo().getUsername(),
+                "SnowStorm Arena Editor",
+                "Place furniture to design the SnowStorm arena, then use :snowwarsave to publish it.",
+                modelName,
+                25,
+                0,
+                0);
+
+        if (room == null) {
+            LOGGER.error("Failed to create the SnowWar editor room with model '{}'. Is the room_models row present?", modelName);
+        }
+
+        return room;
     }
 
     public void onGameFinished(SnowWarGame game) {

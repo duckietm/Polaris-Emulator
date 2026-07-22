@@ -216,7 +216,15 @@ public class SnowWarGame {
         this.state = SnowWarGameState.PREPARING;
         this.assignSpawnPoints();
 
-        this.broadcast(new SnowStormLevelDataComposer(this));
+        // LevelData carries a per-recipient editor flag, so it is composed
+        // per player instead of broadcast.
+        for (SnowWarGamePlayer player : this.getActivePlayers()) {
+            if (player.getHabbo() == null || player.getHabbo().getClient() == null) {
+                continue;
+            }
+            boolean canEdit = player.getHabbo().hasPermission(SnowWarManager.EDIT_PERMISSION);
+            player.getHabbo().getClient().sendResponse(new SnowStormLevelDataComposer(this, canEdit));
+        }
         this.broadcast(this.createFullGameStatusComposer());
         this.broadcast(new SnowStormOnStageStartComposer(this.preparingSeconds));
 
@@ -225,17 +233,13 @@ public class SnowWarGame {
 
     private void assignSpawnPoints() {
         List<SnowWarPoint> occupied = new ArrayList<>();
-        int[] teamMemberIndex = new int[this.teamCount];
 
         int centerX = this.map.getSizeX() / 2;
         int centerY = this.map.getSizeY() / 2;
 
         for (SnowWarGamePlayer player : this.getActivePlayers()) {
-            // Distribute teams over the spawn clusters: team 0 -> clusters 0, 2, ...
-            int clusterIndex = player.getTeamId() + (teamMemberIndex[player.getTeamId()] % 2) * this.teamCount;
-            teamMemberIndex[player.getTeamId()]++;
-
-            SnowWarPoint spawn = this.map.generateSpawn(clusterIndex, occupied, this.random);
+            // Random walkable tile, spread away from already-placed players.
+            SnowWarPoint spawn = this.map.generateSpawn(occupied, this.random);
             occupied.add(spawn);
 
             SnowWarAttributes attr = player.getAttributes();

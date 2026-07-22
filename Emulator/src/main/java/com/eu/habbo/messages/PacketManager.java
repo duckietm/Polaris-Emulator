@@ -1155,6 +1155,9 @@ public class PacketManager {
                 Incoming.UNKNOWN_SNOWSTORM_6001, // exit game
                 com.eu.habbo.messages.incoming.snowwar.SnowStormExitGameEvent.class);
         this.registerHandler(
+                Incoming.UNKNOWN_SNOWSTORM_6010, // open arena editor (6002 is taken by ClickFurniEvent)
+                com.eu.habbo.messages.incoming.snowwar.SnowStormEditRoomEvent.class);
+        this.registerHandler(
                 Incoming.UNKNOWN_SNOWSTORM_6003, // walk
                 com.eu.habbo.messages.incoming.snowwar.SnowStormWalkEvent.class);
         this.registerHandler(

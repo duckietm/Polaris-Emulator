@@ -6394,6 +6394,22 @@
       ]
     },
     {
+      "name": "SNOWWAR_EDIT_ROOM",
+      "direction": "client_to_server",
+      "header": 6010,
+      "java": {
+        "symbol": "UNKNOWN_SNOWSTORM_6010",
+        "className": "SnowStormEditRoomEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormEditRoomEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_EDIT_ROOM",
+        "className": "SnowWarEditRoomComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarEditRoomComposer.ts"
+      },
+      "fields": []
+    },
+    {
       "name": "SNOWWAR_JOIN_QUEUE",
       "direction": "client_to_server",
       "header": 6012,

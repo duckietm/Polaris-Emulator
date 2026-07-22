@@ -15,12 +15,23 @@ public class SnowWarItem {
     private final boolean hidden;
 
     public SnowWarItem(String name, int x, int y, int rotation) {
+        this(name, x, y, rotation,
+                SnowWarItemProperties.getWalkableHeight(name),
+                SnowWarItemProperties.getCollisionHeight(name));
+    }
+
+    /**
+     * Explicit collision properties - used for arbitrary hotel furniture
+     * saved into room_models.public_items by the arena editor, where the
+     * classname is not in the built-in SnowWarItemProperties registry.
+     */
+    public SnowWarItem(String name, int x, int y, int rotation, int walkableHeight, int collisionHeight) {
         this.name = name;
         this.x = x;
         this.y = y;
         this.rotation = rotation;
-        this.walkableHeight = SnowWarItemProperties.getWalkableHeight(name);
-        this.collisionHeight = SnowWarItemProperties.getCollisionHeight(name);
+        this.walkableHeight = walkableHeight;
+        this.collisionHeight = collisionHeight;
         this.hidden = name.equals("snowball_machine") || name.equals("snowball_machine_hidden");
     }
 

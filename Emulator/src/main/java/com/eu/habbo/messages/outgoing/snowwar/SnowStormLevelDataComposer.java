@@ -16,9 +16,11 @@ import java.util.List;
 public class SnowStormLevelDataComposer extends MessageComposer {
 
     private final SnowWarGame game;
+    private final boolean canEditRoom;
 
-    public SnowStormLevelDataComposer(SnowWarGame game) {
+    public SnowStormLevelDataComposer(SnowWarGame game, boolean canEditRoom) {
         this.game = game;
+        this.canEditRoom = canEditRoom;
     }
 
     @Override
@@ -61,6 +63,10 @@ public class SnowStormLevelDataComposer extends MessageComposer {
             this.response.appendInt(machine.getX());
             this.response.appendInt(machine.getY());
         }
+
+        // Trailing per-recipient flag: may this user open the arena editor
+        // (acc_snowwar_edit)? Old clients simply don't read it.
+        this.response.appendBoolean(this.canEditRoom);
 
         return this.response;
     }

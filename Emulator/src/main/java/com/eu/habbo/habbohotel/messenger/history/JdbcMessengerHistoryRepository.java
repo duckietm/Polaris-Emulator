@@ -21,6 +21,8 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
 
     @Override
     public List<MessengerConversationSummary> listConversations(int userId) {
+        ensureLegacyDirectConversations(userId);
+
         String sql = """
                 SELECT c.id, c.type,
                        CASE WHEN c.type = 'direct' THEN COALESCE(MAX(CASE WHEN peer.user_id <> ? THEN peer.user_id END), 0) ELSE 0 END AS participant_id,
@@ -95,6 +97,11 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
 
     @Override
     public List<MessengerStoredMessage> loadHistory(long conversationId, int userId, long beforeMessageId, int limit) {
+        int[] directParticipants = findDirectParticipants(conversationId, userId);
+        if (directParticipants != null) {
+            return loadLegacyDirectHistory(conversationId, directParticipants[0], directParticipants[1], beforeMessageId, limit);
+        }
+
         String sql = """
                 SELECT m.id, m.conversation_id, m.sender_id, m.type, m.message, m.metadata,
                        UNIX_TIMESTAMP(m.created_at) AS created_at
@@ -132,6 +139,109 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
             return messages;
         } catch (SQLException exception) {
             throw new IllegalStateException("failed to load messenger history", exception);
+        }
+    }
+
+    private void ensureLegacyDirectConversations(int userId) {
+        String conversationsSql = """
+                INSERT INTO messenger_conversations (type, direct_key, created_at, updated_at)
+                SELECT 'direct',
+                       CONCAT(LEAST(user_from_id, user_to_id), ':', GREATEST(user_from_id, user_to_id)),
+                       MIN(FROM_UNIXTIME(timestamp)),
+                       MAX(FROM_UNIXTIME(timestamp))
+                FROM chatlogs_private
+                WHERE (user_from_id = ? OR user_to_id = ?)
+                  AND user_from_id > 0
+                  AND user_to_id > 0
+                  AND user_from_id <> user_to_id
+                GROUP BY LEAST(user_from_id, user_to_id), GREATEST(user_from_id, user_to_id)
+                ON DUPLICATE KEY UPDATE updated_at = GREATEST(updated_at, VALUES(updated_at))
+                """;
+        String membersSql = """
+                INSERT IGNORE INTO messenger_members (conversation_id, user_id)
+                SELECT id, CAST(SUBSTRING_INDEX(direct_key, ':', 1) AS UNSIGNED)
+                FROM messenger_conversations
+                WHERE type = 'direct'
+                  AND (SUBSTRING_INDEX(direct_key, ':', 1) = ? OR SUBSTRING_INDEX(direct_key, ':', -1) = ?)
+                UNION ALL
+                SELECT id, CAST(SUBSTRING_INDEX(direct_key, ':', -1) AS UNSIGNED)
+                FROM messenger_conversations
+                WHERE type = 'direct'
+                  AND (SUBSTRING_INDEX(direct_key, ':', 1) = ? OR SUBSTRING_INDEX(direct_key, ':', -1) = ?)
+                """;
+        try (Connection connection = dataSource.getConnection()) {
+            try (PreparedStatement statement = connection.prepareStatement(conversationsSql)) {
+                statement.setInt(1, userId);
+                statement.setInt(2, userId);
+                statement.executeUpdate();
+            }
+            try (PreparedStatement statement = connection.prepareStatement(membersSql)) {
+                statement.setInt(1, userId);
+                statement.setInt(2, userId);
+                statement.setInt(3, userId);
+                statement.setInt(4, userId);
+                statement.executeUpdate();
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("failed to initialize legacy messenger conversations", exception);
+        }
+    }
+
+    private int[] findDirectParticipants(long conversationId, int userId) {
+        String sql = "SELECT direct_key FROM messenger_conversations WHERE id = ? AND type = 'direct'";
+        try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, conversationId);
+            try (ResultSet result = statement.executeQuery()) {
+                if (!result.next()) return null;
+
+                String[] participantIds = result.getString("direct_key").split(":", 2);
+                if (participantIds.length != 2) return null;
+
+                int firstUserId = Integer.parseInt(participantIds[0]);
+                int secondUserId = Integer.parseInt(participantIds[1]);
+                if (firstUserId != userId && secondUserId != userId) return null;
+
+                return new int[]{firstUserId, secondUserId};
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("failed to resolve direct messenger conversation", exception);
+        }
+    }
+
+    private List<MessengerStoredMessage> loadLegacyDirectHistory(long conversationId, int firstUserId, int secondUserId, long beforeMessageId, int limit) {
+        String sql = """
+                SELECT id, user_from_id, message, timestamp
+                FROM chatlogs_private
+                WHERE ((user_from_id = ? AND user_to_id = ?) OR (user_from_id = ? AND user_to_id = ?))
+                  AND (? = 0 OR id < ?)
+                ORDER BY id DESC
+                LIMIT ?
+                """;
+        List<MessengerStoredMessage> messages = new ArrayList<>();
+        try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, firstUserId);
+            statement.setInt(2, secondUserId);
+            statement.setInt(3, secondUserId);
+            statement.setInt(4, firstUserId);
+            statement.setLong(5, beforeMessageId);
+            statement.setLong(6, beforeMessageId);
+            statement.setInt(7, limit + 1);
+            try (ResultSet result = statement.executeQuery()) {
+                while (result.next()) {
+                    messages.add(new MessengerStoredMessage(
+                            result.getLong("id"),
+                            conversationId,
+                            result.getInt("user_from_id"),
+                            0,
+                            result.getString("message"),
+                            null,
+                            result.getLong("timestamp")
+                    ));
+                }
+            }
+            return messages;
+        } catch (SQLException exception) {
+            throw new IllegalStateException("failed to load legacy direct messenger history", exception);
         }
     }
 

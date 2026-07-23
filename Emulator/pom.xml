@@ -26,15 +26,15 @@
         <commons-math3.version>3.6.1</commons-math3.version>
         <jsoup.version>1.22.2</jsoup.version>
         <slf4j.version>2.0.18</slf4j.version>
-        <error-prone-annotations.version>2.49.0</error-prone-annotations.version>
+        <error-prone-annotations.version>2.50.0</error-prone-annotations.version>
         <logback.version>1.5.38</logback.version>
         <jansi.version>2.4.3</jansi.version>
         <bcrypt.version>0.10.2</bcrypt.version>
         <jakarta-mail.version>2.0.5</jakarta-mail.version>
         <junit.version>6.1.2</junit.version>
-        <javaparser.version>3.28.2</javaparser.version>
-        <flyway.version>12.11.0</flyway.version>
-        <testcontainers.version>1.21.4</testcontainers.version>
+        <javaparser.version>3.27.1</javaparser.version>
+        <flyway.version>13.0.0</flyway.version>
+        <testcontainers.version>2.0.5</testcontainers.version>
         <mockito.version>5.23.0</mockito.version>
         <trove4j.reference.version>3.0.3</trove4j.reference.version>
 
@@ -54,7 +54,7 @@
         <cyclonedx-maven-plugin.version>2.9.2</cyclonedx-maven-plugin.version>
         <jacoco-plugin.version>0.8.15</jacoco-plugin.version>
         <jacoco.minimum.instruction.coveredratio>0.07</jacoco.minimum.instruction.coveredratio>
-        <japicmp.version>0.23.1</japicmp.version>
+        <japicmp.version>0.26.1</japicmp.version>
         <spotless-maven-plugin.version>3.8.0</spotless-maven-plugin.version>
         <palantir-java-format.version>2.96.0</palantir-java-format.version>
         <spotbugs-maven-plugin.version>4.10.3.0</spotbugs-maven-plugin.version>

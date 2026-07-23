@@ -21,10 +21,9 @@ public abstract class InteractionCustomValues extends HabboItem {
         this.values.putAll(defaultValues);
 
         for (String s : set.getString("extra_data").split(";")) {
-            String[] data = s.split("=");
-
-            if (data.length == 2) {
-                this.values.put(data[0], data[1]);
+            int separator = s.indexOf('=');
+            if (separator > 0) {
+                this.values.put(s.substring(0, separator), s.substring(separator + 1));
             }
         }
     }

@@ -11,6 +11,7 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
+import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
@@ -67,9 +68,8 @@ public class WiredEffectFurniOpacity extends InteractionWiredEffect {
 
         if (effectiveItems.isEmpty()) return;
 
-        WiredFurniOpacityComposer composer = new WiredFurniOpacityComposer(effectiveItems, this.opacity, this.clickThrough, this.easing);
-
         if (this.visibility == VISIBILITY_TRIGGERING_USER) {
+            WiredFurniOpacityComposer composer = new WiredFurniOpacityComposer(effectiveItems, this.opacity, this.clickThrough, this.easing);
             Habbo actor = ctx.actor().map(room::getHabbo).orElse(null);
 
             if (actor != null && actor.getClient() != null) {
@@ -79,7 +79,11 @@ public class WiredEffectFurniOpacity extends InteractionWiredEffect {
             return;
         }
 
-        room.sendComposer(composer.compose());
+        for (HabboItem item : effectiveItems) {
+            WiredInternalVariableSupport.setFurniOpacity(room, item, this.opacity);
+        }
+
+        room.sendComposer(new WiredFurniOpacityComposer(effectiveItems, this.opacity, this.clickThrough, this.easing).compose());
     }
 
     @Deprecated

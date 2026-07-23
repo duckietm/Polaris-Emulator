@@ -12,6 +12,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredMovementPhysics;
 import com.eu.habbo.messages.outgoing.rooms.items.FloorItemOnRollerComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.FloorItemUpdateComposer;
@@ -230,6 +231,8 @@ final class RoomItemMovementService {
             this.room.updateHabbosAt(t.x, t.y, this.room.getHabbosAt(t.x, t.y));
             this.room.updateBotsAt(t.x, t.y);
         }
+
+        this.scheduleGravityAfterMove(item, occupiedTiles);
 
         // Preserve your newer "place under" behavior if enabled
         if (Emulator.getConfig().getBoolean("wired.place.under", false)) {
@@ -625,6 +628,9 @@ final class RoomItemMovementService {
             this.room.updateHabbosAt(t.x, t.y, this.room.getHabbosAt(t.x, t.y));
             this.room.updateBotsAt(t.x, t.y);
         }
+
+        this.scheduleGravityAfterMove(item, occupiedTiles);
+
         if (Emulator.getConfig().getBoolean("wired.place.under", false)) {
             for (RoomTile t : newOccupiedTiles) {
                 for (Habbo h : this.room.getHabbosAt(t.x, t.y)) {
@@ -844,6 +850,9 @@ final class RoomItemMovementService {
             this.room.updateHabbosAt(t.x, t.y, this.room.getHabbosAt(t.x, t.y));
             this.room.updateBotsAt(t.x, t.y);
         }
+
+        this.scheduleGravityAfterMove(item, occupiedTiles);
+
         if (Emulator.getConfig().getBoolean("wired.place.under", false)) {
             for (RoomTile t : newOccupiedTiles) {
                 for (Habbo h : this.room.getHabbosAt(t.x, t.y)) {
@@ -855,6 +864,10 @@ final class RoomItemMovementService {
             }
         }
         return FurnitureMovementError.NONE;
+    }
+
+    private void scheduleGravityAfterMove(HabboItem movedItem, Set<RoomTile> impactedTiles) {
+        WiredInternalVariableSupport.scheduleGravityForMovement(this.room, movedItem, impactedTiles);
     }
 
     public FurnitureMovementError slideFurniTo(HabboItem item, RoomTile tile, int rotation) {

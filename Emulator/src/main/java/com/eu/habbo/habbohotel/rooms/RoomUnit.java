@@ -80,6 +80,7 @@ public class RoomUnit {
   private ScheduledFuture<?> moveBlockingTask;
 
   private int idleTimer;
+  private boolean idle;
   private Room room;
   private RoomRightLevels rightsLevel = RoomRightLevels.NONE;
   private Set<Integer> overridableTiles;
@@ -361,7 +362,7 @@ public class RoomUnit {
                 .getBoolean("hotel.room.public.doortile.kick");
         boolean invalidated = topItem != null && topItem.invalidatesToRoomKick();
 
-        if (this.canLeaveRoomByDoor && isAtDoor && publicRoomKicks && !invalidated && !RoomDoorkickDisableSupport.isDoorkickDisabled(room)) {
+        if (room.isLeaveOnDoorTileEnabled() && this.canLeaveRoomByDoor && isAtDoor && publicRoomKicks && !invalidated && !RoomDoorkickDisableSupport.isDoorkickDisabled(room)) {
           Emulator.getThreading().run(new RoomUnitKick(habbo, room, false), 500);
         }
       }
@@ -713,7 +714,7 @@ public class RoomUnit {
   }
 
   public boolean isIdle() {
-    return this.idleTimer > Room.IDLE_CYCLES;
+    return this.idle || this.idleTimer > Room.IDLE_CYCLES;
   }
 
   public int getIdleTimer() {
@@ -722,10 +723,11 @@ public class RoomUnit {
 
   public void resetIdleTimer() {
     this.idleTimer = 0;
+    this.idle = false;
   }
 
   public void setIdle() {
-    this.idleTimer = Room.IDLE_CYCLES + 1;
+    this.idle = true;
   }
 
   public void lookAtPoint(RoomTile location) {

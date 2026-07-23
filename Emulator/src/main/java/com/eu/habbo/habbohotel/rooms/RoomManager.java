@@ -1274,7 +1274,7 @@ public class RoomManager {
         ArrayList<Room> rooms = new ArrayList<>();
 
         for (MessengerBuddy buddy : habbo.getMessenger().getFriends().values()) {
-            if (buddy.getOnline() == 0) continue;
+            if (!buddy.isVisibleOnline()) continue;
 
             Habbo friend = Emulator.getGameEnvironment().getHabboManager().getHabbo(buddy.getId());
             if (friend == null || friend.getHabboInfo().getCurrentRoom() == null) continue;
@@ -1291,7 +1291,7 @@ public class RoomManager {
         ArrayList<Room> rooms = new ArrayList<>();
 
         for (MessengerBuddy buddy : habbo.getMessenger().getFriends().values()) {
-            if (buddy.getOnline() == 0) continue;
+            if (!buddy.isVisibleOnline()) continue;
 
             Habbo friend = Emulator.getGameEnvironment().getHabboManager().getHabbo(buddy.getId());
 

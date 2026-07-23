@@ -16,11 +16,14 @@ public class Message implements Runnable, DatabaseLoggable {
     private String message;
 
     public Message(int fromId, int toId, String message) {
+        this(fromId, toId, message, Emulator.getIntUnixTimestamp());
+    }
+
+    public Message(int fromId, int toId, String message, int timestamp) {
         this.fromId = fromId;
         this.toId = toId;
         this.message = message;
-
-        this.timestamp = Emulator.getIntUnixTimestamp();
+        this.timestamp = timestamp;
     }
 
     @Override

@@ -39,14 +39,14 @@ public class FriendsComposer extends MessageComposer {
                 this.response.appendInt(row.getId());
                 this.response.appendString(row.getUsername());
                 this.response.appendInt(row.getGender().equals(HabboGender.M) ? 0 : 1);
-                this.response.appendBoolean(row.getOnline() == 1);
-                this.response.appendBoolean(row.inRoom()); //IN ROOM
+                this.response.appendBoolean(row.isVisibleOnline());
+                this.response.appendBoolean(row.isVisibleInRoom()); //IN ROOM
                 this.response.appendString(row.getLook()); // send look for offline friends too (loaded from DB)
                 this.response.appendInt(row.getCategoryId()); //Friends category
                 this.response.appendString(row.getMotto());
                 this.response.appendString(""); //Last seen as DATETIMESTRING
                 this.response.appendString(""); //Realname or Facebookame as String
-                this.response.appendBoolean(false); //Offline messaging.
+                this.response.appendBoolean(true); // Offline messaging.
                 this.response.appendBoolean(false);
                 this.response.appendBoolean(false);
                 this.response.appendShort(row.getRelation());

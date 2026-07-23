@@ -80,6 +80,7 @@ import com.eu.habbo.messages.incoming.friends.ChangeRelationEvent;
 import com.eu.habbo.messages.incoming.friends.DeclineFriendRequestEvent;
 import com.eu.habbo.messages.incoming.friends.FindNewFriendsEvent;
 import com.eu.habbo.messages.incoming.friends.FriendPrivateMessageEvent;
+import com.eu.habbo.messages.incoming.friends.RequestOfflineMessagesEvent;
 import com.eu.habbo.messages.incoming.friends.FriendRequestEvent;
 import com.eu.habbo.messages.incoming.friends.InviteFriendsEvent;
 import com.eu.habbo.messages.incoming.friends.MarkMessengerReadEvent;
@@ -166,7 +167,13 @@ import com.eu.habbo.messages.incoming.handshake.ReleaseVersionEvent;
 import com.eu.habbo.messages.incoming.handshake.SecureLoginEvent;
 import com.eu.habbo.messages.incoming.helper.MySanctionStatusEvent;
 import com.eu.habbo.messages.incoming.helper.RequestTalentTrackEvent;
+import com.eu.habbo.messages.incoming.handshake.DisconnectEvent;
 import com.eu.habbo.messages.incoming.hotelview.HotelViewClaimBadgeRewardEvent;
+import com.eu.habbo.messages.incoming.hotelview.HotelViewLandingRequestEvent;
+import com.eu.habbo.messages.incoming.hotelview.HotelViewLandingResetVotesEvent;
+import com.eu.habbo.messages.incoming.hotelview.HotelViewLandingSaveEvent;
+import com.eu.habbo.messages.incoming.hotelview.HotelViewLandingSaveSceneEvent;
+import com.eu.habbo.messages.incoming.hotelview.HotelViewLandingVoteEvent;
 import com.eu.habbo.messages.incoming.hotelview.HotelViewDataEvent;
 import com.eu.habbo.messages.incoming.hotelview.HotelViewEvent;
 import com.eu.habbo.messages.incoming.hotelview.HotelViewRequestBadgeRewardEvent;
@@ -353,6 +360,7 @@ import com.eu.habbo.messages.incoming.rooms.users.ClickUserEvent;
 import com.eu.habbo.messages.incoming.rooms.users.IgnoreRoomUserEvent;
 import com.eu.habbo.messages.incoming.rooms.users.RequestRoomUserTagsEvent;
 import com.eu.habbo.messages.incoming.rooms.users.RoomUserActionEvent;
+import com.eu.habbo.messages.incoming.rooms.users.RoomUserHabbiconEvent;
 import com.eu.habbo.messages.incoming.rooms.users.RoomUserBanEvent;
 import com.eu.habbo.messages.incoming.rooms.users.RoomUserDanceEvent;
 import com.eu.habbo.messages.incoming.rooms.users.RoomUserDropHandItemEvent;
@@ -407,6 +415,7 @@ import com.eu.habbo.messages.incoming.users.RequestWearingBadgesEvent;
 import com.eu.habbo.messages.incoming.users.SaveBlockCameraFollowEvent;
 import com.eu.habbo.messages.incoming.users.SaveIgnoreRoomInvitesEvent;
 import com.eu.habbo.messages.incoming.users.SaveMottoEvent;
+import com.eu.habbo.messages.incoming.users.SaveGamePrivacySettingsEvent;
 import com.eu.habbo.messages.incoming.users.SavePreferOldChatEvent;
 import com.eu.habbo.messages.incoming.users.SaveUserVolumesEvent;
 import com.eu.habbo.messages.incoming.users.SaveWardrobeEvent;
@@ -720,6 +729,7 @@ public class PacketManager {
         this.registerHandler(Incoming.MachineIDEvent, MachineIDEvent.class);
         this.registerHandler(Incoming.GetIgnoredUsersEvent, GetIgnoredUsersEvent.class);
         this.registerHandler(Incoming.PingEvent, PingEvent.class);
+        this.registerHandler(Incoming.DisconnectEvent, DisconnectEvent.class);
     }
 
     private void registerFriends() throws Exception {
@@ -731,6 +741,7 @@ public class PacketManager {
         this.registerHandler(Incoming.AcceptFriendRequest, AcceptFriendRequestEvent.class);
         this.registerHandler(Incoming.DeclineFriendRequest, DeclineFriendRequestEvent.class);
         this.registerHandler(Incoming.FriendPrivateMessageEvent, FriendPrivateMessageEvent.class);
+        this.registerHandler(Incoming.RequestOfflineMessagesEvent, RequestOfflineMessagesEvent.class);
         this.registerHandler(Incoming.RequestFriendRequestEvent, RequestFriendRequestsEvent.class);
         this.registerHandler(Incoming.StalkFriendEvent, StalkFriendEvent.class);
         this.registerHandler(Incoming.RequestInitFriendsEvent, RequestInitFriendsEvent.class);
@@ -764,6 +775,7 @@ public class PacketManager {
         this.registerHandler(Incoming.SaveBlockCameraFollowEvent, SaveBlockCameraFollowEvent.class);
         this.registerHandler(Incoming.SaveIgnoreRoomInvitesEvent, SaveIgnoreRoomInvitesEvent.class);
         this.registerHandler(Incoming.SavePreferOldChatEvent, SavePreferOldChatEvent.class);
+        this.registerHandler(Incoming.SaveGamePrivacySettingsEvent, SaveGamePrivacySettingsEvent.class);
         this.registerHandler(Incoming.ActivateEffectEvent, ActivateEffectEvent.class);
         this.registerHandler(Incoming.EnableEffectEvent, EnableEffectEvent.class);
         this.registerHandler(Incoming.UserActivityEvent, UserActivityEvent.class);
@@ -816,6 +828,11 @@ public class PacketManager {
         this.registerHandler(Incoming.HotelViewClaimBadgeRewardEvent, HotelViewClaimBadgeRewardEvent.class);
         this.registerHandler(Incoming.HotelViewRequestLTDAvailabilityEvent, HotelViewRequestLTDAvailabilityEvent.class);
         this.registerHandler(Incoming.HotelViewRequestSecondsUntilEvent, HotelViewRequestSecondsUntilEvent.class);
+        this.registerHandler(Incoming.HotelViewLandingRequestEvent, HotelViewLandingRequestEvent.class);
+        this.registerHandler(Incoming.HotelViewLandingSaveEvent, HotelViewLandingSaveEvent.class);
+        this.registerHandler(Incoming.HotelViewLandingSaveSceneEvent, HotelViewLandingSaveSceneEvent.class);
+        this.registerHandler(Incoming.HotelViewLandingVoteEvent, HotelViewLandingVoteEvent.class);
+        this.registerHandler(Incoming.HotelViewLandingResetVotesEvent, HotelViewLandingResetVotesEvent.class);
     }
 
     private void registerInventory() throws Exception {
@@ -890,6 +907,7 @@ public class PacketManager {
         this.registerHandler(Incoming.RoomUserShoutEvent, RoomUserShoutEvent.class);
         this.registerHandler(Incoming.RoomUserWhisperEvent, RoomUserWhisperEvent.class);
         this.registerHandler(Incoming.RoomUserActionEvent, RoomUserActionEvent.class);
+        this.registerHandler(Incoming.RoomUserHabbiconEvent, RoomUserHabbiconEvent.class);
         this.registerHandler(Incoming.RoomUserSitEvent, RoomUserSitEvent.class);
         this.registerHandler(Incoming.RoomUserDanceEvent, RoomUserDanceEvent.class);
         this.registerHandler(Incoming.RoomUserSignEvent, RoomUserSignEvent.class);

@@ -187,6 +187,28 @@ public class RoomSettingsSaveEvent extends MessageHandler {
                     room.setAllowUnderpass(this.packet.readBoolean());
                 }
 
+                if (this.packet.bytesAvailable() > 0) {
+                    boolean muteAllPets = this.packet.readBoolean();
+                    boolean leaveOnDoorTileEnabled = this.packet.readBoolean();
+                    boolean idleSleepEnabled = this.packet.readBoolean();
+                    int idleSleepTimeoutSeconds = this.packet.readInt();
+                    boolean idleAutokickEnabled = this.packet.readBoolean();
+                    int idleAutokickTimeoutSeconds = this.packet.readInt();
+
+                    if ((idleSleepEnabled && !isInRange(idleSleepTimeoutSeconds, 30, 3600))
+                            || (idleAutokickEnabled && !isInRange(idleAutokickTimeoutSeconds, 60, 36000))
+                            || (idleSleepEnabled && idleAutokickEnabled && idleAutokickTimeoutSeconds < idleSleepTimeoutSeconds + 30)) {
+                        return;
+                    }
+
+                    room.setMuteAllPets(muteAllPets);
+                    room.setLeaveOnDoorTileEnabled(leaveOnDoorTileEnabled);
+                    room.setIdleSleepEnabled(idleSleepEnabled);
+                    room.setIdleSleepTimeoutSeconds(idleSleepEnabled ? idleSleepTimeoutSeconds : 0);
+                    room.setIdleAutokickEnabled(idleAutokickEnabled);
+                    room.setIdleAutokickTimeoutSeconds(idleAutokickEnabled ? idleAutokickTimeoutSeconds : 0);
+                }
+
                 room.setNeedsUpdate(true);
 
                 room.sendComposer(new RoomThicknessComposer(room).compose());

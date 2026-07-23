@@ -6179,6 +6179,38 @@
       ]
     },
     {
+      "name": "SNOWWAR_LOAD_STAGE_READY",
+      "direction": "client_to_server",
+      "header": 6000,
+      "java": {
+        "symbol": "UNKNOWN_SNOWSTORM_6000",
+        "className": "SnowStormLoadStageReadyEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormLoadStageReadyEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_LOAD_STAGE_READY",
+        "className": "SnowWarLoadStageReadyComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarLoadStageReadyComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "SNOWWAR_EXIT_GAME",
+      "direction": "client_to_server",
+      "header": 6001,
+      "java": {
+        "symbol": "UNKNOWN_SNOWSTORM_6001",
+        "className": "SnowStormExitGameEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormExitGameEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_EXIT_GAME",
+        "className": "SnowWarExitGameComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarExitGameComposer.ts"
+      },
+      "fields": []
+    },
+    {
       "name": "CLICK_FURNI",
       "direction": "client_to_server",
       "header": 6002,
@@ -6204,6 +6236,210 @@
           "name": ""
         }
       ]
+    },
+    {
+      "name": "SNOWWAR_WALK",
+      "direction": "client_to_server",
+      "header": 6003,
+      "java": {
+        "symbol": "UNKNOWN_SNOWSTORM_6003",
+        "className": "SnowStormWalkEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormWalkEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_WALK",
+        "className": "SnowWarWalkComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarWalkComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "worldX"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "worldY"
+        }
+      ]
+    },
+    {
+      "name": "SNOWWAR_THROW_AT_LOCATION",
+      "direction": "client_to_server",
+      "header": 6004,
+      "java": {
+        "symbol": "UNKNOWN_SNOWSTORM_6004",
+        "className": "SnowStormThrowAtLocationEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormThrowAtLocationEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_THROW_AT_LOCATION",
+        "className": "SnowWarThrowAtLocationComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarThrowAtLocationComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "worldX"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "worldY"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "trajectory"
+        }
+      ]
+    },
+    {
+      "name": "SNOWWAR_THROW_AT_PLAYER",
+      "direction": "client_to_server",
+      "header": 6005,
+      "java": {
+        "symbol": "UNKNOWN_SNOWSTORM_6005",
+        "className": "SnowStormThrowAtPlayerEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormThrowAtPlayerEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_THROW_AT_PLAYER",
+        "className": "SnowWarThrowAtPlayerComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarThrowAtPlayerComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "targetObjectId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "trajectory"
+        }
+      ]
+    },
+    {
+      "name": "SNOWWAR_CREATE_SNOWBALL",
+      "direction": "client_to_server",
+      "header": 6006,
+      "java": {
+        "symbol": "UNKNOWN_SNOWSTORM_6006",
+        "className": "SnowStormCreateSnowballEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormCreateSnowballEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_CREATE_SNOWBALL",
+        "className": "SnowWarCreateSnowballComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarCreateSnowballComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "SNOWWAR_REQUEST_FULL_GAME_STATUS",
+      "direction": "client_to_server",
+      "header": 6007,
+      "java": {
+        "symbol": "UNKNOWN_SNOWSTORM_6007",
+        "className": "SnowStormRequestFullGameStatusEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormRequestFullGameStatusEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_REQUEST_FULL_GAME_STATUS",
+        "className": "SnowWarRequestFullGameStatusComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarRequestFullGameStatusComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "SNOWWAR_PLAY_AGAIN",
+      "direction": "client_to_server",
+      "header": 6008,
+      "java": {
+        "symbol": "UNKNOWN_SNOWSTORM_6008",
+        "className": "SnowStormPlayAgainEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormPlayAgainEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_PLAY_AGAIN",
+        "className": "SnowWarPlayAgainComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarPlayAgainComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "SNOWWAR_GAME_CHAT",
+      "direction": "client_to_server",
+      "header": 6009,
+      "java": {
+        "symbol": "UNKNOWN_SNOWSTORM_6009",
+        "className": "SnowStormGameChatEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormGameChatEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_GAME_CHAT",
+        "className": "SnowWarGameChatComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarGameChatComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "message"
+        }
+      ]
+    },
+    {
+      "name": "SNOWWAR_EDIT_ROOM",
+      "direction": "client_to_server",
+      "header": 6010,
+      "java": {
+        "symbol": "UNKNOWN_SNOWSTORM_6010",
+        "className": "SnowStormEditRoomEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormEditRoomEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_EDIT_ROOM",
+        "className": "SnowWarEditRoomComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarEditRoomComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "SNOWWAR_JOIN_QUEUE",
+      "direction": "client_to_server",
+      "header": 6012,
+      "java": {
+        "symbol": "SnowStormJoinQueueEvent",
+        "className": "SnowStormJoinQueueEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormJoinQueueEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_JOIN_QUEUE",
+        "className": "SnowWarJoinQueueComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarJoinQueueComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "SNOWWAR_LEAVE_QUEUE",
+      "direction": "client_to_server",
+      "header": 6013,
+      "java": {
+        "symbol": "UNKNOWN_SNOWSTORM_6013",
+        "className": "SnowStormLeaveQueueEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormLeaveQueueEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_LEAVE_QUEUE",
+        "className": "SnowWarLeaveQueueComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarLeaveQueueComposer.ts"
+      },
+      "fields": []
     },
     {
       "name": "REQUEST_PREFIXES",
@@ -6283,27 +6519,27 @@
         {
           "kind": "scalar",
           "type": "string",
-          "name": "text"
+          "name": "request"
         },
         {
           "kind": "scalar",
           "type": "string",
-          "name": "color"
+          "name": "request"
         },
         {
           "kind": "scalar",
           "type": "string",
-          "name": "icon"
+          "name": "request"
         },
         {
           "kind": "scalar",
           "type": "string",
-          "name": "effect"
+          "name": "request"
         },
         {
           "kind": "scalar",
           "type": "string",
-          "name": "font"
+          "name": "request"
         }
       ]
     },
@@ -14643,6 +14879,310 @@
       ]
     },
     {
+      "name": "SNOWWAR_QUEUE_POSITION",
+      "direction": "server_to_client",
+      "header": 5001,
+      "java": {
+        "symbol": "SnowStormQuePositionComposer",
+        "className": "SnowStormQuePositionComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormQuePositionComposer.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_QUEUE_POSITION",
+        "className": "SnowWarQueuePositionParser",
+        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarQueuePositionParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "SNOWWAR_START_LOBBY_COUNTER",
+      "direction": "server_to_client",
+      "header": 5003,
+      "java": {
+        "symbol": "SnowStormStartLobbyCounterComposer",
+        "className": "SnowStormStartLobbyCounterComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormStartLobbyCounterComposer.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_START_LOBBY_COUNTER",
+        "className": "SnowWarStartLobbyCounterParser",
+        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarStartLobbyCounterParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "SNOWWAR_GAME_ENDED",
+      "direction": "server_to_client",
+      "header": 5006,
+      "java": {
+        "symbol": "SnowStormGameEndedComposer",
+        "className": "SnowStormGameEndedComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormGameEndedComposer.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_GAME_ENDED",
+        "className": "SnowWarGameEndedParser",
+        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarGameEndedParser.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "SNOWWAR_GAMES_LEFT",
+      "direction": "server_to_client",
+      "header": 5010,
+      "java": {
+        "symbol": "SnowStormGamesLeftComposer",
+        "className": "SnowStormGamesLeftComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormGamesLeftComposer.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_GAMES_LEFT",
+        "className": "SnowWarGamesLeftParser",
+        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarGamesLeftParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "SNOWWAR_GAMES_INFORMATION",
+      "direction": "server_to_client",
+      "header": 5012,
+      "java": {
+        "symbol": "SnowStormGamesInformationComposer",
+        "className": "SnowStormGamesInformationComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormGamesInformationComposer.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_GAMES_INFORMATION",
+        "className": "SnowWarGamesInformationParser",
+        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarGamesInformationParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "SNOWWAR_ON_STAGE_START",
+      "direction": "server_to_client",
+      "header": 5017,
+      "java": {
+        "symbol": "SnowStormOnStageStartComposer",
+        "className": "SnowStormOnStageStartComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormOnStageStartComposer.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_ON_STAGE_START",
+        "className": "SnowWarOnStageStartParser",
+        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarOnStageStartParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "SNOWWAR_INIT_ARENA",
+      "direction": "server_to_client",
+      "header": 5018,
+      "java": {
+        "symbol": "SnowStormIntializeGameArenaViewComposer",
+        "className": "SnowStormIntializeGameArenaViewComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormIntializeGameArenaViewComposer.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_INIT_ARENA",
+        "className": "SnowWarInitArenaParser",
+        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarInitArenaParser.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "SNOWWAR_REJOIN_PREVIOUS_ROOM",
+      "direction": "server_to_client",
+      "header": 5019,
+      "java": {
+        "symbol": "SnowStormRejoinPreviousRoomComposer",
+        "className": "SnowStormRejoinPreviousRoomComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormRejoinPreviousRoomComposer.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_REJOIN_PREVIOUS_ROOM",
+        "className": "SnowWarRejoinPreviousRoomParser",
+        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarRejoinPreviousRoomParser.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "SNOWWAR_USER_CHAT",
+      "direction": "server_to_client",
+      "header": 5023,
+      "java": {
+        "symbol": "SnowStormUserChatMessageComposer",
+        "className": "SnowStormUserChatMessageComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormUserChatMessageComposer.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_USER_CHAT",
+        "className": "SnowWarUserChatParser",
+        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarUserChatParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "SNOWWAR_ON_STAGE_RUNNING",
+      "direction": "server_to_client",
+      "header": 5024,
+      "java": {
+        "symbol": "SnowStormOnStageRunningComposer",
+        "className": "SnowStormOnStageRunningComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormOnStageRunningComposer.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_ON_STAGE_RUNNING",
+        "className": "SnowWarOnStageRunningParser",
+        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarOnStageRunningParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "SNOWWAR_ON_STAGE_ENDING",
+      "direction": "server_to_client",
+      "header": 5025,
+      "java": {
+        "symbol": "SnowStormOnStageEndingComposer",
+        "className": "SnowStormOnStageEndingComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormOnStageEndingComposer.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_ON_STAGE_ENDING",
+        "className": "SnowWarOnStageEndingParser",
+        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarOnStageEndingParser.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "SNOWWAR_PLAYER_EXITED_ARENA",
+      "direction": "server_to_client",
+      "header": 5027,
+      "java": {
+        "symbol": "SnowStormOnPlayerExitedArenaComposer",
+        "className": "SnowStormOnPlayerExitedArenaComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormOnPlayerExitedArenaComposer.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_PLAYER_EXITED_ARENA",
+        "className": "SnowWarPlayerExitedArenaParser",
+        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarPlayerExitedArenaParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "SNOWWAR_GENERIC_ERROR",
+      "direction": "server_to_client",
+      "header": 5028,
+      "java": {
+        "symbol": "SnowStormGenericErrorComposer",
+        "className": "SnowStormGenericErrorComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormGenericErrorComposer.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_GENERIC_ERROR",
+        "className": "SnowWarGenericErrorParser",
+        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarGenericErrorParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "SNOWWAR_USER_REMATCHED",
+      "direction": "server_to_client",
+      "header": 5029,
+      "java": {
+        "symbol": "SnowStormUserRematchedComposer",
+        "className": "SnowStormUserRematchedComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormUserRematchedComposer.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_USER_REMATCHED",
+        "className": "SnowWarUserRematchedParser",
+        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarUserRematchedParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
       "name": "WIRED_ROOM_SETTINGS_DATA",
       "direction": "server_to_client",
       "header": 5102,
@@ -16676,6 +17216,86 @@
       "symbol": "FIREWORK_CHARGE_DATA",
       "path": "packages/communication/src/messages/parser/catalog/FireworkChargeDataParser.ts",
       "reason": "Header is registered only by the Nitro Renderer packet registry"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "java",
+      "header": 9410,
+      "symbol": "HotelViewLandingRequestEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingRequestEvent.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "java",
+      "header": 9411,
+      "symbol": "HotelViewLandingSaveEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingSaveEvent.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "java",
+      "header": 9412,
+      "symbol": "HotelViewLandingSaveSceneEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingSaveSceneEvent.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "java",
+      "header": 9413,
+      "symbol": "HotelViewLandingVoteEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingVoteEvent.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "java",
+      "header": 9414,
+      "symbol": "HotelViewLandingResetVotesEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingResetVotesEvent.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "java",
+      "header": 9415,
+      "symbol": "SaveGamePrivacySettingsEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/users/SaveGamePrivacySettingsEvent.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "java",
+      "header": 9416,
+      "symbol": "RequestOfflineMessagesEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/friends/RequestOfflineMessagesEvent.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "java",
+      "header": 9417,
+      "symbol": "RoomUserHabbiconEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/users/RoomUserHabbiconEvent.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "server_to_client",
+      "side": "java",
+      "header": 9409,
+      "symbol": "HotelViewLandingComposer",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/hotelview/HotelViewLandingComposer.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "server_to_client",
+      "side": "java",
+      "header": 9410,
+      "symbol": "RoomUserHabbiconComposer",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/users/RoomUserHabbiconComposer.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
     }
   ],
   "exemptions": [
@@ -17669,7 +18289,7 @@
         "className": "FurnitureExchangeComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/logic/FurnitureExchangeComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 163,col 5) Record Declarations are not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 195,col 5) Record Declarations are not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "GROUP_SAVE_INFORMATION",
@@ -17813,7 +18433,7 @@
         "className": "PurchaseFromCatalogComposer",
         "path": "packages/communication/src/messages/outgoing/catalog/PurchaseFromCatalogComposer.ts"
       },
-      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle"
+      "reason": "Java analyzer: Packet fields delegated to external reader readFrom inside handle"
     },
     {
       "name": "REQUESTFURNIINVENTORYWHENNOTINROOM",
@@ -18213,7 +18833,7 @@
         "className": "ChestDepositFurniComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestDepositFurniComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 50,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 49,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "CHEST_START_DEPOSIT",
@@ -21318,6 +21938,70 @@
         "path": "packages/communication/src/messages/parser/friendlist/MessengerConversationsParser.ts"
       },
       "reason": "TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
+      "name": "SNOWWAR_GAME_STATUS",
+      "direction": "server_to_client",
+      "header": 5015,
+      "java": {
+        "symbol": "SnowStormGameStatusComposer",
+        "className": "SnowStormGameStatusComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormGameStatusComposer.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_GAME_STATUS",
+        "className": "SnowWarGameStatusParser",
+        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarGameStatusParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in WhileStatement inside parse"
+    },
+    {
+      "name": "SNOWWAR_FULL_GAME_STATUS",
+      "direction": "server_to_client",
+      "header": 5016,
+      "java": {
+        "symbol": "SnowStormFullGameStatusComposer",
+        "className": "SnowStormFullGameStatusComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormFullGameStatusComposer.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_FULL_GAME_STATUS",
+        "className": "SnowWarFullGameStatusParser",
+        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarFullGameStatusParser.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external serializer serialize inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor SnowWarGameObjectData inside parse"
+    },
+    {
+      "name": "SNOWWAR_LEVEL_DATA",
+      "direction": "server_to_client",
+      "header": 5021,
+      "java": {
+        "symbol": "SnowStormLevelDataComposer",
+        "className": "SnowStormLevelDataComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormLevelDataComposer.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_LEVEL_DATA",
+        "className": "SnowWarLevelDataParser",
+        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarLevelDataParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor SnowWarPlayerData inside parse"
+    },
+    {
+      "name": "SNOWWAR_ON_GAME_ENDING",
+      "direction": "server_to_client",
+      "header": 5022,
+      "java": {
+        "symbol": "SnowStormOnGameEndingComposer",
+        "className": "SnowStormOnGameEndingComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormOnGameEndingComposer.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_ON_GAME_ENDING",
+        "className": "SnowWarOnGameEndingParser",
+        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarOnGameEndingParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForStmt inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor SnowWarGameResultTeamData inside parse"
     },
     {
       "name": "NOTIFICATION_SIMPLE_ALERT",

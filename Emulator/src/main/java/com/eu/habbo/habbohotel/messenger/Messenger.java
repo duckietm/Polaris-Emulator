@@ -6,14 +6,17 @@ import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboManager;
+import com.eu.habbo.messages.outgoing.friends.FriendChatMessageComposer;
 import com.eu.habbo.messages.outgoing.friends.UpdateFriendComposer;
 import com.eu.habbo.plugin.events.users.friends.UserAcceptFriendRequestEvent;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -314,6 +317,9 @@ public class Messenger {
 
     public void connectionChanged(Habbo owner, boolean online, boolean inRoom) {
         if (owner != null) {
+            boolean visibleOnline = online && !owner.getHabboStats().hideOnline;
+            boolean visibleInRoom = visibleOnline && inRoom;
+
             for (Map.Entry<Integer, MessengerBuddy> map : this.getFriends().entrySet()) {
                 if (map.getValue().getOnline() == 0) continue;
 
@@ -325,8 +331,8 @@ public class Messenger {
                                 .getFriend(owner.getHabboInfo().getId());
 
                         if (buddy != null) {
-                            buddy.setOnline(online);
-                            buddy.inRoom(inRoom);
+                            buddy.setOnline(visibleOnline);
+                            buddy.inRoom(visibleInRoom);
                             buddy.setLook(owner.getHabboInfo().getLook());
                             buddy.setGender(owner.getHabboInfo().getGender());
                             buddy.setUsername(owner.getHabboInfo().getUsername());
@@ -447,6 +453,65 @@ public class Messenger {
 
     public MessengerBuddy getFriend(int id) {
         return this.friends.get(id);
+    }
+
+    public void deliverOfflineMessages(Habbo recipient) {
+        List<Integer> messageIds = new ArrayList<>();
+        List<Message> messages = new ArrayList<>();
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT id, user_from_id, message, sended_on FROM messenger_offline WHERE user_id = ? ORDER BY id ASC LIMIT 500")) {
+            statement.setInt(1, recipient.getHabboInfo().getId());
+
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    messageIds.add(set.getInt("id"));
+                    messages.add(new Message(
+                            set.getInt("user_from_id"),
+                            recipient.getHabboInfo().getId(),
+                            set.getString("message"),
+                            set.getInt("sended_on")));
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Could not load offline messenger messages", e);
+            return;
+        }
+
+        if (messageIds.isEmpty()) {
+            return;
+        }
+
+        List<Integer> deliveredIds = new ArrayList<>();
+
+        for (int index = 0; index < messages.size(); index++) {
+            Message message = messages.get(index);
+
+            if (this.friends.containsKey(message.getFromId())) {
+                recipient.getClient().sendResponse(new FriendChatMessageComposer(
+                        message,
+                        message.getFromId(),
+                        message.getFromId(),
+                        "offline"));
+            }
+
+            deliveredIds.add(messageIds.get(index));
+        }
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "DELETE FROM messenger_offline WHERE id = ? AND user_id = ?")) {
+            for (int messageId : deliveredIds) {
+                statement.setInt(1, messageId);
+                statement.setInt(2, recipient.getHabboInfo().getId());
+                statement.addBatch();
+            }
+
+            statement.executeBatch();
+        } catch (SQLException e) {
+            LOGGER.error("Could not delete delivered offline messenger messages", e);
+        }
     }
 
     public void dispose() {

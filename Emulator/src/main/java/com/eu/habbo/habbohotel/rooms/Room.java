@@ -202,6 +202,12 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     private int tradeMode;
     private boolean moveDiagonally;
     private boolean allowUnderpass;
+    private boolean muteAllPets;
+    private boolean leaveOnDoorTileEnabled;
+    private boolean idleSleepEnabled;
+    private int idleSleepTimeoutSeconds;
+    private boolean idleAutokickEnabled;
+    private int idleAutokickTimeoutSeconds;
     private boolean jukeboxActive;
     private boolean hideWired;
     private boolean buildersClubTrialLocked;
@@ -366,6 +372,12 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         this.tradeMode = snapshot.postBanLoad().tradeMode();
         this.moveDiagonally = snapshot.postBanLoad().moveDiagonally();
         this.allowUnderpass = snapshot.postBanLoad().allowUnderpass();
+        this.muteAllPets = snapshot.postBanLoad().muteAllPets();
+        this.leaveOnDoorTileEnabled = snapshot.postBanLoad().leaveOnDoorTileEnabled();
+        this.idleSleepEnabled = snapshot.postBanLoad().idleSleepEnabled();
+        this.idleSleepTimeoutSeconds = snapshot.postBanLoad().idleSleepTimeoutSeconds();
+        this.idleAutokickEnabled = snapshot.postBanLoad().idleAutokickEnabled();
+        this.idleAutokickTimeoutSeconds = snapshot.postBanLoad().idleAutokickTimeoutSeconds();
 
         this.allowBotsWalk = true;
         this.allowEffects = true;
@@ -1259,7 +1271,13 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
                 this.allowUnderpass,
                 this.youtubeEnabled,
                 this.buildersClubTrialLocked,
-                this.buildersClubOriginalState);
+                this.buildersClubOriginalState,
+                this.muteAllPets,
+                this.leaveOnDoorTileEnabled,
+                this.idleSleepEnabled,
+                this.idleSleepTimeoutSeconds,
+                this.idleAutokickEnabled,
+                this.idleAutokickTimeoutSeconds);
     }
 
     void savePendingItems(List<HabboItem> items) {
@@ -1590,6 +1608,54 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
     public void setAllowUnderpass(boolean allowUnderpass) {
         this.allowUnderpass = allowUnderpass;
+    }
+
+    public boolean isMuteAllPets() {
+        return this.muteAllPets;
+    }
+
+    public void setMuteAllPets(boolean muteAllPets) {
+        this.muteAllPets = muteAllPets;
+    }
+
+    public boolean isLeaveOnDoorTileEnabled() {
+        return this.leaveOnDoorTileEnabled;
+    }
+
+    public void setLeaveOnDoorTileEnabled(boolean leaveOnDoorTileEnabled) {
+        this.leaveOnDoorTileEnabled = leaveOnDoorTileEnabled;
+    }
+
+    public boolean isIdleSleepEnabled() {
+        return this.idleSleepEnabled;
+    }
+
+    public void setIdleSleepEnabled(boolean idleSleepEnabled) {
+        this.idleSleepEnabled = idleSleepEnabled;
+    }
+
+    public int getIdleSleepTimeoutSeconds() {
+        return this.idleSleepTimeoutSeconds;
+    }
+
+    public void setIdleSleepTimeoutSeconds(int idleSleepTimeoutSeconds) {
+        this.idleSleepTimeoutSeconds = idleSleepTimeoutSeconds;
+    }
+
+    public boolean isIdleAutokickEnabled() {
+        return this.idleAutokickEnabled;
+    }
+
+    public void setIdleAutokickEnabled(boolean idleAutokickEnabled) {
+        this.idleAutokickEnabled = idleAutokickEnabled;
+    }
+
+    public int getIdleAutokickTimeoutSeconds() {
+        return this.idleAutokickTimeoutSeconds;
+    }
+
+    public void setIdleAutokickTimeoutSeconds(int idleAutokickTimeoutSeconds) {
+        this.idleAutokickTimeoutSeconds = idleAutokickTimeoutSeconds;
     }
 
     public boolean isAllowBotsWalk() {

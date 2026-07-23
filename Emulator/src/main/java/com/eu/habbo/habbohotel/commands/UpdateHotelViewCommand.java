@@ -12,6 +12,7 @@ public class UpdateHotelViewCommand extends Command {
     public boolean handle(GameClient gameClient, String[] params) throws Exception {
         Emulator.getGameEnvironment().getHotelViewManager().getNewsList().reload();
         Emulator.getGameEnvironment().getHotelViewManager().getHallOfFame().reload();
+        Emulator.getGameEnvironment().getHotelViewManager().reloadAndBroadcastLandingView();
 
         gameClient.getHabbo().whisper(Emulator.getTexts().getValue("commands.succes.cmd_update_hotel_view"));
 

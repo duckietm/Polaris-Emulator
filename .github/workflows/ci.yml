@@ -45,7 +45,7 @@ jobs:
 
       - name: Upload furni consistency fixture report
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: furni-consistency-fixture-report
           path: Emulator/target/furni-consistency-fixture.json

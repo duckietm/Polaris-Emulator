@@ -231,6 +231,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectForwa
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectFreeze;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectFurniToFurni;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectFurniToUser;
+import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectFurniOpacity;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveAchievement;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveBadge;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveCredits;
@@ -721,6 +722,7 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_act_give_var", WiredEffectGiveVariable.class));
         this.interactionsList.add(new ItemInteraction("wf_act_remove_var", WiredEffectRemoveVariable.class));
         this.interactionsList.add(new ItemInteraction("wf_act_change_var_val", WiredEffectChangeVariableValue.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_furni_opacity", WiredEffectFurniOpacity.class));
 
         this.interactionsList.add(new ItemInteraction("wf_cnd_has_furni_on", WiredConditionFurniHaveFurni.class));
         this.interactionsList.add(new ItemInteraction("wf_cnd_furnis_hv_avtrs", WiredConditionFurniHaveHabbo.class));

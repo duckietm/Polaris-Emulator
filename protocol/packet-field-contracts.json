@@ -3443,6 +3443,22 @@
       ]
     },
     {
+      "name": "DISCONNECT",
+      "direction": "client_to_server",
+      "header": 2445,
+      "java": {
+        "symbol": "DisconnectEvent",
+        "className": "DisconnectEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/handshake/DisconnectEvent.java"
+      },
+      "typescript": {
+        "symbol": "DISCONNECT",
+        "className": "DisconnectMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/handshake/DisconnectMessageComposer.ts"
+      },
+      "fields": []
+    },
+    {
       "name": "GET_FRIEND_REQUESTS",
       "direction": "client_to_server",
       "header": 2448,
@@ -9515,6 +9531,21 @@
         {
           "kind": "scalar",
           "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
           "name": ""
         }
       ]
@@ -15810,6 +15841,70 @@
       "reason": "Header is registered only by the Polaris Emulator packet registry"
     },
     {
+      "direction": "client_to_server",
+      "side": "java",
+      "header": 9410,
+      "symbol": "HotelViewLandingRequestEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingRequestEvent.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "java",
+      "header": 9411,
+      "symbol": "HotelViewLandingSaveEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingSaveEvent.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "java",
+      "header": 9412,
+      "symbol": "HotelViewLandingSaveSceneEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingSaveSceneEvent.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "java",
+      "header": 9413,
+      "symbol": "HotelViewLandingVoteEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingVoteEvent.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "java",
+      "header": 9414,
+      "symbol": "HotelViewLandingResetVotesEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingResetVotesEvent.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "java",
+      "header": 9415,
+      "symbol": "SaveGamePrivacySettingsEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/users/SaveGamePrivacySettingsEvent.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "java",
+      "header": 9416,
+      "symbol": "RequestOfflineMessagesEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/friends/RequestOfflineMessagesEvent.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "java",
+      "header": 9417,
+      "symbol": "RoomUserHabbiconEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/users/RoomUserHabbiconEvent.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
       "direction": "server_to_client",
       "side": "java",
       "header": 10,
@@ -15935,6 +16030,22 @@
       "header": 3786,
       "symbol": "RoomFloorThicknessUpdatedComposer",
       "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/RoomFloorThicknessUpdatedComposer.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "server_to_client",
+      "side": "java",
+      "header": 9409,
+      "symbol": "HotelViewLandingComposer",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/hotelview/HotelViewLandingComposer.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "server_to_client",
+      "side": "java",
+      "header": 9410,
+      "symbol": "RoomUserHabbiconComposer",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/users/RoomUserHabbiconComposer.java",
       "reason": "Header is registered only by the Polaris Emulator packet registry"
     },
     {
@@ -16447,14 +16558,6 @@
       "header": 2436,
       "symbol": "GET_GIFT",
       "path": "packages/communication/src/messages/outgoing/gifts/GetGiftMessageComposer.ts",
-      "reason": "Header is registered only by the Nitro Renderer packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "typescript",
-      "header": 2445,
-      "symbol": "DISCONNECT",
-      "path": "packages/communication/src/messages/outgoing/handshake/DisconnectMessageComposer.ts",
       "reason": "Header is registered only by the Nitro Renderer packet registry"
     },
     {
@@ -17216,86 +17319,6 @@
       "symbol": "FIREWORK_CHARGE_DATA",
       "path": "packages/communication/src/messages/parser/catalog/FireworkChargeDataParser.ts",
       "reason": "Header is registered only by the Nitro Renderer packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "java",
-      "header": 9410,
-      "symbol": "HotelViewLandingRequestEvent",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingRequestEvent.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "java",
-      "header": 9411,
-      "symbol": "HotelViewLandingSaveEvent",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingSaveEvent.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "java",
-      "header": 9412,
-      "symbol": "HotelViewLandingSaveSceneEvent",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingSaveSceneEvent.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "java",
-      "header": 9413,
-      "symbol": "HotelViewLandingVoteEvent",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingVoteEvent.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "java",
-      "header": 9414,
-      "symbol": "HotelViewLandingResetVotesEvent",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingResetVotesEvent.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "java",
-      "header": 9415,
-      "symbol": "SaveGamePrivacySettingsEvent",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/users/SaveGamePrivacySettingsEvent.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "java",
-      "header": 9416,
-      "symbol": "RequestOfflineMessagesEvent",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/friends/RequestOfflineMessagesEvent.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "java",
-      "header": 9417,
-      "symbol": "RoomUserHabbiconEvent",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/users/RoomUserHabbiconEvent.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "server_to_client",
-      "side": "java",
-      "header": 9409,
-      "symbol": "HotelViewLandingComposer",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/hotelview/HotelViewLandingComposer.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "server_to_client",
-      "side": "java",
-      "header": 9410,
-      "symbol": "RoomUserHabbiconComposer",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/users/RoomUserHabbiconComposer.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
     }
   ],
   "exemptions": [
@@ -18626,6 +18649,22 @@
         "path": "packages/communication/src/messages/outgoing/handshake/ClientHelloMessageComposer.ts"
       },
       "reason": "TypeScript analyzer: Outgoing value `NITRO-${NitroVersion.RENDERER_VERSION.replaceAll(\u0027.\u0027, \u0027-\u0027)}` has no statically resolvable wire type"
+    },
+    {
+      "name": "SNOWWAR_SAVE_EDITOR",
+      "direction": "client_to_server",
+      "header": 6011,
+      "java": {
+        "symbol": "UNKNOWN_SNOWSTORM_6011",
+        "className": "SnowStormSaveEditorEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormSaveEditorEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_SAVE_EDITOR",
+        "className": "SnowWarSaveEditorComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarSaveEditorComposer.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForStmt inside handle; TypeScript analyzer: Outgoing composer message array cannot be resolved statically"
     },
     {
       "name": "YOUTUBE_ROOM_PLAY",

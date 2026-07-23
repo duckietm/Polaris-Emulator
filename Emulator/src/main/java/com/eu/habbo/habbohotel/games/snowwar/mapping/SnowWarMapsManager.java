@@ -144,10 +144,12 @@ public final class SnowWarMapsManager {
 
                 if (parts.length >= 6) {
                     // Editor-saved hotel furniture carries explicit heights and,
-                    // for room-ad furni, a trailing image URL (7th token).
+                    // for room-ad furni, a trailing image URL (7th token) plus an
+                    // optional vertical offset for the backdrop (8th token).
                     String imageUrl = parts.length >= 7 ? parts[6] : "";
+                    int offsetZ = parts.length >= 8 ? parseIntSafe(parts[7]) : 0;
                     items.add(new SnowWarItem(name, x, y, rotation,
-                            Integer.parseInt(parts[4]), Integer.parseInt(parts[5]), imageUrl));
+                            Integer.parseInt(parts[4]), Integer.parseInt(parts[5]), imageUrl, offsetZ));
                 } else if (SnowWarItemProperties.isKnownItem(name)) {
                     items.add(new SnowWarItem(name, x, y, rotation));
                 } else {
@@ -199,6 +201,14 @@ public final class SnowWarMapsManager {
                 mapId, modelName, items.size(), machinePositions.size(), spawnClusters.size());
 
         return new SnowWarMap(mapId, heightmapRows, items, machinePositions, spawnClusters);
+    }
+
+    private static int parseIntSafe(String value) {
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     private static void addMachine(List<SnowWarItem> items, List<SnowWarPoint> machinePositions, int x, int y) {

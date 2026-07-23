@@ -1202,6 +1202,9 @@ public class PacketManager {
         this.registerHandler(
                 Incoming.UNKNOWN_SNOWSTORM_6013, // leave queue
                 com.eu.habbo.messages.incoming.snowwar.SnowStormLeaveQueueEvent.class);
+        this.registerHandler(
+                Incoming.UNKNOWN_SNOWSTORM_6011, // save in-game arena editor layout
+                com.eu.habbo.messages.incoming.snowwar.SnowStormSaveEditorEvent.class);
     }
 
     void registerGameCenter() throws Exception {

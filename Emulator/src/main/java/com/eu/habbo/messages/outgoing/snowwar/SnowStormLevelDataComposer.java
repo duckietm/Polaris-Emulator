@@ -54,8 +54,10 @@ public class SnowStormLevelDataComposer extends MessageComposer {
             this.response.appendInt(item.getY());
             this.response.appendInt(item.getRotation());
             // Room-ad image URL (empty for normal props) so the arena can
-            // draw ad backgrounds saved by the editor.
+            // draw ad backgrounds saved by the editor, plus the vertical
+            // offset that nudges that full-screen backdrop up/down.
             this.response.appendString(item.getImageUrl());
+            this.response.appendInt(item.getOffsetZ());
         }
 
         List<SnowWarMachineObject> machines = this.game.getMachines();

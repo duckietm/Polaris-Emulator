@@ -1556,6 +1556,8 @@ U|com/eu/habbo/messages/incoming/rooms/users/RoomUserWalkEvent.java|CALL|getPlug
 U|com/eu/habbo/messages/incoming/rooms/users/RoomUserWhisperEvent.java|CALL|getPluginManager|1
 U|com/eu/habbo/messages/incoming/rooms/users/RoomUserWhisperEvent.java|CALL|getTexts|1
 U|com/eu/habbo/messages/incoming/rooms/users/RoomUserWhisperEvent.java|CALL|getThreading|1
+U|com/eu/habbo/messages/incoming/snowwar/SnowStormSaveEditorEvent.java|CALL|getDatabase|1
+U|com/eu/habbo/messages/incoming/snowwar/SnowStormSaveEditorEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/soundboard/SoundboardPlayEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/soundboard/SoundboardSetEnabledEvent.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/messages/incoming/trading/TradeStartEvent.java|CALL|getIntUnixTimestamp|2
@@ -2234,5 +2236,6 @@ D|com/eu/habbo/messages/incoming/rooms/items/RedeemClothingEvent.java|1
 D|com/eu/habbo/messages/incoming/rooms/items/RedeemItemTransaction.java|1
 D|com/eu/habbo/messages/incoming/rooms/pets/CompostMonsterplantEvent.java|1
 D|com/eu/habbo/messages/incoming/rooms/pets/HorseRemoveSaddleEvent.java|1
+D|com/eu/habbo/messages/incoming/snowwar/SnowStormSaveEditorEvent.java|1
 D|com/eu/habbo/messages/incoming/users/ConfirmChangeNameEvent.java|1
 D|com/eu/habbo/messages/incoming/users/GetIgnoredUsersEvent.java|1

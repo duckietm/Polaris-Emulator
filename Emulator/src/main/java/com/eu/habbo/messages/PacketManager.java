@@ -499,6 +499,7 @@ public class PacketManager {
         this.registerCrafting();
         this.registerCamera();
         this.registerGameCenter();
+        this.registerSnowWar();
         this.registerEarnings();
 
         RuntimeValidationReport report = PacketRuntimeValidator.validateHandlers(this.incoming);
@@ -1158,6 +1159,49 @@ public class PacketManager {
         this.registerHandler(Incoming.CameraPurchaseEvent, CameraPurchaseEvent.class);
         this.registerHandler(Incoming.CameraRoomThumbnailEvent, CameraRoomThumbnailEvent.class);
         this.registerHandler(Incoming.CameraPublishToWebEvent, CameraPublishToWebEvent.class);
+    }
+
+    void registerSnowWar() throws Exception {
+        // The UNKNOWN_SNOWSTORM_* constant names are frozen by the plugin ABI
+        // gate (PluginAbiCompatibilityTest) and duplicate ids are rejected by
+        // PacketNamesContractTest, so the legacy names stay canonical. The
+        // handler class names document what each header actually is.
+        this.registerHandler(
+                Incoming.UNKNOWN_SNOWSTORM_6000, // load stage ready
+                com.eu.habbo.messages.incoming.snowwar.SnowStormLoadStageReadyEvent.class);
+        this.registerHandler(
+                Incoming.UNKNOWN_SNOWSTORM_6001, // exit game
+                com.eu.habbo.messages.incoming.snowwar.SnowStormExitGameEvent.class);
+        this.registerHandler(
+                Incoming.UNKNOWN_SNOWSTORM_6010, // open arena editor (6002 is taken by ClickFurniEvent)
+                com.eu.habbo.messages.incoming.snowwar.SnowStormEditRoomEvent.class);
+        this.registerHandler(
+                Incoming.UNKNOWN_SNOWSTORM_6003, // walk
+                com.eu.habbo.messages.incoming.snowwar.SnowStormWalkEvent.class);
+        this.registerHandler(
+                Incoming.UNKNOWN_SNOWSTORM_6004, // throw at location
+                com.eu.habbo.messages.incoming.snowwar.SnowStormThrowAtLocationEvent.class);
+        this.registerHandler(
+                Incoming.UNKNOWN_SNOWSTORM_6005, // throw at player
+                com.eu.habbo.messages.incoming.snowwar.SnowStormThrowAtPlayerEvent.class);
+        this.registerHandler(
+                Incoming.UNKNOWN_SNOWSTORM_6006, // create snowball
+                com.eu.habbo.messages.incoming.snowwar.SnowStormCreateSnowballEvent.class);
+        this.registerHandler(
+                Incoming.UNKNOWN_SNOWSTORM_6007, // request full game status
+                com.eu.habbo.messages.incoming.snowwar.SnowStormRequestFullGameStatusEvent.class);
+        this.registerHandler(
+                Incoming.UNKNOWN_SNOWSTORM_6008, // play again
+                com.eu.habbo.messages.incoming.snowwar.SnowStormPlayAgainEvent.class);
+        this.registerHandler(
+                Incoming.UNKNOWN_SNOWSTORM_6009, // game chat
+                com.eu.habbo.messages.incoming.snowwar.SnowStormGameChatEvent.class);
+        this.registerHandler(
+                Incoming.SnowStormJoinQueueEvent,
+                com.eu.habbo.messages.incoming.snowwar.SnowStormJoinQueueEvent.class);
+        this.registerHandler(
+                Incoming.UNKNOWN_SNOWSTORM_6013, // leave queue
+                com.eu.habbo.messages.incoming.snowwar.SnowStormLeaveQueueEvent.class);
     }
 
     void registerGameCenter() throws Exception {

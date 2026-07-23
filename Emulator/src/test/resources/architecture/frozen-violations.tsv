@@ -1196,6 +1196,7 @@ U|com/eu/habbo/messages/incoming/furnieditor/FurniEditorUpdateFurnidataEvent.jav
 U|com/eu/habbo/messages/incoming/furnieditor/FurniEditorUpdateFurnidataEvent.java|CALL|getGameEnvironment|4
 U|com/eu/habbo/messages/incoming/furnieditor/FurnidataAuditLog.java|CALL|getDatabase|1
 U|com/eu/habbo/messages/incoming/furnieditor/FurnidataAuditLog.java|CALL|getIntUnixTimestamp|1
+U|com/eu/habbo/messages/incoming/gamecenter/GameCenterJoinGameEvent.java|CALL|getConfig|1
 U|com/eu/habbo/messages/incoming/guardians/GuardianAcceptRequestEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/guardians/GuardianVoteEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/guides/GuideCancelHelpRequestEvent.java|CALL|getGameEnvironment|2

@@ -11,10 +11,16 @@ import java.util.List;
 // room + the available pads. The client shows the toolbar icon only if enabled.
 public class SoundboardSettingsComposer extends MessageComposer {
     private final boolean enabled;
+    private final int cooldownSeconds;
     private final List<SoundboardSound> sounds;
 
     public SoundboardSettingsComposer(boolean enabled, List<SoundboardSound> sounds) {
+        this(enabled, 60, sounds);
+    }
+
+    public SoundboardSettingsComposer(boolean enabled, int cooldownSeconds, List<SoundboardSound> sounds) {
         this.enabled = enabled;
+        this.cooldownSeconds = Math.max(0, cooldownSeconds);
         this.sounds = sounds;
     }
 
@@ -22,6 +28,7 @@ public class SoundboardSettingsComposer extends MessageComposer {
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.SoundboardSettingsComposer);
         this.response.appendBoolean(this.enabled);
+        this.response.appendInt(this.cooldownSeconds);
         this.response.appendInt(this.sounds.size());
         for (SoundboardSound sound : this.sounds) {
             this.response.appendInt(sound.id);

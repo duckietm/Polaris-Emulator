@@ -548,6 +548,15 @@ public class Habbo implements Runnable {
         }
     }
 
+    public void whisperLocalized(
+            String textKey, String placeholder, String replacement, RoomChatMessageBubbles bubble) {
+        this.whisper(this.getText(textKey).replace(placeholder, replacement), bubble);
+    }
+
+    private String getText(String key) {
+        return Emulator.getTexts().getValue(key);
+    }
+
     public void talk(String message) {
         this.talk(message, this.habboStats.chatColor);
     }
@@ -652,7 +661,7 @@ public class Habbo implements Runnable {
             Map<String, String> keys = new HashMap<>();
             keys.put("display", "BUBBLE");
             keys.put("image", "${image.library.url}album1584/" + badge.getCode() + ".gif");
-            keys.put("message", Emulator.getTexts().getValue("commands.generic.cmd_badge.received"));
+            keys.put("message", this.getText("commands.generic.cmd_badge.received"));
             this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.RECEIVED_BADGE.key, keys));
 
             return true;

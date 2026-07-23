@@ -2,6 +2,8 @@ package com.eu.habbo.messages.incoming.soundboard;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
+import com.eu.habbo.habbohotel.soundboard.SoundboardManager;
 import com.eu.habbo.habbohotel.soundboard.SoundboardSound;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -22,10 +24,32 @@ public class SoundboardPlayEvent extends MessageHandler {
         if (room == null || !room.isSoundboardEnabled()) return;
 
         int soundId = this.packet.readInt();
-        SoundboardSound sound = Emulator.getGameEnvironment().getSoundboardManager().getSound(soundId);
-        if (sound == null) return;
+        SoundboardManager.PlayDecision decision = Emulator.getGameEnvironment()
+                .getSoundboardManager()
+                .tryPlay(
+                        habbo.getHabboInfo().getId(),
+                        habbo.getHabboInfo().getRank().getId(),
+                        soundId,
+                        System.currentTimeMillis());
+        if (!decision.allowed()) {
+            if (decision.denialReason() == SoundboardManager.DenialReason.COOLDOWN) {
+                habbo.whisperLocalized(
+                        "soundboard.cooldown.remaining",
+                        "%seconds%",
+                        Integer.toString(decision.remainingSeconds()),
+                        RoomChatMessageBubbles.ALERT);
+            }
+            return;
+        }
 
-        // Broadcast to everyone in the room.
-        room.sendComposer(new SoundboardPlayComposer(sound.id, sound.url, habbo.getHabboInfo().getUsername()).compose());
+        SoundboardSound sound = decision.sound();
+        room.sendComposer(new SoundboardPlayComposer(
+                        sound.id,
+                        sound.url,
+                        sound.name,
+                        habbo.getHabboInfo().getId(),
+                        habbo.getRoomUnit().getId(),
+                        habbo.getHabboInfo().getUsername())
+                .compose());
     }
 }

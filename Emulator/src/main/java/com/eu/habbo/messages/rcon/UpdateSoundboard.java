@@ -13,7 +13,9 @@ public class UpdateSoundboard extends RCONMessage<UpdateSoundboard.SoundboardJSO
 
     @Override
     public void handle(Gson gson, SoundboardJSON object) {
-        Emulator.getGameEnvironment().getSoundboardManager().reload();
+        var environment = Emulator.getGameEnvironment();
+        environment.getPermissionsManager().reload();
+        environment.getSoundboardManager().reload();
     }
 
     static class SoundboardJSON {

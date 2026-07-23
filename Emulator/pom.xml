@@ -34,7 +34,7 @@
         <junit.version>6.1.2</junit.version>
         <javaparser.version>3.27.1</javaparser.version>
         <flyway.version>13.0.0</flyway.version>
-        <testcontainers.version>1.21.4</testcontainers.version>
+        <testcontainers.version>2.0.5</testcontainers.version>
         <mockito.version>5.23.0</mockito.version>
         <trove4j.reference.version>3.0.3</trove4j.reference.version>
 

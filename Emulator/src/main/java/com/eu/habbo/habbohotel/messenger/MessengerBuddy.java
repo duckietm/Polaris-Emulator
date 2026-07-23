@@ -110,11 +110,19 @@ public class MessengerBuddy implements Runnable, ISerialize {
     }
 
     public int getOnline() {
-        return this.online;
+        Habbo habbo = Emulator.getGameServer().getGameClientManager().getHabbo(this.id);
+
+        return habbo != null && habbo.getHabboInfo().isOnline() ? 1 : this.online;
     }
 
     public void setOnline(boolean value) {
         this.online = (value ? 1 : 0);
+    }
+
+    public boolean isVisibleOnline() {
+        Habbo habbo = Emulator.getGameServer().getGameClientManager().getHabbo(this.id);
+
+        return this.getOnline() == 1 && (habbo == null || !habbo.getHabboStats().hideOnline);
     }
 
     public String getLook() {
@@ -143,11 +151,21 @@ public class MessengerBuddy implements Runnable, ISerialize {
     public void setCategoryId(int categoryId) { this.categoryId = categoryId; }
 
     public boolean inRoom() {
+        Habbo habbo = Emulator.getGameServer().getGameClientManager().getHabbo(this.id);
+
+        if (habbo != null) {
+            return habbo.getHabboInfo().getCurrentRoom() != null;
+        }
+
         return this.inRoom;
     }
 
     public void inRoom(boolean value) {
         this.inRoom = value;
+    }
+
+    public boolean isVisibleInRoom() {
+        return this.isVisibleOnline() && this.inRoom();
     }
 
     @Override
@@ -164,34 +182,60 @@ public class MessengerBuddy implements Runnable, ISerialize {
     }
 
     public void onMessageReceived(Habbo from, String message) {
+        this.onMessageReceivedWithDeliveryStatus(from, message);
+    }
+
+    public boolean onMessageReceivedWithDeliveryStatus(Habbo from, String message) {
         Habbo habbo = Emulator.getGameServer().getGameClientManager().getHabbo(this.id);
 
-        if (habbo == null)
-            return;
-
         Message chatMessage = new Message(from.getHabboInfo().getId(), this.id, message);
-        Emulator.getThreading().run(chatMessage);
 
         if (WordFilter.ENABLED_FRIENDCHAT) {
             chatMessage.setMessage(Emulator.getGameEnvironment().getWordFilter().filter(chatMessage.getMessage(), from));
         }
 
+        Emulator.getThreading().run(chatMessage);
+
+        if (habbo == null || !habbo.isOnline() || habbo.getClient() == null || !habbo.getClient().getChannel().isOpen()) {
+            return this.storeOfflineMessage(chatMessage);
+        }
+
         habbo.getClient().sendResponse(new FriendChatMessageComposer(chatMessage));
+        return !this.isVisibleOnline();
+    }
+
+    private boolean storeOfflineMessage(Message message) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO messenger_offline (user_id, user_from_id, message, sended_on) VALUES (?, ?, ?, ?)")) {
+            statement.setInt(1, message.getToId());
+            statement.setInt(2, message.getFromId());
+            statement.setString(3, message.getMessage());
+            statement.setInt(4, message.getTimestamp());
+            statement.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            LOGGER.error("Could not store offline messenger message", e);
+            return false;
+        }
     }
 
     @Override
     public void serialize(ServerMessage message) {
+        boolean visibleOnline = this.isVisibleOnline();
+        boolean visibleInRoom = this.isVisibleInRoom();
+
         message.appendInt(this.id);
         message.appendString(this.username);
         message.appendInt(this.gender.equals(HabboGender.M) ? 0 : 1);
-        message.appendBoolean(this.online == 1);
-        message.appendBoolean(this.inRoom); //IN ROOM
+        message.appendBoolean(visibleOnline);
+        message.appendBoolean(visibleOnline && visibleInRoom); //IN ROOM
         message.appendString(this.look);
         message.appendInt(this.categoryId); // Friends category ID
         message.appendString(this.motto);
         message.appendString(""); //Last seen as DATETIMESTRING
         message.appendString(""); // Realname or Facebookame as String
-        message.appendBoolean(false); //Offline messaging.
+        message.appendBoolean(true); // Offline messaging.
         message.appendBoolean(false);
         message.appendBoolean(false);
         message.appendShort(this.relation);

@@ -61,6 +61,12 @@ record RoomSnapshot(
                         set.getInt("trade_mode"),
                         set.getString("move_diagonally").equals("1"),
                         set.getString("allow_underpass").equals("1"),
+                        set.getBoolean("mute_all_pets"),
+                        set.getBoolean("leave_on_door_tile"),
+                        set.getBoolean("idle_sleep_enabled"),
+                        set.getInt("idle_sleep_timeout_seconds"),
+                        set.getBoolean("idle_autokick_enabled"),
+                        set.getInt("idle_autokick_timeout_seconds"),
                         set.getString("moodlight_data")));
     }
 
@@ -138,6 +144,12 @@ record RoomSnapshot(
             int tradeMode,
             boolean moveDiagonally,
             boolean allowUnderpass,
+            boolean muteAllPets,
+            boolean leaveOnDoorTileEnabled,
+            boolean idleSleepEnabled,
+            int idleSleepTimeoutSeconds,
+            boolean idleAutokickEnabled,
+            int idleAutokickTimeoutSeconds,
             String moodlightData) {
     }
 }

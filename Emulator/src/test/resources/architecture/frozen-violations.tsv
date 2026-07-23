@@ -360,7 +360,7 @@ U|com/eu/habbo/habbohotel/commands/UpdateConfigCommand.java|CALL|getTexts|2
 U|com/eu/habbo/habbohotel/commands/UpdateGuildPartsCommand.java|CALL|getBadgeImager|1
 U|com/eu/habbo/habbohotel/commands/UpdateGuildPartsCommand.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/commands/UpdateGuildPartsCommand.java|CALL|getTexts|1
-U|com/eu/habbo/habbohotel/commands/UpdateHotelViewCommand.java|CALL|getGameEnvironment|2
+U|com/eu/habbo/habbohotel/commands/UpdateHotelViewCommand.java|CALL|getGameEnvironment|3
 U|com/eu/habbo/habbohotel/commands/UpdateHotelViewCommand.java|CALL|getTexts|2
 U|com/eu/habbo/habbohotel/commands/UpdateItemsCommand.java|CALL|getGameEnvironment|5
 U|com/eu/habbo/habbohotel/commands/UpdateItemsCommand.java|CALL|getTexts|2
@@ -447,6 +447,9 @@ U|com/eu/habbo/habbohotel/guilds/forums/ForumThreadComment.java|CALL|getIntUnixT
 U|com/eu/habbo/habbohotel/guilds/forums/ForumThreadComment.java|CALL|getPluginManager|2
 U|com/eu/habbo/habbohotel/hotelview/HallOfFame.java|CALL|getConfig|1
 U|com/eu/habbo/habbohotel/hotelview/HallOfFame.java|CALL|getDatabase|1
+U|com/eu/habbo/habbohotel/hotelview/HotelViewManager.java|CALL|getConfig|3
+U|com/eu/habbo/habbohotel/hotelview/HotelViewManager.java|CALL|getDatabase|6
+U|com/eu/habbo/habbohotel/hotelview/HotelViewManager.java|CALL|getGameEnvironment|4
 U|com/eu/habbo/habbohotel/hotelview/NewsList.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/items/CrackableReward.java|CALL|getRandom|1
 U|com/eu/habbo/habbohotel/items/FurnidataSourceResolver.java|CALL|getConfig|3
@@ -766,14 +769,14 @@ U|com/eu/habbo/habbohotel/mentions/MentionManager.java|CALL|getIntUnixTimestamp|
 U|com/eu/habbo/habbohotel/messenger/Message.java|CALL|getDatabaseLogger|1
 U|com/eu/habbo/habbohotel/messenger/Message.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/habbohotel/messenger/Messenger.java|CALL|getConfig|1
-U|com/eu/habbo/habbohotel/messenger/Messenger.java|CALL|getDatabase|13
+U|com/eu/habbo/habbohotel/messenger/Messenger.java|CALL|getDatabase|15
 U|com/eu/habbo/habbohotel/messenger/Messenger.java|CALL|getGameEnvironment|3
 U|com/eu/habbo/habbohotel/messenger/Messenger.java|CALL|getGameServer|4
 U|com/eu/habbo/habbohotel/messenger/Messenger.java|CALL|getIntUnixTimestamp|2
 U|com/eu/habbo/habbohotel/messenger/Messenger.java|CALL|getPluginManager|1
-U|com/eu/habbo/habbohotel/messenger/MessengerBuddy.java|CALL|getDatabase|1
+U|com/eu/habbo/habbohotel/messenger/MessengerBuddy.java|CALL|getDatabase|2
 U|com/eu/habbo/habbohotel/messenger/MessengerBuddy.java|CALL|getGameEnvironment|1
-U|com/eu/habbo/habbohotel/messenger/MessengerBuddy.java|CALL|getGameServer|2
+U|com/eu/habbo/habbohotel/messenger/MessengerBuddy.java|CALL|getGameServer|5
 U|com/eu/habbo/habbohotel/messenger/MessengerBuddy.java|CALL|getThreading|2
 U|com/eu/habbo/habbohotel/messenger/StaffChatBuddy.java|CALL|getGameServer|1
 U|com/eu/habbo/habbohotel/messenger/history/MessengerHistoryServices.java|CALL|getDatabase|1
@@ -895,7 +898,7 @@ U|com/eu/habbo/habbohotel/rooms/RoomChatMessage.java|CALL|getConfig|3
 U|com/eu/habbo/habbohotel/rooms/RoomChatMessage.java|CALL|getDatabaseLogger|1
 U|com/eu/habbo/habbohotel/rooms/RoomChatMessage.java|CALL|getGameEnvironment|3
 U|com/eu/habbo/habbohotel/rooms/RoomChatMessage.java|CALL|getIntUnixTimestamp|1
-U|com/eu/habbo/habbohotel/rooms/RoomCycleManager.java|CALL|getConfig|3
+U|com/eu/habbo/habbohotel/rooms/RoomCycleManager.java|CALL|getConfig|2
 U|com/eu/habbo/habbohotel/rooms/RoomCycleManager.java|CALL|getGameEnvironment|3
 U|com/eu/habbo/habbohotel/rooms/RoomCycleManager.java|CALL|getPluginManager|1
 U|com/eu/habbo/habbohotel/rooms/RoomCycleManager.java|CALL|getThreading|1
@@ -981,7 +984,7 @@ U|com/eu/habbo/habbohotel/users/HabboManager.java|CALL|getPluginManager|2
 U|com/eu/habbo/habbohotel/users/HabboManager.java|CALL|getTexts|3
 U|com/eu/habbo/habbohotel/users/HabboNavigatorWindowSettings.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/users/HabboStats.java|CALL|getConfig|2
-U|com/eu/habbo/habbohotel/users/HabboStats.java|CALL|getDatabase|11
+U|com/eu/habbo/habbohotel/users/HabboStats.java|CALL|getDatabase|12
 U|com/eu/habbo/habbohotel/users/HabboStats.java|CALL|getGameEnvironment|4
 U|com/eu/habbo/habbohotel/users/HabboStats.java|CALL|getIntUnixTimestamp|13
 U|com/eu/habbo/habbohotel/users/HabboStats.java|CALL|getPluginManager|2
@@ -1193,7 +1196,6 @@ U|com/eu/habbo/messages/incoming/furnieditor/FurniEditorUpdateFurnidataEvent.jav
 U|com/eu/habbo/messages/incoming/furnieditor/FurniEditorUpdateFurnidataEvent.java|CALL|getGameEnvironment|4
 U|com/eu/habbo/messages/incoming/furnieditor/FurnidataAuditLog.java|CALL|getDatabase|1
 U|com/eu/habbo/messages/incoming/furnieditor/FurnidataAuditLog.java|CALL|getIntUnixTimestamp|1
-U|com/eu/habbo/messages/incoming/gamecenter/GameCenterJoinGameEvent.java|CALL|getConfig|1
 U|com/eu/habbo/messages/incoming/guardians/GuardianAcceptRequestEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/guardians/GuardianVoteEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/guides/GuideCancelHelpRequestEvent.java|CALL|getGameEnvironment|2
@@ -1272,6 +1274,7 @@ U|com/eu/habbo/messages/incoming/guilds/forums/GuildForumThreadsMessagesEvent.ja
 U|com/eu/habbo/messages/incoming/guilds/forums/GuildForumUpdateSettingsEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/guilds/forums/GuildForumUpdateSettingsEvent.java|CALL|getThreading|1
 U|com/eu/habbo/messages/incoming/handshake/CompleteDiffieHandshakeEvent.java|CALL|getGameServer|1
+U|com/eu/habbo/messages/incoming/handshake/DisconnectEvent.java|CALL|getGameServer|1
 U|com/eu/habbo/messages/incoming/handshake/InitDiffieHandshakeEvent.java|CALL|getGameServer|1
 U|com/eu/habbo/messages/incoming/handshake/MachineIDEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/handshake/MachineIDEvent.java|CALL|getGameServer|1
@@ -1293,6 +1296,11 @@ U|com/eu/habbo/messages/incoming/handshake/UsernameEvent.java|CALL|getIntUnixTim
 U|com/eu/habbo/messages/incoming/helper/RequestTalentTrackEvent.java|CALL|getConfig|1
 U|com/eu/habbo/messages/incoming/hotelview/HotelViewClaimBadgeRewardEvent.java|CALL|getConfig|2
 U|com/eu/habbo/messages/incoming/hotelview/HotelViewEvent.java|CALL|getGameEnvironment|2
+U|com/eu/habbo/messages/incoming/hotelview/HotelViewLandingRequestEvent.java|CALL|getGameEnvironment|2
+U|com/eu/habbo/messages/incoming/hotelview/HotelViewLandingResetVotesEvent.java|CALL|getGameEnvironment|1
+U|com/eu/habbo/messages/incoming/hotelview/HotelViewLandingSaveEvent.java|CALL|getGameEnvironment|1
+U|com/eu/habbo/messages/incoming/hotelview/HotelViewLandingSaveSceneEvent.java|CALL|getGameEnvironment|1
+U|com/eu/habbo/messages/incoming/hotelview/HotelViewLandingVoteEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/hotelview/HotelViewRequestBadgeRewardEvent.java|CALL|getConfig|2
 U|com/eu/habbo/messages/incoming/hotelview/HotelViewRequestLTDAvailabilityEvent.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/messages/incoming/hotelview/HotelViewRequestSecondsUntilEvent.java|CALL|getIntUnixTimestamp|1
@@ -1576,6 +1584,7 @@ U|com/eu/habbo/messages/incoming/users/RequestUserDataEvent.java|CALL|getGameSer
 U|com/eu/habbo/messages/incoming/users/RequestUserProfileEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/users/RequestWearingBadgesEvent.java|CALL|getGameServer|1
 U|com/eu/habbo/messages/incoming/users/SaveBlockCameraFollowEvent.java|CALL|getPluginManager|1
+U|com/eu/habbo/messages/incoming/users/SaveGamePrivacySettingsEvent.java|CALL|getPluginManager|1
 U|com/eu/habbo/messages/incoming/users/SaveIgnoreRoomInvitesEvent.java|CALL|getPluginManager|1
 U|com/eu/habbo/messages/incoming/users/SaveMottoEvent.java|CALL|getConfig|1
 U|com/eu/habbo/messages/incoming/users/SaveMottoEvent.java|CALL|getGameEnvironment|2

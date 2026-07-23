@@ -27,8 +27,8 @@ class RoomSaveBehaviorTest {
             assertTrue(call.sql().startsWith(
                     "UPDATE rooms SET name = ?, description = ?, password = ?"));
             assertTrue(call.sql().endsWith(
-                    "builders_club_original_state = ? WHERE id = ?"));
-            assertEquals(44, call.parameters().size());
+                    "idle_autokick_timeout_seconds = ? WHERE id = ?"));
+            assertEquals(50, call.parameters().size());
             assertSavedValues(call.parameters());
         }
     }
@@ -120,6 +120,12 @@ class RoomSaveBehaviorTest {
                 .field("youtubeEnabled", true)
                 .field("buildersClubTrialLocked", true)
                 .field("buildersClubOriginalState", RoomState.LOCKED)
+                .field("muteAllPets", true)
+                .field("leaveOnDoorTileEnabled", true)
+                .field("idleSleepEnabled", true)
+                .field("idleSleepTimeoutSeconds", 120)
+                .field("idleAutokickEnabled", true)
+                .field("idleAutokickTimeoutSeconds", 600)
                 .build();
     }
 
@@ -167,6 +173,12 @@ class RoomSaveBehaviorTest {
         assertEquals("1", values.get(41));
         assertEquals("1", values.get(42));
         assertEquals("locked", values.get(43));
-        assertEquals(41, values.get(44));
+        assertEquals("1", values.get(44));
+        assertEquals("1", values.get(45));
+        assertEquals("1", values.get(46));
+        assertEquals(120, values.get(47));
+        assertEquals("1", values.get(48));
+        assertEquals(600, values.get(49));
+        assertEquals(41, values.get(50));
     }
 }

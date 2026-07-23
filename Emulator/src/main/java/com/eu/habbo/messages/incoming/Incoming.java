@@ -523,6 +523,16 @@ public class Incoming {
     public static final int TraxEditorBuySongEvent = 9331;
     public static final int TraxEditorSaveSongEvent = 9332;
     public static final int TraxEditorDeleteSongEvent = 9333;
+    public static final int HotelViewLandingRequestEvent = 9410;
+    public static final int HotelViewLandingSaveEvent = 9411;
+    public static final int HotelViewLandingSaveSceneEvent = 9412;
+    public static final int HotelViewLandingVoteEvent = 9413;
+    public static final int HotelViewLandingResetVotesEvent = 9414;
+    public static final int SaveGamePrivacySettingsEvent = 9415;
+    public static final int RequestOfflineMessagesEvent = 9416;
+    // 6010 (used by the original PR) is reserved by UNKNOWN_SNOWSTORM_6010, so habbicon uses 9417
+    public static final int RoomUserHabbiconEvent = 9417;
+    public static final int DisconnectEvent = 2445;
     public static final int RequestMentionsEvent = 4803;
     public static final int MarkMentionsReadEvent = 4804;
     public static final int DeleteMentionEvent = 4805;

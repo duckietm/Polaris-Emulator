@@ -133,8 +133,6 @@ public class Outgoing {
     public final static int TranslationLanguagesComposer = 5106; // CUSTOM
     public final static int TranslationResultComposer = 5107; // CUSTOM
     public final static int AreaHideComposer = 6001; // CUSTOM
-    public final static int WiredFurniOpacityComposer = 6002; // CUSTOM
-    public final static int WiredFurniGravityComposer = 9415; // CUSTOM
     public final static int RoomPaintComposer = 2454; // PRODUCTION-201611291003-338511768
     public final static int MarketplaceConfigComposer = 1823; // PRODUCTION-201611291003-338511768
     public final static int AddBotComposer = 1352; // PRODUCTION-201611291003-338511768

@@ -1,25 +1,32 @@
 package com.eu.habbo.plugin;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import japicmp.cmp.JApiCmpArchive;
 import japicmp.cmp.JarArchiveComparator;
 import japicmp.cmp.JarArchiveComparatorOptions;
 import japicmp.model.JApiClass;
 import japicmp.model.JApiCompatibilityChange;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HexFormat;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Plugin ABI gates. Plugins in production hotels are loaded via URLClassLoader
@@ -46,32 +53,32 @@ import static org.junit.jupiter.api.Assertions.*;
 class PluginAbiCompatibilityTest {
 
     private record Gate(
-        String name,
-        Path baselineJar,
-        Path acceptedFile,
-        String reviewedAcceptedFileSha256,
-        List<String> acceptedFileHeader) {}
+            String name,
+            Path baselineJar,
+            Path acceptedFile,
+            String reviewedAcceptedFileSha256,
+            List<String> acceptedFileHeader) {}
 
     private static final Gate MORNINGSTAR_GATE = new Gate(
-        "Arcturus Morningstar 3.5.5",
-        Path.of("abi-baseline", "arcturus-morningstar-3.5.5-api.jar"),
-        Path.of("abi-baseline", "accepted-divergence-morningstar.txt"),
-        "19125f6ffb02db1aff6516d72d5527b36b09557462ab0df3bda16e5f3f563236",
-        List.of(
-            "# Binary-incompatible divergence from the Arcturus Morningstar 3.5.5 plugin ABI",
-            "# that has already shipped in Polaris and is accepted. One token per line.",
-            "# Any incompatibility NOT listed here fails PluginAbiCompatibilityTest."));
+            "Arcturus Morningstar 3.5.5",
+            Path.of("abi-baseline", "arcturus-morningstar-3.5.5-api.jar"),
+            Path.of("abi-baseline", "accepted-divergence-morningstar.txt"),
+            "19125f6ffb02db1aff6516d72d5527b36b09557462ab0df3bda16e5f3f563236",
+            List.of(
+                    "# Binary-incompatible divergence from the Arcturus Morningstar 3.5.5 plugin ABI",
+                    "# that has already shipped in Polaris and is accepted. One token per line.",
+                    "# Any incompatibility NOT listed here fails PluginAbiCompatibilityTest."));
 
     private static final Gate POLARIS_GATE = new Gate(
-        "the released Polaris jar (see abi-baseline/README.md for the pinned version)",
-        Path.of("abi-baseline", "polaris-release-api.jar"),
-        Path.of("abi-baseline", "accepted-divergence-polaris.txt"),
-        "da4111fd732beb33104cc62940f6649e9f5ca907ce2bff026c64878412072b29",
-        List.of(
-            "# Binary-incompatible divergence from the latest RELEASED Polaris jar that is",
-            "# accepted on this branch. One token per line; kept near-empty by policy —",
-            "# only internal machinery never plausibly touched by plugins may appear here.",
-            "# Any incompatibility NOT listed here fails PluginAbiCompatibilityTest."));
+            "the released Polaris jar (see abi-baseline/README.md for the pinned version)",
+            Path.of("abi-baseline", "polaris-release-api.jar"),
+            Path.of("abi-baseline", "accepted-divergence-polaris.txt"),
+            "da4111fd732beb33104cc62940f6649e9f5ca907ce2bff026c64878412072b29",
+            List.of(
+                    "# Binary-incompatible divergence from the latest RELEASED Polaris jar that is",
+                    "# accepted on this branch. One token per line; kept near-empty by policy —",
+                    "# only internal machinery never plausibly touched by plugins may appear here.",
+                    "# Any incompatibility NOT listed here fails PluginAbiCompatibilityTest."));
 
     private static final Path CLASSES_DIR = Path.of("target", "classes");
     private static final String REGENERATE_PROPERTY = "polaris.abi.regenerate";
@@ -82,8 +89,8 @@ class PluginAbiCompatibilityTest {
     void jarUpCompiledClasses() throws IOException {
         assertTrue(Files.isDirectory(CLASSES_DIR), "Compiled classes not found (run via Maven): " + CLASSES_DIR);
         currentJar = buildJar(
-            CLASSES_DIR,
-            Files.createDirectories(Path.of("target", "abi-check")).resolve("current-classes.jar"));
+                CLASSES_DIR,
+                Files.createDirectories(Path.of("target", "abi-check")).resolve("current-classes.jar"));
     }
 
     @Test
@@ -107,8 +114,8 @@ class PluginAbiCompatibilityTest {
         }
 
         assertTrue(
-            Files.isRegularFile(gate.acceptedFile()),
-            "Missing " + gate.acceptedFile() + "; regenerate with -D" + REGENERATE_PROPERTY + "=true");
+                Files.isRegularFile(gate.acceptedFile()),
+                "Missing " + gate.acceptedFile() + "; regenerate with -D" + REGENERATE_PROPERTY + "=true");
         assertEquals(gate.reviewedAcceptedFileSha256(), sha256(gate.acceptedFile()), """
                         The accepted ABI divergence list changed without updating its reviewed digest.
                         Review every added token semantically; do not accept a signature break merely
@@ -119,22 +126,22 @@ class PluginAbiCompatibilityTest {
         Set<String> accepted;
         try (Stream<String> lines = Files.lines(gate.acceptedFile())) {
             accepted = lines.map(String::trim)
-                .filter(line -> !line.isEmpty() && !line.startsWith("#"))
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+                    .filter(line -> !line.isEmpty() && !line.startsWith("#"))
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
         }
 
         List<String> resolved = accepted.stream()
-            .filter(token -> !currentTokens.contains(token))
-            .toList();
+                .filter(token -> !currentTokens.contains(token))
+                .toList();
         if (!resolved.isEmpty()) {
             System.out.println("ABI gate: " + resolved.size() + " accepted divergence token(s) no longer occur;"
-                + " consider pruning " + gate.acceptedFile() + ":");
+                    + " consider pruning " + gate.acceptedFile() + ":");
             resolved.forEach(token -> System.out.println("  " + token));
         }
 
         List<String> newBreaks = currentTokens.stream()
-            .filter(token -> !accepted.contains(token))
-            .toList();
+                .filter(token -> !accepted.contains(token))
+                .toList();
         if (!newBreaks.isEmpty()) {
             fail("""
                     %d NEW binary-incompatible change(s) vs %s:
@@ -146,9 +153,9 @@ class PluginAbiCompatibilityTest {
                     to new code instead of changing them — see abi-baseline/README.md. Do not
                     regenerate the accepted-divergence files without explicit maintainer approval.
                     """.formatted(
-                newBreaks.size(),
-                gate.name(),
-                newBreaks.stream().map(token -> "  " + token).collect(Collectors.joining("\n"))));
+                            newBreaks.size(),
+                            gate.name(),
+                            newBreaks.stream().map(token -> "  " + token).collect(Collectors.joining("\n"))));
         }
     }
 
@@ -165,32 +172,32 @@ class PluginAbiCompatibilityTest {
                 addTokens(tokens, "superclass", fqn, clazz.getSuperclass().getCompatibilityChanges());
             }
             clazz.getInterfaces()
-                .forEach(iface -> addTokens(
-                    tokens,
-                    "interface",
-                    fqn + "#" + iface.getFullyQualifiedName(),
-                    iface.getCompatibilityChanges()));
+                    .forEach(iface -> addTokens(
+                            tokens,
+                            "interface",
+                            fqn + "#" + iface.getFullyQualifiedName(),
+                            iface.getCompatibilityChanges()));
             clazz.getConstructors()
-                .forEach(ctor -> addTokens(
-                    tokens,
-                    "constructor",
-                    fqn + "#<init>(" + parameterList(ctor.getParameters()) + ")",
-                    ctor.getCompatibilityChanges()));
+                    .forEach(ctor -> addTokens(
+                            tokens,
+                            "constructor",
+                            fqn + "#<init>(" + parameterList(ctor.getParameters()) + ")",
+                            ctor.getCompatibilityChanges()));
             clazz.getMethods()
-                .forEach(method -> addTokens(
-                    tokens,
-                    "method",
-                    fqn + "#" + method.getName() + "(" + parameterList(method.getParameters()) + ")",
-                    method.getCompatibilityChanges()));
+                    .forEach(method -> addTokens(
+                            tokens,
+                            "method",
+                            fqn + "#" + method.getName() + "(" + parameterList(method.getParameters()) + ")",
+                            method.getCompatibilityChanges()));
             clazz.getFields()
-                .forEach(field ->
-                    addTokens(tokens, "field", fqn + "#" + field.getName(), field.getCompatibilityChanges()));
+                    .forEach(field ->
+                            addTokens(tokens, "field", fqn + "#" + field.getName(), field.getCompatibilityChanges()));
         }
         return tokens;
     }
 
     private static void addTokens(
-        Set<String> tokens, String kind, String subject, List<JApiCompatibilityChange> changes) {
+            Set<String> tokens, String kind, String subject, List<JApiCompatibilityChange> changes) {
         for (JApiCompatibilityChange change : changes) {
             if (!change.isBinaryCompatible()) {
                 tokens.add(kind + " " + subject + " " + change.getType().name());
@@ -207,19 +214,19 @@ class PluginAbiCompatibilityTest {
         options.getIgnoreMissingClasses().setIgnoreAllMissingClasses(true);
         JarArchiveComparator comparator = new JarArchiveComparator(options);
         return comparator.compare(
-            new JApiCmpArchive(oldJar.toFile(), "baseline"), new JApiCmpArchive(newJar.toFile(), "current"));
+                new JApiCmpArchive(oldJar.toFile(), "baseline"), new JApiCmpArchive(newJar.toFile(), "current"));
     }
 
     /** japicmp reads jars, not class directories, so package the compiled classes into a jar. */
     private static Path buildJar(Path classesDir, Path jar) throws IOException {
         try (JarOutputStream out = new JarOutputStream(Files.newOutputStream(jar));
-             Stream<Path> files = Files.walk(classesDir)) {
+                Stream<Path> files = Files.walk(classesDir)) {
             List<Path> classFiles = files.filter(path -> path.toString().endsWith(".class"))
-                .sorted()
-                .toList();
+                    .sorted()
+                    .toList();
             for (Path classFile : classFiles) {
                 out.putNextEntry(
-                    new JarEntry(classesDir.relativize(classFile).toString().replace('\\', '/')));
+                        new JarEntry(classesDir.relativize(classFile).toString().replace('\\', '/')));
                 out.write(Files.readAllBytes(classFile));
                 out.closeEntry();
             }
@@ -236,7 +243,7 @@ class PluginAbiCompatibilityTest {
         lines.addAll(tokens);
         Files.write(gate.acceptedFile(), lines);
         System.out.println(
-            "ABI gate: wrote " + tokens.size() + " accepted divergence tokens to " + gate.acceptedFile());
+                "ABI gate: wrote " + tokens.size() + " accepted divergence tokens to " + gate.acceptedFile());
     }
 
     private static String sha256(Path path) throws IOException {
@@ -245,8 +252,8 @@ class PluginAbiCompatibilityTest {
             // checkout (core.autocrlf) or editor may materialise this file
             // with CRLF without changing the reviewed content.
             byte[] normalized = Files.readString(path, java.nio.charset.StandardCharsets.UTF_8)
-                .replace("\r\n", "\n")
-                .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                    .replace("\r\n", "\n")
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8);
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(normalized));
         } catch (java.security.NoSuchAlgorithmException impossible) {
             throw new IllegalStateException("JDK is missing SHA-256", impossible);

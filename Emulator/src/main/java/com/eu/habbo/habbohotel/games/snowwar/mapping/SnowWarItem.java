@@ -17,16 +17,23 @@ public class SnowWarItem {
     private final int offsetZ;
 
     public SnowWarItem(String name, int x, int y, int rotation) {
-        this(name, x, y, rotation,
+        this(
+                name,
+                x,
+                y,
+                rotation,
                 SnowWarItemProperties.getWalkableHeight(name),
-                SnowWarItemProperties.getCollisionHeight(name), "", 0);
+                SnowWarItemProperties.getCollisionHeight(name),
+                "",
+                0);
     }
 
     public SnowWarItem(String name, int x, int y, int rotation, int walkableHeight, int collisionHeight) {
         this(name, x, y, rotation, walkableHeight, collisionHeight, "", 0);
     }
 
-    public SnowWarItem(String name, int x, int y, int rotation, int walkableHeight, int collisionHeight, String imageUrl) {
+    public SnowWarItem(
+            String name, int x, int y, int rotation, int walkableHeight, int collisionHeight, String imageUrl) {
         this(name, x, y, rotation, walkableHeight, collisionHeight, imageUrl, 0);
     }
 
@@ -38,7 +45,15 @@ public class SnowWarItem {
      * only for room-ad (ads_bg) furni so the arena can draw the ad image;
      * offsetZ nudges that full-screen backdrop up/down.
      */
-    public SnowWarItem(String name, int x, int y, int rotation, int walkableHeight, int collisionHeight, String imageUrl, int offsetZ) {
+    public SnowWarItem(
+            String name,
+            int x,
+            int y,
+            int rotation,
+            int walkableHeight,
+            int collisionHeight,
+            String imageUrl,
+            int offsetZ) {
         this.name = name;
         this.x = x;
         this.y = y;

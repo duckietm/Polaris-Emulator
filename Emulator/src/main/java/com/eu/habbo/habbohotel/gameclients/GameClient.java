@@ -22,6 +22,13 @@ import org.slf4j.LoggerFactory;
 
 public class GameClient {
 
+    // Client-advertised WIRED extension protocol version. This negotiates packet
+    // compatibility and is not a server-side feature flag.
+    public static final int WIRED_FEATURE_PROTOCOL_VERSION = 1;
+
+    // Bit 0 - the client understands per-furniture opacity updates.
+    public static final int WIRED_FEATURE_OPACITY = 1;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(GameClient.class);
 
     private final Channel channel;
@@ -34,6 +41,11 @@ public class GameClient {
     private String machineId = "";
     private String ssoTicket = "";
     private String releaseVersion = "";
+
+    // These values are written during capability negotiation and read by packet
+    // and executor threads afterwards.
+    private volatile int wiredFeatureProtocolVersion;
+    private volatile int wiredFeatureCapabilities;
 
     public final ConcurrentHashMap<Integer, Integer> incomingPacketCounter = new ConcurrentHashMap<>(25);
     public final ConcurrentHashMap<Class<? extends MessageHandler>, Long> messageTimestamps = new ConcurrentHashMap<>();
@@ -69,6 +81,20 @@ public class GameClient {
 
     public void setHabbo(Habbo habbo) {
         this.habbo = habbo;
+    }
+
+    /** Stores only the WIRED capabilities understood by this emulator build. */
+    public void setWiredFeatureCapabilities(int protocolVersion, int capabilities) {
+        this.wiredFeatureProtocolVersion = Math.max(0, protocolVersion);
+        this.wiredFeatureCapabilities = Math.max(0, capabilities) & WIRED_FEATURE_OPACITY;
+    }
+
+    /** Returns whether this client advertised the required protocol and capability bit. */
+    public boolean supportsWiredFeature(int minimumProtocolVersion, int capability) {
+        return minimumProtocolVersion > 0
+                && capability > 0
+                && this.wiredFeatureProtocolVersion >= minimumProtocolVersion
+                && (this.wiredFeatureCapabilities & capability) == capability;
     }
 
     public boolean isHandshakeFinished() {

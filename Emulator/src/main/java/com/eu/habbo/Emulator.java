@@ -488,6 +488,14 @@ public final class Emulator {
         configuration.register("wired.gravity.max_items_per_room", "1000");
         configuration.register("wired.gravity.settle_delay_ms", "75");
         configuration.register("wired.gravity.retry_delay_ms", "50");
+        configuration.register(
+                "wired.opacity.max_states_per_room",
+                "5000",
+                "Maximum global and per-user opacity states retained by one room.");
+        configuration.register(
+                "wired.opacity.max_updates_per_packet",
+                "1000",
+                "Maximum furniture opacity updates emitted in one packet.");
         Emulator.config.register("nitro.secure.api.max_payload_bytes", "65536");
         Emulator.config.register("nitro.secure.config.max_file_bytes", "2097152");
         Emulator.config.register("nitro.secure.gamedata.max_file_bytes", "16777216");

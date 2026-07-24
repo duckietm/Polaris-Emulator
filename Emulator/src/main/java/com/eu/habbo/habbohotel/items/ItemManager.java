@@ -224,6 +224,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectBotTe
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectBotWalkToFurni;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectCancelTransaction;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectChangeFurniDirection;
+import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectChangeOpacity;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectChangeVariableValue;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectControlClock;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectForwardUserToRoom;
@@ -960,6 +961,7 @@ public class ItemManager {
         // ---- end inert-furni group ----
 
         this.interactionsList.add(new ItemInteraction("wf_highscore", InteractionWiredHighscore.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_change_opacity", WiredEffectChangeOpacity.class));
 
         this.interactionsList.add(new ItemInteraction("battlebanzai_tile", InteractionBattleBanzaiTile.class));
         this.interactionsList.add(

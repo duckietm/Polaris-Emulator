@@ -194,6 +194,7 @@ public class RoomUnitManager {
         synchronized (this.room.roomUnitLock) {
             this.currentHabbos.remove(habbo.getHabboInfo().getId());
         }
+        this.room.forgetWiredOpacityUser(habbo.getHabboInfo().getId());
         this.room
                 .getUserVariableManager()
                 .clearAssignmentsForUser(habbo.getHabboInfo().getId());

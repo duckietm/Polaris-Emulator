@@ -179,6 +179,7 @@ final class RoomItemRegistry {
             WiredManager.invalidateRoom(this.room);
         }
         this.room.forgetWiredGravity(item);
+        this.room.forgetWiredOpacity(item);
         this.room.onFurnitureTopologyChanged();
     }
 

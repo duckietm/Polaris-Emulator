@@ -1441,6 +1441,14 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         this.wiredRuntime.forgetGravity(item);
     }
 
+    void forgetWiredOpacity(HabboItem item) {
+        this.wiredRuntime.forgetOpacity(item);
+    }
+
+    void forgetWiredOpacityUser(int userId) {
+        this.wiredRuntime.forgetOpacityUser(userId);
+    }
+
     void disposeWiredRuntimeState() {
         this.wiredRuntime.dispose();
     }

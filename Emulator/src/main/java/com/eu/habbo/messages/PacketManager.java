@@ -427,6 +427,7 @@ import com.eu.habbo.messages.incoming.users.UserWearBadgeEvent;
 import com.eu.habbo.messages.incoming.wired.WiredApplySetConditionsEvent;
 import com.eu.habbo.messages.incoming.wired.WiredConditionSaveDataEvent;
 import com.eu.habbo.messages.incoming.wired.WiredEffectSaveDataEvent;
+import com.eu.habbo.messages.incoming.wired.WiredFeatureCapabilitiesEvent;
 import com.eu.habbo.messages.incoming.wired.WiredFurniRuntimeStateRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredMonitorRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredRoomSettingsRequestEvent;
@@ -1102,6 +1103,7 @@ public class PacketManager {
         this.registerHandler(Incoming.WiredUserVariableManageEvent, WiredUserVariableManageEvent.class);
         this.registerHandler(Incoming.WiredUserInspectMoveEvent, WiredUserInspectMoveEvent.class);
         this.registerHandler(Incoming.WiredFurniRuntimeStateRequestEvent, WiredFurniRuntimeStateRequestEvent.class);
+        this.registerHandler(Incoming.WiredFeatureCapabilitiesEvent, WiredFeatureCapabilitiesEvent.class);
     }
 
     void registerTranslation() throws Exception {

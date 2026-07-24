@@ -1,7 +1,6 @@
 package com.eu.habbo.habbohotel.games.snowwar.mapping;
 
 import com.eu.habbo.habbohotel.games.snowwar.SnowWarPoint;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -22,8 +21,12 @@ public class SnowWarMap {
     private final int sizeY;
     private final SnowWarTile[][] tiles;
 
-    public SnowWarMap(int mapId, List<String> heightmapRows, List<SnowWarItem> items,
-                      List<SnowWarPoint> machinePositions, List<SnowWarSpawnCluster> spawnClusters) {
+    public SnowWarMap(
+            int mapId,
+            List<String> heightmapRows,
+            List<SnowWarItem> items,
+            List<SnowWarPoint> machinePositions,
+            List<SnowWarSpawnCluster> spawnClusters) {
         this.mapId = mapId;
         this.heightmapRows = heightmapRows;
         this.items = items;
@@ -50,8 +53,7 @@ public class SnowWarMap {
                     // engine. Single-tile props keep their old behaviour.
                     int effW = item.getEffectiveWidth();
                     int effL = item.getEffectiveLength();
-                    if (x >= item.getX() && x < item.getX() + effW
-                            && y >= item.getY() && y < item.getY() + effL) {
+                    if (x >= item.getX() && x < item.getX() + effW && y >= item.getY() && y < item.getY() + effL) {
                         itemsAtPosition.add(item);
                     }
                 }

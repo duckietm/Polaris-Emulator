@@ -2,9 +2,6 @@ package com.eu.habbo.habbohotel.games.snowwar.mapping;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.games.snowwar.SnowWarPoint;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,6 +17,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Loads and caches SnowWar arenas (README 5.3).
@@ -82,8 +81,8 @@ public final class SnowWarMapsManager {
         String publicItems = null;
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement =
-                 connection.prepareStatement("SELECT heightmap, public_items FROM room_models WHERE name = ?")) {
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT heightmap, public_items FROM room_models WHERE name = ?")) {
             statement.setString(1, modelName);
             try (ResultSet set = statement.executeQuery()) {
                 if (!set.next()) {
@@ -100,9 +99,9 @@ public final class SnowWarMapsManager {
 
         if (heightmap == null || heightmap.trim().isEmpty()) {
             LOGGER.error(
-                "SnowWar map {}: room_models row '{}' has an empty heightmap, using bundled files.",
-                mapId,
-                modelName);
+                    "SnowWar map {}: room_models row '{}' has an empty heightmap, using bundled files.",
+                    mapId,
+                    modelName);
             return null;
         }
 
@@ -123,10 +122,10 @@ public final class SnowWarMapsManager {
 
                 if (parts.length >= 5 && parts[0].equalsIgnoreCase("spawn")) {
                     spawnClusters.add(new SnowWarSpawnCluster(
-                        Integer.parseInt(parts[1]),
-                        Integer.parseInt(parts[2]),
-                        Integer.parseInt(parts[3]),
-                        Integer.parseInt(parts[4])));
+                            Integer.parseInt(parts[1]),
+                            Integer.parseInt(parts[2]),
+                            Integer.parseInt(parts[3]),
+                            Integer.parseInt(parts[4])));
                     continue;
                 }
 
@@ -151,14 +150,14 @@ public final class SnowWarMapsManager {
                     String imageUrl = parts.length >= 7 ? parts[6] : "";
                     int offsetZ = parts.length >= 8 ? parseIntSafe(parts[7]) : 0;
                     items.add(new SnowWarItem(
-                        name,
-                        x,
-                        y,
-                        rotation,
-                        Integer.parseInt(parts[4]),
-                        Integer.parseInt(parts[5]),
-                        imageUrl,
-                        offsetZ));
+                            name,
+                            x,
+                            y,
+                            rotation,
+                            Integer.parseInt(parts[4]),
+                            Integer.parseInt(parts[5]),
+                            imageUrl,
+                            offsetZ));
                 } else if (SnowWarItemProperties.isKnownItem(name)) {
                     items.add(new SnowWarItem(name, x, y, rotation));
                 } else {
@@ -184,16 +183,16 @@ public final class SnowWarMapsManager {
 
             if (spawnClusters.isEmpty()) {
                 for (String cluster :
-                    readContent("arena_" + mapId + "_spawn_clusters.dat").split("\\|")) {
+                        readContent("arena_" + mapId + "_spawn_clusters.dat").split("\\|")) {
                     String[] parts = cluster.trim().split("\\s+");
                     if (parts.length < 4) {
                         continue;
                     }
                     spawnClusters.add(new SnowWarSpawnCluster(
-                        Integer.parseInt(parts[0]),
-                        Integer.parseInt(parts[1]),
-                        Integer.parseInt(parts[2]),
-                        Integer.parseInt(parts[3])));
+                            Integer.parseInt(parts[0]),
+                            Integer.parseInt(parts[1]),
+                            Integer.parseInt(parts[2]),
+                            Integer.parseInt(parts[3])));
                 }
             }
         } catch (IOException e) {
@@ -210,12 +209,12 @@ public final class SnowWarMapsManager {
         applyItemSizes(items);
 
         LOGGER.info(
-            "Loaded SnowWar map {} from room_models '{}' ({} items, {} machines, {} spawn clusters).",
-            mapId,
-            modelName,
-            items.size(),
-            machinePositions.size(),
-            spawnClusters.size());
+                "Loaded SnowWar map {} from room_models '{}' ({} items, {} machines, {} spawn clusters).",
+                mapId,
+                modelName,
+                items.size(),
+                machinePositions.size(),
+                spawnClusters.size());
 
         return new SnowWarMap(mapId, heightmapRows, items, machinePositions, spawnClusters);
     }
@@ -233,20 +232,20 @@ public final class SnowWarMapsManager {
             }
             try {
                 com.eu.habbo.habbohotel.items.Item base =
-                    Emulator.getGameEnvironment().getItemManager().getItem(item.getName());
+                        Emulator.getGameEnvironment().getItemManager().getItem(item.getName());
                 if (base != null) {
                     item.setSize(base.getWidth(), base.getLength());
                 }
                 LOGGER.info(
-                    "SnowWar item '{}' at ({},{}) rot {} -> size {}x{} (base found: {}, walkableHeight {})",
-                    item.getName(),
-                    item.getX(),
-                    item.getY(),
-                    item.getRotation(),
-                    item.getWidth(),
-                    item.getLength(),
-                    base != null,
-                    item.getWalkableHeight());
+                        "SnowWar item '{}' at ({},{}) rot {} -> size {}x{} (base found: {}, walkableHeight {})",
+                        item.getName(),
+                        item.getX(),
+                        item.getY(),
+                        item.getRotation(),
+                        item.getWidth(),
+                        item.getLength(),
+                        base != null,
+                        item.getWalkableHeight());
             } catch (Exception e) {
                 // Item manager not ready or classname unknown: leave the 1x1
                 // default rather than failing the whole arena load.
@@ -294,7 +293,7 @@ public final class SnowWarMapsManager {
                 }
 
                 items.add(new SnowWarItem(
-                    name, Integer.parseInt(parts[1]), Integer.parseInt(parts[2]), Integer.parseInt(parts[3])));
+                        name, Integer.parseInt(parts[1]), Integer.parseInt(parts[2]), Integer.parseInt(parts[3])));
             }
 
             List<SnowWarPoint> machinePositions = new ArrayList<>();
@@ -316,20 +315,20 @@ public final class SnowWarMapsManager {
                 }
 
                 spawnClusters.add(new SnowWarSpawnCluster(
-                    Integer.parseInt(parts[0]),
-                    Integer.parseInt(parts[1]),
-                    Integer.parseInt(parts[2]),
-                    Integer.parseInt(parts[3])));
+                        Integer.parseInt(parts[0]),
+                        Integer.parseInt(parts[1]),
+                        Integer.parseInt(parts[2]),
+                        Integer.parseInt(parts[3])));
             }
 
             applyItemSizes(items);
 
             LOGGER.info(
-                "Loaded SnowWar map {} ({} items, {} machines, {} spawn clusters).",
-                mapId,
-                items.size(),
-                machinePositions.size(),
-                spawnClusters.size());
+                    "Loaded SnowWar map {} ({} items, {} machines, {} spawn clusters).",
+                    mapId,
+                    items.size(),
+                    machinePositions.size(),
+                    spawnClusters.size());
 
             return new SnowWarMap(mapId, heightmapRows, items, machinePositions, spawnClusters);
         } catch (Exception e) {

@@ -8,7 +8,6 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -42,7 +41,8 @@ public class WiredExtraMovementCurve extends InteractionWiredExtra {
         super(set, baseItem);
     }
 
-    public WiredExtraMovementCurve(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredExtraMovementCurve(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -55,7 +55,9 @@ public class WiredExtraMovementCurve extends InteractionWiredExtra {
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
         int value = (settings.getIntParams().length > 0) ? settings.getIntParams()[0] : this.curveType;
 
-        if (value == this.curveType && settings.getStringParam() != null && !settings.getStringParam().isEmpty()) {
+        if (value == this.curveType
+                && settings.getStringParam() != null
+                && !settings.getStringParam().isEmpty()) {
             try {
                 value = Integer.parseInt(settings.getStringParam());
             } catch (NumberFormatException ignored) {
@@ -104,8 +106,8 @@ public class WiredExtraMovementCurve extends InteractionWiredExtra {
         if (wiredData.startsWith("{")) {
             JsonData data = WiredExtraPayloadGuard.fromJson(wiredData, JsonData.class);
             this.curveType = normalizeCurve((data != null) ? data.curveType : CURVE_LINEAR);
-            this.intensity = normalizeIntensity(
-                    (data != null && data.intensity != null) ? data.intensity : INTENSITY_DEFAULT);
+            this.intensity =
+                    normalizeIntensity((data != null && data.intensity != null) ? data.intensity : INTENSITY_DEFAULT);
             return;
         }
 
@@ -123,9 +125,7 @@ public class WiredExtraMovementCurve extends InteractionWiredExtra {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
 
     @Override
     public boolean hasConfiguration() {

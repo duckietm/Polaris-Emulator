@@ -7,7 +7,6 @@ import com.eu.habbo.habbohotel.games.snowwar.objects.SnowWarMachineObject;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-
 import java.util.List;
 
 /**
@@ -40,7 +39,8 @@ public class SnowStormLevelDataComposer extends MessageComposer {
             this.response.appendInt(player.getTeamId());
             this.response.appendString(player.getHabbo().getHabboInfo().getUsername());
             this.response.appendString(player.getHabbo().getHabboInfo().getLook());
-            this.response.appendString(player.getHabbo().getHabboInfo().getGender().name().toUpperCase());
+            this.response.appendString(
+                    player.getHabbo().getHabboInfo().getGender().name().toUpperCase());
         }
 
         this.response.appendString(this.game.getMap().getHeightmapForPacket());

@@ -7,11 +7,10 @@ import com.eu.habbo.habbohotel.games.snowwar.mapping.SnowWarMapsManager;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Header 6011: a permitted user (acc_snowwar_edit, rank 7 by default)
@@ -65,7 +64,11 @@ public class SnowStormSaveEditorEvent extends MessageHandler {
             // SnowWarMapsManager re-expands them (main tile + hidden collision
             // tiles + ammo point).
             if (name.equals("snowball_machine")) {
-                builder.append("snowball_machine ").append(x).append(' ').append(y).append("\r\n");
+                builder.append("snowball_machine ")
+                        .append(x)
+                        .append(' ')
+                        .append(y)
+                        .append("\r\n");
                 continue;
             }
 
@@ -94,11 +97,16 @@ public class SnowStormSaveEditorEvent extends MessageHandler {
                 }
             }
 
-            builder.append(name).append(' ')
-                    .append(x).append(' ')
-                    .append(y).append(' ')
-                    .append(rotation).append(' ')
-                    .append(walkableHeight).append(' ')
+            builder.append(name)
+                    .append(' ')
+                    .append(x)
+                    .append(' ')
+                    .append(y)
+                    .append(' ')
+                    .append(rotation)
+                    .append(' ')
+                    .append(walkableHeight)
+                    .append(' ')
                     .append(collisionHeight);
 
             if (hasImage) {
@@ -137,9 +145,10 @@ public class SnowStormSaveEditorEvent extends MessageHandler {
         boolean writeHeightmap = rowCount > 0 && heightmap.length() > 0;
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement = connection.prepareStatement(writeHeightmap
-                        ? "UPDATE room_models SET public_items = ?, heightmap = ? WHERE name = ?"
-                        : "UPDATE room_models SET public_items = ? WHERE name = ?")) {
+                PreparedStatement statement = connection.prepareStatement(
+                        writeHeightmap
+                                ? "UPDATE room_models SET public_items = ?, heightmap = ? WHERE name = ?"
+                                : "UPDATE room_models SET public_items = ? WHERE name = ?")) {
             statement.setString(1, builder.toString());
             if (writeHeightmap) {
                 statement.setString(2, heightmap.toString());
@@ -152,7 +161,14 @@ public class SnowStormSaveEditorEvent extends MessageHandler {
 
         SnowWarMapsManager.invalidate(mapId);
 
-        LOGGER.info("SnowWar arena {} ('{}') saved from the in-game editor by {} ({} items, {} spawns, {} ad images, {} floor rows).",
-                mapId, modelName, habbo.getHabboInfo().getUsername(), itemCount, spawnCount, adImages, rowCount);
+        LOGGER.info(
+                "SnowWar arena {} ('{}') saved from the in-game editor by {} ({} items, {} spawns, {} ad images, {} floor rows).",
+                mapId,
+                modelName,
+                habbo.getHabboInfo().getUsername(),
+                itemCount,
+                spawnCount,
+                adImages,
+                rowCount);
     }
 }

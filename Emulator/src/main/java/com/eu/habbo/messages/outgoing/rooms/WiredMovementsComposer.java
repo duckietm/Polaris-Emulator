@@ -118,7 +118,9 @@ public class WiredMovementsComposer extends MessageComposer {
                 newMovement.duration,
                 newMovement.elapsed,
                 newMovement.anchorType,
-                newMovement.anchorId);
+                newMovement.anchorId,
+                newMovement.animationEffect,
+                newMovement.gravityIntensity);
         }
 
         if((previous instanceof UserMovementData) && (current instanceof UserMovementData))
@@ -156,7 +158,11 @@ public class WiredMovementsComposer extends MessageComposer {
     }
 
     public static MovementData furniMovement(int id, int fromX, int fromY, int toX, int toY, double fromZ, double toZ, int rotation, int duration, int elapsed, int anchorType, int anchorId) {
-        return new FurniMovementData(id, fromX, fromY, toX, toY, fromZ, toZ, rotation, duration, elapsed, anchorType, anchorId);
+        return furniMovement(id, fromX, fromY, toX, toY, fromZ, toZ, rotation, duration, elapsed, anchorType, anchorId, 0, 0);
+    }
+
+    public static MovementData furniMovement(int id, int fromX, int fromY, int toX, int toY, double fromZ, double toZ, int rotation, int duration, int elapsed, int anchorType, int anchorId, int animationEffect, int gravityIntensity) {
+        return new FurniMovementData(id, fromX, fromY, toX, toY, fromZ, toZ, rotation, duration, elapsed, anchorType, anchorId, animationEffect, gravityIntensity);
     }
 
     public static MovementData userWalkMovement(int id, int fromX, int fromY, int toX, int toY, double fromZ, double toZ, int bodyDirection, int headDirection, int duration) {
@@ -251,8 +257,10 @@ public class WiredMovementsComposer extends MessageComposer {
         private final int elapsed;
         private final int anchorType;
         private final int anchorId;
+        private final int animationEffect;
+        private final int gravityIntensity;
 
-        private FurniMovementData(int id, int fromX, int fromY, int toX, int toY, double fromZ, double toZ, int rotation, int duration, int elapsed, int anchorType, int anchorId) {
+        private FurniMovementData(int id, int fromX, int fromY, int toX, int toY, double fromZ, double toZ, int rotation, int duration, int elapsed, int anchorType, int anchorId, int animationEffect, int gravityIntensity) {
             super(TYPE_FURNI_MOVE);
             this.id = id;
             this.fromX = fromX;
@@ -266,6 +274,8 @@ public class WiredMovementsComposer extends MessageComposer {
             this.elapsed = elapsed;
             this.anchorType = anchorType;
             this.anchorId = anchorId;
+            this.animationEffect = animationEffect;
+            this.gravityIntensity = gravityIntensity;
         }
 
         @Override
@@ -282,6 +292,8 @@ public class WiredMovementsComposer extends MessageComposer {
             response.appendInt(this.elapsed);
             response.appendInt(this.anchorType);
             response.appendInt(this.anchorId);
+            response.appendInt(this.animationEffect);
+            response.appendInt(this.gravityIntensity);
         }
     }
 

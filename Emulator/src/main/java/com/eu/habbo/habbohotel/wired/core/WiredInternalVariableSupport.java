@@ -20,12 +20,26 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboGender;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.util.HotelDateTimeUtil;
+import com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer;
+import com.eu.habbo.messages.outgoing.rooms.items.WiredFurniGravityComposer;
+import com.eu.habbo.messages.outgoing.rooms.items.WiredFurniOpacityComposer;
 
 import java.time.ZonedDateTime;
 import java.time.temporal.WeekFields;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class WiredInternalVariableSupport {
+    private static final String FURNI_OPACITY_CACHE_KEY = "wired.internal.furni.opacity";
+    private static final String FURNI_GRAVITY_CACHE_KEY = "wired.internal.furni.gravity";
+    private static final long FURNI_GRAVITY_DROP_DELAY_MS = WiredMovementsComposer.DEFAULT_DURATION + 50L;
     private static final ThreadLocal<Boolean> USER_MOVE_INSTANT_OVERRIDE = new ThreadLocal<>();
     private static final ThreadLocal<UserMoveBatch> USER_MOVE_BATCH = new ThreadLocal<>();
     private static final ThreadLocal<Integer> USER_MOVE_BATCH_DEPTH = new ThreadLocal<>();
@@ -66,7 +80,8 @@ public final class WiredInternalVariableSupport {
     public static boolean canUseFurniDestination(String key) {
         String normalized = normalizeKey(key);
         return "@state".equals(normalized) || "@position_x".equals(normalized) || "@position_y".equals(normalized)
-            || "@rotation".equals(normalized) || "@altitude".equals(normalized);
+            || "@rotation".equals(normalized) || "@altitude".equals(normalized) || "@opacity".equals(normalized)
+            || "@gravity".equals(normalized);
     }
 
     public static boolean canUseUserReference(String key) {
@@ -94,7 +109,8 @@ public final class WiredInternalVariableSupport {
             || "@is_invisible".equals(normalized) || "@type".equals(normalized) || "@is_stackable".equals(normalized)
             || "@can_stand_on".equals(normalized) || "@can_sit_on".equals(normalized) || "@can_lay_on".equals(normalized)
             || "@owner_id".equals(normalized) || "@wallitem_offset".equals(normalized)
-            || "@dimensions.x".equals(normalized) || "@dimensions.y".equals(normalized);
+            || "@dimensions.x".equals(normalized) || "@dimensions.y".equals(normalized) || "@opacity".equals(normalized)
+            || "@gravity".equals(normalized);
     }
 
     public static boolean canUseRoomReference(String key) {
@@ -167,7 +183,7 @@ public final class WiredInternalVariableSupport {
 
         return switch (normalized) {
             case "@id", "@class_id", "@height", "@state", "@position_x", "@position_y", "@rotation", "@altitude",
-                "@is_invisible", "@type", "@owner_id", "@dimensions.x", "@dimensions.y" -> true;
+                "@is_invisible", "@type", "@owner_id", "@dimensions.x", "@dimensions.y", "@opacity", "@gravity" -> true;
             case "~teleport.target_id" -> item.getTeleportTargetId() > 0;
             case "@wallitem_offset" -> item.getBaseItem().getType() == FurnitureType.WALL;
             case "@is_stackable" -> item.getBaseItem().allowStack();
@@ -295,6 +311,8 @@ public final class WiredInternalVariableSupport {
             case "@position_y" -> (int) item.getY();
             case "@rotation" -> item.getRotation();
             case "@altitude" -> (int) Math.round(item.getZ() * 100);
+            case "@opacity" -> getFurniOpacity(room, item);
+            case "@gravity" -> getFurniGravity(room, item);
             case "@is_invisible" -> 0;
             case "@type" -> 0;
             case "@is_stackable" -> (item.getBaseItem() != null && item.getBaseItem().allowStack()) ? 1 : 0;
@@ -319,6 +337,17 @@ public final class WiredInternalVariableSupport {
         if ("@state".equals(normalized)) {
             item.setExtradata(String.valueOf(normalizeFurniStateValue(item, value)));
             room.updateItemState(item);
+            return true;
+        }
+
+        if ("@opacity".equals(normalized)) {
+            applyFurniOpacity(room, item, value, false, 0);
+            return true;
+        }
+
+        if ("@gravity".equals(normalized)) {
+            setFurniGravity(room, item, value);
+            scheduleFurniGravity(room, item, 0L);
             return true;
         }
 
@@ -659,6 +688,180 @@ public final class WiredInternalVariableSupport {
         }
 
         return wrappedValue;
+    }
+
+    public static void applyFurniOpacity(Room room, HabboItem item, int opacity, boolean clickThrough, int easing) {
+        if (room == null || item == null) {
+            return;
+        }
+
+        int normalizedOpacity = setFurniOpacity(room, item, opacity);
+        room.sendComposer(new WiredFurniOpacityComposer(Collections.singletonList(item), normalizedOpacity, clickThrough, easing).compose());
+    }
+
+    public static int setFurniOpacity(Room room, HabboItem item, int opacity) {
+        int normalizedOpacity = Math.max(0, Math.min(100, opacity));
+
+        if (room != null && item != null) {
+            getFurniOpacityValues(room).put(item.getId(), normalizedOpacity);
+        }
+
+        return normalizedOpacity;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<Integer, Integer> getFurniOpacityValues(Room room) {
+        synchronized (room.cache) {
+            Object value = room.cache.get(FURNI_OPACITY_CACHE_KEY);
+
+            if (value instanceof Map<?, ?>) {
+                return (Map<Integer, Integer>) value;
+            }
+
+            Map<Integer, Integer> values = new ConcurrentHashMap<>();
+            room.cache.put(FURNI_OPACITY_CACHE_KEY, values);
+            return values;
+        }
+    }
+
+    private static int getFurniOpacity(Room room, HabboItem item) {
+        return getFurniOpacityValues(room).getOrDefault(item.getId(), 100);
+    }
+
+    public static void scheduleGravityForMovement(Room room, HabboItem movedItem, Collection<RoomTile> impactedTiles) {
+        if (room == null || movedItem == null) {
+            return;
+        }
+
+        if (hasFurniGravity(room, movedItem)) {
+            scheduleFurniGravity(room, movedItem, FURNI_GRAVITY_DROP_DELAY_MS);
+        }
+
+        if (impactedTiles == null || impactedTiles.isEmpty()) {
+            return;
+        }
+
+        Set<Integer> scheduledItemIds = new HashSet<>();
+        scheduledItemIds.add(movedItem.getId());
+
+        for (RoomTile tile : impactedTiles) {
+            if (tile == null) {
+                continue;
+            }
+
+            for (HabboItem item : room.getItemsAt(tile)) {
+                if (item == null || scheduledItemIds.contains(item.getId()) || !hasFurniGravity(room, item)) {
+                    continue;
+                }
+
+                scheduledItemIds.add(item.getId());
+                scheduleFurniGravity(room, item, FURNI_GRAVITY_DROP_DELAY_MS);
+            }
+        }
+    }
+
+    public static int setFurniGravity(Room room, HabboItem item, int gravity) {
+        int normalizedGravity = gravity > 0 ? 1 : 0;
+
+        if (room != null && item != null) {
+            Map<Integer, Integer> values = getFurniGravityValues(room);
+
+            if (normalizedGravity > 0) {
+                values.put(item.getId(), normalizedGravity);
+            } else {
+                values.remove(item.getId());
+            }
+
+            room.sendComposer(new WiredFurniGravityComposer(Collections.singletonList(item), normalizedGravity).compose());
+        }
+
+        return normalizedGravity;
+    }
+
+    public static int getFurniGravity(Room room, HabboItem item) {
+        if (room == null || item == null) {
+            return 0;
+        }
+
+        return getFurniGravityValues(room).getOrDefault(item.getId(), 0);
+    }
+
+    private static boolean hasFurniGravity(Room room, HabboItem item) {
+        return getFurniGravity(room, item) > 0;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<Integer, Integer> getFurniGravityValues(Room room) {
+        synchronized (room.cache) {
+            Object value = room.cache.get(FURNI_GRAVITY_CACHE_KEY);
+
+            if (value instanceof Map<?, ?>) {
+                return (Map<Integer, Integer>) value;
+            }
+
+            Map<Integer, Integer> values = new ConcurrentHashMap<>();
+            room.cache.put(FURNI_GRAVITY_CACHE_KEY, values);
+            return values;
+        }
+    }
+
+    private static void scheduleFurniGravity(Room room, HabboItem item, long delayMs) {
+        if (room == null || item == null || !hasFurniGravity(room, item)) {
+            return;
+        }
+
+        applyFurniGravity(room, item);
+    }
+
+    private static void applyFurniGravity(Room room, HabboItem item) {
+        if (room == null || item == null || !hasFurniGravity(room, item) || item.getBaseItem() == null) {
+            return;
+        }
+
+        if (item.getBaseItem().getType() != FurnitureType.FLOOR || room.getLayout() == null) {
+            return;
+        }
+
+        RoomTile tile = room.getLayout().getTile(item.getX(), item.getY());
+
+        if (tile == null) {
+            return;
+        }
+
+        double targetZ = room.getStackHeight(tile.x, tile.y, false, item);
+
+        if (targetZ < room.getLayout().getHeightAtSquare(tile.x, tile.y)) {
+            targetZ = room.getLayout().getHeightAtSquare(tile.x, tile.y);
+        }
+
+        if (item.getZ() <= targetZ + 0.001) {
+            return;
+        }
+
+        double oldZ = item.getZ();
+        FurnitureMovementError error = room.moveFurniTo(item, tile, item.getRotation(), targetZ, null, false, false);
+
+        if (error != FurnitureMovementError.NONE) {
+            return;
+        }
+
+        List<WiredMovementsComposer.MovementData> movements = new ArrayList<>(1);
+        movements.add(WiredMovementsComposer.furniMovement(
+            item.getId(),
+            tile.x,
+            tile.y,
+            tile.x,
+            tile.y,
+            oldZ,
+            item.getZ(),
+            item.getRotation(),
+            WiredMovementsComposer.DEFAULT_DURATION,
+            0,
+            WiredMovementsComposer.FURNI_ANCHOR_NONE,
+            0,
+            6,
+            100));
+        room.sendComposer(new WiredMovementsComposer(movements).compose());
     }
 
     private static int parseInteger(String value) {

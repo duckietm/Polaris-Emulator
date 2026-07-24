@@ -77,6 +77,12 @@ class PackagedJarContractIT {
                 LegacyPluginFixtureCompiler.compileReleasedPolarisPlugin(
                         Files.createDirectories(polaris.resolve("compile"))),
                 polaris);
+
+        Path current = Files.createDirectories(temp.resolve("current-wired-snapshot"));
+        runPluginFixture(
+                LegacyPluginFixtureCompiler.compileCurrentWiredSnapshotPlugin(
+                        Files.createDirectories(current.resolve("compile")), packagedJar()),
+                current);
     }
 
     private static void runPluginFixture(Path fixture, Path workDirectory) throws Exception {

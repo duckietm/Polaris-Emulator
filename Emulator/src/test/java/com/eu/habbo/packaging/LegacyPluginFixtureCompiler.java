@@ -45,6 +45,17 @@ final class LegacyPluginFixtureCompiler {
                 List.of(Path.of("abi-baseline", "polaris-release-api.jar")));
     }
 
+    static Path compileCurrentWiredSnapshotPlugin(Path workDirectory, Path currentJar) throws Exception {
+        Path fixture = FIXTURE_ROOT.resolve("current-wired-snapshot");
+        return compilePlugin(
+                workDirectory,
+                fixture,
+                "WiredSnapshotProviderPlugin.java",
+                "current-wired-snapshot-provider-fixture.jar",
+                "25",
+                List.of(currentJar));
+    }
+
     private static Path compilePlugin(
             Path workDirectory, Path fixture, String sourceName, String jarName, String release, List<Path> classpath)
             throws Exception {

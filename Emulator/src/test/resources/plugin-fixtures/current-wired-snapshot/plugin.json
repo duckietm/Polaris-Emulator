@@ -1,0 +1,7 @@
+{
+  "name": "Current WIRED snapshot provider fixture",
+  "description": "Validates the additive delayed snapshot provider from the assembled Polaris JAR",
+  "author": "Polaris tests",
+  "version": "1.0.0",
+  "main": "fixture.currentwiredsnapshot.WiredSnapshotProviderPlugin"
+}

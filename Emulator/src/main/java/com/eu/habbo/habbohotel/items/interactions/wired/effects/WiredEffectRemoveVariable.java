@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
@@ -17,7 +18,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -43,7 +43,8 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect {
         this.selectedFurni = new LinkedHashSet<>();
     }
 
-    public WiredEffectRemoveVariable(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectRemoveVariable(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.selectedFurni = new LinkedHashSet<>();
     }
@@ -118,7 +119,8 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect {
     }
 
     private void executeContextVariables(WiredContext ctx, Room room) {
-        WiredVariableDefinitionInfo definition = WiredContextVariableSupport.getDefinitionInfo(room, this.variableItemId);
+        WiredVariableDefinitionInfo definition =
+                WiredContextVariableSupport.getDefinitionInfo(room, this.variableItemId);
 
         if (definition == null || definition.isReadOnly()) {
             return;
@@ -176,8 +178,10 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect {
 
         int[] intParams = settings.getIntParams();
         int nextTargetType = normalizeTargetType((intParams.length > 0) ? intParams[0] : TARGET_USER);
-        int nextUserSource = normalizeUserSource((intParams.length > 1) ? intParams[1] : WiredSourceUtil.SOURCE_TRIGGER);
-        int nextFurniSource = normalizeFurniSource((intParams.length > 2) ? intParams[2] : WiredSourceUtil.SOURCE_TRIGGER);
+        int nextUserSource =
+                normalizeUserSource((intParams.length > 1) ? intParams[1] : WiredSourceUtil.SOURCE_TRIGGER);
+        int nextFurniSource =
+                normalizeFurniSource((intParams.length > 2) ? intParams[2] : WiredSourceUtil.SOURCE_TRIGGER);
         int nextVariableItemId = parseVariableItemId(settings.getStringParam());
 
         if (nextVariableItemId <= 0) {
@@ -186,19 +190,22 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect {
 
         switch (nextTargetType) {
             case TARGET_USER:
-                WiredVariableDefinitionInfo userDefinition = room.getUserVariableManager().getDefinitionInfo(nextVariableItemId);
+                WiredVariableDefinitionInfo userDefinition =
+                        room.getUserVariableManager().getDefinitionInfo(nextVariableItemId);
                 if (userDefinition == null || userDefinition.isReadOnly()) {
                     throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
                 }
                 break;
             case TARGET_FURNI:
-                WiredVariableDefinitionInfo furniDefinition = room.getFurniVariableManager().getDefinitionInfo(nextVariableItemId);
+                WiredVariableDefinitionInfo furniDefinition =
+                        room.getFurniVariableManager().getDefinitionInfo(nextVariableItemId);
                 if (furniDefinition == null || furniDefinition.isReadOnly()) {
                     throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
                 }
                 break;
             case TARGET_CONTEXT:
-                WiredVariableDefinitionInfo contextDefinition = WiredContextVariableSupport.getDefinitionInfo(room, nextVariableItemId);
+                WiredVariableDefinitionInfo contextDefinition =
+                        WiredContextVariableSupport.getDefinitionInfo(room, nextVariableItemId);
                 if (contextDefinition == null || contextDefinition.isReadOnly()) {
                     throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
                 }
@@ -248,7 +255,14 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect {
             }
         }
 
-        return WiredManager.getGson().toJson(new JsonData(this.variableItemId, this.targetType, this.userSource, this.furniSource, this.getDelay(), selectedItemIds));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.variableItemId,
+                        this.targetType,
+                        this.userSource,
+                        this.furniSource,
+                        this.getDelay(),
+                        selectedItemIds));
     }
 
     @Override
@@ -292,6 +306,11 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect {
             this.variableItemId = Math.max(0, Integer.parseInt(wiredData.trim()));
             this.targetType = TARGET_USER;
         } catch (NumberFormatException ignored) {
+            WiredCompatibilityDiagnostics.record(
+                    WiredCompatibilityDiagnostics.FailurePoint.EFFECT_REMOVE_VARIABLE_LEGACY,
+                    this.getRoomId(),
+                    this.getId(),
+                    ignored);
         }
     }
 
@@ -306,8 +325,7 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {}
 
     @Override
     public WiredEffectType getType() {
@@ -359,7 +377,13 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect {
         int delay;
         List<Integer> selectedFurniIds;
 
-        JsonData(int variableItemId, int targetType, int userSource, int furniSource, int delay, List<Integer> selectedFurniIds) {
+        JsonData(
+                int variableItemId,
+                int targetType,
+                int userSource,
+                int furniSource,
+                int delay,
+                List<Integer> selectedFurniIds) {
             this.variableItemId = variableItemId;
             this.targetType = targetType;
             this.userSource = userSource;

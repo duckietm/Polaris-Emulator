@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.triggers;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
@@ -17,7 +18,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredTriggerSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredTriggerSaveException;
 import com.eu.habbo.messages.outgoing.rooms.items.ItemStateComposer;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -45,7 +45,8 @@ public class WiredTriggerReceiveSignal extends InteractionWiredTrigger {
         this.items = new LinkedHashSet<>();
     }
 
-    public WiredTriggerReceiveSignal(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredTriggerReceiveSignal(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.items = new LinkedHashSet<>();
     }
@@ -54,13 +55,13 @@ public class WiredTriggerReceiveSignal extends InteractionWiredTrigger {
     public boolean matches(HabboItem triggerItem, WiredEvent event) {
         if (event.getType() != WiredEvent.Type.SIGNAL_RECEIVED) return false;
 
-        List<HabboItem> resolvedAntennas = WiredTriggerSourceUtil.resolveItems(this, event, this.furniSource, this.items).stream()
-                .filter(this::isAntennaItem)
-                .collect(Collectors.toList());
+        List<HabboItem> resolvedAntennas =
+                WiredTriggerSourceUtil.resolveItems(this, event, this.furniSource, this.items).stream()
+                        .filter(this::isAntennaItem)
+                        .collect(Collectors.toList());
 
         if (!resolvedAntennas.isEmpty()) {
-            return resolvedAntennas.stream()
-                    .anyMatch(item -> item != null && item.getId() == event.getSignalChannel());
+            return resolvedAntennas.stream().anyMatch(item -> item != null && item.getId() == event.getSignalChannel());
         }
 
         return this.channel > 0 && event.getSignalChannel() == this.channel;
@@ -136,10 +137,15 @@ public class WiredTriggerReceiveSignal extends InteractionWiredTrigger {
     public void serializeWiredData(ServerMessage message, Room room) {
         int senderCount = 0;
         try {
-            if (room != null && room.getRoomSpecialTypes() != null) {
+            if (room.getRoomSpecialTypes() != null) {
                 senderCount = this.getSenderCount(room);
             }
         } catch (Exception e) {
+            WiredCompatibilityDiagnostics.record(
+                    WiredCompatibilityDiagnostics.FailurePoint.TRIGGER_RECEIVE_SIGNAL_SERIALIZE,
+                    room.getId(),
+                    this.getId(),
+                    e);
         }
 
         Set<HabboItem> itemsToRemove = new HashSet<>();
@@ -228,22 +234,25 @@ public class WiredTriggerReceiveSignal extends InteractionWiredTrigger {
         this.setExtradata("1");
         room.sendComposer(new ItemStateComposer(this).compose());
 
-        Emulator.getThreading().run(() -> {
-            if (!room.isLoaded()) return;
-            if (this.activationToken.get() != token) return;
+        Emulator.getThreading()
+                .run(
+                        () -> {
+                            if (!room.isLoaded()) return;
+                            if (this.activationToken.get() != token) return;
 
-            this.setExtradata("0");
-            room.sendComposer(new ItemStateComposer(this).compose());
-        }, ACTIVATION_PULSE_MS);
+                            this.setExtradata("0");
+                            room.sendComposer(new ItemStateComposer(this).compose());
+                        },
+                        ACTIVATION_PULSE_MS);
     }
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-                channel,
-                furniSource,
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList())
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        channel,
+                        furniSource,
+                        this.items.stream().map(HabboItem::getId).collect(Collectors.toList())));
     }
 
     @Override

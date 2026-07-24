@@ -20,7 +20,6 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboGender;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.util.HotelDateTimeUtil;
-
 import java.time.ZonedDateTime;
 import java.time.temporal.WeekFields;
 import java.util.Locale;
@@ -30,95 +29,40 @@ public final class WiredInternalVariableSupport {
     private static final ThreadLocal<UserMoveBatch> USER_MOVE_BATCH = new ThreadLocal<>();
     private static final ThreadLocal<Integer> USER_MOVE_BATCH_DEPTH = new ThreadLocal<>();
 
-    private WiredInternalVariableSupport() {
-    }
+    private WiredInternalVariableSupport() {}
 
     public static String normalizeKey(String key) {
-        if (key == null) {
-            return "";
-        }
-
-        String normalized = key.trim();
-
-        return switch (normalized) {
-            case "@position.x" -> "@position_x";
-            case "@position.y" -> "@position_y";
-            case "@effect" -> "@effect_id";
-            case "@handitems" -> "@handitem_id";
-            case "@is_mute" -> "@is_muted";
-            case "@teams.red.score" -> "@team_red_score";
-            case "@teams.green.score" -> "@team_green_score";
-            case "@teams.blue.score" -> "@team_blue_score";
-            case "@teams.yellow.score" -> "@team_yellow_score";
-            case "@teams.red.size" -> "@team_red_size";
-            case "@teams.green.size" -> "@team_green_size";
-            case "@teams.blue.size" -> "@team_blue_size";
-            case "@teams.yellow.size" -> "@team_yellow_size";
-            default -> normalized;
-        };
+        return WiredInternalVariableRegistry.DEFAULT.normalize(key);
     }
 
     public static boolean canUseUserDestination(String key) {
-        String normalized = normalizeKey(key);
-        return "@position_x".equals(normalized) || "@position_y".equals(normalized) || "@direction".equals(normalized);
+        return WiredInternalVariableRegistry.DEFAULT.supports(
+                key, WiredInternalVariableRegistry.Capability.USER_DESTINATION);
     }
 
     public static boolean canUseFurniDestination(String key) {
-        String normalized = normalizeKey(key);
-        return "@state".equals(normalized) || "@position_x".equals(normalized) || "@position_y".equals(normalized)
-            || "@rotation".equals(normalized) || "@altitude".equals(normalized);
+        return WiredInternalVariableRegistry.DEFAULT.supports(
+                key, WiredInternalVariableRegistry.Capability.FURNI_DESTINATION);
     }
 
     public static boolean canUseUserReference(String key) {
-        String normalized = normalizeKey(key);
-
-        return "@index".equals(normalized) || "@type".equals(normalized) || "@gender".equals(normalized)
-            || "@level".equals(normalized) || "@achievement_score".equals(normalized) || "@is_hc".equals(normalized)
-            || "@has_rights".equals(normalized) || "@is_group_admin".equals(normalized) || "@is_owner".equals(normalized)
-            || "@is_muted".equals(normalized) || "@is_trading".equals(normalized) || "@is_frozen".equals(normalized)
-            || "@effect_id".equals(normalized) || "@team_score".equals(normalized) || "@team_color".equals(normalized)
-            || "@team_type".equals(normalized) || "@sign".equals(normalized) || "@dance".equals(normalized)
-            || "@is_idle".equals(normalized) || "@handitem_id".equals(normalized) || "@position_x".equals(normalized)
-            || "@position_y".equals(normalized) || "@direction".equals(normalized) || "@altitude".equals(normalized)
-            || "@favourite_group_id".equals(normalized) || "@room_entry.method".equals(normalized)
-            || "@room_entry.teleport_id".equals(normalized) || "@user_id".equals(normalized)
-            || "@bot_id".equals(normalized) || "@pet_id".equals(normalized) || "@pet_owner_id".equals(normalized);
+        return WiredInternalVariableRegistry.DEFAULT.supports(
+                key, WiredInternalVariableRegistry.Capability.USER_REFERENCE);
     }
 
     public static boolean canUseFurniReference(String key) {
-        String normalized = normalizeKey(key);
-
-        return "~teleport.target_id".equals(normalized) || "@id".equals(normalized) || "@class_id".equals(normalized)
-            || "@height".equals(normalized) || "@state".equals(normalized) || "@position_x".equals(normalized)
-            || "@position_y".equals(normalized) || "@rotation".equals(normalized) || "@altitude".equals(normalized)
-            || "@is_invisible".equals(normalized) || "@type".equals(normalized) || "@is_stackable".equals(normalized)
-            || "@can_stand_on".equals(normalized) || "@can_sit_on".equals(normalized) || "@can_lay_on".equals(normalized)
-            || "@owner_id".equals(normalized) || "@wallitem_offset".equals(normalized)
-            || "@dimensions.x".equals(normalized) || "@dimensions.y".equals(normalized);
+        return WiredInternalVariableRegistry.DEFAULT.supports(
+                key, WiredInternalVariableRegistry.Capability.FURNI_REFERENCE);
     }
 
     public static boolean canUseRoomReference(String key) {
-        String normalized = normalizeKey(key);
-
-        return "@furni_count".equals(normalized) || "@user_count".equals(normalized) || "@wired_timer".equals(normalized)
-            || "@team_red_score".equals(normalized) || "@team_green_score".equals(normalized) || "@team_blue_score".equals(normalized)
-            || "@team_yellow_score".equals(normalized) || "@team_red_size".equals(normalized) || "@team_green_size".equals(normalized)
-            || "@team_blue_size".equals(normalized) || "@team_yellow_size".equals(normalized) || "@room_id".equals(normalized)
-            || "@group_id".equals(normalized) || "@timezone_server".equals(normalized) || "@timezone_client".equals(normalized)
-            || "@current_time".equals(normalized) || "@current_time.millisecond_of_second".equals(normalized)
-            || "@current_time.seconds_of_minute".equals(normalized) || "@current_time.minute_of_hour".equals(normalized)
-            || "@current_time.hour_of_day".equals(normalized) || "@current_time.day_of_week".equals(normalized)
-            || "@current_time.day_of_month".equals(normalized) || "@current_time.day_of_year".equals(normalized)
-            || "@current_time.week_of_year".equals(normalized) || "@current_time.month_of_year".equals(normalized)
-            || "@current_time.year".equals(normalized);
+        return WiredInternalVariableRegistry.DEFAULT.supports(
+                key, WiredInternalVariableRegistry.Capability.ROOM_REFERENCE);
     }
 
     public static boolean canUseContextReference(String key) {
-        String normalized = normalizeKey(key);
-
-        return "@selector_furni_count".equals(normalized) || "@selector_user_count".equals(normalized)
-            || "@signal_furni_count".equals(normalized) || "@signal_user_count".equals(normalized)
-            || "@antenna_id".equals(normalized) || "@chat_type".equals(normalized) || "@chat_style".equals(normalized);
+        return WiredInternalVariableRegistry.DEFAULT.supports(
+                key, WiredInternalVariableRegistry.Capability.CONTEXT_REFERENCE);
     }
 
     public static boolean hasUserValue(Room room, RoomUnit roomUnit, String key) {
@@ -132,11 +76,22 @@ public final class WiredInternalVariableSupport {
         String normalized = normalizeKey(key);
 
         return switch (normalized) {
-            case "@index", "@type", "@level", "@achievement_score", "@position_x", "@position_y", "@direction", "@altitude" -> true;
+            case "@index",
+                    "@type",
+                    "@level",
+                    "@achievement_score",
+                    "@position_x",
+                    "@position_y",
+                    "@direction",
+                    "@altitude" -> true;
             case "@gender" -> habbo != null || bot != null;
             case "@is_hc" -> habbo != null && habbo.getHabboStats().hasActiveClub();
-            case "@has_rights" -> habbo != null && (room.hasRights(habbo) || room.getGuildRightLevel(habbo).isEqualOrGreaterThan(RoomRightLevels.GUILD_RIGHTS));
-            case "@is_group_admin" -> habbo != null && room.getGuildRightLevel(habbo).isEqualOrGreaterThan(RoomRightLevels.GUILD_ADMIN);
+            case "@has_rights" ->
+                habbo != null
+                        && (room.hasRights(habbo)
+                                || room.getGuildRightLevel(habbo).isEqualOrGreaterThan(RoomRightLevels.GUILD_RIGHTS));
+            case "@is_group_admin" ->
+                habbo != null && room.getGuildRightLevel(habbo).isEqualOrGreaterThan(RoomRightLevels.GUILD_ADMIN);
             case "@is_owner" -> habbo != null && room.isOwner(habbo);
             case "@is_muted" -> (habbo != null && room.isMuted(habbo)) || (pet != null && pet.isMuted());
             case "@is_trading" -> habbo != null && room.getActiveTradeForHabbo(habbo) != null;
@@ -149,7 +104,8 @@ public final class WiredInternalVariableSupport {
             case "@handitem_id" -> roomUnit.getHandItem() > 0;
             case "@favourite_group_id" -> habbo != null && habbo.getHabboStats().guild > 0;
             case "@room_entry.method" -> habbo != null && hasRoomEntryMethod(habbo);
-            case "@room_entry.teleport_id" -> habbo != null && habbo.getHabboInfo().getRoomEntryTeleportId() > 0;
+            case "@room_entry.teleport_id" ->
+                habbo != null && habbo.getHabboInfo().getRoomEntryTeleportId() > 0;
             case "@user_id" -> habbo != null;
             case "@bot_id" -> bot != null;
             case "@pet_id" -> pet != null;
@@ -166,8 +122,19 @@ public final class WiredInternalVariableSupport {
         String normalized = normalizeKey(key);
 
         return switch (normalized) {
-            case "@id", "@class_id", "@height", "@state", "@position_x", "@position_y", "@rotation", "@altitude",
-                "@is_invisible", "@type", "@owner_id", "@dimensions.x", "@dimensions.y" -> true;
+            case "@id",
+                    "@class_id",
+                    "@height",
+                    "@state",
+                    "@position_x",
+                    "@position_y",
+                    "@rotation",
+                    "@altitude",
+                    "@is_invisible",
+                    "@type",
+                    "@owner_id",
+                    "@dimensions.x",
+                    "@dimensions.y" -> true;
             case "~teleport.target_id" -> item.getTeleportTargetId() > 0;
             case "@wallitem_offset" -> item.getBaseItem().getType() == FurnitureType.WALL;
             case "@is_stackable" -> item.getBaseItem().allowStack();
@@ -199,8 +166,17 @@ public final class WiredInternalVariableSupport {
             case "@level" -> (roomUnit.getRightsLevel() != null) ? roomUnit.getRightsLevel().level : 0;
             case "@achievement_score" -> (habbo != null) ? habbo.getHabboStats().getAchievementScore() : null;
             case "@is_hc" -> (habbo != null && habbo.getHabboStats().hasActiveClub()) ? 1 : 0;
-            case "@has_rights" -> (habbo != null && (room.hasRights(habbo) || room.getGuildRightLevel(habbo).isEqualOrGreaterThan(RoomRightLevels.GUILD_RIGHTS))) ? 1 : 0;
-            case "@is_group_admin" -> (habbo != null && room.getGuildRightLevel(habbo).isEqualOrGreaterThan(RoomRightLevels.GUILD_ADMIN)) ? 1 : 0;
+            case "@has_rights" ->
+                (habbo != null
+                                && (room.hasRights(habbo)
+                                        || room.getGuildRightLevel(habbo)
+                                                .isEqualOrGreaterThan(RoomRightLevels.GUILD_RIGHTS)))
+                        ? 1
+                        : 0;
+            case "@is_group_admin" ->
+                (habbo != null && room.getGuildRightLevel(habbo).isEqualOrGreaterThan(RoomRightLevels.GUILD_ADMIN))
+                        ? 1
+                        : 0;
             case "@is_owner" -> (habbo != null && room.isOwner(habbo)) ? 1 : 0;
             case "@is_muted" -> ((habbo != null && room.isMuted(habbo)) || (pet != null && pet.isMuted())) ? 1 : 0;
             case "@is_trading" -> (habbo != null && room.getActiveTradeForHabbo(habbo) != null) ? 1 : 0;
@@ -210,16 +186,21 @@ public final class WiredInternalVariableSupport {
             case "@team_color" -> getTeamColorId(roomUnit.getEffectId());
             case "@team_type" -> getTeamTypeId(roomUnit.getEffectId());
             case "@sign" -> parseStatusInteger(roomUnit, RoomUnitStatus.SIGN);
-            case "@dance" -> (roomUnit.getDanceType() != null) ? roomUnit.getDanceType().getType() : 0;
+            case "@dance" ->
+                (roomUnit.getDanceType() != null) ? roomUnit.getDanceType().getType() : 0;
             case "@is_idle" -> roomUnit.isIdle() ? 1 : 0;
             case "@handitem_id" -> roomUnit.getHandItem();
             case "@position_x" -> (int) roomUnit.getX();
             case "@position_y" -> (int) roomUnit.getY();
-            case "@direction" -> (roomUnit.getBodyRotation() != null) ? (int) roomUnit.getBodyRotation().getValue() : 0;
+            case "@direction" ->
+                (roomUnit.getBodyRotation() != null)
+                        ? (int) roomUnit.getBodyRotation().getValue()
+                        : 0;
             case "@altitude" -> (int) Math.round(roomUnit.getZ() * 100);
             case "@favourite_group_id" -> (habbo != null) ? habbo.getHabboStats().guild : null;
             case "@room_entry.method" -> getRoomEntryMethodValue(habbo);
-            case "@room_entry.teleport_id" -> (habbo != null) ? habbo.getHabboInfo().getRoomEntryTeleportId() : null;
+            case "@room_entry.teleport_id" ->
+                (habbo != null) ? habbo.getHabboInfo().getRoomEntryTeleportId() : null;
             case "@user_id" -> (habbo != null) ? habbo.getHabboInfo().getId() : null;
             case "@bot_id" -> (bot != null) ? bot.getId() : null;
             case "@pet_id" -> (pet != null) ? pet.getId() : null;
@@ -232,13 +213,15 @@ public final class WiredInternalVariableSupport {
         Boolean instantOverride = USER_MOVE_INSTANT_OVERRIDE.get();
 
         if (instantOverride != null) {
-            return writeUserValue(room, roomUnit, key, value, WiredUserMovementHelper.DEFAULT_ANIMATION_DURATION, instantOverride);
+            return writeUserValue(
+                    room, roomUnit, key, value, WiredUserMovementHelper.DEFAULT_ANIMATION_DURATION, instantOverride);
         }
 
         return writeUserValue(room, roomUnit, key, value, WiredUserMovementHelper.DEFAULT_ANIMATION_DURATION, false);
     }
 
-    public static boolean writeUserValue(Room room, RoomUnit roomUnit, String key, int value, int animationDuration, boolean noAnimation) {
+    public static boolean writeUserValue(
+            Room room, RoomUnit roomUnit, String key, int value, int animationDuration, boolean noAnimation) {
         if (room == null || roomUnit == null) {
             return false;
         }
@@ -278,6 +261,12 @@ public final class WiredInternalVariableSupport {
         return new UserMoveBatchScope(previousDepth);
     }
 
+    static void clearThreadLocalsForCurrentThread() {
+        USER_MOVE_INSTANT_OVERRIDE.remove();
+        USER_MOVE_BATCH.remove();
+        USER_MOVE_BATCH_DEPTH.remove();
+    }
+
     public static Integer readFurniValue(Room room, HabboItem item, String key) {
         if (room == null || item == null) {
             return null;
@@ -288,8 +277,12 @@ public final class WiredInternalVariableSupport {
         return switch (normalized) {
             case "~teleport.target_id" -> item.getTeleportTargetId();
             case "@id" -> item.getId();
-            case "@class_id" -> (item.getBaseItem() != null) ? item.getBaseItem().getId() : null;
-            case "@height" -> (item.getBaseItem() != null) ? (int) Math.round(item.getBaseItem().getHeight() * 100) : null;
+            case "@class_id" ->
+                (item.getBaseItem() != null) ? item.getBaseItem().getId() : null;
+            case "@height" ->
+                (item.getBaseItem() != null)
+                        ? (int) Math.round(item.getBaseItem().getHeight() * 100)
+                        : null;
             case "@state" -> parseInteger(item.getExtradata());
             case "@position_x" -> (int) item.getX();
             case "@position_y" -> (int) item.getY();
@@ -297,13 +290,25 @@ public final class WiredInternalVariableSupport {
             case "@altitude" -> (int) Math.round(item.getZ() * 100);
             case "@is_invisible" -> 0;
             case "@type" -> 0;
-            case "@is_stackable" -> (item.getBaseItem() != null && item.getBaseItem().allowStack()) ? 1 : 0;
-            case "@can_stand_on" -> (item.getBaseItem() != null && item.getBaseItem().allowWalk()) ? 1 : 0;
-            case "@can_sit_on" -> (item.getBaseItem() != null && item.getBaseItem().allowSit()) ? 1 : 0;
-            case "@can_lay_on" -> (item.getBaseItem() != null && item.getBaseItem().allowLay()) ? 1 : 0;
-            case "@wallitem_offset" -> ((item.getBaseItem() != null) && item.getBaseItem().getType() == FurnitureType.WALL && item.getWallPosition() != null && !item.getWallPosition().trim().isEmpty()) ? 1 : 0;
-            case "@dimensions.x" -> (item.getBaseItem() != null) ? (int) item.getBaseItem().getWidth() : null;
-            case "@dimensions.y" -> (item.getBaseItem() != null) ? (int) item.getBaseItem().getLength() : null;
+            case "@is_stackable" ->
+                (item.getBaseItem() != null && item.getBaseItem().allowStack()) ? 1 : 0;
+            case "@can_stand_on" ->
+                (item.getBaseItem() != null && item.getBaseItem().allowWalk()) ? 1 : 0;
+            case "@can_sit_on" ->
+                (item.getBaseItem() != null && item.getBaseItem().allowSit()) ? 1 : 0;
+            case "@can_lay_on" ->
+                (item.getBaseItem() != null && item.getBaseItem().allowLay()) ? 1 : 0;
+            case "@wallitem_offset" ->
+                ((item.getBaseItem() != null)
+                                && item.getBaseItem().getType() == FurnitureType.WALL
+                                && item.getWallPosition() != null
+                                && !item.getWallPosition().trim().isEmpty())
+                        ? 1
+                        : 0;
+            case "@dimensions.x" ->
+                (item.getBaseItem() != null) ? (int) item.getBaseItem().getWidth() : null;
+            case "@dimensions.y" ->
+                (item.getBaseItem() != null) ? (int) item.getBaseItem().getLength() : null;
             case "@owner_id" -> item.getUserId();
             default -> null;
         };
@@ -344,7 +349,8 @@ public final class WiredInternalVariableSupport {
         String normalized = normalizeKey(key);
 
         return switch (normalized) {
-            case "@furni_count" -> room.getFloorItems().size() + room.getWallItems().size();
+            case "@furni_count" ->
+                room.getFloorItems().size() + room.getWallItems().size();
             case "@user_count" -> room.getUserCount();
             case "@wired_timer" -> (int) (WiredManager.getTickService().getTickCount() / 10L);
             case "@team_red_score" -> getTeamMetric(room, GameTeamColors.RED, true);
@@ -367,7 +373,8 @@ public final class WiredInternalVariableSupport {
             case "@current_time.day_of_week" -> now.getDayOfWeek().getValue();
             case "@current_time.day_of_month" -> now.getDayOfMonth();
             case "@current_time.day_of_year" -> now.getDayOfYear();
-            case "@current_time.week_of_year" -> now.get(WeekFields.of(Locale.ITALY).weekOfWeekBasedYear());
+            case "@current_time.week_of_year" ->
+                now.get(WeekFields.of(Locale.ITALY).weekOfWeekBasedYear());
             case "@current_time.month_of_year" -> now.getMonthValue();
             case "@current_time.year" -> now.getYear();
             default -> null;
@@ -382,8 +389,10 @@ public final class WiredInternalVariableSupport {
         String normalized = normalizeKey(key);
 
         return switch (normalized) {
-            case "@selector_furni_count" -> countIterable(ctx.targets() != null ? ctx.targets().items() : null);
-            case "@selector_user_count" -> countIterable(ctx.targets() != null ? ctx.targets().users() : null);
+            case "@selector_furni_count" ->
+                countIterable(ctx.targets() != null ? ctx.targets().items() : null);
+            case "@selector_user_count" ->
+                countIterable(ctx.targets() != null ? ctx.targets().users() : null);
             case "@signal_furni_count" -> ctx.event().getSignalFurniCount();
             case "@signal_user_count" -> ctx.event().getSignalUserCount();
             case "@antenna_id" -> ctx.event().getSignalChannel();
@@ -417,7 +426,10 @@ public final class WiredInternalVariableSupport {
     }
 
     private static Integer getUserTeamScore(Room room, Habbo habbo) {
-        if (room == null || habbo == null || habbo.getHabboInfo() == null || habbo.getHabboInfo().getGamePlayer() == null) {
+        if (room == null
+                || habbo == null
+                || habbo.getHabboInfo() == null
+                || habbo.getHabboInfo().getGamePlayer() == null) {
             return null;
         }
 
@@ -473,7 +485,9 @@ public final class WiredInternalVariableSupport {
             return null;
         }
 
-        if (habbo != null && habbo.getHabboInfo() != null && habbo.getHabboInfo().getCurrentGame() != null) {
+        if (habbo != null
+                && habbo.getHabboInfo() != null
+                && habbo.getHabboInfo().getCurrentGame() != null) {
             Game game = room.getGame(habbo.getHabboInfo().getCurrentGame());
             if (game != null) {
                 return game;
@@ -499,7 +513,9 @@ public final class WiredInternalVariableSupport {
         }
 
         String roomEntryMethod = habbo.getHabboInfo().getRoomEntryMethod();
-        return roomEntryMethod != null && !roomEntryMethod.trim().isEmpty() && !"unknown".equalsIgnoreCase(roomEntryMethod);
+        return roomEntryMethod != null
+                && !roomEntryMethod.trim().isEmpty()
+                && !"unknown".equalsIgnoreCase(roomEntryMethod);
     }
 
     private static Integer getRoomEntryMethodValue(Habbo habbo) {
@@ -528,7 +544,8 @@ public final class WiredInternalVariableSupport {
         return parseInteger(roomUnit.getStatus(status));
     }
 
-    private static boolean moveUserTo(Room room, RoomUnit roomUnit, int x, int y, int animationDuration, boolean noAnimation) {
+    private static boolean moveUserTo(
+            Room room, RoomUnit roomUnit, int x, int y, int animationDuration, boolean noAnimation) {
         if (room == null || roomUnit == null || room.getLayout() == null) {
             return false;
         }
@@ -540,17 +557,18 @@ public final class WiredInternalVariableSupport {
 
         double targetZ = WiredUserMovementHelper.resolveUserTargetZ(room, targetTile);
         return WiredUserMovementHelper.moveUser(
-            room,
-            roomUnit,
-            targetTile,
-            targetZ,
-            roomUnit.getBodyRotation(),
-            roomUnit.getHeadRotation(),
-            animationDuration,
-            noAnimation);
+                room,
+                roomUnit,
+                targetTile,
+                targetZ,
+                roomUnit.getBodyRotation(),
+                roomUnit.getHeadRotation(),
+                animationDuration,
+                noAnimation);
     }
 
-    private static boolean stageUserMoveIfPossible(Room room, RoomUnit roomUnit, String normalizedKey, int value, int animationDuration, boolean noAnimation) {
+    private static boolean stageUserMoveIfPossible(
+            Room room, RoomUnit roomUnit, String normalizedKey, int value, int animationDuration, boolean noAnimation) {
         if (room == null || roomUnit == null || normalizedKey == null) {
             return false;
         }
@@ -565,8 +583,10 @@ public final class WiredInternalVariableSupport {
             return false;
         }
 
-        UserMoveBatchEntry entry = batch.entries.computeIfAbsent(roomUnit.getId(), ignored ->
-            new UserMoveBatchEntry(room, roomUnit, roomUnit.getX(), roomUnit.getY(), animationDuration, noAnimation));
+        UserMoveBatchEntry entry = batch.entries.computeIfAbsent(
+                roomUnit.getId(),
+                ignored -> new UserMoveBatchEntry(
+                        room, roomUnit, roomUnit.getX(), roomUnit.getY(), animationDuration, noAnimation));
 
         entry.animationDuration = animationDuration;
         entry.noAnimation = noAnimation;
@@ -614,14 +634,14 @@ public final class WiredInternalVariableSupport {
         double targetZ = WiredUserMovementHelper.resolveUserTargetZ(entry.room, targetTile);
 
         WiredUserMovementHelper.moveUser(
-            entry.room,
-            entry.roomUnit,
-            targetTile,
-            targetZ,
-            entry.roomUnit.getBodyRotation(),
-            entry.roomUnit.getHeadRotation(),
-            entry.animationDuration,
-            entry.noAnimation);
+                entry.room,
+                entry.roomUnit,
+                targetTile,
+                targetZ,
+                entry.roomUnit.getBodyRotation(),
+                entry.roomUnit.getHeadRotation(),
+                entry.animationDuration,
+                entry.noAnimation);
 
         entry.targetX = entry.roomUnit.getX();
         entry.targetY = entry.roomUnit.getY();
@@ -772,7 +792,8 @@ public final class WiredInternalVariableSupport {
         private boolean xDirty;
         private boolean yDirty;
 
-        private UserMoveBatchEntry(Room room, RoomUnit roomUnit, int targetX, int targetY, int animationDuration, boolean noAnimation) {
+        private UserMoveBatchEntry(
+                Room room, RoomUnit roomUnit, int targetX, int targetY, int animationDuration, boolean noAnimation) {
             this.room = room;
             this.roomUnit = roomUnit;
             this.targetX = targetX;
@@ -783,5 +804,4 @@ public final class WiredInternalVariableSupport {
             this.yDirty = false;
         }
     }
-
 }

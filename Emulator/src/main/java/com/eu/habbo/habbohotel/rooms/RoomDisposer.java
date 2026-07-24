@@ -52,6 +52,7 @@ final class RoomDisposer {
             this.room.getItemManager().saveAllPendingItems();
 
             WiredManager.unregisterRoomTickables(this.room);
+            this.room.disposeWiredRuntimeState();
             specialTypes.dispose();
             this.clearWiredCaches();
 

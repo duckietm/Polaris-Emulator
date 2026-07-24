@@ -90,14 +90,25 @@ public class RoomItemManager {
 
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
+                    int itemId = 0;
+                    HabboItem item = null;
                     try {
-                        HabboItem item = this.getHabboItem(set.getInt("id"));
+                        itemId = set.getInt("id");
+                        item = this.getHabboItem(itemId);
 
-                        if (item instanceof InteractionWired) {
-                            ((InteractionWired) item).loadWiredData(set, this.room);
+                        if (item instanceof InteractionWired wired) {
+                            wired.loadWiredData(set, this.room);
                         }
-                    } catch (SQLException e) {
-                        LOGGER.error("Caught SQL exception", e);
+                    } catch (Exception exception) {
+                        if (item instanceof InteractionWired) {
+                            this.registry.quarantineWired(item);
+                        }
+                        LOGGER.error(
+                                "Quarantined malformed wired item room={} item={} type={} cause={}",
+                                this.room.getId(),
+                                itemId,
+                                item == null ? "unknown" : item.getClass().getSimpleName(),
+                                exception.getClass().getSimpleName());
                     }
                 }
             }
@@ -115,6 +126,11 @@ public class RoomItemManager {
      */
     public HabboItem getHabboItem(int id) {
         return this.index.get(id);
+    }
+
+    /** Returns the current in-room incarnation for an item ID, or zero when absent. */
+    public long getItemIncarnation(int id) {
+        return this.index.itemIncarnation(id);
     }
 
     /**

@@ -1,6 +1,6 @@
 package com.eu.habbo.habbohotel.items.interactions;
 
-import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
@@ -12,12 +12,10 @@ import com.eu.habbo.habbohotel.wired.api.IWiredEffect;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import com.eu.habbo.messages.outgoing.wired.WiredEffectDataComposer;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.LinkedHashSet;
-import java.util.Set;
 import java.util.function.Predicate;
 
 /**
@@ -38,13 +36,13 @@ import java.util.function.Predicate;
  *   <li>{@link #serializeWiredData(com.eu.habbo.messages.ServerMessage, Room)} - Sends config to client</li>
  * </ul>
  * </p>
- * 
+ *
  * @see InteractionWiredTrigger
  * @see InteractionWiredCondition
  * @see com.eu.habbo.habbohotel.wired.core.WiredManager
  */
 public abstract class InteractionWiredEffect extends InteractionWired implements IWiredEffect {
-    
+
     // Common cooldown constants (in milliseconds)
     /** No cooldown - effect can trigger as fast as possible */
     public static final long COOLDOWN_NONE = 0L;
@@ -56,7 +54,7 @@ public abstract class InteractionWiredEffect extends InteractionWired implements
     public static final long COOLDOWN_TRIGGER_STACKS = 250L;
     /** Cooldown for teleport effect */
     public static final long COOLDOWN_TELEPORT = 500L;
-    
+
     private int delay;
 
     public InteractionWiredEffect(ResultSet set, Item baseItem) throws SQLException {
@@ -100,16 +98,16 @@ public abstract class InteractionWiredEffect extends InteractionWired implements
     public abstract WiredEffectType getType();
 
     // ========== IWiredEffect Implementation ==========
-    
+
     /**
      * Executes this effect with the given context.
      * Subclasses must implement this to define their effect logic.
-     * 
+     *
      * @param ctx the wired context containing event data
      */
     @Override
     public abstract void execute(WiredContext ctx);
-    
+
     /**
      * Returns whether this effect requires an actor (user) to execute.
      */
@@ -121,23 +119,28 @@ public abstract class InteractionWiredEffect extends InteractionWired implements
     /**
      * Indicates whether this effect requires a triggering user (RoomUnit) to execute.
      * Effects that require a user will not execute if no user triggered them.
-     * 
+     *
      * @return true if this effect requires a triggering user, false otherwise
      */
     public boolean requiresTriggeringUser() {
         return false;
     }
-    
+
     /**
      * Gets the room this wired effect is placed in.
      * Convenience method to avoid repeated lookups.
-     * 
+     *
      * @return the Room, or null if not found
      */
     protected Room getRoom() {
-        return Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
+        if (WiredPlatform.gameEnvironment() == null
+                || WiredPlatform.gameEnvironment().getRoomManager() == null) {
+            return null;
+        }
+
+        return WiredPlatform.gameEnvironment().getRoomManager().getRoom(this.getRoomId());
     }
-    
+
     /**
      * Validates and cleans a collection of items, removing those that are no longer valid.
      * An item is invalid if:
@@ -146,7 +149,7 @@ public abstract class InteractionWiredEffect extends InteractionWired implements
      *   <li>Its room ID doesn't match this effect's room ID</li>
      *   <li>It no longer exists in the room</li>
      * </ul>
-     * 
+     *
      * @param items the collection of items to validate
      * @param <T> the type extending HabboItem
      * @return the number of items removed
@@ -155,26 +158,24 @@ public abstract class InteractionWiredEffect extends InteractionWired implements
         if (items == null || items.isEmpty()) {
             return 0;
         }
-        
+
         Room room = this.getRoom();
         if (room == null) {
             int size = items.size();
             items.clear();
             return size;
         }
-        
+
         int roomId = this.getRoomId();
         int sizeBefore = items.size();
-        items.removeIf(item -> item == null 
-            || item.getRoomId() != roomId 
-            || room.getHabboItem(item.getId()) == null);
+        items.removeIf(item -> item == null || item.getRoomId() != roomId || room.getHabboItem(item.getId()) == null);
         return sizeBefore - items.size();
     }
-    
+
     /**
      * Validates and cleans a collection of items with an additional custom predicate.
      * Items matching the predicate will be removed in addition to standard validation.
-     * 
+     *
      * @param items the collection of items to validate
      * @param additionalRemoveCondition additional condition that, if true, causes removal
      * @param <T> the type extending HabboItem
@@ -184,32 +185,31 @@ public abstract class InteractionWiredEffect extends InteractionWired implements
         if (items == null || items.isEmpty()) {
             return 0;
         }
-        
+
         Room room = this.getRoom();
         if (room == null) {
             int size = items.size();
             items.clear();
             return size;
         }
-        
+
         int roomId = this.getRoomId();
         int sizeBefore = items.size();
-        items.removeIf(item -> item == null 
-            || item.getRoomId() != roomId 
-            || room.getHabboItem(item.getId()) == null
-            || additionalRemoveCondition.test(item));
+        items.removeIf(item -> item == null
+                || item.getRoomId() != roomId
+                || room.getHabboItem(item.getId()) == null
+                || additionalRemoveCondition.test(item));
         return sizeBefore - items.size();
     }
 
-    protected <T> LinkedHashSet<T> applySelectorModifiers(Iterable<T> matchedTargets,
-                                                          Iterable<T> availableTargets,
-                                                          Iterable<T> existingTargets,
-                                                          boolean filterExisting,
-                                                          boolean invert) {
+    protected <T> LinkedHashSet<T> applySelectorModifiers(
+            Iterable<T> matchedTargets,
+            Iterable<T> availableTargets,
+            Iterable<T> existingTargets,
+            boolean filterExisting,
+            boolean invert) {
         LinkedHashSet<T> matched = toLinkedHashSet(matchedTargets);
-        LinkedHashSet<T> base = filterExisting
-            ? toLinkedHashSet(existingTargets)
-            : toLinkedHashSet(availableTargets);
+        LinkedHashSet<T> base = filterExisting ? toLinkedHashSet(existingTargets) : toLinkedHashSet(availableTargets);
 
         if (invert) {
             base.removeAll(matched);

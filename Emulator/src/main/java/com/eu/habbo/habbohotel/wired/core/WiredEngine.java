@@ -1,12 +1,10 @@
 package com.eu.habbo.habbohotel.wired.core;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition;
+import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
-import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraExecutionLimit;
-import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraOrEval;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRandom;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUnseen;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboClicksUser;
@@ -14,26 +12,19 @@ import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHab
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import com.eu.habbo.habbohotel.wired.WiredConditionOperator;
-import com.eu.habbo.habbohotel.wired.WiredEffectType;
-import com.eu.habbo.habbohotel.wired.api.IWiredCondition;
 import com.eu.habbo.habbohotel.wired.api.IWiredEffect;
 import com.eu.habbo.habbohotel.wired.api.WiredStack;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.GenericAlertComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.ItemStateComposer;
-import com.eu.habbo.plugin.events.furniture.wired.WiredStackExecutedEvent;
-import com.eu.habbo.plugin.events.furniture.wired.WiredStackTriggeredEvent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import org.slf4j.Logger;
@@ -114,24 +105,17 @@ public final class WiredEngine {
     private final WiredServices services;
     private final WiredStackIndex index;
     private final int maxStepsPerStack;
+    private final WiredConditionEvaluator conditionEvaluator;
+    private final WiredDelayedScheduler delayedScheduler;
+    private final WiredEffectCooldownService effectCooldownService;
+    private final WiredEventDispatcher eventDispatcher;
+    private final WiredEffectPlanner effectPlanner;
+    private final WiredExecutionGuard executionGuard;
+    private final WiredStackExecutor stackExecutor;
+    private final WiredStackRepository stackRepository;
 
     /** Track unseen effect indices per room+tile for round-robin selection */
     private final ConcurrentHashMap<String, Integer> unseenIndices;
-
-    /** Track recursion depth per room to prevent infinite loops */
-    private final ConcurrentHashMap<Integer, Integer> roomRecursionDepth;
-
-    /** Track event timestamps per room+eventType for rate limiting: key = "roomId:eventType" */
-    private final ConcurrentHashMap<String, EventRateTracker> eventRateLimiters;
-
-    /** Track rooms that are banned from wired execution: roomId -> ban expiry timestamp */
-    private final ConcurrentHashMap<Integer, Long> bannedRooms;
-
-    /** Track monitor diagnostics per room */
-    private final ConcurrentHashMap<Integer, WiredRoomDiagnostics> roomDiagnostics;
-
-    /** Cache room+eventType+sourceItemId -> matching stacks for source-triggered timer events */
-    private final ConcurrentHashMap<String, List<WiredStack>> sourceStacksByTriggerKey;
 
     /** Track filter-selector animation tokens so rapid executions do not reset newer animations */
     private final ConcurrentHashMap<Integer, Long> filteredSelectorAnimationTokens;
@@ -144,6 +128,18 @@ public final class WiredEngine {
      * @param maxStepsPerStack maximum steps per stack execution (loop protection)
      */
     public WiredEngine(WiredServices services, WiredStackIndex index, int maxStepsPerStack) {
+        this(
+                services,
+                index,
+                maxStepsPerStack,
+                roomId -> WiredPlatform.gameEnvironment().getRoomManager().getRoom(roomId));
+    }
+
+    WiredEngine(
+            WiredServices services,
+            WiredStackIndex index,
+            int maxStepsPerStack,
+            WiredDelayedScheduler.RoomResolver delayedRoomResolver) {
         if (services == null) throw new IllegalArgumentException("Services cannot be null");
         if (index == null) throw new IllegalArgumentException("Index cannot be null");
         if (maxStepsPerStack <= 0) throw new IllegalArgumentException("Max steps must be positive");
@@ -151,12 +147,63 @@ public final class WiredEngine {
         this.services = services;
         this.index = index;
         this.maxStepsPerStack = maxStepsPerStack;
+        this.conditionEvaluator = new WiredConditionEvaluator(this::debug);
+        this.delayedScheduler = new WiredDelayedScheduler(
+                (task, delayMs) -> {
+                    var future = WiredPlatform.threading().run(task, delayMs);
+                    return future == null ? null : () -> future.cancel(false);
+                },
+                System::currentTimeMillis,
+                this::debug,
+                delayedRoomResolver);
+        this.effectCooldownService = new WiredEffectCooldownService(() -> WiredPlatform.configuration() != null
+                && WiredPlatform.configuration().getBoolean("wired.custom.enabled", false));
+        this.effectPlanner = new WiredEffectPlanner();
+        this.stackRepository = new WiredStackRepository(index);
+        this.executionGuard =
+                new WiredExecutionGuard(System::currentTimeMillis, this::handleRateLimit, this::handleRecursionLimit);
+        this.stackExecutor = new WiredStackExecutor(
+                this.services,
+                this.maxStepsPerStack,
+                this.conditionEvaluator,
+                this.effectPlanner,
+                this.executionGuard,
+                new WiredStackExecutor.Hooks() {
+                    @Override
+                    public List<InteractionWiredEffect> executeSelectors(WiredStack stack, WiredContext context) {
+                        return WiredEngine.this.executeSelectors(stack, context);
+                    }
+
+                    @Override
+                    public void applySelectionFilterExtras(
+                            WiredStack stack, WiredContext context, List<InteractionWiredEffect> executedSelectors) {
+                        WiredEngine.this.applySelectionFilterExtras(stack, context, executedSelectors);
+                    }
+
+                    @Override
+                    public boolean selectorsHaveRequiredTargets(
+                            List<InteractionWiredEffect> executedSelectors, WiredContext context) {
+                        return WiredEngine.this.selectorsHaveRequiredTargets(executedSelectors, context);
+                    }
+
+                    @Override
+                    public void finalizeSelectors(
+                            List<InteractionWiredEffect> executedSelectors, WiredContext context, long currentTime) {
+                        WiredEngine.this.finalizeSelectors(executedSelectors, context, currentTime);
+                    }
+
+                    @Override
+                    public void executeEffects(
+                            WiredStack stack, List<IWiredEffect> effects, WiredContext context, long currentTime) {
+                        WiredEngine.this.executeEffects(stack, effects, context, currentTime);
+                    }
+                },
+                System::currentTimeMillis,
+                this::debug,
+                WiredStructuredDiagnostics.production());
+        this.eventDispatcher = new WiredEventDispatcher(
+                this.executionGuard, this.stackRepository, this.stackExecutor::executeEvent, this::debug);
         this.unseenIndices = new ConcurrentHashMap<>();
-        this.roomRecursionDepth = new ConcurrentHashMap<>();
-        this.eventRateLimiters = new ConcurrentHashMap<>();
-        this.bannedRooms = new ConcurrentHashMap<>();
-        this.roomDiagnostics = new ConcurrentHashMap<>();
-        this.sourceStacksByTriggerKey = new ConcurrentHashMap<>();
         this.filteredSelectorAnimationTokens = new ConcurrentHashMap<>();
     }
 
@@ -171,55 +218,7 @@ public final class WiredEngine {
     }
 
     public boolean handleEvent(WiredEvent event, boolean negateConditions) {
-        if (event == null) {
-            return false;
-        }
-
-        Room room = event.getRoom();
-        if (room == null || !room.isLoaded()) {
-            return false;
-        }
-
-        int roomId = room.getId();
-
-        if (this.isRoomBanned(roomId)) {
-            return false;
-        }
-
-        // Soft rate limiting to prevent rapid-fire event spam without banning whole rooms
-        if (isRateLimited(roomId, room, event.getType())) {
-            return false;
-        }
-
-        // Check and increment recursion depth to prevent infinite loops
-        int currentDepth = roomRecursionDepth.merge(roomId, 1, Integer::sum);
-        if (currentDepth > MAX_RECURSION_DEPTH) {
-            roomRecursionDepth.merge(roomId, -1, Integer::sum);
-            getDiagnostics(roomId)
-                    .recordRecursionTimeout(
-                            System.currentTimeMillis(),
-                            String.format(
-                                    "Recursion depth %d/%d while handling %s",
-                                    currentDepth,
-                                    MAX_RECURSION_DEPTH,
-                                    event.getType().name()),
-                            event.getType().name(),
-                            0);
-            LOGGER.warn(
-                    "Wired recursion limit reached in room {} (depth: {}). "
-                            + "Possible infinite loop detected (e.g., collision + chase). Aborting.",
-                    roomId,
-                    currentDepth);
-            debug(room, "RECURSION LIMIT REACHED - aborting to prevent crash");
-            return false;
-        }
-
-        try {
-            return handleEventInternal(event, room, negateConditions);
-        } finally {
-            // Decrement recursion depth
-            roomRecursionDepth.compute(roomId, (k, v) -> (v == null || v <= 1) ? null : v - 1);
-        }
+        return this.eventDispatcher.dispatch(event, negateConditions);
     }
 
     /**
@@ -231,418 +230,11 @@ public final class WiredEngine {
      * @return true if any matching stack was triggered
      */
     public boolean handleEventForSourceItem(WiredEvent event, int sourceItemId) {
-        if (event == null || sourceItemId <= 0) {
-            return false;
-        }
-
-        Room room = event.getRoom();
-        if (room == null || !room.isLoaded()) {
-            return false;
-        }
-
-        int roomId = room.getId();
-
-        if (this.isRoomBanned(roomId)) {
-            return false;
-        }
-
-        if (isRateLimited(roomId, room, event.getType())) {
-            return false;
-        }
-
-        int currentDepth = roomRecursionDepth.merge(roomId, 1, Integer::sum);
-        if (currentDepth > MAX_RECURSION_DEPTH) {
-            roomRecursionDepth.merge(roomId, -1, Integer::sum);
-            LOGGER.warn(
-                    "Wired recursion limit reached in room {} (depth: {}). "
-                            + "Possible infinite loop detected (source item execution). Aborting.",
-                    roomId,
-                    currentDepth);
-            debug(room, "RECURSION LIMIT REACHED - aborting source-item execution");
-            return false;
-        }
-
-        try {
-            return handleEventForSourceItemInternal(event, room, sourceItemId);
-        } finally {
-            roomRecursionDepth.compute(roomId, (k, v) -> (v == null || v <= 1) ? null : v - 1);
-        }
-    }
-
-    /**
-     * Internal event handling optimized for a known source trigger item.
-     */
-    private boolean handleEventForSourceItemInternal(WiredEvent event, Room room, int sourceItemId) {
-        List<WiredStack> stacks = getStacksForSourceItem(room, event.getType(), sourceItemId);
-        if (stacks.isEmpty()) {
-            return false;
-        }
-
-        debug(
-                room,
-                "Processing {} stacks for event type {} from source item {}",
-                stacks.size(),
-                event.getType(),
-                sourceItemId);
-
-        boolean anyTriggered = false;
-        boolean suppressSaysOutput = false;
-        long triggerTime = event.getCreatedAtMs();
-
-        for (WiredStack stack : stacks) {
-            try {
-                boolean triggered = processStack(stack, event, triggerTime);
-                if (triggered) {
-                    anyTriggered = true;
-
-                    if ((event.getType() == WiredEvent.Type.USER_SAYS)
-                            && (stack.triggerItem() instanceof WiredTriggerHabboSaysKeyword)
-                            && ((WiredTriggerHabboSaysKeyword) stack.triggerItem()).isHideMessage()) {
-                        suppressSaysOutput = true;
-                    }
-                }
-            } catch (WiredLimitException limitEx) {
-                debug(room, "Stack execution stopped (limit): {}", limitEx.getMessage());
-            } catch (Exception ex) {
-                LOGGER.error(
-                        "Error processing source wired stack in room {} for item {}: {}",
-                        room.getId(),
-                        sourceItemId,
-                        ex.getMessage(),
-                        ex);
-                debug(room, "Source stack error: {}", ex.getMessage());
-            }
-        }
-
-        if (event.getType() == WiredEvent.Type.USER_SAYS) {
-            return suppressSaysOutput;
-        }
-
-        return anyTriggered;
-    }
-
-    /**
-     * Find all stacks for a specific room/event/source item combination.
-     * Multiple stacks can legally share the same trigger item.
-     */
-    private List<WiredStack> getStacksForSourceItem(Room room, WiredEvent.Type eventType, int sourceItemId) {
-        String cacheKey = room.getId() + ":" + eventType.name() + ":" + sourceItemId;
-
-        List<WiredStack> cached = sourceStacksByTriggerKey.get(cacheKey);
-        if (cached != null) {
-            return cached;
-        }
-
-        List<WiredStack> allStacks = index.getStacks(room, eventType);
-        if (allStacks.isEmpty()) {
-            sourceStacksByTriggerKey.put(cacheKey, Collections.emptyList());
-            return Collections.emptyList();
-        }
-
-        List<WiredStack> matching = new ArrayList<>();
-        for (WiredStack stack : allStacks) {
-            if (stack == null || stack.triggerItem() == null) {
-                continue;
-            }
-
-            if (stack.triggerItem().getId() == sourceItemId) {
-                matching.add(stack);
-            }
-        }
-
-        List<WiredStack> result = matching.isEmpty() ? Collections.emptyList() : Collections.unmodifiableList(matching);
-        sourceStacksByTriggerKey.put(cacheKey, result);
-        return result;
-    }
-
-    /**
-     * Internal event handling after recursion check.
-     */
-    private boolean handleEventInternal(WiredEvent event, Room room, boolean negateConditions) {
-
-        // Find candidate stacks for this event type
-        List<WiredStack> stacks = index.getStacks(room, event.getType());
-        if (stacks.isEmpty()) {
-            return false;
-        }
-
-        debug(room, "Processing {} stacks for event type {}", stacks.size(), event.getType());
-
-        boolean anyTriggered = false;
-        boolean suppressSaysOutput = false;
-        long triggerTime = event.getCreatedAtMs();
-
-        for (WiredStack stack : stacks) {
-            try {
-                boolean triggered = processStack(stack, event, triggerTime, negateConditions);
-                if (triggered) {
-                    anyTriggered = true;
-
-                    if ((event.getType() == WiredEvent.Type.USER_SAYS)
-                            && (stack.triggerItem() instanceof WiredTriggerHabboSaysKeyword)
-                            && ((WiredTriggerHabboSaysKeyword) stack.triggerItem()).isHideMessage()) {
-                        suppressSaysOutput = true;
-                    }
-                }
-            } catch (WiredLimitException limitEx) {
-                debug(room, "Stack execution stopped (limit): {}", limitEx.getMessage());
-            } catch (Exception ex) {
-                LOGGER.error("Error processing wired stack in room {}: {}", room.getId(), ex.getMessage(), ex);
-                debug(room, "Stack error: {}", ex.getMessage());
-            }
-        }
-
-        if (event.getType() == WiredEvent.Type.USER_SAYS) {
-            return suppressSaysOutput;
-        }
-
-        return anyTriggered;
-    }
-
-    /**
-     * Process a single wired stack.
-     */
-    private boolean processStack(WiredStack stack, WiredEvent event, long currentTime) {
-        return processStack(stack, event, currentTime, false);
-    }
-
-    private boolean processStack(WiredStack stack, WiredEvent event, long currentTime, boolean negateConditions) {
-        Room room = event.getRoom();
-        WiredTextInputCaptureSupport.CaptureResult captureResult = resolveTextInputCapture(stack, event);
-
-        // Check if trigger matches
-        if (!captureResult.matches()) {
-            return false;
-        }
-
-        // Check if trigger requires actor
-        if (stack.trigger().requiresActor() && !event.getActor().isPresent()) {
-            return false;
-        }
-
-        if (!stackHasExecutableOutcome(stack, event)) {
-            return false;
-        }
-
-        // Create execution context with stack reference
-        WiredState state = new WiredState(maxStepsPerStack);
-        WiredContext ctx = new WiredContext(event, stack.triggerItem(), stack, services, state, null);
-        WiredTextInputCaptureSupport.applyToContext(ctx, room, captureResult);
-        WiredRoomDiagnostics diagnostics = getDiagnostics(room.getId());
-
-        // Initial step for trigger
-        state.step();
-
-        int stackCost = estimateStackCost(stack, roomRecursionDepth.getOrDefault(room.getId(), 0));
-        String monitorSourceLabel = getMonitorSourceLabel(stack.triggerItem(), event);
-        int monitorSourceId = getMonitorSourceId(stack.triggerItem());
-
-        debug(
-                room,
-                "Trigger matched: {} at item {} (conditions: {}, effects: {})",
-                event.getType(),
-                stack.triggerItem() != null ? stack.triggerItem().getId() : "null",
-                stack.conditions().size(),
-                stack.effects().size());
-
-        // Run selectors before conditions so targets are available
-        List<InteractionWiredEffect> executedSelectors = Collections.emptyList();
-        if (stack.hasEffects()) {
-            executedSelectors = executeSelectors(stack, ctx);
-            applySelectionFilterExtras(stack, ctx, executedSelectors);
-        }
-
-        if (!selectorsHaveRequiredTargets(executedSelectors, ctx)) {
-            return false;
-        }
-
-        boolean conditionsPassedForExecution = getConditionOutcomeForExecution(stack, ctx, negateConditions);
-        List<IWiredEffect> executableEffects =
-                getExecutableEffectsForCurrentExecution(stack, conditionsPassedForExecution);
-        boolean hasSpecialOutcome = conditionsPassedForExecution && hasSpecialTriggerOutcome(stack, event);
-
-        if (!shouldContinueAfterConditionCheck(
-                stack, room, conditionsPassedForExecution, executableEffects, hasSpecialOutcome)) {
-            return false;
-        }
-
-        WiredExtraExecutionLimit executionLimitExtra = getExecutionLimitExtra(room, stack);
-        if (executionLimitExtra != null && !executionLimitExtra.tryAcquireExecutionSlot(currentTime)) {
-            debug(
-                    room,
-                    "Execution limit blocked stack {} (max {} in {} ms)",
-                    stack.triggerItem() != null ? stack.triggerItem().getId() : "null",
-                    executionLimitExtra.getMaxExecutions(),
-                    executionLimitExtra.getTimeWindowMs());
-            return false;
-        }
-
-        // Fire plugin event (WiredStackTriggeredEvent)
-        if (!fireTriggeredEvent(stack, event)) {
-            debug(room, "Stack cancelled by plugin");
-            return false;
-        }
-
-        if (!diagnostics.tryConsumeExecutionBudget(
-                stackCost,
-                currentTime,
-                monitorSourceLabel,
-                monitorSourceId,
-                buildStackMonitorReason(stack, event, stackCost))) {
-            debug(
-                    room,
-                    "Execution cap blocked stack {}",
-                    stack.triggerItem() != null ? stack.triggerItem().getId() : "null");
-            return false;
-        }
-
-        if (conditionsPassedForExecution
-                && (event.getType() == WiredEvent.Type.USER_CLICKS_USER)
-                && (stack.triggerItem() instanceof WiredTriggerHabboClicksUser)
-                && event.getActor().isPresent()) {
-            WiredTriggerHabboClicksUser clickUserTrigger = (WiredTriggerHabboClicksUser) stack.triggerItem();
-            WiredTriggerHabboClicksUser.applyRuntimeOptions(
-                    event.getActor().get(), clickUserTrigger.isBlockMenuOpen(), clickUserTrigger.isDoNotRotate());
-        }
-
-        RoomUnit actor = event.getActor().orElse(null);
-
-        // Only show the trigger/selector activation when the stack is actually allowed to continue.
-        if (stack.triggerItem() instanceof InteractionWiredTrigger) {
-            InteractionWiredTrigger trigger = (InteractionWiredTrigger) stack.triggerItem();
-            trigger.activateBox(room, actor, currentTime);
-        }
-
-        activateExtras(room, stack.triggerItem(), actor, currentTime);
-        finalizeSelectors(executedSelectors, ctx, currentTime);
-
-        // Execute effects
-        if (!executableEffects.isEmpty()) {
-            executeEffects(stack, executableEffects, ctx, currentTime);
-        }
-
-        // Fire executed event
-        fireExecutedEvent(stack, event);
-        diagnostics.recordExecution(
-                state.elapsedMs(),
-                System.currentTimeMillis(),
-                monitorSourceLabel,
-                monitorSourceId,
-                buildExecutionMonitorReason(stack, state.elapsedMs()));
-
-        return true;
+        return this.eventDispatcher.dispatchForSourceItem(event, sourceItemId);
     }
 
     public boolean executeDirectStack(WiredStack stack, WiredEvent event, boolean negateConditions) {
-        if (stack == null || event == null) {
-            return false;
-        }
-
-        Room room = event.getRoom();
-        if (room == null) {
-            return false;
-        }
-
-        if (stack.trigger().requiresActor() && !event.getActor().isPresent()) {
-            return false;
-        }
-
-        if (!stackHasExecutableOutcome(stack, event)) {
-            return false;
-        }
-
-        long currentTime = System.currentTimeMillis();
-
-        WiredState state = new WiredState(maxStepsPerStack);
-        WiredContext ctx = new WiredContext(event, stack.triggerItem(), stack, services, state, null);
-        WiredRoomDiagnostics diagnostics = getDiagnostics(room.getId());
-
-        state.step();
-
-        int stackCost = estimateStackCost(stack, roomRecursionDepth.getOrDefault(room.getId(), 0));
-        String monitorSourceLabel = getMonitorSourceLabel(stack.triggerItem(), event);
-        int monitorSourceId = getMonitorSourceId(stack.triggerItem());
-
-        debug(
-                room,
-                "Direct stack execution for item {} (conditions: {}, effects: {}, negated: {})",
-                stack.triggerItem() != null ? stack.triggerItem().getId() : "null",
-                stack.conditions().size(),
-                stack.effects().size(),
-                negateConditions);
-
-        List<InteractionWiredEffect> executedSelectors = Collections.emptyList();
-        if (stack.hasEffects()) {
-            executedSelectors = executeSelectors(stack, ctx);
-            applySelectionFilterExtras(stack, ctx, executedSelectors);
-        }
-
-        if (!selectorsHaveRequiredTargets(executedSelectors, ctx)) {
-            return false;
-        }
-
-        boolean conditionsPassedForExecution = getConditionOutcomeForExecution(stack, ctx, negateConditions);
-        List<IWiredEffect> executableEffects =
-                getExecutableEffectsForCurrentExecution(stack, conditionsPassedForExecution);
-        boolean hasSpecialOutcome = conditionsPassedForExecution && hasSpecialTriggerOutcome(stack, event);
-
-        if (!shouldContinueAfterConditionCheck(
-                stack, room, conditionsPassedForExecution, executableEffects, hasSpecialOutcome)) {
-            return false;
-        }
-
-        WiredExtraExecutionLimit executionLimitExtra = getExecutionLimitExtra(room, stack);
-        if (executionLimitExtra != null && !executionLimitExtra.tryAcquireExecutionSlot(currentTime)) {
-            debug(
-                    room,
-                    "Execution limit blocked direct stack {} (max {} in {} ms)",
-                    stack.triggerItem() != null ? stack.triggerItem().getId() : "null",
-                    executionLimitExtra.getMaxExecutions(),
-                    executionLimitExtra.getTimeWindowMs());
-            return false;
-        }
-
-        if (!fireTriggeredEvent(stack, event)) {
-            debug(room, "Direct stack cancelled by plugin");
-            return false;
-        }
-
-        if (!diagnostics.tryConsumeExecutionBudget(
-                stackCost,
-                currentTime,
-                monitorSourceLabel,
-                monitorSourceId,
-                buildStackMonitorReason(stack, event, stackCost))) {
-            debug(
-                    room,
-                    "Execution cap blocked direct stack {}",
-                    stack.triggerItem() != null ? stack.triggerItem().getId() : "null");
-            return false;
-        }
-
-        RoomUnit actor = event.getActor().orElse(null);
-
-        if (stack.triggerItem() instanceof InteractionWiredTrigger) {
-            InteractionWiredTrigger trigger = (InteractionWiredTrigger) stack.triggerItem();
-            trigger.activateBox(room, actor, currentTime);
-        }
-
-        activateExtras(room, stack.triggerItem(), actor, currentTime);
-        finalizeSelectors(executedSelectors, ctx, currentTime);
-
-        if (!executableEffects.isEmpty()) {
-            executeEffects(stack, executableEffects, ctx, currentTime);
-        }
-
-        fireExecutedEvent(stack, event);
-        diagnostics.recordExecution(
-                state.elapsedMs(),
-                System.currentTimeMillis(),
-                monitorSourceLabel,
-                monitorSourceId,
-                buildExecutionMonitorReason(stack, state.elapsedMs()));
-
-        return true;
+        return this.stackExecutor.executeDirect(stack, event, negateConditions);
     }
 
     public boolean shouldExecuteDirectStack(WiredStack stack, WiredEvent event, boolean negateConditions) {
@@ -677,9 +269,10 @@ public final class WiredEngine {
             return false;
         }
 
-        boolean conditionsPassedForExecution = getConditionOutcomeForExecution(stack, ctx, negateConditions);
+        boolean conditionsPassedForExecution =
+                this.conditionEvaluator.outcomeForExecution(stack, ctx, negateConditions);
         List<IWiredEffect> executableEffects =
-                getExecutableEffectsForCurrentExecution(stack, conditionsPassedForExecution);
+                this.effectPlanner.executableEffects(stack, conditionsPassedForExecution);
         return !executableEffects.isEmpty();
     }
 
@@ -715,12 +308,12 @@ public final class WiredEngine {
             return false;
         }
 
-        boolean conditionsPassedForExecution = getConditionOutcomeForExecution(stack, ctx, false);
+        boolean conditionsPassedForExecution = this.conditionEvaluator.outcomeForExecution(stack, ctx, false);
         if (!conditionsPassedForExecution) {
             return false;
         }
 
-        List<IWiredEffect> executableEffects = getExecutableEffectsForCurrentExecution(stack, true);
+        List<IWiredEffect> executableEffects = this.effectPlanner.executableEffects(stack, true);
         boolean hasSpecialOutcome = hasSpecialTriggerOutcome(stack, event);
         if (executableEffects.isEmpty() && !hasSpecialOutcome) {
             return false;
@@ -772,51 +365,6 @@ public final class WiredEngine {
         return false;
     }
 
-    private boolean getConditionOutcomeForExecution(WiredStack stack, WiredContext ctx, boolean negateConditions) {
-        if (!stack.hasConditions()) {
-            return !negateConditions;
-        }
-
-        return shouldConditionsPass(stack, ctx, negateConditions);
-    }
-
-    private List<IWiredEffect> getExecutableEffectsForCurrentExecution(WiredStack stack, boolean conditionsPassed) {
-        List<IWiredEffect> executableEffects = new ArrayList<>();
-
-        for (IWiredEffect effect : stack.effects()) {
-            if (effect == null || effect.isSelector()) {
-                continue;
-            }
-
-            boolean negativeEffect = isNegativeConditionEffect(effect);
-
-            if (conditionsPassed) {
-                if (!negativeEffect) {
-                    executableEffects.add(effect);
-                }
-                continue;
-            }
-
-            if (stack.hasConditions() && negativeEffect) {
-                executableEffects.add(effect);
-            }
-        }
-
-        return executableEffects;
-    }
-
-    private boolean isNegativeConditionEffect(IWiredEffect effect) {
-        if (!(effect instanceof InteractionWiredEffect)) {
-            return false;
-        }
-
-        WiredEffectType effectType = ((InteractionWiredEffect) effect).getType();
-        return effectType == WiredEffectType.NEG_CALL_STACKS
-                || effectType == WiredEffectType.NEG_SEND_SIGNAL
-                || effectType == WiredEffectType.NEG_SHOW_MESSAGE
-                || effectType == WiredEffectType.NEG_LOG;
-    }
-
     private WiredTextInputCaptureSupport.CaptureResult resolveTextInputCapture(WiredStack stack, WiredEvent event) {
         if (stack == null || event == null) {
             return WiredTextInputCaptureSupport.CaptureResult.noMatch();
@@ -830,138 +378,6 @@ public final class WiredEngine {
         }
 
         return WiredTextInputCaptureSupport.resolve(stack, event);
-    }
-
-    /**
-     * Evaluate all conditions in a stack.
-     */
-    private boolean evaluateConditions(WiredStack stack, WiredContext ctx) {
-        List<IWiredCondition> conditions = stack.conditions();
-
-        return evaluateConditionsByMode(
-                conditions, ctx, stack.conditionEvaluationMode(), stack.conditionEvaluationValue());
-    }
-
-    private boolean shouldContinueAfterConditionCheck(
-            WiredStack stack,
-            Room room,
-            boolean conditionsPassedForExecution,
-            List<IWiredEffect> executableEffects,
-            boolean hasSpecialOutcome) {
-        if (stack.hasConditions()) {
-            debug(room, "Evaluating {} conditions...", stack.conditions().size());
-
-            if (!conditionsPassedForExecution && !executableEffects.isEmpty()) {
-                debug(room, "Conditions failed, executing negative effects");
-                return true;
-            }
-
-            if (!conditionsPassedForExecution) {
-                debug(room, "Conditions failed, aborting stack");
-                return false;
-            }
-
-            if (hasSpecialOutcome || !executableEffects.isEmpty()) {
-                return true;
-            }
-
-            debug(room, "Conditions passed, but no executable effects remain");
-            return false;
-        }
-
-        if (!conditionsPassedForExecution) {
-            debug(room, "No conditions in stack, negated execution aborted");
-            return false;
-        }
-
-        if (hasSpecialOutcome || !executableEffects.isEmpty()) {
-            debug(room, "No conditions in stack, proceeding to effects");
-            return true;
-        }
-
-        debug(room, "No conditions in stack, but no executable effects remain");
-        return false;
-    }
-
-    private boolean shouldConditionsPass(WiredStack stack, WiredContext ctx, boolean negateConditions) {
-        boolean conditionsPassed = evaluateConditions(stack, ctx);
-        debug(ctx.room(), "Conditions result: {}", conditionsPassed ? "PASSED" : "FAILED");
-        return negateConditions ? !conditionsPassed : conditionsPassed;
-    }
-
-    /**
-     * Evaluate conditions according to the configured stack mode.
-     */
-    private boolean evaluateConditionsByMode(
-            List<IWiredCondition> conditions, WiredContext ctx, int evaluationMode, int evaluationValue) {
-        if (conditions == null || conditions.isEmpty()) {
-            return true;
-        }
-
-        Room room = ctx.room();
-        Map<String, List<Boolean>> groupedOrResults = new LinkedHashMap<>();
-        int matchedRequirements = 0;
-        int totalRequirements = 0;
-
-        for (IWiredCondition condition : conditions) {
-            ctx.state().step();
-
-            boolean result = condition.evaluate(ctx);
-            String conditionKey = getConditionGroupKey(condition);
-
-            if (condition.operator() == WiredConditionOperator.OR) {
-                groupedOrResults
-                        .computeIfAbsent(conditionKey, ignored -> new ArrayList<>())
-                        .add(result);
-                debug(
-                        room,
-                        "  Condition (OR group {}) {}: {}",
-                        conditionKey,
-                        condition.getClass().getSimpleName(),
-                        result ? "PASS" : "FAIL");
-                continue;
-            }
-
-            totalRequirements++;
-
-            if (result) {
-                matchedRequirements++;
-            }
-
-            debug(room, "  Condition {}: {}", condition.getClass().getSimpleName(), result ? "PASS" : "FAIL");
-        }
-
-        for (Map.Entry<String, List<Boolean>> entry : groupedOrResults.entrySet()) {
-            totalRequirements++;
-
-            boolean groupPassed = entry.getValue().stream().anyMatch(Boolean::booleanValue);
-            if (groupPassed) {
-                matchedRequirements++;
-            }
-
-            debug(room, "  Condition (OR result {}) : {}", entry.getKey(), groupPassed ? "PASS" : "FAIL");
-        }
-
-        boolean matches =
-                WiredExtraOrEval.matchesMode(evaluationMode, matchedRequirements, totalRequirements, evaluationValue);
-
-        debug(
-                room,
-                "Condition eval mode {} value {} matched {}/{} logical requirements => {}",
-                evaluationMode,
-                evaluationValue,
-                matchedRequirements,
-                totalRequirements,
-                matches ? "PASS" : "FAIL");
-        return matches;
-    }
-
-    private String getConditionGroupKey(IWiredCondition condition) {
-        if (condition instanceof InteractionWiredCondition) {
-            return String.valueOf(((InteractionWiredCondition) condition).getType());
-        }
-
-        return condition.getClass().getName();
     }
 
     /**
@@ -1066,14 +482,16 @@ public final class WiredEngine {
                     }
                 } else {
                     // Execute immediately
+                    if (!this.effectCooldownService.tryAcquire(effect, ctx, currentTime)) {
+                        continue;
+                    }
                     ctx.state().step();
                     try {
-                        effect.execute(ctx);
+                        WiredExecutionScope.execute(effect, ctx);
 
                         // Activate box animation after execution
                         if (effect instanceof InteractionWiredEffect) {
                             InteractionWiredEffect wiredEffect = (InteractionWiredEffect) effect;
-                            wiredEffect.setCooldown(currentTime);
                             wiredEffect.activateBox(ctx.room(), ctx.actor().orElse(null), currentTime);
                         }
                     } catch (Exception e) {
@@ -1097,21 +515,10 @@ public final class WiredEngine {
         if (effects.isEmpty()) return Collections.emptyList();
 
         List<InteractionWiredEffect> executedSelectors = new ArrayList<>();
-        List<IWiredEffect> immediateSelectors = new ArrayList<>();
-        List<IWiredEffect> deferredSelectors = new ArrayList<>();
+        WiredEffectPlanner.SelectorPlan selectorPlan = this.effectPlanner.selectorPlan(effects);
 
-        for (IWiredEffect effect : effects) {
-            if (!effect.isSelector()) continue;
-
-            if (effect.usesExistingSelectorTargets()) {
-                deferredSelectors.add(effect);
-            } else {
-                immediateSelectors.add(effect);
-            }
-        }
-
-        executeSelectorList(immediateSelectors, ctx, executedSelectors);
-        executeSelectorList(deferredSelectors, ctx, executedSelectors);
+        executeSelectorList(selectorPlan.immediate(), ctx, executedSelectors);
+        executeSelectorList(selectorPlan.deferred(), ctx, executedSelectors);
 
         return executedSelectors;
     }
@@ -1123,9 +530,13 @@ public final class WiredEngine {
                 continue;
             }
 
+            if (!this.effectCooldownService.tryAcquire(effect, ctx, ctx.event().getCreatedAtMs())) {
+                continue;
+            }
+
             ctx.state().step();
             try {
-                effect.execute(ctx);
+                WiredExecutionScope.execute(effect, ctx);
                 if (effect instanceof InteractionWiredEffect) {
                     InteractionWiredEffect wiredEffect = (InteractionWiredEffect) effect;
                     executedSelectors.add(wiredEffect);
@@ -1149,8 +560,6 @@ public final class WiredEngine {
         RoomUnit actor = ctx.actor().orElse(null);
 
         for (InteractionWiredEffect wiredEffect : executedSelectors) {
-            wiredEffect.setCooldown(currentTime);
-
             if (wiredEffect.usesExistingSelectorTargets()) {
                 animateFilteredSelectorBox(room, wiredEffect);
             } else {
@@ -1186,7 +595,7 @@ public final class WiredEngine {
             long animationToken,
             long delay,
             boolean clearToken) {
-        Emulator.getThreading()
+        WiredPlatform.threading()
                 .run(() -> setFilteredSelectorState(room, wiredEffect, state, animationToken, clearToken), delay);
     }
 
@@ -1252,52 +661,26 @@ public final class WiredEngine {
         WiredRoomDiagnostics diagnostics = getDiagnostics(ctx.room().getId());
         String sourceLabel = getMonitorSourceLabel(ctx.triggerItem(), ctx.event());
         int sourceId = getMonitorSourceId(ctx.triggerItem());
+        this.delayedScheduler.scheduleEffect(
+                effect, ctx, delay, triggerTime, diagnostics, sourceLabel, sourceId, this::executeDelayedEffect);
+    }
 
-        if (!diagnostics.tryScheduleDelayedEvent(
-                System.currentTimeMillis(),
-                sourceLabel,
-                sourceId,
-                String.format(
-                        "Scheduling delayed effect %s with delay %d tick(s)",
-                        effect.getClass().getSimpleName(), delay))) {
-            debug(
-                    ctx.room(),
-                    "Delayed events cap blocked effect {}",
-                    effect.getClass().getSimpleName());
+    private void executeDelayedEffect(WiredDelayedExecutionSnapshot.Resolved resolved) {
+        IWiredEffect effect = resolved.effects().getFirst();
+        WiredContext context = resolved.context();
+        long executionTime = System.currentTimeMillis();
+        if (!this.effectCooldownService.tryAcquire(effect, context, executionTime)) {
             return;
         }
+        try {
+            WiredExecutionScope.execute(effect, context);
 
-        // Delay is in 500ms ticks
-        long delayMs = delay * 500L;
-        long elapsedSinceTrigger = Math.max(0L, System.currentTimeMillis() - triggerTime);
-        long remainingDelayMs = Math.max(0L, delayMs - elapsedSinceTrigger);
-        Room room = ctx.room();
-        RoomUnit actor = ctx.actor().orElse(null);
-
-        Emulator.getThreading()
-                .run(
-                        () -> {
-                            if (!room.isLoaded() || room.getHabbos().isEmpty()) {
-                                diagnostics.completeDelayedEvent();
-                                return;
-                            }
-
-                            try {
-                                effect.execute(ctx);
-
-                                // Activate box animation after execution
-                                if (effect instanceof InteractionWiredEffect) {
-                                    InteractionWiredEffect wiredEffect = (InteractionWiredEffect) effect;
-                                    wiredEffect.setCooldown(System.currentTimeMillis());
-                                    wiredEffect.activateBox(room, actor, System.currentTimeMillis());
-                                }
-                            } catch (Exception e) {
-                                LOGGER.warn("Error executing delayed effect: {}", e.getMessage());
-                            } finally {
-                                diagnostics.completeDelayedEvent();
-                            }
-                        },
-                        remainingDelayMs);
+            if (effect instanceof InteractionWiredEffect wiredEffect) {
+                wiredEffect.activateBox(context.room(), context.actor().orElse(null), executionTime);
+            }
+        } catch (Exception exception) {
+            LOGGER.warn("Error executing delayed effect: {}", exception.getMessage());
+        }
     }
 
     private void executeOrderedEffects(List<IWiredEffect> effects, WiredContext ctx, long currentTime) {
@@ -1305,29 +688,10 @@ public final class WiredEngine {
             return;
         }
 
-        Map<Integer, List<IWiredEffect>> effectsByDelay = new LinkedHashMap<>();
-
-        for (IWiredEffect effect : effects) {
-            if (effect == null) {
-                continue;
-            }
-
-            if (effect.requiresActor() && !ctx.hasActor()) {
-                continue;
-            }
-
-            effectsByDelay
-                    .computeIfAbsent(effect.getDelay(), key -> new ArrayList<>())
-                    .add(effect);
-        }
-
-        for (Map.Entry<Integer, List<IWiredEffect>> entry : effectsByDelay.entrySet()) {
-            int delay = entry.getKey();
-            List<IWiredEffect> batch = entry.getValue();
-
-            if (batch.isEmpty()) {
-                continue;
-            }
+        for (WiredEffectPlanner.DelayBatch delayBatch :
+                this.effectPlanner.orderedDelayBatches(effects, ctx.hasActor())) {
+            int delay = delayBatch.delay();
+            List<IWiredEffect> batch = delayBatch.effects();
 
             if (delay > 0) {
                 scheduleOrderedEffectBatch(batch, ctx, delay, currentTime);
@@ -1351,7 +715,7 @@ public final class WiredEngine {
             return false;
         }
 
-        List<WiredStack> stacks = index.getStacks(room, event.getType());
+        List<WiredStack> stacks = this.stackRepository.getStacks(room, event.getType());
         if (stacks.isEmpty()) {
             return false;
         }
@@ -1387,36 +751,16 @@ public final class WiredEngine {
         String sourceLabel = getMonitorSourceLabel(ctx.triggerItem(), ctx.event());
         int sourceId = getMonitorSourceId(ctx.triggerItem());
 
-        if (!diagnostics.tryScheduleDelayedEvent(
-                System.currentTimeMillis(),
+        this.delayedScheduler.scheduleOrderedBatch(
+                batch,
+                ctx,
+                delay,
+                triggerTime,
+                diagnostics,
                 sourceLabel,
                 sourceId,
-                String.format(
-                        "Scheduling ordered batch with %d effect(s) and delay %d tick(s)", batch.size(), delay))) {
-            debug(ctx.room(), "Delayed events cap blocked ordered batch with {} effect(s)", batch.size());
-            return;
-        }
-
-        long delayMs = delay * 500L;
-        long elapsedSinceTrigger = Math.max(0L, System.currentTimeMillis() - triggerTime);
-        long remainingDelayMs = Math.max(0L, delayMs - elapsedSinceTrigger);
-        Room room = ctx.room();
-
-        Emulator.getThreading()
-                .run(
-                        () -> {
-                            if (!room.isLoaded() || room.getHabbos().isEmpty()) {
-                                diagnostics.completeDelayedEvent();
-                                return;
-                            }
-
-                            try {
-                                executeOrderedEffectBatch(batch, ctx, System.currentTimeMillis(), true);
-                            } finally {
-                                diagnostics.completeDelayedEvent();
-                            }
-                        },
-                        remainingDelayMs);
+                resolved -> executeOrderedEffectBatch(
+                        resolved.effects(), resolved.context(), System.currentTimeMillis(), true));
     }
 
     private void executeOrderedEffectBatch(
@@ -1430,15 +774,17 @@ public final class WiredEngine {
                 WiredInternalVariableSupport.beginUserMoveBatch()) {
             for (IWiredEffect effect : batch) {
                 try {
+                    if (!this.effectCooldownService.tryAcquire(effect, ctx, executionTime)) {
+                        continue;
+                    }
                     if (!useExecutionTimeForCooldown) {
                         ctx.state().step();
                     }
 
-                    effect.execute(ctx);
+                    WiredExecutionScope.execute(effect, ctx);
 
                     if (effect instanceof InteractionWiredEffect) {
                         InteractionWiredEffect wiredEffect = (InteractionWiredEffect) effect;
-                        wiredEffect.setCooldown(executionTime);
                         wiredEffect.activateBox(room, actor, executionTime);
                     }
                 } catch (Exception e) {
@@ -1467,69 +813,6 @@ public final class WiredEngine {
     }
 
     /**
-     * Fire the WiredStackTriggeredEvent for plugin compatibility.
-     */
-    private boolean fireTriggeredEvent(WiredStack stack, WiredEvent event) {
-        // Build legacy collections for event
-        if (stack.triggerItem() instanceof InteractionWiredTrigger) {
-            // This event is checked for cancellation
-            Set<InteractionWiredEffect> legacyEffects = new HashSet<>();
-            Set<InteractionWiredCondition> legacyConditions = new HashSet<>();
-
-            // Extract effects (all effects should now implement both interfaces)
-            for (IWiredEffect eff : stack.effects()) {
-                if (eff instanceof InteractionWiredEffect) {
-                    legacyEffects.add((InteractionWiredEffect) eff);
-                }
-            }
-            for (IWiredCondition cond : stack.conditions()) {
-                if (cond instanceof InteractionWiredCondition) {
-                    legacyConditions.add((InteractionWiredCondition) cond);
-                }
-            }
-
-            WiredStackTriggeredEvent triggeredEvent = new WiredStackTriggeredEvent(
-                    event.getRoom(),
-                    event.getActor().orElse(null),
-                    (InteractionWiredTrigger) stack.triggerItem(),
-                    legacyEffects,
-                    legacyConditions);
-
-            return !Emulator.getPluginManager().fireEvent(triggeredEvent).isCancelled();
-        }
-        return true;
-    }
-
-    /**
-     * Fire the WiredStackExecutedEvent for plugin compatibility.
-     */
-    private void fireExecutedEvent(WiredStack stack, WiredEvent event) {
-        if (stack.triggerItem() instanceof InteractionWiredTrigger) {
-            Set<InteractionWiredEffect> legacyEffects = new HashSet<>();
-            Set<InteractionWiredCondition> legacyConditions = new HashSet<>();
-
-            for (IWiredEffect eff : stack.effects()) {
-                if (eff instanceof InteractionWiredEffect) {
-                    legacyEffects.add((InteractionWiredEffect) eff);
-                }
-            }
-            for (IWiredCondition cond : stack.conditions()) {
-                if (cond instanceof InteractionWiredCondition) {
-                    legacyConditions.add((InteractionWiredCondition) cond);
-                }
-            }
-
-            Emulator.getPluginManager()
-                    .fireEvent(new WiredStackExecutedEvent(
-                            event.getRoom(),
-                            event.getActor().orElse(null),
-                            (InteractionWiredTrigger) stack.triggerItem(),
-                            legacyEffects,
-                            legacyConditions));
-        }
-    }
-
-    /**
      * Log a debug message if debug mode is enabled.
      */
     private void debug(Room room, String format, Object... args) {
@@ -1543,24 +826,6 @@ public final class WiredEngine {
 
         String message = String.format(format.replace("{}", "%s"), args);
         LOGGER.debug("[WiredEngine][Room {}] {}", room.getId(), message);
-    }
-
-    /**
-     * Activate all extras at the trigger item's location for their animation.
-     */
-    private void activateExtras(Room room, HabboItem triggerItem, RoomUnit roomUnit, long millis) {
-        if (triggerItem == null || room.getRoomSpecialTypes() == null) {
-            return;
-        }
-
-        Collection<InteractionWiredExtra> extras =
-                room.getRoomSpecialTypes().getExtras(triggerItem.getX(), triggerItem.getY());
-
-        if (extras != null) {
-            for (InteractionWiredExtra extra : extras) {
-                extra.activateBox(room, roomUnit, millis);
-            }
-        }
     }
 
     private WiredExtraRandom getRandomExtra(Room room, WiredStack stack) {
@@ -1644,14 +909,14 @@ public final class WiredEngine {
      * @param roomId the room ID
      */
     public void clearRoomRecursionDepth(int roomId) {
-        roomRecursionDepth.remove(roomId);
+        this.executionGuard.clearRoomRecursionDepth(roomId);
     }
 
     /**
      * Clear all recursion tracking.
      */
     public void clearAllRecursionDepth() {
-        roomRecursionDepth.clear();
+        this.executionGuard.clearAllRecursionDepth();
     }
 
     /**
@@ -1660,7 +925,7 @@ public final class WiredEngine {
      * @return the current recursion depth, or 0 if not tracked
      */
     public int getRecursionDepth(int roomId) {
-        return roomRecursionDepth.getOrDefault(roomId, 0);
+        return this.executionGuard.recursionDepth(roomId);
     }
 
     /**
@@ -1669,8 +934,7 @@ public final class WiredEngine {
      * @param roomId the room ID
      */
     public void clearRoomRateLimiters(int roomId) {
-        String prefix = roomId + ":";
-        eventRateLimiters.keySet().removeIf(key -> key.startsWith(prefix));
+        this.executionGuard.clearRoomRateLimiters(roomId);
     }
 
     /**
@@ -1678,22 +942,18 @@ public final class WiredEngine {
      * @param roomId the room ID
      */
     public void clearRoomDiagnostics(int roomId) {
-        roomDiagnostics.remove(roomId);
+        this.executionGuard.clearRoomDiagnostics(roomId);
     }
 
     /**
      * Clear all monitor diagnostics.
      */
     public void clearAllDiagnostics() {
-        roomDiagnostics.clear();
+        this.executionGuard.clearAllDiagnostics();
     }
 
     public void clearRoomDiagnosticsLogs(int roomId) {
-        WiredRoomDiagnostics diagnostics = roomDiagnostics.get(roomId);
-
-        if (diagnostics != null) {
-            diagnostics.clearLogs();
-        }
+        this.executionGuard.clearRoomDiagnosticsLogs(roomId);
     }
 
     /**
@@ -1701,15 +961,18 @@ public final class WiredEngine {
      * @param roomId the room ID
      */
     public void clearRoomSourceStackCache(int roomId) {
-        String prefix = roomId + ":";
-        sourceStacksByTriggerKey.keySet().removeIf(key -> key.startsWith(prefix));
+        this.stackRepository.clearRoomSourceStackCache(roomId);
     }
 
     /**
      * Clear all cached source-stack lookups.
      */
     public void clearAllSourceStackCache() {
-        sourceStacksByTriggerKey.clear();
+        this.stackRepository.clearAllSourceStackCache();
+    }
+
+    int sourceStackCacheSize() {
+        return this.stackRepository.sourceStackCacheSize();
     }
 
     /**
@@ -1729,9 +992,18 @@ public final class WiredEngine {
      */
     public void clearAllExecutionCaches() {
         clearAllRecursionDepth();
-        eventRateLimiters.clear();
+        this.executionGuard.clearAllRateLimiters();
         clearAllSourceStackCache();
         clearUnseenCache();
+        this.effectCooldownService.clear();
+    }
+
+    void shutdownScheduledWork() {
+        this.delayedScheduler.shutdown();
+    }
+
+    boolean tryAcquireEffectCooldown(IWiredEffect effect, WiredContext context, long timestamp) {
+        return this.effectCooldownService.tryAcquire(effect, context, timestamp);
     }
 
     /**
@@ -1739,7 +1011,7 @@ public final class WiredEngine {
      * @param roomId the room ID
      */
     public void clearRoomBan(int roomId) {
-        bannedRooms.remove(roomId);
+        this.executionGuard.clearRoomBan(roomId);
     }
 
     /**
@@ -1748,52 +1020,18 @@ public final class WiredEngine {
      * @return the diagnostics snapshot
      */
     public WiredRoomDiagnostics.Snapshot getDiagnosticsSnapshot(int roomId) {
-        long now = System.currentTimeMillis();
-        long killedUntil = bannedRooms.getOrDefault(roomId, 0L);
-
-        return getDiagnostics(roomId).snapshot(getRecursionDepth(roomId), MAX_RECURSION_DEPTH, killedUntil, now);
+        return this.executionGuard.snapshot(roomId);
     }
 
-    /**
-     * Check if a room is currently banned from wired execution.
-     * @param roomId the room ID
-     * @return true if wired is banned in this room
-     */
-    private boolean isRoomBanned(int roomId) {
-        Long banExpiry = bannedRooms.get(roomId);
-        if (banExpiry == null) {
-            return false;
-        }
-
-        if (System.currentTimeMillis() >= banExpiry) {
-            bannedRooms.remove(roomId);
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Ban wired execution in a room.
-     * @param roomId the room ID
-     * @param room the room object
-     */
-    private void banRoom(int roomId, Room room, WiredEvent.Type eventType, int eventCount) {
-        getDiagnostics(roomId)
-                .recordKilled(
-                        System.currentTimeMillis(),
-                        String.format(
-                                "Rate limit exceeded for %s with %d event(s) in %dms",
-                                eventType.name(), eventCount, RATE_LIMIT_WINDOW_MS),
-                        eventType.name(),
-                        0);
-
-        // Only actually ban the room if ban duration is configured (> 0)
-        if (WIRED_BAN_DURATION_MS > 0) {
-            long banExpiry = System.currentTimeMillis() + WIRED_BAN_DURATION_MS;
-            bannedRooms.put(roomId, banExpiry);
-
-            long banMinutes = WIRED_BAN_DURATION_MS / 60000;
+    private void handleRateLimit(
+            Room room,
+            WiredEvent.Type eventType,
+            int eventCount,
+            WiredExecutionGuard.LimitSource limits,
+            boolean banned) {
+        int roomId = room.getId();
+        if (banned) {
+            long banMinutes = limits.banDurationMs() / 60000;
 
             // Send alert to all users in the room
             String roomAlertMessage = Emulator.getTexts()
@@ -1813,7 +1051,7 @@ public final class WiredEngine {
                             .replace("%minutes%", String.valueOf(banMinutes)));
             keys.put("linkUrl", "event:navigator/goto/" + roomId);
             keys.put("linkTitle", Emulator.getTexts().getValue("wired.abuse.staff.link"));
-            Emulator.getGameEnvironment()
+            WiredPlatform.gameEnvironment()
                     .getHabboManager()
                     .sendPacketToHabbosWithPermission(
                             new BubbleAlertComposer("admin.staffalert", keys).compose(), "acc_modtool_room_info");
@@ -1825,7 +1063,6 @@ public final class WiredEngine {
                     room.getOwnerName(),
                     banMinutes);
         } else {
-            // Ban duration is 0 - only log, do not spam alerts or put a ban entry
             LOGGER.warn(
                     "Wired rate limit exceeded in room {} ({}) for event {} ({} events). Ban disabled (wired.abuse.ban.duration.ms=0).",
                     roomId,
@@ -1835,74 +1072,32 @@ public final class WiredEngine {
         }
     }
 
-    /**
-     * Check if an event should be rate-limited.
-     * Uses a soft limiter only, without banning rooms.
-     * @param roomId the room ID
-     * @param room the room object
-     * @param eventType the event type
-     * @return true if the event should be blocked due to rate limiting
-     */
-    private boolean isRateLimited(int roomId, Room room, WiredEvent.Type eventType) {
-        String key = roomId + ":" + eventType.name();
-        long now = System.currentTimeMillis();
-
-        EventRateTracker tracker = eventRateLimiters.compute(key, (k, existing) -> {
-            if (existing == null) {
-                return new EventRateTracker(now);
-            }
-            existing.recordEvent(now);
-            return existing;
-        });
-
-        boolean limited = tracker.isRateLimited(now);
-        if (limited && tracker.shouldBan(now)) {
-            // First time hitting limit in this suppression window - ban the room
-            banRoom(roomId, room, eventType, tracker.getEventCount());
+    private void handleRecursionLimit(
+            Room room,
+            WiredEvent.Type eventType,
+            WiredExecutionGuard.EntryKind kind,
+            int currentDepth,
+            int maximumDepth) {
+        if (kind == WiredExecutionGuard.EntryKind.SOURCE_ITEM) {
+            LOGGER.warn(
+                    "Wired recursion limit reached in room {} (depth: {}). "
+                            + "Possible infinite loop detected (source item execution). Aborting.",
+                    room.getId(),
+                    currentDepth);
+            debug(room, "RECURSION LIMIT REACHED - aborting source-item execution");
+            return;
         }
-        return limited;
+
+        LOGGER.warn(
+                "Wired recursion limit reached in room {} (depth: {}). "
+                        + "Possible infinite loop detected (e.g., collision + chase). Aborting.",
+                room.getId(),
+                currentDepth);
+        debug(room, "RECURSION LIMIT REACHED - aborting to prevent crash");
     }
 
     private WiredRoomDiagnostics getDiagnostics(int roomId) {
-        return roomDiagnostics.computeIfAbsent(
-                roomId,
-                ignored -> new WiredRoomDiagnostics(
-                        MONITOR_USAGE_WINDOW_MS,
-                        MONITOR_USAGE_LIMIT,
-                        MONITOR_DELAYED_EVENTS_LIMIT,
-                        MONITOR_OVERLOAD_AVERAGE_MS,
-                        MONITOR_OVERLOAD_PEAK_MS,
-                        MONITOR_HEAVY_USAGE_PERCENT,
-                        MONITOR_HEAVY_CONSECUTIVE_WINDOWS,
-                        MONITOR_OVERLOAD_CONSECUTIVE_WINDOWS,
-                        MONITOR_HEAVY_DELAYED_PERCENT,
-                        200));
-    }
-
-    private int estimateStackCost(WiredStack stack, int recursionDepth) {
-        int cost = 1;
-
-        if (stack == null) {
-            return cost;
-        }
-
-        cost += Math.max(0, stack.conditions().size());
-
-        for (IWiredEffect effect : stack.effects()) {
-            if (effect == null) {
-                continue;
-            }
-
-            cost += effect.isSelector() ? 2 : 3;
-
-            if (effect.getDelay() > 0) {
-                cost += 4;
-            }
-        }
-
-        cost += Math.max(0, recursionDepth) * 2;
-
-        return Math.max(1, cost);
+        return this.executionGuard.diagnostics(roomId);
     }
 
     private String getMonitorSourceLabel(HabboItem triggerItem, WiredEvent event) {
@@ -1917,89 +1112,5 @@ public final class WiredEngine {
 
     private int getMonitorSourceId(HabboItem triggerItem) {
         return triggerItem != null ? triggerItem.getId() : 0;
-    }
-
-    private String buildStackMonitorReason(WiredStack stack, WiredEvent event, int stackCost) {
-        if (stack == null) {
-            return String.format(
-                    "Processing %s with estimated cost %d", event.getType().name(), stackCost);
-        }
-
-        int selectors = 0;
-        int delayedEffects = 0;
-
-        for (IWiredEffect effect : stack.effects()) {
-            if (effect == null) {
-                continue;
-            }
-
-            if (effect.isSelector()) {
-                selectors++;
-            }
-
-            if (effect.getDelay() > 0) {
-                delayedEffects++;
-            }
-        }
-
-        return String.format(
-                "Trigger %s with %d condition(s), %d effect(s), %d selector(s), %d delayed effect(s) and estimated cost %d",
-                event.getType().name(),
-                stack.conditions().size(),
-                stack.effects().size(),
-                selectors,
-                delayedEffects,
-                stackCost);
-    }
-
-    private String buildExecutionMonitorReason(WiredStack stack, long elapsedMs) {
-        if (stack == null) {
-            return String.format("Execution completed in %dms", elapsedMs);
-        }
-
-        return String.format(
-                "Stack with %d condition(s) and %d effect(s) completed in %dms",
-                stack.conditions().size(), stack.effects().size(), elapsedMs);
-    }
-
-    /**
-     * Tracks event rate for a specific room + event type combination.
-     */
-    private static final class EventRateTracker {
-        private long windowStart;
-        private int eventCount;
-        private boolean warned;
-
-        EventRateTracker(long now) {
-            this.windowStart = now;
-            this.eventCount = 1;
-            this.warned = false;
-        }
-
-        synchronized void recordEvent(long now) {
-            if (now - windowStart > RATE_LIMIT_WINDOW_MS) {
-                windowStart = now;
-                eventCount = 1;
-                warned = false;
-            } else {
-                eventCount++;
-            }
-        }
-
-        synchronized boolean isRateLimited(long now) {
-            return eventCount > MAX_EVENTS_PER_WINDOW;
-        }
-
-        synchronized boolean shouldBan(long now) {
-            if (eventCount > MAX_EVENTS_PER_WINDOW && !warned) {
-                warned = true;
-                return true;
-            }
-            return false;
-        }
-
-        synchronized int getEventCount() {
-            return eventCount;
-        }
     }
 }

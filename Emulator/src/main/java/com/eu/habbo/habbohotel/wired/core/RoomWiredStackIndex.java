@@ -16,9 +16,12 @@ import com.eu.habbo.habbohotel.wired.api.IWiredCondition;
 import com.eu.habbo.habbohotel.wired.api.IWiredEffect;
 import com.eu.habbo.habbohotel.wired.api.IWiredTrigger;
 import com.eu.habbo.habbohotel.wired.api.WiredStack;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Implementation of {@link WiredStackIndex} that builds stacks from {@link RoomSpecialTypes}.
@@ -28,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * IWiredTrigger, IWiredCondition, and IWiredEffect interfaces, no adapters
  * are needed.
  * </p>
- * 
+ *
  * <h3>Stack Building:</h3>
  * <ol>
  *   <li>Find all triggers of the requested event type</li>
@@ -36,15 +39,17 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li>Check for extras (OR mode, random, unseen) at the tile</li>
  *   <li>Build a WiredStack with the collected components</li>
  * </ol>
- * 
+ *
  * @see RoomSpecialTypes
  * @see WiredStack
  */
 public final class RoomWiredStackIndex implements WiredStackIndex {
 
     /** Cache of built stacks per room and event type */
-    private final ConcurrentHashMap<Integer, Map<WiredEvent.Type, List<WiredStack>>> cache;
-    
+    private final ConcurrentHashMap<RoomCacheKey, ConcurrentHashMap<WiredEvent.Type, List<WiredStack>>> cache;
+
+    private final AtomicLong publicationEpoch;
+
     /** Whether to use caching (can be disabled for testing) */
     private final boolean useCache;
 
@@ -62,6 +67,7 @@ public final class RoomWiredStackIndex implements WiredStackIndex {
     public RoomWiredStackIndex(boolean useCache) {
         this.useCache = useCache;
         this.cache = new ConcurrentHashMap<>();
+        this.publicationEpoch = new AtomicLong();
     }
 
     @Override
@@ -70,11 +76,35 @@ public final class RoomWiredStackIndex implements WiredStackIndex {
             return Collections.emptyList();
         }
 
-        if (useCache) {
-            return cache.computeIfAbsent(room.getId(), k -> new ConcurrentHashMap<>())
-                    .computeIfAbsent(type, t -> buildStacks(room, t));
-        } else {
-            return buildStacks(room, type);
+        while (true) {
+            RoomCacheKey key = RoomCacheKey.capture(room);
+            long epoch = this.publicationEpoch.get();
+            if (!this.useCache) {
+                List<WiredStack> result = buildStacks(room, type);
+                if (key.matches(room) && epoch == this.publicationEpoch.get()) {
+                    return result;
+                }
+                continue;
+            }
+
+            this.removeStaleRoomEntries(key);
+            ConcurrentHashMap<WiredEvent.Type, List<WiredStack>> byType =
+                    this.cache.computeIfAbsent(key, ignored -> new ConcurrentHashMap<>());
+            List<WiredStack> result = byType.get(type);
+            if (result == null) {
+                List<WiredStack> built = buildStacks(room, type);
+                if (!this.canPublish(room, key, byType, epoch)) {
+                    this.cache.remove(key, byType);
+                    continue;
+                }
+                List<WiredStack> previous = byType.putIfAbsent(type, built);
+                result = previous != null ? previous : built;
+            }
+
+            if (this.canPublish(room, key, byType, epoch)) {
+                return result;
+            }
+            this.cache.remove(key, byType);
         }
     }
 
@@ -95,12 +125,14 @@ public final class RoomWiredStackIndex implements WiredStackIndex {
     @Override
     public void invalidateAll(Room room) {
         if (room == null) return;
-        cache.remove(room.getId());
+        this.publicationEpoch.incrementAndGet();
+        room.advanceWiredCacheGeneration();
+        this.cache.keySet().removeIf(key -> key.roomId() == room.getId());
     }
 
     @Override
     public boolean isCached(Room room) {
-        return room != null && cache.containsKey(room.getId());
+        return room != null && this.cache.containsKey(RoomCacheKey.capture(room));
     }
 
     /**
@@ -131,7 +163,7 @@ public final class RoomWiredStackIndex implements WiredStackIndex {
             // (we build one stack per trigger, but share conditions/effects at same location)
             short x = trigger.getX();
             short y = trigger.getY();
-            
+
             // Build the stack for this trigger
             WiredStack stack = buildStack(room, specialTypes, trigger, x, y);
             if (stack != null) {
@@ -147,7 +179,21 @@ public final class RoomWiredStackIndex implements WiredStackIndex {
             return Collections.emptyList();
         }
 
+        while (true) {
+            RoomCacheKey key = RoomCacheKey.capture(room);
+            long epoch = this.publicationEpoch.get();
+            List<WiredStack> result = buildStacksAtTile(room, tile);
+            if (key.matches(room) && epoch == this.publicationEpoch.get()) {
+                return result;
+            }
+        }
+    }
+
+    private List<WiredStack> buildStacksAtTile(Room room, RoomTile tile) {
         RoomSpecialTypes specialTypes = room.getRoomSpecialTypes();
+        if (specialTypes == null) {
+            return Collections.emptyList();
+        }
         Collection<InteractionWiredTrigger> triggers = specialTypes.getTriggers(tile.x, tile.y);
 
         if (triggers == null || triggers.isEmpty()) {
@@ -173,8 +219,8 @@ public final class RoomWiredStackIndex implements WiredStackIndex {
     /**
      * Build a single wired stack for a trigger at a specific location.
      */
-    private WiredStack buildStack(Room room, RoomSpecialTypes specialTypes,
-                                   InteractionWiredTrigger trigger, short x, short y) {
+    private WiredStack buildStack(
+            Room room, RoomSpecialTypes specialTypes, InteractionWiredTrigger trigger, short x, short y) {
         // The trigger already implements IWiredTrigger
         IWiredTrigger wrappedTrigger = trigger;
 
@@ -224,8 +270,7 @@ public final class RoomWiredStackIndex implements WiredStackIndex {
                 conditionEvaluationValue,
                 useRandom,
                 useUnseen,
-                executeInOrder
-        );
+                executeInOrder);
     }
 
     /**
@@ -262,7 +307,8 @@ public final class RoomWiredStackIndex implements WiredStackIndex {
      * Clear all cached data.
      */
     public void clearAll() {
-        cache.clear();
+        this.publicationEpoch.incrementAndGet();
+        this.cache.clear();
     }
 
     /**
@@ -270,6 +316,29 @@ public final class RoomWiredStackIndex implements WiredStackIndex {
      * @return cached room count
      */
     public int getCachedRoomCount() {
-        return cache.size();
+        return this.cache.size();
+    }
+
+    private boolean canPublish(
+            Room room, RoomCacheKey key, ConcurrentHashMap<WiredEvent.Type, List<WiredStack>> byType, long epoch) {
+        return key.matches(room) && epoch == this.publicationEpoch.get() && this.cache.get(key) == byType;
+    }
+
+    private void removeStaleRoomEntries(RoomCacheKey currentKey) {
+        this.cache.keySet().removeIf(key -> key.roomId() == currentKey.roomId() && !key.equals(currentKey));
+    }
+
+    private record RoomCacheKey(int roomId, long lifecycleGeneration, long wiredGeneration) {
+
+        static RoomCacheKey capture(Room room) {
+            return new RoomCacheKey(room.getId(), room.getLifecycleGeneration(), room.getWiredCacheGeneration());
+        }
+
+        boolean matches(Room room) {
+            return room != null
+                    && room.getId() == this.roomId
+                    && room.getLifecycleGeneration() == this.lifecycleGeneration
+                    && room.getWiredCacheGeneration() == this.wiredGeneration;
+        }
     }
 }

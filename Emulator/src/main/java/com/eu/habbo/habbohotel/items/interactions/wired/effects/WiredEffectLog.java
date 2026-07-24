@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
+import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
@@ -12,14 +13,12 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WiredEffectLog extends InteractionWiredEffect {
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredEffectLog.class);
@@ -107,13 +106,12 @@ public class WiredEffectLog extends InteractionWiredEffect {
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
         String wiredData = set.getString("wired_data");
 
-        if(wiredData.startsWith("{")) {
+        if (wiredData.startsWith("{")) {
             JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
             this.message = data.message;
             this.setDelay(data.delay);
             this.userSource = data.userSource;
-        }
-        else {
+        } else {
             String[] data = wiredData.split("\t");
             this.message = "";
 
@@ -123,6 +121,11 @@ public class WiredEffectLog extends InteractionWiredEffect {
                 try {
                     this.message = data[1];
                 } catch (Exception e) {
+                    WiredCompatibilityDiagnostics.record(
+                            WiredCompatibilityDiagnostics.FailurePoint.EFFECT_LOG_LEGACY,
+                            this.getRoomId(),
+                            this.getId(),
+                            e);
                 }
             }
 

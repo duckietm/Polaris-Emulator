@@ -2,7 +2,6 @@ package com.eu.habbo.habbohotel.wired.core;
 
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
-
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -14,7 +13,7 @@ import java.util.Set;
  * by selectors (future feature) before effects are executed. By default,
  * targets include the triggering actor and trigger item.
  * </p>
- * 
+ *
  * <h3>Future Selector Support:</h3>
  * <pre>{@code
  * // Selectors will be able to filter/modify targets:
@@ -22,11 +21,11 @@ import java.util.Set;
  *     .filter(u -> u.hasEffect(123))
  *     .collect(Collectors.toList()));
  * }</pre>
- * 
+ *
  * @see WiredContext
  */
 public final class WiredTargets {
-    
+
     private final Set<RoomUnit> users = new LinkedHashSet<>();
     private final Set<HabboItem> items = new LinkedHashSet<>();
     private boolean itemsModifiedBySelector = false;
@@ -160,6 +159,32 @@ public final class WiredTargets {
         }
     }
 
+    /** Restore a previously captured delayed target set without changing selector provenance. */
+    void restoreSnapshot(
+            Iterable<RoomUnit> newUsers,
+            Iterable<HabboItem> newItems,
+            boolean usersModifiedBySelector,
+            boolean itemsModifiedBySelector) {
+        this.users.clear();
+        this.items.clear();
+        if (newUsers != null) {
+            for (RoomUnit user : newUsers) {
+                if (user != null) {
+                    this.users.add(user);
+                }
+            }
+        }
+        if (newItems != null) {
+            for (HabboItem item : newItems) {
+                if (item != null) {
+                    this.items.add(item);
+                }
+            }
+        }
+        this.usersModifiedBySelector = usersModifiedBySelector;
+        this.itemsModifiedBySelector = itemsModifiedBySelector;
+    }
+
     /**
      * Add a user to the targets.
      * @param user the user to add (null is ignored)
@@ -212,9 +237,6 @@ public final class WiredTargets {
 
     @Override
     public String toString() {
-        return "WiredTargets{" +
-                "users=" + users.size() +
-                ", items=" + items.size() +
-                '}';
+        return "WiredTargets{" + "users=" + users.size() + ", items=" + items.size() + '}';
     }
 }

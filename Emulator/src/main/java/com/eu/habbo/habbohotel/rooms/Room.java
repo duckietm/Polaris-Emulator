@@ -127,6 +127,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     private final RoomRepository repository;
     private final RoomWiredAccessService wiredAccess;
     private final RoomWiredVisibilityService wiredVisibility = new RoomWiredVisibilityService(this);
+    private final RoomWiredRuntime wiredRuntime = new RoomWiredRuntime(this);
     private final RoomUserCountPersistence userCountPersistence;
     public volatile double lastCycleCpuMs = 0.0;
     public volatile String lastCycleThread = "N/A";
@@ -1416,6 +1417,30 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         return this.lifecycle.isLoaded();
     }
 
+    public long getLifecycleGeneration() {
+        return this.lifecycle.generation();
+    }
+
+    public long getWiredCacheGeneration() {
+        return this.wiredRuntime.cacheGeneration();
+    }
+
+    public long advanceWiredCacheGeneration() {
+        return this.wiredRuntime.advanceCacheGeneration();
+    }
+
+    public RoomWiredRuntime getWiredRuntime() {
+        return this.wiredRuntime;
+    }
+
+    void onFurnitureTopologyChanged() {
+        this.wiredRuntime.onFurnitureTopologyChanged();
+    }
+
+    void disposeWiredRuntimeState() {
+        this.wiredRuntime.dispose();
+    }
+
     public void setNeedsUpdate(boolean needsUpdate) {
         this.needsUpdate = needsUpdate;
     }
@@ -1446,6 +1471,10 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
     public HabboItem getHabboItem(int id) {
         return this.itemManager.getHabboItem(id);
+    }
+
+    public long getItemIncarnation(int id) {
+        return this.itemManager.getItemIncarnation(id);
     }
 
     void removeHabboItem(int id) {

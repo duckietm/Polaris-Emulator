@@ -1,6 +1,5 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
-import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
@@ -12,8 +11,6 @@ import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
-import com.eu.habbo.threading.runnables.WiredResetTimers;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -21,8 +18,6 @@ import java.util.List;
 
 public class WiredEffectResetTimers extends InteractionWiredEffect {
     public static final WiredEffectType type = WiredEffectType.RESET_TIMERS;
-
-    private int delay = 0;
 
     public WiredEffectResetTimers(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -70,8 +65,11 @@ public class WiredEffectResetTimers extends InteractionWiredEffect {
 
     @Override
     public void execute(WiredContext ctx) {
-        Room room = ctx.room();
-        Emulator.getThreading().run(new WiredResetTimers(room), this.delay);
+        if (ctx == null || ctx.room() == null || ctx.services() == null) {
+            return;
+        }
+
+        ctx.services().resetTimers(ctx.room());
     }
 
     @Deprecated
@@ -82,30 +80,26 @@ public class WiredEffectResetTimers extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-            this.getDelay()
-        ));
+        return WiredManager.getGson().toJson(new JsonData(this.getDelay()));
     }
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
         String wiredData = set.getString("wired_data");
+        int parsedDelay = 0;
 
         JsonData jsonData = WiredUtilityPayloadGuard.fromJson(wiredData, JsonData.class);
         if (jsonData != null) {
-            this.delay = WiredUtilityPayloadGuard.delay(jsonData.delay);
-        } else {
-            if (wiredData != null && !wiredData.equals("")) {
-                this.delay = WiredUtilityPayloadGuard.parseDelay(wiredData);
-            }
+            parsedDelay = WiredUtilityPayloadGuard.delay(jsonData.delay);
+        } else if (wiredData != null && !wiredData.isEmpty()) {
+            parsedDelay = WiredUtilityPayloadGuard.parseDelay(wiredData);
         }
 
-        this.setDelay(WiredUtilityPayloadGuard.delay(this.delay));
+        this.setDelay(WiredUtilityPayloadGuard.delay(parsedDelay));
     }
 
     @Override
     public void onPickUp() {
-        this.delay = 0;
         this.setDelay(0);
     }
 

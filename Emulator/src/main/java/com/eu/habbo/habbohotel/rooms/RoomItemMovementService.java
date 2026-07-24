@@ -246,6 +246,8 @@ final class RoomItemMovementService {
             }
         }
 
+        this.room.onFurnitureTopologyChanged();
+
         return FurnitureMovementError.NONE;
     }
 
@@ -405,6 +407,7 @@ final class RoomItemMovementService {
             }
         }
 
+        this.room.onFurnitureTopologyChanged();
         return FurnitureMovementError.NONE;
     }
 
@@ -636,6 +639,7 @@ final class RoomItemMovementService {
                 }
             }
         }
+        this.room.onFurnitureTopologyChanged();
         return FurnitureMovementError.NONE;
     }
 
@@ -854,6 +858,7 @@ final class RoomItemMovementService {
                 }
             }
         }
+        this.room.onFurnitureTopologyChanged();
         return FurnitureMovementError.NONE;
     }
 
@@ -895,6 +900,7 @@ final class RoomItemMovementService {
             this.room.updateHabbosAt(t.x, t.y);
             this.room.updateBotsAt(t.x, t.y);
         }
+        this.room.onFurnitureTopologyChanged();
         return FurnitureMovementError.NONE;
     }
 

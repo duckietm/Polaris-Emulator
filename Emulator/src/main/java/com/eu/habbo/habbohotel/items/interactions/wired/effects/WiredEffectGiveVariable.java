@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
@@ -17,7 +18,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -45,7 +45,8 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect {
         this.selectedFurni = new LinkedHashSet<>();
     }
 
-    public WiredEffectGiveVariable(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectGiveVariable(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.selectedFurni = new LinkedHashSet<>();
     }
@@ -74,7 +75,8 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect {
     }
 
     private void executeContextVariables(WiredContext ctx, Room room) {
-        WiredVariableDefinitionInfo definitionInfo = WiredContextVariableSupport.getDefinitionInfo(room, this.variableItemId);
+        WiredVariableDefinitionInfo definitionInfo =
+                WiredContextVariableSupport.getDefinitionInfo(room, this.variableItemId);
         if (definitionInfo == null || definitionInfo.isReadOnly()) {
             return;
         }
@@ -84,7 +86,8 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect {
     }
 
     private void executeUserVariables(WiredContext ctx, Room room) {
-        WiredVariableDefinitionInfo definitionInfo = room.getUserVariableManager().getDefinitionInfo(this.variableItemId);
+        WiredVariableDefinitionInfo definitionInfo =
+                room.getUserVariableManager().getDefinitionInfo(this.variableItemId);
 
         if (definitionInfo == null || definitionInfo.isReadOnly()) {
             return;
@@ -194,8 +197,10 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect {
         int nextTargetType = normalizeTargetType((intParams.length > 0) ? intParams[0] : TARGET_USER);
         boolean nextOverrideExisting = (intParams.length > 1) && (intParams[1] == 1);
         int nextInitialValue = (intParams.length > 2) ? intParams[2] : 0;
-        int nextUserSource = normalizeUserSource((intParams.length > 3) ? intParams[3] : WiredSourceUtil.SOURCE_TRIGGER);
-        int nextFurniSource = normalizeFurniSource((intParams.length > 4) ? intParams[4] : WiredSourceUtil.SOURCE_TRIGGER);
+        int nextUserSource =
+                normalizeUserSource((intParams.length > 3) ? intParams[3] : WiredSourceUtil.SOURCE_TRIGGER);
+        int nextFurniSource =
+                normalizeFurniSource((intParams.length > 4) ? intParams[4] : WiredSourceUtil.SOURCE_TRIGGER);
         int nextVariableItemId = parseVariableItemId(settings.getStringParam());
 
         if (nextVariableItemId <= 0 && settings.getFurniIds() != null && settings.getFurniIds().length > 0) {
@@ -211,14 +216,17 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect {
             throw new WiredSaveException("wiredfurni.params.variables.validation.missing_variable");
         }
 
-        WiredVariableDefinitionInfo userDefinitionInfo = (nextTargetType == TARGET_USER) ? room.getUserVariableManager().getDefinitionInfo(nextVariableItemId) : null;
+        WiredVariableDefinitionInfo userDefinitionInfo = (nextTargetType == TARGET_USER)
+                ? room.getUserVariableManager().getDefinitionInfo(nextVariableItemId)
+                : null;
 
         if (nextTargetType == TARGET_USER && (userDefinitionInfo == null || userDefinitionInfo.isReadOnly())) {
             throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
         }
 
         if (nextTargetType == TARGET_FURNI) {
-            WiredVariableDefinitionInfo furniDefinitionInfo = room.getFurniVariableManager().getDefinitionInfo(nextVariableItemId);
+            WiredVariableDefinitionInfo furniDefinitionInfo =
+                    room.getFurniVariableManager().getDefinitionInfo(nextVariableItemId);
 
             if (furniDefinitionInfo == null || furniDefinitionInfo.isReadOnly()) {
                 throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
@@ -226,7 +234,8 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect {
         }
 
         if (nextTargetType == TARGET_CONTEXT) {
-            WiredVariableDefinitionInfo contextDefinitionInfo = WiredContextVariableSupport.getDefinitionInfo(room, nextVariableItemId);
+            WiredVariableDefinitionInfo contextDefinitionInfo =
+                    WiredContextVariableSupport.getDefinitionInfo(room, nextVariableItemId);
 
             if (contextDefinitionInfo == null || contextDefinitionInfo.isReadOnly()) {
                 throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
@@ -276,7 +285,16 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect {
             }
         }
 
-        return WiredManager.getGson().toJson(new JsonData(this.variableItemId, this.targetType, this.overrideExisting, this.initialValue, this.userSource, this.furniSource, this.getDelay(), selectedItemIds));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.variableItemId,
+                        this.targetType,
+                        this.overrideExisting,
+                        this.initialValue,
+                        this.userSource,
+                        this.furniSource,
+                        this.getDelay(),
+                        selectedItemIds));
     }
 
     @Override
@@ -322,6 +340,11 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect {
             this.variableItemId = Math.max(0, Integer.parseInt(wiredData.trim()));
             this.targetType = TARGET_USER;
         } catch (NumberFormatException ignored) {
+            WiredCompatibilityDiagnostics.record(
+                    WiredCompatibilityDiagnostics.FailurePoint.EFFECT_GIVE_VARIABLE_LEGACY,
+                    this.getRoomId(),
+                    this.getId(),
+                    ignored);
         }
     }
 
@@ -338,8 +361,7 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {}
 
     @Override
     public WiredEffectType getType() {
@@ -421,7 +443,15 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect {
         int delay;
         List<Integer> selectedFurniIds;
 
-        JsonData(int variableItemId, int targetType, boolean overrideExisting, int initialValue, int userSource, int furniSource, int delay, List<Integer> selectedFurniIds) {
+        JsonData(
+                int variableItemId,
+                int targetType,
+                boolean overrideExisting,
+                int initialValue,
+                int userSource,
+                int furniSource,
+                int delay,
+                List<Integer> selectedFurniIds) {
             this.variableItemId = variableItemId;
             this.targetType = targetType;
             this.overrideExisting = overrideExisting;

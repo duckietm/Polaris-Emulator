@@ -70,7 +70,7 @@ public class Incoming {
     public static final int ModToolRequestRoomInfoEvent = 707;
     public static final int FriendRequestEvent = 3157;
     public static final int RecycleEvent = 2771;
-    public static final int RequestRoomCategoriesEvent = 3027; //1371;
+    public static final int RequestRoomCategoriesEvent = 3027; // 1371;
     public static final int ToggleWallItemEvent = 210;
     public static final int RoomUserTalkEvent = 1314;
     public static final int HotelViewDataEvent = 2912;
@@ -102,7 +102,7 @@ public class Incoming {
     public static final int BuildersClubPlaceWallItemEvent = 462;
     public static final int RequestInventoryPetsEvent = 3095;
     public static final int ModToolRequestRoomVisitsEvent = 3526;
-    public static final int ModToolWarnEvent = -1;//3763
+    public static final int ModToolWarnEvent = -1; // 3763
     public static final int RequestItemInfoEvent = 3288;
     public static final int ModToolRequestRoomChatlogEvent = 2587;
     public static final int UserSaveLookEvent = 2730;
@@ -115,7 +115,7 @@ public class Incoming {
     public static final int GuildChangeNameDescEvent = 3137;
     public static final int RequestSellItemEvent = 848;
     public static final int ModToolChangeRoomSettingsEvent = 3260;
-    public static final int ModToolRequestUserChatlogEvent = 1391;//203
+    public static final int ModToolRequestUserChatlogEvent = 1391; // 203
     public static final int GuildChangeSettingsEvent = 3435;
     public static final int RoomUserDropHandItemEvent = 2814;
     public static final int RequestProfileFriendsEvent = 2138;
@@ -128,7 +128,7 @@ public class Incoming {
     public static final int RoomSettingsSaveEvent = 1969;
     public static final int AcceptFriendRequest = 137;
     public static final int DeclineFriendRequest = 2890;
-    public static final int ReleaseVersionEvent = 4000;//4000 
+    public static final int ReleaseVersionEvent = 4000; // 4000
     public static final int InitDiffieHandshake = 3110;
     public static final int CompleteDiffieHandshake = 773;
     public static final int SearchRoomsMyFavoriteEvent = 2578;
@@ -150,7 +150,7 @@ public class Incoming {
     public static final int BotSettingsEvent = 1986;
     public static final int StalkFriendEvent = 3997;
     public static final int RoomPickupItemEvent = 3456;
-	public static final int RoomPickupChooserEvent = 10017;
+    public static final int RoomPickupChooserEvent = 10017;
     public static final int RedeemItemEvent = 3115;
     public static final int RequestFriendsEvent = 1523;
     public static final int RequestAchievementsEvent = 219;
@@ -167,7 +167,7 @@ public class Incoming {
     public static final int ModToolReleaseTicketEvent = 1572;
     public static final int ModToolCloseTicketEvent = 2067;
     public static final int TriggerColorWheelEvent = 2144;
-    public static final int SearchRoomsByTagEvent = -1;//1956
+    public static final int SearchRoomsByTagEvent = -1; // 1956
     public static final int RequestPublicRoomsEvent = 1229;
     public static final int RequestResolutionEvent = 359;
     public static final int RequestInventoryItemsEvent = 3150;
@@ -279,7 +279,7 @@ public class Incoming {
     public static final int JukeBoxEventOne = 2304;
     public static final int JukeBoxEventTwo = 1435;
     public static final int RoomUserMuteEvent = 3485;
-    //public static final int JukeBoxEventThree = 3846;
+    // public static final int JukeBoxEventThree = 3846;
     public static final int RequestDeleteRoomEvent = 532;
     public static final int RequestPromotionRoomsEvent = 1075;
     public static final int BuyRoomPromotionEvent = 777;
@@ -382,7 +382,6 @@ public class Incoming {
     public static final int StopBreedingEvent = 2713;
     public static final int ConfirmPetBreedingEvent = 3382;
 
-
     public static final int GuildForumListEvent = 873;
     public static final int GuildForumThreadsEvent = 436;
     public static final int GuildForumDataEvent = 3149;
@@ -393,7 +392,6 @@ public class Incoming {
     public static final int GuildForumModerateThreadEvent = 1397;
     public static final int GuildForumThreadUpdateEvent = 3045;
     public static final int GuildForumMarkAsReadEvent = 1855;
-
 
     public static final int UNKNOWN_SNOWSTORM_6000 = 6000;
     public static final int UNKNOWN_SNOWSTORM_6001 = 6001;
@@ -423,7 +421,7 @@ public class Incoming {
     public static final int UNKNOWN_SNOWSTORM_6025 = 6025;
     public static final int SnowStormUserPickSnowballEvent = 6026;
 
-	// CUSTOM
+    // CUSTOM
     public static final int UpdateFurniturePositionEvent = 10019;
     public static final int ClickUserEvent = 10020;
     public static final int WiredMonitorRequestEvent = 10021;
@@ -436,7 +434,7 @@ public class Incoming {
     public static final int TranslationLanguagesRequestEvent = 10032;
     public static final int TranslationTextRequestEvent = 10033;
     public static final int RequestInventoryPetDelete = 10030;
-    public static final int RequestInventoryBadgeDelete  = 10031;
+    public static final int RequestInventoryBadgeDelete = 10031;
 
     // Furni Editor
     public static final int FurniEditorSearchEvent = 10040;

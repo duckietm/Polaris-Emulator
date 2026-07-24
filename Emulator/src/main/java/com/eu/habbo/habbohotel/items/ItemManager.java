@@ -140,7 +140,6 @@ import com.eu.habbo.habbohotel.items.interactions.totems.InteractionTotemLegs;
 import com.eu.habbo.habbohotel.items.interactions.totems.InteractionTotemPlanet;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestCurrency;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestFurni;
-import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredContract;
 import com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionActorDir;
 import com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionChestHasItemType;
 import com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionChestHasItems;
@@ -777,24 +776,9 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_storage_furni2", InteractionWiredChestFurni.class));
         this.interactionsList.add(new ItemInteraction("wf_storage_furni_starter", InteractionWiredChestFurni.class));
 
-        // Wired chest trading / contracts (Nitro layout codes 99–105, 110–113, 47–48, 27–28)
-        this.interactionsList.add(new ItemInteraction("wf_act_give_currency", WiredEffectGiveCurrencyFromChest.class));
-        this.interactionsList.add(new ItemInteraction("wf_act_give_furni", WiredEffectGiveFurniFromChest.class));
-        this.interactionsList.add(new ItemInteraction("wf_act_init_transaction", WiredEffectInitTransaction.class));
-        this.interactionsList.add(new ItemInteraction("wf_act_cancel_transaction", WiredEffectCancelTransaction.class));
-        this.interactionsList.add(new ItemInteraction("wf_cnd_chest_has_items", WiredConditionChestHasItems.class));
-        this.interactionsList.add(
-                new ItemInteraction("wf_cnd_chest_has_item_type", WiredConditionChestHasItemType.class));
-        this.interactionsList.add(
-                new ItemInteraction("wf_trg_transaction_complete", WiredTriggerTransactionComplete.class));
-        this.interactionsList.add(new ItemInteraction("wf_trg_transaction_fail", WiredTriggerTransactionFail.class));
-        this.interactionsList.add(new ItemInteraction("wf_contract_payment", InteractionWiredContract.Payment.class));
-        this.interactionsList.add(new ItemInteraction("wf_contract_reward", InteractionWiredContract.Reward.class));
-        this.interactionsList.add(new ItemInteraction("wf_contract_trade", InteractionWiredContract.Trade.class));
-        this.interactionsList.add(
-                new ItemInteraction("wf_xtra_custom_contract", InteractionWiredContract.Custom.class));
-        // Phase-2 chest-full wired: give-from-chest, has-item conditions, scanner, transactions,
-        // place/remove-furni, contracts, quests (chest storage furni above are from the #291 base).
+        // Wired chest trading/contracts: give-from-chest, has-item conditions, scanner,
+        // transactions, place/remove-furni, contracts and quests. Each key is registered once;
+        // historical contract persistence is read by the canonical classes.
         this.interactionsList.add(new ItemInteraction("wf_act_give_currency", WiredEffectGiveCurrencyFromChest.class));
         this.interactionsList.add(new ItemInteraction("wf_cnd_chest_has_items", WiredConditionChestHasItems.class));
         this.interactionsList.add(new ItemInteraction("wf_act_give_furni", WiredEffectGiveFurniFromChest.class));

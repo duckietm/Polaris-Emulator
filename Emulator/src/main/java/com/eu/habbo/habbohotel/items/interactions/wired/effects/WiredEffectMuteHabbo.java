@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
@@ -18,7 +19,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredTextPlaceholderUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserWhisperComposer;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -56,7 +56,7 @@ public class WiredEffectMuteHabbo extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        if(settings.getIntParams().length < 2) throw new WiredSaveException("invalid data");
+        if (settings.getIntParams().length < 2) throw new WiredSaveException("invalid data");
 
         this.length = settings.getIntParams()[0];
         this.userSource = settings.getIntParams()[1];
@@ -79,9 +79,21 @@ public class WiredEffectMuteHabbo extends InteractionWiredEffect {
 
             room.muteHabbo(habbo, Math.max(1, this.length));
 
-            String message = this.message.replace("%user%", habbo.getHabboInfo().getUsername()).replace("%online_count%", Emulator.getGameEnvironment().getHabboManager().getOnlineCount() + "").replace("%room_count%", Emulator.getGameEnvironment().getRoomManager().getActiveRooms().size() + "");
+            String message = this.message
+                    .replace("%user%", habbo.getHabboInfo().getUsername())
+                    .replace(
+                            "%online_count%",
+                            Emulator.getGameEnvironment().getHabboManager().getOnlineCount() + "")
+                    .replace(
+                            "%room_count%",
+                            Emulator.getGameEnvironment()
+                                            .getRoomManager()
+                                            .getActiveRooms()
+                                            .size() + "");
             message = WiredTextPlaceholderUtil.applyUsernamePlaceholders(ctx, message);
-            habbo.getClient().sendResponse(new RoomUserWhisperComposer(new RoomChatMessage(message, habbo, habbo, RoomChatMessageBubbles.WIRED)));
+            habbo.getClient()
+                    .sendResponse(new RoomUserWhisperComposer(
+                            new RoomChatMessage(message, habbo, habbo, RoomChatMessageBubbles.WIRED)));
         }
     }
 
@@ -93,12 +105,7 @@ public class WiredEffectMuteHabbo extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-                this.getDelay(),
-                this.length,
-                this.message,
-                this.userSource
-        ));
+        return WiredManager.getGson().toJson(new JsonData(this.getDelay(), this.length, this.message, this.userSource));
     }
 
     @Override
@@ -120,6 +127,11 @@ public class WiredEffectMuteHabbo extends InteractionWiredEffect {
                     this.length = Integer.parseInt(data[1]);
                     this.message = data[2];
                 } catch (Exception e) {
+                    WiredCompatibilityDiagnostics.record(
+                            WiredCompatibilityDiagnostics.FailurePoint.EFFECT_MUTE_HABBO_LEGACY,
+                            this.getRoomId(),
+                            this.getId(),
+                            e);
                 }
             }
         }
@@ -140,7 +152,8 @@ public class WiredEffectMuteHabbo extends InteractionWiredEffect {
 
     @Override
     public boolean requiresTriggeringUser() {
-        return this.userSource == WiredSourceUtil.SOURCE_TRIGGER || WiredTextPlaceholderUtil.requiresActor(this.getRoom(), this);
+        return this.userSource == WiredSourceUtil.SOURCE_TRIGGER
+                || WiredTextPlaceholderUtil.requiresActor(this.getRoom(), this);
     }
 
     static class JsonData {

@@ -50,6 +50,12 @@ final class RoomLifecycle {
         }
     }
 
+    long generation() {
+        synchronized (this.lock) {
+            return this.generation;
+        }
+    }
+
     long beginLoad() {
         synchronized (this.lock) {
             return this.beginLoadLocked();

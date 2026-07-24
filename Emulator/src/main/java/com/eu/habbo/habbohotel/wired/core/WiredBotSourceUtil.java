@@ -3,7 +3,6 @@ package com.eu.habbo.habbohotel.wired.core;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -11,8 +10,7 @@ import java.util.List;
 public final class WiredBotSourceUtil {
     public static final int SOURCE_BOT_NAME = 100;
 
-    private WiredBotSourceUtil() {
-    }
+    private WiredBotSourceUtil() {}
 
     public static int normalizeBotSource(int value) {
         return normalizeBotSource(value, SOURCE_BOT_NAME);
@@ -36,6 +34,10 @@ public final class WiredBotSourceUtil {
         }
 
         if (botSource == SOURCE_BOT_NAME) {
+            if (botName == null || botName.isEmpty()) {
+                return Collections.emptyList();
+            }
+
             List<Bot> bots = room.getBots(botName);
             return (bots != null) ? new ArrayList<>(bots) : Collections.emptyList();
         }

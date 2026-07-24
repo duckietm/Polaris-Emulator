@@ -1,6 +1,8 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.conditions;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredCompatibilityDiagnostics;
+import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
@@ -8,22 +10,22 @@ import com.eu.habbo.habbohotel.items.interactions.wired.interfaces.InteractionWi
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
-import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.WiredMatchFurniSetting;
+import com.eu.habbo.habbohotel.wired.core.WiredContext;
+import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.math.BigDecimal;
 import java.util.Set;
 
-public class WiredConditionMatchStatePosition extends InteractionWiredCondition implements InteractionWiredMatchFurniSettings {
+public class WiredConditionMatchStatePosition extends InteractionWiredCondition
+        implements InteractionWiredMatchFurniSettings {
     protected static final int QUANTIFIER_ALL = 0;
     protected static final int QUANTIFIER_ANY = 1;
 
@@ -43,7 +45,8 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
         this.settings = new HashSet<>();
     }
 
-    public WiredConditionMatchStatePosition(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredConditionMatchStatePosition(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.settings = new HashSet<>();
     }
@@ -61,8 +64,7 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
         message.appendInt(WiredManager.MAXIMUM_FURNI_SELECTION);
         message.appendInt(this.settings.size());
 
-        for (WiredMatchFurniSetting item : this.settings)
-            message.appendInt(item.item_id);
+        for (WiredMatchFurniSetting item : this.settings) message.appendInt(item.item_id);
 
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
@@ -82,19 +84,22 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
 
     @Override
     public boolean saveData(WiredSettings settings) {
-        if(settings.getIntParams().length < 3) return false;
+        if (settings.getIntParams().length < 3) return false;
         int[] params = settings.getIntParams();
         this.state = params[0] == 1;
         this.direction = params[1] == 1;
         this.position = params[2] == 1;
         this.altitude = (params.length > 3) && (params[3] == 1);
-        this.furniSource = (params.length > 4) ? WiredMatchPositionInputGuard.normalizeFurniSource(params[4], false) : ((params.length > 3 && params[3] > 1) ? WiredMatchPositionInputGuard.normalizeFurniSource(params[3], false) : WiredSourceUtil.SOURCE_TRIGGER);
+        this.furniSource = (params.length > 4)
+                ? WiredMatchPositionInputGuard.normalizeFurniSource(params[4], false)
+                : ((params.length > 3 && params[3] > 1)
+                        ? WiredMatchPositionInputGuard.normalizeFurniSource(params[3], false)
+                        : WiredSourceUtil.SOURCE_TRIGGER);
         this.quantifier = (params.length > 5) ? this.normalizeQuantifier(params[5]) : QUANTIFIER_ALL;
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
 
-        if (room == null)
-            return true;
+        if (room == null) return true;
 
         int count = settings.getFurniIds().length;
         if (count > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) return false;
@@ -106,10 +111,12 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
             HabboItem item = room.getHabboItem(itemId);
 
             if (item != null)
-                this.settings.add(new WiredMatchFurniSetting(item.getId(), item.getExtradata(), item.getRotation(), item.getX(), item.getY(), item.getZ()));
+                this.settings.add(new WiredMatchFurniSetting(
+                        item.getId(), item.getExtradata(), item.getRotation(), item.getX(), item.getY(), item.getZ()));
         }
 
-        this.furniSource = WiredMatchPositionInputGuard.normalizeFurniSource(this.furniSource, !this.settings.isEmpty());
+        this.furniSource =
+                WiredMatchPositionInputGuard.normalizeFurniSource(this.furniSource, !this.settings.isEmpty());
 
         return true;
     }
@@ -122,8 +129,7 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
 
         this.refresh();
 
-        if (this.settings.isEmpty())
-            return true;
+        if (this.settings.isEmpty()) return true;
 
         if (this.quantifier == QUANTIFIER_ANY) {
             return this.evaluateAnyTargetMatches(ctx);
@@ -162,8 +168,7 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
         for (WiredMatchFurniSetting setting : this.settings) {
             HabboItem item = room.getHabboItem(setting.item_id);
             if (item == null) continue;
-            if (!this.matchesSetting(item, setting))
-                return false;
+            if (!this.matchesSetting(item, setting)) return false;
         }
 
         return true;
@@ -229,11 +234,9 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
     }
 
     private boolean matchesSetting(HabboItem item, WiredMatchFurniSetting setting) {
-        if (this.state && !item.getExtradata().equals(setting.state))
-            return false;
+        if (this.state && !item.getExtradata().equals(setting.state)) return false;
 
-        if (this.position && !(setting.x == item.getX() && setting.y == item.getY()))
-            return false;
+        if (this.position && !(setting.x == item.getX() && setting.y == item.getY())) return false;
 
         if (this.altitude && BigDecimal.valueOf(item.getZ()).compareTo(BigDecimal.valueOf(setting.z)) != 0)
             return false;
@@ -249,15 +252,15 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-                this.state,
-                this.position,
-                this.direction,
-                this.altitude,
-                new ArrayList<>(this.settings),
-                this.furniSource,
-                this.quantifier
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.state,
+                        this.position,
+                        this.direction,
+                        this.altitude,
+                        new ArrayList<>(this.settings),
+                        this.furniSource,
+                        this.quantifier));
     }
 
     @Override
@@ -286,7 +289,8 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
             this.direction = data.direction;
             this.altitude = data.altitude;
             this.settings.addAll(WiredMatchPositionInputGuard.sanitizeSettings(data.settings, room));
-            this.furniSource = WiredMatchPositionInputGuard.normalizeFurniSource(data.furniSource, !this.settings.isEmpty());
+            this.furniSource =
+                    WiredMatchPositionInputGuard.normalizeFurniSource(data.furniSource, !this.settings.isEmpty());
             this.quantifier = this.normalizeQuantifier(data.quantifier);
         } else {
             String[] data = wiredData.split(":");
@@ -309,11 +313,17 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
                     this.position = data[4].equals("1");
                 } catch (NumberFormatException ignored) {
                     // malformed legacy data — keep whatever was parsed plus defaults
+                    WiredCompatibilityDiagnostics.record(
+                            WiredCompatibilityDiagnostics.FailurePoint.CONDITION_MATCH_POSITION_ITEM,
+                            this.getRoomId(),
+                            this.getId(),
+                            ignored);
                 }
             }
 
             this.altitude = false;
-            this.furniSource = WiredMatchPositionInputGuard.normalizeFurniSource(WiredSourceUtil.SOURCE_TRIGGER, !this.settings.isEmpty());
+            this.furniSource = WiredMatchPositionInputGuard.normalizeFurniSource(
+                    WiredSourceUtil.SOURCE_TRIGGER, !this.settings.isEmpty());
             this.quantifier = QUANTIFIER_ALL;
         }
     }
@@ -333,8 +343,7 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
                     Integer.parseInt(parts[3]),
                     Integer.parseInt(parts[4]),
                     z,
-                    room
-            );
+                    room);
         } catch (NumberFormatException ignored) {
             return null;
         }
@@ -404,7 +413,12 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
     }
 
     protected void refresh() {
-        Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
+        if (WiredPlatform.gameEnvironment() == null
+                || WiredPlatform.gameEnvironment().getRoomManager() == null) {
+            return;
+        }
+
+        Room room = WiredPlatform.gameEnvironment().getRoomManager().getRoom(this.getRoomId());
 
         if (room != null) {
             Set<WiredMatchFurniSetting> remove = new HashSet<>();
@@ -456,7 +470,14 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
         int furniSource;
         int quantifier;
 
-        public JsonData(boolean state, boolean position, boolean direction, boolean altitude, List<WiredMatchFurniSetting> settings, int furniSource, int quantifier) {
+        public JsonData(
+                boolean state,
+                boolean position,
+                boolean direction,
+                boolean altitude,
+                List<WiredMatchFurniSetting> settings,
+                int furniSource,
+                int quantifier) {
             this.state = state;
             this.position = position;
             this.direction = direction;

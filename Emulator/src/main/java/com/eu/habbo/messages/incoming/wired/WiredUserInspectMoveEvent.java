@@ -32,13 +32,16 @@ public class WiredUserInspectMoveEvent extends MessageHandler {
 
         RoomUnit roomUnit = resolveRoomUnit(room, roomUnitId);
 
-        if (roomUnit == null || roomUnit.getCurrentLocation() == null || room.getLayout() == null) {
+        if (!WiredUserInspectMovePolicy.canMove(room, this.client.getHabbo(), roomUnit)
+                || roomUnit.getCurrentLocation() == null
+                || room.getLayout() == null) {
             return;
         }
 
         RoomUserRotation targetRotation = RoomUserRotation.fromValue((((direction % 8) + 8) % 8));
         boolean positionChanged = roomUnit.getX() != x || roomUnit.getY() != y;
-        boolean directionChanged = roomUnit.getBodyRotation() != targetRotation || roomUnit.getHeadRotation() != targetRotation;
+        boolean directionChanged =
+                roomUnit.getBodyRotation() != targetRotation || roomUnit.getHeadRotation() != targetRotation;
 
         if (!positionChanged) {
             if (directionChanged) {
@@ -50,13 +53,23 @@ public class WiredUserInspectMoveEvent extends MessageHandler {
 
         RoomTile targetTile = room.getLayout().getTile((short) x, (short) y);
 
-        if (targetTile == null || targetTile.state == RoomTileState.INVALID || targetTile.state == RoomTileState.BLOCKED) {
+        if (targetTile == null
+                || targetTile.state == RoomTileState.INVALID
+                || targetTile.state == RoomTileState.BLOCKED) {
             return;
         }
 
         double targetZ = targetTile.getStackHeight() + ((targetTile.state == RoomTileState.SIT) ? -0.5 : 0);
 
-        if (!WiredUserMovementHelper.moveUser(room, roomUnit, targetTile, targetZ, targetRotation, targetRotation, WiredUserMovementHelper.DEFAULT_ANIMATION_DURATION, false)
+        if (!WiredUserMovementHelper.moveUser(
+                        room,
+                        roomUnit,
+                        targetTile,
+                        targetZ,
+                        targetRotation,
+                        targetRotation,
+                        WiredUserMovementHelper.DEFAULT_ANIMATION_DURATION,
+                        false)
                 && directionChanged) {
             WiredUserMovementHelper.updateUserDirection(room, roomUnit, targetRotation, targetRotation);
         }

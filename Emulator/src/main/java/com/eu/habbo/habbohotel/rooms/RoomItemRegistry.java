@@ -113,6 +113,7 @@ final class RoomItemRegistry {
         if (wiredItem) {
             WiredManager.invalidateRoom(this.room);
         }
+        this.room.onFurnitureTopologyChanged();
     }
 
     void unregister(HabboItem item) {
@@ -175,6 +176,40 @@ final class RoomItemRegistry {
         }
 
         if (wiredItem || cleanedSignalAntennaReferences) {
+            WiredManager.invalidateRoom(this.room);
+        }
+        this.room.onFurnitureTopologyChanged();
+    }
+
+    /** Removes malformed wired furniture from every executable index without deleting the room item. */
+    void quarantineWired(HabboItem item) {
+        RoomSpecialTypes specialTypes = this.room.getRoomSpecialTypes();
+        if (specialTypes == null || item == null) {
+            return;
+        }
+
+        if (item instanceof WiredTickable tickable) {
+            WiredManager.unregisterTickable(this.room, tickable);
+        } else if (item instanceof ICycleable cycleable) {
+            specialTypes.removeCycleTask(cycleable);
+        }
+
+        boolean wiredItem = false;
+        if (item instanceof InteractionWiredTrigger trigger) {
+            specialTypes.removeTrigger(trigger);
+            wiredItem = true;
+        } else if (item instanceof InteractionWiredEffect effect) {
+            specialTypes.removeEffect(effect);
+            wiredItem = true;
+        } else if (item instanceof InteractionWiredCondition condition) {
+            specialTypes.removeCondition(condition);
+            wiredItem = true;
+        } else if (item instanceof InteractionWiredExtra extra) {
+            specialTypes.removeExtra(extra);
+            wiredItem = true;
+        }
+
+        if (wiredItem) {
             WiredManager.invalidateRoom(this.room);
         }
     }

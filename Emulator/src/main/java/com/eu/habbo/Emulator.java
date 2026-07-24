@@ -144,6 +144,15 @@ public final class Emulator {
     private static final SecureRandom secureRandom = new SecureRandom();
 
     static {
+        WiredPlatform.install(new WiredPlatform.Services(
+                () -> getConfig(),
+                () -> getDatabase(),
+                () -> getGameEnvironment(),
+                () -> getThreading(),
+                () -> getPluginManager(),
+                () -> getRandom(),
+                () -> getIntUnixTimestamp(),
+                () -> isReady));
         Thread hook = new Thread(new Runnable() {
             public synchronized void run() {
                 Emulator.dispose();

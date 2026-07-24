@@ -14,7 +14,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -71,7 +70,8 @@ public class WiredEffectGiveDuckets extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
-        int nextAmount = WiredNumericInputGuard.parsePositiveAmount(settings.getStringParam(), WiredNumericInputGuard.maxRewardAmount());
+        int nextAmount = WiredNumericInputGuard.parsePositiveAmount(
+                settings.getStringParam(), WiredNumericInputGuard.maxRewardAmount());
         if (nextAmount <= 0) {
             return false;
         }
@@ -97,8 +97,7 @@ public class WiredEffectGiveDuckets extends InteractionWiredEffect {
         for (RoomUnit unit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
             Habbo habbo = room.getHabbo(unit);
             if (habbo == null) continue;
-
-            habbo.givePixels(this.amount);
+            habbo.givePoints(0, this.amount);
         }
     }
 

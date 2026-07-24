@@ -16,7 +16,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.inventory.InventoryBadgesComposer;
 import com.eu.habbo.messages.outgoing.users.UserBadgesComposer;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -68,7 +67,8 @@ public class WiredEffectRemoveBadge extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
-        String nextBadge = settings.getStringParam() != null ? settings.getStringParam().trim() : "";
+        String nextBadge =
+                settings.getStringParam() != null ? settings.getStringParam().trim() : "";
         if (nextBadge.isEmpty()) {
             return false;
         }
@@ -97,14 +97,14 @@ public class WiredEffectRemoveBadge extends InteractionWiredEffect {
 
             BadgesComponent bc = habbo.getInventory().getBadgesComponent();
             if (bc.removeBadge(this.badge) == null) continue;
-
             BadgesComponent.deleteBadge(habbo.getHabboInfo().getId(), this.badge);
 
             if (habbo.getClient() != null) {
                 habbo.getClient().sendResponse(new InventoryBadgesComposer(habbo));
             }
-
-            room.sendComposer(new UserBadgesComposer(bc.getWearingBadges(), habbo.getHabboInfo().getId()).compose());
+            room.sendComposer(new UserBadgesComposer(
+                            bc.getWearingBadges(), habbo.getHabboInfo().getId())
+                    .compose());
         }
     }
 
@@ -123,13 +123,12 @@ public class WiredEffectRemoveBadge extends InteractionWiredEffect {
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
         String wiredData = set.getString("wired_data");
 
-        if(wiredData.startsWith("{")) {
+        if (wiredData.startsWith("{")) {
             JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
             this.badge = data.badge != null ? data.badge : "";
             this.setDelay(data.delay);
             this.userSource = data.userSource;
-        }
-        else {
+        } else {
             String[] data = wiredData.split("\t");
             this.badge = "";
 

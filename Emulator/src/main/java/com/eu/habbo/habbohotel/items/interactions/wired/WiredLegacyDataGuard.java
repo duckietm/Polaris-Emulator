@@ -1,16 +1,15 @@
 package com.eu.habbo.habbohotel.items.interactions.wired;
 
+import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
-
 import java.util.ArrayList;
 import java.util.List;
 
 public final class WiredLegacyDataGuard {
     public static final int DEFAULT_MAX_DELAY = 20;
 
-    private WiredLegacyDataGuard() {
-    }
+    private WiredLegacyDataGuard() {}
 
     public static int parseDelay(String value) {
         try {
@@ -40,6 +39,8 @@ public final class WiredLegacyDataGuard {
                 }
             } catch (NumberFormatException e) {
                 // Ignore malformed legacy ids and keep loading the remaining items.
+                WiredCompatibilityDiagnostics.record(
+                        WiredCompatibilityDiagnostics.FailurePoint.LEGACY_DATA_LIST_ENTRY, room.getId(), 0, e);
             }
         }
 

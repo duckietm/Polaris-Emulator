@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.conditions;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
@@ -13,7 +14,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
@@ -38,7 +38,8 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
         super(set, baseItem);
     }
 
-    public WiredConditionTriggerOnFurni(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredConditionTriggerOnFurni(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -51,12 +52,10 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
         this.refresh();
 
         List<RoomUnit> userTargets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
-        if (userTargets.isEmpty())
-            return false;
+        if (userTargets.isEmpty()) return false;
 
         List<HabboItem> itemTargets = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items);
-        if (itemTargets.isEmpty())
-            return false;
+        if (itemTargets.isEmpty()) return false;
 
         if (this.quantifier == QUANTIFIER_ANY) {
             return this.isAnyUserOnFurni(userTargets, itemTargets, ctx.room());
@@ -100,12 +99,12 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
     @Override
     public String getWiredData() {
         this.refresh();
-        return WiredManager.getGson().toJson(new JsonData(
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList()),
-                this.furniSource,
-                this.userSource,
-                this.quantifier
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.items.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                        this.furniSource,
+                        this.userSource,
+                        this.quantifier));
     }
 
     @Override
@@ -122,7 +121,8 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
             this.userSource = WiredFurniConditionInputGuard.normalizeUserSource(data.userSource);
             this.quantifier = this.normalizeQuantifier(data.quantifier);
 
-            for(int id : WiredFurniConditionInputGuard.sanitizeItemIds(data.itemIds, WiredManager.MAXIMUM_FURNI_SELECTION)) {
+            for (int id :
+                    WiredFurniConditionInputGuard.sanitizeItemIds(data.itemIds, WiredManager.MAXIMUM_FURNI_SELECTION)) {
                 HabboItem item = room.getHabboItem(id);
 
                 if (item != null) {
@@ -130,7 +130,8 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
                 }
             }
         } else {
-            for (int id : WiredFurniConditionInputGuard.parseLegacyItemIds(wiredData, WiredManager.MAXIMUM_FURNI_SELECTION)) {
+            for (int id :
+                    WiredFurniConditionInputGuard.parseLegacyItemIds(wiredData, WiredManager.MAXIMUM_FURNI_SELECTION)) {
                 HabboItem item = room.getHabboItem(id);
 
                 if (item != null) {
@@ -141,7 +142,8 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
             this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
             this.quantifier = QUANTIFIER_ALL;
         }
-        this.furniSource = WiredFurniConditionInputGuard.selectedOrNormalizedFurniSource(this.furniSource, !this.items.isEmpty());
+        this.furniSource =
+                WiredFurniConditionInputGuard.selectedOrNormalizedFurniSource(this.furniSource, !this.items.isEmpty());
     }
 
     @Override
@@ -165,8 +167,7 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
         message.appendInt(WiredManager.MAXIMUM_FURNI_SELECTION);
         message.appendInt(this.items.size());
 
-        for (HabboItem item : this.items)
-            message.appendInt(item.getId());
+        for (HabboItem item : this.items) message.appendInt(item.getId());
 
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
@@ -187,8 +188,12 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
         if (count > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) return false;
 
         int[] params = settings.getIntParams();
-        this.furniSource = (params.length > 0) ? WiredFurniConditionInputGuard.normalizeFurniSource(params[0]) : WiredSourceUtil.SOURCE_TRIGGER;
-        this.userSource = (params.length > 1) ? WiredFurniConditionInputGuard.normalizeUserSource(params[1]) : WiredSourceUtil.SOURCE_TRIGGER;
+        this.furniSource = (params.length > 0)
+                ? WiredFurniConditionInputGuard.normalizeFurniSource(params[0])
+                : WiredSourceUtil.SOURCE_TRIGGER;
+        this.userSource = (params.length > 1)
+                ? WiredFurniConditionInputGuard.normalizeUserSource(params[1])
+                : WiredSourceUtil.SOURCE_TRIGGER;
         this.quantifier = (params.length > 2) ? this.normalizeQuantifier(params[2]) : QUANTIFIER_ALL;
 
         this.furniSource = WiredFurniConditionInputGuard.selectedOrNormalizedFurniSource(this.furniSource, count > 0);
@@ -215,13 +220,17 @@ public class WiredConditionTriggerOnFurni extends InteractionWiredCondition {
     protected void refresh() {
         Set<HabboItem> items = new HashSet<>();
 
-        Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
+        if (WiredPlatform.gameEnvironment() == null
+                || WiredPlatform.gameEnvironment().getRoomManager() == null) {
+            return;
+        }
+
+        Room room = WiredPlatform.gameEnvironment().getRoomManager().getRoom(this.getRoomId());
         if (room == null) {
             items.addAll(this.items);
         } else {
             for (HabboItem item : this.items) {
-                if (item.getRoomId() != room.getId())
-                    items.add(item);
+                if (item.getRoomId() != room.getId()) items.add(item);
             }
         }
 

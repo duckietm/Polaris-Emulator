@@ -2,7 +2,6 @@ package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
-import com.eu.habbo.habbohotel.games.Game;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
@@ -10,15 +9,15 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
-import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
+import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class WiredEffectAllUsersLeaveTeam extends InteractionWiredEffect {
@@ -29,14 +28,31 @@ public class WiredEffectAllUsersLeaveTeam extends InteractionWiredEffect {
         super(set, baseItem);
     }
 
-    public WiredEffectAllUsersLeaveTeam(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectAllUsersLeaveTeam(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
     @Override
     public void execute(WiredContext ctx) {
-        for (Habbo h : new java.util.ArrayList<>(ctx.room().getCurrentHabbos().values())) {
-            Class<? extends com.eu.habbo.habbohotel.games.Game> g = h.getHabboInfo().getCurrentGame();
+        if (ctx == null || ctx.room() == null || ctx.room().getCurrentHabbos() == null) {
+            return;
+        }
+
+        Collection<Habbo> currentHabbos = ctx.room().getCurrentHabbos().values();
+        if (currentHabbos == null || currentHabbos.isEmpty()) {
+            return;
+        }
+
+        Habbo[] snapshot = currentHabbos.toArray(Habbo[]::new);
+        if (snapshot == null) {
+            return;
+        }
+
+        for (Habbo h : snapshot) {
+            if (h == null || h.getHabboInfo() == null) continue;
+            Class<? extends com.eu.habbo.habbohotel.games.Game> g =
+                    h.getHabboInfo().getCurrentGame();
             if (g == null) continue;
             com.eu.habbo.habbohotel.games.Game game = ctx.room().getGame(g);
             if (game != null) game.removeHabbo(h);
@@ -58,12 +74,11 @@ public class WiredEffectAllUsersLeaveTeam extends InteractionWiredEffect {
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
         String wiredData = set.getString("wired_data");
 
-        if(wiredData.startsWith("{")) {
+        if (wiredData.startsWith("{")) {
             JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
             this.setDelay(data.delay);
             this.userSource = data.userSource;
-        }
-        else {
+        } else {
             this.setDelay(Integer.parseInt(wiredData));
             this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
         }
@@ -117,7 +132,7 @@ public class WiredEffectAllUsersLeaveTeam extends InteractionWiredEffect {
 
         int delay = settings.getDelay();
 
-        if(delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
+        if (delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
             throw new WiredSaveException("Delay too long");
 
         this.setDelay(delay);

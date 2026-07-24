@@ -1,6 +1,6 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
-import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
@@ -11,12 +11,11 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
-import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
+import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.hotelview.BonusRareComposer;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -32,7 +31,8 @@ public class WiredEffectGiveHotelviewBonusRarePoints extends InteractionWiredEff
         super(set, baseItem);
     }
 
-    public WiredEffectGiveHotelviewBonusRarePoints(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectGiveHotelviewBonusRarePoints(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -68,8 +68,15 @@ public class WiredEffectGiveHotelviewBonusRarePoints extends InteractionWiredEff
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
-        int nextAmount = WiredNumericInputGuard.parsePositiveAmount(settings.getStringParam(), WiredNumericInputGuard.maxRewardAmount());
+        int nextAmount = WiredNumericInputGuard.parsePositiveAmount(
+                settings.getStringParam(), WiredNumericInputGuard.maxRewardAmount());
         if (nextAmount <= 0) {
+            return false;
+        }
+        int maxDelay = WiredPlatform.configuration() == null
+                ? 20
+                : WiredPlatform.configuration().getInt("hotel.wired.max_delay", 20);
+        if (settings.getDelay() > maxDelay) {
             return false;
         }
         this.amount = nextAmount;
@@ -89,14 +96,17 @@ public class WiredEffectGiveHotelviewBonusRarePoints extends InteractionWiredEff
 
     @Override
     public void execute(WiredContext ctx) {
-        if (this.amount <= 0) return;
+        Room room = ctx.room();
+        if (room == null || this.amount <= 0) return;
+        int pointsType = WiredPlatform.configuration().getInt("hotelview.promotional.points.type");
 
         for (RoomUnit unit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
-            Habbo habbo = ctx.room().getHabbo(unit);
+            Habbo habbo = room.getHabbo(unit);
             if (habbo == null) continue;
-
-            habbo.givePoints(Emulator.getConfig().getInt("hotelview.promotional.points.type"), this.amount);
-            habbo.getClient().sendResponse(new BonusRareComposer(habbo));
+            habbo.givePoints(pointsType, this.amount);
+            if (habbo.getClient() != null) {
+                habbo.getClient().sendResponse(new BonusRareComposer(habbo));
+            }
         }
     }
 
@@ -116,20 +126,24 @@ public class WiredEffectGiveHotelviewBonusRarePoints extends InteractionWiredEff
         String wiredData = set.getString("wired_data");
         this.amount = 0;
 
-        if(wiredData.startsWith("{")) {
+        if (wiredData != null && wiredData.startsWith("{")) {
             JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
             this.setDelay(data.delay);
-            this.amount = data.amount;
+            this.amount = Math.min(Math.max(data.amount, 0), WiredNumericInputGuard.maxRewardAmount());
             this.userSource = data.userSource;
         } else {
-            if (wiredData.split("\t").length >= 2) {
-                super.setDelay(Integer.parseInt(wiredData.split("\t")[0]));
+            String[] legacy = wiredData == null ? new String[0] : wiredData.split("\t");
+            if (legacy.length >= 2) {
+                super.setDelay(Integer.parseInt(legacy[0]));
 
                 try {
-                    this.amount = Integer.parseInt(wiredData.split("\t")[1]);
-                } catch (Exception e) {
+                    this.amount = Math.min(
+                            Math.max(Integer.parseInt(legacy[1]), 0), WiredNumericInputGuard.maxRewardAmount());
+                } catch (NumberFormatException ignored) {
+                    this.amount = 0;
                 }
             }
+            this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
         }
     }
 

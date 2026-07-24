@@ -32,9 +32,9 @@ class MessengerHistoryServiceTest {
         repository.rows.add(new MessengerStoredMessage(1, 9, 7, 0, "first", null, 100));
         MessengerHistoryService service = new MessengerHistoryService(repository, 30, 500);
 
-        MessengerHistoryPage page = service.loadHistory(9, 7, 0, 500);
+        MessengerHistoryPage page = service.loadHistory(9, 7, 0, MessengerHistoryService.MAX_PAGE_SIZE + 4_500);
 
-        assertEquals(50, repository.requestedLimit);
+        assertEquals(MessengerHistoryService.MAX_PAGE_SIZE, repository.requestedLimit);
         assertEquals(List.of(1L, 2L, 3L), page.messages().stream().map(MessengerStoredMessage::id).toList());
     }
 

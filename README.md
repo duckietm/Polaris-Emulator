@@ -86,7 +86,9 @@ How it works, what it covers and how to configure it is documented in
 
 - **TheGeneral** — the original Arcturus emulator
 - **The Arcturus Morningstar team** ([krews.org](https://krews.org)) — the community fork Polaris grew from
-- **DuckieTM**, **simoleo89**, **Medievalshell**, **Lorenzo (the wired master)**, **Remco**
+- **DuckieTM**, **simoleo89**, **Medievalshell**, **Lorenzo (the wired master)**, **Remco**, **Dennis (DennisObject)**
+- **Dippy** — Improved wired architecture base
+- **Seth / iSetht** — Opacity & Gravity wireds
 - **Puffin** — the MyBoBBa catalogue assets, **xlRaiko** — the clothing pack
 
 ## Community

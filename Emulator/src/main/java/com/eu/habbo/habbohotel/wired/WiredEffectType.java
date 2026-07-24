@@ -70,6 +70,7 @@ public enum WiredEffectType {
     CANCEL_TRANSACTION(105),
     PLACE_FURNI(106),
     REMOVE_FURNI(107),
+    FURNI_OPACITY(114),
     MOVE_FURNI_AS_GROUP(95),
     REMOTE_SELECTOR(96),
     // Negative-branch effects that reuse the SHOW_MESSAGE(7) client dialog (text). Distinct enum

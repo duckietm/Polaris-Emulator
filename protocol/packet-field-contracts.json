@@ -22261,6 +22261,22 @@
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },
     {
+      "name": "WIRED_FURNI_MOVE_STYLE",
+      "direction": "server_to_client",
+      "header": 5110,
+      "java": {
+        "symbol": "WiredFurniMoveStyleComposer",
+        "className": "WiredFurniMoveStyleComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/WiredFurniMoveStyleComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_FURNI_MOVE_STYLE",
+        "className": "WiredFurniMoveStyleParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredFurniMoveStyleParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
       "name": "AREA_HIDE",
       "direction": "server_to_client",
       "header": 6001,

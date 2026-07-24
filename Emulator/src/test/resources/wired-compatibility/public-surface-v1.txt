@@ -3116,14 +3116,21 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraM
 
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve#CODE:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve#CURVE_BOUNCE:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve#CURVE_DROP:int
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve#CURVE_EASE_IN:int
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve#CURVE_EASE_IN_OUT:int
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve#CURVE_EASE_OUT:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve#CURVE_ELASTIC:int
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve#CURVE_LINEAR:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve#INTENSITY_DEFAULT:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve#INTENSITY_MAX:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve#INTENSITY_MIN:int
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve(java.sql.ResultSet,com.eu.habbo.habbohotel.items.Item) throws java.sql.SQLException
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve#execute(com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.Room,java.lang.Object[]):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve#getCurveType(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve#getIntensity(-):int throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve#getWiredData(-):java.lang.String throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve#hasConfiguration(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve#loadWiredData(java.sql.ResultSet,com.eu.habbo.habbohotel.rooms.Room):void throws java.sql.SQLException
@@ -5415,6 +5422,12 @@ METHOD public static com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper#res
 METHOD public static com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper#resolveMoveStepElapsed(com.eu.habbo.habbohotel.rooms.RoomUnit):int throws -
 METHOD public static com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper#shouldSuppressStatusComposer(com.eu.habbo.habbohotel.rooms.RoomUnit):boolean throws -
 METHOD public static com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper#shouldSuppressStatusUpdate(com.eu.habbo.habbohotel.rooms.RoomUnit):boolean throws -
+
+TYPE public final com.eu.habbo.habbohotel.wired.core.WiredMoveStyleHelper extends java.lang.Object
+FIELD public static final com.eu.habbo.habbohotel.wired.core.WiredMoveStyleHelper#DROP_INTENSITY:int
+FIELD public static final com.eu.habbo.habbohotel.wired.core.WiredMoveStyleHelper#STYLE_DROP:int
+FIELD public static final com.eu.habbo.habbohotel.wired.core.WiredMoveStyleHelper#STYLE_LINEAR:int
+METHOD public static com.eu.habbo.habbohotel.wired.core.WiredMoveStyleHelper#broadcast(com.eu.habbo.habbohotel.rooms.Room,java.util.Collection<java.lang.Integer>,int,int):void throws -
 
 TYPE public final com.eu.habbo.habbohotel.wired.core.WiredMovementPhysics extends java.lang.Object
 FIELD public static final com.eu.habbo.habbohotel.wired.core.WiredMovementPhysics#NONE:com.eu.habbo.habbohotel.wired.core.WiredMovementPhysics

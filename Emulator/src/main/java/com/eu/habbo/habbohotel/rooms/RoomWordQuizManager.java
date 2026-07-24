@@ -4,8 +4,6 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.polls.infobus.SimplePollAnswerComposer;
 import com.eu.habbo.messages.outgoing.polls.infobus.SimplePollStartComposer;
-
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -13,36 +11,29 @@ import java.util.List;
  */
 public class RoomWordQuizManager {
     private final Room room;
-    private final List<Integer> userVotes;
-    
-    private String wordQuiz = "";
-    private int noVotes = 0;
-    private int yesVotes = 0;
-    private int wordQuizEnd = 0;
 
     public RoomWordQuizManager(Room room) {
         this.room = room;
-        this.userVotes = new ArrayList<>();
     }
 
     /**
      * Handles a user's quiz answer.
      */
     public void handleWordQuiz(Habbo habbo, String answer) {
-        synchronized (this.userVotes) {
-            if (!this.wordQuiz.isEmpty() && !this.hasVotedInWordQuiz(habbo)) {
+        synchronized (this.room.userVotes) {
+            if (!this.room.wordQuiz.isEmpty() && !this.hasVotedInWordQuiz(habbo)) {
                 answer = answer.replace(":", "");
 
                 if (answer.equals("0")) {
-                    this.noVotes++;
+                    this.room.noVotes++;
                 } else if (answer.equals("1")) {
-                    this.yesVotes++;
+                    this.room.yesVotes++;
                 }
 
-                this.room.sendComposer(
-                    new SimplePollAnswerComposer(habbo.getHabboInfo().getId(), answer, this.noVotes,
-                        this.yesVotes).compose());
-                this.userVotes.add(habbo.getHabboInfo().getId());
+                this.room.sendComposer(new SimplePollAnswerComposer(
+                                habbo.getHabboInfo().getId(), answer, this.room.noVotes, this.room.yesVotes)
+                        .compose());
+                this.room.userVotes.add(habbo.getHabboInfo().getId());
             }
         }
     }
@@ -52,11 +43,11 @@ public class RoomWordQuizManager {
      */
     public void startWordQuiz(String question, int duration) {
         if (!this.hasActiveWordQuiz()) {
-            this.wordQuiz = question;
-            this.noVotes = 0;
-            this.yesVotes = 0;
-            this.userVotes.clear();
-            this.wordQuizEnd = Emulator.getIntUnixTimestamp() + (duration / 1000);
+            this.room.wordQuiz = question;
+            this.room.noVotes = 0;
+            this.room.yesVotes = 0;
+            this.room.userVotes.clear();
+            this.room.wordQuizEnd = Emulator.getIntUnixTimestamp() + (duration / 1000);
             this.room.sendComposer(new SimplePollStartComposer(duration, question).compose());
         }
     }
@@ -65,60 +56,60 @@ public class RoomWordQuizManager {
      * Checks if there is an active word quiz.
      */
     public boolean hasActiveWordQuiz() {
-        return Emulator.getIntUnixTimestamp() < this.wordQuizEnd;
+        return Emulator.getIntUnixTimestamp() < this.room.wordQuizEnd;
     }
 
     /**
      * Checks if a user has voted in the current quiz.
      */
     public boolean hasVotedInWordQuiz(Habbo habbo) {
-        return this.userVotes.contains(habbo.getHabboInfo().getId());
+        return this.room.userVotes.contains(habbo.getHabboInfo().getId());
     }
 
     /**
      * Resets the quiz state.
      */
     public void reset() {
-        this.wordQuiz = "";
-        this.yesVotes = 0;
-        this.noVotes = 0;
-        this.userVotes.clear();
+        this.room.wordQuiz = "";
+        this.room.yesVotes = 0;
+        this.room.noVotes = 0;
+        this.room.userVotes.clear();
     }
 
     // Getters and setters for backward compatibility
     public String getWordQuiz() {
-        return wordQuiz;
+        return this.room.wordQuiz;
     }
 
     public void setWordQuiz(String wordQuiz) {
-        this.wordQuiz = wordQuiz;
+        this.room.wordQuiz = wordQuiz;
     }
 
     public int getNoVotes() {
-        return noVotes;
+        return this.room.noVotes;
     }
 
     public void setNoVotes(int noVotes) {
-        this.noVotes = noVotes;
+        this.room.noVotes = noVotes;
     }
 
     public int getYesVotes() {
-        return yesVotes;
+        return this.room.yesVotes;
     }
 
     public void setYesVotes(int yesVotes) {
-        this.yesVotes = yesVotes;
+        this.room.yesVotes = yesVotes;
     }
 
     public int getWordQuizEnd() {
-        return wordQuizEnd;
+        return this.room.wordQuizEnd;
     }
 
     public void setWordQuizEnd(int wordQuizEnd) {
-        this.wordQuizEnd = wordQuizEnd;
+        this.room.wordQuizEnd = wordQuizEnd;
     }
 
     public List<Integer> getUserVotes() {
-        return userVotes;
+        return this.room.userVotes;
     }
 }

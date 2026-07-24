@@ -22,9 +22,6 @@ import com.eu.habbo.threading.runnables.YouAreAPirate;
 import com.eu.habbo.util.pathfinding.Rotation;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.awt.Rectangle;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -33,6 +30,8 @@ import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Manages all chat functionality within a room.
@@ -60,15 +59,26 @@ public class RoomChatManager {
     public static boolean MUTEAREA_CAN_WHISPER = false;
 
     public RoomChatManager(Room room) {
-        this(room, Emulator.getConfig().getInt(
-            "hotel.flood.mute.time", DEFAULT_MUTE_TIME_SECONDS));
+        this(room, configuredMuteTime());
+    }
+
+    RoomChatManager(Room room, Int2IntMap mutedHabbos) {
+        this(room, configuredMuteTime(), mutedHabbos);
     }
 
     RoomChatManager(Room room, int muteTime) {
+        this(room, muteTime, new Int2IntOpenHashMap());
+    }
+
+    RoomChatManager(Room room, int muteTime, Int2IntMap mutedHabbos) {
         this.room = room;
         this.wordFilterWords = new HashSet<>(0);
-        this.mutedHabbos = new Int2IntOpenHashMap();
+        this.mutedHabbos = mutedHabbos;
         this.muteTime = muteTime;
+    }
+
+    private static int configuredMuteTime() {
+        return Emulator.getConfig().getInt("hotel.flood.mute.time", DEFAULT_MUTE_TIME_SECONDS);
     }
 
     // ==================== WORD FILTER ====================
@@ -80,8 +90,8 @@ public class RoomChatManager {
         synchronized (this.wordFilterWords) {
             this.wordFilterWords.clear();
 
-            try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT word FROM room_wordfilter WHERE room_id = ?")) {
+            try (PreparedStatement statement =
+                    connection.prepareStatement("SELECT word FROM room_wordfilter WHERE room_id = ?")) {
                 statement.setInt(1, this.room.getId());
                 try (ResultSet set = statement.executeQuery()) {
                     while (set.next()) {
@@ -103,9 +113,9 @@ public class RoomChatManager {
                 return;
             }
 
-            try (Connection connection = Emulator.getDatabase().getDataSource()
-                .getConnection(); PreparedStatement statement = connection.prepareStatement(
-                "INSERT IGNORE INTO room_wordfilter VALUES (?, ?)")) {
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                    PreparedStatement statement =
+                            connection.prepareStatement("INSERT IGNORE INTO room_wordfilter VALUES (?, ?)")) {
                 statement.setInt(1, this.room.getId());
                 statement.setString(2, word);
                 statement.execute();
@@ -125,9 +135,9 @@ public class RoomChatManager {
         synchronized (this.wordFilterWords) {
             this.wordFilterWords.remove(word);
 
-            try (Connection connection = Emulator.getDatabase().getDataSource()
-                .getConnection(); PreparedStatement statement = connection.prepareStatement(
-                "DELETE FROM room_wordfilter WHERE room_id = ? AND word = ?")) {
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                    PreparedStatement statement =
+                            connection.prepareStatement("DELETE FROM room_wordfilter WHERE room_id = ? AND word = ?")) {
                 statement.setInt(1, this.room.getId());
                 statement.setString(2, word);
                 statement.execute();
@@ -158,8 +168,7 @@ public class RoomChatManager {
      */
     public void muteHabbo(Habbo habbo, int minutes) {
         synchronized (this.mutedHabbos) {
-            this.mutedHabbos.put(habbo.getHabboInfo().getId(),
-                Emulator.getIntUnixTimestamp() + (minutes * 60));
+            this.mutedHabbos.put(habbo.getHabboInfo().getId(), Emulator.getIntUnixTimestamp() + (minutes * 60));
         }
     }
 
@@ -181,8 +190,7 @@ public class RoomChatManager {
         }
 
         if (this.mutedHabbos.containsKey(habbo.getHabboInfo().getId())) {
-            boolean time =
-                this.mutedHabbos.get(habbo.getHabboInfo().getId()) > Emulator.getIntUnixTimestamp();
+            boolean time = this.mutedHabbos.get(habbo.getHabboInfo().getId()) > Emulator.getIntUnixTimestamp();
 
             if (!time) {
                 this.mutedHabbos.remove(habbo.getHabboInfo().getId());
@@ -199,8 +207,7 @@ public class RoomChatManager {
      */
     public int getMuteTimeRemaining(Habbo habbo) {
         if (this.mutedHabbos.containsKey(habbo.getHabboInfo().getId())) {
-            return Math.max(0,
-                this.mutedHabbos.get(habbo.getHabboInfo().getId()) - Emulator.getIntUnixTimestamp());
+            return Math.max(0, this.mutedHabbos.get(habbo.getHabboInfo().getId()) - Emulator.getIntUnixTimestamp());
         }
         return 0;
     }
@@ -234,16 +241,14 @@ public class RoomChatManager {
     /**
      * Handles talking in the room with wired ignore option.
      */
-    public void talk(final Habbo habbo, final RoomChatMessage roomChatMessage, RoomChatType chatType,
-        boolean ignoreWired) {
+    public void talk(
+            final Habbo habbo, final RoomChatMessage roomChatMessage, RoomChatType chatType, boolean ignoreWired) {
         if (!habbo.getHabboStats().allowTalk()) {
             return;
         }
 
-        if (habbo.getRoomUnit().isInvisible() && Emulator.getConfig()
-            .getBoolean("invisible.prevent.chat", false)) {
-            if (!CommandHandler.handleCommand(habbo.getClient(),
-                roomChatMessage.getUnfilteredMessage())) {
+        if (habbo.getRoomUnit().isInvisible() && Emulator.getConfig().getBoolean("invisible.prevent.chat", false)) {
+            if (!CommandHandler.handleCommand(habbo.getClient(), roomChatMessage.getUnfilteredMessage())) {
                 habbo.whisper(Emulator.getTexts().getValue("invisible.prevent.chat.error"));
             }
 
@@ -261,10 +266,11 @@ public class RoomChatManager {
             }
         }
         habbo.getHabboStats().lastChat = millis;
-        
+
         // Easter egg
-        if (roomChatMessage != null && Emulator.getConfig().getBoolean("easter_eggs.enabled")
-            && roomChatMessage.getMessage().equalsIgnoreCase("i am a pirate")) {
+        if (roomChatMessage != null
+                && Emulator.getConfig().getBoolean("easter_eggs.enabled")
+                && roomChatMessage.getMessage().equalsIgnoreCase("i am a pirate")) {
             habbo.getHabboStats().chatCounter.addAndGet(1);
             Emulator.getThreading().run(new YouAreAPirate(habbo, this.room));
             return;
@@ -282,14 +288,15 @@ public class RoomChatManager {
 
         this.room.sendComposer(new RoomUserTypingComposer(habbo.getRoomUnit(), false).compose());
 
-        if (roomChatMessage == null || roomChatMessage.getMessage() == null
-            || roomChatMessage.getMessage().equals("")) {
+        if (roomChatMessage == null
+                || roomChatMessage.getMessage() == null
+                || roomChatMessage.getMessage().equals("")) {
             return;
         }
 
         // Check mute area
-        if (!habbo.hasPermission(Permission.ACC_NOMUTE) && (!MUTEAREA_CAN_WHISPER
-            || chatType != RoomChatType.WHISPER)) {
+        if (!habbo.hasPermission(Permission.ACC_NOMUTE)
+                && (!MUTEAREA_CAN_WHISPER || chatType != RoomChatType.WHISPER)) {
             for (HabboItem area : this.room.getRoomSpecialTypes().getItemsOfType(InteractionMuteArea.class)) {
                 if (((InteractionMuteArea) area).inSquare(habbo.getRoomUnit().getCurrentLocation())) {
                     return;
@@ -302,7 +309,7 @@ public class RoomChatManager {
             if (!habbo.hasPermission(Permission.ACC_CHAT_NO_FILTER)) {
                 for (String string : this.wordFilterWords) {
                     roomChatMessage.setMessage(
-                        roomChatMessage.getMessage().replaceAll("(?i)" + Pattern.quote(string), "bobba"));
+                            roomChatMessage.getMessage().replaceAll("(?i)" + Pattern.quote(string), "bobba"));
                 }
             }
         }
@@ -314,8 +321,7 @@ public class RoomChatManager {
             }
 
             if (this.isMuted(habbo)) {
-                habbo.getClient().sendResponse(new MutedWhisperComposer(
-                    Math.max(1, this.getMuteTimeRemaining(habbo))));
+                habbo.getClient().sendResponse(new MutedWhisperComposer(Math.max(1, this.getMuteTimeRemaining(habbo))));
                 return;
             }
         }
@@ -349,18 +355,21 @@ public class RoomChatManager {
         boolean suppressSaysOutput = false;
         if (chatType != RoomChatType.WHISPER) {
             if (CommandHandler.handleCommand(habbo.getClient(), roomChatMessage.getUnfilteredMessage())) {
-                WiredManager.triggerUserSays(habbo.getHabboInfo().getCurrentRoom(), habbo.getRoomUnit(), wiredSayMessage);
+                WiredManager.triggerUserSays(
+                        habbo.getHabboInfo().getCurrentRoom(), habbo.getRoomUnit(), wiredSayMessage);
                 roomChatMessage.isCommand = true;
                 return;
             }
 
             if (!ignoreWired) {
                 suppressSaysOutput = WiredManager.shouldSuppressUserSaysOutput(
-                    habbo.getHabboInfo().getCurrentRoom(),
-                    habbo.getRoomUnit(),
-                    wiredSayMessage,
-                    chatType.ordinal(),
-                    roomChatMessage.getBubble() != null ? roomChatMessage.getBubble().getType() : -1);
+                        habbo.getHabboInfo().getCurrentRoom(),
+                        habbo.getRoomUnit(),
+                        wiredSayMessage,
+                        chatType.ordinal(),
+                        roomChatMessage.getBubble() != null
+                                ? roomChatMessage.getBubble().getType()
+                                : -1);
             }
         }
 
@@ -368,8 +377,8 @@ public class RoomChatManager {
         ServerMessage prefixMessage = null;
 
         if (Emulator.getPluginManager().isRegistered(UsernameTalkEvent.class, true)) {
-            UsernameTalkEvent usernameTalkEvent = Emulator.getPluginManager()
-                .fireEvent(new UsernameTalkEvent(habbo, roomChatMessage, chatType));
+            UsernameTalkEvent usernameTalkEvent =
+                    Emulator.getPluginManager().fireEvent(new UsernameTalkEvent(habbo, roomChatMessage, chatType));
             if (usernameTalkEvent.hasCustomComposer()) {
                 prefixMessage = usernameTalkEvent.getCustomComposer();
             }
@@ -377,13 +386,14 @@ public class RoomChatManager {
 
         if (prefixMessage == null) {
             prefixMessage = roomChatMessage.getHabbo().getHabboInfo().getRank().hasPrefix()
-                ? new RoomUserNameChangedComposer(habbo, true).compose() : null;
+                    ? new RoomUserNameChangedComposer(habbo, true).compose()
+                    : null;
         }
         ServerMessage clearPrefixMessage =
-            prefixMessage != null ? new RoomUserNameChangedComposer(habbo).compose() : null;
+                prefixMessage != null ? new RoomUserNameChangedComposer(habbo).compose() : null;
 
-        Rectangle tentRectangle = this.room.getRoomSpecialTypes().tentAt(
-            habbo.getRoomUnit().getCurrentLocation());
+        Rectangle tentRectangle =
+                this.room.getRoomSpecialTypes().tentAt(habbo.getRoomUnit().getCurrentLocation());
 
         // Trim message
         String trimmedMessage = roomChatMessage.getMessage().replaceAll("\\s+$", "");
@@ -399,17 +409,17 @@ public class RoomChatManager {
             this.handleWhisper(habbo, roomChatMessage, prefixMessage, clearPrefixMessage);
         } else if (chatType == RoomChatType.TALK) {
             if (suppressSaysOutput) {
-                habbo.getClient().sendResponse(new RoomUserWhisperComposer(
-                    new RoomChatMessage(roomChatMessage.getMessage(), habbo, habbo,
-                        roomChatMessage.getBubble())));
+                habbo.getClient()
+                        .sendResponse(new RoomUserWhisperComposer(new RoomChatMessage(
+                                roomChatMessage.getMessage(), habbo, habbo, roomChatMessage.getBubble())));
             } else {
                 this.handleTalk(habbo, roomChatMessage, prefixMessage, clearPrefixMessage, tentRectangle);
             }
         } else if (chatType == RoomChatType.SHOUT) {
             if (suppressSaysOutput) {
-                habbo.getClient().sendResponse(new RoomUserWhisperComposer(
-                    new RoomChatMessage(roomChatMessage.getMessage(), habbo, habbo,
-                        roomChatMessage.getBubble())));
+                habbo.getClient()
+                        .sendResponse(new RoomUserWhisperComposer(new RoomChatMessage(
+                                roomChatMessage.getMessage(), habbo, habbo, roomChatMessage.getBubble())));
             } else {
                 this.handleShout(habbo, roomChatMessage, prefixMessage, clearPrefixMessage, tentRectangle);
             }
@@ -421,7 +431,9 @@ public class RoomChatManager {
                     habbo.getRoomUnit(),
                     wiredSayMessage,
                     chatType.ordinal(),
-                    roomChatMessage.getBubble() != null ? roomChatMessage.getBubble().getType() : -1);
+                    roomChatMessage.getBubble() != null
+                            ? roomChatMessage.getBubble().getType()
+                            : -1);
         }
 
         // Notify bots and talking furniture
@@ -434,16 +446,19 @@ public class RoomChatManager {
     /**
      * Handles whisper chat.
      */
-    private void handleWhisper(Habbo habbo, RoomChatMessage roomChatMessage,
-        ServerMessage prefixMessage, ServerMessage clearPrefixMessage) {
+    private void handleWhisper(
+            Habbo habbo,
+            RoomChatMessage roomChatMessage,
+            ServerMessage prefixMessage,
+            ServerMessage clearPrefixMessage) {
         if (roomChatMessage.getTargetHabbo() == null) {
             return;
         }
 
         RoomChatMessage staffChatMessage = new RoomChatMessage(roomChatMessage);
         staffChatMessage.setMessage(
-            "To " + staffChatMessage.getTargetHabbo().getHabboInfo().getUsername() + ": "
-                + staffChatMessage.getMessage());
+                "To " + staffChatMessage.getTargetHabbo().getHabboInfo().getUsername() + ": "
+                        + staffChatMessage.getMessage());
 
         final ServerMessage message = new RoomUserWhisperComposer(roomChatMessage).compose();
         final ServerMessage staffMessage = new RoomUserWhisperComposer(staffChatMessage).compose();
@@ -472,17 +487,27 @@ public class RoomChatManager {
     /**
      * Handles normal talk.
      */
-    private void handleTalk(Habbo habbo, RoomChatMessage roomChatMessage,
-        ServerMessage prefixMessage, ServerMessage clearPrefixMessage, Rectangle tentRectangle) {
+    private void handleTalk(
+            Habbo habbo,
+            RoomChatMessage roomChatMessage,
+            ServerMessage prefixMessage,
+            ServerMessage clearPrefixMessage,
+            Rectangle tentRectangle) {
         ServerMessage message = new RoomUserTalkComposer(roomChatMessage).compose();
         boolean noChatLimit = habbo.hasPermission(Permission.ACC_CHAT_NO_LIMIT);
         int chatDistance = this.room.getChatDistance();
 
         for (Habbo h : this.room.getHabbos()) {
-            if ((h.getRoomUnit().getCurrentLocation().distance(habbo.getRoomUnit().getCurrentLocation())
-                <= chatDistance || h.equals(habbo) || this.room.hasRights(h) || noChatLimit) && (
-                tentRectangle == null || RoomLayout.tileInSquare(tentRectangle,
-                    h.getRoomUnit().getCurrentLocation()))) {
+            if ((h.getRoomUnit()
+                                            .getCurrentLocation()
+                                            .distance(habbo.getRoomUnit().getCurrentLocation())
+                                    <= chatDistance
+                            || h.equals(habbo)
+                            || this.room.hasRights(h)
+                            || noChatLimit)
+                    && (tentRectangle == null
+                            || RoomLayout.tileInSquare(
+                                    tentRectangle, h.getRoomUnit().getCurrentLocation()))) {
                 if (!h.getHabboStats().userIgnored(habbo.getHabboInfo().getId())) {
                     if (prefixMessage != null && !h.getHabboStats().preferOldChat) {
                         h.getClient().sendResponse(prefixMessage);
@@ -491,29 +516,40 @@ public class RoomChatManager {
                     if (clearPrefixMessage != null && !h.getHabboStats().preferOldChat) {
                         h.getClient().sendResponse(clearPrefixMessage);
                     }
-                    
+
                     // Turn head toward speaker if conditions are met
                     if (!h.equals(habbo)) {
                         RoomUnit roomUnit = h.getRoomUnit();
-                        if (!roomUnit.isWalking() && !roomUnit.hasStatus(RoomUnitStatus.MOVE) 
-                            && !roomUnit.hasStatus(RoomUnitStatus.LAY) && !roomUnit.isIdle() 
-                            && !roomUnit.isInvisible()) {
+                        if (!roomUnit.isWalking()
+                                && !roomUnit.hasStatus(RoomUnitStatus.MOVE)
+                                && !roomUnit.hasStatus(RoomUnitStatus.LAY)
+                                && !roomUnit.isIdle()
+                                && !roomUnit.isInvisible()) {
                             RoomUserRotation targetRotation = RoomUserRotation.values()[
-                                Rotation.Calculate(roomUnit.getX(), roomUnit.getY(), 
-                                    habbo.getRoomUnit().getX(), habbo.getRoomUnit().getY())];
+                                    Rotation.Calculate(
+                                            roomUnit.getX(),
+                                            roomUnit.getY(),
+                                            habbo.getRoomUnit().getX(),
+                                            habbo.getRoomUnit().getY())];
                             // Only turn head if speaker is within peripheral vision (1 rotation step)
-                            if (RoomUserRotation.rotationDistance(roomUnit.getBodyRotation().getValue(), 
-                                targetRotation.getValue()) <= 1) {
+                            if (RoomUserRotation.rotationDistance(
+                                            roomUnit.getBodyRotation().getValue(), targetRotation.getValue())
+                                    <= 1) {
                                 roomUnit.setHeadRotation(targetRotation);
                                 roomUnit.statusUpdate(true);
-                                
+
                                 // Schedule head reset after 2 seconds
-                                Emulator.getThreading().run(() -> {
-                                    if (roomUnit.isInRoom() && !roomUnit.isWalking() && !roomUnit.isIdle()) {
-                                        roomUnit.setHeadRotation(roomUnit.getBodyRotation());
-                                        roomUnit.statusUpdate(true);
-                                    }
-                                }, 2000);
+                                Emulator.getThreading()
+                                        .run(
+                                                () -> {
+                                                    if (roomUnit.isInRoom()
+                                                            && !roomUnit.isWalking()
+                                                            && !roomUnit.isIdle()) {
+                                                        roomUnit.setHeadRotation(roomUnit.getBodyRotation());
+                                                        roomUnit.statusUpdate(true);
+                                                    }
+                                                },
+                                                2000);
                             }
                         }
                     }
@@ -528,13 +564,19 @@ public class RoomChatManager {
     /**
      * Handles shout chat.
      */
-    private void handleShout(Habbo habbo, RoomChatMessage roomChatMessage,
-        ServerMessage prefixMessage, ServerMessage clearPrefixMessage, Rectangle tentRectangle) {
+    private void handleShout(
+            Habbo habbo,
+            RoomChatMessage roomChatMessage,
+            ServerMessage prefixMessage,
+            ServerMessage clearPrefixMessage,
+            Rectangle tentRectangle) {
         ServerMessage message = new RoomUserShoutComposer(roomChatMessage).compose();
 
         for (Habbo h : this.room.getHabbos()) {
-            if (!h.getHabboStats().userIgnored(habbo.getHabboInfo().getId()) && (tentRectangle == null
-                || RoomLayout.tileInSquare(tentRectangle, h.getRoomUnit().getCurrentLocation()))) {
+            if (!h.getHabboStats().userIgnored(habbo.getHabboInfo().getId())
+                    && (tentRectangle == null
+                            || RoomLayout.tileInSquare(
+                                    tentRectangle, h.getRoomUnit().getCurrentLocation()))) {
                 if (prefixMessage != null && !h.getHabboStats().preferOldChat) {
                     h.getClient().sendResponse(prefixMessage);
                 }
@@ -542,29 +584,40 @@ public class RoomChatManager {
                 if (clearPrefixMessage != null && !h.getHabboStats().preferOldChat) {
                     h.getClient().sendResponse(clearPrefixMessage);
                 }
-                
+
                 // Turn head toward speaker if conditions are met
                 if (!h.equals(habbo)) {
                     RoomUnit roomUnit = h.getRoomUnit();
-                    if (!roomUnit.isWalking() && !roomUnit.hasStatus(RoomUnitStatus.MOVE) 
-                        && !roomUnit.hasStatus(RoomUnitStatus.LAY) && !roomUnit.isIdle() 
-                        && !roomUnit.isInvisible()) {
+                    if (!roomUnit.isWalking()
+                            && !roomUnit.hasStatus(RoomUnitStatus.MOVE)
+                            && !roomUnit.hasStatus(RoomUnitStatus.LAY)
+                            && !roomUnit.isIdle()
+                            && !roomUnit.isInvisible()) {
                         RoomUserRotation targetRotation = RoomUserRotation.values()[
-                            Rotation.Calculate(roomUnit.getX(), roomUnit.getY(), 
-                                habbo.getRoomUnit().getX(), habbo.getRoomUnit().getY())];
+                                Rotation.Calculate(
+                                        roomUnit.getX(),
+                                        roomUnit.getY(),
+                                        habbo.getRoomUnit().getX(),
+                                        habbo.getRoomUnit().getY())];
                         // Only turn head if speaker is within peripheral vision (1 rotation step)
-                        if (RoomUserRotation.rotationDistance(roomUnit.getBodyRotation().getValue(), 
-                            targetRotation.getValue()) <= 1) {
+                        if (RoomUserRotation.rotationDistance(
+                                        roomUnit.getBodyRotation().getValue(), targetRotation.getValue())
+                                <= 1) {
                             roomUnit.setHeadRotation(targetRotation);
                             roomUnit.statusUpdate(true);
-                            
+
                             // Schedule head reset after 2 seconds
-                            Emulator.getThreading().run(() -> {
-                                if (roomUnit.isInRoom() && !roomUnit.isWalking() && !roomUnit.isIdle()) {
-                                    roomUnit.setHeadRotation(roomUnit.getBodyRotation());
-                                    roomUnit.statusUpdate(true);
-                                }
-                            }, 2000);
+                            Emulator.getThreading()
+                                    .run(
+                                            () -> {
+                                                if (roomUnit.isInRoom()
+                                                        && !roomUnit.isWalking()
+                                                        && !roomUnit.isIdle()) {
+                                                    roomUnit.setHeadRotation(roomUnit.getBodyRotation());
+                                                    roomUnit.statusUpdate(true);
+                                                }
+                                            },
+                                            2000);
                         }
                     }
                 }
@@ -578,14 +631,15 @@ public class RoomChatManager {
     /**
      * Shows tent chat to staff outside the tent.
      */
-    public void showTentChatMessageOutsideTentIfPermitted(Habbo receivingHabbo,
-        RoomChatMessage roomChatMessage, Rectangle tentRectangle) {
-        if (receivingHabbo != null && receivingHabbo.hasPermission(Permission.ACC_SEE_TENTCHAT)
-            && tentRectangle != null && !RoomLayout.tileInSquare(tentRectangle,
-            receivingHabbo.getRoomUnit().getCurrentLocation())) {
+    public void showTentChatMessageOutsideTentIfPermitted(
+            Habbo receivingHabbo, RoomChatMessage roomChatMessage, Rectangle tentRectangle) {
+        if (receivingHabbo != null
+                && receivingHabbo.hasPermission(Permission.ACC_SEE_TENTCHAT)
+                && tentRectangle != null
+                && !RoomLayout.tileInSquare(
+                        tentRectangle, receivingHabbo.getRoomUnit().getCurrentLocation())) {
             RoomChatMessage staffChatMessage = new RoomChatMessage(roomChatMessage);
-            staffChatMessage.setMessage(
-                "[" + Emulator.getTexts().getValue("hotel.room.tent.prefix") + "] "
+            staffChatMessage.setMessage("[" + Emulator.getTexts().getValue("hotel.room.tent.prefix") + "] "
                     + staffChatMessage.getMessage());
             final ServerMessage staffMessage = new RoomUserWhisperComposer(staffChatMessage).compose();
             receivingHabbo.getClient().sendResponse(staffMessage);
@@ -614,28 +668,33 @@ public class RoomChatManager {
      */
     private void handleTalkingFurniture(Habbo habbo, RoomChatMessage roomChatMessage) {
         if (roomChatMessage.getBubble().triggersTalkingFurniture()) {
-            Set<HabboItem> items = this.room.getRoomSpecialTypes().getItemsOfType(
-                InteractionTalkingFurniture.class);
+            Set<HabboItem> items = this.room.getRoomSpecialTypes().getItemsOfType(InteractionTalkingFurniture.class);
 
             for (HabboItem item : items) {
                 if (item.getExtradata().equals("1")) {
                     continue;
                 }
-                if (this.room.getLayout().getTile(item.getX(), item.getY())
-                    .distance(habbo.getRoomUnit().getCurrentLocation()) <= Emulator.getConfig()
-                    .getInt("furniture.talking.range")) {
-                    int count = Emulator.getConfig()
-                        .getInt(item.getBaseItem().getName() + ".message.count", 0);
+                if (this.room
+                                .getLayout()
+                                .getTile(item.getX(), item.getY())
+                                .distance(habbo.getRoomUnit().getCurrentLocation())
+                        <= Emulator.getConfig().getInt("furniture.talking.range")) {
+                    int count = Emulator.getConfig().getInt(item.getBaseItem().getName() + ".message.count", 0);
 
                     if (count > 0) {
                         int randomValue = Emulator.getRandom().nextInt(count + 1);
 
-                        RoomChatMessage itemMessage = new RoomChatMessage(Emulator.getTexts()
-                            .getValue(item.getBaseItem().getName() + ".message." + randomValue,
-                                item.getBaseItem().getName() + ".message." + randomValue + " not found!"),
-                            habbo, RoomChatMessageBubbles.getBubble(Emulator.getConfig()
-                            .getInt(item.getBaseItem().getName() + ".message.bubble",
-                                RoomChatMessageBubbles.PARROT.getType())));
+                        RoomChatMessage itemMessage = new RoomChatMessage(
+                                Emulator.getTexts()
+                                        .getValue(
+                                                item.getBaseItem().getName() + ".message." + randomValue,
+                                                item.getBaseItem().getName() + ".message." + randomValue
+                                                        + " not found!"),
+                                habbo,
+                                RoomChatMessageBubbles.getBubble(Emulator.getConfig()
+                                        .getInt(
+                                                item.getBaseItem().getName() + ".message.bubble",
+                                                RoomChatMessageBubbles.PARROT.getType())));
 
                         this.room.sendComposer(new RoomUserTalkComposer(itemMessage).compose());
 
@@ -644,10 +703,13 @@ public class RoomChatManager {
                             item.setExtradata("1");
                             this.room.updateItemState(item);
 
-                            Emulator.getThreading().run(() -> {
-                                item.setExtradata("0");
-                                this.room.updateItemState(item);
-                            }, 2000);
+                            Emulator.getThreading()
+                                    .run(
+                                            () -> {
+                                                item.setExtradata("0");
+                                                this.room.updateItemState(item);
+                                            },
+                                            2000);
 
                             break;
                         } catch (Exception e) {
@@ -668,6 +730,10 @@ public class RoomChatManager {
         synchronized (this.wordFilterWords) {
             this.wordFilterWords.clear();
         }
+        this.clearMutes();
+    }
+
+    void clearMutes() {
         synchronized (this.mutedHabbos) {
             this.mutedHabbos.clear();
         }

@@ -93,6 +93,7 @@
     "polls": ["id", "reward_badge", "thanks_message", "title"],
     "polls_answers": ["answer", "poll_id", "question_id", "user_id"],
     "polls_questions": ["id", "min_selections", "options", "order", "parent_id", "poll_id", "question", "type"],
+    "random_words": ["id", "word"],
     "recycler_prizes": ["item_id", "rarity"],
     "room_bans": ["ends", "room_id", "user_id"],
     "room_enter_log": ["exit_timestamp", "id", "room_id", "timestamp", "user_id"],

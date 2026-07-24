@@ -423,6 +423,7 @@ U|com/eu/habbo/habbohotel/games/snowwar/SnowWarManager.java|CALL|getGameEnvironm
 U|com/eu/habbo/habbohotel/games/snowwar/SnowWarManager.java|CALL|getThreading|2
 U|com/eu/habbo/habbohotel/games/snowwar/mapping/SnowWarMapsManager.java|CALL|getConfig|1
 U|com/eu/habbo/habbohotel/games/snowwar/mapping/SnowWarMapsManager.java|CALL|getDatabase|1
+U|com/eu/habbo/habbohotel/games/snowwar/mapping/SnowWarMapsManager.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/games/tag/TagGame.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/guides/GuardianTicket.java|CALL|getConfig|4
 U|com/eu/habbo/habbohotel/guides/GuardianTicket.java|CALL|getGameEnvironment|6
@@ -880,11 +881,10 @@ U|com/eu/habbo/habbohotel/polls/PollManager.java|CALL|getDatabase|2
 U|com/eu/habbo/habbohotel/rooms/BuildersClubRoomSupport.java|CALL|getDatabase|10
 U|com/eu/habbo/habbohotel/rooms/BuildersClubRoomSupport.java|CALL|getGameEnvironment|10
 U|com/eu/habbo/habbohotel/rooms/CustomRoomLayout.java|CALL|getDatabase|1
-U|com/eu/habbo/habbohotel/rooms/Room.java|CALL|getDatabase|1
-U|com/eu/habbo/habbohotel/rooms/Room.java|CALL|getGameEnvironment|11
-U|com/eu/habbo/habbohotel/rooms/Room.java|CALL|getIntUnixTimestamp|3
+U|com/eu/habbo/habbohotel/rooms/Room.java|CALL|getGameEnvironment|2
+U|com/eu/habbo/habbohotel/rooms/Room.java|CALL|getIntUnixTimestamp|2
 U|com/eu/habbo/habbohotel/rooms/Room.java|CALL|getPluginManager|3
-U|com/eu/habbo/habbohotel/rooms/Room.java|CALL|getThreading|3
+U|com/eu/habbo/habbohotel/rooms/Room.java|CALL|getThreading|2
 U|com/eu/habbo/habbohotel/rooms/RoomBan.java|CALL|getDatabase|2
 U|com/eu/habbo/habbohotel/rooms/RoomChatBubbleManager.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/rooms/RoomChatManager.java|CALL|getConfig|7
@@ -929,7 +929,7 @@ U|com/eu/habbo/habbohotel/rooms/RoomPromotion.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/rooms/RoomPromotionManager.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/rooms/RoomPromotionManager.java|CALL|getIntUnixTimestamp|5
 U|com/eu/habbo/habbohotel/rooms/RoomRightsManager.java|CALL|getGameEnvironment|3
-U|com/eu/habbo/habbohotel/rooms/RoomRightsManager.java|CALL|getIntUnixTimestamp|4
+U|com/eu/habbo/habbohotel/rooms/RoomRightsManager.java|CALL|getIntUnixTimestamp|3
 U|com/eu/habbo/habbohotel/rooms/RoomRightsManager.java|CALL|getPluginManager|1
 U|com/eu/habbo/habbohotel/rooms/RoomRollerManager.java|CALL|getPluginManager|4
 U|com/eu/habbo/habbohotel/rooms/RoomRollerManager.java|CALL|getThreading|1

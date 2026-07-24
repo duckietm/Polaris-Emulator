@@ -62,6 +62,12 @@ public class SnowStormLevelDataComposer extends MessageComposer {
             // server does (0 = walkable rug/tile, >0 = solid), instead of
             // treating every prop as impassable.
             this.response.appendInt(item.getWalkableHeight());
+            // Furni footprint in tiles (unrotated width/length from furnidata).
+            // The client rotates these the same way the server does to block the
+            // whole footprint and depth-sort multi-tile props by their front
+            // tile, so a 3x3 prop no longer draws over adjacent avatars.
+            this.response.appendInt(item.getWidth());
+            this.response.appendInt(item.getLength());
         }
 
         List<SnowWarMachineObject> machines = this.game.getMachines();

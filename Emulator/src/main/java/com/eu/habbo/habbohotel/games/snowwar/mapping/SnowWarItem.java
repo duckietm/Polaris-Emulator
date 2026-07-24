@@ -16,6 +16,14 @@ public class SnowWarItem {
     private final String imageUrl;
     private final int offsetZ;
 
+    // Furni footprint in tiles (from the base item's furnidata). Defaults to a
+    // single tile; SnowWarMapsManager fills in the real dimensions from the
+    // item manager so multi-tile furni block their whole footprint and the
+    // client can depth-sort them by their front tile. Kept mutable (set once at
+    // load) to avoid widening every constructor.
+    private int width = 1;
+    private int length = 1;
+
     public SnowWarItem(String name, int x, int y, int rotation) {
         this(
                 name,
@@ -79,6 +87,39 @@ public class SnowWarItem {
 
     public int getRotation() {
         return this.rotation;
+    }
+
+    public int getWidth() {
+        return this.width;
+    }
+
+    public int getLength() {
+        return this.length;
+    }
+
+    /**
+     * Sets the furni footprint (tile dimensions) once, at map load. Values are
+     * clamped to at least 1 so a missing/zero furnidata entry still occupies a
+     * single tile.
+     */
+    public void setSize(int width, int length) {
+        this.width = Math.max(1, width);
+        this.length = Math.max(1, length);
+    }
+
+    /**
+     * Effective footprint width after rotation (width and length swap for the
+     * 90/270-degree rotations, mirroring RoomLayout.getRectangle).
+     */
+    public int getEffectiveWidth() {
+        return (this.rotation == 2 || this.rotation == 6) ? this.length : this.width;
+    }
+
+    /**
+     * Effective footprint length after rotation (see getEffectiveWidth).
+     */
+    public int getEffectiveLength() {
+        return (this.rotation == 2 || this.rotation == 6) ? this.width : this.length;
     }
 
     public int getWalkableHeight() {

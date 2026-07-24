@@ -1,12 +1,11 @@
 package com.eu.habbo.habbohotel.messenger.history;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.Test;
 
 class MessengerHistoryServiceTest {
     @Test
@@ -35,7 +34,9 @@ class MessengerHistoryServiceTest {
         MessengerHistoryPage page = service.loadHistory(9, 7, 0, MessengerHistoryService.MAX_PAGE_SIZE + 4_500);
 
         assertEquals(MessengerHistoryService.MAX_PAGE_SIZE, repository.requestedLimit);
-        assertEquals(List.of(1L, 2L, 3L), page.messages().stream().map(MessengerStoredMessage::id).toList());
+        assertEquals(
+                List.of(1L, 2L, 3L),
+                page.messages().stream().map(MessengerStoredMessage::id).toList());
     }
 
     @Test
@@ -82,18 +83,21 @@ class MessengerHistoryServiceTest {
         }
 
         @Override
-        public List<MessengerStoredMessage> loadHistory(long conversationId, int userId, long beforeMessageId, int limit) {
+        public List<MessengerStoredMessage> loadHistory(
+                long conversationId, int userId, long beforeMessageId, int limit) {
             requestedLimit = limit;
             return new ArrayList<>(rows);
         }
 
         @Override
-        public MessengerStoredMessage storeDirectMessage(int senderId, int recipientId, int type, String message, String metadata) {
+        public MessengerStoredMessage storeDirectMessage(
+                int senderId, int recipientId, int type, String message, String metadata) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public MessengerStoredMessage storeConversationMessage(long conversationId, int senderId, int type, String message, String metadata) {
+        public MessengerStoredMessage storeConversationMessage(
+                long conversationId, int senderId, int type, String message, String metadata) {
             throw new UnsupportedOperationException();
         }
 

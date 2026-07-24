@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.games.snowwar.objects.SnowWarMachineObject;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
+
 import java.util.List;
 
 /**
@@ -39,8 +40,7 @@ public class SnowStormLevelDataComposer extends MessageComposer {
             this.response.appendInt(player.getTeamId());
             this.response.appendString(player.getHabbo().getHabboInfo().getUsername());
             this.response.appendString(player.getHabbo().getHabboInfo().getLook());
-            this.response.appendString(
-                    player.getHabbo().getHabboInfo().getGender().name().toUpperCase());
+            this.response.appendString(player.getHabbo().getHabboInfo().getGender().name().toUpperCase());
         }
 
         this.response.appendString(this.game.getMap().getHeightmapForPacket());
@@ -58,6 +58,10 @@ public class SnowStormLevelDataComposer extends MessageComposer {
             // offset that nudges that full-screen backdrop up/down.
             this.response.appendString(item.getImageUrl());
             this.response.appendInt(item.getOffsetZ());
+            // Per-furni walkable height so the client blocks the same tiles the
+            // server does (0 = walkable rug/tile, >0 = solid), instead of
+            // treating every prop as impassable.
+            this.response.appendInt(item.getWalkableHeight());
         }
 
         List<SnowWarMachineObject> machines = this.game.getMachines();

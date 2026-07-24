@@ -1,12 +1,11 @@
 package com.eu.habbo.messages.outgoing.rooms.items;
 
-import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.items.FurnitureType;
+import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
 import com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer;
-
 import java.util.Collection;
 
 /** Sends a transient, client-side opacity update for Wired-selected furniture. */
@@ -32,7 +31,8 @@ public class WiredFurniOpacityComposer extends MessageComposer {
 
         for (HabboItem item : this.items) {
             this.response.appendInt(item.getId());
-            this.response.appendBoolean(item.getBaseItem() != null && item.getBaseItem().getType() != FurnitureType.FLOOR);
+            this.response.appendBoolean(
+                    item.getBaseItem() != null && item.getBaseItem().getType() != FurnitureType.FLOOR);
             this.response.appendInt(this.opacity);
             this.response.appendBoolean(this.clickThrough);
             this.response.appendInt(this.easing);

@@ -16,7 +16,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import com.eu.habbo.messages.outgoing.rooms.items.WiredFurniOpacityComposer;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -47,7 +46,8 @@ public class WiredEffectFurniOpacity extends InteractionWiredEffect {
         super(set, baseItem);
     }
 
-    public WiredEffectFurniOpacity(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectFurniOpacity(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -56,19 +56,20 @@ public class WiredEffectFurniOpacity extends InteractionWiredEffect {
         Room room = ctx.room();
         if (room == null) return;
 
-        List<HabboItem> effectiveItems = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items)
-                .stream()
+        List<HabboItem> effectiveItems = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items).stream()
                 .filter(item -> item != null && item.getRoomId() == this.getRoomId())
                 .collect(Collectors.toList());
 
         if (this.furniSource == WiredSourceUtil.SOURCE_SELECTED) {
-            this.items.removeIf(item -> item == null || item.getRoomId() != this.getRoomId() || room.getHabboItem(item.getId()) == null);
+            this.items.removeIf(item ->
+                    item == null || item.getRoomId() != this.getRoomId() || room.getHabboItem(item.getId()) == null);
         }
 
         if (effectiveItems.isEmpty()) return;
 
         if (this.visibility == VISIBILITY_TRIGGERING_USER) {
-            WiredFurniOpacityComposer composer = new WiredFurniOpacityComposer(effectiveItems, this.opacity, this.clickThrough, this.easing);
+            WiredFurniOpacityComposer composer =
+                    new WiredFurniOpacityComposer(effectiveItems, this.opacity, this.clickThrough, this.easing);
             Habbo actor = ctx.actor().map(room::getHabbo).orElse(null);
 
             if (actor != null && actor.getClient() != null) {
@@ -82,7 +83,8 @@ public class WiredEffectFurniOpacity extends InteractionWiredEffect {
             WiredInternalVariableSupport.setFurniOpacity(room, item, this.opacity);
         }
 
-        room.sendComposer(new WiredFurniOpacityComposer(effectiveItems, this.opacity, this.clickThrough, this.easing).compose());
+        room.sendComposer(
+                new WiredFurniOpacityComposer(effectiveItems, this.opacity, this.clickThrough, this.easing).compose());
     }
 
     @Deprecated
@@ -93,15 +95,15 @@ public class WiredEffectFurniOpacity extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-                this.getDelay(),
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList()),
-                this.opacity,
-                this.visibility,
-                this.clickThrough,
-                this.easing,
-                this.furniSource
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.getDelay(),
+                        this.items.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                        this.opacity,
+                        this.visibility,
+                        this.clickThrough,
+                        this.easing,
+                        this.furniSource));
     }
 
     @Override
@@ -150,7 +152,8 @@ public class WiredEffectFurniOpacity extends InteractionWiredEffect {
     @Override
     public void serializeWiredData(ServerMessage message, Room room) {
         List<HabboItem> validItems = this.items.stream()
-                .filter(item -> item != null && item.getRoomId() == this.getRoomId() && room.getHabboItem(item.getId()) != null)
+                .filter(item ->
+                        item != null && item.getRoomId() == this.getRoomId() && room.getHabboItem(item.getId()) != null)
                 .collect(Collectors.toList());
 
         this.items.clear();
@@ -237,7 +240,14 @@ public class WiredEffectFurniOpacity extends InteractionWiredEffect {
         int easing;
         int furniSource;
 
-        JsonData(int delay, List<Integer> itemIds, int opacity, int visibility, boolean clickThrough, int easing, int furniSource) {
+        JsonData(
+                int delay,
+                List<Integer> itemIds,
+                int opacity,
+                int visibility,
+                boolean clickThrough,
+                int easing,
+                int furniSource) {
             this.delay = delay;
             this.itemIds = itemIds;
             this.opacity = opacity;

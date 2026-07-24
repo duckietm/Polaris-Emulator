@@ -1,8 +1,8 @@
 package com.eu.habbo.messages.incoming.wired;
 
+import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveVariable;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveVariable;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.messages.incoming.MessageHandler;
 
@@ -40,7 +40,8 @@ public class WiredUserVariableUpdateEvent extends MessageHandler {
                 HabboItem item = room.getHabboItem(targetId);
 
                 if (item != null) {
-                    String variableName = definitionItemId == INTERNAL_FURNI_OPACITY_VARIABLE_ITEM_ID ? "@opacity" : "@gravity";
+                    String variableName =
+                            definitionItemId == INTERNAL_FURNI_OPACITY_VARIABLE_ITEM_ID ? "@opacity" : "@gravity";
                     WiredInternalVariableSupport.writeFurniValue(room, item, variableName, value);
                 }
 

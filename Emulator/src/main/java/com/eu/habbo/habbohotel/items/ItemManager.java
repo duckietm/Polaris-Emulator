@@ -229,9 +229,9 @@ import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectChang
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectControlClock;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectForwardUserToRoom;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectFreeze;
+import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectFurniOpacity;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectFurniToFurni;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectFurniToUser;
-import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectFurniOpacity;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveAchievement;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveBadge;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveCredits;

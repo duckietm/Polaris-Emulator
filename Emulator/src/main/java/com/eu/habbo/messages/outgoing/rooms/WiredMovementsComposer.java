@@ -3,7 +3,6 @@ package com.eu.habbo.messages.outgoing.rooms;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -42,28 +41,24 @@ public class WiredMovementsComposer extends MessageComposer {
         return this.response;
     }
 
-    private static List<MovementData> normalizeMovements(List<MovementData> source)
-    {
-        if((source == null) || source.isEmpty()) return new ArrayList<>();
+    private static List<MovementData> normalizeMovements(List<MovementData> source) {
+        if ((source == null) || source.isEmpty()) return new ArrayList<>();
 
         final LinkedHashMap<String, MovementData> normalized = new LinkedHashMap<>();
 
-        for(final MovementData movement : source)
-        {
-            if(movement == null) continue;
+        for (final MovementData movement : source) {
+            if (movement == null) continue;
 
             final String key = movementKey(movement);
 
-            if(key == null)
-            {
+            if (key == null) {
                 normalized.put(UUID.randomUUID().toString(), movement);
                 continue;
             }
 
             final MovementData existing = normalized.get(key);
 
-            if(existing == null)
-            {
+            if (existing == null) {
                 normalized.put(key, movement);
                 continue;
             }
@@ -74,72 +69,64 @@ public class WiredMovementsComposer extends MessageComposer {
         return new ArrayList<>(normalized.values());
     }
 
-    private static String movementKey(MovementData movement)
-    {
-        if(movement instanceof FurniMovementData)
-        {
+    private static String movementKey(MovementData movement) {
+        if (movement instanceof FurniMovementData) {
             return "furni:" + ((FurniMovementData) movement).id;
         }
 
-        if(movement instanceof UserMovementData)
-        {
+        if (movement instanceof UserMovementData) {
             return "user:" + ((UserMovementData) movement).id;
         }
 
-        if(movement instanceof UserDirectionData)
-        {
+        if (movement instanceof UserDirectionData) {
             return "userdir:" + ((UserDirectionData) movement).id;
         }
 
-        if(movement instanceof WallItemMovementData)
-        {
+        if (movement instanceof WallItemMovementData) {
             return "wall:" + ((WallItemMovementData) movement).id;
         }
 
         return null;
     }
 
-    private static MovementData mergeMovement(MovementData previous, MovementData current)
-    {
-        if((previous instanceof FurniMovementData) && (current instanceof FurniMovementData))
-        {
+    private static MovementData mergeMovement(MovementData previous, MovementData current) {
+        if ((previous instanceof FurniMovementData) && (current instanceof FurniMovementData)) {
             final FurniMovementData oldMovement = (FurniMovementData) previous;
             final FurniMovementData newMovement = (FurniMovementData) current;
 
             return furniMovement(
-                oldMovement.id,
-                oldMovement.fromX,
-                oldMovement.fromY,
-                newMovement.toX,
-                newMovement.toY,
-                oldMovement.fromZ,
-                newMovement.toZ,
-                newMovement.rotation,
-                newMovement.duration,
-                newMovement.elapsed,
-                newMovement.anchorType,
-                newMovement.anchorId,
-                newMovement.animationEffect,
-                newMovement.gravityIntensity);
+                    oldMovement.id,
+                    oldMovement.fromX,
+                    oldMovement.fromY,
+                    newMovement.toX,
+                    newMovement.toY,
+                    oldMovement.fromZ,
+                    newMovement.toZ,
+                    newMovement.rotation,
+                    newMovement.duration,
+                    newMovement.elapsed,
+                    newMovement.anchorType,
+                    newMovement.anchorId,
+                    newMovement.animationEffect,
+                    newMovement.gravityIntensity);
         }
 
-        if((previous instanceof UserMovementData) && (current instanceof UserMovementData))
-        {
+        if ((previous instanceof UserMovementData) && (current instanceof UserMovementData)) {
             final UserMovementData oldMovement = (UserMovementData) previous;
             final UserMovementData newMovement = (UserMovementData) current;
 
             return new UserMovementData(
-                oldMovement.id,
-                oldMovement.fromX,
-                oldMovement.fromY,
-                newMovement.toX,
-                newMovement.toY,
-                oldMovement.fromZ,
-                newMovement.toZ,
-                newMovement.movementType,
-                newMovement.bodyDirection,
-                newMovement.headDirection,
-                newMovement.duration);
+                    oldMovement.id,
+                    oldMovement.fromX,
+                    oldMovement.fromY,
+                    newMovement.toX,
+                    newMovement.toY,
+                    oldMovement.fromZ,
+                    newMovement.toZ,
+                    newMovement.movementType,
+                    newMovement.bodyDirection,
+                    newMovement.headDirection,
+                    newMovement.duration);
         }
 
         return current;
@@ -149,28 +136,102 @@ public class WiredMovementsComposer extends MessageComposer {
         return furniMovement(id, fromX, fromY, toX, toY, fromZ, toZ, 0, DEFAULT_DURATION, 0, FURNI_ANCHOR_NONE, 0);
     }
 
-    public static MovementData furniMovement(int id, int fromX, int fromY, int toX, int toY, double fromZ, double toZ, int rotation, int duration) {
+    public static MovementData furniMovement(
+            int id, int fromX, int fromY, int toX, int toY, double fromZ, double toZ, int rotation, int duration) {
         return furniMovement(id, fromX, fromY, toX, toY, fromZ, toZ, rotation, duration, 0, FURNI_ANCHOR_NONE, 0);
     }
 
-    public static MovementData furniMovement(int id, int fromX, int fromY, int toX, int toY, double fromZ, double toZ, int rotation, int duration, int elapsed) {
+    public static MovementData furniMovement(
+            int id,
+            int fromX,
+            int fromY,
+            int toX,
+            int toY,
+            double fromZ,
+            double toZ,
+            int rotation,
+            int duration,
+            int elapsed) {
         return furniMovement(id, fromX, fromY, toX, toY, fromZ, toZ, rotation, duration, elapsed, FURNI_ANCHOR_NONE, 0);
     }
 
-    public static MovementData furniMovement(int id, int fromX, int fromY, int toX, int toY, double fromZ, double toZ, int rotation, int duration, int elapsed, int anchorType, int anchorId) {
-        return furniMovement(id, fromX, fromY, toX, toY, fromZ, toZ, rotation, duration, elapsed, anchorType, anchorId, 0, 0);
+    public static MovementData furniMovement(
+            int id,
+            int fromX,
+            int fromY,
+            int toX,
+            int toY,
+            double fromZ,
+            double toZ,
+            int rotation,
+            int duration,
+            int elapsed,
+            int anchorType,
+            int anchorId) {
+        return furniMovement(
+                id, fromX, fromY, toX, toY, fromZ, toZ, rotation, duration, elapsed, anchorType, anchorId, 0, 0);
     }
 
-    public static MovementData furniMovement(int id, int fromX, int fromY, int toX, int toY, double fromZ, double toZ, int rotation, int duration, int elapsed, int anchorType, int anchorId, int animationEffect, int gravityIntensity) {
-        return new FurniMovementData(id, fromX, fromY, toX, toY, fromZ, toZ, rotation, duration, elapsed, anchorType, anchorId, animationEffect, gravityIntensity);
+    public static MovementData furniMovement(
+            int id,
+            int fromX,
+            int fromY,
+            int toX,
+            int toY,
+            double fromZ,
+            double toZ,
+            int rotation,
+            int duration,
+            int elapsed,
+            int anchorType,
+            int anchorId,
+            int animationEffect,
+            int gravityIntensity) {
+        return new FurniMovementData(
+                id,
+                fromX,
+                fromY,
+                toX,
+                toY,
+                fromZ,
+                toZ,
+                rotation,
+                duration,
+                elapsed,
+                anchorType,
+                anchorId,
+                animationEffect,
+                gravityIntensity);
     }
 
-    public static MovementData userWalkMovement(int id, int fromX, int fromY, int toX, int toY, double fromZ, double toZ, int bodyDirection, int headDirection, int duration) {
-        return new UserMovementData(id, fromX, fromY, toX, toY, fromZ, toZ, USER_MOVEMENT_WALK, bodyDirection, headDirection, duration);
+    public static MovementData userWalkMovement(
+            int id,
+            int fromX,
+            int fromY,
+            int toX,
+            int toY,
+            double fromZ,
+            double toZ,
+            int bodyDirection,
+            int headDirection,
+            int duration) {
+        return new UserMovementData(
+                id, fromX, fromY, toX, toY, fromZ, toZ, USER_MOVEMENT_WALK, bodyDirection, headDirection, duration);
     }
 
-    public static MovementData userSlideMovement(int id, int fromX, int fromY, int toX, int toY, double fromZ, double toZ, int bodyDirection, int headDirection, int duration) {
-        return new UserMovementData(id, fromX, fromY, toX, toY, fromZ, toZ, USER_MOVEMENT_SLIDE, bodyDirection, headDirection, duration);
+    public static MovementData userSlideMovement(
+            int id,
+            int fromX,
+            int fromY,
+            int toX,
+            int toY,
+            double fromZ,
+            double toZ,
+            int bodyDirection,
+            int headDirection,
+            int duration) {
+        return new UserMovementData(
+                id, fromX, fromY, toX, toY, fromZ, toZ, USER_MOVEMENT_SLIDE, bodyDirection, headDirection, duration);
     }
 
     public static MovementData userDirectionUpdate(int id, int headDirection, int bodyDirection) {
@@ -213,7 +274,18 @@ public class WiredMovementsComposer extends MessageComposer {
         private final int headDirection;
         private final int duration;
 
-        private UserMovementData(int id, int fromX, int fromY, int toX, int toY, double fromZ, double toZ, int movementType, int bodyDirection, int headDirection, int duration) {
+        private UserMovementData(
+                int id,
+                int fromX,
+                int fromY,
+                int toX,
+                int toY,
+                double fromZ,
+                double toZ,
+                int movementType,
+                int bodyDirection,
+                int headDirection,
+                int duration) {
             super(TYPE_USER_MOVE);
             this.id = id;
             this.fromX = fromX;
@@ -260,7 +332,21 @@ public class WiredMovementsComposer extends MessageComposer {
         private final int animationEffect;
         private final int gravityIntensity;
 
-        private FurniMovementData(int id, int fromX, int fromY, int toX, int toY, double fromZ, double toZ, int rotation, int duration, int elapsed, int anchorType, int anchorId, int animationEffect, int gravityIntensity) {
+        private FurniMovementData(
+                int id,
+                int fromX,
+                int fromY,
+                int toX,
+                int toY,
+                double fromZ,
+                double toZ,
+                int rotation,
+                int duration,
+                int elapsed,
+                int anchorType,
+                int anchorId,
+                int animationEffect,
+                int gravityIntensity) {
             super(TYPE_FURNI_MOVE);
             this.id = id;
             this.fromX = fromX;

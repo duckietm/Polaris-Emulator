@@ -137,6 +137,7 @@ public final class WiredInternalVariableSupport {
                     "@dimensions.y" -> true;
             case "~teleport.target_id" -> item.getTeleportTargetId() > 0;
             case "@wallitem_offset" -> item.getBaseItem().getType() == FurnitureType.WALL;
+            case "@gravity" -> item.getBaseItem().getType() == FurnitureType.FLOOR;
             case "@is_stackable" -> item.getBaseItem().allowStack();
             case "@can_stand_on" -> item.getBaseItem().allowWalk();
             case "@can_sit_on" -> item.getBaseItem().allowSit();
@@ -310,6 +311,7 @@ public final class WiredInternalVariableSupport {
             case "@dimensions.y" ->
                 (item.getBaseItem() != null) ? (int) item.getBaseItem().getLength() : null;
             case "@owner_id" -> item.getUserId();
+            case "@gravity" -> room.getWiredRuntime().isGravityEnabled(item) ? 1 : 0;
             default -> null;
         };
     }
@@ -332,6 +334,7 @@ public final class WiredInternalVariableSupport {
         }
 
         return switch (normalized) {
+            case "@gravity" -> room.getWiredRuntime().setGravityEnabled(item, value != 0);
             case "@position_x" -> moveFurniTo(room, item, value, item.getY(), item.getRotation(), item.getZ());
             case "@position_y" -> moveFurniTo(room, item, item.getX(), value, item.getRotation(), item.getZ());
             case "@rotation" -> moveFurniTo(room, item, item.getX(), item.getY(), value, item.getZ());

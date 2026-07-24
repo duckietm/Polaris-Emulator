@@ -7822,6 +7822,43 @@
       ]
     },
     {
+      "name": "WIRED_FURNI_RUNTIME_STATE_REQUEST",
+      "direction": "client_to_server",
+      "header": 10028,
+      "java": {
+        "symbol": "WiredFurniRuntimeStateRequestEvent",
+        "className": "WiredFurniRuntimeStateRequestEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredFurniRuntimeStateRequestEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_FURNI_RUNTIME_STATE_REQUEST",
+        "className": "WiredFurniRuntimeStateRequestComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredFurniRuntimeStateRequestComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "itemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "action"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "key"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "requestedValue"
+        }
+      ]
+    },
+    {
       "name": "DELETE_PET",
       "direction": "client_to_server",
       "header": 10030,
@@ -15308,6 +15345,48 @@
         {
           "kind": "scalar",
           "type": "string",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "WIRED_FURNI_RUNTIME_STATE",
+      "direction": "server_to_client",
+      "header": 5108,
+      "java": {
+        "symbol": "WiredFurniRuntimeStateComposer",
+        "className": "WiredFurniRuntimeStateComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredFurniRuntimeStateComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_FURNI_RUNTIME_STATE",
+        "className": "WiredFurniRuntimeStateParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredFurniRuntimeStateParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
           "name": ""
         }
       ]

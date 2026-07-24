@@ -178,6 +178,7 @@ final class RoomItemRegistry {
         if (wiredItem || cleanedSignalAntennaReferences) {
             WiredManager.invalidateRoom(this.room);
         }
+        this.room.forgetWiredGravity(item);
         this.room.onFurnitureTopologyChanged();
     }
 

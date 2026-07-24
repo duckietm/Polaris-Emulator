@@ -269,6 +269,7 @@ public final class WiredMoveCarryHelper {
             if (!useWiredMovements) {
                 applyInstantCarryState(room, movingItem, targetTile, rotation, carryContext);
             } else if (oldLocation != null) {
+                room.getWiredRuntime().markFurnitureMoving(movingItem, animationDuration);
                 sendAnimatedMove(
                         room,
                         movingItem,
@@ -313,6 +314,7 @@ public final class WiredMoveCarryHelper {
                 && (oldLocation.x != targetTile.x
                         || oldLocation.y != targetTile.y
                         || Double.compare(oldZ, movingItem.getZ()) != 0)) {
+            room.getWiredRuntime().markFurnitureMoving(movingItem, WiredMovementsComposer.DEFAULT_DURATION);
             List<WiredMovementsComposer.MovementData> collectedMovements = COLLECTED_MOVEMENTS.get();
 
             if (collectedMovements != null) {

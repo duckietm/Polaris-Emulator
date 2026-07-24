@@ -485,6 +485,9 @@ public final class Emulator {
         configuration.register("stress.max_total_entities", "200000");
         configuration.register("stress.max_chat_per_second", "10000");
         configuration.register("stress.max_duration_seconds", "3600");
+        configuration.register("wired.gravity.max_items_per_room", "1000");
+        configuration.register("wired.gravity.settle_delay_ms", "75");
+        configuration.register("wired.gravity.retry_delay_ms", "50");
         Emulator.config.register("nitro.secure.api.max_payload_bytes", "65536");
         Emulator.config.register("nitro.secure.config.max_file_bytes", "2097152");
         Emulator.config.register("nitro.secure.gamedata.max_file_bytes", "16777216");

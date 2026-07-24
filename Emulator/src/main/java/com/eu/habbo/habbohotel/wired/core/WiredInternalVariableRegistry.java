@@ -119,6 +119,8 @@ final class WiredInternalVariableRegistry {
                 "@dimensions.y");
         builder.register(
                 Capability.FURNI_DESTINATION, "@state", "@position_x", "@position_y", "@rotation", "@altitude");
+        builder.registerWhen(
+                ALWAYS_ENABLED, EnumSet.of(Capability.FURNI_REFERENCE, Capability.FURNI_DESTINATION), "@gravity");
         builder.register(
                 Capability.ROOM_REFERENCE,
                 "@furni_count",

@@ -4,6 +4,7 @@ import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.wired.core.WiredMoveStyleHelper;
 import com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -205,6 +206,7 @@ final class WiredGravityService {
         }
 
         List<WiredMovementsComposer.MovementData> movements = new ArrayList<>();
+        List<Integer> fallenItemIds = new ArrayList<>();
         long retryAfterMs = 0L;
         for (WiredGravityPlanner.Fall fall : plan.falls()) {
             if (!sameGeneration(expectedGeneration)) {
@@ -239,6 +241,7 @@ final class WiredGravityService {
             }
 
             movingUntil.put(item.getId(), now + durationMs);
+            fallenItemIds.add(item.getId());
             movements.add(WiredMovementsComposer.furniMovement(
                     item.getId(),
                     expected.x(),
@@ -254,6 +257,8 @@ final class WiredGravityService {
         }
 
         if (!movements.isEmpty()) {
+            WiredMoveStyleHelper.broadcast(
+                    room, fallenItemIds, WiredMoveStyleHelper.STYLE_DROP, WiredMoveStyleHelper.DROP_INTENSITY);
             room.sendComposer(new WiredMovementsComposer(movements).compose());
         }
         return retryAfterMs;

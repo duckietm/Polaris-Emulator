@@ -1151,11 +1151,11 @@ CASE legacy-zero OUT eyJrZWVwQWx0aXR1ZGUiOmZhbHNlLCJtb3ZlVGhyb3VnaEZ1cm5pIjpmYWx
 CASE legacy-tab OUT eyJrZWVwQWx0aXR1ZGUiOmZhbHNlLCJtb3ZlVGhyb3VnaEZ1cm5pIjpmYWxzZSwibW92ZVRocm91Z2hVc2VycyI6ZmFsc2UsImJsb2NrQnlGdXJuaSI6ZmFsc2UsIm1vdmVUaHJvdWdoRnVybmlTb3VyY2UiOjAsImJsb2NrQnlGdXJuaVNvdXJjZSI6MCwibW92ZVRocm91Z2hVc2Vyc1NvdXJjZSI6MH0=
 
 TYPE com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve
-CASE blank OUT eyJjdXJ2ZVR5cGUiOjB9
-CASE json-empty OUT eyJjdXJ2ZVR5cGUiOjB9
-CASE json-malformed OUT eyJjdXJ2ZVR5cGUiOjB9
-CASE legacy-zero OUT eyJjdXJ2ZVR5cGUiOjB9
-CASE legacy-tab OUT eyJjdXJ2ZVR5cGUiOjB9
+CASE blank OUT eyJjdXJ2ZVR5cGUiOjAsImludGVuc2l0eSI6MTAwfQ==
+CASE json-empty OUT eyJjdXJ2ZVR5cGUiOjAsImludGVuc2l0eSI6MTAwfQ==
+CASE json-malformed OUT eyJjdXJ2ZVR5cGUiOjAsImludGVuc2l0eSI6MTAwfQ==
+CASE legacy-zero OUT eyJjdXJ2ZVR5cGUiOjAsImludGVuc2l0eSI6MTAwfQ==
+CASE legacy-tab OUT eyJjdXJ2ZVR5cGUiOjAsImludGVuc2l0eSI6MTAwfQ==
 
 TYPE com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraOrEval
 CASE blank OUT eyJldmFsdWF0aW9uTW9kZSI6MCwiZnVybmlTb3VyY2UiOjAsImNvbXBhcmVWYWx1ZSI6MSwiaXRlbUlkcyI6W119

@@ -28,6 +28,8 @@ public class GameClient {
 
     // Bit 0 - the client understands per-furniture opacity updates.
     public static final int WIRED_FEATURE_OPACITY = 1;
+    public static final int WIRED_FEATURE_MOVE_STYLE = 2;
+    private static final int WIRED_FEATURE_KNOWN_MASK = WIRED_FEATURE_OPACITY | WIRED_FEATURE_MOVE_STYLE;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GameClient.class);
 
@@ -86,7 +88,7 @@ public class GameClient {
     /** Stores only the WIRED capabilities understood by this emulator build. */
     public void setWiredFeatureCapabilities(int protocolVersion, int capabilities) {
         this.wiredFeatureProtocolVersion = Math.max(0, protocolVersion);
-        this.wiredFeatureCapabilities = Math.max(0, capabilities) & WIRED_FEATURE_OPACITY;
+        this.wiredFeatureCapabilities = Math.max(0, capabilities) & WIRED_FEATURE_KNOWN_MASK;
     }
 
     /** Returns whether this client advertised the required protocol and capability bit. */

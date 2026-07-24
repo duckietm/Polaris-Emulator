@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraAnimatio
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMoveCarryUsers;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMoveNoAnimation;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovePhysics;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve;
 import com.eu.habbo.habbohotel.rooms.FurnitureMovementError;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
@@ -270,6 +271,7 @@ public final class WiredMoveCarryHelper {
                 applyInstantCarryState(room, movingItem, targetTile, rotation, carryContext);
             } else if (oldLocation != null) {
                 room.getWiredRuntime().markFurnitureMoving(movingItem, animationDuration);
+                sendMoveStyleHint(room, stackItem, movingItem);
                 sendAnimatedMove(
                         room,
                         movingItem,
@@ -1237,6 +1239,22 @@ public final class WiredMoveCarryHelper {
         }
 
         return null;
+    }
+
+    private static void sendMoveStyleHint(Room room, HabboItem stackItem, HabboItem movingItem) {
+        Collection<InteractionWiredExtra> extras = getMovementExtras(room, stackItem);
+        if (extras == null) {
+            return;
+        }
+
+        for (InteractionWiredExtra extra : extras) {
+            if (extra instanceof WiredExtraMovementCurve curve
+                    && curve.getCurveType() != WiredExtraMovementCurve.CURVE_LINEAR) {
+                WiredMoveStyleHelper.broadcast(
+                        room, List.of(movingItem.getId()), curve.getCurveType(), curve.getIntensity());
+                return;
+            }
+        }
     }
 
     private static Collection<InteractionWiredExtra> getMovementExtras(Room room, HabboItem stackItem) {

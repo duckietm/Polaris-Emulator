@@ -51,6 +51,12 @@ final class RoomPersistentStateFactory {
                 room.isAllowUnderpass(),
                 room.isYoutubeEnabled(),
                 room.isBuildersClubTrialLocked(),
-                room.getBuildersClubOriginalState());
+                room.getBuildersClubOriginalState(),
+                room.isMuteAllPets(),
+                room.isLeaveOnDoorTileEnabled(),
+                room.isIdleSleepEnabled(),
+                room.getIdleSleepTimeoutSeconds(),
+                room.isIdleAutokickEnabled(),
+                room.getIdleAutokickTimeoutSeconds());
     }
 }

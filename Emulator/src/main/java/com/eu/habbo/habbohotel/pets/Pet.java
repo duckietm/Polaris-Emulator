@@ -131,7 +131,7 @@ public class Pet implements ISerialize, Runnable {
 
 
     protected void say(String message) {
-        if (this.roomUnit != null && this.room != null && !message.isEmpty()) {
+        if (this.roomUnit != null && this.room != null && !this.room.isMuteAllPets() && !message.isEmpty()) {
             RoomChatMessage chatMessage = new RoomChatMessage(message, this.roomUnit, RoomChatMessageBubbles.NORMAL);
             PetTalkEvent talkEvent = new PetTalkEvent(this, chatMessage);
             if (!Emulator.getPluginManager().fireEvent(talkEvent).isCancelled()) {

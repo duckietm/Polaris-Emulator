@@ -465,3 +465,11 @@ superclass com.eu.habbo.networking.camera.messages.outgoing.CameraLoginComposer 
 superclass com.eu.habbo.networking.camera.messages.outgoing.CameraRenderImageComposer SUPERCLASS_REMOVED
 superclass com.eu.habbo.threading.runnables.CameraClientAutoReconnect SUPERCLASS_REMOVED
 superclass com.eu.habbo.threading.runnables.WiredExecuteTask SUPERCLASS_REMOVED
+# Reviewed 2026-07-23: benign synthetic-only divergences from the upstream
+# guild/wardrobe restructure. GuildMember's compareTo(Object) still exists at
+# runtime as the compiler-generated Comparable<GuildMember> bridge, and
+# WardrobeItem's Java-8 synthetic accessor constructors (the WardrobeComponent$1
+# marker) are dropped by JDK nestmate compilation and are uncallable by plugins.
+constructor com.eu.habbo.habbohotel.users.inventory.WardrobeComponent$WardrobeItem#<init>(com.eu.habbo.habbohotel.users.inventory.WardrobeComponent,com.eu.habbo.habbohotel.users.HabboGender,java.lang.String,int,com.eu.habbo.habbohotel.users.Habbo,com.eu.habbo.habbohotel.users.inventory.WardrobeComponent$1) CONSTRUCTOR_REMOVED
+constructor com.eu.habbo.habbohotel.users.inventory.WardrobeComponent$WardrobeItem#<init>(com.eu.habbo.habbohotel.users.inventory.WardrobeComponent,java.sql.ResultSet,com.eu.habbo.habbohotel.users.Habbo,com.eu.habbo.habbohotel.users.inventory.WardrobeComponent$1) CONSTRUCTOR_REMOVED
+method com.eu.habbo.habbohotel.guilds.GuildMember#compareTo(java.lang.Object) METHOD_REMOVED

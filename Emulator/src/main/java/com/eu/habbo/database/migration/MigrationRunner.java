@@ -73,6 +73,23 @@ public final class MigrationRunner {
         }
     }
 
+    /**
+     * Realigns the Flyway schema history with the packaged migrations without
+     * touching hotel data, using the same raw connection invariant.
+     *
+     * <p>Recovers a database whose {@code flyway_schema_history} drifted from
+     * the migration files - most commonly when an already-applied migration was
+     * edited upstream, so its recorded checksum no longer matches. Flyway's
+     * {@code repair()} rewrites those checksums (and clears any failed rows) in
+     * place, so the next normal startup can migrate again. This replaces the
+     * destructive "delete every history row and re-run everything" workaround.
+     */
+    public static void repairAtStartup(HikariDataSource runtimeDataSource) {
+        try (HikariDataSource rawMigrationDataSource = rawMigrationDataSource(runtimeDataSource)) {
+            repair(rawMigrationDataSource);
+        }
+    }
+
     /** Runs the action permitted for the detected schema state. */
     public static MigrateResult migrate(DataSource dataSource) {
         return migrate(dataSource, MigrationBackup.disabled());
@@ -169,6 +186,32 @@ public final class MigrationRunner {
         } catch (Exception e) {
             throw new MigrationException("Migration status failed; the schema history could not be "
                     + "validated against the packaged migrations. No changes were made.", e);
+        }
+    }
+
+    /** Repairs the schema history in place. Never migrates or baselines. */
+    public static void repair(DataSource dataSource) {
+        SchemaPreflight.State state = SchemaPreflight.detect(dataSource);
+        LOGGER.info("[migrate] Detected schema state: {}", state);
+
+        if (state == SchemaPreflight.State.UNKNOWN) {
+            throw new MigrationException(
+                    "Refusing to repair: the database is non-empty but is not a recognised Arc/Polaris schema. "
+                            + "No changes were made.");
+        }
+        if (state == SchemaPreflight.State.EMPTY || state == SchemaPreflight.State.RECOGNISED_EXISTING) {
+            LOGGER.warn("[migrate] No Flyway schema history to repair (state {}); nothing to do.", state);
+            return;
+        }
+
+        try {
+            Flyway flyway = flyway(dataSource);
+            flyway.repair();
+            LOGGER.info("[migrate] Schema history repaired: recorded checksums realigned with the packaged "
+                    + "migrations and any failed rows cleared. Run a normal startup to apply pending migrations.");
+        } catch (Exception e) {
+            throw new MigrationException("Migration repair failed; the schema history could not be realigned "
+                    + "with the packaged migrations. No hotel data was changed.", e);
         }
     }
 

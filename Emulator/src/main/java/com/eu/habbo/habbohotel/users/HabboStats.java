@@ -50,6 +50,7 @@ public class HabboStats implements Runnable {
     public int petRespectPointsToGive;
     public boolean blockFollowing;
     public boolean blockFriendRequests;
+    public boolean hideOnline;
     public boolean blockRoomInvites;
     public boolean blockStaffAlerts;
     public boolean preferOldChat;
@@ -125,6 +126,7 @@ public class HabboStats implements Runnable {
         this.respectPointsToGive = set.getInt("daily_respect_points");
         this.blockFollowing = set.getString("block_following").equals("1");
         this.blockFriendRequests = set.getString("block_friendrequests").equals("1");
+        this.hideOnline = "1".equals(safeColumnString(set, "hide_online", "0"));
         this.blockRoomInvites = set.getString("block_roominvites").equals("1");
         this.preferOldChat = set.getString("old_chat").equals("1");
         this.blockCameraFollow = set.getString("block_camera_follow").equals("1");
@@ -333,7 +335,7 @@ public class HabboStats implements Runnable {
         int onlineTime = Emulator.getIntUnixTimestamp() - onlineTimeLast;
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-            try (PreparedStatement statement = connection.prepareStatement("UPDATE users_settings SET achievement_score = ?, respects_received = ?, respects_given = ?, daily_respect_points = ?, block_following = ?, block_friendrequests = ?, online_time = online_time + ?, guild_id = ?, daily_pet_respect_points = ?, club_expire_timestamp = ?, login_streak = ?, rent_space_id = ?, rent_space_endtime = ?, volume_system = ?, volume_furni = ?, volume_trax = ?, block_roominvites = ?, old_chat = ?, block_camera_follow = ?, chat_color = ?, hof_points = ?, block_alerts = ?, talent_track_citizenship_level = ?, talent_track_helpers_level = ?, ignore_bots = ?, ignore_pets = ?, nux = ?, mute_end_timestamp = ?, allow_name_change = ?, perk_trade = ?, can_trade = ?, `forums_post_count` = ?, ui_flags = ?, has_gotten_default_saved_searches = ?, max_friends = ?, max_rooms = ?, last_hc_payday = ?, hc_gifts_claimed = ?, builders_club_bonus_furni = ? WHERE user_id = ? LIMIT 1")) {
+            try (PreparedStatement statement = connection.prepareStatement("UPDATE users_settings SET achievement_score = ?, respects_received = ?, respects_given = ?, daily_respect_points = ?, block_following = ?, block_friendrequests = ?, online_time = online_time + ?, guild_id = ?, daily_pet_respect_points = ?, club_expire_timestamp = ?, login_streak = ?, rent_space_id = ?, rent_space_endtime = ?, volume_system = ?, volume_furni = ?, volume_trax = ?, block_roominvites = ?, old_chat = ?, block_camera_follow = ?, chat_color = ?, hof_points = ?, block_alerts = ?, talent_track_citizenship_level = ?, talent_track_helpers_level = ?, ignore_bots = ?, ignore_pets = ?, nux = ?, mute_end_timestamp = ?, allow_name_change = ?, perk_trade = ?, can_trade = ?, `forums_post_count` = ?, ui_flags = ?, has_gotten_default_saved_searches = ?, max_friends = ?, max_rooms = ?, last_hc_payday = ?, hc_gifts_claimed = ?, builders_club_bonus_furni = ?, hide_online = ? WHERE user_id = ? LIMIT 1")) {
                 statement.setInt(1, this.achievementScore);
                 statement.setInt(2, this.respectPointsReceived);
                 statement.setInt(3, this.respectPointsGiven);
@@ -373,7 +375,8 @@ public class HabboStats implements Runnable {
                 statement.setInt(37, this.lastHCPayday);
                 statement.setInt(38, this.hcGiftsClaimed);
                 statement.setInt(39, this.buildersClubBonusFurni);
-                statement.setInt(40, this.habboInfo.getId());
+                statement.setString(40, this.hideOnline ? "1" : "0");
+                statement.setInt(41, this.habboInfo.getId());
                 
                 statement.executeUpdate();
             }
@@ -831,6 +834,24 @@ public class HabboStats implements Runnable {
     public void setMassMentionsEnabled(boolean enabled) {
         this.massMentionsEnabled = enabled;
         persistFlag("mass_mentions_enabled", enabled);
+    }
+
+    public void setGamePrivacy(boolean hideOnline, boolean blockFollowing, boolean blockFriendRequests) {
+        this.hideOnline = hideOnline;
+        this.blockFollowing = blockFollowing;
+        this.blockFriendRequests = blockFriendRequests;
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "UPDATE users_settings SET hide_online = ?, block_following = ?, block_friendrequests = ? WHERE user_id = ? LIMIT 1")) {
+            statement.setString(1, hideOnline ? "1" : "0");
+            statement.setString(2, blockFollowing ? "1" : "0");
+            statement.setString(3, blockFriendRequests ? "1" : "0");
+            statement.setInt(4, this.habboInfo.getId());
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.error("Failed to persist game privacy for user {}", this.habboInfo.getId(), e);
+        }
     }
 
     private static final Set<String> PERSIST_FLAG_COLUMNS =

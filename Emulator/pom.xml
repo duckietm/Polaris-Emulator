@@ -6,12 +6,12 @@
 
     <groupId>com.eu.habbo</groupId>
     <artifactId>Polaris</artifactId>
-    <version>4.2.60</version>
+    <version>4.2.65</version>
     <name>Polaris</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.build.outputTimestamp>2026-07-20T00:00:00Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2026-07-21T12:03:26Z</project.build.outputTimestamp>
         <maven.compiler.release>25</maven.compiler.release>
         <maven.build.java.version>[25,27)</maven.build.java.version>
 
@@ -26,14 +26,14 @@
         <commons-math3.version>3.6.1</commons-math3.version>
         <jsoup.version>1.22.2</jsoup.version>
         <slf4j.version>2.0.18</slf4j.version>
-        <error-prone-annotations.version>2.49.0</error-prone-annotations.version>
+        <error-prone-annotations.version>2.50.0</error-prone-annotations.version>
         <logback.version>1.5.38</logback.version>
         <jansi.version>2.4.3</jansi.version>
         <bcrypt.version>0.10.2</bcrypt.version>
         <jakarta-mail.version>2.0.5</jakarta-mail.version>
         <junit.version>6.1.2</junit.version>
         <javaparser.version>3.27.1</javaparser.version>
-        <flyway.version>12.11.0</flyway.version>
+        <flyway.version>13.0.0</flyway.version>
         <testcontainers.version>1.21.4</testcontainers.version>
         <mockito.version>5.23.0</mockito.version>
         <trove4j.reference.version>3.0.3</trove4j.reference.version>
@@ -47,14 +47,14 @@
         <maven-jar-plugin.version>3.5.0</maven-jar-plugin.version>
         <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
         <maven-resources-plugin.version>3.5.0</maven-resources-plugin.version>
-        <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
+        <maven-shade-plugin.version>3.6.2</maven-shade-plugin.version>
         <maven-site-plugin.version>3.22.0</maven-site-plugin.version>
         <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
         <versions-maven-plugin.version>2.21.0</versions-maven-plugin.version>
         <cyclonedx-maven-plugin.version>2.9.2</cyclonedx-maven-plugin.version>
         <jacoco-plugin.version>0.8.15</jacoco-plugin.version>
         <jacoco.minimum.instruction.coveredratio>0.07</jacoco.minimum.instruction.coveredratio>
-        <japicmp.version>0.23.1</japicmp.version>
+        <japicmp.version>0.26.1</japicmp.version>
         <spotless-maven-plugin.version>3.8.0</spotless-maven-plugin.version>
         <palantir-java-format.version>2.96.0</palantir-java-format.version>
         <spotbugs-maven-plugin.version>4.10.3.0</spotbugs-maven-plugin.version>

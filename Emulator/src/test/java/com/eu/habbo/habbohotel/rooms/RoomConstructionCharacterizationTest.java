@@ -259,6 +259,12 @@ class RoomConstructionCharacterizationTest {
         values.put("trade_mode", 2);
         values.put("move_diagonally", "1");
         values.put("allow_underpass", "1");
+        values.put("mute_all_pets", true);
+        values.put("leave_on_door_tile", true);
+        values.put("idle_sleep_enabled", false);
+        values.put("idle_sleep_timeout_seconds", 0);
+        values.put("idle_autokick_enabled", false);
+        values.put("idle_autokick_timeout_seconds", 0);
         values.put("moodlight_data", "2,1,1,#123456,200");
 
         return proxy(ResultSet.class, (ignored, method, arguments) -> {

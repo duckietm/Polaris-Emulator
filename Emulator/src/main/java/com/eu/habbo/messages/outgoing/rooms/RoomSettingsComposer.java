@@ -53,6 +53,12 @@ public class RoomSettingsComposer extends MessageComposer {
         this.response.appendInt(this.room.getKickOption());
         this.response.appendInt(this.room.getBanOption());
         this.response.appendInt(this.room.isAllowUnderpass() ? 1 : 0);
+        this.response.appendInt(this.room.isMuteAllPets() ? 1 : 0);
+        this.response.appendInt(this.room.isLeaveOnDoorTileEnabled() ? 1 : 0);
+        this.response.appendInt(this.room.isIdleSleepEnabled() ? 1 : 0);
+        this.response.appendInt(this.room.getIdleSleepTimeoutSeconds());
+        this.response.appendInt(this.room.isIdleAutokickEnabled() ? 1 : 0);
+        this.response.appendInt(this.room.getIdleAutokickTimeoutSeconds());
         return this.response;
     }
 

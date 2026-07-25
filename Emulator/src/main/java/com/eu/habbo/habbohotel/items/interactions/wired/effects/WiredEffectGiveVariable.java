@@ -12,6 +12,12 @@ import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayChange;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayMutationResult;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayRuntimeSupport;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
@@ -59,6 +65,12 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect {
             return;
         }
 
+        WiredArrayVariableDefinition arrayDefinition = this.getArrayDefinition(room);
+        if (arrayDefinition != null && arrayDefinition.isArray()) {
+            this.giveArray(ctx, room, arrayDefinition);
+            return;
+        }
+
         switch (this.targetType) {
             case TARGET_USER:
                 this.executeUserVariables(ctx, room);
@@ -83,6 +95,37 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect {
 
         Integer value = definitionInfo.hasValue() ? this.initialValue : null;
         WiredContextVariableSupport.assignVariable(ctx, room, this.variableItemId, value, this.overrideExisting);
+    }
+
+    private void giveArray(WiredContext ctx, Room room, WiredArrayVariableDefinition definition) {
+        List<WiredArrayRuntimeSupport.Owner> owners = WiredArrayRuntimeSupport.resolveOwners(
+                ctx,
+                this.selectedFurni,
+                definition,
+                this.targetType == TARGET_FURNI ? this.furniSource : this.userSource);
+        for (WiredArrayRuntimeSupport.Owner owner : owners) {
+            boolean changed;
+            if (definition.getArrayVariableType() == WiredArrayVariableType.CONTEXT) {
+                changed = ctx.contextVariables()
+                                .giveArray(definition.getId(), definition.getArrayDefinition(), this.overrideExisting)
+                        == WiredArrayMutationResult.SUCCESS;
+            } else {
+                changed = room.getArrayVariableManager()
+                        .give(definition, owner.id(), this.overrideExisting)
+                        .changed();
+            }
+            if (changed) WiredArrayRuntimeSupport.dispatchChange(ctx, definition, owner, WiredArrayChange.created());
+        }
+    }
+
+    private WiredArrayVariableDefinition getArrayDefinition(Room room) {
+        int variableType =
+                switch (this.targetType) {
+                    case TARGET_FURNI -> WiredArrayVariableType.FURNI.code();
+                    case TARGET_CONTEXT -> WiredArrayVariableType.CONTEXT.code();
+                    default -> WiredArrayVariableType.USER.code();
+                };
+        return WiredArrayDefinitionSupport.resolve(room, variableType, this.variableItemId);
     }
 
     private void executeUserVariables(WiredContext ctx, Room room) {

@@ -71,6 +71,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     private RoomUserVariableManager userVariableManager;
     private RoomFurniVariableManager furniVariableManager;
     private RoomVariableManager roomVariableManager;
+    private RoomArrayVariableManager arrayVariableManager;
 
     public static final Comparator<Room> SORT_SCORE = (o1, o2) -> o2.getScore() - o1.getScore();
     public static final Comparator<Room> SORT_ID = (o1, o2) -> o2.getId() - o1.getId();
@@ -389,6 +390,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         this.userVariableManager = new RoomUserVariableManager(this);
         this.furniVariableManager = new RoomFurniVariableManager(this);
         this.roomVariableManager = new RoomVariableManager(this);
+        this.arrayVariableManager = new RoomArrayVariableManager(this, this.dependencies);
     }
 
     // ==================== MANAGER GETTERS ====================
@@ -480,6 +482,10 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
     public RoomVariableManager getRoomVariableManager() {
         return this.roomVariableManager;
+    }
+
+    public RoomArrayVariableManager getArrayVariableManager() {
+        return this.arrayVariableManager;
     }
 
     /**

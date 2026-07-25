@@ -7,16 +7,19 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType;
+import com.eu.habbo.habbohotel.wired.arrays.WiredVariableDefinitionData;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class WiredExtraVariableReference extends InteractionWiredExtra {
+public class WiredExtraVariableReference extends InteractionWiredExtra implements WiredArrayVariableDefinition {
     public static final int CODE = 81;
 
     private String variableName = "";
@@ -27,12 +30,14 @@ public class WiredExtraVariableReference extends InteractionWiredExtra {
     private int sourceTargetType = WiredVariableReferenceSupport.TARGET_USER;
     private boolean hasValue = false;
     private boolean readOnly = true;
+    private WiredArrayDefinition arrayDefinition;
 
     public WiredExtraVariableReference(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
     }
 
-    public WiredExtraVariableReference(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredExtraVariableReference(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -58,12 +63,9 @@ public class WiredExtraVariableReference extends InteractionWiredExtra {
             throw new WiredSaveException("wiredfurni.params.variables.validation.missing_variable");
         }
 
-        WiredVariableReferenceSupport.SharedDefinitionOption definition = WiredVariableReferenceSupport.findSharedDefinition(
-            room,
-            config.sourceRoomId,
-            config.sourceVariableItemId,
-            config.sourceTargetType
-        );
+        WiredVariableReferenceSupport.SharedDefinitionOption definition =
+                WiredVariableReferenceSupport.findSharedDefinition(
+                        room, config.sourceRoomId, config.sourceVariableItemId, config.sourceTargetType);
 
         if (definition == null) {
             throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
@@ -77,6 +79,7 @@ public class WiredExtraVariableReference extends InteractionWiredExtra {
         this.sourceTargetType = definition.getTargetType();
         this.hasValue = definition.hasValue();
         this.readOnly = config.readOnly;
+        this.arrayDefinition = definition.getArrayDefinition();
 
         room.getUserVariableManager().broadcastSnapshot();
         return true;
@@ -84,16 +87,19 @@ public class WiredExtraVariableReference extends InteractionWiredExtra {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-            this.variableName,
-            this.sourceRoomId,
-            this.sourceRoomName,
-            this.sourceVariableItemId,
-            this.sourceVariableName,
-            this.sourceTargetType,
-            this.hasValue,
-            this.readOnly
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.variableName,
+                        this.sourceRoomId,
+                        this.sourceRoomName,
+                        this.sourceVariableItemId,
+                        this.sourceVariableName,
+                        this.sourceTargetType,
+                        this.hasValue,
+                        this.readOnly,
+                        this.arrayDefinition == null
+                                ? WiredVariableDefinitionData.scalar(this.variableName)
+                                : WiredVariableDefinitionData.array(this.variableName, this.arrayDefinition)));
     }
 
     @Override
@@ -133,6 +139,16 @@ public class WiredExtraVariableReference extends InteractionWiredExtra {
         this.sourceTargetType = normalizeTargetType(data.sourceTargetType);
         this.hasValue = data.hasValue;
         this.readOnly = data.readOnly;
+        if (data.definition != null) {
+            try {
+                this.arrayDefinition =
+                        com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport.parseArrayDefinition(
+                                data.definition);
+                if (this.arrayDefinition != null) this.hasValue = true;
+            } catch (IllegalArgumentException ignored) {
+                this.arrayDefinition = null;
+            }
+        }
     }
 
     @Override
@@ -145,11 +161,11 @@ public class WiredExtraVariableReference extends InteractionWiredExtra {
         this.sourceTargetType = WiredVariableReferenceSupport.TARGET_USER;
         this.hasValue = false;
         this.readOnly = true;
+        this.arrayDefinition = null;
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {}
 
     @Override
     public boolean hasConfiguration() {
@@ -200,6 +216,46 @@ public class WiredExtraVariableReference extends InteractionWiredExtra {
         return this.sourceTargetType == WiredVariableReferenceSupport.TARGET_ROOM;
     }
 
+    @Override
+    public WiredArrayVariableType getArrayVariableType() {
+        return this.isRoomReference() ? WiredArrayVariableType.ROOM : WiredArrayVariableType.USER;
+    }
+
+    @Override
+    public WiredArrayDefinition getArrayDefinition() {
+        return this.arrayDefinition;
+    }
+
+    @Override
+    public boolean isArrayPermanent() {
+        return true;
+    }
+
+    @Override
+    public int getArrayStorageRoomId(int currentRoomId) {
+        return this.sourceRoomId;
+    }
+
+    @Override
+    public int getArrayStorageDefinitionItemId() {
+        return this.sourceVariableItemId;
+    }
+
+    @Override
+    public boolean isArrayWritable() {
+        return !this.readOnly;
+    }
+
+    @Override
+    public boolean isArrayShared() {
+        return true;
+    }
+
+    @Override
+    public boolean isArraySourceValid() {
+        return WiredVariableReferenceSupport.isSharedSourceStillAvailable(this);
+    }
+
     private String buildEditorPayload(Room room) {
         List<RoomEditorData> roomOptions = new ArrayList<>();
 
@@ -207,22 +263,30 @@ public class WiredExtraVariableReference extends InteractionWiredExtra {
             List<VariableEditorData> variables = new ArrayList<>();
 
             for (WiredVariableReferenceSupport.SharedDefinitionOption definition : option.getVariables()) {
-                variables.add(new VariableEditorData(definition.getItemId(), definition.getName(), definition.getTargetType(), definition.hasValue()));
+                variables.add(new VariableEditorData(
+                        definition.getItemId(),
+                        definition.getName(),
+                        definition.getTargetType(),
+                        definition.hasValue(),
+                        definition.getArrayDefinition() == null
+                                ? WiredVariableDefinitionData.scalar(definition.getName())
+                                : WiredVariableDefinitionData.array(
+                                        definition.getName(), definition.getArrayDefinition())));
             }
 
             roomOptions.add(new RoomEditorData(option.getRoomId(), option.getRoomName(), variables));
         }
 
-        return WiredManager.getGson().toJson(new EditorPayload(
-            this.variableName,
-            this.sourceRoomId,
-            this.sourceRoomName,
-            this.sourceVariableItemId,
-            this.sourceVariableName,
-            this.sourceTargetType,
-            this.readOnly,
-            roomOptions
-        ));
+        return WiredManager.getGson()
+                .toJson(new EditorPayload(
+                        this.variableName,
+                        this.sourceRoomId,
+                        this.sourceRoomName,
+                        this.sourceVariableItemId,
+                        this.sourceVariableName,
+                        this.sourceTargetType,
+                        this.readOnly,
+                        roomOptions));
     }
 
     private static ConfigData parseConfigData(String value) {
@@ -235,7 +299,9 @@ public class WiredExtraVariableReference extends InteractionWiredExtra {
     }
 
     private static int normalizeTargetType(int value) {
-        return (value == WiredVariableReferenceSupport.TARGET_ROOM) ? WiredVariableReferenceSupport.TARGET_ROOM : WiredVariableReferenceSupport.TARGET_USER;
+        return (value == WiredVariableReferenceSupport.TARGET_ROOM)
+                ? WiredVariableReferenceSupport.TARGET_ROOM
+                : WiredVariableReferenceSupport.TARGET_USER;
     }
 
     private static String sanitizeLabel(String value) {
@@ -255,8 +321,18 @@ public class WiredExtraVariableReference extends InteractionWiredExtra {
         int sourceTargetType;
         boolean hasValue;
         boolean readOnly;
+        WiredVariableDefinitionData definition;
 
-        JsonData(String variableName, int sourceRoomId, String sourceRoomName, int sourceVariableItemId, String sourceVariableName, int sourceTargetType, boolean hasValue, boolean readOnly) {
+        JsonData(
+                String variableName,
+                int sourceRoomId,
+                String sourceRoomName,
+                int sourceVariableItemId,
+                String sourceVariableName,
+                int sourceTargetType,
+                boolean hasValue,
+                boolean readOnly,
+                WiredVariableDefinitionData definition) {
             this.variableName = variableName;
             this.sourceRoomId = sourceRoomId;
             this.sourceRoomName = sourceRoomName;
@@ -265,6 +341,7 @@ public class WiredExtraVariableReference extends InteractionWiredExtra {
             this.sourceTargetType = sourceTargetType;
             this.hasValue = hasValue;
             this.readOnly = readOnly;
+            this.definition = definition;
         }
     }
 
@@ -281,7 +358,15 @@ public class WiredExtraVariableReference extends InteractionWiredExtra {
         String sourceVariableName;
         List<RoomEditorData> rooms;
 
-        EditorPayload(String variableName, int sourceRoomId, String sourceRoomName, int sourceVariableItemId, String sourceVariableName, int sourceTargetType, boolean readOnly, List<RoomEditorData> rooms) {
+        EditorPayload(
+                String variableName,
+                int sourceRoomId,
+                String sourceRoomName,
+                int sourceVariableItemId,
+                String sourceVariableName,
+                int sourceTargetType,
+                boolean readOnly,
+                List<RoomEditorData> rooms) {
             this.variableName = variableName;
             this.sourceRoomId = sourceRoomId;
             this.sourceRoomName = sourceRoomName;
@@ -310,12 +395,15 @@ public class WiredExtraVariableReference extends InteractionWiredExtra {
         String name;
         int targetType;
         boolean hasValue;
+        WiredVariableDefinitionData definition;
 
-        VariableEditorData(int itemId, String name, int targetType, boolean hasValue) {
+        VariableEditorData(
+                int itemId, String name, int targetType, boolean hasValue, WiredVariableDefinitionData definition) {
             this.itemId = itemId;
             this.name = name;
             this.targetType = targetType;
             this.hasValue = hasValue;
+            this.definition = definition;
         }
     }
 }

@@ -48,7 +48,8 @@ public enum WiredConditionType {
     CHEST_HAS_ITEM_TYPE(48),
     NO_BATTLEBANZAI(44),
     USER_ON_FURNI_WITH_STATE(45),
-    TRG_FURNI_ADJACENT_STATE(46);
+    TRG_FURNI_ADJACENT_STATE(46),
+    CHECK_ARRAY(49);
 
     public final int code;
 

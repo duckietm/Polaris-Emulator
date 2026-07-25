@@ -398,6 +398,13 @@ public final class WiredInternalVariableSupport {
 
         String normalized = normalizeKey(key);
 
+        Long arrayValue = readArrayContextValue(ctx, normalized);
+        if (arrayValue != null || normalized.startsWith("@array.")) {
+            return arrayValue == null
+                    ? null
+                    : (int) Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, arrayValue));
+        }
+
         return switch (normalized) {
             case "@selector_furni_count" ->
                 countIterable(ctx.targets() != null ? ctx.targets().items() : null);
@@ -408,6 +415,36 @@ public final class WiredInternalVariableSupport {
             case "@antenna_id" -> ctx.event().getSignalChannel();
             case "@chat_type" -> ctx.event().getChatType();
             case "@chat_style" -> ctx.event().getChatStyle();
+            default -> null;
+        };
+    }
+
+    /** Returns context values without narrowing 64-bit array field values used by text output. */
+    public static Long readContextLongValue(WiredContext ctx, String key) {
+        if (ctx == null) return null;
+
+        String normalized = normalizeKey(key);
+        Long arrayValue = readArrayContextValue(ctx, normalized);
+        if (arrayValue != null || normalized.startsWith("@array.")) return arrayValue;
+
+        Integer value = readContextValue(ctx, normalized);
+        return value != null ? value.longValue() : null;
+    }
+
+    private static Long readArrayContextValue(WiredContext ctx, String normalized) {
+        if (ctx.event() == null || ctx.event().getArrayChange() == null) return null;
+
+        var change = ctx.event().getArrayChange();
+        return switch (normalized) {
+            case "@array.change_type" -> (long) change.changeType();
+            case "@array.index" -> (long) change.index();
+            case "@array.source_index" -> (long) change.sourceIndex();
+            case "@array.destination_index" -> (long) change.destinationIndex();
+            case "@array.field_index" -> (long) (change.fieldId() > 0 ? change.fieldId() : -1);
+            case "@array.old_value" -> change.oldValue();
+            case "@array.new_value" -> change.newValue();
+            case "@array.old_length" -> (long) change.oldLength();
+            case "@array.new_length" -> (long) change.newLength();
             default -> null;
         };
     }

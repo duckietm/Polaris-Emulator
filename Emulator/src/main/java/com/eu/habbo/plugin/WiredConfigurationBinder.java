@@ -3,6 +3,8 @@ package com.eu.habbo.plugin;
 import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.core.config.ConfigurationBinder;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSendSignal;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArraySettings;
 import com.eu.habbo.habbohotel.wired.core.WiredEngine;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 
@@ -75,6 +77,17 @@ final class WiredConfigurationBinder extends ConfigurationBinder {
                 "wired.monitor.heavy.delayed.percent",
                 () -> WiredEngine.MONITOR_HEAVY_DELAYED_PERCENT =
                         this.configuration.getInt("wired.monitor.heavy.delayed.percent", 60));
+        this.apply(
+                "hotel.wired.arrays",
+                () -> WiredArraySettings.configure(
+                        this.configuration.getInt(
+                                "hotel.wired.arrays.max_entries", WiredArrayDefinition.ABSOLUTE_MAX_ENTRIES),
+                        this.configuration.getInt(
+                                "hotel.wired.arrays.max_populated_cells_per_owner",
+                                WiredArrayDefinition.DEFAULT_MAX_POPULATED_CELLS),
+                        this.configuration.getInt(
+                                "hotel.wired.arrays.max_owners_per_execution",
+                                WiredArraySettings.DEFAULT_MAX_OWNERS_PER_EXECUTION)));
 
         if (WiredManager.getEngine() != null) {
             WiredManager.getEngine().clearAllDiagnostics();

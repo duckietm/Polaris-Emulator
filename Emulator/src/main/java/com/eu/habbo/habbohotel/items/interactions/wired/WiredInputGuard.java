@@ -2,7 +2,6 @@ package com.eu.habbo.habbohotel.items.interactions.wired;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.messages.ClientMessage;
-
 import java.util.Arrays;
 
 public final class WiredInputGuard {
@@ -14,8 +13,7 @@ public final class WiredInputGuard {
     public static final int MIN_STUFF_SELECTION_CODE = -1;
     public static final int MAX_STUFF_SELECTION_CODE = 2;
 
-    private WiredInputGuard() {
-    }
+    private WiredInputGuard() {}
 
     public static int[] readIntParams(ClientMessage packet) {
         int count = packet.readInt();
@@ -31,14 +29,17 @@ public final class WiredInputGuard {
     }
 
     public static String readStringParam(ClientMessage packet) {
+        return readStringParam(packet, MAX_STRING_PARAM_LENGTH);
+    }
+
+    public static String readStringParam(ClientMessage packet, int maximumLength) {
         String value = packet.readString();
         if (value == null || value.isEmpty()) {
             return "";
         }
 
-        return value.length() > MAX_STRING_PARAM_LENGTH
-                ? value.substring(0, MAX_STRING_PARAM_LENGTH)
-                : value;
+        int boundedMaximum = Math.max(1, Math.min(WiredLargePayload.MAX_STRING_PARAM_LENGTH, maximumLength));
+        return value.length() > boundedMaximum ? value.substring(0, boundedMaximum) : value;
     }
 
     public static int[] readFurniIds(ClientMessage packet) {
@@ -73,9 +74,8 @@ public final class WiredInputGuard {
     }
 
     public static int maxFurniSelectionCount() {
-        int selectionLimit = Emulator.getConfig() != null
-                ? Emulator.getConfig().getInt("hotel.wired.furni.selection.count", 5)
-                : 5;
+        int selectionLimit =
+                Emulator.getConfig() != null ? Emulator.getConfig().getInt("hotel.wired.furni.selection.count", 5) : 5;
         selectionLimit = Math.max(1, selectionLimit);
         return Math.min(MAX_ABSOLUTE_FURNI_IDS, selectionLimit * 20);
     }

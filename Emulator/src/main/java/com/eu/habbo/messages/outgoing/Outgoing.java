@@ -129,6 +129,7 @@ public class Outgoing {
     public static final int WiredMonitorDataComposer = 5101; // CUSTOM
     public static final int WiredRoomSettingsDataComposer = 5102; // CUSTOM
     public static final int WiredUserVariablesDataComposer = 5103; // CUSTOM
+    public static final int WiredArrayInspectionDataComposer = 5111; // CUSTOM
     public static final int ConfInvisStateComposer = 5104; // CUSTOM
     public static final int TranslationLanguagesComposer = 5106; // CUSTOM
     public static final int TranslationResultComposer = 5107; // CUSTOM

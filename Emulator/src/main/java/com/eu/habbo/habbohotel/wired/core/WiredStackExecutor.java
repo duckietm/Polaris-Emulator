@@ -36,6 +36,8 @@ final class WiredStackExecutor {
 
         boolean selectorsHaveRequiredTargets(List<InteractionWiredEffect> executedSelectors, WiredContext context);
 
+        void captureArrayEntries(Room room, WiredStack stack, WiredContext context);
+
         void finalizeSelectors(List<InteractionWiredEffect> executedSelectors, WiredContext context, long currentTime);
 
         void executeEffects(WiredStack stack, List<IWiredEffect> effects, WiredContext context, long currentTime);
@@ -132,6 +134,7 @@ final class WiredStackExecutor {
             return false;
         }
 
+        this.hooks.captureArrayEntries(room, stack, context);
         boolean conditionsPassed = this.conditionEvaluator.outcomeForExecution(stack, context, negateConditions);
         List<IWiredEffect> executableEffects = this.effectPlanner.executableEffects(stack, conditionsPassed);
         boolean hasSpecialOutcome = conditionsPassed && hasSpecialTriggerOutcome(stack, event);

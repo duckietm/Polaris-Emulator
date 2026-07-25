@@ -3,14 +3,15 @@ package com.eu.habbo.messages.outgoing.wired;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomFurniVariableManager;
-import com.eu.habbo.habbohotel.rooms.RoomVariableManager;
 import com.eu.habbo.habbohotel.rooms.RoomUserVariableManager;
+import com.eu.habbo.habbohotel.rooms.RoomVariableManager;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
+import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-
 import java.util.Collections;
 import java.util.List;
 
@@ -19,16 +20,52 @@ public class WiredUserVariablesDataComposer extends MessageComposer {
     private final RoomFurniVariableManager.Snapshot furniSnapshot;
     private final RoomVariableManager.Snapshot roomSnapshot;
     private final List<WiredVariableDefinitionInfo> contextDefinitions;
+    private final Room room;
 
-    public WiredUserVariablesDataComposer(RoomUserVariableManager.Snapshot userSnapshot, RoomFurniVariableManager.Snapshot furniSnapshot, RoomVariableManager.Snapshot roomSnapshot) {
-        this(userSnapshot, furniSnapshot, roomSnapshot, resolveContextDefinitions(userSnapshot, furniSnapshot, roomSnapshot));
+    public WiredUserVariablesDataComposer(
+            RoomUserVariableManager.Snapshot userSnapshot,
+            RoomFurniVariableManager.Snapshot furniSnapshot,
+            RoomVariableManager.Snapshot roomSnapshot) {
+        this(userSnapshot, furniSnapshot, roomSnapshot, resolveRoom(userSnapshot, furniSnapshot, roomSnapshot));
     }
 
-    public WiredUserVariablesDataComposer(RoomUserVariableManager.Snapshot userSnapshot, RoomFurniVariableManager.Snapshot furniSnapshot, RoomVariableManager.Snapshot roomSnapshot, List<WiredVariableDefinitionInfo> contextDefinitions) {
+    private WiredUserVariablesDataComposer(
+            RoomUserVariableManager.Snapshot userSnapshot,
+            RoomFurniVariableManager.Snapshot furniSnapshot,
+            RoomVariableManager.Snapshot roomSnapshot,
+            Room room) {
+        this(
+                userSnapshot,
+                furniSnapshot,
+                roomSnapshot,
+                room != null ? WiredContextVariableSupport.createDefinitionInfos(room) : Collections.emptyList(),
+                room);
+    }
+
+    public WiredUserVariablesDataComposer(
+            RoomUserVariableManager.Snapshot userSnapshot,
+            RoomFurniVariableManager.Snapshot furniSnapshot,
+            RoomVariableManager.Snapshot roomSnapshot,
+            List<WiredVariableDefinitionInfo> contextDefinitions) {
+        this(
+                userSnapshot,
+                furniSnapshot,
+                roomSnapshot,
+                contextDefinitions,
+                resolveRoom(userSnapshot, furniSnapshot, roomSnapshot));
+    }
+
+    private WiredUserVariablesDataComposer(
+            RoomUserVariableManager.Snapshot userSnapshot,
+            RoomFurniVariableManager.Snapshot furniSnapshot,
+            RoomVariableManager.Snapshot roomSnapshot,
+            List<WiredVariableDefinitionInfo> contextDefinitions,
+            Room room) {
         this.userSnapshot = userSnapshot;
         this.furniSnapshot = furniSnapshot;
         this.roomSnapshot = roomSnapshot;
         this.contextDefinitions = (contextDefinitions != null) ? contextDefinitions : Collections.emptyList();
+        this.room = room;
     }
 
     @Override
@@ -47,7 +84,8 @@ public class WiredUserVariablesDataComposer extends MessageComposer {
 
         this.response.appendInt(roomId);
 
-        this.response.appendInt((this.userSnapshot != null) ? this.userSnapshot.getDefinitions().size() : 0);
+        this.response.appendInt(
+                (this.userSnapshot != null) ? this.userSnapshot.getDefinitions().size() : 0);
 
         if (this.userSnapshot != null) {
             for (RoomUserVariableManager.DefinitionEntry definition : this.userSnapshot.getDefinitions()) {
@@ -60,7 +98,8 @@ public class WiredUserVariablesDataComposer extends MessageComposer {
             }
         }
 
-        this.response.appendInt((this.userSnapshot != null) ? this.userSnapshot.getUsers().size() : 0);
+        this.response.appendInt(
+                (this.userSnapshot != null) ? this.userSnapshot.getUsers().size() : 0);
 
         if (this.userSnapshot != null) {
             for (RoomUserVariableManager.UserAssignmentsEntry user : this.userSnapshot.getUsers()) {
@@ -77,7 +116,10 @@ public class WiredUserVariablesDataComposer extends MessageComposer {
             }
         }
 
-        this.response.appendInt((this.furniSnapshot != null) ? this.furniSnapshot.getDefinitions().size() : 0);
+        this.response.appendInt(
+                (this.furniSnapshot != null)
+                        ? this.furniSnapshot.getDefinitions().size()
+                        : 0);
 
         if (this.furniSnapshot != null) {
             for (RoomFurniVariableManager.DefinitionEntry definition : this.furniSnapshot.getDefinitions()) {
@@ -90,7 +132,8 @@ public class WiredUserVariablesDataComposer extends MessageComposer {
             }
         }
 
-        this.response.appendInt((this.furniSnapshot != null) ? this.furniSnapshot.getFurnis().size() : 0);
+        this.response.appendInt(
+                (this.furniSnapshot != null) ? this.furniSnapshot.getFurnis().size() : 0);
 
         if (this.furniSnapshot != null) {
             for (RoomFurniVariableManager.FurniAssignmentsEntry furni : this.furniSnapshot.getFurnis()) {
@@ -107,7 +150,8 @@ public class WiredUserVariablesDataComposer extends MessageComposer {
             }
         }
 
-        this.response.appendInt((this.roomSnapshot != null) ? this.roomSnapshot.getDefinitions().size() : 0);
+        this.response.appendInt(
+                (this.roomSnapshot != null) ? this.roomSnapshot.getDefinitions().size() : 0);
 
         if (this.roomSnapshot != null) {
             for (RoomVariableManager.DefinitionEntry definition : this.roomSnapshot.getDefinitions()) {
@@ -120,7 +164,8 @@ public class WiredUserVariablesDataComposer extends MessageComposer {
             }
         }
 
-        this.response.appendInt((this.roomSnapshot != null) ? this.roomSnapshot.getAssignments().size() : 0);
+        this.response.appendInt(
+                (this.roomSnapshot != null) ? this.roomSnapshot.getAssignments().size() : 0);
 
         if (this.roomSnapshot != null) {
             for (RoomVariableManager.AssignmentEntry assignment : this.roomSnapshot.getAssignments()) {
@@ -147,10 +192,15 @@ public class WiredUserVariablesDataComposer extends MessageComposer {
             this.response.appendBoolean(definition.isReadOnly());
         }
 
+        this.response.appendString(WiredManager.getGson().toJson(WiredArrayDefinitionSupport.collect(this.room)));
+
         return this.response;
     }
 
-    private static List<WiredVariableDefinitionInfo> resolveContextDefinitions(RoomUserVariableManager.Snapshot userSnapshot, RoomFurniVariableManager.Snapshot furniSnapshot, RoomVariableManager.Snapshot roomSnapshot) {
+    private static Room resolveRoom(
+            RoomUserVariableManager.Snapshot userSnapshot,
+            RoomFurniVariableManager.Snapshot furniSnapshot,
+            RoomVariableManager.Snapshot roomSnapshot) {
         int roomId = 0;
 
         if (userSnapshot != null) {
@@ -162,10 +212,9 @@ public class WiredUserVariablesDataComposer extends MessageComposer {
         }
 
         if (roomId <= 0) {
-            return Collections.emptyList();
+            return null;
         }
 
-        Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
-        return room != null ? WiredContextVariableSupport.createDefinitionInfos(room) : Collections.emptyList();
+        return Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
     }
 }

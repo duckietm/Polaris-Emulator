@@ -3,6 +3,9 @@ package com.eu.habbo.messages.incoming.wired;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredInputGuard;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredLargePayload;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -26,7 +29,17 @@ public class WiredConditionSaveDataEvent extends MessageHandler {
                     boolean saved;
                     try {
                         saved = SAVE_ADAPTER.save(
-                                condition, () -> InteractionWired.readSettings(this.packet, false), () -> this.packet);
+                                condition,
+                                () -> {
+                                    int maximumStringLength = condition instanceof WiredLargePayload
+                                            ? WiredLargePayload.MAX_STRING_PARAM_LENGTH
+                                            : WiredInputGuard.MAX_STRING_PARAM_LENGTH;
+                                    WiredSettings settings =
+                                            InteractionWired.readSettings(this.packet, false, maximumStringLength);
+                                    settings.setRoom(room);
+                                    return settings;
+                                },
+                                () -> this.packet);
                     } catch (IllegalArgumentException exception) {
                         this.client.sendResponse(new UpdateFailedComposer("Invalid wired condition settings"));
                         return;

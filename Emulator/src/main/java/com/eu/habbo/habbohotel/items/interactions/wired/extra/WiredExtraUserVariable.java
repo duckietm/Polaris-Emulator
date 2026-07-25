@@ -7,14 +7,18 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType;
+import com.eu.habbo.habbohotel.wired.arrays.WiredVariableDefinitionData;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class WiredExtraUserVariable extends InteractionWiredExtra {
+public class WiredExtraUserVariable extends InteractionWiredExtra implements WiredArrayVariableDefinition {
     public static final int CODE = 70;
     public static final int AVAILABILITY_ROOM = 0;
     public static final int AVAILABILITY_PERMANENT = 10;
@@ -23,6 +27,7 @@ public class WiredExtraUserVariable extends InteractionWiredExtra {
     private String variableName = "";
     private boolean hasValue = false;
     private int availability = AVAILABILITY_ROOM;
+    private WiredArrayDefinition arrayDefinition;
 
     public WiredExtraUserVariable(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -40,7 +45,13 @@ public class WiredExtraUserVariable extends InteractionWiredExtra {
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
         int[] intParams = settings.getIntParams();
-        String normalizedName = WiredVariableNameValidator.normalizeForSave(settings.getStringParam());
+        WiredVariableDefinitionData definitionData;
+        try {
+            definitionData = WiredArrayDefinitionSupport.readEditorData(settings.getStringParam());
+        } catch (IllegalArgumentException exception) {
+            throw new WiredSaveException(exception.getMessage());
+        }
+        String normalizedName = WiredVariableNameValidator.normalizeForSave(definitionData.name);
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
 
@@ -49,18 +60,40 @@ public class WiredExtraUserVariable extends InteractionWiredExtra {
         }
 
         WiredVariableNameValidator.validateDefinitionName(room, this.getId(), normalizedName);
+        int nextAvailability = normalizeAvailability((intParams.length > 1) ? intParams[1] : AVAILABILITY_ROOM);
+
+        WiredArrayDefinition nextArrayDefinition;
+        try {
+            nextArrayDefinition = WiredArrayDefinitionSupport.parseArrayDefinition(definitionData);
+            room.getArrayVariableManager()
+                    .validateDefinitionChange(
+                            this,
+                            nextArrayDefinition,
+                            nextAvailability == AVAILABILITY_PERMANENT || nextAvailability == AVAILABILITY_SHARED);
+        } catch (IllegalArgumentException exception) {
+            throw new WiredSaveException(exception.getMessage());
+        }
 
         this.variableName = normalizedName;
-        this.hasValue = (intParams.length > 0) && (intParams[0] == 1);
-        this.availability = normalizeAvailability((intParams.length > 1) ? intParams[1] : AVAILABILITY_ROOM);
+        this.arrayDefinition = nextArrayDefinition;
+        this.hasValue = this.arrayDefinition != null || ((intParams.length > 0) && (intParams[0] == 1));
+        this.availability = nextAvailability;
 
         room.getUserVariableManager().handleDefinitionUpdated(this);
+        room.getArrayVariableManager().handleDefinitionUpdated(this);
         return true;
     }
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(this.variableName, this.hasValue, this.availability));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.variableName,
+                        this.hasValue,
+                        this.availability,
+                        this.arrayDefinition == null
+                                ? WiredVariableDefinitionData.scalar(this.variableName)
+                                : WiredVariableDefinitionData.array(this.variableName, this.arrayDefinition)));
     }
 
     @Override
@@ -70,7 +103,7 @@ public class WiredExtraUserVariable extends InteractionWiredExtra {
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.variableName);
+        message.appendString(WiredArrayDefinitionSupport.editorString(this.variableName, this.arrayDefinition));
         message.appendInt(2);
         message.appendInt(this.hasValue ? 1 : 0);
         message.appendInt(this.availability);
@@ -96,6 +129,14 @@ public class WiredExtraUserVariable extends InteractionWiredExtra {
                 this.variableName = WiredVariableNameValidator.normalizeLegacy(data.variableName);
                 this.hasValue = data.hasValue;
                 this.availability = normalizeAvailability(data.availability);
+                if (data.definition != null) {
+                    try {
+                        this.arrayDefinition = WiredArrayDefinitionSupport.parseArrayDefinition(data.definition);
+                        if (this.arrayDefinition != null) this.hasValue = true;
+                    } catch (IllegalArgumentException ignored) {
+                        this.arrayDefinition = null;
+                    }
+                }
             }
 
             return;
@@ -109,11 +150,11 @@ public class WiredExtraUserVariable extends InteractionWiredExtra {
         this.variableName = "";
         this.hasValue = false;
         this.availability = AVAILABILITY_ROOM;
+        this.arrayDefinition = null;
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {}
 
     @Override
     public boolean hasConfiguration() {
@@ -140,6 +181,26 @@ public class WiredExtraUserVariable extends InteractionWiredExtra {
         return this.availability == AVAILABILITY_SHARED;
     }
 
+    @Override
+    public WiredArrayVariableType getArrayVariableType() {
+        return WiredArrayVariableType.USER;
+    }
+
+    @Override
+    public WiredArrayDefinition getArrayDefinition() {
+        return this.arrayDefinition;
+    }
+
+    @Override
+    public boolean isArrayPermanent() {
+        return this.isPermanentAvailability();
+    }
+
+    @Override
+    public boolean isArrayShared() {
+        return this.isSharedAvailability();
+    }
+
     private static int normalizeAvailability(int value) {
         if (value == AVAILABILITY_PERMANENT || value == AVAILABILITY_SHARED) {
             return value;
@@ -152,11 +213,13 @@ public class WiredExtraUserVariable extends InteractionWiredExtra {
         String variableName;
         boolean hasValue;
         int availability;
+        WiredVariableDefinitionData definition;
 
-        JsonData(String variableName, boolean hasValue, int availability) {
+        JsonData(String variableName, boolean hasValue, int availability, WiredVariableDefinitionData definition) {
             this.variableName = variableName;
             this.hasValue = hasValue;
             this.availability = availability;
+            this.definition = definition;
         }
     }
 }

@@ -433,6 +433,8 @@ public class Incoming {
     public static final int WiredUserInspectMoveEvent = 10027;
     public static final int WiredFurniRuntimeStateRequestEvent = 10028;
     public static final int WiredFeatureCapabilitiesEvent = 10029;
+    public static final int WiredArrayInspectionRequestEvent = 10034;
+    public static final int WiredArrayInspectionUpdateEvent = 10035;
     public static final int TranslationLanguagesRequestEvent = 10032;
     public static final int TranslationTextRequestEvent = 10033;
     public static final int RequestInventoryPetDelete = 10030;

@@ -16035,6 +16035,14 @@
     {
       "direction": "server_to_client",
       "side": "java",
+      "header": 6002,
+      "symbol": "WiredFurniOpacityComposer",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/items/WiredFurniOpacityComposer.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "server_to_client",
+      "side": "java",
       "header": 9409,
       "symbol": "HotelViewLandingComposer",
       "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/hotelview/HotelViewLandingComposer.java",
@@ -16046,6 +16054,14 @@
       "header": 9410,
       "symbol": "RoomUserHabbiconComposer",
       "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/users/RoomUserHabbiconComposer.java",
+      "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "server_to_client",
+      "side": "java",
+      "header": 9415,
+      "symbol": "WiredFurniGravityComposer",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/items/WiredFurniGravityComposer.java",
       "reason": "Header is registered only by the Polaris Emulator packet registry"
     },
     {

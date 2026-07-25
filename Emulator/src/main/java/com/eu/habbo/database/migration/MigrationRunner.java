@@ -5,15 +5,14 @@ import com.eu.habbo.database.backup.MariaDbMigrationBackup;
 import com.eu.habbo.database.backup.MigrationBackup;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import java.util.Properties;
+import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
 import org.flywaydb.core.api.MigrationInfoService;
 import org.flywaydb.core.api.output.MigrateResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.sql.DataSource;
-import java.util.Properties;
 
 /**
  * Runs Flyway migrations.
@@ -40,13 +39,14 @@ public final class MigrationRunner {
 
     private static final String KEY_ON_STARTUP = "db.migrate.on_startup";
 
-    private MigrationRunner() {
-    }
+    private MigrationRunner() {}
 
     /** Startup entry point, called before database-backed configuration is loaded. */
     public static void runAtStartup(HikariDataSource runtimeDataSource, ConfigurationManager config) {
         if (!config.getBoolean(KEY_ON_STARTUP, true)) {
-            LOGGER.warn("[migrate] {}=false — skipping automatic schema migration. The operator is responsible for schema state.", KEY_ON_STARTUP);
+            LOGGER.warn(
+                    "[migrate] {}=false — skipping automatic schema migration. The operator is responsible for schema state.",
+                    KEY_ON_STARTUP);
             return;
         }
 
@@ -54,15 +54,11 @@ public final class MigrationRunner {
     }
 
     /** Applies migrations immediately, regardless of the startup config switch. */
-    public static MigrateResult migrateAtStartup(
-            HikariDataSource runtimeDataSource,
-            ConfigurationManager config) {
+    public static MigrateResult migrateAtStartup(HikariDataSource runtimeDataSource, ConfigurationManager config) {
         // The runtime datasource rewrites legacy plugin SQL. Migrations require an
         // unwrapped pool so their DDL cannot be silently translated.
         try (HikariDataSource rawMigrationDataSource = rawMigrationDataSource(runtimeDataSource)) {
-            return migrate(
-                    rawMigrationDataSource,
-                    MariaDbMigrationBackup.resolve(config, rawMigrationDataSource));
+            return migrate(rawMigrationDataSource, MariaDbMigrationBackup.resolve(config, rawMigrationDataSource));
         }
     }
 
@@ -102,7 +98,8 @@ public final class MigrationRunner {
         LOGGER.info("[migrate] Detected schema state: {}", state);
         try {
             if (state != SchemaPreflight.State.EMPTY && state != SchemaPreflight.State.UNKNOWN) {
-                java.util.List<String> pending = java.util.Arrays.stream(flyway.info().pending())
+                java.util.List<String> pending = java.util.Arrays.stream(
+                                flyway.info().pending())
                         .filter(migration -> !isBaselineSkippedDuringAdoption(state, migration))
                         .map(migration -> migration.getVersion() == null
                                 ? migration.getDescription()
@@ -110,29 +107,35 @@ public final class MigrationRunner {
                         .toList();
                 if (!pending.isEmpty()) migrationBackup.beforeMigrations(pending);
             }
-            MigrateResult result = switch (state) {
-                case UNKNOWN -> throw new MigrationException(
-                        "Refusing to migrate: the database is non-empty but is not a recognised Arc/Polaris schema. "
-                                + "No changes were made. Check that db.database points at the correct database, or see the "
-                                + "conversion/recovery instructions before proceeding.");
-                case RECOGNISED_EXISTING -> {
-                    LOGGER.warn("[migrate] Existing Arcturus/Polaris hotel detected with no migration history. "
-                            + "Polaris will preserve the hotel data, record adoption baseline V{}, and apply the required upgrades now. "
-                            + "A full database backup before first startup is strongly recommended.", BASELINE_VERSION);
-                    flyway.baseline();
-                    yield flyway.migrate();
-                }
-                case EMPTY, MANAGED -> flyway.migrate();
-                default -> throw new MigrationException("Unhandled schema state: " + state);
-            };
+            MigrateResult result =
+                    switch (state) {
+                        case UNKNOWN ->
+                            throw new MigrationException(
+                                    "Refusing to migrate: the database is non-empty but is not a recognised Arc/Polaris schema. "
+                                            + "No changes were made. Check that db.database points at the correct database, or see the "
+                                            + "conversion/recovery instructions before proceeding.");
+                        case RECOGNISED_EXISTING -> {
+                            LOGGER.warn(
+                                    "[migrate] Existing Arcturus/Polaris hotel detected with no migration history. "
+                                            + "Polaris will preserve the hotel data, record adoption baseline V{}, and apply the required upgrades now. "
+                                            + "A full database backup before first startup is strongly recommended.",
+                                    BASELINE_VERSION);
+                            flyway.baseline();
+                            yield flyway.migrate();
+                        }
+                        case EMPTY, MANAGED -> flyway.migrate();
+                        default -> throw new MigrationException("Unhandled schema state: " + state);
+                    };
             RuntimeSchemaValidator.validate(dataSource);
             LOGGER.info("[migrate] Runtime schema invariants validated.");
             return result;
         } catch (MigrationException e) {
             throw e;
         } catch (Exception e) {
-            throw new MigrationException("Migration failed; the emulator will not start against a half-upgraded schema. "
-                    + "Inspect the error, restore from backup or forward-fix, then retry.", e);
+            throw new MigrationException(
+                    "Migration failed; the emulator will not start against a half-upgraded schema. "
+                            + "Inspect the error, restore from backup or forward-fix, then retry.",
+                    e);
         }
     }
 
@@ -155,9 +158,13 @@ public final class MigrationRunner {
 
             MigrationInfoService info = flyway.info();
             MigrationInfo current = info.current();
-            out.append("Current version: ").append(current == null ? "(none)" : current.getVersion()).append('\n');
+            out.append("Current version: ")
+                    .append(current == null ? "(none)" : current.getVersion())
+                    .append('\n');
             if (state == SchemaPreflight.State.RECOGNISED_EXISTING) {
-                out.append("Adoption: record baseline V").append(BASELINE_VERSION).append('\n');
+                out.append("Adoption: record baseline V")
+                        .append(BASELINE_VERSION)
+                        .append('\n');
             }
 
             MigrationInfo[] pending = info.pending();
@@ -170,8 +177,11 @@ public final class MigrationRunner {
             out.append("Pending migrations: ").append(pendingCount).append('\n');
             for (MigrationInfo migration : pending) {
                 if (!isBaselineSkippedDuringAdoption(state, migration)) {
-                    out.append("  - V").append(migration.getVersion()).append(' ')
-                            .append(migration.getDescription()).append('\n');
+                    out.append("  - V")
+                            .append(migration.getVersion())
+                            .append(' ')
+                            .append(migration.getDescription())
+                            .append('\n');
                 }
             }
             // A fully migrated database must also satisfy the runtime contract, so
@@ -184,8 +194,10 @@ public final class MigrationRunner {
         } catch (MigrationException e) {
             throw e;
         } catch (Exception e) {
-            throw new MigrationException("Migration status failed; the schema history could not be "
-                    + "validated against the packaged migrations. No changes were made.", e);
+            throw new MigrationException(
+                    "Migration status failed; the schema history could not be "
+                            + "validated against the packaged migrations. No changes were made.",
+                    e);
         }
     }
 
@@ -210,14 +222,14 @@ public final class MigrationRunner {
             LOGGER.info("[migrate] Schema history repaired: recorded checksums realigned with the packaged "
                     + "migrations and any failed rows cleared. Run a normal startup to apply pending migrations.");
         } catch (Exception e) {
-            throw new MigrationException("Migration repair failed; the schema history could not be realigned "
-                    + "with the packaged migrations. No hotel data was changed.", e);
+            throw new MigrationException(
+                    "Migration repair failed; the schema history could not be realigned "
+                            + "with the packaged migrations. No hotel data was changed.",
+                    e);
         }
     }
 
-    private static boolean isBaselineSkippedDuringAdoption(
-            SchemaPreflight.State state,
-            MigrationInfo migration) {
+    private static boolean isBaselineSkippedDuringAdoption(SchemaPreflight.State state, MigrationInfo migration) {
         return state == SchemaPreflight.State.RECOGNISED_EXISTING
                 && migration.getVersion() != null
                 && BASELINE_VERSION.equals(migration.getVersion().getVersion());

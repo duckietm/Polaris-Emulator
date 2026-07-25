@@ -6,7 +6,6 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -15,7 +14,8 @@ import java.util.Map;
 public abstract class InteractionCustomValues extends HabboItem {
     public final Map<String, String> values = new HashMap<>();
 
-    public InteractionCustomValues(ResultSet set, Item baseItem, Map<String, String> defaultValues) throws SQLException {
+    public InteractionCustomValues(ResultSet set, Item baseItem, Map<String, String> defaultValues)
+            throws SQLException {
         super(set, baseItem);
 
         this.values.putAll(defaultValues);
@@ -31,7 +31,14 @@ public abstract class InteractionCustomValues extends HabboItem {
         }
     }
 
-    public InteractionCustomValues(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells, Map<String, String> defaultValues) {
+    public InteractionCustomValues(
+            int id,
+            int userId,
+            Item item,
+            String extradata,
+            int limitedStack,
+            int limitedSells,
+            Map<String, String> defaultValues) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
 
         this.values.putAll(defaultValues);
@@ -48,9 +55,7 @@ public abstract class InteractionCustomValues extends HabboItem {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
 
     @Override
     public void run() {
@@ -82,7 +87,5 @@ public abstract class InteractionCustomValues extends HabboItem {
         super.serializeExtradata(serverMessage);
     }
 
-    public void onCustomValuesSaved(Room room, GameClient client, Map<String, String> oldValues) {
-
-    }
+    public void onCustomValuesSaved(Room room, GameClient client, Map<String, String> oldValues) {}
 }

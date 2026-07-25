@@ -1,6 +1,5 @@
 package com.eu.habbo.habbohotel.messenger.history;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -8,6 +7,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import javax.sql.DataSource;
 
 public final class JdbcMessengerHistoryRepository implements MessengerHistoryRepository {
     private static final int CLEANUP_BATCH_SIZE = 1000;
@@ -40,7 +40,8 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
                 ORDER BY c.updated_at DESC
                 """;
         List<MessengerConversationSummary> summaries = new ArrayList<>();
-        try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, userId);
             statement.setInt(2, userId);
             statement.setInt(3, userId);
@@ -54,8 +55,7 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
                             result.getString("display_name"),
                             result.getLong("last_message_id"),
                             result.getInt("unread_count"),
-                            result.getLong("updated_at")
-                    ));
+                            result.getLong("updated_at")));
                 }
             }
             return summaries;
@@ -66,9 +66,10 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
 
     @Override
     public boolean isActiveMember(long conversationId, int userId) {
-        String sql = "SELECT 1 FROM messenger_members WHERE conversation_id = ? AND user_id = ? AND left_at IS NULL LIMIT 1";
+        String sql =
+                "SELECT 1 FROM messenger_members WHERE conversation_id = ? AND user_id = ? AND left_at IS NULL LIMIT 1";
         try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+                PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, conversationId);
             statement.setInt(2, userId);
             try (ResultSet result = statement.executeQuery()) {
@@ -84,7 +85,7 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
         String sql = "SELECT user_id FROM messenger_members WHERE conversation_id = ? AND left_at IS NULL";
         List<Integer> userIds = new ArrayList<>();
         try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+                PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, conversationId);
             try (ResultSet result = statement.executeQuery()) {
                 while (result.next()) userIds.add(result.getInt("user_id"));
@@ -99,7 +100,8 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
     public List<MessengerStoredMessage> loadHistory(long conversationId, int userId, long beforeMessageId, int limit) {
         int[] directParticipants = findDirectParticipants(conversationId, userId);
         if (directParticipants != null) {
-            return loadLegacyDirectHistory(conversationId, directParticipants[0], directParticipants[1], beforeMessageId, limit);
+            return loadLegacyDirectHistory(
+                    conversationId, directParticipants[0], directParticipants[1], beforeMessageId, limit);
         }
 
         String sql = """
@@ -117,7 +119,7 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
                 """;
         List<MessengerStoredMessage> messages = new ArrayList<>();
         try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+                PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, userId);
             statement.setLong(2, conversationId);
             statement.setLong(3, beforeMessageId);
@@ -132,8 +134,7 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
                             result.getInt("type"),
                             result.getString("message"),
                             result.getString("metadata"),
-                            result.getLong("created_at")
-                    ));
+                            result.getLong("created_at")));
                 }
             }
             return messages;
@@ -189,7 +190,8 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
 
     private int[] findDirectParticipants(long conversationId, int userId) {
         String sql = "SELECT direct_key FROM messenger_conversations WHERE id = ? AND type = 'direct'";
-        try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, conversationId);
             try (ResultSet result = statement.executeQuery()) {
                 if (!result.next()) return null;
@@ -201,14 +203,15 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
                 int secondUserId = Integer.parseInt(participantIds[1]);
                 if (firstUserId != userId && secondUserId != userId) return null;
 
-                return new int[]{firstUserId, secondUserId};
+                return new int[] {firstUserId, secondUserId};
             }
         } catch (SQLException exception) {
             throw new IllegalStateException("failed to resolve direct messenger conversation", exception);
         }
     }
 
-    private List<MessengerStoredMessage> loadLegacyDirectHistory(long conversationId, int firstUserId, int secondUserId, long beforeMessageId, int limit) {
+    private List<MessengerStoredMessage> loadLegacyDirectHistory(
+            long conversationId, int firstUserId, int secondUserId, long beforeMessageId, int limit) {
         String sql = """
                 SELECT id, user_from_id, message, timestamp
                 FROM chatlogs_private
@@ -218,7 +221,8 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
                 LIMIT ?
                 """;
         List<MessengerStoredMessage> messages = new ArrayList<>();
-        try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, firstUserId);
             statement.setInt(2, secondUserId);
             statement.setInt(3, secondUserId);
@@ -235,8 +239,7 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
                             0,
                             result.getString("message"),
                             null,
-                            result.getLong("timestamp")
-                    ));
+                            result.getLong("timestamp")));
                 }
             }
             return messages;
@@ -246,14 +249,18 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
     }
 
     @Override
-    public MessengerStoredMessage storeDirectMessage(int senderId, int recipientId, int type, String message, String metadata) {
-        String conversationSql = "INSERT INTO messenger_conversations (type, direct_key) VALUES ('direct', ?) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), updated_at = CURRENT_TIMESTAMP";
-        String memberSql = "INSERT INTO messenger_members (conversation_id, user_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE left_at = NULL, left_message_id = NULL";
+    public MessengerStoredMessage storeDirectMessage(
+            int senderId, int recipientId, int type, String message, String metadata) {
+        String conversationSql =
+                "INSERT INTO messenger_conversations (type, direct_key) VALUES ('direct', ?) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), updated_at = CURRENT_TIMESTAMP";
+        String memberSql =
+                "INSERT INTO messenger_members (conversation_id, user_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE left_at = NULL, left_message_id = NULL";
         try (Connection connection = dataSource.getConnection()) {
             connection.setAutoCommit(false);
             try {
                 long conversationId;
-                try (PreparedStatement statement = connection.prepareStatement(conversationSql, Statement.RETURN_GENERATED_KEYS)) {
+                try (PreparedStatement statement =
+                        connection.prepareStatement(conversationSql, Statement.RETURN_GENERATED_KEYS)) {
                     statement.setString(1, MessengerHistoryService.directKey(senderId, recipientId));
                     statement.executeUpdate();
                     try (ResultSet keys = statement.getGeneratedKeys()) {
@@ -270,7 +277,8 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
                     statement.addBatch();
                     statement.executeBatch();
                 }
-                MessengerStoredMessage stored = insertMessage(connection, conversationId, senderId, type, message, metadata);
+                MessengerStoredMessage stored =
+                        insertMessage(connection, conversationId, senderId, type, message, metadata);
                 connection.commit();
                 return stored;
             } catch (SQLException exception) {
@@ -285,11 +293,13 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
     }
 
     @Override
-    public MessengerStoredMessage storeConversationMessage(long conversationId, int senderId, int type, String message, String metadata) {
+    public MessengerStoredMessage storeConversationMessage(
+            long conversationId, int senderId, int type, String message, String metadata) {
         try (Connection connection = dataSource.getConnection()) {
             connection.setAutoCommit(false);
             try {
-                MessengerStoredMessage stored = insertMessage(connection, conversationId, senderId, type, message, metadata);
+                MessengerStoredMessage stored =
+                        insertMessage(connection, conversationId, senderId, type, message, metadata);
                 connection.commit();
                 return stored;
             } catch (SQLException exception) {
@@ -303,8 +313,11 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
         }
     }
 
-    private MessengerStoredMessage insertMessage(Connection connection, long conversationId, int senderId, int type, String message, String metadata) throws SQLException {
-        String sql = "INSERT INTO messenger_messages (conversation_id, sender_id, type, message, metadata) VALUES (?, ?, ?, ?, ?)";
+    private MessengerStoredMessage insertMessage(
+            Connection connection, long conversationId, int senderId, int type, String message, String metadata)
+            throws SQLException {
+        String sql =
+                "INSERT INTO messenger_messages (conversation_id, sender_id, type, message, metadata) VALUES (?, ?, ?, ?, ?)";
         long messageId;
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setLong(1, conversationId);
@@ -318,11 +331,13 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
                 messageId = keys.getLong(1);
             }
         }
-        try (PreparedStatement statement = connection.prepareStatement("UPDATE messenger_conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?")) {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "UPDATE messenger_conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?")) {
             statement.setLong(1, conversationId);
             statement.executeUpdate();
         }
-        return new MessengerStoredMessage(messageId, conversationId, senderId, type, message, metadata, System.currentTimeMillis() / 1000L);
+        return new MessengerStoredMessage(
+                messageId, conversationId, senderId, type, message, metadata, System.currentTimeMillis() / 1000L);
     }
 
     @Override
@@ -342,7 +357,8 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
                         AND (member.left_message_id IS NULL OR message.id <= member.left_message_id)
                   )
                 """;
-        try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, messageId);
             statement.setLong(2, conversationId);
             statement.setInt(3, userId);
@@ -355,7 +371,8 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
 
     @Override
     public void cleanupRetention(int days, int maxMessagesPerConversation) {
-        String deleteExpired = "DELETE FROM messenger_messages WHERE created_at < UTC_TIMESTAMP() - INTERVAL ? DAY LIMIT ?";
+        String deleteExpired =
+                "DELETE FROM messenger_messages WHERE created_at < UTC_TIMESTAMP() - INTERVAL ? DAY LIMIT ?";
         String deleteOverflow = """
                 DELETE messages FROM messenger_messages messages
                 JOIN (

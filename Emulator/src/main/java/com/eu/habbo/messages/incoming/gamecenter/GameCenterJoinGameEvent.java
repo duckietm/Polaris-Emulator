@@ -15,14 +15,14 @@ public class GameCenterJoinGameEvent extends MessageHandler {
     public void handle() throws Exception {
         int gameId = this.packet.readInt();
 
-        if (gameId == 0) //SnowStorm
+        if (gameId == 0) // SnowStorm
         {
             if (Emulator.getConfig().getBoolean("gamecenter.snowwar.enabled", true)) {
                 SnowWarManager.getInstance().joinQueue(this.client.getHabbo());
             } else {
                 this.client.sendResponse(new SnowStormGenericErrorComposer(SnowWarConstants.ERROR_INTERNAL));
             }
-        } else if (gameId == 3) //BaseJump
+        } else if (gameId == 3) // BaseJump
         {
             this.client.sendResponse(new GameCenterAchievementsConfigurationComposer());
             this.client.sendResponse(new BaseJumpLoadGameURLComposer());

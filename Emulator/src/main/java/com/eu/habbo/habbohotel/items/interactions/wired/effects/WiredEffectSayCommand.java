@@ -1,5 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
+import com.eu.habbo.WiredPlatform;
+import com.eu.habbo.habbohotel.commands.Command;
 import com.eu.habbo.habbohotel.commands.CommandHandler;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
@@ -14,17 +16,21 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WiredEffectSayCommand extends InteractionWiredEffect {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WiredEffectSayCommand.class);
+
     public static final WiredEffectType type = WiredEffectType.SHOW_MESSAGE;
 
     private String command = "";
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;
+    private int configuredByUserId;
 
     public WiredEffectSayCommand(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -71,7 +77,13 @@ public class WiredEffectSayCommand extends InteractionWiredEffect {
         if (nextCommand.isEmpty()) {
             return false;
         }
+
+        Habbo principal = gameClient == null ? null : gameClient.getHabbo();
+        if (principal == null || !WiredCommandPolicy.canUse(WiredCommandPolicy.resolve(nextCommand), principal)) {
+            return false;
+        }
         this.command = nextCommand;
+        this.configuredByUserId = principal.getHabboInfo().getId();
 
         int[] params = settings.getIntParams();
         this.userSource = (params.length > 0) ? params[0] : WiredSourceUtil.SOURCE_TRIGGER;
@@ -91,6 +103,17 @@ public class WiredEffectSayCommand extends InteractionWiredEffect {
         Room room = ctx.room();
 
         String line = this.command.startsWith(":") ? this.command : ":" + this.command;
+        Command resolved = WiredCommandPolicy.resolve(line);
+        Habbo principal = resolvePrincipal(room);
+        if (!WiredCommandPolicy.canUse(resolved, principal)) {
+            LOGGER.warn(
+                    "Blocked wired command item={} room={} principal={} key={}",
+                    this.getId(),
+                    room.getId(),
+                    this.configuredByUserId,
+                    WiredCommandPolicy.commandKey(line));
+            return;
+        }
 
         for (RoomUnit unit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
             Habbo habbo = room.getHabbo(unit);
@@ -108,20 +131,22 @@ public class WiredEffectSayCommand extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(this.command, this.getDelay(), this.userSource));
+        return WiredManager.getGson()
+                .toJson(new JsonData(this.command, this.getDelay(), this.userSource, this.configuredByUserId));
     }
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
         String wiredData = set.getString("wired_data");
 
-        if(wiredData.startsWith("{")) {
+        if (wiredData != null && wiredData.startsWith("{")) {
             JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
             this.command = (data.command == null) ? "" : data.command;
             this.setDelay(data.delay);
             this.userSource = data.userSource;
-        }
-        else {
+            this.configuredByUserId = data.configuredByUserId > 0 ? data.configuredByUserId : this.getUserId();
+        } else {
+            wiredData = wiredData == null ? "" : wiredData;
             String[] data = wiredData.split("\t");
             this.command = "";
 
@@ -132,6 +157,7 @@ public class WiredEffectSayCommand extends InteractionWiredEffect {
 
             this.needsUpdate(true);
             this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
+            this.configuredByUserId = this.getUserId();
         }
     }
 
@@ -139,6 +165,7 @@ public class WiredEffectSayCommand extends InteractionWiredEffect {
     public void onPickUp() {
         this.command = "";
         this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
+        this.configuredByUserId = 0;
         this.setDelay(0);
     }
 
@@ -147,15 +174,25 @@ public class WiredEffectSayCommand extends InteractionWiredEffect {
         return this.userSource == WiredSourceUtil.SOURCE_TRIGGER;
     }
 
+    private Habbo resolvePrincipal(Room room) {
+        int principalId = this.configuredByUserId > 0 ? this.configuredByUserId : this.getUserId();
+        Habbo principal = room.getHabbo(principalId);
+        if (principal != null) return principal;
+        if (WiredPlatform.gameEnvironment() == null) return null;
+        return WiredPlatform.gameEnvironment().getHabboManager().getHabbo(principalId);
+    }
+
     static class JsonData {
         String command;
         int delay;
         int userSource;
+        int configuredByUserId;
 
-        public JsonData(String command, int delay, int userSource) {
+        public JsonData(String command, int delay, int userSource, int configuredByUserId) {
             this.command = command;
             this.delay = delay;
             this.userSource = userSource;
+            this.configuredByUserId = configuredByUserId;
         }
     }
 }

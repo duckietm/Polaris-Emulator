@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
@@ -495,6 +496,11 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
                 if (item != null && item.getId() == itemId) return true;
             }
         } catch (Exception e) {
+            WiredCompatibilityDiagnostics.record(
+                    WiredCompatibilityDiagnostics.FailurePoint.EFFECT_SEND_SIGNAL_SELECTION,
+                    this.getRoomId(),
+                    this.getId(),
+                    e);
         }
         return false;
     }

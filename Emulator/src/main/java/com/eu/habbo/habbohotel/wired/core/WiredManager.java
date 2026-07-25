@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.wired.core;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.habbohotel.catalog.CatalogItem;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
@@ -138,20 +139,28 @@ public final class WiredManager {
         MAXIMUM_FURNI_SELECTION = Emulator.getConfig().getInt("hotel.wired.furni.selection.count", 5);
         TELEPORT_DELAY = Emulator.getConfig().getInt("wired.effect.teleport.delay", 500);
 
-        // Set debug mode
-        if (debug) {
-            setDebugEnabled(true);
+        // Apply the configured value on every runtime generation so an in-process restart cannot
+        // inherit debug mode from the previous generation.
+        setDebugEnabled(debug);
+
+        // Build and start a complete runtime before publishing it through the compatibility
+        // facade. Callers therefore see either the previous generation or a fully active one.
+        RoomWiredStackIndex newStackIndex = new RoomWiredStackIndex();
+        WiredServices services = DefaultWiredServices.getInstance();
+        WiredEngine newEngine = new WiredEngine(services, newStackIndex, maxSteps);
+        WiredRuntime runtime = new WiredRuntime(newEngine, newStackIndex, WiredTickService.getInstance());
+
+        try {
+            runtime.start();
+        } catch (RuntimeException exception) {
+            cleanupRuntimeState(newEngine, newStackIndex);
+            setDebugEnabled(false);
+            throw exception;
         }
 
-        // Create components
-        stackIndex = new RoomWiredStackIndex();
-        WiredServices services = DefaultWiredServices.getInstance();
-        engine = new WiredEngine(services, stackIndex, maxSteps);
-
-        WiredRuntime runtime = new WiredRuntime(engine, stackIndex, WiredTickService.getInstance());
-        runtime.start();
+        engine = newEngine;
+        stackIndex = newStackIndex;
         RUNTIME.set(runtime);
-
         initialized = true;
 
         if (!enabled || !exclusive) {
@@ -171,30 +180,64 @@ public final class WiredManager {
      * Called during emulator shutdown.
      */
     public static synchronized void shutdown() {
-        if (!initialized) {
+        WiredRuntime currentRuntime = RUNTIME.getAndSet(null);
+        WiredEngine currentEngine = engine;
+        RoomWiredStackIndex currentStackIndex = stackIndex;
+        boolean hadPublishedState =
+                initialized || currentRuntime != null || currentEngine != null || currentStackIndex != null;
+
+        // Disable the facade and remove published references before cleanup starts. A concurrent
+        // event can no longer enter a runtime generation while it is being dismantled.
+        initialized = false;
+        engine = null;
+        stackIndex = null;
+
+        if (!hadPublishedState) {
+            clearCurrentThreadRuntimeState();
+            setDebugEnabled(false);
             return;
         }
 
         LOGGER.info("Shutting down Wired Manager...");
 
-        WiredRuntime currentRuntime = RUNTIME.get();
-        if (currentRuntime != null) {
-            currentRuntime.shutdown();
-        } else {
-            // Defensive compatibility path for partially initialized legacy state.
-            WiredTickService.getInstance().stop();
-            if (stackIndex != null) {
-                stackIndex.clearAll();
+        try {
+            if (currentRuntime != null && currentRuntime.isActive()) {
+                currentRuntime.shutdown();
+            } else {
+                // Defensive compatibility path for partially initialized legacy state.
+                WiredTickService.getInstance().stop();
+                cleanupRuntimeState(currentEngine, currentStackIndex);
             }
-            if (engine != null) {
-                engine.clearUnseenCache();
-                engine.clearAllDiagnostics();
-                engine.clearAllExecutionCaches();
-            }
+        } finally {
+            clearCurrentThreadRuntimeState();
+            setDebugEnabled(false);
         }
 
-        initialized = false;
         LOGGER.info("Wired Manager shutdown complete");
+    }
+
+    private static void cleanupRuntimeState(WiredEngine currentEngine, RoomWiredStackIndex currentStackIndex) {
+        if (currentEngine != null) {
+            currentEngine.shutdownScheduledWork();
+        }
+        if (currentStackIndex != null) {
+            currentStackIndex.clearAll();
+        }
+        if (currentEngine != null) {
+            currentEngine.clearUnseenCache();
+            currentEngine.clearAllDiagnostics();
+            currentEngine.clearAllExecutionCaches();
+        }
+    }
+
+    private static void clearCurrentThreadRuntimeState() {
+        EVENT_HANDLING_DEPTH.remove();
+        DEFERRED_EFFECT_EVENTS.remove();
+        WiredInternalVariableSupport.clearThreadLocalsForCurrentThread();
+        WiredMoveCarryHelper.clearThreadLocalsForCurrentThread();
+        WiredUserMovementHelper.clearThreadLocalsForCurrentThread();
+        WiredSelectionFilterSupport.clearThreadLocalsForCurrentThread();
+        WiredExecutionScope.clearForCurrentThread();
     }
 
     /**
@@ -829,6 +872,8 @@ public final class WiredManager {
             return;
         }
 
+        room.advanceWiredCacheGeneration();
+
         if (stackIndex != null) {
             stackIndex.invalidateAll(room);
         }
@@ -846,6 +891,9 @@ public final class WiredManager {
      * Invalidate the wired index for a specific tile.
      */
     public static void invalidateTile(Room room, RoomTile tile) {
+        if (room != null && tile != null) {
+            room.advanceWiredCacheGeneration();
+        }
         if (stackIndex != null && room != null && tile != null) {
             stackIndex.invalidate(room, tile);
         }
@@ -862,6 +910,8 @@ public final class WiredManager {
         if (room == null) {
             return;
         }
+
+        room.advanceWiredCacheGeneration();
 
         if (engine != null) {
             engine.clearRoomExecutionCaches(room.getId());
@@ -883,7 +933,7 @@ public final class WiredManager {
     // ========== Debug Mode ==========
 
     /** Debug mode - when enabled, logs detailed wired execution flow */
-    private static boolean debugEnabled = false;
+    private static volatile boolean debugEnabled = false;
 
     /**
      * Enables or disables wired debug mode.
@@ -1078,8 +1128,10 @@ public final class WiredManager {
                                 .build();
                         WiredContext ctx = new WiredContext(
                                 event, effect, DefaultWiredServices.getInstance(), new WiredState(100));
-                        effect.execute(ctx);
-                        effect.setCooldown(millis);
+                        if (!engine.tryAcquireEffectCooldown(effect, ctx, millis)) {
+                            continue;
+                        }
+                        WiredExecutionScope.execute(effect, ctx);
                     }
                 }
             }
@@ -1294,6 +1346,11 @@ public final class WiredManager {
                     type = parsedType;
                 }
             } catch (NumberFormatException ignored) {
+                WiredCompatibilityDiagnostics.record(
+                        WiredCompatibilityDiagnostics.FailurePoint.REWARD_POINTS_TYPE,
+                        wiredBox.getRoomId(),
+                        wiredBox.getId(),
+                        ignored);
             }
 
             habbo.givePoints(type, points);
@@ -1397,7 +1454,10 @@ public final class WiredManager {
 
                         if (failureCode == -1) {
                             if (wiredBox.getRewardTime() == WiredEffectGiveReward.LIMIT_N_MINUTES) {
-                                if (Emulator.getIntUnixTimestamp() - set.getInt("timestamp") <= 60) {
+                                if (isWithinMinuteLimit(
+                                        Emulator.getIntUnixTimestamp(),
+                                        set.getInt("timestamp"),
+                                        wiredBox.getLimitationInterval())) {
                                     failureCode = WiredRewardAlertComposer.REWARD_ALREADY_RECEIVED_THIS_MINUTE;
                                 }
                             }
@@ -1491,5 +1551,9 @@ public final class WiredManager {
 
             return false;
         }
+    }
+
+    static boolean isWithinMinuteLimit(int now, int previousReward, int intervalMinutes) {
+        return (long) now - previousReward <= 60L * intervalMinutes;
     }
 }

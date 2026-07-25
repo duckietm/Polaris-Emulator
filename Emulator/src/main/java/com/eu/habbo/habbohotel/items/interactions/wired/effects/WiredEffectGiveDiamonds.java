@@ -1,6 +1,6 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
-import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
@@ -15,7 +15,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -37,7 +36,8 @@ public class WiredEffectGiveDiamonds extends InteractionWiredEffect {
         super(set, baseItem);
     }
 
-    public WiredEffectGiveDiamonds(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectGiveDiamonds(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -73,7 +73,8 @@ public class WiredEffectGiveDiamonds extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
-        int nextAmount = WiredNumericInputGuard.parsePositiveAmount(settings.getStringParam(), WiredNumericInputGuard.maxRewardAmount());
+        int nextAmount = WiredNumericInputGuard.parsePositiveAmount(
+                settings.getStringParam(), WiredNumericInputGuard.maxRewardAmount());
         if (nextAmount <= 0) {
             return false;
         }
@@ -95,12 +96,13 @@ public class WiredEffectGiveDiamonds extends InteractionWiredEffect {
     @Override
     public void execute(WiredContext ctx) {
         Room room = ctx.room();
-        int diamondType = Emulator.getConfig().getInt("seasonal.currency.diamond", 5);
+        int diamondType = WiredPlatform.configuration() == null
+                ? 5
+                : WiredPlatform.configuration().getInt("seasonal.currency.diamond", 5);
 
         for (RoomUnit unit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
             Habbo habbo = room.getHabbo(unit);
             if (habbo == null) continue;
-
             habbo.givePoints(diamondType, this.amount);
         }
     }

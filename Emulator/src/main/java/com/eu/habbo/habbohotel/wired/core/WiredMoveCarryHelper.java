@@ -6,7 +6,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraAnimatio
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMoveCarryUsers;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMoveNoAnimation;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovePhysics;
-import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementAnimation;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve;
 import com.eu.habbo.habbohotel.rooms.FurnitureMovementError;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
@@ -226,11 +226,6 @@ public final class WiredMoveCarryHelper {
         int animationDuration = animationDurationOverride != null
                 ? Math.max(50, animationDurationOverride)
                 : getAnimationDuration(room, stackItem, WiredMovementsComposer.DEFAULT_DURATION);
-        WiredExtraMovementAnimation movementAnimation = getMovementAnimationExtra(room, stackItem);
-        int animationEffect = movementAnimation == null
-                ? WiredExtraMovementAnimation.EFFECT_DEFAULT
-                : movementAnimation.getAnimationEffect();
-        int gravityIntensity = movementAnimation == null ? 0 : movementAnimation.getGravityIntensity();
         Set<Integer> previousSuppressedRoomUnitIds = SUPPRESSED_STATUS_ROOM_UNIT_IDS.get();
 
         if (carryContext.active) {
@@ -275,6 +270,8 @@ public final class WiredMoveCarryHelper {
             if (!useWiredMovements) {
                 applyInstantCarryState(room, movingItem, targetTile, rotation, carryContext);
             } else if (oldLocation != null) {
+                room.getWiredRuntime().markFurnitureMoving(movingItem, animationDuration);
+                sendMoveStyleHint(room, stackItem, movingItem);
                 sendAnimatedMove(
                         room,
                         movingItem,
@@ -286,9 +283,7 @@ public final class WiredMoveCarryHelper {
                         animationDuration,
                         (animationElapsedOverride != null) ? Math.max(0, animationElapsedOverride) : 0,
                         anchorType,
-                        anchorId,
-                        animationEffect,
-                        gravityIntensity);
+                        anchorId);
             }
         }
 
@@ -321,6 +316,7 @@ public final class WiredMoveCarryHelper {
                 && (oldLocation.x != targetTile.x
                         || oldLocation.y != targetTile.y
                         || Double.compare(oldZ, movingItem.getZ()) != 0)) {
+            room.getWiredRuntime().markFurnitureMoving(movingItem, WiredMovementsComposer.DEFAULT_DURATION);
             List<WiredMovementsComposer.MovementData> collectedMovements = COLLECTED_MOVEMENTS.get();
 
             if (collectedMovements != null) {
@@ -412,6 +408,12 @@ public final class WiredMoveCarryHelper {
         }
 
         return new WiredMovementsComposer(movements).compose();
+    }
+
+    static void clearThreadLocalsForCurrentThread() {
+        SUPPRESSED_STATUS_ROOM_UNIT_IDS.remove();
+        COLLECTED_MOVEMENTS.remove();
+        MOVEMENT_COLLECTION_DEPTH.remove();
     }
 
     public static void registerUserFollower(
@@ -770,8 +772,7 @@ public final class WiredMoveCarryHelper {
             if (extra instanceof WiredExtraMoveCarryUsers
                     || extra instanceof WiredExtraMoveNoAnimation
                     || extra instanceof WiredExtraAnimationTime
-                    || extra instanceof WiredExtraMovePhysics
-                    || extra instanceof WiredExtraMovementAnimation) {
+                    || extra instanceof WiredExtraMovePhysics) {
                 return true;
             }
         }
@@ -945,9 +946,7 @@ public final class WiredMoveCarryHelper {
             int animationDuration,
             int animationElapsed,
             int anchorType,
-            int anchorId,
-            int animationEffect,
-            int gravityIntensity) {
+            int anchorId) {
         List<CarriedUnitMove> carriedMoves = getCarriedUnitMoves(room, movingItem, targetTile, rotation, carryContext);
         List<WiredMovementsComposer.MovementData> movements = new ArrayList<>();
         movements.add(WiredMovementsComposer.furniMovement(
@@ -962,9 +961,7 @@ public final class WiredMoveCarryHelper {
                 animationDuration,
                 animationElapsed,
                 anchorType,
-                anchorId,
-                animationEffect,
-                gravityIntensity));
+                anchorId));
 
         for (CarriedUnitMove carriedMove : carriedMoves) {
             suppressStatusComposer(carriedMove.roomUnit, animationDuration);
@@ -1244,19 +1241,20 @@ public final class WiredMoveCarryHelper {
         return null;
     }
 
-    private static WiredExtraMovementAnimation getMovementAnimationExtra(Room room, HabboItem stackItem) {
+    private static void sendMoveStyleHint(Room room, HabboItem stackItem, HabboItem movingItem) {
         Collection<InteractionWiredExtra> extras = getMovementExtras(room, stackItem);
-        if (extras == null || extras.isEmpty()) {
-            return null;
+        if (extras == null) {
+            return;
         }
 
         for (InteractionWiredExtra extra : extras) {
-            if (extra instanceof WiredExtraMovementAnimation) {
-                return (WiredExtraMovementAnimation) extra;
+            if (extra instanceof WiredExtraMovementCurve curve
+                    && curve.getCurveType() != WiredExtraMovementCurve.CURVE_LINEAR) {
+                WiredMoveStyleHelper.broadcast(
+                        room, List.of(movingItem.getId()), curve.getCurveType(), curve.getIntensity());
+                return;
             }
         }
-
-        return null;
     }
 
     private static Collection<InteractionWiredExtra> getMovementExtras(Room room, HabboItem stackItem) {

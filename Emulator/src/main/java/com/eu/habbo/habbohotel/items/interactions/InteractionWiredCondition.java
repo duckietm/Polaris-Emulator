@@ -9,8 +9,8 @@ import com.eu.habbo.habbohotel.wired.WiredConditionOperator;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.api.IWiredCondition;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
+import com.eu.habbo.messages.ClientMessage;
 import com.eu.habbo.messages.outgoing.wired.WiredConditionDataComposer;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -26,7 +26,8 @@ public abstract class InteractionWiredCondition extends InteractionWired impleme
         super(set, baseItem);
     }
 
-    public InteractionWiredCondition(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionWiredCondition(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -54,20 +55,32 @@ public abstract class InteractionWiredCondition extends InteractionWired impleme
 
     public abstract boolean saveData(WiredSettings settings);
 
+    /**
+     * Historical condition-save hook retained for plugin binaries compiled against the
+     * packet-based WIRED API. First-party conditions use {@link #saveData(WiredSettings)}; the
+     * incoming save adapter calls this descriptor only for a class that has no concrete typed
+     * implementation.
+     *
+     * @param packet packet positioned immediately after the condition item ID
+     * @return whether the legacy condition accepted its settings
+     */
+    public boolean saveData(ClientMessage packet) {
+        return false;
+    }
+
     public WiredConditionOperator operator() {
         return WiredConditionOperator.AND;
     }
-    
+
     // ========== IWiredCondition Implementation ==========
-    
+
     /**
      * Evaluates whether this condition passes.
      * Subclasses must implement this to define their evaluation logic.
-     * 
+     *
      * @param ctx the wired context containing event data
      * @return true if the condition passes
      */
     @Override
     public abstract boolean evaluate(WiredContext ctx);
-
 }

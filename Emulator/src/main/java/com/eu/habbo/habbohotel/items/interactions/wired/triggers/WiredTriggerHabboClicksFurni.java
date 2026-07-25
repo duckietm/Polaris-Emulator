@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.triggers;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
@@ -15,7 +16,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredTriggerSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredTriggerSaveException;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashSet;
@@ -35,7 +35,8 @@ public class WiredTriggerHabboClicksFurni extends InteractionWiredTrigger {
         this.items = new LinkedHashSet<>();
     }
 
-    public WiredTriggerHabboClicksFurni(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredTriggerHabboClicksFurni(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.items = new LinkedHashSet<>();
     }
@@ -69,7 +70,11 @@ public class WiredTriggerHabboClicksFurni extends InteractionWiredTrigger {
             items.addAll(this.items);
         } else {
             for (HabboItem item : this.items) {
-                if (Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId()).getHabboItem(item.getId()) == null) {
+                if (Emulator.getGameEnvironment()
+                                .getRoomManager()
+                                .getRoom(this.getRoomId())
+                                .getHabboItem(item.getId())
+                        == null) {
                     items.add(item);
                 }
             }
@@ -106,7 +111,9 @@ public class WiredTriggerHabboClicksFurni extends InteractionWiredTrigger {
         this.items.clear();
         this.furniSource = (settings.getIntParams().length > 0)
                 ? this.normalizeFurniSource(settings.getIntParams()[0])
-                : ((settings.getFurniIds().length > 0) ? WiredSourceUtil.SOURCE_SELECTED : WiredSourceUtil.SOURCE_TRIGGER);
+                : ((settings.getFurniIds().length > 0)
+                        ? WiredSourceUtil.SOURCE_SELECTED
+                        : WiredSourceUtil.SOURCE_TRIGGER);
 
         if (this.furniSource != WiredSourceUtil.SOURCE_SELECTED) {
             return true;
@@ -133,10 +140,10 @@ public class WiredTriggerHabboClicksFurni extends InteractionWiredTrigger {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-                this.furniSource,
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList())
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.furniSource,
+                        this.items.stream().map(HabboItem::getId).collect(Collectors.toList())));
     }
 
     @Override
@@ -171,6 +178,11 @@ public class WiredTriggerHabboClicksFurni extends InteractionWiredTrigger {
                                 this.items.add(item);
                             }
                         } catch (Exception e) {
+                            WiredCompatibilityDiagnostics.record(
+                                    WiredCompatibilityDiagnostics.FailurePoint.TRIGGER_CLICK_ITEM,
+                                    room.getId(),
+                                    this.getId(),
+                                    e);
                         }
                     }
                 }
@@ -225,7 +237,9 @@ public class WiredTriggerHabboClicksFurni extends InteractionWiredTrigger {
                 return WiredTriggerSourceUtil.resolveItems(this, event, WiredSourceUtil.SOURCE_SELECTOR, this.items);
             case WiredSourceUtil.SOURCE_TRIGGER:
             default:
-                return (triggerItem != null) ? java.util.Collections.singletonList(triggerItem) : java.util.Collections.emptyList();
+                return (triggerItem != null)
+                        ? java.util.Collections.singletonList(triggerItem)
+                        : java.util.Collections.emptyList();
         }
     }
 

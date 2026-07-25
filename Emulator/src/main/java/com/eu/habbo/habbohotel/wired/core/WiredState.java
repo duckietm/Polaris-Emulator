@@ -12,19 +12,19 @@ import java.util.UUID;
  *   <li>Maximum allowed steps before throwing {@link WiredLimitException}</li>
  * </ul>
  * </p>
- * 
+ *
  * <h3>Usage:</h3>
  * <pre>{@code
  * WiredState state = new WiredState(100); // max 100 steps
  * state.step(); // must call before each condition/effect
  * // ... execute condition/effect ...
  * }</pre>
- * 
+ *
  * @see WiredLimitException
  * @see WiredContext
  */
 public final class WiredState {
-    
+
     private final UUID runId;
     private final int maxSteps;
     private int steps = 0;
@@ -40,6 +40,20 @@ public final class WiredState {
         this.runId = UUID.randomUUID();
         this.maxSteps = maxSteps;
         this.startTimeMs = System.currentTimeMillis();
+    }
+
+    private WiredState(UUID runId, int maxSteps, int steps, long startTimeMs, boolean aborted, String abortReason) {
+        this.runId = runId;
+        this.maxSteps = maxSteps;
+        this.steps = steps;
+        this.startTimeMs = startTimeMs;
+        this.aborted = aborted;
+        this.abortReason = abortReason;
+    }
+
+    static WiredState restoreDelayedSnapshot(
+            UUID runId, int maxSteps, int steps, long startTimeMs, boolean aborted, String abortReason) {
+        return new WiredState(runId, maxSteps, steps, startTimeMs, aborted, abortReason);
     }
 
     /**
@@ -102,19 +116,18 @@ public final class WiredState {
     /**
      * Increment the step counter and check for limit violation.
      * Call this before each trigger match, condition evaluation, or effect execution.
-     * 
+     *
      * @throws WiredLimitException if the step limit has been exceeded
      */
     public void step() {
         if (aborted) {
             throw new WiredLimitException("Wired execution was aborted: " + abortReason);
         }
-        
+
         steps++;
         if (steps > maxSteps) {
             throw new WiredLimitException(
-                    "Wired execution exceeded max steps: " + maxSteps + 
-                    " (runId: " + runId + ")");
+                    "Wired execution exceeded max steps: " + maxSteps + " (runId: " + runId + ")");
         }
     }
 
@@ -157,11 +170,10 @@ public final class WiredState {
 
     @Override
     public String toString() {
-        return "WiredState{" +
-                "runId=" + runId +
-                ", steps=" + steps + "/" + maxSteps +
-                ", elapsed=" + elapsedMs() + "ms" +
-                (aborted ? ", ABORTED: " + abortReason : "") +
-                '}';
+        return "WiredState{" + "runId="
+                + runId + ", steps="
+                + steps + "/" + maxSteps + ", elapsed="
+                + elapsedMs() + "ms" + (aborted ? ", ABORTED: " + abortReason : "")
+                + '}';
     }
 }

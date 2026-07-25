@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 
+import com.eu.habbo.WiredCompatibilityDiagnostics;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -32,7 +33,14 @@ public class ContractTerm {
     public final String legacyPosterId;
     public final int amount;
 
-    public ContractTerm(int direction, int kind, int currencyType, boolean wallItem, int baseItemId, String legacyPosterId, int amount) {
+    public ContractTerm(
+            int direction,
+            int kind,
+            int currencyType,
+            boolean wallItem,
+            int baseItemId,
+            String legacyPosterId,
+            int amount) {
         this.direction = (direction == DIR_RECEIVE) ? DIR_RECEIVE : DIR_PAY;
         this.kind = (kind == KIND_FURNI) ? KIND_FURNI : KIND_CURRENCY;
         this.currencyType = currencyType;
@@ -46,7 +54,8 @@ public class ContractTerm {
         return new ContractTerm(direction, KIND_CURRENCY, currencyType, false, 0, "", amount);
     }
 
-    public static ContractTerm furni(int direction, boolean wallItem, int baseItemId, String legacyPosterId, int amount) {
+    public static ContractTerm furni(
+            int direction, boolean wallItem, int baseItemId, String legacyPosterId, int amount) {
         return new ContractTerm(direction, KIND_FURNI, 0, wallItem, baseItemId, legacyPosterId, amount);
     }
 
@@ -178,6 +187,8 @@ public class ContractTerm {
                 }
                 posters.set(index, poster);
             } catch (NumberFormatException ignored) {
+                WiredCompatibilityDiagnostics.record(
+                        WiredCompatibilityDiagnostics.FailurePoint.CONTRACT_POSTER_INDEX, ignored);
             }
         }
         return posters;

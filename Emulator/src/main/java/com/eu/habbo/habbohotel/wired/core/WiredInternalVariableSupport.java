@@ -19,26 +19,12 @@ import com.eu.habbo.habbohotel.users.DanceType;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboGender;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer;
-import com.eu.habbo.messages.outgoing.rooms.items.WiredFurniGravityComposer;
-import com.eu.habbo.messages.outgoing.rooms.items.WiredFurniOpacityComposer;
 import com.eu.habbo.util.HotelDateTimeUtil;
 import java.time.ZonedDateTime;
 import java.time.temporal.WeekFields;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 public final class WiredInternalVariableSupport {
-    private static final String FURNI_OPACITY_CACHE_KEY = "wired.internal.furni.opacity";
-    private static final String FURNI_GRAVITY_CACHE_KEY = "wired.internal.furni.gravity";
-    private static final long FURNI_GRAVITY_DROP_DELAY_MS = WiredMovementsComposer.DEFAULT_DURATION + 50L;
     private static final ThreadLocal<Boolean> USER_MOVE_INSTANT_OVERRIDE = new ThreadLocal<>();
     private static final ThreadLocal<UserMoveBatch> USER_MOVE_BATCH = new ThreadLocal<>();
     private static final ThreadLocal<Integer> USER_MOVE_BATCH_DEPTH = new ThreadLocal<>();
@@ -46,149 +32,37 @@ public final class WiredInternalVariableSupport {
     private WiredInternalVariableSupport() {}
 
     public static String normalizeKey(String key) {
-        if (key == null) {
-            return "";
-        }
-
-        String normalized = key.trim();
-
-        return switch (normalized) {
-            case "@position.x" -> "@position_x";
-            case "@position.y" -> "@position_y";
-            case "@effect" -> "@effect_id";
-            case "@handitems" -> "@handitem_id";
-            case "@is_mute" -> "@is_muted";
-            case "@teams.red.score" -> "@team_red_score";
-            case "@teams.green.score" -> "@team_green_score";
-            case "@teams.blue.score" -> "@team_blue_score";
-            case "@teams.yellow.score" -> "@team_yellow_score";
-            case "@teams.red.size" -> "@team_red_size";
-            case "@teams.green.size" -> "@team_green_size";
-            case "@teams.blue.size" -> "@team_blue_size";
-            case "@teams.yellow.size" -> "@team_yellow_size";
-            default -> normalized;
-        };
+        return WiredInternalVariableRegistry.DEFAULT.normalize(key);
     }
 
     public static boolean canUseUserDestination(String key) {
-        String normalized = normalizeKey(key);
-        return "@position_x".equals(normalized) || "@position_y".equals(normalized) || "@direction".equals(normalized);
+        return WiredInternalVariableRegistry.DEFAULT.supports(
+                key, WiredInternalVariableRegistry.Capability.USER_DESTINATION);
     }
 
     public static boolean canUseFurniDestination(String key) {
-        String normalized = normalizeKey(key);
-        return "@state".equals(normalized)
-                || "@position_x".equals(normalized)
-                || "@position_y".equals(normalized)
-                || "@rotation".equals(normalized)
-                || "@altitude".equals(normalized)
-                || "@opacity".equals(normalized)
-                || "@gravity".equals(normalized);
+        return WiredInternalVariableRegistry.DEFAULT.supports(
+                key, WiredInternalVariableRegistry.Capability.FURNI_DESTINATION);
     }
 
     public static boolean canUseUserReference(String key) {
-        String normalized = normalizeKey(key);
-
-        return "@index".equals(normalized)
-                || "@type".equals(normalized)
-                || "@gender".equals(normalized)
-                || "@level".equals(normalized)
-                || "@achievement_score".equals(normalized)
-                || "@is_hc".equals(normalized)
-                || "@has_rights".equals(normalized)
-                || "@is_group_admin".equals(normalized)
-                || "@is_owner".equals(normalized)
-                || "@is_muted".equals(normalized)
-                || "@is_trading".equals(normalized)
-                || "@is_frozen".equals(normalized)
-                || "@effect_id".equals(normalized)
-                || "@team_score".equals(normalized)
-                || "@team_color".equals(normalized)
-                || "@team_type".equals(normalized)
-                || "@sign".equals(normalized)
-                || "@dance".equals(normalized)
-                || "@is_idle".equals(normalized)
-                || "@handitem_id".equals(normalized)
-                || "@position_x".equals(normalized)
-                || "@position_y".equals(normalized)
-                || "@direction".equals(normalized)
-                || "@altitude".equals(normalized)
-                || "@favourite_group_id".equals(normalized)
-                || "@room_entry.method".equals(normalized)
-                || "@room_entry.teleport_id".equals(normalized)
-                || "@user_id".equals(normalized)
-                || "@bot_id".equals(normalized)
-                || "@pet_id".equals(normalized)
-                || "@pet_owner_id".equals(normalized);
+        return WiredInternalVariableRegistry.DEFAULT.supports(
+                key, WiredInternalVariableRegistry.Capability.USER_REFERENCE);
     }
 
     public static boolean canUseFurniReference(String key) {
-        String normalized = normalizeKey(key);
-
-        return "~teleport.target_id".equals(normalized)
-                || "@id".equals(normalized)
-                || "@class_id".equals(normalized)
-                || "@height".equals(normalized)
-                || "@state".equals(normalized)
-                || "@position_x".equals(normalized)
-                || "@position_y".equals(normalized)
-                || "@rotation".equals(normalized)
-                || "@altitude".equals(normalized)
-                || "@is_invisible".equals(normalized)
-                || "@type".equals(normalized)
-                || "@is_stackable".equals(normalized)
-                || "@can_stand_on".equals(normalized)
-                || "@can_sit_on".equals(normalized)
-                || "@can_lay_on".equals(normalized)
-                || "@owner_id".equals(normalized)
-                || "@wallitem_offset".equals(normalized)
-                || "@dimensions.x".equals(normalized)
-                || "@dimensions.y".equals(normalized)
-                || "@opacity".equals(normalized)
-                || "@gravity".equals(normalized);
+        return WiredInternalVariableRegistry.DEFAULT.supports(
+                key, WiredInternalVariableRegistry.Capability.FURNI_REFERENCE);
     }
 
     public static boolean canUseRoomReference(String key) {
-        String normalized = normalizeKey(key);
-
-        return "@furni_count".equals(normalized)
-                || "@user_count".equals(normalized)
-                || "@wired_timer".equals(normalized)
-                || "@team_red_score".equals(normalized)
-                || "@team_green_score".equals(normalized)
-                || "@team_blue_score".equals(normalized)
-                || "@team_yellow_score".equals(normalized)
-                || "@team_red_size".equals(normalized)
-                || "@team_green_size".equals(normalized)
-                || "@team_blue_size".equals(normalized)
-                || "@team_yellow_size".equals(normalized)
-                || "@room_id".equals(normalized)
-                || "@group_id".equals(normalized)
-                || "@timezone_server".equals(normalized)
-                || "@timezone_client".equals(normalized)
-                || "@current_time".equals(normalized)
-                || "@current_time.millisecond_of_second".equals(normalized)
-                || "@current_time.seconds_of_minute".equals(normalized)
-                || "@current_time.minute_of_hour".equals(normalized)
-                || "@current_time.hour_of_day".equals(normalized)
-                || "@current_time.day_of_week".equals(normalized)
-                || "@current_time.day_of_month".equals(normalized)
-                || "@current_time.day_of_year".equals(normalized)
-                || "@current_time.week_of_year".equals(normalized)
-                || "@current_time.month_of_year".equals(normalized)
-                || "@current_time.year".equals(normalized);
+        return WiredInternalVariableRegistry.DEFAULT.supports(
+                key, WiredInternalVariableRegistry.Capability.ROOM_REFERENCE);
     }
 
     public static boolean canUseContextReference(String key) {
-        String normalized = normalizeKey(key);
-
-        return "@selector_furni_count".equals(normalized)
-                || "@selector_user_count".equals(normalized)
-                || "@signal_furni_count".equals(normalized)
-                || "@signal_user_count".equals(normalized)
-                || "@antenna_id".equals(normalized)
-                || "@chat_type".equals(normalized)
-                || "@chat_style".equals(normalized);
+        return WiredInternalVariableRegistry.DEFAULT.supports(
+                key, WiredInternalVariableRegistry.Capability.CONTEXT_REFERENCE);
     }
 
     public static boolean hasUserValue(Room room, RoomUnit roomUnit, String key) {
@@ -260,11 +134,10 @@ public final class WiredInternalVariableSupport {
                     "@type",
                     "@owner_id",
                     "@dimensions.x",
-                    "@dimensions.y",
-                    "@opacity",
-                    "@gravity" -> true;
+                    "@dimensions.y" -> true;
             case "~teleport.target_id" -> item.getTeleportTargetId() > 0;
             case "@wallitem_offset" -> item.getBaseItem().getType() == FurnitureType.WALL;
+            case "@gravity" -> item.getBaseItem().getType() == FurnitureType.FLOOR;
             case "@is_stackable" -> item.getBaseItem().allowStack();
             case "@can_stand_on" -> item.getBaseItem().allowWalk();
             case "@can_sit_on" -> item.getBaseItem().allowSit();
@@ -389,6 +262,12 @@ public final class WiredInternalVariableSupport {
         return new UserMoveBatchScope(previousDepth);
     }
 
+    static void clearThreadLocalsForCurrentThread() {
+        USER_MOVE_INSTANT_OVERRIDE.remove();
+        USER_MOVE_BATCH.remove();
+        USER_MOVE_BATCH_DEPTH.remove();
+    }
+
     public static Integer readFurniValue(Room room, HabboItem item, String key) {
         if (room == null || item == null) {
             return null;
@@ -410,8 +289,6 @@ public final class WiredInternalVariableSupport {
             case "@position_y" -> (int) item.getY();
             case "@rotation" -> item.getRotation();
             case "@altitude" -> (int) Math.round(item.getZ() * 100);
-            case "@opacity" -> getFurniOpacity(room, item);
-            case "@gravity" -> getFurniGravity(room, item);
             case "@is_invisible" -> 0;
             case "@type" -> 0;
             case "@is_stackable" ->
@@ -434,6 +311,7 @@ public final class WiredInternalVariableSupport {
             case "@dimensions.y" ->
                 (item.getBaseItem() != null) ? (int) item.getBaseItem().getLength() : null;
             case "@owner_id" -> item.getUserId();
+            case "@gravity" -> room.getWiredRuntime().isGravityEnabled(item) ? 1 : 0;
             default -> null;
         };
     }
@@ -451,22 +329,12 @@ public final class WiredInternalVariableSupport {
             return true;
         }
 
-        if ("@opacity".equals(normalized)) {
-            applyFurniOpacity(room, item, value, false, 0);
-            return true;
-        }
-
-        if ("@gravity".equals(normalized)) {
-            setFurniGravity(room, item, value);
-            scheduleFurniGravity(room, item, 0L);
-            return true;
-        }
-
         if (item.getBaseItem() == null || item.getBaseItem().getType() != FurnitureType.FLOOR) {
             return false;
         }
 
         return switch (normalized) {
+            case "@gravity" -> room.getWiredRuntime().setGravityEnabled(item, value != 0);
             case "@position_x" -> moveFurniTo(room, item, value, item.getY(), item.getRotation(), item.getZ());
             case "@position_y" -> moveFurniTo(room, item, item.getX(), value, item.getRotation(), item.getZ());
             case "@rotation" -> moveFurniTo(room, item, item.getX(), item.getY(), value, item.getZ());
@@ -814,183 +682,6 @@ public final class WiredInternalVariableSupport {
         }
 
         return wrappedValue;
-    }
-
-    public static void applyFurniOpacity(Room room, HabboItem item, int opacity, boolean clickThrough, int easing) {
-        if (room == null || item == null) {
-            return;
-        }
-
-        int normalizedOpacity = setFurniOpacity(room, item, opacity);
-        room.sendComposer(
-                new WiredFurniOpacityComposer(Collections.singletonList(item), normalizedOpacity, clickThrough, easing)
-                        .compose());
-    }
-
-    public static int setFurniOpacity(Room room, HabboItem item, int opacity) {
-        int normalizedOpacity = Math.max(0, Math.min(100, opacity));
-
-        if (room != null && item != null) {
-            getFurniOpacityValues(room).put(item.getId(), normalizedOpacity);
-        }
-
-        return normalizedOpacity;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Map<Integer, Integer> getFurniOpacityValues(Room room) {
-        synchronized (room.cache) {
-            Object value = room.cache.get(FURNI_OPACITY_CACHE_KEY);
-
-            if (value instanceof Map<?, ?>) {
-                return (Map<Integer, Integer>) value;
-            }
-
-            Map<Integer, Integer> values = new ConcurrentHashMap<>();
-            room.cache.put(FURNI_OPACITY_CACHE_KEY, values);
-            return values;
-        }
-    }
-
-    private static int getFurniOpacity(Room room, HabboItem item) {
-        return getFurniOpacityValues(room).getOrDefault(item.getId(), 100);
-    }
-
-    public static void scheduleGravityForMovement(Room room, HabboItem movedItem, Collection<RoomTile> impactedTiles) {
-        if (room == null || movedItem == null) {
-            return;
-        }
-
-        if (hasFurniGravity(room, movedItem)) {
-            scheduleFurniGravity(room, movedItem, FURNI_GRAVITY_DROP_DELAY_MS);
-        }
-
-        if (impactedTiles == null || impactedTiles.isEmpty()) {
-            return;
-        }
-
-        Set<Integer> scheduledItemIds = new HashSet<>();
-        scheduledItemIds.add(movedItem.getId());
-
-        for (RoomTile tile : impactedTiles) {
-            if (tile == null) {
-                continue;
-            }
-
-            for (HabboItem item : room.getItemsAt(tile)) {
-                if (item == null || scheduledItemIds.contains(item.getId()) || !hasFurniGravity(room, item)) {
-                    continue;
-                }
-
-                scheduledItemIds.add(item.getId());
-                scheduleFurniGravity(room, item, FURNI_GRAVITY_DROP_DELAY_MS);
-            }
-        }
-    }
-
-    public static int setFurniGravity(Room room, HabboItem item, int gravity) {
-        int normalizedGravity = gravity > 0 ? 1 : 0;
-
-        if (room != null && item != null) {
-            Map<Integer, Integer> values = getFurniGravityValues(room);
-
-            if (normalizedGravity > 0) {
-                values.put(item.getId(), normalizedGravity);
-            } else {
-                values.remove(item.getId());
-            }
-
-            room.sendComposer(
-                    new WiredFurniGravityComposer(Collections.singletonList(item), normalizedGravity).compose());
-        }
-
-        return normalizedGravity;
-    }
-
-    public static int getFurniGravity(Room room, HabboItem item) {
-        if (room == null || item == null) {
-            return 0;
-        }
-
-        return getFurniGravityValues(room).getOrDefault(item.getId(), 0);
-    }
-
-    private static boolean hasFurniGravity(Room room, HabboItem item) {
-        return getFurniGravity(room, item) > 0;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Map<Integer, Integer> getFurniGravityValues(Room room) {
-        synchronized (room.cache) {
-            Object value = room.cache.get(FURNI_GRAVITY_CACHE_KEY);
-
-            if (value instanceof Map<?, ?>) {
-                return (Map<Integer, Integer>) value;
-            }
-
-            Map<Integer, Integer> values = new ConcurrentHashMap<>();
-            room.cache.put(FURNI_GRAVITY_CACHE_KEY, values);
-            return values;
-        }
-    }
-
-    private static void scheduleFurniGravity(Room room, HabboItem item, long delayMs) {
-        if (room == null || item == null || !hasFurniGravity(room, item)) {
-            return;
-        }
-
-        applyFurniGravity(room, item);
-    }
-
-    private static void applyFurniGravity(Room room, HabboItem item) {
-        if (room == null || item == null || !hasFurniGravity(room, item) || item.getBaseItem() == null) {
-            return;
-        }
-
-        if (item.getBaseItem().getType() != FurnitureType.FLOOR || room.getLayout() == null) {
-            return;
-        }
-
-        RoomTile tile = room.getLayout().getTile(item.getX(), item.getY());
-
-        if (tile == null) {
-            return;
-        }
-
-        double targetZ = room.getStackHeight(tile.x, tile.y, false, item);
-
-        if (targetZ < room.getLayout().getHeightAtSquare(tile.x, tile.y)) {
-            targetZ = room.getLayout().getHeightAtSquare(tile.x, tile.y);
-        }
-
-        if (item.getZ() <= targetZ + 0.001) {
-            return;
-        }
-
-        double oldZ = item.getZ();
-        FurnitureMovementError error = room.moveFurniTo(item, tile, item.getRotation(), targetZ, null, false, false);
-
-        if (error != FurnitureMovementError.NONE) {
-            return;
-        }
-
-        List<WiredMovementsComposer.MovementData> movements = new ArrayList<>(1);
-        movements.add(WiredMovementsComposer.furniMovement(
-                item.getId(),
-                tile.x,
-                tile.y,
-                tile.x,
-                tile.y,
-                oldZ,
-                item.getZ(),
-                item.getRotation(),
-                WiredMovementsComposer.DEFAULT_DURATION,
-                0,
-                WiredMovementsComposer.FURNI_ANCHOR_NONE,
-                0,
-                6,
-                100));
-        room.sendComposer(new WiredMovementsComposer(movements).compose());
     }
 
     private static int parseInteger(String value) {

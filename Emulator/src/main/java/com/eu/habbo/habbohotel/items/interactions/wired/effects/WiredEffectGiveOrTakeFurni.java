@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
@@ -176,6 +177,8 @@ public class WiredEffectGiveOrTakeFurni extends InteractionWiredEffect {
             throw new WiredSaveException("Invalid data");
         }
 
+        int nextMode = (params[2] == MODE_TAKE) ? MODE_TAKE : MODE_GIVE;
+
         int nextBaseItemId = params[0];
         if (nextBaseItemId <= 0
                 || Emulator.getGameEnvironment().getItemManager().getItem(nextBaseItemId) == null) {
@@ -183,13 +186,16 @@ public class WiredEffectGiveOrTakeFurni extends InteractionWiredEffect {
         }
 
         int delay = settings.getDelay();
-        if (delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20)) {
+        int maxDelay = WiredPlatform.configuration() == null
+                ? 20
+                : WiredPlatform.configuration().getInt("hotel.wired.max_delay", 20);
+        if (delay > maxDelay) {
             throw new WiredSaveException("Delay too long");
         }
 
         this.baseItemId = nextBaseItemId;
         this.quantity = clampQuantity(params[1]);
-        this.giveOrTake = (params[2] == MODE_TAKE) ? MODE_TAKE : MODE_GIVE;
+        this.giveOrTake = nextMode;
         this.userSource = params[3];
         this.setDelay(delay);
 

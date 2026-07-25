@@ -9,7 +9,6 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFilterUs
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -18,8 +17,7 @@ import java.util.List;
 final class WiredSelectionFilterSupport {
     private static final ThreadLocal<Integer> FILTER_DEPTH = ThreadLocal.withInitial(() -> 0);
 
-    private WiredSelectionFilterSupport() {
-    }
+    private WiredSelectionFilterSupport() {}
 
     static void applySelectorFilters(Room room, HabboItem triggerItem, WiredContext ctx) {
         if (ctx == null) {
@@ -27,11 +25,13 @@ final class WiredSelectionFilterSupport {
         }
 
         if (ctx.targets().isItemsModifiedBySelector()) {
-            ctx.targets().setItems(filterItems(room, triggerItem, ctx, ctx.targets().items()));
+            ctx.targets()
+                    .setItems(filterItems(room, triggerItem, ctx, ctx.targets().items()));
         }
 
         if (ctx.targets().isUsersModifiedBySelector()) {
-            ctx.targets().setUsers(filterUsers(room, triggerItem, ctx, ctx.targets().users()));
+            ctx.targets()
+                    .setUsers(filterUsers(room, triggerItem, ctx, ctx.targets().users()));
         }
     }
 
@@ -42,7 +42,8 @@ final class WiredSelectionFilterSupport {
             return items;
         }
 
-        Collection<InteractionWiredExtra> extras = room.getRoomSpecialTypes().getExtras(triggerItem.getX(), triggerItem.getY());
+        Collection<InteractionWiredExtra> extras =
+                room.getRoomSpecialTypes().getExtras(triggerItem.getX(), triggerItem.getY());
         if (extras == null || extras.isEmpty()) {
             return items;
         }
@@ -86,7 +87,8 @@ final class WiredSelectionFilterSupport {
             return users;
         }
 
-        Collection<InteractionWiredExtra> extras = room.getRoomSpecialTypes().getExtras(triggerItem.getX(), triggerItem.getY());
+        Collection<InteractionWiredExtra> extras =
+                room.getRoomSpecialTypes().getExtras(triggerItem.getX(), triggerItem.getY());
         if (extras == null || extras.isEmpty()) {
             return users;
         }
@@ -187,6 +189,10 @@ final class WiredSelectionFilterSupport {
         }
 
         return result;
+    }
+
+    static void clearThreadLocalsForCurrentThread() {
+        FILTER_DEPTH.remove();
     }
 
     private static final class FilterScope implements AutoCloseable {

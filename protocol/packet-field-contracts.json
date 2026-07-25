@@ -7822,6 +7822,70 @@
       ]
     },
     {
+      "name": "WIRED_FURNI_RUNTIME_STATE_REQUEST",
+      "direction": "client_to_server",
+      "header": 10028,
+      "java": {
+        "symbol": "WiredFurniRuntimeStateRequestEvent",
+        "className": "WiredFurniRuntimeStateRequestEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredFurniRuntimeStateRequestEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_FURNI_RUNTIME_STATE_REQUEST",
+        "className": "WiredFurniRuntimeStateRequestComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredFurniRuntimeStateRequestComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "itemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "action"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "key"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "requestedValue"
+        }
+      ]
+    },
+    {
+      "name": "WIRED_FEATURE_CAPABILITIES",
+      "direction": "client_to_server",
+      "header": 10029,
+      "java": {
+        "symbol": "WiredFeatureCapabilitiesEvent",
+        "className": "WiredFeatureCapabilitiesEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredFeatureCapabilitiesEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_FEATURE_CAPABILITIES",
+        "className": "WiredFeatureCapabilitiesComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredFeatureCapabilitiesComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "protocolVersion"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "capabilities"
+        }
+      ]
+    },
+    {
       "name": "DELETE_PET",
       "direction": "client_to_server",
       "header": 10030,
@@ -15313,6 +15377,48 @@
       ]
     },
     {
+      "name": "WIRED_FURNI_RUNTIME_STATE",
+      "direction": "server_to_client",
+      "header": 5108,
+      "java": {
+        "symbol": "WiredFurniRuntimeStateComposer",
+        "className": "WiredFurniRuntimeStateComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredFurniRuntimeStateComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_FURNI_RUNTIME_STATE",
+        "className": "WiredFurniRuntimeStateParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredFurniRuntimeStateParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        }
+      ]
+    },
+    {
       "name": "PREFIX_RECEIVED",
       "direction": "server_to_client",
       "header": 7002,
@@ -16035,14 +16141,6 @@
     {
       "direction": "server_to_client",
       "side": "java",
-      "header": 6002,
-      "symbol": "WiredFurniOpacityComposer",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/items/WiredFurniOpacityComposer.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "server_to_client",
-      "side": "java",
       "header": 9409,
       "symbol": "HotelViewLandingComposer",
       "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/hotelview/HotelViewLandingComposer.java",
@@ -16054,14 +16152,6 @@
       "header": 9410,
       "symbol": "RoomUserHabbiconComposer",
       "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/users/RoomUserHabbiconComposer.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "server_to_client",
-      "side": "java",
-      "header": 9415,
-      "symbol": "WiredFurniGravityComposer",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/items/WiredFurniGravityComposer.java",
       "reason": "Header is registered only by the Polaris Emulator packet registry"
     },
     {
@@ -22153,6 +22243,38 @@
         "path": "packages/communication/src/messages/parser/translation/TranslationLanguagesParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
+      "name": "WIRED_FURNI_OPACITY",
+      "direction": "server_to_client",
+      "header": 5109,
+      "java": {
+        "symbol": "WiredFurniOpacityComposer",
+        "className": "WiredFurniOpacityComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/WiredFurniOpacityComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_FURNI_OPACITY",
+        "className": "WiredFurniOpacityParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredFurniOpacityParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
+      "name": "WIRED_FURNI_MOVE_STYLE",
+      "direction": "server_to_client",
+      "header": 5110,
+      "java": {
+        "symbol": "WiredFurniMoveStyleComposer",
+        "className": "WiredFurniMoveStyleComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/WiredFurniMoveStyleComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_FURNI_MOVE_STYLE",
+        "className": "WiredFurniMoveStyleParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredFurniMoveStyleParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },
     {
       "name": "AREA_HIDE",

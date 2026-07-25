@@ -1,14 +1,13 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.conditions;
 
+import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 public final class WiredFurniConditionInputGuard {
-    private WiredFurniConditionInputGuard() {
-    }
+    private WiredFurniConditionInputGuard() {}
 
     public static int normalizeFurniSource(int value) {
         switch (value) {
@@ -68,6 +67,8 @@ public final class WiredFurniConditionInputGuard {
                 }
             } catch (NumberFormatException ignored) {
                 // Ignore malformed legacy item ids.
+                WiredCompatibilityDiagnostics.record(
+                        WiredCompatibilityDiagnostics.FailurePoint.CONDITION_FURNI_INPUT_ID, ignored);
             }
         }
 

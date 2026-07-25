@@ -25,7 +25,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Feature-gated, session-only furniture opacity effect inspired by Seth's reference branch. */
 public class WiredEffectChangeOpacity extends InteractionWiredEffect {
     public static final WiredEffectType type = WiredEffectType.CHANGE_OPACITY;
 

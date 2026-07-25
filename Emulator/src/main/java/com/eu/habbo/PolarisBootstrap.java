@@ -77,6 +77,11 @@ final class PolarisBootstrap {
         Emulator.synchronizeLegacyFacade(runtime);
 
         if (database.getDataSource() != null) {
+            if (migrationOptions.mode() == MigrationOptions.Mode.REPAIR) {
+                MigrationRunner.repairAtStartup(database.getDataSource());
+                return false;
+            }
+
             if (migrationOptions.mode() == MigrationOptions.Mode.VALIDATE) {
                 System.out.print(MigrationRunner.statusAtStartup(database.getDataSource()));
                 DatabaseIntegrityAudit.auditAtStartup(database.getDataSource(), configuration, integrityAuditOptions);

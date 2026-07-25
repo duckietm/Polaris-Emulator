@@ -1,0 +1,4 @@
+interface:
+  display_name: "Polaris Development"
+  short_description: "Align, implement, and verify Polaris changes"
+  default_prompt: "Use $polaris-development to prepare and implement this Polaris task against the latest dev branch."

@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.core.ConfigurationManager;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.MultiThreadIoEventLoopGroup;
 import io.netty.channel.nio.NioIoHandler;
@@ -43,27 +44,25 @@ class WebSocketHttpOffloadTest {
         NioSocketChannel channel = new NioSocketChannel();
         try {
             eventLoops.register(channel).syncUninterruptibly();
-            new WebSocketChannelInitializer().initChannel(channel);
+            channel.eventLoop()
+                    .submit(() -> new WebSocketChannelInitializer().initChannel(channel))
+                    .syncUninterruptibly();
 
             EventExecutor socketExecutor = channel.eventLoop();
             EventExecutor blockingExecutor =
-                    channel.pipeline().context("nitroSecureAssetHandler").executor();
+                    awaitPresent(channel, "nitroSecureAssetHandler").executor();
 
             assertNotSame(socketExecutor, blockingExecutor);
             assertSame(
-                    blockingExecutor,
-                    channel.pipeline().context("badgeHttpHandler").executor());
+                    blockingExecutor, awaitPresent(channel, "badgeHttpHandler").executor());
             assertSame(
                     blockingExecutor,
-                    channel.pipeline().context("badgeLeaderboardHttpHandler").executor());
+                    awaitPresent(channel, "badgeLeaderboardHttpHandler").executor());
             assertSame(
                     blockingExecutor,
-                    channel.pipeline().context("emuStatsHttpHandler").executor());
-            assertSame(
-                    socketExecutor, channel.pipeline().context("wsHttpHandler").executor());
-            assertSame(
-                    socketExecutor,
-                    channel.pipeline().context("authHttpHandler").executor());
+                    awaitPresent(channel, "emuStatsHttpHandler").executor());
+            assertSame(socketExecutor, awaitPresent(channel, "wsHttpHandler").executor());
+            assertSame(socketExecutor, awaitPresent(channel, "authHttpHandler").executor());
         } finally {
             channel.close().syncUninterruptibly();
             eventLoops.shutdownGracefully().syncUninterruptibly();
@@ -89,7 +88,9 @@ class WebSocketHttpOffloadTest {
         NioSocketChannel channel = new NioSocketChannel();
         try {
             eventLoops.register(channel).syncUninterruptibly();
-            new WebSocketChannelInitializer().initChannel(channel);
+            channel.eventLoop()
+                    .submit(() -> new WebSocketChannelInitializer().initChannel(channel))
+                    .syncUninterruptibly();
 
             channel.eventLoop()
                     .submit(() -> channel.pipeline()
@@ -105,7 +106,7 @@ class WebSocketHttpOffloadTest {
             awaitRemoved(channel, "badgeHttpHandler");
             awaitRemoved(channel, "badgeLeaderboardHttpHandler");
             awaitRemoved(channel, "emuStatsHttpHandler");
-            assertNotNull(channel.pipeline().context("gameMessageHandler"));
+            assertNotNull(channel.pipeline().context("wsCodec"));
         } finally {
             channel.close().syncUninterruptibly();
             eventLoops.shutdownGracefully().syncUninterruptibly();
@@ -123,6 +124,17 @@ class WebSocketHttpOffloadTest {
             Thread.sleep(5);
         }
         assertNull(channel.pipeline().context(handlerName));
+    }
+
+    private static ChannelHandlerContext awaitPresent(NioSocketChannel channel, String handlerName)
+            throws InterruptedException {
+        long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(2);
+        ChannelHandlerContext context;
+        while ((context = channel.pipeline().context(handlerName)) == null && System.nanoTime() <= deadline) {
+            Thread.sleep(5);
+        }
+        assertNotNull(context, () -> "Missing pipeline handler: " + handlerName);
+        return context;
     }
 
     @Test

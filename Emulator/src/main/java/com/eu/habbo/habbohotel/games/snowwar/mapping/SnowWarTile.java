@@ -56,7 +56,10 @@ public class SnowWarTile {
             return false;
         }
 
-        return this.highestItem == null;
+        // Only solid furni (walkableHeight > 0) block movement; flat props such
+        // as rugs/ice (walkableHeight 0) stay walkable. This mirrors the client
+        // simulation, which blocks a tile only for walkableHeight > 0 items.
+        return this.highestItem == null || this.highestItem.getWalkableHeight() <= 0;
     }
 
     /**

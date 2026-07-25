@@ -107,7 +107,10 @@ public class RoomManager {
                    roller_speed, override_model, model, promoted, jukebox_active,
                    hidewired, builders_club_trial_locked,
                    builders_club_original_state, trade_mode, move_diagonally,
-                   allow_underpass, moodlight_data
+                   allow_underpass, mute_all_pets, leave_on_door_tile,
+                   idle_sleep_enabled, idle_sleep_timeout_seconds,
+                   idle_autokick_enabled, idle_autokick_timeout_seconds,
+                   moodlight_data
             FROM rooms
             WHERE is_public = ? OR is_staff_picked = ? ORDER BY id DESC
             """;
@@ -128,7 +131,10 @@ public class RoomManager {
                    roller_speed, override_model, model, promoted, jukebox_active,
                    hidewired, builders_club_trial_locked,
                    builders_club_original_state, trade_mode, move_diagonally,
-                   allow_underpass, moodlight_data
+                   allow_underpass, mute_all_pets, leave_on_door_tile,
+                   idle_sleep_enabled, idle_sleep_timeout_seconds,
+                   idle_autokick_enabled, idle_autokick_timeout_seconds,
+                   moodlight_data
             FROM rooms
             WHERE owner_id = ?
             """;

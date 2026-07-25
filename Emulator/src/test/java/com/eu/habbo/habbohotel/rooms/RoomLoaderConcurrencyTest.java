@@ -81,7 +81,7 @@ class RoomLoaderConcurrencyTest {
             return List.of();
         });
         Room room = loadableRoom();
-        setRoomField(room, "promoted", true);
+        room.getPromotionManager().setPromoted(true);
 
         room.startBackgroundLoad();
 
@@ -142,12 +142,6 @@ class RoomLoaderConcurrencyTest {
         Object original = field.get(null);
         field.set(null, value);
         return original;
-    }
-
-    private static void setRoomField(Room room, String name, Object value) throws Exception {
-        Field field = Room.class.getDeclaredField(name);
-        field.setAccessible(true);
-        field.set(room, value);
     }
 
     private static final class EmptyPluginManager extends PluginManager {

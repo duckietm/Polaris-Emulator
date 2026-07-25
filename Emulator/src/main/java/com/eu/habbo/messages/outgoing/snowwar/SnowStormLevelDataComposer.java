@@ -54,8 +54,20 @@ public class SnowStormLevelDataComposer extends MessageComposer {
             this.response.appendInt(item.getY());
             this.response.appendInt(item.getRotation());
             // Room-ad image URL (empty for normal props) so the arena can
-            // draw ad backgrounds saved by the editor.
+            // draw ad backgrounds saved by the editor, plus the vertical
+            // offset that nudges that full-screen backdrop up/down.
             this.response.appendString(item.getImageUrl());
+            this.response.appendInt(item.getOffsetZ());
+            // Per-furni walkable height so the client blocks the same tiles the
+            // server does (0 = walkable rug/tile, >0 = solid), instead of
+            // treating every prop as impassable.
+            this.response.appendInt(item.getWalkableHeight());
+            // Furni footprint in tiles (unrotated width/length from furnidata).
+            // The client rotates these the same way the server does to block the
+            // whole footprint and depth-sort multi-tile props by their front
+            // tile, so a 3x3 prop no longer draws over adjacent avatars.
+            this.response.appendInt(item.getWidth());
+            this.response.appendInt(item.getLength());
         }
 
         List<SnowWarMachineObject> machines = this.game.getMachines();

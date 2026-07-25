@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.extra;
 
+import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
@@ -8,7 +9,6 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -49,7 +49,8 @@ public class WiredExtraVariableLevelUpSystem extends InteractionWiredExtra {
         super(set, baseItem);
     }
 
-    public WiredExtraVariableLevelUpSystem(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredExtraVariableLevelUpSystem(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -66,15 +67,15 @@ public class WiredExtraVariableLevelUpSystem extends InteractionWiredExtra {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-            this.mode,
-            this.stepSize,
-            this.maxLevel,
-            this.firstLevelXp,
-            this.increaseFactor,
-            this.interpolationText,
-            this.getSelectedSubvariables()
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.mode,
+                        this.stepSize,
+                        this.maxLevel,
+                        this.firstLevelXp,
+                        this.increaseFactor,
+                        this.interpolationText,
+                        this.getSelectedSubvariables()));
     }
 
     @Override
@@ -116,8 +117,7 @@ public class WiredExtraVariableLevelUpSystem extends InteractionWiredExtra {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {}
 
     @Override
     public boolean hasConfiguration() {
@@ -150,8 +150,8 @@ public class WiredExtraVariableLevelUpSystem extends InteractionWiredExtra {
 
     public boolean hasSubvariable(int subvariableType) {
         return subvariableType >= 0
-            && subvariableType < SUBVARIABLE_COUNT
-            && ((this.subvariableMask & (1 << subvariableType)) != 0);
+                && subvariableType < SUBVARIABLE_COUNT
+                && ((this.subvariableMask & (1 << subvariableType)) != 0);
     }
 
     public List<Integer> getSelectedSubvariables() {
@@ -192,6 +192,8 @@ public class WiredExtraVariableLevelUpSystem extends InteractionWiredExtra {
                 return (data != null) ? data : new JsonData();
             }
         } catch (Exception ignored) {
+            WiredCompatibilityDiagnostics.record(
+                    WiredCompatibilityDiagnostics.FailurePoint.EXTRA_LEVEL_UP_JSON, ignored);
         }
 
         JsonData fallback = new JsonData();
@@ -254,10 +256,16 @@ public class WiredExtraVariableLevelUpSystem extends InteractionWiredExtra {
         String interpolationText = "";
         List<Integer> subvariables = null;
 
-        JsonData() {
-        }
+        JsonData() {}
 
-        JsonData(int mode, int stepSize, int maxLevel, int firstLevelXp, int increaseFactor, String interpolationText, List<Integer> subvariables) {
+        JsonData(
+                int mode,
+                int stepSize,
+                int maxLevel,
+                int firstLevelXp,
+                int increaseFactor,
+                String interpolationText,
+                List<Integer> subvariables) {
             this.mode = mode;
             this.stepSize = stepSize;
             this.maxLevel = maxLevel;

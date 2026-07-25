@@ -795,7 +795,7 @@ public class HabboStats implements Runnable {
 
     public void unignoreUser(int userId) {
         if (this.userIgnored(userId)) {
-            this.ignoredUsers.remove(userId);
+            this.ignoredUsers.rem(userId);
 
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                  PreparedStatement statement = connection.prepareStatement("DELETE FROM users_ignored WHERE user_id = ? AND target_id = ?")) {

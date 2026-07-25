@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.triggers;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
@@ -8,13 +9,12 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.WiredTriggerType;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
+import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredTriggerSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashSet;
@@ -34,7 +34,8 @@ public class WiredTriggerHabboWalkOffFurni extends InteractionWiredTrigger {
         this.items = new LinkedHashSet<>();
     }
 
-    public WiredTriggerHabboWalkOffFurni(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredTriggerHabboWalkOffFurni(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.items = new LinkedHashSet<>();
     }
@@ -44,9 +45,7 @@ public class WiredTriggerHabboWalkOffFurni extends InteractionWiredTrigger {
         HabboItem sourceItem = event.getSourceItem().orElse(null);
         Room room = event.getRoom();
         return WiredTriggerSourceUtil.containsItemOrTile(
-                room,
-                WiredTriggerSourceUtil.resolveItems(this, event, this.furniSource, this.items),
-                sourceItem);
+                room, WiredTriggerSourceUtil.resolveItems(this, event, this.furniSource, this.items), sourceItem);
     }
 
     @Deprecated
@@ -57,10 +56,10 @@ public class WiredTriggerHabboWalkOffFurni extends InteractionWiredTrigger {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-            this.furniSource,
-            this.items.stream().map(HabboItem::getId).collect(Collectors.toList())
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.furniSource,
+                        this.items.stream().map(HabboItem::getId).collect(Collectors.toList())));
     }
 
     @Override
@@ -72,7 +71,7 @@ public class WiredTriggerHabboWalkOffFurni extends InteractionWiredTrigger {
         if (wiredData.startsWith("{")) {
             JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
             this.furniSource = this.normalizeFurniSource(data.furniSource);
-            for (Integer id: data.itemIds) {
+            for (Integer id : data.itemIds) {
                 HabboItem item = room.getHabboItem(id);
                 if (item != null) {
                     this.items.add(item);
@@ -84,15 +83,18 @@ public class WiredTriggerHabboWalkOffFurni extends InteractionWiredTrigger {
 
                 if (!wiredData.split(":")[2].equals("\t")) {
                     for (String s : wiredData.split(":")[2].split(";")) {
-                        if (s.isEmpty())
-                            continue;
+                        if (s.isEmpty()) continue;
 
                         try {
                             HabboItem item = room.getHabboItem(Integer.parseInt(s));
 
-                            if (item != null)
-                                this.items.add(item);
+                            if (item != null) this.items.add(item);
                         } catch (Exception e) {
+                            WiredCompatibilityDiagnostics.record(
+                                    WiredCompatibilityDiagnostics.FailurePoint.TRIGGER_WALK_OFF_ITEM,
+                                    room.getId(),
+                                    this.getId(),
+                                    e);
                         }
                     }
                 }
@@ -121,8 +123,7 @@ public class WiredTriggerHabboWalkOffFurni extends InteractionWiredTrigger {
             items.addAll(this.items);
         } else {
             for (HabboItem item : this.items) {
-                if (room.getHabboItem(item.getId()) == null)
-                    items.add(item);
+                if (room.getHabboItem(item.getId()) == null) items.add(item);
             }
         }
 
@@ -157,7 +158,9 @@ public class WiredTriggerHabboWalkOffFurni extends InteractionWiredTrigger {
         this.items.clear();
         this.furniSource = (settings.getIntParams().length > 0)
                 ? this.normalizeFurniSource(settings.getIntParams()[0])
-                : ((settings.getFurniIds().length > 0) ? WiredSourceUtil.SOURCE_SELECTED : WiredSourceUtil.SOURCE_TRIGGER);
+                : ((settings.getFurniIds().length > 0)
+                        ? WiredSourceUtil.SOURCE_SELECTED
+                        : WiredSourceUtil.SOURCE_TRIGGER);
 
         if (this.furniSource != WiredSourceUtil.SOURCE_SELECTED) {
             return true;

@@ -17,7 +17,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -58,7 +57,7 @@ public class WiredEffectPlaceFurni extends InteractionWiredEffect {
     @Override
     public void execute(WiredContext ctx) {
         Room room = ctx.room();
-        if (room == null || room.getLayout() == null) return;
+        if (room == null || room.getLayout() == null || this.baseItemId <= 0) return;
 
         Item baseItem = Emulator.getGameEnvironment().getItemManager().getItem(this.baseItemId);
         if (baseItem == null || baseItem.getType() != FurnitureType.FLOOR) return;
@@ -75,7 +74,8 @@ public class WiredEffectPlaceFurni extends InteractionWiredEffect {
         for (int i = 0; i < this.quantity; i++) {
             if (room.getFloorItems().size() >= ceiling) break;
 
-            HabboItem item = Emulator.getGameEnvironment().getItemManager().createItem(room.getOwnerId(), baseItem, 0, 0, "");
+            HabboItem item =
+                    Emulator.getGameEnvironment().getItemManager().createItem(room.getOwnerId(), baseItem, 0, 0, "");
             if (item == null) continue;
 
             FurnitureMovementError error = room.placeFloorFurniAt(item, tile, this.rotation, owner);
@@ -149,7 +149,15 @@ public class WiredEffectPlaceFurni extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(this.baseItemId, this.quantity, this.placementMode, this.storedX, this.storedY, this.rotation, this.getDelay()));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.baseItemId,
+                        this.quantity,
+                        this.placementMode,
+                        this.storedX,
+                        this.storedY,
+                        this.rotation,
+                        this.getDelay()));
     }
 
     @Override
@@ -201,7 +209,8 @@ public class WiredEffectPlaceFurni extends InteractionWiredEffect {
         int rotation;
         int delay;
 
-        public JsonData(int baseItemId, int quantity, int placementMode, int storedX, int storedY, int rotation, int delay) {
+        public JsonData(
+                int baseItemId, int quantity, int placementMode, int storedX, int storedY, int rotation, int delay) {
             this.baseItemId = baseItemId;
             this.quantity = quantity;
             this.placementMode = placementMode;

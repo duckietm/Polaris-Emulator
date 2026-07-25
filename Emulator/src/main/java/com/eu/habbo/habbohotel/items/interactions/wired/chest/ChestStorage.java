@@ -1,7 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 
+import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
-
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -41,8 +41,7 @@ public class ChestStorage {
         public int type;
         public int quantity;
 
-        public Entry() {
-        }
+        public Entry() {}
 
         public Entry(int kind, int type, int quantity) {
             this.kind = kind;
@@ -55,14 +54,13 @@ public class ChestStorage {
 
     /** A transaction-log row (deposit / withdraw), newest first. */
     public static class LogEntry {
-        public String type;      // "deposit" | "withdraw"
-        public long timestamp;   // epoch millis
+        public String type; // "deposit" | "withdraw"
+        public long timestamp; // epoch millis
         public String userName;
         public int withdrawn;
         public int deposited;
 
-        public LogEntry() {
-        }
+        public LogEntry() {}
 
         public LogEntry(String type, long timestamp, String userName, int withdrawn, int deposited) {
             this.type = type;
@@ -81,16 +79,16 @@ public class ChestStorage {
     // --- player-facing config ---
     private String name = "";
     private String description = "";
-    private boolean accessOpen = true;       // everyone can open
-    private boolean accessDonate = false;    // everyone can donate
+    private boolean accessOpen = true; // everyone can open
+    private boolean accessDonate = false; // everyone can donate
     private int capacityMax = DEFAULT_CAPACITY;
-    private int appearanceState = 0;         // 0 = open when someone looks inside
+    private int appearanceState = 0; // 0 = open when someone looks inside
     private boolean notifyFull = false;
     private boolean notifyDonation = false;
     private boolean notifyWithdraw = false;
     private boolean notifyEmpty = false;
     private boolean notifyWired = false;
-    private int notifyMode = 0;              // 0 = always
+    private int notifyMode = 0; // 0 = always
 
     /** Defensive snapshot — safe to iterate off-thread; mutate the chest through the dedicated methods. */
     public synchronized List<Entry> entries() {
@@ -138,7 +136,8 @@ public class ChestStorage {
     }
 
     /** Remove up to {@code amount} rows matching a {@link ChestItemType} wire identity. */
-    public synchronized List<ChestFurniStoredItem> removeFurniByType(boolean wallItem, int baseItemId, String legacyPosterId, int amount) {
+    public synchronized List<ChestFurniStoredItem> removeFurniByType(
+            boolean wallItem, int baseItemId, String legacyPosterId, int amount) {
         List<ChestFurniStoredItem> removed = new ArrayList<>();
         if (amount <= 0) return removed;
 
@@ -178,7 +177,8 @@ public class ChestStorage {
     }
 
     /** Like {@link #removeFurniByType} but matching the CLIENT-facing type id (sprite id) instead. Atomic. */
-    public synchronized List<ChestFurniStoredItem> removeFurniByWireType(boolean wallItem, int wireTypeId, String legacyPosterId, int amount) {
+    public synchronized List<ChestFurniStoredItem> removeFurniByWireType(
+            boolean wallItem, int wireTypeId, String legacyPosterId, int amount) {
         List<ChestFurniStoredItem> removed = new ArrayList<>();
         if (amount <= 0) return removed;
 
@@ -338,32 +338,80 @@ public class ChestStorage {
     }
 
     // --- config getters/setters ---
-    public String getName() { return this.name == null ? "" : this.name; }
-    public void setName(String value) { this.name = (value == null) ? "" : value; }
+    public String getName() {
+        return this.name == null ? "" : this.name;
+    }
 
-    public String getDescription() { return this.description == null ? "" : this.description; }
-    public void setDescription(String value) { this.description = (value == null) ? "" : value; }
+    public void setName(String value) {
+        this.name = (value == null) ? "" : value;
+    }
 
-    public boolean isAccessOpen() { return this.accessOpen; }
-    public void setAccessOpen(boolean value) { this.accessOpen = value; }
+    public String getDescription() {
+        return this.description == null ? "" : this.description;
+    }
 
-    public boolean isAccessDonate() { return this.accessDonate; }
-    public void setAccessDonate(boolean value) { this.accessDonate = value; }
+    public void setDescription(String value) {
+        this.description = (value == null) ? "" : value;
+    }
 
-    public int getCapacityMax() { return this.capacityMax <= 0 ? DEFAULT_CAPACITY : this.capacityMax; }
-    public void setCapacityMax(int value) { this.capacityMax = Math.max(DEFAULT_CAPACITY, Math.min(MAX_CAPACITY, value)); }
+    public boolean isAccessOpen() {
+        return this.accessOpen;
+    }
 
-    public int getAppearanceState() { return this.appearanceState; }
-    public void setAppearanceState(int value) { this.appearanceState = value; }
+    public void setAccessOpen(boolean value) {
+        this.accessOpen = value;
+    }
 
-    public boolean isNotifyFull() { return this.notifyFull; }
-    public boolean isNotifyDonation() { return this.notifyDonation; }
-    public boolean isNotifyWithdraw() { return this.notifyWithdraw; }
-    public boolean isNotifyEmpty() { return this.notifyEmpty; }
-    public boolean isNotifyWired() { return this.notifyWired; }
-    public int getNotifyMode() { return this.notifyMode; }
+    public boolean isAccessDonate() {
+        return this.accessDonate;
+    }
 
-    public void setNotifications(boolean full, boolean donation, boolean withdraw, boolean empty, boolean wired, int mode) {
+    public void setAccessDonate(boolean value) {
+        this.accessDonate = value;
+    }
+
+    public int getCapacityMax() {
+        return this.capacityMax <= 0 ? DEFAULT_CAPACITY : this.capacityMax;
+    }
+
+    public void setCapacityMax(int value) {
+        this.capacityMax = Math.max(DEFAULT_CAPACITY, Math.min(MAX_CAPACITY, value));
+    }
+
+    public int getAppearanceState() {
+        return this.appearanceState;
+    }
+
+    public void setAppearanceState(int value) {
+        this.appearanceState = value;
+    }
+
+    public boolean isNotifyFull() {
+        return this.notifyFull;
+    }
+
+    public boolean isNotifyDonation() {
+        return this.notifyDonation;
+    }
+
+    public boolean isNotifyWithdraw() {
+        return this.notifyWithdraw;
+    }
+
+    public boolean isNotifyEmpty() {
+        return this.notifyEmpty;
+    }
+
+    public boolean isNotifyWired() {
+        return this.notifyWired;
+    }
+
+    public int getNotifyMode() {
+        return this.notifyMode;
+    }
+
+    public void setNotifications(
+            boolean full, boolean donation, boolean withdraw, boolean empty, boolean wired, int mode) {
         this.notifyFull = full;
         this.notifyDonation = donation;
         this.notifyWithdraw = withdraw;
@@ -454,6 +502,8 @@ public class ChestStorage {
             chest.migrateAggregatedFurniToItems();
         } catch (Exception ignored) {
             // malformed payload → empty chest
+            WiredCompatibilityDiagnostics.record(
+                    WiredCompatibilityDiagnostics.FailurePoint.CHEST_STORAGE_NUMERIC_FIELD, ignored);
         }
         return chest;
     }
@@ -476,8 +526,7 @@ public class ChestStorage {
         List<ChestFurniStoredItem> furniItems;
         int nextFurniInventoryId = 1;
 
-        JsonData() {
-        }
+        JsonData() {}
 
         JsonData(List<Entry> entries) {
             this.entries = entries;

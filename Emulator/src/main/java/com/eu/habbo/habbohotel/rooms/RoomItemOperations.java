@@ -36,6 +36,7 @@ final class RoomItemOperations {
             if (RoomAreaHideSupport.isControllerItem(item)) {
                 RoomAreaHideSupport.sendState(this.room, item);
             }
+            this.room.onFurnitureTopologyChanged();
         } else if (item.getBaseItem().getType() == FurnitureType.WALL) {
             this.room.sendComposer(new WallItemUpdateComposer(item).compose());
         }
@@ -82,6 +83,10 @@ final class RoomItemOperations {
 
         if (item.getBaseItem().getType() == FurnitureType.FLOOR && RoomHanditemBlockSupport.isControllerItem(item)) {
             RoomHanditemBlockSupport.sendState(this.room);
+        }
+
+        if (item.getBaseItem().getType() == FurnitureType.FLOOR) {
+            this.room.onFurnitureTopologyChanged();
         }
     }
 }

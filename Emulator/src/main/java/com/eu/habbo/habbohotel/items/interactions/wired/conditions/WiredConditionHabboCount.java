@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.conditions;
 
+import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
@@ -10,7 +11,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -26,7 +26,8 @@ public class WiredConditionHabboCount extends InteractionWiredCondition {
         super(set, baseItem);
     }
 
-    public WiredConditionHabboCount(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredConditionHabboCount(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -51,11 +52,7 @@ public class WiredConditionHabboCount extends InteractionWiredCondition {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-                this.lowerLimit,
-                this.upperLimit,
-                this.userSource
-        ));
+        return WiredManager.getGson().toJson(new JsonData(this.lowerLimit, this.upperLimit, this.userSource));
     }
 
     @Override
@@ -79,6 +76,11 @@ public class WiredConditionHabboCount extends InteractionWiredCondition {
                     this.applyLimits(Integer.parseInt(data[0].trim()), Integer.parseInt(data[1].trim()));
                 } catch (NumberFormatException ignored) {
                     // malformed legacy data — keep the constructed defaults
+                    WiredCompatibilityDiagnostics.record(
+                            WiredCompatibilityDiagnostics.FailurePoint.CONDITION_HABBO_COUNT_LEGACY,
+                            this.getRoomId(),
+                            this.getId(),
+                            ignored);
                 }
             }
         }
@@ -117,10 +119,12 @@ public class WiredConditionHabboCount extends InteractionWiredCondition {
 
     @Override
     public boolean saveData(WiredSettings settings) {
-        if(settings.getIntParams().length < 2) return false;
+        if (settings.getIntParams().length < 2) return false;
         int[] params = settings.getIntParams();
         this.applyLimits(params[0], params[1]);
-        this.userSource = (params.length > 2) ? WiredConditionInputGuard.normalizeUserSource(params[2]) : WiredSourceUtil.SOURCE_TRIGGER;
+        this.userSource = (params.length > 2)
+                ? WiredConditionInputGuard.normalizeUserSource(params[2])
+                : WiredSourceUtil.SOURCE_TRIGGER;
 
         return true;
     }

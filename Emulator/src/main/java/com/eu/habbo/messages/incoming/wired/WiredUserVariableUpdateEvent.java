@@ -1,7 +1,7 @@
 package com.eu.habbo.messages.incoming.wired;
 
-import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveVariable;
+import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.messages.incoming.MessageHandler;
 
 public class WiredUserVariableUpdateEvent extends MessageHandler {

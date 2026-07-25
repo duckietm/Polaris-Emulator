@@ -6,12 +6,16 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntMaps;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2LongMap;
+import it.unimi.dsi.fastutil.ints.Int2LongMaps;
+import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 final class RoomItemIndex {
 
@@ -19,6 +23,8 @@ final class RoomItemIndex {
     private final Int2ObjectMap<HabboItem> items = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
     private final Int2ObjectMap<String> ownerNames = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
     private final Int2IntMap ownerCounts = Int2IntMaps.synchronize(new Int2IntOpenHashMap(0));
+    private final Int2LongMap itemIncarnations = Int2LongMaps.synchronize(new Int2LongOpenHashMap(0));
+    private final AtomicLong incarnationSequence = new AtomicLong();
     private final ConcurrentHashMap<RoomTile, Set<HabboItem>> tileCache = new ConcurrentHashMap<>();
 
     RoomItemIndex(Room room) {
@@ -52,6 +58,25 @@ final class RoomItemIndex {
         }
 
         return item != null ? item : this.room.getRoomSpecialTypes().getSpecialItem(id);
+    }
+
+    long registerIncarnation(HabboItem item) {
+        if (item == null) {
+            return 0L;
+        }
+        long incarnation = this.incarnationSequence.incrementAndGet();
+        this.itemIncarnations.put(item.getId(), incarnation);
+        return incarnation;
+    }
+
+    void unregisterIncarnation(HabboItem item) {
+        if (item != null) {
+            this.itemIncarnations.remove(item.getId());
+        }
+    }
+
+    long itemIncarnation(int itemId) {
+        return this.itemIncarnations.getOrDefault(itemId, 0L);
     }
 
     int size() {
@@ -149,6 +174,7 @@ final class RoomItemIndex {
         synchronized (this.ownerNames) {
             this.ownerNames.clear();
         }
+        this.itemIncarnations.clear();
         this.tileCache.clear();
     }
 }

@@ -1,10 +1,10 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
+import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -13,7 +13,8 @@ public class WiredEffectGiveHandItem extends WiredEffectWhisper {
         super(set, baseItem);
     }
 
-    public WiredEffectGiveHandItem(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectGiveHandItem(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -31,6 +32,11 @@ public class WiredEffectGiveHandItem extends WiredEffectWhisper {
                 }
             }
         } catch (Exception e) {
+            WiredCompatibilityDiagnostics.record(
+                    WiredCompatibilityDiagnostics.FailurePoint.EFFECT_GIVE_HAND_ITEM,
+                    ctx.room().getId(),
+                    this.getId(),
+                    e);
         }
     }
 }

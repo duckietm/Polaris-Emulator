@@ -1,6 +1,6 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
-import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
@@ -14,7 +14,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -30,7 +29,8 @@ public class WiredEffectGiveAchievement extends InteractionWiredEffect {
         super(set, baseItem);
     }
 
-    public WiredEffectGiveAchievement(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectGiveAchievement(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -91,14 +91,14 @@ public class WiredEffectGiveAchievement extends InteractionWiredEffect {
     @Override
     public void execute(WiredContext ctx) {
         Room room = ctx.room();
-
-        com.eu.habbo.habbohotel.achievements.Achievement ach = Emulator.getGameEnvironment().getAchievementManager().getAchievement(this.achievement);
+        if (WiredPlatform.gameEnvironment() == null) return;
+        com.eu.habbo.habbohotel.achievements.Achievement ach =
+                WiredPlatform.gameEnvironment().getAchievementManager().getAchievement(this.achievement);
         if (ach == null) return;
 
         for (RoomUnit unit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
             Habbo habbo = room.getHabbo(unit);
             if (habbo == null) continue;
-
             com.eu.habbo.habbohotel.achievements.AchievementManager.progressAchievement(habbo, ach);
         }
     }
@@ -118,13 +118,12 @@ public class WiredEffectGiveAchievement extends InteractionWiredEffect {
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
         String wiredData = set.getString("wired_data");
 
-        if(wiredData.startsWith("{")) {
+        if (wiredData.startsWith("{")) {
             JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
             this.achievement = data.achievement != null ? data.achievement : "";
             this.setDelay(data.delay);
             this.userSource = data.userSource;
-        }
-        else {
+        } else {
             String[] data = wiredData.split("\t");
             this.achievement = "";
 

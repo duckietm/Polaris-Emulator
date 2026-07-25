@@ -1,7 +1,6 @@
 package com.eu.habbo.habbohotel.wired.core;
 
 import com.eu.habbo.habbohotel.wired.tick.WiredTickService;
-import java.util.Objects;
 
 /**
  * Owns the wired engine, stack index, and tick-service lifecycle.
@@ -13,38 +12,25 @@ final class WiredRuntime {
     private final WiredEngine engine;
     private final RoomWiredStackIndex stackIndex;
     private final WiredTickService tickService;
-    private boolean active;
+    private final WiredRuntimeLifecycle lifecycle;
 
     WiredRuntime(WiredEngine engine, RoomWiredStackIndex stackIndex, WiredTickService tickService) {
-        this.engine = Objects.requireNonNull(engine);
-        this.stackIndex = Objects.requireNonNull(stackIndex);
-        this.tickService = Objects.requireNonNull(tickService);
+        this.engine = engine;
+        this.stackIndex = stackIndex;
+        this.tickService = tickService;
+        this.lifecycle = new WiredRuntimeLifecycle(engine, stackIndex, tickService);
     }
 
-    synchronized void start() {
-        if (active) {
-            return;
-        }
-
-        tickService.start();
-        active = true;
+    void start() {
+        this.lifecycle.start();
     }
 
-    synchronized void shutdown() {
-        if (!active) {
-            return;
-        }
-
-        tickService.stop();
-        stackIndex.clearAll();
-        engine.clearUnseenCache();
-        engine.clearAllDiagnostics();
-        engine.clearAllExecutionCaches();
-        active = false;
+    void shutdown() {
+        this.lifecycle.shutdown();
     }
 
-    synchronized boolean isActive() {
-        return active;
+    boolean isActive() {
+        return this.lifecycle.isActive();
     }
 
     WiredEngine engine() {

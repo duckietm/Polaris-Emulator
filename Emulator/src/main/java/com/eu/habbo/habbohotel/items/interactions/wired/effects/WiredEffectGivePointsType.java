@@ -1,6 +1,6 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
-import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
@@ -16,7 +16,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -49,7 +48,8 @@ public class WiredEffectGivePointsType extends InteractionWiredEffect {
         super(set, baseItem);
     }
 
-    public WiredEffectGivePointsType(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectGivePointsType(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -61,7 +61,6 @@ public class WiredEffectGivePointsType extends InteractionWiredEffect {
         for (RoomUnit unit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
             Habbo habbo = room.getHabbo(unit);
             if (habbo == null) continue;
-
             habbo.givePoints(this.pointsType, this.amount);
         }
     }
@@ -118,7 +117,10 @@ public class WiredEffectGivePointsType extends InteractionWiredEffect {
         }
 
         int delay = settings.getDelay();
-        if (delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20)) {
+        int maxDelay = WiredPlatform.configuration() == null
+                ? 20
+                : WiredPlatform.configuration().getInt("hotel.wired.max_delay", 20);
+        if (delay > maxDelay) {
             throw new WiredSaveException("Delay too long");
         }
 
@@ -143,7 +145,8 @@ public class WiredEffectGivePointsType extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(this.pointsType, this.amount, this.getDelay(), this.userSource));
+        return WiredManager.getGson()
+                .toJson(new JsonData(this.pointsType, this.amount, this.getDelay(), this.userSource));
     }
 
     @Override

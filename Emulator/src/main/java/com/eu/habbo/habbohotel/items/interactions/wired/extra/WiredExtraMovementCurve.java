@@ -8,7 +8,6 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -26,16 +25,24 @@ public class WiredExtraMovementCurve extends InteractionWiredExtra {
     public static final int CURVE_EASE_IN = 1;
     public static final int CURVE_EASE_OUT = 2;
     public static final int CURVE_EASE_IN_OUT = 3;
+    public static final int CURVE_BOUNCE = 4;
+    public static final int CURVE_ELASTIC = 5;
+    public static final int CURVE_DROP = 6;
     private static final int CURVE_MIN = CURVE_LINEAR;
-    private static final int CURVE_MAX = CURVE_EASE_IN_OUT;
+    private static final int CURVE_MAX = CURVE_DROP;
+    public static final int INTENSITY_MIN = 0;
+    public static final int INTENSITY_MAX = 100;
+    public static final int INTENSITY_DEFAULT = 100;
 
     private int curveType = CURVE_LINEAR;
+    private int intensity = INTENSITY_DEFAULT;
 
     public WiredExtraMovementCurve(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
     }
 
-    public WiredExtraMovementCurve(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredExtraMovementCurve(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -48,7 +55,9 @@ public class WiredExtraMovementCurve extends InteractionWiredExtra {
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
         int value = (settings.getIntParams().length > 0) ? settings.getIntParams()[0] : this.curveType;
 
-        if (value == this.curveType && settings.getStringParam() != null && !settings.getStringParam().isEmpty()) {
+        if (value == this.curveType
+                && settings.getStringParam() != null
+                && !settings.getStringParam().isEmpty()) {
             try {
                 value = Integer.parseInt(settings.getStringParam());
             } catch (NumberFormatException ignored) {
@@ -57,12 +66,15 @@ public class WiredExtraMovementCurve extends InteractionWiredExtra {
         }
 
         this.curveType = normalizeCurve(value);
+        if (settings.getIntParams().length > 1) {
+            this.intensity = normalizeIntensity(settings.getIntParams()[1]);
+        }
         return true;
     }
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(this.curveType));
+        return WiredManager.getGson().toJson(new JsonData(this.curveType, this.intensity));
     }
 
     @Override
@@ -73,8 +85,9 @@ public class WiredExtraMovementCurve extends InteractionWiredExtra {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(1);
+        message.appendInt(2);
         message.appendInt(this.curveType);
+        message.appendInt(this.intensity);
         message.appendInt(0);
         message.appendInt(CODE);
         message.appendInt(0);
@@ -93,6 +106,8 @@ public class WiredExtraMovementCurve extends InteractionWiredExtra {
         if (wiredData.startsWith("{")) {
             JsonData data = WiredExtraPayloadGuard.fromJson(wiredData, JsonData.class);
             this.curveType = normalizeCurve((data != null) ? data.curveType : CURVE_LINEAR);
+            this.intensity =
+                    normalizeIntensity((data != null && data.intensity != null) ? data.intensity : INTENSITY_DEFAULT);
             return;
         }
 
@@ -106,12 +121,11 @@ public class WiredExtraMovementCurve extends InteractionWiredExtra {
     @Override
     public void onPickUp() {
         this.curveType = CURVE_LINEAR;
+        this.intensity = INTENSITY_DEFAULT;
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
 
     @Override
     public boolean hasConfiguration() {
@@ -122,15 +136,26 @@ public class WiredExtraMovementCurve extends InteractionWiredExtra {
         return this.curveType;
     }
 
+    public int getIntensity() {
+        return this.intensity;
+    }
+
     private static int normalizeCurve(int value) {
         return Math.max(CURVE_MIN, Math.min(CURVE_MAX, value));
     }
 
+    private static int normalizeIntensity(int value) {
+        return Math.max(INTENSITY_MIN, Math.min(INTENSITY_MAX, value));
+    }
+
     static class JsonData {
         int curveType;
+        // Wrapper so payloads saved before the intensity field existed load as "default", not 0.
+        Integer intensity;
 
-        JsonData(int curveType) {
+        JsonData(int curveType, int intensity) {
             this.curveType = curveType;
+            this.intensity = intensity;
         }
     }
 }

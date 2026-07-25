@@ -5,7 +5,6 @@ import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.api.WiredStack;
-
 import java.util.Optional;
 
 /**
@@ -20,7 +19,7 @@ import java.util.Optional;
  *   <li>Execution state for loop safety ({@link #state()})</li>
  * </ul>
  * </p>
- * 
+ *
  * <h3>Usage in Conditions:</h3>
  * <pre>{@code
  * public boolean evaluate(WiredContext ctx) {
@@ -29,15 +28,15 @@ import java.util.Optional;
  *         .orElse(false);
  * }
  * }</pre>
- * 
+ *
  * <h3>Usage in Effects:</h3>
  * <pre>{@code
  * public void execute(WiredContext ctx) {
- *     ctx.actor().ifPresent(user -> 
+ *     ctx.actor().ifPresent(user ->
  *         ctx.services().teleportUser(ctx.room(), user, targetTile));
  * }
  * }</pre>
- * 
+ *
  * @see WiredEvent
  * @see WiredServices
  * @see WiredState
@@ -49,13 +48,16 @@ public final class WiredContext {
     private final WiredServices services;
     private final WiredState state;
     private final WiredTargets targets;
-    
+
+    /** Actor still eligible for the current execution; delayed work revalidates this reference. */
+    private RoomUnit activeActor;
+
     /** The wired trigger furniture item executing this stack */
     private final HabboItem triggerItem;
-    
+
     /** The wired stack being executed (for conditions to access effects) */
     private final WiredStack stack;
-    
+
     /** Extra settings from the trigger item (for legacy compatibility) */
     private final Object[] legacySettings;
 
@@ -67,7 +69,7 @@ public final class WiredContext {
 
     /**
      * Create a new wired context.
-     * 
+     *
      * @param event the triggering event (required)
      * @param triggerItem the wired trigger item (may be null for programmatic triggers)
      * @param services the services for performing side effects
@@ -79,20 +81,25 @@ public final class WiredContext {
 
     /**
      * Create a new wired context with legacy settings.
-     * 
+     *
      * @param event the triggering event (required)
      * @param triggerItem the wired trigger item (may be null)
      * @param services the services for performing side effects
      * @param state the execution state
      * @param legacySettings extra settings array for legacy adapter compatibility
      */
-    public WiredContext(WiredEvent event, HabboItem triggerItem, WiredServices services, WiredState state, Object[] legacySettings) {
+    public WiredContext(
+            WiredEvent event,
+            HabboItem triggerItem,
+            WiredServices services,
+            WiredState state,
+            Object[] legacySettings) {
         this(event, triggerItem, null, services, state, legacySettings);
     }
-    
+
     /**
      * Create a new wired context with stack and legacy settings.
-     * 
+     *
      * @param event the triggering event (required)
      * @param triggerItem the wired trigger item (may be null)
      * @param stack the wired stack being executed (may be null)
@@ -100,12 +107,19 @@ public final class WiredContext {
      * @param state the execution state
      * @param legacySettings extra settings array for legacy adapter compatibility
      */
-    public WiredContext(WiredEvent event, HabboItem triggerItem, WiredStack stack, WiredServices services, WiredState state, Object[] legacySettings) {
+    public WiredContext(
+            WiredEvent event,
+            HabboItem triggerItem,
+            WiredStack stack,
+            WiredServices services,
+            WiredState state,
+            Object[] legacySettings) {
         if (event == null) throw new IllegalArgumentException("Event cannot be null");
         if (services == null) throw new IllegalArgumentException("Services cannot be null");
         if (state == null) throw new IllegalArgumentException("State cannot be null");
-        
+
         this.event = event;
+        this.activeActor = event.getActor().orElse(null);
         this.triggerItem = triggerItem;
         this.stack = stack;
         this.services = services;
@@ -115,7 +129,7 @@ public final class WiredContext {
                 ? event.getContextVariableScope().copy()
                 : new WiredContextVariableScope();
         this.targets = new WiredTargets();
-        
+
         // Default targets: include actor and trigger item for backwards compatibility
         event.getActor().ifPresent(targets::addUser);
         if (triggerItem != null) {
@@ -156,7 +170,7 @@ public final class WiredContext {
      * @return optional containing the actor
      */
     public Optional<RoomUnit> actor() {
-        return event.getActor();
+        return Optional.ofNullable(this.activeActor);
     }
 
     /**
@@ -281,6 +295,19 @@ public final class WiredContext {
         this.includeWiredSelectorItems = includeWiredSelectorItems;
     }
 
+    /** Restore copied delayed-only state after live room entities have been resolved. */
+    void restoreDelayedSnapshot(
+            WiredContextVariableScope contextVariables,
+            Iterable<RoomUnit> users,
+            Iterable<HabboItem> items,
+            boolean usersModifiedBySelector,
+            boolean itemsModifiedBySelector,
+            boolean includeWiredSelectorItems) {
+        this.contextVariables = contextVariables != null ? contextVariables.copy() : new WiredContextVariableScope();
+        this.targets.restoreSnapshot(users, items, usersModifiedBySelector, itemsModifiedBySelector);
+        this.includeWiredSelectorItems = includeWiredSelectorItems;
+    }
+
     // ========== Utility Methods ==========
 
     /**
@@ -288,7 +315,7 @@ public final class WiredContext {
      * @return true if an actor is present
      */
     public boolean hasActor() {
-        return event.getActor().isPresent();
+        return this.activeActor != null;
     }
 
     /**
@@ -326,11 +353,10 @@ public final class WiredContext {
 
     @Override
     public String toString() {
-        return "WiredContext{" +
-                "event=" + event +
-                ", triggerItem=" + (triggerItem != null ? triggerItem.getId() : "null") +
-                ", targets=" + targets +
-                ", state=" + state +
-                '}';
+        return "WiredContext{" + "event="
+                + event + ", triggerItem="
+                + (triggerItem != null ? triggerItem.getId() : "null") + ", targets="
+                + targets + ", state="
+                + state + '}';
     }
 }

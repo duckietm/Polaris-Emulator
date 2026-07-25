@@ -7,7 +7,6 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -19,23 +18,26 @@ public class WiredConditionNotTriggerOnFurni extends WiredConditionTriggerOnFurn
         super(set, baseItem);
     }
 
-    public WiredConditionNotTriggerOnFurni(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredConditionNotTriggerOnFurni(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
     @Override
     public boolean evaluate(WiredContext ctx) {
+        if (ctx == null || ctx.room() == null) {
+            return false;
+        }
+
         Room room = ctx.room();
 
         this.refresh();
 
         List<RoomUnit> userTargets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
-        if (userTargets.isEmpty())
-            return false;
+        if (userTargets.isEmpty()) return false;
 
         List<HabboItem> itemTargets = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items);
-        if (itemTargets.isEmpty())
-            return true;
+        if (itemTargets.isEmpty()) return true;
 
         if (this.getQuantifier() == QUANTIFIER_ANY) {
             return !this.isAnyUserOnFurni(userTargets, itemTargets, room);

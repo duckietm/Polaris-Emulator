@@ -2,6 +2,8 @@
 
 This directory provides the disposable Polaris side of the renderer end-to-end tests. It recreates an isolated schema, imports the Polaris base database, seeds synthetic test data, then starts Polaris on dedicated loopback ports. Normal Polaris startup applies any migrations newer than the base database.
 
+Polaris overlays the `emulator_settings` table on top of `config.ini` once the database connects, so any key present in that table wins. `seed.sql` therefore seeds the listener and session keys the harness depends on — `ws.enabled`, `ws.host`, `ws.port`, `ws.whitelist`, `crypto.ws.enabled`, `enc.enabled`, `client.release.allowed` and `session.reconnect.grace.seconds` — before Polaris starts. The base database ships the legacy aliases `ws.nitro.host` and `ws.nitro.port`, which startup copies into `ws.host`/`ws.port` when those keys are absent; seeding them first keeps the WebSocket listener and the `/__e2e` probe on `E2E_GAME_PORT` instead of the stock `0.0.0.0:2096`. Only `db.*`, `game.*`, `rcon.*` and `e2e.enabled` are genuinely controlled by `config.ini.template`.
+
 The scripts never require production credentials or production data. `prepare-database` only accepts a loopback database host and a database name beginning with `polaris_e2e_`. It deletes and recreates that database on every run.
 
 ## Prerequisites
@@ -32,7 +34,7 @@ The runtime and database scripts share these variables:
 | `E2E_SSO_TICKET` | `e2e-inventory-ticket` | Ticket assigned to fixture user `900001` |
 | `E2E_USER_ID` | `900001` | Fixture user used by probes and tests |
 | `E2E_ROOM_ID` | `900002` | Fixture room |
-| `E2E_GAME_PORT` | `31999` | WebSocket listener and HTTP probe |
+| `E2E_GAME_PORT` | `31999` | WebSocket listener and HTTP probe; required by `prepare-database` too, which seeds it as `ws.port` |
 | `E2E_RAW_PORT` | `31998` | Raw game listener |
 | `E2E_RCON_PORT` | `32000` | RCON listener |
 | `E2E_WS_URL` | `ws://127.0.0.1:31999` | Renderer WebSocket URL |

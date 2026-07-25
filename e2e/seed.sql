@@ -35,3 +35,25 @@ INSERT INTO items (
     900004, 900001, 0, 18, '', 0, 0, 0.000000, 0,
     '', '', '0:0', 0
 );
+
+-- The `emulator_settings` overlay is applied after the database connects and
+-- overwrites config.ini, so every key below is decided here rather than in
+-- config.ini.template. The base database ships the legacy aliases
+-- ws.nitro.host='0.0.0.0' and ws.nitro.port='2096', which normal startup copies
+-- into ws.host/ws.port; without these rows the WebSocket listener and the
+-- /__e2e probe bind 0.0.0.0:2096 instead of the port the harness advertises and
+-- readiness never succeeds. Seeding the canonical keys first also makes that
+-- copy a no-op, because it only fills in absent keys.
+-- Keep these values in sync with e2e/config.ini.template.
+INSERT INTO emulator_settings (`key`, `value`) VALUES
+    ('ws.enabled', 'true'),
+    ('ws.host', '127.0.0.1'),
+    ('ws.port', @e2e_ws_port),
+    -- 'error' is the sentinel the upgrade handler uses for a request with no
+    -- Origin header, which is what the Node test client sends.
+    ('ws.whitelist', 'localhost,127.0.0.1,error'),
+    ('crypto.ws.enabled', '0'),
+    ('enc.enabled', '0'),
+    ('client.release.allowed', 'NITRO-3-6-0'),
+    ('session.reconnect.grace.seconds', '30')
+ON DUPLICATE KEY UPDATE `value` = VALUES(`value`);

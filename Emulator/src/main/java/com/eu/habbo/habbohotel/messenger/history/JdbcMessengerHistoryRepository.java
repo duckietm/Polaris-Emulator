@@ -98,10 +98,19 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
 
     @Override
     public List<MessengerStoredMessage> loadHistory(long conversationId, int userId, long beforeMessageId, int limit) {
-        int[] directParticipants = findDirectParticipants(conversationId, userId);
-        if (directParticipants != null) {
-            return loadLegacyDirectHistory(
-                    conversationId, directParticipants[0], directParticipants[1], beforeMessageId, limit);
+        // Direct conversations adopted from chatlogs_private have no rows in
+        // messenger_messages, so they can only be read from the legacy table.
+        // Everything this emulator stores goes to messenger_messages, so the
+        // legacy read must stay a fallback — routing every direct conversation
+        // to it hides each message sent since the conversation was adopted.
+        // Deciding on the conversation rather than on the current page keeps
+        // paging from falling back once it reaches the oldest message.
+        if (!hasStoredMessages(conversationId)) {
+            int[] directParticipants = findDirectParticipants(conversationId, userId);
+            if (directParticipants != null) {
+                return loadLegacyDirectHistory(
+                        conversationId, directParticipants[0], directParticipants[1], beforeMessageId, limit);
+            }
         }
 
         String sql = """
@@ -185,6 +194,19 @@ public final class JdbcMessengerHistoryRepository implements MessengerHistoryRep
             }
         } catch (SQLException exception) {
             throw new IllegalStateException("failed to initialize legacy messenger conversations", exception);
+        }
+    }
+
+    private boolean hasStoredMessages(long conversationId) {
+        String sql = "SELECT 1 FROM messenger_messages WHERE conversation_id = ? LIMIT 1";
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, conversationId);
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next();
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("failed to inspect stored messenger history", exception);
         }
     }
 

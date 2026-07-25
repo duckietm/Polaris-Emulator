@@ -17,7 +17,7 @@ class WiredInternalVariableRegistryCompatibilityTest {
                 Set.of("@position_x", "@position_y", "@direction"),
                 keys(WiredInternalVariableRegistry.Capability.USER_DESTINATION));
         assertEquals(
-                Set.of("@state", "@position_x", "@position_y", "@rotation", "@altitude", "@gravity"),
+                Set.of("@state", "@position_x", "@position_y", "@rotation", "@altitude", "@gravity", "@opacity"),
                 keys(WiredInternalVariableRegistry.Capability.FURNI_DESTINATION));
         assertEquals(
                 Set.of(
@@ -74,7 +74,8 @@ class WiredInternalVariableRegistryCompatibilityTest {
                         "@wallitem_offset",
                         "@dimensions.x",
                         "@dimensions.y",
-                        "@gravity"),
+                        "@gravity",
+                        "@opacity"),
                 keys(WiredInternalVariableRegistry.Capability.FURNI_REFERENCE));
         assertEquals(
                 Set.of(

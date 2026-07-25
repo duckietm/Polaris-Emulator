@@ -3,7 +3,10 @@ package com.eu.habbo.messages.incoming.wired;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -50,6 +53,59 @@ class WiredFurniRuntimeStatePolicyTest {
         WiredFurniRuntimeStatePolicy.Result invalid = WiredFurniRuntimeStatePolicy.write(room, item, "@gravity", 2);
         assertFalse(invalid.supported());
         assertFalse(invalid.success());
+    }
+
+    @Test
+    void opacityIsReadableAndWritableAcrossItsFullPercentageRange() {
+        Room room = mock(Room.class);
+        RoomWiredRuntime runtime = mock(RoomWiredRuntime.class);
+        when(room.getWiredRuntime()).thenReturn(runtime);
+        HabboItem item = floorItem();
+        when(runtime.setGlobalOpacity(room, item, 40)).thenReturn(true);
+        when(runtime.globalOpacity(item)).thenReturn(40);
+
+        WiredFurniRuntimeStatePolicy.Result written = WiredFurniRuntimeStatePolicy.write(room, item, "@opacity", 40);
+
+        assertEquals(40, written.value());
+        assertTrue(written.supported());
+        assertTrue(written.success());
+        verify(runtime).setGlobalOpacity(room, item, 40);
+
+        WiredFurniRuntimeStatePolicy.Result read = WiredFurniRuntimeStatePolicy.read(room, item, " @opacity ");
+        assertEquals(40, read.value());
+        assertTrue(read.supported());
+    }
+
+    @Test
+    void opacityRejectsValuesOutsideZeroToHundredAndGravityStaysBoolean() {
+        Room room = mock(Room.class);
+        RoomWiredRuntime runtime = mock(RoomWiredRuntime.class);
+        when(room.getWiredRuntime()).thenReturn(runtime);
+        HabboItem item = floorItem();
+
+        assertFalse(
+                WiredFurniRuntimeStatePolicy.write(room, item, "@opacity", 101).supported());
+        assertFalse(
+                WiredFurniRuntimeStatePolicy.write(room, item, "@opacity", -1).supported());
+        assertFalse(
+                WiredFurniRuntimeStatePolicy.write(room, item, "@gravity", 40).supported());
+        verify(runtime, never()).setGlobalOpacity(any(), any(), anyInt());
+    }
+
+    @Test
+    void opacityAppliesToWallFurnitureUnlikeGravity() {
+        Room room = mock(Room.class);
+        RoomWiredRuntime runtime = mock(RoomWiredRuntime.class);
+        when(room.getWiredRuntime()).thenReturn(runtime);
+        HabboItem wall = mock(HabboItem.class);
+        Item wallBase = mock(Item.class);
+        when(wall.getBaseItem()).thenReturn(wallBase);
+        when(wallBase.getType()).thenReturn(FurnitureType.WALL);
+        when(runtime.setGlobalOpacity(room, wall, 0)).thenReturn(true);
+        when(runtime.globalOpacity(wall)).thenReturn(0);
+
+        assertTrue(WiredFurniRuntimeStatePolicy.write(room, wall, "@opacity", 0).success());
+        assertFalse(WiredFurniRuntimeStatePolicy.read(room, wall, "@gravity").supported());
     }
 
     @Test

@@ -153,6 +153,18 @@ final class WiredOpacityService {
         return this.stateCount;
     }
 
+    /** Current room-wide opacity for one item, ignoring per-user overlays. */
+    synchronized int globalOpacity(int itemId) {
+        VisualState state = this.globalStates.get(itemId);
+        return state == null ? VisualState.DEFAULT.opacity() : state.opacity();
+    }
+
+    /** Current room-wide click-through for one item, ignoring per-user overlays. */
+    synchronized boolean globalClickThrough(int itemId) {
+        VisualState state = this.globalStates.get(itemId);
+        return state != null && state.clickThrough();
+    }
+
     private List<HabboItem> validItems(Collection<HabboItem> items) {
         if (items == null || items.isEmpty()) {
             return List.of();

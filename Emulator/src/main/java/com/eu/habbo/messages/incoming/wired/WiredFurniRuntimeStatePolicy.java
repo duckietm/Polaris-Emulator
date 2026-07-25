@@ -3,12 +3,15 @@ package com.eu.habbo.messages.incoming.wired;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
+import java.util.Set;
 
 final class WiredFurniRuntimeStatePolicy {
     static final int ACTION_READ = 0;
     static final int ACTION_WRITE = 1;
     static final int MAX_KEY_LENGTH = 64;
     static final String GRAVITY_KEY = "@gravity";
+    static final String OPACITY_KEY = "@opacity";
+    private static final Set<String> ALLOWED_KEYS = Set.of(GRAVITY_KEY, OPACITY_KEY);
 
     private WiredFurniRuntimeStatePolicy() {}
 
@@ -28,7 +31,7 @@ final class WiredFurniRuntimeStatePolicy {
 
     static Result write(Room room, HabboItem item, String key, int value) {
         String normalized = normalizeAllowedKey(key);
-        if ((value != 0 && value != 1)
+        if (!isValueInRange(normalized, value)
                 || room == null
                 || item == null
                 || normalized.isEmpty()
@@ -48,7 +51,15 @@ final class WiredFurniRuntimeStatePolicy {
         }
 
         String normalized = WiredInternalVariableSupport.normalizeKey(key);
-        return GRAVITY_KEY.equals(normalized) ? normalized : "";
+        return ALLOWED_KEYS.contains(normalized) ? normalized : "";
+    }
+
+    /** Gravity is a flag; opacity is a percentage. Anything outside its own range is rejected. */
+    private static boolean isValueInRange(String normalizedKey, int value) {
+        if (OPACITY_KEY.equals(normalizedKey)) {
+            return value >= 0 && value <= 100;
+        }
+        return value == 0 || value == 1;
     }
 
     record Result(int value, boolean supported, boolean success) {

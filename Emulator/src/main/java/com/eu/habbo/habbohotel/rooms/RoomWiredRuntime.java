@@ -62,6 +62,31 @@ public final class RoomWiredRuntime {
         return this.opacity.snapshot(userId);
     }
 
+    /** Room-wide opacity for one item, ignoring per-user overlays. Used by the {@code @opacity} variable. */
+    public int globalOpacity(HabboItem item) {
+        return item == null ? 100 : this.opacity.globalOpacity(item.getId());
+    }
+
+    /**
+     * Sets the room-wide opacity for one item and pushes it to every client that announced opacity
+     * support. Click-through is preserved, so a variable write only changes how transparent the item
+     * is.
+     */
+    public boolean setGlobalOpacity(Room room, HabboItem item, int opacity) {
+        if (room == null || item == null) {
+            return false;
+        }
+
+        boolean clickThrough = this.opacity.globalClickThrough(item.getId());
+        List<WiredOpacityState> applied = this.opacity.applyGlobal(List.of(item), opacity, clickThrough);
+        if (applied.isEmpty()) {
+            return false;
+        }
+
+        WiredOpacityBroadcaster.broadcast(room, applied, 0, 0);
+        return true;
+    }
+
     void forgetOpacity(HabboItem item) {
         this.opacity.forgetItem(item);
     }

@@ -154,7 +154,6 @@ UPDATE `items_base` SET `interaction_type` = 'wf_xtra_filter_users' WHERE `publi
 UPDATE `items_base` SET `interaction_type` = 'wf_xtra_mov_carry_users' WHERE `public_name` = 'wf_xtra_mov_carry_users';
 UPDATE `items_base` SET `interaction_type` = 'wf_xtra_mov_no_animation' WHERE `public_name` = 'wf_xtra_mov_no_animation';
 UPDATE `items_base` SET `interaction_type` = 'wf_xtra_mov_physics' WHERE `public_name` = 'wf_xtra_mov_physics';
-UPDATE `items_base` SET `interaction_type` = 'wf_xtra_mov_animation' WHERE `public_name` = 'wf_xtra_mov_animation';
 UPDATE `items_base` SET `interaction_type` = 'default' WHERE `public_name` = 'wf_act_log';
 UPDATE `items_base` SET `interaction_type` = 'default' WHERE `public_name` = 'wf_act_neg_log';
 UPDATE `items_base` SET `interaction_type` = 'default' WHERE `public_name` = 'wf_var_echo';

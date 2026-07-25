@@ -138,6 +138,7 @@ public final class WiredInternalVariableSupport {
             case "~teleport.target_id" -> item.getTeleportTargetId() > 0;
             case "@wallitem_offset" -> item.getBaseItem().getType() == FurnitureType.WALL;
             case "@gravity" -> item.getBaseItem().getType() == FurnitureType.FLOOR;
+            case "@opacity" -> true;
             case "@is_stackable" -> item.getBaseItem().allowStack();
             case "@can_stand_on" -> item.getBaseItem().allowWalk();
             case "@can_sit_on" -> item.getBaseItem().allowSit();
@@ -312,6 +313,7 @@ public final class WiredInternalVariableSupport {
                 (item.getBaseItem() != null) ? (int) item.getBaseItem().getLength() : null;
             case "@owner_id" -> item.getUserId();
             case "@gravity" -> room.getWiredRuntime().isGravityEnabled(item) ? 1 : 0;
+            case "@opacity" -> room.getWiredRuntime().globalOpacity(item);
             default -> null;
         };
     }
@@ -327,6 +329,11 @@ public final class WiredInternalVariableSupport {
             item.setExtradata(String.valueOf(normalizeFurniStateValue(item, value)));
             room.updateItemState(item);
             return true;
+        }
+
+        // Opacity applies to wall items too, so it is handled before the floor-only guard.
+        if ("@opacity".equals(normalized)) {
+            return room.getWiredRuntime().setGlobalOpacity(room, item, value);
         }
 
         if (item.getBaseItem() == null || item.getBaseItem().getType() != FurnitureType.FLOOR) {

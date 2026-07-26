@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,6 +83,7 @@ public class HabboStats implements Runnable {
     public boolean perkTrade;
     public long roomEnterTimestamp;
     public AtomicInteger chatCounter = new AtomicInteger(0);
+    public final AtomicBoolean singingPirate = new AtomicBoolean(false);
     public long lastChat;
     public long lastUsersSearched;
     public boolean nux;

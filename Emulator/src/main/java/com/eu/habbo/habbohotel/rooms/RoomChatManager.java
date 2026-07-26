@@ -267,15 +267,6 @@ public class RoomChatManager {
         }
         habbo.getHabboStats().lastChat = millis;
 
-        // Easter egg
-        if (roomChatMessage != null
-                && Emulator.getConfig().getBoolean("easter_eggs.enabled")
-                && roomChatMessage.getMessage().equalsIgnoreCase("i am a pirate")) {
-            habbo.getHabboStats().chatCounter.addAndGet(1);
-            Emulator.getThreading().run(new YouAreAPirate(habbo, this.room));
-            return;
-        }
-
         // Handle idle event
         UserIdleEvent event = new UserIdleEvent(habbo, UserIdleEvent.IdleReason.TALKED, false);
         Emulator.getPluginManager().fireEvent(event);
@@ -347,6 +338,19 @@ public class RoomChatManager {
                     }
                 }
             }
+        }
+
+        // Easter egg. Must stay below the mute and flood guards above: it consumes the
+        // message and returns, so anything placed before it is trivially bypassed by
+        // repeating the trigger. One song per Habbo at a time, otherwise a single client
+        // can stack unbounded singing tasks on the scheduler.
+        if (Emulator.getConfig().getBoolean("easter_eggs.enabled")
+                && roomChatMessage.getMessage().equalsIgnoreCase("i am a pirate")) {
+            if (habbo.getHabboStats().singingPirate.compareAndSet(false, true)) {
+                Emulator.getThreading().run(new YouAreAPirate(habbo, this.room));
+            }
+
+            return;
         }
 
         String wiredSayMessage = roomChatMessage.getMessage();

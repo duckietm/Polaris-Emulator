@@ -12,9 +12,9 @@ import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayAddress;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayRuntimeSupport;
-import com.eu.habbo.habbohotel.wired.arrays.WiredArrayValue;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayView;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
@@ -303,7 +303,7 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
             } else {
                 Integer index = WiredArrayRuntimeSupport.resolveIndex(
                         ctx, this.selectedItems, this.arrayAddress, definition, owner);
-                WiredArrayValue value = WiredArrayRuntimeSupport.getValue(ctx, definition, owner);
+                WiredArrayView value = WiredArrayRuntimeSupport.getValue(ctx, definition, owner);
                 match = index != null && value != null && value.getEntry(index) != null;
             }
             if (any && match) return true;

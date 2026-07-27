@@ -1,5 +1,8 @@
 -- Polaris Wired arrays. Definitions remain on the four existing variable boxes;
 -- only permanent owner values are stored here. Context arrays stay execution-scoped.
+-- CHECK constraints are intentional bounds for hostile or manual writes. As with the existing
+-- room_wired_variables table, room ownership is lifecycle-managed and has no rooms FK; entry rows
+-- do use a cascading FK to their value header. MariaDB already validates the JSON column itself.
 
 CREATE TABLE IF NOT EXISTS `room_wired_array_values` (
     `room_id` INT NOT NULL,
@@ -35,15 +38,14 @@ CREATE TABLE IF NOT EXISTS `room_wired_array_entries` (
             (`room_id`, `variable_item_id`, `owner_type`, `owner_id`)
         ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `chk_room_wired_array_entry_index`
-        CHECK (`entry_index` BETWEEN 0 AND 2047),
-    CONSTRAINT `chk_room_wired_array_entry_json`
-        CHECK (JSON_VALID(`entry_data`))
+        CHECK (`entry_index` BETWEEN 0 AND 2047)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `wired_emulator_settings` (`key`, `value`, `comment`) VALUES
     ('hotel.wired.arrays.max_entries', '2048', 'Maximum logical capacity allowed for a Wired array definition.'),
     ('hotel.wired.arrays.max_populated_cells_per_owner', '4096', 'Maximum stored array fields per owner and variable.'),
-    ('hotel.wired.arrays.max_owners_per_execution', '50', 'Maximum array owners processed by one Wired box execution.')
+    ('hotel.wired.arrays.max_owners_per_execution', '50', 'Maximum array owners processed by one Wired box execution.'),
+    ('hotel.wired.arrays.metrics_log_interval_ms', '60000', 'Minimum interval between aggregate Wired array metric logs.')
 ON DUPLICATE KEY UPDATE `value` = `value`;
 
 -- Fixed sprite IDs match FurnitureData; database row IDs remain installation-local.

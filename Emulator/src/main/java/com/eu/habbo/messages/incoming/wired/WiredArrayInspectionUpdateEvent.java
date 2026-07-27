@@ -4,7 +4,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomArrayVariableManager;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayChange;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayNumericOperation;
-import com.eu.habbo.habbohotel.wired.arrays.WiredArrayValue;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayView;
 import com.eu.habbo.habbohotel.wired.arrays.WiredCreatorToolsArrayInspection;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
@@ -40,7 +40,7 @@ public final class WiredArrayInspectionUpdateEvent extends MessageHandler {
                 || !resolved.definition().isArrayWritable()
                 || !room.getArrayVariableManager().hasValue(resolved.definition(), resolved.ownerId())) return;
 
-        WiredArrayValue before = room.getArrayVariableManager().getValue(resolved.definition(), resolved.ownerId());
+        WiredArrayView before = room.getArrayVariableManager().getValue(resolved.definition(), resolved.ownerId());
         int oldLength = before == null ? 0 : before.getLengthForCondition();
         RoomArrayVariableManager.FieldMutationOutcome outcome = room.getArrayVariableManager()
                 .mutateField(

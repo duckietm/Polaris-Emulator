@@ -19,9 +19,9 @@ import com.eu.habbo.habbohotel.rooms.RoomUnitType;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayRuntimeSupport;
-import com.eu.habbo.habbohotel.wired.arrays.WiredArrayValue;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayView;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -336,7 +336,7 @@ public final class WiredTextPlaceholderUtil {
         for (WiredArrayRuntimeSupport.Owner owner : owners) {
             Integer index = WiredArrayRuntimeSupport.resolveIndex(
                     ctx, extra.getItems(), extra.getArrayAddress(), definition, owner);
-            WiredArrayValue value = WiredArrayRuntimeSupport.getValue(ctx, definition, owner);
+            WiredArrayView value = WiredArrayRuntimeSupport.getValue(ctx, definition, owner);
             Long fieldValue =
                     index == null || value == null ? null : value.readField(index, extra.getArrayAddress().fieldId);
             if (fieldValue != null) {

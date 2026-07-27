@@ -19,6 +19,7 @@ import com.eu.habbo.habbohotel.users.DanceType;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboGender;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayRuntimeSupport;
 import com.eu.habbo.util.HotelDateTimeUtil;
 import java.time.ZonedDateTime;
 import java.time.temporal.WeekFields;
@@ -61,8 +62,10 @@ public final class WiredInternalVariableSupport {
     }
 
     public static boolean canUseContextReference(String key) {
-        return WiredInternalVariableRegistry.DEFAULT.supports(
-                key, WiredInternalVariableRegistry.Capability.CONTEXT_REFERENCE);
+        String normalized = normalizeKey(key);
+        return WiredArrayRuntimeSupport.isValidCaptureProjectionPath(normalized)
+                || WiredInternalVariableRegistry.DEFAULT.supports(
+                        normalized, WiredInternalVariableRegistry.Capability.CONTEXT_REFERENCE);
     }
 
     public static boolean hasUserValue(Room room, RoomUnit roomUnit, String key) {
@@ -432,6 +435,8 @@ public final class WiredInternalVariableSupport {
     }
 
     private static Long readArrayContextValue(WiredContext ctx, String normalized) {
+        Long captured = ctx.contextVariables().readArrayCapture(normalized);
+        if (captured != null || WiredArrayRuntimeSupport.isValidCaptureProjectionPath(normalized)) return captured;
         if (ctx.event() == null || ctx.event().getArrayChange() == null) return null;
 
         var change = ctx.event().getArrayChange();

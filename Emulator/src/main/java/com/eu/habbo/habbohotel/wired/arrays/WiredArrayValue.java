@@ -10,7 +10,7 @@ import java.util.TreeMap;
 import java.util.random.RandomGenerator;
 
 /** Copy-on-write array value. Slots are sparse; lists always have entries below logical length. */
-public final class WiredArrayValue {
+public final class WiredArrayValue implements WiredArrayView {
     private final WiredArrayDefinition definition;
     private final int populatedCellLimit;
     private int logicalLength;
@@ -190,6 +190,11 @@ public final class WiredArrayValue {
         return Collections.unmodifiableMap(new LinkedHashMap<>(this.entries));
     }
 
+    @Override
+    public Map<Integer, WiredArrayEntry> entriesView() {
+        return Collections.unmodifiableMap(this.entries);
+    }
+
     public WiredArrayValue copy() {
         WiredArrayValue copy =
                 new WiredArrayValue(this.definition, this.getLogicalLength(), this.populatedCellLimit, false);
@@ -275,8 +280,10 @@ public final class WiredArrayValue {
                 if (this.logicalLength < 2) return WiredArrayMutationResult.NO_CHANGE;
                 List<WiredArrayEntry> original = new ArrayList<>(this.entries.values());
                 List<WiredArrayEntry> shuffled = new ArrayList<>(original);
-                Collections.shuffle(shuffled, new java.util.Random(random.nextLong()));
-                if (shuffled.equals(original)) Collections.rotate(shuffled, 1);
+                for (int remaining = shuffled.size(); remaining > 1; remaining--) {
+                    Collections.swap(shuffled, remaining - 1, random.nextInt(remaining));
+                }
+                if (shuffled.equals(original)) return WiredArrayMutationResult.NO_CHANGE;
                 for (int index = 0; index < shuffled.size(); index++) {
                     this.entries.put(index, shuffled.get(index));
                 }

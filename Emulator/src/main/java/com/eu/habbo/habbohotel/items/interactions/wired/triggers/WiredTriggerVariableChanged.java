@@ -15,6 +15,7 @@ import com.eu.habbo.habbohotel.wired.arrays.WiredArrayChangeType;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType;
+import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
@@ -27,6 +28,7 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
 
     public static final int TARGET_USER = 0;
     public static final int TARGET_FURNI = 1;
+    public static final int TARGET_CONTEXT = 2;
     public static final int TARGET_ROOM = 3;
 
     private static final String CUSTOM_TOKEN_PREFIX = "custom:";
@@ -66,6 +68,7 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
     private boolean deletedEnabled = true;
     private int arrayOptions = ARRAY_CREATED | ARRAY_CHANGED;
     private int arrayFieldId;
+    private boolean arrayDataConfigured;
 
     public WiredTriggerVariableChanged(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -127,8 +130,11 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString((this.variableToken == null ? "" : this.variableToken) + "\t"
-                + WiredManager.getGson().toJson(new ArrayData(this.arrayOptions, this.arrayFieldId)));
+        String editorToken = this.variableToken == null ? "" : this.variableToken;
+        if (this.resolveArrayDefinition(room) != null) {
+            editorToken += "\t" + WiredManager.getGson().toJson(new ArrayData(this.arrayOptions, this.arrayFieldId));
+        }
+        message.appendString(editorToken);
         message.appendInt(7);
         message.appendInt(this.targetType);
         message.appendInt(this.createdEnabled ? 1 : 0);
@@ -173,19 +179,18 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
             throw new WiredTriggerSaveException("wiredfurni.params.variables.validation.missing_variable");
         }
 
-        if (!this.hasAnyEnabledOption()) {
-            return false;
-        }
-
         if (room == null || !this.isValidDefinition(room)) {
             throw new WiredTriggerSaveException("wiredfurni.params.variables.validation.invalid_variable");
         }
 
         WiredArrayVariableDefinition arrayDefinition = this.resolveArrayDefinition(room);
+        this.arrayDataConfigured = arrayDefinition != null;
         if (arrayDefinition != null) {
             if ((this.arrayOptions & (ARRAY_CREATED | ARRAY_CHANGED | ARRAY_SPECIFIC)) == 0) return false;
             if (this.arrayFieldId > 0 && arrayDefinition.getArrayDefinition().getField(this.arrayFieldId) == null)
                 return false;
+        } else if (!this.hasAnyEnabledOption()) {
+            return false;
         }
 
         return true;
@@ -204,8 +209,8 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
                         this.decreasedEnabled,
                         this.unchangedEnabled,
                         this.deletedEnabled,
-                        this.arrayOptions,
-                        this.arrayFieldId));
+                        this.arrayDataConfigured ? this.arrayOptions : null,
+                        this.arrayDataConfigured ? this.arrayFieldId : null));
     }
 
     @Override
@@ -234,8 +239,10 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
         this.decreasedEnabled = data.decreasedEnabled;
         this.unchangedEnabled = data.unchangedEnabled;
         this.deletedEnabled = data.deletedEnabled;
-        this.arrayOptions = data.arrayOptions == 0 ? ARRAY_CREATED | ARRAY_CHANGED : data.arrayOptions;
-        this.arrayFieldId = Math.max(0, data.arrayFieldId);
+        this.arrayDataConfigured = data.arrayOptions != null || data.arrayFieldId != null;
+        int loadedArrayOptions = data.arrayOptions == null ? 0 : data.arrayOptions;
+        this.arrayOptions = loadedArrayOptions == 0 ? ARRAY_CREATED | ARRAY_CHANGED : loadedArrayOptions;
+        this.arrayFieldId = Math.max(0, data.arrayFieldId == null ? 0 : data.arrayFieldId);
         this.setVariableToken(normalizeVariableToken(
                 (data.variableToken != null)
                         ? data.variableToken
@@ -256,6 +263,7 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
         this.deletedEnabled = true;
         this.arrayOptions = ARRAY_CREATED | ARRAY_CHANGED;
         this.arrayFieldId = 0;
+        this.arrayDataConfigured = false;
     }
 
     private void setVariableToken(String token) {
@@ -287,6 +295,7 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
         WiredVariableDefinitionInfo definitionInfo =
                 switch (this.targetType) {
                     case TARGET_FURNI -> room.getFurniVariableManager().getDefinitionInfo(this.variableItemId);
+                    case TARGET_CONTEXT -> WiredContextVariableSupport.getDefinitionInfo(room, this.variableItemId);
                     case TARGET_ROOM -> room.getRoomVariableManager().getDefinitionInfo(this.variableItemId);
                     default -> room.getUserVariableManager().getDefinitionInfo(this.variableItemId);
                 };
@@ -298,6 +307,7 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
         WiredArrayVariableType type =
                 switch (this.targetType) {
                     case TARGET_FURNI -> WiredArrayVariableType.FURNI;
+                    case TARGET_CONTEXT -> WiredArrayVariableType.CONTEXT;
                     case TARGET_ROOM -> WiredArrayVariableType.ROOM;
                     default -> WiredArrayVariableType.USER;
                 };
@@ -346,7 +356,7 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
 
     private static int normalizeTargetType(int value) {
         return switch (value) {
-            case TARGET_FURNI, TARGET_ROOM -> value;
+            case TARGET_FURNI, TARGET_CONTEXT, TARGET_ROOM -> value;
             default -> TARGET_USER;
         };
     }
@@ -395,8 +405,8 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
         boolean decreasedEnabled;
         boolean unchangedEnabled;
         boolean deletedEnabled;
-        int arrayOptions;
-        int arrayFieldId;
+        Integer arrayOptions;
+        Integer arrayFieldId;
 
         JsonData(
                 String variableToken,
@@ -408,8 +418,8 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
                 boolean decreasedEnabled,
                 boolean unchangedEnabled,
                 boolean deletedEnabled,
-                int arrayOptions,
-                int arrayFieldId) {
+                Integer arrayOptions,
+                Integer arrayFieldId) {
             this.variableToken = variableToken;
             this.variableItemId = variableItemId;
             this.targetType = targetType;

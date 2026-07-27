@@ -57,9 +57,30 @@ class WiredContextVariableScopeArrayTest {
         assertEquals(1, original.getArrayValue(77, definition).getLogicalLength());
         assertEquals(2, fork.getArrayValue(77, definition).getLogicalLength());
         assertEquals(12L, original.readArrayCapture("@array.inventory.value"));
+        assertEquals(12L, original.readArrayCapture("inventory.value"));
         assertEquals(1L, original.readArrayCapture("@array.inventory.found"));
         assertEquals(0L, fork.readArrayCapture("@array.inventory.found"));
         assertNull(original.readArrayCapture("@array.inventory.unknown"));
+        assertTrue(WiredInternalVariableSupport.canUseContextReference("inventory.value"));
+        assertTrue(WiredInternalVariableSupport.canUseContextReference("@array.inventory.found"));
+    }
+
+    @Test
+    void publishedReadViewStaysStableAcrossCopyOnWriteMutation() {
+        WiredArrayDefinition definition = definition();
+        WiredContextVariableScope scope = new WiredContextVariableScope();
+        assertEquals(WiredArrayMutationResult.SUCCESS, scope.giveArray(77, definition, false));
+        assertEquals(
+                WiredArrayMutationResult.SUCCESS,
+                scope.mutateArray(77, definition, WiredArrayStructuralOperation.APPEND, 0, 0, Map.of(1, 12L)));
+        var published = scope.getArrayView(77, definition);
+
+        assertEquals(
+                WiredArrayMutationResult.SUCCESS,
+                scope.mutateArray(77, definition, WiredArrayStructuralOperation.APPEND, 0, 0, Map.of(1, 99L)));
+
+        assertEquals(1, published.getLogicalLength());
+        assertEquals(2, scope.getArrayView(77, definition).getLogicalLength());
     }
 
     private static WiredArrayDefinition definition() {

@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredInputGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredLargePayload;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -35,8 +36,7 @@ public class WiredEffectSaveDataEvent extends MessageHandler {
                         int maximumStringLength =
                                 effect instanceof WiredLargePayload || extra instanceof WiredLargePayload
                                         ? WiredLargePayload.MAX_STRING_PARAM_LENGTH
-                                        : com.eu.habbo.habbohotel.items.interactions.wired.WiredInputGuard
-                                                .MAX_STRING_PARAM_LENGTH;
+                                        : WiredInputGuard.MAX_STRING_PARAM_LENGTH;
                         settings = InteractionWired.readSettings(this.packet, true, maximumStringLength);
                         settings.setRoom(room);
                     } catch (IllegalArgumentException e) {

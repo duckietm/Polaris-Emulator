@@ -15,14 +15,15 @@ import com.eu.habbo.habbohotel.wired.arrays.WiredArrayAddress;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayChange;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayEditorSupport;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayMutationResult;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayReference;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayRuntimeSupport;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArraySettings;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayStructuralOperation;
-import com.eu.habbo.habbohotel.wired.arrays.WiredArrayValue;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayView;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
@@ -83,7 +84,7 @@ public final class WiredEffectModifyArray extends InteractionWiredEffect impleme
 
         boolean changed = false;
         for (WiredArrayRuntimeSupport.Owner owner : owners) {
-            WiredArrayValue before = WiredArrayRuntimeSupport.getValue(ctx, definition, owner);
+            WiredArrayView before = WiredArrayRuntimeSupport.getValue(ctx, definition, owner);
             Integer first = structuralOperation.requiresFirstIndex()
                     ? WiredArrayRuntimeSupport.resolveIndex(ctx, this.selectedItems, this.firstIndex, definition, owner)
                     : 0;
@@ -155,21 +156,21 @@ public final class WiredEffectModifyArray extends InteractionWiredEffect impleme
         validateAddress(data.firstIndex, definition, nextOperation.requiresFirstIndex(), room);
         validateAddress(data.secondIndex, definition, nextOperation.requiresSecondIndex(), room);
         validateRawInputs(data.fieldInputs);
-        Map<Integer, WiredArrayReference> nextInputs = normalizeInputs(data.fieldInputs);
+        Map<Integer, WiredArrayReference> nextInputs = WiredArrayEditorSupport.normalizeInputs(data.fieldInputs);
         if (nextOperation.requiresEntryValues()) validateInputs(nextInputs, definition, room);
 
         int maxDelay = WiredInputGuard.maxDelay();
         if (settings.getDelay() < 0 || settings.getDelay() > maxDelay) {
             throw new WiredSaveException("Delay too long");
         }
-        List<HabboItem> nextSelected = parseItems(settings.getFurniIds(), room);
+        List<HabboItem> nextSelected = WiredArrayEditorSupport.parseItems(settings.getFurniIds(), room);
 
         this.variableType = nextType;
         this.variableItemId = data.variableItemId;
         this.operation = nextOperation.code();
         this.ownerSource = WiredArrayRuntimeSupport.normalizeSource(definition.getArrayVariableType(), params[2]);
-        this.firstIndex = normalizeAddress(data.firstIndex);
-        this.secondIndex = normalizeAddress(data.secondIndex);
+        this.firstIndex = WiredArrayEditorSupport.normalizeAddress(data.firstIndex);
+        this.secondIndex = WiredArrayEditorSupport.normalizeAddress(data.secondIndex);
         this.fieldInputs = nextInputs;
         this.selectedItems.clear();
         this.selectedItems.addAll(nextSelected);
@@ -196,11 +197,11 @@ public final class WiredEffectModifyArray extends InteractionWiredEffect impleme
             this.operation = loaded == null ? WiredArrayStructuralOperation.APPEND.code() : loaded.code();
             this.ownerSource = WiredArrayRuntimeSupport.normalizeSource(
                     WiredArrayVariableType.fromCode(this.variableType), data.ownerSource);
-            this.firstIndex = normalizeAddress(data.firstIndex);
-            this.secondIndex = normalizeAddress(data.secondIndex);
-            this.fieldInputs = normalizeInputs(data.fieldInputs);
+            this.firstIndex = WiredArrayEditorSupport.normalizeAddress(data.firstIndex);
+            this.secondIndex = WiredArrayEditorSupport.normalizeAddress(data.secondIndex);
+            this.fieldInputs = WiredArrayEditorSupport.normalizeInputs(data.fieldInputs);
             this.setDelay(Math.min(Math.max(0, data.delay), WiredInputGuard.maxDelay()));
-            this.loadItems(data.itemIds, room);
+            WiredArrayEditorSupport.loadItems(this.selectedItems, data.itemIds, room);
         } catch (Exception exception) {
             LOGGER.warn("Rejected invalid Modify Array wired_data for item {}", this.getId());
             this.onPickUp();
@@ -251,9 +252,9 @@ public final class WiredEffectModifyArray extends InteractionWiredEffect impleme
     public boolean requiresTriggeringUser() {
         if (this.variableType == WiredArrayVariableType.USER.code()
                 && this.ownerSource == WiredSourceUtil.SOURCE_TRIGGER) return true;
-        return addressRequiresTrigger(this.firstIndex)
-                || addressRequiresTrigger(this.secondIndex)
-                || this.fieldInputs.values().stream().anyMatch(WiredEffectModifyArray::referenceRequiresTrigger);
+        return WiredArrayEditorSupport.requiresTrigger(this.firstIndex)
+                || WiredArrayEditorSupport.requiresTrigger(this.secondIndex)
+                || this.fieldInputs.values().stream().anyMatch(WiredArrayEditorSupport::requiresTrigger);
     }
 
     private Map<Integer, Long> resolveEntryValues(
@@ -296,7 +297,7 @@ public final class WiredEffectModifyArray extends InteractionWiredEffect impleme
                 || (address.mode != WiredArrayAddress.CONSTANT && address.mode != WiredArrayAddress.VARIABLE)) {
             throw new WiredSaveException("Invalid array index");
         }
-        WiredArrayAddress normalized = normalizeAddress(address);
+        WiredArrayAddress normalized = WiredArrayEditorSupport.normalizeAddress(address);
         if (normalized.mode == WiredArrayAddress.CONSTANT) {
             if (normalized.value < 0
                     || normalized.value >= definition.getArrayDefinition().getMaxEntries()) {
@@ -304,7 +305,10 @@ public final class WiredEffectModifyArray extends InteractionWiredEffect impleme
             }
             return;
         }
-        validateScalarReference(normalized.variableType, normalized.variableItemId, normalized.capturePath, room);
+        if (!WiredArrayEditorSupport.isValidScalarReference(
+                normalized.variableType, normalized.variableItemId, normalized.capturePath, room)) {
+            throw new WiredSaveException("Choose a scalar variable with a value");
+        }
     }
 
     private static void validateInputs(
@@ -318,15 +322,7 @@ public final class WiredEffectModifyArray extends InteractionWiredEffect impleme
                 throw new WiredSaveException("Unknown array field");
             }
             WiredArrayReference reference = entry.getValue();
-            if (reference.mode == WiredArrayReference.CONSTANT) {
-                try {
-                    Long.parseLong(reference.value == null ? "" : reference.value.trim());
-                } catch (NumberFormatException exception) {
-                    throw new WiredSaveException("Array fields must be signed 64-bit integers");
-                }
-            } else if (reference.mode == WiredArrayReference.VARIABLE) {
-                validateScalarReference(reference.variableType, reference.variableItemId, reference.capturePath, room);
-            } else {
+            if (!WiredArrayEditorSupport.isValidReference(reference, room)) {
                 throw new WiredSaveException("Invalid array field input");
             }
         }
@@ -344,55 +340,10 @@ public final class WiredEffectModifyArray extends InteractionWiredEffect impleme
                     || reference == null
                     || (reference.mode != WiredArrayReference.CONSTANT
                             && reference.mode != WiredArrayReference.VARIABLE)
-                    || (reference.mode == WiredArrayReference.CONSTANT && reference.value == null)) {
+                    || !WiredArrayEditorSupport.validRawReference(reference)) {
                 throw new WiredSaveException("Invalid array field input");
             }
         }
-    }
-
-    private static void validateScalarReference(int variableType, int itemId, String capturePath, Room room)
-            throws WiredSaveException {
-        if (capturePath != null && !capturePath.isBlank()) {
-            if (WiredArrayRuntimeSupport.isValidCapturePath(capturePath)) return;
-            throw new WiredSaveException("Invalid captured array field");
-        }
-        WiredArrayVariableDefinition scalar = WiredArrayDefinitionSupport.resolve(room, variableType, itemId);
-        if (scalar == null || scalar.isArray() || !scalar.hasValue()) {
-            throw new WiredSaveException("Choose a scalar variable with a value");
-        }
-    }
-
-    private static WiredArrayAddress normalizeAddress(WiredArrayAddress value) {
-        WiredArrayAddress result = value == null ? new WiredArrayAddress() : value;
-        result.mode =
-                result.mode == WiredArrayAddress.VARIABLE ? WiredArrayAddress.VARIABLE : WiredArrayAddress.CONSTANT;
-        result.variableType =
-                WiredArrayVariableType.fromCode(result.variableType).code();
-        result.variableSource = WiredArrayRuntimeSupport.normalizeSource(
-                WiredArrayVariableType.fromCode(result.variableType), result.variableSource);
-        result.capturePath = result.capturePath == null ? "" : result.capturePath.trim();
-        return result;
-    }
-
-    private static Map<Integer, WiredArrayReference> normalizeInputs(Map<Integer, WiredArrayReference> input) {
-        Map<Integer, WiredArrayReference> result = new LinkedHashMap<>();
-        if (input == null) return result;
-        for (Map.Entry<Integer, WiredArrayReference> entry : input.entrySet()) {
-            if (result.size() >= WiredArrayDefinition.MAX_FIELDS) break;
-            if (entry.getKey() == null || entry.getKey() <= 0 || entry.getValue() == null) continue;
-            WiredArrayReference reference = entry.getValue();
-            reference.mode = reference.mode == WiredArrayReference.VARIABLE
-                    ? WiredArrayReference.VARIABLE
-                    : WiredArrayReference.CONSTANT;
-            reference.value = reference.value == null ? "0" : reference.value.trim();
-            reference.variableType =
-                    WiredArrayVariableType.fromCode(reference.variableType).code();
-            reference.variableSource = WiredArrayRuntimeSupport.normalizeSource(
-                    WiredArrayVariableType.fromCode(reference.variableType), reference.variableSource);
-            reference.capturePath = reference.capturePath == null ? "" : reference.capturePath.trim();
-            result.put(entry.getKey(), reference);
-        }
-        return result;
     }
 
     private static JsonData readData(String raw) throws WiredSaveException {
@@ -406,50 +357,8 @@ public final class WiredEffectModifyArray extends InteractionWiredEffect impleme
         }
     }
 
-    private static List<HabboItem> parseItems(int[] ids, Room room) throws WiredSaveException {
-        List<HabboItem> result = new ArrayList<>();
-        if (ids == null) return result;
-        int limit = Math.max(0, Math.min(WiredInputGuard.MAX_ABSOLUTE_FURNI_IDS, WiredManager.MAXIMUM_FURNI_SELECTION));
-        if (ids.length > limit) throw new WiredSaveException("Too many furni selected");
-        for (int id : ids) {
-            HabboItem item = room.getHabboItem(id);
-            if (item == null) throw new WiredSaveException("Selected furni is no longer in the room");
-            if (!result.contains(item)) result.add(item);
-        }
-        return result;
-    }
-
-    private void loadItems(List<Integer> ids, Room room) {
-        if (ids == null || room == null) return;
-        int limit = Math.min(ids.size(), WiredManager.MAXIMUM_FURNI_SELECTION);
-        for (int index = 0; index < limit; index++) {
-            Integer id = ids.get(index);
-            HabboItem item = id == null ? null : room.getHabboItem(id);
-            if (item != null && !this.selectedItems.contains(item)) this.selectedItems.add(item);
-        }
-    }
-
     private void logFailure(WiredContext ctx, WiredArrayMutationResult result) {
         ctx.debug("Modify Array %s failed: %s", this.getId(), result.name());
-        LOGGER.debug(
-                "Modify Array {} failed in room {}: {}",
-                this.getId(),
-                ctx.room().getId(),
-                result);
-    }
-
-    private static boolean addressRequiresTrigger(WiredArrayAddress address) {
-        return address != null
-                && address.mode == WiredArrayAddress.VARIABLE
-                && address.variableType == WiredArrayVariableType.USER.code()
-                && address.variableSource == WiredSourceUtil.SOURCE_TRIGGER;
-    }
-
-    private static boolean referenceRequiresTrigger(WiredArrayReference reference) {
-        return reference != null
-                && reference.mode == WiredArrayReference.VARIABLE
-                && reference.variableType == WiredArrayVariableType.USER.code()
-                && reference.variableSource == WiredSourceUtil.SOURCE_TRIGGER;
     }
 
     static final class JsonData {

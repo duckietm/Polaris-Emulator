@@ -1,7 +1,6 @@
 package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayEntry;
-import com.eu.habbo.habbohotel.wired.arrays.WiredArrayValue;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
@@ -59,7 +58,7 @@ final class RoomArrayVariableRepository {
         }
     }
 
-    long replace(RoomArrayVariableManager.Key key, long expectedVersion, WiredArrayValue value, int now)
+    long replace(RoomArrayVariableManager.Key key, long expectedVersion, WiredArrayPersistenceDelta delta, int now)
             throws SQLException {
         try (Connection connection = this.database.openConnection()) {
             boolean originalAutoCommit = connection.getAutoCommit();
@@ -73,9 +72,9 @@ final class RoomArrayVariableRepository {
                 }
 
                 long nextVersion = Math.addExact(currentVersion, 1L);
-                updateHeader(connection, key, value.getLogicalLength(), nextVersion, now);
-                deleteEntries(connection, key);
-                insertEntries(connection, key, value.entriesSnapshot());
+                updateHeader(connection, key, delta.logicalLength(), nextVersion, now);
+                deleteEntries(connection, key, delta.removedIndexes());
+                upsertEntries(connection, key, delta.upsertedEntries());
                 connection.commit();
                 return nextVersion;
             } catch (SQLException | RuntimeException exception) {
@@ -154,7 +153,7 @@ final class RoomArrayVariableRepository {
                 values.setInt(2, definitionItemId);
                 values.executeUpdate();
                 connection.commit();
-            } catch (SQLException exception) {
+            } catch (SQLException | RuntimeException exception) {
                 connection.rollback();
                 throw exception;
             } finally {
@@ -180,7 +179,7 @@ final class RoomArrayVariableRepository {
                 values.setInt(3, ownerId);
                 values.executeUpdate();
                 connection.commit();
-            } catch (SQLException exception) {
+            } catch (SQLException | RuntimeException exception) {
                 connection.rollback();
                 throw exception;
             } finally {
@@ -243,7 +242,23 @@ final class RoomArrayVariableRepository {
         }
     }
 
-    private static void insertEntries(
+    private static void deleteEntries(
+            Connection connection, RoomArrayVariableManager.Key key, Iterable<Integer> indexes) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "DELETE FROM room_wired_array_entries WHERE room_id = ? AND variable_item_id = ? AND owner_type = ? AND owner_id = ? AND entry_index = ?")) {
+            boolean hasEntries = false;
+            for (Integer index : indexes) {
+                if (index == null || index < 0) continue;
+                bindKey(statement, key, 1);
+                statement.setInt(5, index);
+                statement.addBatch();
+                hasEntries = true;
+            }
+            if (hasEntries) statement.executeBatch();
+        }
+    }
+
+    private static void upsertEntries(
             Connection connection, RoomArrayVariableManager.Key key, Map<Integer, WiredArrayEntry> entries)
             throws SQLException {
         if (entries.isEmpty()) return;
@@ -251,6 +266,7 @@ final class RoomArrayVariableRepository {
                 INSERT INTO room_wired_array_entries
                     (room_id, variable_item_id, owner_type, owner_id, entry_index, entry_data)
                 VALUES (?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE entry_data = VALUES(entry_data)
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             for (Map.Entry<Integer, WiredArrayEntry> entry : entries.entrySet()) {

@@ -60,6 +60,7 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
     private String placeholderName = DEFAULT_PLACEHOLDER_NAME;
     private String delimiter = DEFAULT_DELIMITER;
     private WiredArrayAddress arrayAddress = new WiredArrayAddress();
+    private boolean arrayAddressConfigured;
 
     public WiredExtraTextOutputVariable(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -130,6 +131,7 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
         this.placeholderName = normalizePlaceholderName(stringData[1]);
         this.delimiter = normalizeDelimiter(stringData[2]);
         this.arrayAddress = nextArrayData.address;
+        this.arrayAddressConfigured = arrayDefinition != null;
 
         if (!canUseTextualDisplay(room, this.targetType, this.variableToken)) {
             this.displayType = DISPLAY_NUMERIC;
@@ -151,7 +153,7 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
                 this.placeholderName,
                 this.delimiter,
                 this.items.stream().map(HabboItem::getId).collect(Collectors.toList()));
-        data.arrayAddress = this.arrayAddress;
+        if (this.arrayAddressConfigured) data.arrayAddress = this.arrayAddress;
         return WiredManager.getGson().toJson(data);
     }
 
@@ -174,8 +176,11 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
 
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.variableToken + "\t" + this.placeholderName + "\t" + this.delimiter + "\t"
-                + WiredManager.getGson().toJson(new ArrayData(this.arrayAddress)));
+        String editorData = this.variableToken + "\t" + this.placeholderName + "\t" + this.delimiter;
+        if (resolveArrayDefinition(room, this.targetType, this.variableItemId) != null) {
+            editorData += "\t" + WiredManager.getGson().toJson(new ArrayData(this.arrayAddress));
+        }
+        message.appendString(editorData);
         message.appendInt(5);
         message.appendInt(this.targetType);
         message.appendInt(this.displayType);
@@ -212,6 +217,7 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
                 this.furniSource = normalizeFurniSource(data.furniSource);
                 this.placeholderName = normalizePlaceholderName(data.placeholderName);
                 this.delimiter = normalizeDelimiter(data.delimiter);
+                this.arrayAddressConfigured = data.arrayAddress != null;
                 this.arrayAddress = data.arrayAddress == null ? new WiredArrayAddress() : data.arrayAddress;
 
                 if (room != null && data.itemIds != null) {
@@ -240,6 +246,7 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
         this.placeholderName = normalizePlaceholderName(legacyData[1]);
         this.delimiter = normalizeDelimiter(legacyData[2]);
         this.arrayAddress = parseArrayData(legacyData[3]).address;
+        this.arrayAddressConfigured = !legacyData[3].isBlank();
     }
 
     @Override
@@ -254,6 +261,7 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
         this.placeholderName = DEFAULT_PLACEHOLDER_NAME;
         this.delimiter = DEFAULT_DELIMITER;
         this.arrayAddress = new WiredArrayAddress();
+        this.arrayAddressConfigured = false;
     }
 
     @Override

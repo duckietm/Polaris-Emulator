@@ -4,7 +4,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredLargePayload;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable;
+import java.sql.ResultSet;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -75,6 +81,41 @@ class WiredArrayDefinitionTest {
     }
 
     @Test
+    void storedDefinitionsRemainLoadableWhenRuntimeMaximumIsLowered() {
+        WiredVariableDefinitionData stored = arrayData("simple", "list", 1024);
+
+        assertThrows(IllegalArgumentException.class, () -> WiredArrayDefinition.fromData(stored, 512));
+        assertEquals(
+                1024,
+                WiredArrayDefinitionSupport.parseStoredArrayDefinition(stored).getMaxEntries());
+    }
+
+    @Test
+    void permanentFurniArraysSurviveALowerRuntimeMaximum() throws Exception {
+        ResultSet row = mock(ResultSet.class);
+        when(row.getString("wired_data"))
+                .thenReturn("{\"variableName\":\"Inventory\",\"hasValue\":true,\"availability\":10,"
+                        + "\"definition\":{\"name\":\"Inventory\",\"valueShape\":\"array\","
+                        + "\"arrayFormat\":\"simple\",\"arrayMode\":\"list\",\"maxEntries\":1024,"
+                        + "\"nextFieldId\":2,\"fields\":[],\"schemaVersion\":1}} ");
+        WiredExtraFurniVariable variable = new WiredExtraFurniVariable(42, 1, mock(Item.class), "", 0, 0);
+
+        WiredArraySettings.configure(512, 4096, 50);
+        try {
+            variable.loadWiredData(row, null);
+
+            assertTrue(variable instanceof WiredLargePayload);
+            assertTrue(variable.isArray());
+            assertEquals(1024, variable.getArrayDefinition().getMaxEntries());
+        } finally {
+            WiredArraySettings.configure(
+                    WiredArrayDefinition.ABSOLUTE_MAX_ENTRIES,
+                    WiredArrayDefinition.DEFAULT_MAX_POPULATED_CELLS,
+                    WiredArraySettings.DEFAULT_MAX_OWNERS_PER_EXECUTION);
+        }
+    }
+
+    @Test
     void acceptsOnlyBoundedArrayCapturePaths() {
         assertTrue(WiredArrayRuntimeSupport.isValidCapturePath("@array.Inventory.ItemID"));
         assertTrue(WiredArrayRuntimeSupport.isValidCapturePath("@array.inventory.found"));
@@ -82,6 +123,9 @@ class WiredArrayDefinitionTest {
         assertFalse(WiredArrayRuntimeSupport.isValidCapturePath("@array.inventory.item-id"));
         assertFalse(WiredArrayRuntimeSupport.isValidCapturePath("@array.inventory.$field"));
         assertFalse(WiredArrayRuntimeSupport.isValidCapturePath("@array." + "a".repeat(41) + ".value"));
+        assertTrue(WiredArrayRuntimeSupport.isValidCaptureProjectionPath("Inventory.ItemID"));
+        assertTrue(WiredArrayRuntimeSupport.isValidCaptureProjectionPath("@array.Inventory.ItemID"));
+        assertFalse(WiredArrayRuntimeSupport.isValidCaptureProjectionPath("Inventory.Item.ID"));
     }
 
     static WiredVariableDefinitionData arrayData(String format, String mode, int maximum) {

@@ -68,6 +68,9 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
 
     @Override
     public String getWiredData() {
+        if (this.fieldId == 0) {
+            return WiredManager.getGson().toJson(new LegacyJsonData(this.mappingsText));
+        }
         return WiredManager.getGson().toJson(new JsonData(this.mappingsText, this.fieldId));
     }
 
@@ -333,6 +336,14 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
     static class JsonData extends ConfigData {
         JsonData(String mappingsText, int fieldId) {
             super(mappingsText, fieldId);
+        }
+    }
+
+    static final class LegacyJsonData {
+        String mappingsText;
+
+        LegacyJsonData(String mappingsText) {
+            this.mappingsText = mappingsText;
         }
     }
 

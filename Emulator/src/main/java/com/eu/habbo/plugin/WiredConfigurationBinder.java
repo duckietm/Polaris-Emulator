@@ -87,7 +87,12 @@ final class WiredConfigurationBinder extends ConfigurationBinder {
                                 WiredArrayDefinition.DEFAULT_MAX_POPULATED_CELLS),
                         this.configuration.getInt(
                                 "hotel.wired.arrays.max_owners_per_execution",
-                                WiredArraySettings.DEFAULT_MAX_OWNERS_PER_EXECUTION)));
+                                WiredArraySettings.DEFAULT_MAX_OWNERS_PER_EXECUTION),
+                        this.configuration.getInt(
+                                "hotel.wired.arrays.metrics_log_interval_ms",
+                                this.configuration.getInt(
+                                        "hotel.wired.variables.arrays.metrics_log_interval_ms",
+                                        Math.toIntExact(WiredArraySettings.DEFAULT_METRICS_LOG_INTERVAL_MS)))));
 
         if (WiredManager.getEngine() != null) {
             WiredManager.getEngine().clearAllDiagnostics();

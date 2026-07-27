@@ -98,7 +98,7 @@ public class WiredExtraVariableReference extends InteractionWiredExtra implement
                         this.hasValue,
                         this.readOnly,
                         this.arrayDefinition == null
-                                ? WiredVariableDefinitionData.scalar(this.variableName)
+                                ? null
                                 : WiredVariableDefinitionData.array(this.variableName, this.arrayDefinition)));
     }
 

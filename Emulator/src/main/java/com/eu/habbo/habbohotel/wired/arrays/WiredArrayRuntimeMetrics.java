@@ -1,6 +1,5 @@
 package com.eu.habbo.habbohotel.wired.arrays;
 
-import com.eu.habbo.Emulator;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import org.slf4j.Logger;
@@ -82,8 +81,7 @@ public final class WiredArrayRuntimeMetrics {
 
     private static void maybeLogSummary() {
         long now = System.currentTimeMillis();
-        long interval = Math.max(
-                10_000L, Emulator.getConfig().getInt("hotel.wired.variables.arrays.metrics_log_interval_ms", 60_000));
+        long interval = WiredArraySettings.metricsLogIntervalMs();
         long previous = LAST_LOGGED_AT.get();
         if (now - previous < interval || !LAST_LOGGED_AT.compareAndSet(previous, now)) return;
         Snapshot value = snapshot();

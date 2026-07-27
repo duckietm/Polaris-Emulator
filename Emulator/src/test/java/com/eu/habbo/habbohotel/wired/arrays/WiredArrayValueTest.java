@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.random.RandomGenerator;
 import org.junit.jupiter.api.Test;
 
 class WiredArrayValueTest {
@@ -180,11 +181,48 @@ class WiredArrayValueTest {
         value.apply(WiredArrayStructuralOperation.APPEND, 0, 0, entry(3, 30));
         List<Long> before = firstFields(value);
 
-        assertEquals(WiredArrayMutationResult.SUCCESS, value.apply(WiredArrayStructuralOperation.SHUFFLE, 0, 0, null));
+        RandomGenerator shuffledOrder = new RandomGenerator() {
+            @Override
+            public long nextLong() {
+                return 0;
+            }
+
+            @Override
+            public int nextInt(int bound) {
+                return 0;
+            }
+        };
+        assertEquals(
+                WiredArrayMutationResult.SUCCESS,
+                value.apply(WiredArrayStructuralOperation.SHUFFLE, 0, 0, null, shuffledOrder));
 
         List<Long> after = firstFields(value);
         assertNotEquals(before, after);
         assertEquals(before.stream().sorted().toList(), after.stream().sorted().toList());
+    }
+
+    @Test
+    void shuffleMayHonestlyReportNoChangeForAnIdenticalPermutation() {
+        WiredArrayDefinition definition = recordDefinition("list", 2);
+        WiredArrayValue value = WiredArrayValue.empty(definition, 4);
+        value.apply(WiredArrayStructuralOperation.APPEND, 0, 0, entry(1, 10));
+        value.apply(WiredArrayStructuralOperation.APPEND, 0, 0, entry(2, 20));
+        RandomGenerator identity = new RandomGenerator() {
+            @Override
+            public long nextLong() {
+                return 0;
+            }
+
+            @Override
+            public int nextInt(int bound) {
+                return bound - 1;
+            }
+        };
+
+        assertEquals(
+                WiredArrayMutationResult.NO_CHANGE,
+                value.apply(WiredArrayStructuralOperation.SHUFFLE, 0, 0, null, identity));
+        assertEquals(List.of(1L, 2L), firstFields(value));
     }
 
     private static WiredArrayDefinition recordDefinition(String mode, int maximum) {

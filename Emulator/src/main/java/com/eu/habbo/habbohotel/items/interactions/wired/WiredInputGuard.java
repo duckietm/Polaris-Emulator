@@ -39,7 +39,10 @@ public final class WiredInputGuard {
         }
 
         int boundedMaximum = Math.max(1, Math.min(WiredLargePayload.MAX_STRING_PARAM_LENGTH, maximumLength));
-        return value.length() > boundedMaximum ? value.substring(0, boundedMaximum) : value;
+        if (value.length() > boundedMaximum) {
+            throw new IllegalArgumentException("Wired string parameter exceeds the allowed length");
+        }
+        return value;
     }
 
     public static int[] readFurniIds(ClientMessage packet) {

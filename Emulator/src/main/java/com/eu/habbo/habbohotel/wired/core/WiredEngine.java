@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -861,7 +862,7 @@ public final class WiredEngine {
         for (WiredExtraArrayCaptureVariable capturer : capturers) {
             String alias = capturer.getCaptureAlias(room);
             if (alias != null && !alias.isBlank()) {
-                aliasCounts.merge(alias.toLowerCase(java.util.Locale.ROOT), 1, Integer::sum);
+                aliasCounts.merge(alias.toLowerCase(Locale.ROOT), 1, Integer::sum);
             }
         }
 
@@ -871,7 +872,7 @@ public final class WiredEngine {
                 continue;
             }
             ctx.state().step();
-            if (aliasCounts.getOrDefault(alias.toLowerCase(java.util.Locale.ROOT), 0) > 1) {
+            if (aliasCounts.getOrDefault(alias.toLowerCase(Locale.ROOT), 0) > 1) {
                 capturer.publishMissing(ctx);
                 debug(room, "Skipped duplicate array capture alias {}", alias);
                 continue;

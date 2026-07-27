@@ -129,18 +129,40 @@ class RoomArrayVariableRepositoryTest {
         WiredArrayValue value = WiredArrayValue.empty(definition(), 16);
         value.apply(WiredArrayStructuralOperation.APPEND, 0, 0, Map.of(1, 10L, 2, 20L));
 
-        long nextVersion = repository.replace(key, 4L, value, 123);
+        long nextVersion = repository.replace(key, 4L, WiredArrayPersistenceDelta.between(null, value), 123);
 
         assertEquals(5L, nextVersion);
-        assertEquals(5, dataSource.calls().size());
+        assertEquals(4, dataSource.calls().size());
         assertTrue(dataSource.calls().get(0).sql().startsWith("INSERT INTO room_wired_array_values"));
         assertTrue(dataSource.calls().get(1).sql().contains("FOR UPDATE"));
         assertTrue(dataSource.calls().get(2).sql().startsWith("UPDATE room_wired_array_values"));
-        assertTrue(dataSource.calls().get(3).sql().startsWith("DELETE FROM room_wired_array_entries"));
-        assertEquals("batch", dataSource.calls().get(4).operation());
+        assertEquals("batch", dataSource.calls().get(3).operation());
         assertEquals(
                 Map.of(1, 44, 2, 91, 3, 1, 4, 44, 5, 0, 6, "{\"1\":10,\"2\":20}"),
-                dataSource.calls().get(4).parameters());
+                dataSource.calls().get(3).parameters());
+    }
+
+    @Test
+    void appendPersistsOnlyTheNewEntry() throws Exception {
+        RoomJdbcTestSupport.RecordingDataSource dataSource = new RoomJdbcTestSupport.RecordingDataSource();
+        dataSource.rows(sql -> sql.contains("FOR UPDATE") ? List.of(Map.of("version", 4L)) : List.of());
+        RoomArrayVariableRepository repository = new RoomArrayVariableRepository(dataSource);
+        RoomArrayVariableManager.Key key = new RoomArrayVariableManager.Key(44, 91, 1, 44);
+        WiredArrayValue before = WiredArrayValue.empty(definition(), 16);
+        before.apply(WiredArrayStructuralOperation.APPEND, 0, 0, Map.of(1, 10L, 2, 20L));
+        WiredArrayValue after = before.copy();
+        after.apply(WiredArrayStructuralOperation.APPEND, 0, 0, Map.of(1, 30L, 2, 40L));
+
+        WiredArrayPersistenceDelta delta = WiredArrayPersistenceDelta.between(before, after);
+        long nextVersion = repository.replace(key, 4L, delta, 123);
+
+        assertEquals(5L, nextVersion);
+        assertTrue(delta.removedIndexes().isEmpty());
+        assertEquals(1, delta.upsertedEntries().size());
+        assertEquals(1, delta.upsertedEntries().keySet().iterator().next());
+        assertEquals(4, dataSource.calls().size());
+        assertEquals("batch", dataSource.calls().getLast().operation());
+        assertEquals(1, dataSource.calls().getLast().parameters().get(5));
     }
 
     @Test

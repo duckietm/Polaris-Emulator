@@ -79,7 +79,7 @@ class WiredRegisteredExecutionCompatibilityTest {
 
     @Test
     void executionMatrixCoversEveryRegisteredWiredClass() throws Exception {
-        assertEquals(235, wiredTypes().size(), "Review every added or removed registered wired execution type");
+        assertEquals(238, wiredTypes().size(), "Review every added or removed registered wired execution type");
     }
 
     @Test

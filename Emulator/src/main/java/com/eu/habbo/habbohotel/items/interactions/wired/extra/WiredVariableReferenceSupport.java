@@ -647,6 +647,11 @@ public final class WiredVariableReferenceSupport {
         private final WiredArrayDefinition arrayDefinition;
 
         public SharedDefinitionOption(
+                int roomId, String roomName, int itemId, String name, int targetType, boolean hasValue) {
+            this(roomId, roomName, itemId, name, targetType, hasValue, null);
+        }
+
+        public SharedDefinitionOption(
                 int roomId,
                 String roomName,
                 int itemId,

@@ -20,9 +20,9 @@ import com.eu.habbo.habbohotel.wired.arrays.WiredArrayAddress;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayReference;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayRuntimeSupport;
-import com.eu.habbo.habbohotel.wired.arrays.WiredArrayValue;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayView;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
@@ -419,7 +419,7 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
         for (WiredArrayRuntimeSupport.Owner owner : owners) {
             Integer index = WiredArrayRuntimeSupport.resolveIndex(
                     ctx, this.selectedItems, this.arrayAddress, definition, owner);
-            WiredArrayValue value = WiredArrayRuntimeSupport.getValue(ctx, definition, owner);
+            WiredArrayView value = WiredArrayRuntimeSupport.getValue(ctx, definition, owner);
             Long current = index == null || value == null ? null : value.readField(index, this.arrayAddress.fieldId);
             Long reference = this.resolveArrayComparisonReference(ctx, owner, scalarReferences, destinationIndex++);
             boolean match = current != null

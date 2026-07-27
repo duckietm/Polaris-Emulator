@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredLargePayload;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -17,8 +18,12 @@ import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class WiredExtraUserVariable extends InteractionWiredExtra implements WiredArrayVariableDefinition {
+public class WiredExtraUserVariable extends InteractionWiredExtra
+        implements WiredArrayVariableDefinition, WiredLargePayload {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WiredExtraUserVariable.class);
     public static final int CODE = 70;
     public static final int AVAILABILITY_ROOM = 0;
     public static final int AVAILABILITY_PERMANENT = 10;
@@ -28,6 +33,8 @@ public class WiredExtraUserVariable extends InteractionWiredExtra implements Wir
     private boolean hasValue = false;
     private int availability = AVAILABILITY_ROOM;
     private WiredArrayDefinition arrayDefinition;
+    private boolean arrayDefinitionUnavailable;
+    private WiredVariableDefinitionData unavailableArrayDefinitionData;
 
     public WiredExtraUserVariable(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -64,7 +71,8 @@ public class WiredExtraUserVariable extends InteractionWiredExtra implements Wir
 
         WiredArrayDefinition nextArrayDefinition;
         try {
-            nextArrayDefinition = WiredArrayDefinitionSupport.parseArrayDefinition(definitionData);
+            nextArrayDefinition =
+                    WiredArrayDefinitionSupport.parseArrayDefinition(definitionData, this.arrayDefinition);
             room.getArrayVariableManager()
                     .validateDefinitionChange(
                             this,
@@ -76,6 +84,8 @@ public class WiredExtraUserVariable extends InteractionWiredExtra implements Wir
 
         this.variableName = normalizedName;
         this.arrayDefinition = nextArrayDefinition;
+        this.arrayDefinitionUnavailable = false;
+        this.unavailableArrayDefinitionData = null;
         this.hasValue = this.arrayDefinition != null || ((intParams.length > 0) && (intParams[0] == 1));
         this.availability = nextAvailability;
 
@@ -88,12 +98,7 @@ public class WiredExtraUserVariable extends InteractionWiredExtra implements Wir
     public String getWiredData() {
         return WiredManager.getGson()
                 .toJson(new JsonData(
-                        this.variableName,
-                        this.hasValue,
-                        this.availability,
-                        this.arrayDefinition == null
-                                ? WiredVariableDefinitionData.scalar(this.variableName)
-                                : WiredVariableDefinitionData.array(this.variableName, this.arrayDefinition)));
+                        this.variableName, this.hasValue, this.availability, this.persistedDefinitionData()));
     }
 
     @Override
@@ -103,7 +108,8 @@ public class WiredExtraUserVariable extends InteractionWiredExtra implements Wir
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(WiredArrayDefinitionSupport.editorString(this.variableName, this.arrayDefinition));
+        message.appendString(WiredArrayDefinitionSupport.editorString(
+                this.variableName, this.arrayDefinition, this.unavailableArrayDefinitionData));
         message.appendInt(2);
         message.appendInt(this.hasValue ? 1 : 0);
         message.appendInt(this.availability);
@@ -131,10 +137,22 @@ public class WiredExtraUserVariable extends InteractionWiredExtra implements Wir
                 this.availability = normalizeAvailability(data.availability);
                 if (data.definition != null) {
                     try {
-                        this.arrayDefinition = WiredArrayDefinitionSupport.parseArrayDefinition(data.definition);
+                        this.arrayDefinition = WiredArrayDefinitionSupport.parseStoredArrayDefinition(data.definition);
+                        this.arrayDefinitionUnavailable = false;
+                        this.unavailableArrayDefinitionData = null;
                         if (this.arrayDefinition != null) this.hasValue = true;
-                    } catch (IllegalArgumentException ignored) {
+                    } catch (IllegalArgumentException exception) {
                         this.arrayDefinition = null;
+                        this.arrayDefinitionUnavailable = data.definition.isArray();
+                        this.unavailableArrayDefinitionData = this.arrayDefinitionUnavailable
+                                ? WiredVariableDefinitionData.copyOf(data.definition)
+                                : null;
+                        if (this.arrayDefinitionUnavailable) this.hasValue = false;
+                        LOGGER.warn(
+                                "Wired user variable {} in room {} has an unavailable array definition: {}",
+                                this.getId(),
+                                room == null ? this.getRoomId() : room.getId(),
+                                exception.getMessage());
                     }
                 }
             }
@@ -151,6 +169,8 @@ public class WiredExtraUserVariable extends InteractionWiredExtra implements Wir
         this.hasValue = false;
         this.availability = AVAILABILITY_ROOM;
         this.arrayDefinition = null;
+        this.arrayDefinitionUnavailable = false;
+        this.unavailableArrayDefinitionData = null;
     }
 
     @Override
@@ -197,6 +217,11 @@ public class WiredExtraUserVariable extends InteractionWiredExtra implements Wir
     }
 
     @Override
+    public boolean isArray() {
+        return this.arrayDefinition != null || this.arrayDefinitionUnavailable;
+    }
+
+    @Override
     public boolean isArrayShared() {
         return this.isSharedAvailability();
     }
@@ -207,6 +232,18 @@ public class WiredExtraUserVariable extends InteractionWiredExtra implements Wir
         }
 
         return AVAILABILITY_ROOM;
+    }
+
+    private WiredVariableDefinitionData persistedDefinitionData() {
+        if (this.arrayDefinition != null) {
+            return WiredVariableDefinitionData.array(this.variableName, this.arrayDefinition);
+        }
+        if (this.unavailableArrayDefinitionData != null) {
+            WiredVariableDefinitionData data = WiredVariableDefinitionData.copyOf(this.unavailableArrayDefinitionData);
+            data.name = this.variableName;
+            return data;
+        }
+        return null;
     }
 
     static class JsonData {

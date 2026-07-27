@@ -20,6 +20,8 @@ import java.util.regex.Pattern;
 public final class WiredArrayRuntimeSupport {
     private static final Pattern CAPTURE_PATH =
             Pattern.compile("^@array\\.[A-Za-z0-9_]{1,40}\\.[A-Za-z0-9_]{1,40}$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern CAPTURE_PROJECTION_PATH =
+            Pattern.compile("^(?:@array\\.)?[A-Za-z0-9_]{1,40}\\.[A-Za-z0-9_]{1,40}$", Pattern.CASE_INSENSITIVE);
 
     private WiredArrayRuntimeSupport() {}
 
@@ -72,10 +74,10 @@ public final class WiredArrayRuntimeSupport {
         return new ArrayList<>(distinct.values());
     }
 
-    public static WiredArrayValue getValue(WiredContext ctx, WiredArrayVariableDefinition definition, Owner owner) {
+    public static WiredArrayView getValue(WiredContext ctx, WiredArrayVariableDefinition definition, Owner owner) {
         if (ctx == null || definition == null || owner == null) return null;
         if (definition.getArrayVariableType() == WiredArrayVariableType.CONTEXT) {
-            return ctx.contextVariables().getArrayValue(definition.getId(), definition.getArrayDefinition());
+            return ctx.contextVariables().getArrayView(definition.getId(), definition.getArrayDefinition());
         }
         return ctx.room().getArrayVariableManager().getValue(definition, owner.id());
     }
@@ -98,7 +100,7 @@ public final class WiredArrayRuntimeSupport {
                             secondIndex,
                             entryValues);
             return new RoomArrayVariableManager.MutationOutcome(
-                    result, ctx.contextVariables().getArrayValue(definition.getId(), definition.getArrayDefinition()));
+                    result, ctx.contextVariables().getArrayView(definition.getId(), definition.getArrayDefinition()));
         }
         return ctx.room()
                 .getArrayVariableManager()
@@ -150,7 +152,7 @@ public final class WiredArrayRuntimeSupport {
             Owner referenceOwner = matchingOwner(owners, owner);
             if (referenceOwner == null) return null;
             Integer index = resolveIndex(ctx, selectedItems, reference.address, definition, referenceOwner);
-            WiredArrayValue value = getValue(ctx, definition, referenceOwner);
+            WiredArrayView value = getValue(ctx, definition, referenceOwner);
             return index == null || value == null ? null : value.readField(index, reference.address.fieldId);
         }
         return resolveScalar(
@@ -207,6 +209,12 @@ public final class WiredArrayRuntimeSupport {
 
     public static boolean isValidCapturePath(String capturePath) {
         return capturePath != null && CAPTURE_PATH.matcher(capturePath.trim()).matches();
+    }
+
+    /** Accepts strict metadata paths and Seth-compatible read-only {@code alias.field} projections. */
+    public static boolean isValidCaptureProjectionPath(String capturePath) {
+        return capturePath != null
+                && CAPTURE_PROJECTION_PATH.matcher(capturePath.trim()).matches();
     }
 
     public static int normalizeSource(WiredArrayVariableType type, int source) {

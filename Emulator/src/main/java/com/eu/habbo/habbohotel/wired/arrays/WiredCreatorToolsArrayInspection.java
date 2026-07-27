@@ -46,7 +46,7 @@ public final class WiredCreatorToolsArrayInspection {
         if (room == null || variable == null || !variable.isArray() || ownerId <= 0) return result;
 
         result.definition = Definition.from(room, variable);
-        WiredArrayValue value = room.getArrayVariableManager().getValue(variable, ownerId);
+        WiredArrayView value = room.getArrayVariableManager().getValue(variable, ownerId);
         result.hasArray = value != null;
         result.logicalLength = value == null ? 0 : value.getLogicalLength();
         result.occupiedCount = value == null ? 0 : value.getOccupiedCount();

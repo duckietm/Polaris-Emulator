@@ -192,7 +192,11 @@ public class WiredUserVariablesDataComposer extends MessageComposer {
             this.response.appendBoolean(definition.isReadOnly());
         }
 
-        this.response.appendString(WiredManager.getGson().toJson(WiredArrayDefinitionSupport.collect(this.room)));
+        List<WiredArrayDefinitionSupport.EditorDefinition> arrayDefinitions =
+                WiredArrayDefinitionSupport.collect(this.room);
+        if (!arrayDefinitions.isEmpty()) {
+            this.response.appendString(WiredManager.getGson().toJson(arrayDefinitions));
+        }
 
         return this.response;
     }

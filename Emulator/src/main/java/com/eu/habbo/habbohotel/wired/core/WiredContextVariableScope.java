@@ -5,9 +5,11 @@ import com.eu.habbo.habbohotel.wired.arrays.WiredArrayCaptureSnapshot;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayMutationResult;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayNumericOperation;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayRuntimeSupport;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArraySettings;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayStructuralOperation;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayValue;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayView;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -49,14 +51,20 @@ public final class WiredContextVariableScope {
         if (sourceCaptures != null) this.arrayCaptures.putAll(sourceCaptures);
     }
 
-    public WiredContextVariableScope copy() {
+    public synchronized WiredContextVariableScope copy() {
         return new WiredContextVariableScope(this.assignments, this.arrays, this.arrayCaptures);
     }
 
     public synchronized WiredArrayValue getArrayValue(int definitionItemId, WiredArrayDefinition definition) {
         if (definitionItemId <= 0 || definition == null) return null;
         WiredArrayValue value = this.arrays.get(definitionItemId);
-        return value == null ? null : value.copy();
+        return value == null || !matchesDefinition(value.getDefinition(), definition) ? null : value.copy();
+    }
+
+    public synchronized WiredArrayView getArrayView(int definitionItemId, WiredArrayDefinition definition) {
+        if (definitionItemId <= 0 || definition == null) return null;
+        WiredArrayValue value = this.arrays.get(definitionItemId);
+        return value == null || !matchesDefinition(value.getDefinition(), definition) ? null : value;
     }
 
     public synchronized WiredArrayMutationResult giveArray(
@@ -117,33 +125,37 @@ public final class WiredContextVariableScope {
     }
 
     public synchronized Long readArrayCapture(String path) {
-        if (path == null || !path.regionMatches(true, 0, "@array.", 0, 7)) return null;
-        String[] parts = path.substring(7).split("\\.", 2);
+        if (!WiredArrayRuntimeSupport.isValidCaptureProjectionPath(path)) {
+            return null;
+        }
+        String normalized = path.trim();
+        if (normalized.regionMatches(true, 0, "@array.", 0, 7)) normalized = normalized.substring(7);
+        String[] parts = normalized.split("\\.", 2);
         if (parts.length != 2 || parts[0].isBlank() || parts[1].isBlank()) return null;
         WiredArrayCaptureSnapshot capture = this.arrayCaptures.get(parts[0].toLowerCase(Locale.ROOT));
         return capture == null ? null : capture.read(parts[1]);
     }
 
-    public boolean hasVariable(int definitionItemId) {
+    public synchronized boolean hasVariable(int definitionItemId) {
         return definitionItemId > 0 && this.assignments.containsKey(definitionItemId);
     }
 
-    public Integer getValue(int definitionItemId) {
+    public synchronized Integer getValue(int definitionItemId) {
         VariableAssignment assignment = this.assignments.get(definitionItemId);
         return assignment != null ? assignment.getValue() : null;
     }
 
-    public int getCreatedAt(int definitionItemId) {
+    public synchronized int getCreatedAt(int definitionItemId) {
         VariableAssignment assignment = this.assignments.get(definitionItemId);
         return assignment != null ? assignment.getCreatedAt() : 0;
     }
 
-    public int getUpdatedAt(int definitionItemId) {
+    public synchronized int getUpdatedAt(int definitionItemId) {
         VariableAssignment assignment = this.assignments.get(definitionItemId);
         return assignment != null ? assignment.getUpdatedAt() : 0;
     }
 
-    public boolean assignValue(int definitionItemId, Integer value, boolean overrideExisting) {
+    public synchronized boolean assignValue(int definitionItemId, Integer value, boolean overrideExisting) {
         if (definitionItemId <= 0) {
             return false;
         }
@@ -164,7 +176,7 @@ public final class WiredContextVariableScope {
         return false;
     }
 
-    public boolean updateValue(int definitionItemId, Integer value) {
+    public synchronized boolean updateValue(int definitionItemId, Integer value) {
         if (definitionItemId <= 0) {
             return false;
         }
@@ -183,12 +195,20 @@ public final class WiredContextVariableScope {
         return true;
     }
 
-    public boolean removeValue(int definitionItemId) {
+    public synchronized boolean removeValue(int definitionItemId) {
         if (definitionItemId <= 0) {
             return false;
         }
 
         return this.assignments.remove(definitionItemId) != null;
+    }
+
+    private static boolean matchesDefinition(WiredArrayDefinition current, WiredArrayDefinition expected) {
+        return current != null
+                && current.getFormat() == expected.getFormat()
+                && current.getMode() == expected.getMode()
+                && current.getMaxEntries() == expected.getMaxEntries()
+                && current.getFields().equals(expected.getFields());
     }
 
     public static final class VariableAssignment {

@@ -31,6 +31,7 @@ import com.eu.habbo.habbohotel.wired.arrays.WiredArrayRuntimeSupport;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayValue;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayView;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
@@ -88,6 +89,7 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
     private WiredArrayAddress destinationArrayAddress = new WiredArrayAddress();
     private WiredArrayAddress referenceArrayAddress = new WiredArrayAddress();
     private String arrayReferenceConstant = "0";
+    private boolean arrayDataConfigured;
     private final List<HabboItem> destinationSelectedFurni = new ArrayList<>();
     private final List<HabboItem> referenceSelectedFurni = new ArrayList<>();
 
@@ -139,7 +141,7 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
             Long reference = this.resolveArrayReference(ctx, owner);
             if (!numericOperation.isUnary() && reference == null) continue;
             long operand = reference == null ? 0L : reference;
-            WiredArrayValue before = WiredArrayRuntimeSupport.getValue(ctx, definition, owner);
+            WiredArrayView before = WiredArrayRuntimeSupport.getValue(ctx, definition, owner);
             boolean changed;
             long previous;
             long current;
@@ -155,7 +157,7 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
                 changed = outcome.changed();
                 previous = outcome.previousValue();
                 current = outcome.currentValue();
-                WiredArrayValue after = WiredArrayRuntimeSupport.getValue(ctx, definition, owner);
+                WiredArrayView after = WiredArrayRuntimeSupport.getValue(ctx, definition, owner);
                 newLength = after == null ? 0 : after.getLengthForCondition();
             } else {
                 var outcome = ctx.room()
@@ -453,6 +455,13 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
         this.destinationArrayAddress = nextArrayData.destinationAddress;
         this.referenceArrayAddress = nextArrayData.referenceAddress;
         this.arrayReferenceConstant = nextArrayData.referenceConstant;
+        this.arrayDataConfigured = this.resolveArrayDefinition(
+                                room, nextDestinationTargetType, getCustomItemId(nextDestinationVariableToken))
+                        != null
+                || (nextReferenceMode == REF_VARIABLE
+                        && this.resolveArrayDefinition(
+                                        room, nextReferenceTargetType, getCustomItemId(nextReferenceVariableToken))
+                                != null);
         this.setDelay(settings.getDelay());
         return true;
     }
@@ -476,8 +485,10 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
                 this.getDelay(),
                 this.toIds(this.destinationSelectedFurni),
                 this.toIds(this.referenceSelectedFurni));
-        data.arrayData =
-                new ArrayData(this.destinationArrayAddress, this.referenceArrayAddress, this.arrayReferenceConstant);
+        if (this.arrayDataConfigured) {
+            data.arrayData = new ArrayData(
+                    this.destinationArrayAddress, this.referenceArrayAddress, this.arrayReferenceConstant);
+        }
         return WiredManager.getGson().toJson(data);
     }
 
@@ -509,6 +520,7 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
         this.destinationFurniSource = normalizeDestinationFurniSource(data.destinationFurniSource);
         this.referenceUserSource = normalizeUserSource(data.referenceUserSource);
         this.referenceFurniSource = normalizeReferenceFurniSource(data.referenceFurniSource);
+        this.arrayDataConfigured = data.arrayData != null;
         ArrayData arrayData = normalizeArrayData(data.arrayData);
         this.destinationArrayAddress = arrayData.destinationAddress;
         this.referenceArrayAddress = arrayData.referenceAddress;
@@ -545,6 +557,7 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
         this.destinationArrayAddress = new WiredArrayAddress();
         this.referenceArrayAddress = new WiredArrayAddress();
         this.arrayReferenceConstant = "0";
+        this.arrayDataConfigured = false;
         this.destinationSelectedFurni.clear();
         this.referenceSelectedFurni.clear();
         this.setDelay(0);

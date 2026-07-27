@@ -1,6 +1,6 @@
 package com.eu.habbo.habbohotel.rooms;
 
-import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayMutationResult;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayNumericOperation;
@@ -9,6 +9,7 @@ import com.eu.habbo.habbohotel.wired.arrays.WiredArraySettings;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayStructuralOperation;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayValue;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayView;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,11 +37,11 @@ public final class RoomArrayVariableManager {
         this.currentTimestamp = currentTimestamp;
     }
 
-    public WiredArrayValue getValue(WiredArrayVariableDefinition definition, int ownerId) {
+    public WiredArrayView getValue(WiredArrayVariableDefinition definition, int ownerId) {
         if (!this.isValidOwner(definition, ownerId)) return null;
         Key key = this.key(definition, ownerId);
         State state = this.getOrLoad(key, definition);
-        return state == null || !state.exists() ? null : state.value().copy();
+        return state == null || !state.exists() ? null : state.value();
     }
 
     public boolean hasValue(WiredArrayVariableDefinition definition, int ownerId) {
@@ -62,14 +63,13 @@ public final class RoomArrayVariableManager {
             State current = this.getOrLoad(key, definition);
             if (current == null) return new MutationOutcome(WiredArrayMutationResult.PERSISTENCE_FAILED, null);
             if (current.exists() && (!overrideExisting || current.value().isEmpty())) {
-                return new MutationOutcome(
-                        WiredArrayMutationResult.NO_CHANGE, current.value().copy());
+                return new MutationOutcome(WiredArrayMutationResult.NO_CHANGE, current.value());
             }
             WiredArrayValue candidate = WiredArrayValue.empty(
                     definition.getArrayDefinition(), WiredArraySettings.maxPopulatedCellsPerOwner());
             PublishResult published = this.publish(key, definition, current, candidate);
             if (published == PublishResult.SUCCESS) {
-                return new MutationOutcome(WiredArrayMutationResult.SUCCESS, candidate.copy());
+                return new MutationOutcome(WiredArrayMutationResult.SUCCESS, candidate);
             }
             if (published == PublishResult.FAILURE) {
                 return new MutationOutcome(WiredArrayMutationResult.PERSISTENCE_FAILED, null);
@@ -143,17 +143,14 @@ public final class RoomArrayVariableManager {
             if (!current.exists()) return new MutationOutcome(WiredArrayMutationResult.MISSING_OWNER, null);
             WiredArrayValue candidate = current.value().copy();
             WiredArrayMutationResult result = candidate.apply(operation, firstIndex, secondIndex, entryValues);
-            if (result != WiredArrayMutationResult.SUCCESS)
-                return new MutationOutcome(result, current.value().copy());
+            if (result != WiredArrayMutationResult.SUCCESS) return new MutationOutcome(result, current.value());
 
             PublishResult published = this.publish(key, definition, current, candidate);
             if (published == PublishResult.SUCCESS) {
-                return new MutationOutcome(WiredArrayMutationResult.SUCCESS, candidate.copy());
+                return new MutationOutcome(WiredArrayMutationResult.SUCCESS, candidate);
             }
             if (published == PublishResult.FAILURE)
-                return new MutationOutcome(
-                        WiredArrayMutationResult.PERSISTENCE_FAILED,
-                        current.value().copy());
+                return new MutationOutcome(WiredArrayMutationResult.PERSISTENCE_FAILED, current.value());
         }
         return new MutationOutcome(WiredArrayMutationResult.PERSISTENCE_FAILED, null);
     }
@@ -181,17 +178,13 @@ public final class RoomArrayVariableManager {
             WiredArrayValue.FieldMutation mutation = candidate.mutateField(index, fieldId, operation, reference);
             if (!mutation.changed()) {
                 return new FieldMutationOutcome(
-                        mutation.result(),
-                        current.value().copy(),
-                        mutation.previousValue(),
-                        mutation.currentValue(),
-                        false);
+                        mutation.result(), current.value(), mutation.previousValue(), mutation.currentValue(), false);
             }
             PublishResult published = this.publish(key, definition, current, candidate);
             if (published == PublishResult.SUCCESS) {
                 return new FieldMutationOutcome(
                         WiredArrayMutationResult.SUCCESS,
-                        candidate.copy(),
+                        candidate,
                         mutation.previousValue(),
                         mutation.currentValue(),
                         mutation.created());
@@ -205,6 +198,10 @@ public final class RoomArrayVariableManager {
     public void validateDefinitionChange(
             WiredArrayVariableDefinition currentDefinition, WiredArrayDefinition replacement, boolean nextPermanent) {
         if (currentDefinition == null) return;
+        if (currentDefinition.isArray() && currentDefinition.getArrayDefinition() == null) {
+            throw new IllegalArgumentException(
+                    "This array definition is unavailable and cannot be changed without correcting its stored data.");
+        }
         WiredArrayDefinition current = currentDefinition.getArrayDefinition();
         if (current == null && replacement == null) return;
 
@@ -232,6 +229,10 @@ public final class RoomArrayVariableManager {
 
     public void handleDefinitionUpdated(WiredArrayVariableDefinition definition) {
         if (definition == null) return;
+        if (definition.isArray() && definition.getArrayDefinition() == null) {
+            this.values.keySet().removeIf(key -> key.definitionItemId() == definition.getId());
+            return;
+        }
         if (!definition.isArray()) {
             this.values.keySet().removeIf(key -> key.definitionItemId() == definition.getId());
         } else {
@@ -386,7 +387,7 @@ public final class RoomArrayVariableManager {
                 ownerId);
     }
 
-    public record MutationOutcome(WiredArrayMutationResult result, WiredArrayValue value) {
+    public record MutationOutcome(WiredArrayMutationResult result, WiredArrayView value) {
         public boolean changed() {
             return this.result == WiredArrayMutationResult.SUCCESS;
         }
@@ -394,7 +395,7 @@ public final class RoomArrayVariableManager {
 
     public record FieldMutationOutcome(
             WiredArrayMutationResult result,
-            WiredArrayValue value,
+            WiredArrayView value,
             long previousValue,
             long currentValue,
             boolean created) {
@@ -415,12 +416,13 @@ public final class RoomArrayVariableManager {
             State next = new State(current.version() + 1L, true, candidate);
             return this.values.replace(key, current, next) ? PublishResult.SUCCESS : PublishResult.RETRY;
         }
-        int deletedRows = current.exists() ? current.value().getOccupiedCount() : 0;
-        int upsertedRows = candidate.getOccupiedCount();
+        WiredArrayPersistenceDelta delta =
+                WiredArrayPersistenceDelta.between(current.exists() ? current.value() : null, candidate);
+        int deletedRows = delta.removedIndexes().size();
+        int upsertedRows = delta.upsertedEntries().size();
         long startedAt = System.nanoTime();
         try {
-            long nextVersion =
-                    this.repository.replace(key, current.version(), candidate, this.currentTimestamp.getAsInt());
+            long nextVersion = this.repository.replace(key, current.version(), delta, this.currentTimestamp.getAsInt());
             WiredArrayRuntimeMetrics.recordPersistence(
                     1, deletedRows, upsertedRows, System.nanoTime() - startedAt, true);
             if (nextVersion < 0) {
@@ -453,8 +455,9 @@ public final class RoomArrayVariableManager {
     }
 
     private void invalidateOtherCaches(Key key) {
-        if (key == null || Emulator.getGameEnvironment() == null) return;
-        for (Room activeRoom : Emulator.getGameEnvironment().getRoomManager().getActiveRooms()) {
+        GameEnvironment environment = this.room.gameEnvironment();
+        if (key == null || environment == null || environment.getRoomManager() == null) return;
+        for (Room activeRoom : environment.getRoomManager().getActiveRooms()) {
             if (activeRoom == null || activeRoom == this.room) continue;
             activeRoom.getArrayVariableManager().invalidateStorageKey(key);
         }

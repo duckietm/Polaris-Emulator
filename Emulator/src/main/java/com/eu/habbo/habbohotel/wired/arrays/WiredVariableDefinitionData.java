@@ -37,4 +37,20 @@ public final class WiredVariableDefinitionData {
         data.schemaVersion = WiredArrayDefinition.SCHEMA_VERSION;
         return data;
     }
+
+    public static WiredVariableDefinitionData copyOf(WiredVariableDefinitionData source) {
+        if (source == null) return null;
+        WiredVariableDefinitionData copy = new WiredVariableDefinitionData();
+        copy.name = source.name;
+        copy.valueShape = source.valueShape;
+        copy.arrayFormat = source.arrayFormat;
+        copy.arrayMode = source.arrayMode;
+        copy.maxEntries = source.maxEntries;
+        copy.nextFieldId = source.nextFieldId;
+        copy.fields = source.fields == null ? new ArrayList<>() : new ArrayList<>(source.fields);
+        copy.schemaVersion = source.schemaVersion;
+        copy.serverMaxEntries = source.serverMaxEntries;
+        copy.serverMaxPopulatedCells = source.serverMaxPopulatedCells;
+        return copy;
+    }
 }

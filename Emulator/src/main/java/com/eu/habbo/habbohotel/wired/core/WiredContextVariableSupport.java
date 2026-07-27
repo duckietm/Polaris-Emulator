@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.wired.core;
 
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraArrayCaptureVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextVariable;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
@@ -8,7 +9,9 @@ import com.eu.habbo.messages.outgoing.wired.WiredUserVariablesDataComposer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public final class WiredContextVariableSupport {
     private WiredContextVariableSupport() {}
@@ -55,6 +58,20 @@ public final class WiredContextVariableSupport {
                     WiredVariableTextConnectorSupport.isTextConnected(room, definition.getId()),
                     false,
                     definition.isArray()));
+        }
+
+        if (room != null && room.getRoomSpecialTypes() != null) {
+            Set<String> projections = new LinkedHashSet<>();
+            for (InteractionWiredExtra extra : room.getRoomSpecialTypes().getExtras()) {
+                if (extra instanceof WiredExtraArrayCaptureVariable capture) {
+                    projections.addAll(capture.getCaptureProjectionNames(room));
+                }
+            }
+            int virtualItemId = -1;
+            for (String projection : projections) {
+                definitions.add(
+                        new WiredVariableDefinitionInfo(virtualItemId--, projection, true, 0, false, true, false));
+            }
         }
 
         return definitions;

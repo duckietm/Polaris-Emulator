@@ -7,6 +7,11 @@ public final class WiredArrayFieldDefinition {
     private final String name;
     private final int order;
 
+    @SuppressWarnings("unused")
+    private WiredArrayFieldDefinition() {
+        this(0, "", 0);
+    }
+
     public WiredArrayFieldDefinition(int id, String name, int order) {
         this.id = id;
         this.name = name;

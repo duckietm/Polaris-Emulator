@@ -29,9 +29,27 @@ public final class WiredArrayDefinitionSupport {
         return WiredArrayDefinition.fromData(data, WiredArraySettings.maxEntries());
     }
 
+    public static WiredArrayDefinition parseArrayDefinition(
+            WiredVariableDefinitionData data, WiredArrayDefinition currentDefinition) {
+        int currentMaximum = currentDefinition == null ? 0 : currentDefinition.getMaxEntries();
+        return WiredArrayDefinition.fromData(data, Math.max(WiredArraySettings.maxEntries(), currentMaximum));
+    }
+
+    public static WiredArrayDefinition parseStoredArrayDefinition(WiredVariableDefinitionData data) {
+        return WiredArrayDefinition.fromData(data, WiredArrayDefinition.ABSOLUTE_MAX_ENTRIES);
+    }
+
     public static String editorString(String name, WiredArrayDefinition definition) {
-        if (definition == null) return name == null ? "" : name;
-        WiredVariableDefinitionData data = WiredVariableDefinitionData.array(name, definition);
+        return editorString(name, definition, null);
+    }
+
+    public static String editorString(
+            String name, WiredArrayDefinition definition, WiredVariableDefinitionData unavailableDefinition) {
+        if (definition == null && unavailableDefinition == null) return name == null ? "" : name;
+        WiredVariableDefinitionData data = definition == null
+                ? WiredVariableDefinitionData.copyOf(unavailableDefinition)
+                : WiredVariableDefinitionData.array(name, definition);
+        data.name = name == null ? "" : name;
         data.serverMaxEntries = WiredArraySettings.maxEntries();
         data.serverMaxPopulatedCells = WiredArraySettings.maxPopulatedCellsPerOwner();
         return WiredManager.getGson().toJson(data);
@@ -76,7 +94,7 @@ public final class WiredArrayDefinitionSupport {
                     definition.getId(),
                     definition.getVariableName(),
                     definition.getArrayVariableType().code(),
-                    array == null ? "single" : "array",
+                    array == null ? (definition.isArray() ? "array_unavailable" : "single") : "array",
                     array == null
                             ? WiredArrayFormat.SIMPLE.wireName()
                             : array.getFormat().wireName(),

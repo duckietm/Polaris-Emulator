@@ -10,11 +10,11 @@ public class SnowWarAttributes {
 
     // Movement
     private volatile boolean walking = false;
-    private volatile SnowWarPoint currentPosition = new SnowWarPoint(0, 0);   // tile coords
-    private volatile SnowWarPoint worldPosition = new SnowWarPoint(0, 0);     // world coords
-    private volatile SnowWarPoint walkGoal = null;                            // tile coords
-    private volatile SnowWarPoint nextGoal = null;                            // tile coords
-    private volatile SnowWarPoint goalWorldCoordinates = null;                // raw client world coords
+    private volatile SnowWarPoint currentPosition = new SnowWarPoint(0, 0); // tile coords
+    private volatile SnowWarPoint worldPosition = new SnowWarPoint(0, 0); // world coords
+    private volatile SnowWarPoint walkGoal = null; // tile coords
+    private volatile SnowWarPoint nextGoal = null; // tile coords
+    private volatile SnowWarPoint goalWorldCoordinates = null; // raw client world coords
 
     // Combat
     private final AtomicInteger snowballCount = new AtomicInteger(0);
@@ -22,6 +22,8 @@ public class SnowWarAttributes {
     private volatile int pendingHealth = 0;
     private volatile boolean pendingStun = false;
     private volatile long lastThrowTime = 0;
+    private volatile long lastChatTime = 0;
+    private volatile long lastStatusRequestTime = 0;
 
     // Pathfinding guard (SnowWarPathfinder.MAX_PATHFIND_ITERATIONS)
     private volatile int pathfindIterations = 0;
@@ -123,6 +125,22 @@ public class SnowWarAttributes {
         this.lastThrowTime = lastThrowTime;
     }
 
+    public long getLastChatTime() {
+        return this.lastChatTime;
+    }
+
+    public void setLastChatTime(long lastChatTime) {
+        this.lastChatTime = lastChatTime;
+    }
+
+    public long getLastStatusRequestTime() {
+        return this.lastStatusRequestTime;
+    }
+
+    public void setLastStatusRequestTime(long lastStatusRequestTime) {
+        this.lastStatusRequestTime = lastStatusRequestTime;
+    }
+
     public int getPathfindIterations() {
         return this.pathfindIterations;
     }
@@ -165,9 +183,8 @@ public class SnowWarAttributes {
     public void resetForSpawn(SnowWarPoint spawnTile) {
         this.walking = false;
         this.currentPosition = spawnTile;
-        this.worldPosition = new SnowWarPoint(
-                SnowWarMath.tileToWorld(spawnTile.getX()),
-                SnowWarMath.tileToWorld(spawnTile.getY()));
+        this.worldPosition =
+                new SnowWarPoint(SnowWarMath.tileToWorld(spawnTile.getX()), SnowWarMath.tileToWorld(spawnTile.getY()));
         this.walkGoal = spawnTile;
         this.nextGoal = null;
         this.goalWorldCoordinates = null;
@@ -176,6 +193,8 @@ public class SnowWarAttributes {
         this.pendingHealth = SnowWarConstants.INITIAL_HEALTH;
         this.pendingStun = false;
         this.lastThrowTime = 0;
+        this.lastChatTime = 0;
+        this.lastStatusRequestTime = 0;
         this.pathfindIterations = 0;
         this.activityState = SnowWarActivityState.NORMAL;
         this.activityTimer = 0;

@@ -508,6 +508,14 @@ public class SnowWarGame {
             return;
         }
 
+        // Anti-flood: chat is broadcast to every player, so rate-limit it.
+        SnowWarAttributes chatAttr = player.getAttributes();
+        long now = System.currentTimeMillis();
+        if (chatAttr.getLastChatTime() + SnowWarConstants.CHAT_COOLDOWN_MS > now) {
+            return;
+        }
+        chatAttr.setLastChatTime(now);
+
         String trimmed = message.trim();
         if (trimmed.isEmpty()) {
             return;
@@ -543,6 +551,15 @@ public class SnowWarGame {
     }
 
     public void sendFullGameStatus(SnowWarGamePlayer player) {
+        // Anti-flood: serializing + sending the whole game state is expensive,
+        // so rate-limit client-driven full-status requests per player.
+        SnowWarAttributes attr = player.getAttributes();
+        long now = System.currentTimeMillis();
+        if (attr.getLastStatusRequestTime() + SnowWarConstants.STATUS_REQUEST_COOLDOWN_MS > now) {
+            return;
+        }
+        attr.setLastStatusRequestTime(now);
+
         if (player.getHabbo().getClient() != null) {
             player.getHabbo().getClient().sendResponse(this.createFullGameStatusComposer());
         }

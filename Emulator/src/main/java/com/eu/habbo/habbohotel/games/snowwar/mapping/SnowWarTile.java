@@ -2,6 +2,9 @@ package com.eu.habbo.habbohotel.games.snowwar.mapping;
 
 import java.util.List;
 
+/**
+ * A single arena tile with collision data (README 5.5).
+ */
 public class SnowWarTile {
 
     private final int x;
@@ -45,19 +48,31 @@ public class SnowWarTile {
         return this.highestItem;
     }
 
+    /**
+     * Pathfinder collision: can a player walk on this tile? (README 5.5)
+     */
     public boolean isWalkable() {
         if (this.blocked) {
             return false;
         }
 
+        // Only solid furni (walkableHeight > 0) block movement; flat props such
+        // as rugs/ice (walkableHeight 0) stay walkable. This mirrors the client
+        // simulation, which blocks a tile only for walkableHeight > 0 items.
         return this.highestItem == null || this.highestItem.getWalkableHeight() <= 0;
     }
 
+    /**
+     * Snowball collision: does this tile block a ball flying with the given
+     * trajectory? (README 5.5; trajectory 0 = quick, 1 = short/lob, 2 = long)
+     */
     public boolean isHeightBlocking(int trajectory) {
         if (this.highestItem == null) {
             return false;
         }
 
+        // A long (curved) throw arcs over everything; a straight or lob throw is
+        // stopped by any furni tall enough to block snowballs (stack height > 0.4).
         if (trajectory == 2) {
             return false;
         }

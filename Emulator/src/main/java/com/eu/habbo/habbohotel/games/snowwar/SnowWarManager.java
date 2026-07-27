@@ -9,14 +9,13 @@ import com.eu.habbo.messages.outgoing.snowwar.SnowStormGamesLeftComposer;
 import com.eu.habbo.messages.outgoing.snowwar.SnowStormGenericErrorComposer;
 import com.eu.habbo.messages.outgoing.snowwar.SnowStormQuePositionComposer;
 import com.eu.habbo.messages.outgoing.snowwar.SnowStormStartLobbyCounterComposer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Singleton managing the SnowWar matchmaking queue and running games.
@@ -47,14 +46,18 @@ public class SnowWarManager {
     private final ConcurrentHashMap<Integer, SnowWarGame> games = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, SnowWarGame> userGames = new ConcurrentHashMap<>();
 
+    // Per-user fixed-window packet counter for the generic SnowWar flood cap.
+    // Value is [windowStartMillis, countInWindow]; guarded per-entry by the
+    // entry object itself (see allowPacket).
+    private final ConcurrentHashMap<Integer, long[]> packetWindows = new ConcurrentHashMap<>();
+
     private final AtomicInteger gameIdCounter = new AtomicInteger(0);
     private final AtomicInteger gamesPlayed = new AtomicInteger(0);
 
     private volatile boolean countdownRunning = false;
     private volatile int countdownSeconds = 0;
 
-    private SnowWarManager() {
-    }
+    private SnowWarManager() {}
 
     public boolean isEnabled() {
         return Emulator.getConfig().getBoolean("gamecenter.snowwar.enabled", true);
@@ -82,10 +85,32 @@ public class SnowWarManager {
 
     public void clearUserGame(int userId) {
         this.userGames.remove(userId);
+        this.packetWindows.remove(userId);
     }
 
     public void clearUserGameIfMatches(int userId, SnowWarGame game) {
         this.userGames.remove(userId, game);
+    }
+
+    /**
+     * Generic per-user flood cap across every SnowWar packet. Fixed-window
+     * counter: at most PACKET_FLOOD_MAX_PER_WINDOW packets per
+     * PACKET_FLOOD_WINDOW_MS. Returns false when the packet should be dropped.
+     * This is a blanket backstop on top of the per-action cooldowns, so a mix
+     * of packet types can't be spun in a tight loop.
+     */
+    public boolean allowPacket(int userId) {
+        long now = System.currentTimeMillis();
+        long[] window = this.packetWindows.computeIfAbsent(userId, id -> new long[] {now, 0});
+        synchronized (window) {
+            if (now - window[0] > SnowWarConstants.PACKET_FLOOD_WINDOW_MS) {
+                window[0] = now;
+                window[1] = 1;
+                return true;
+            }
+            window[1]++;
+            return window[1] <= SnowWarConstants.PACKET_FLOOD_MAX_PER_WINDOW;
+        }
     }
 
     // ========================================================================
@@ -109,8 +134,12 @@ public class SnowWarManager {
             return;
         }
 
+        // Already queued: ignore the repeat join instead of re-broadcasting
+        // queue positions to everyone on each spammed packet.
         synchronized (this.queue) {
-            this.queue.add(userId);
+            if (!this.queue.add(userId)) {
+                return;
+            }
         }
 
         this.send(habbo, new SnowStormGamesLeftComposer(-1));
@@ -125,10 +154,13 @@ public class SnowWarManager {
             return;
         }
 
+        int userId = habbo.getHabboInfo().getId();
         boolean removed;
         synchronized (this.queue) {
-            removed = this.queue.remove(habbo.getHabboInfo().getId());
+            removed = this.queue.remove(userId);
         }
+
+        this.packetWindows.remove(userId);
 
         if (removed) {
             this.broadcastQueuePositions();
@@ -211,7 +243,8 @@ public class SnowWarManager {
 
         // Drop offline users from the queue before evaluating.
         synchronized (this.queue) {
-            this.queue.removeIf(userId -> Emulator.getGameEnvironment().getHabboManager().getHabbo(userId) == null);
+            this.queue.removeIf(
+                    userId -> Emulator.getGameEnvironment().getHabboManager().getHabbo(userId) == null);
         }
 
         if (this.getQueueSize() < this.getMinimumPlayers()) {
@@ -262,6 +295,13 @@ public class SnowWarManager {
                     continue;
                 }
 
+                // Never pull a user who is already in a game into a second one
+                // (would overwrite userGames and orphan their first game).
+                if (this.userGames.containsKey(userId)) {
+                    this.queue.remove(userId);
+                    continue;
+                }
+
                 participants.add(habbo);
                 this.queue.remove(userId);
             }
@@ -302,9 +342,10 @@ public class SnowWarManager {
         String modelName = SnowWarMapsManager.getModelName(mapId);
 
         int roomId = 0;
-        try (java.sql.Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                java.sql.PreparedStatement statement = connection.prepareStatement(
-                        "SELECT id FROM rooms WHERE model = ? ORDER BY id LIMIT 1")) {
+        try (java.sql.Connection connection =
+                        Emulator.getDatabase().getDataSource().getConnection();
+                java.sql.PreparedStatement statement =
+                        connection.prepareStatement("SELECT id FROM rooms WHERE model = ? ORDER BY id LIMIT 1")) {
             statement.setString(1, modelName);
             try (java.sql.ResultSet set = statement.executeQuery()) {
                 if (set.next()) {
@@ -320,18 +361,22 @@ public class SnowWarManager {
             return Emulator.getGameEnvironment().getRoomManager().loadRoom(roomId);
         }
 
-        Room room = Emulator.getGameEnvironment().getRoomManager().createRoom(
-                habbo.getHabboInfo().getId(),
-                habbo.getHabboInfo().getUsername(),
-                "SnowStorm Arena Editor",
-                "Place furniture to design the SnowStorm arena, then use :snowwarsave to publish it.",
-                modelName,
-                25,
-                0,
-                0);
+        Room room = Emulator.getGameEnvironment()
+                .getRoomManager()
+                .createRoom(
+                        habbo.getHabboInfo().getId(),
+                        habbo.getHabboInfo().getUsername(),
+                        "SnowStorm Arena Editor",
+                        "Place furniture to design the SnowStorm arena, then use :snowwarsave to publish it.",
+                        modelName,
+                        25,
+                        0,
+                        0);
 
         if (room == null) {
-            LOGGER.error("Failed to create the SnowWar editor room with model '{}'. Is the room_models row present?", modelName);
+            LOGGER.error(
+                    "Failed to create the SnowWar editor room with model '{}'. Is the room_models row present?",
+                    modelName);
         }
 
         return room;

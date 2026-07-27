@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.snowwar;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.games.snowwar.SnowWarConstants;
 import com.eu.habbo.habbohotel.games.snowwar.SnowWarManager;
 import com.eu.habbo.habbohotel.games.snowwar.mapping.SnowWarItemProperties;
 import com.eu.habbo.habbohotel.games.snowwar.mapping.SnowWarMapsManager;
@@ -42,6 +43,12 @@ public class SnowStormSaveEditorEvent extends MessageHandler {
 
         int mapId = this.packet.readInt();
         int itemCount = this.packet.readInt();
+        // Reject an implausible item count outright (each packet is
+        // self-contained, so leftover bytes are discarded): keeps a malformed
+        // or malicious save from bloating the arena definition.
+        if (itemCount < 0 || itemCount > SnowWarConstants.EDITOR_MAX_ITEMS) {
+            return;
+        }
 
         StringBuilder builder = new StringBuilder();
         int adImages = 0;
@@ -53,12 +60,20 @@ public class SnowStormSaveEditorEvent extends MessageHandler {
             int rotation = this.packet.readInt();
             String imageUrl = this.packet.readString();
             int offsetZ = this.packet.readInt();
-            boolean hasImage = imageUrl != null && !imageUrl.trim().isEmpty();
 
             if (name == null || name.trim().isEmpty()) {
                 continue;
             }
             name = name.trim();
+            // The item lines are space/CRLF-delimited and re-parsed on load, so
+            // a name or ad-image URL containing whitespace/newlines could inject
+            // extra tokens or whole lines. Drop such values instead of trusting
+            // them: skip a whitespace-bearing name entirely, and treat a
+            // whitespace-bearing URL as "no image".
+            if (containsWhitespace(name)) {
+                continue;
+            }
+            boolean hasImage = imageUrl != null && !imageUrl.trim().isEmpty() && !containsWhitespace(imageUrl.trim());
 
             // Machines are stored in the short "snowball_machine x y" form so
             // SnowWarMapsManager re-expands them (main tile + hidden collision
@@ -118,6 +133,9 @@ public class SnowStormSaveEditorEvent extends MessageHandler {
         }
 
         int spawnCount = this.packet.readInt();
+        if (spawnCount < 0 || spawnCount > SnowWarConstants.EDITOR_MAX_SPAWNS) {
+            return;
+        }
         for (int i = 0; i < spawnCount; i++) {
             int x = this.packet.readInt();
             int y = this.packet.readInt();
@@ -127,12 +145,17 @@ public class SnowStormSaveEditorEvent extends MessageHandler {
         // Floor plan (heightmap): the editor can reshape the arena, so persist
         // the sent grid too. 'x'/'X' cells are void, anything else is walkable.
         int rowCount = this.packet.readInt();
+        if (rowCount < 0 || rowCount > SnowWarConstants.EDITOR_MAX_ROWS) {
+            return;
+        }
         StringBuilder heightmap = new StringBuilder();
         for (int i = 0; i < rowCount; i++) {
             String row = this.packet.readString();
             if (row == null) {
                 row = "";
             }
+            // Strip CR/LF so a single row can't inject extra heightmap rows.
+            row = row.replace("\r", "").replace("\n", "");
             if (heightmap.length() > 0) {
                 heightmap.append("\r\n");
             }
@@ -170,5 +193,14 @@ public class SnowStormSaveEditorEvent extends MessageHandler {
                 spawnCount,
                 adImages,
                 rowCount);
+    }
+
+    private static boolean containsWhitespace(String value) {
+        for (int i = 0; i < value.length(); i++) {
+            if (Character.isWhitespace(value.charAt(i))) {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -17,6 +17,9 @@ public class SnowStormThrowAtLocationEvent extends MessageHandler {
         int trajectory = this.packet.readInt();
 
         int userId = this.client.getHabbo().getHabboInfo().getId();
+        if (!SnowWarManager.getInstance().allowPacket(userId)) {
+            return;
+        }
         SnowWarGame game = SnowWarManager.getInstance().getGameByUserId(userId);
 
         if (game == null) {

@@ -2,6 +2,9 @@ package com.eu.habbo.habbohotel.games.snowwar.mapping;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.games.snowwar.SnowWarPoint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,8 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class SnowWarMapsManager {
 
@@ -31,6 +32,7 @@ public final class SnowWarMapsManager {
     private static final int MACHINE_MIN_SEPARATION_SQUARED = 5 * 5;
     private static final double SNOWBALL_BLOCK_HEIGHT = 0.4;
     private static final ConcurrentHashMap<Integer, SnowWarMap> MAPS = new ConcurrentHashMap<>();
+
     private SnowWarMapsManager() {}
 
     public static SnowWarMap getMap(int mapId) {

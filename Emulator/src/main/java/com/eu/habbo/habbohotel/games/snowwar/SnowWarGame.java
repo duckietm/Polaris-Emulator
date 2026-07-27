@@ -24,15 +24,14 @@ import com.eu.habbo.messages.outgoing.snowwar.SnowStormOnStageStartComposer;
 import com.eu.habbo.messages.outgoing.snowwar.SnowStormRejoinPreviousRoomComposer;
 import com.eu.habbo.messages.outgoing.snowwar.SnowStormUserChatMessageComposer;
 import com.eu.habbo.messages.outgoing.snowwar.SnowStormUserRematchedComposer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * One SnowWar match. Lifecycle per PROTOCOL.md "Game flow":
@@ -85,8 +84,8 @@ public class SnowWarGame {
 
         if (this.map != null) {
             for (SnowWarPoint machinePosition : this.map.getMachinePositions()) {
-                this.machines.add(new SnowWarMachineObject(this.nextObjectId(),
-                        machinePosition.getX(), machinePosition.getY()));
+                this.machines.add(
+                        new SnowWarMachineObject(this.nextObjectId(), machinePosition.getX(), machinePosition.getY()));
             }
         }
     }
@@ -183,12 +182,15 @@ public class SnowWarGame {
 
         this.broadcast(new SnowStormIntializeGameArenaViewComposer());
 
-        Emulator.getThreading().run(() -> {
-            if (this.state == SnowWarGameState.WAITING_FOR_PLAYERS) {
-                LOGGER.info("SnowWar game {}: load stage timeout reached, starting anyway.", this.id);
-                this.beginPreparing();
-            }
-        }, LOAD_STAGE_TIMEOUT_MS);
+        Emulator.getThreading()
+                .run(
+                        () -> {
+                            if (this.state == SnowWarGameState.WAITING_FOR_PLAYERS) {
+                                LOGGER.info("SnowWar game {}: load stage timeout reached, starting anyway.", this.id);
+                                this.beginPreparing();
+                            }
+                        },
+                        LOAD_STAGE_TIMEOUT_MS);
     }
 
     public void onLoadStageReady(int userId) {
@@ -335,9 +337,10 @@ public class SnowWarGame {
         // player may keep playing until they leave.
         int endThreshold = Math.min(2, SnowWarManager.getInstance().getMinimumPlayers());
 
-        if (remainingPlayers < endThreshold && (this.state == SnowWarGameState.WAITING_FOR_PLAYERS
-                || this.state == SnowWarGameState.PREPARING
-                || this.state == SnowWarGameState.RUNNING)) {
+        if (remainingPlayers < endThreshold
+                && (this.state == SnowWarGameState.WAITING_FOR_PLAYERS
+                        || this.state == SnowWarGameState.PREPARING
+                        || this.state == SnowWarGameState.RUNNING)) {
             this.endGame();
             return;
         }
@@ -390,7 +393,9 @@ public class SnowWarGame {
     }
 
     public void handleThrowAtLocation(SnowWarGamePlayer player, int worldX, int worldY, int trajectory) {
-        if (trajectory != 1 && trajectory != 2) {
+        // 0 = straight (flat) throw, 1 = lob, 2 = long high-arc throw. Plain
+        // right-click sends 0, Shift+right-click sends 2.
+        if (trajectory != 0 && trajectory != 1 && trajectory != 2) {
             return;
         }
 
@@ -429,11 +434,12 @@ public class SnowWarGame {
         }
         // Range gate: normal throws reach 5 tiles, long throws 15. Outside
         // that the client must use a long throw or move closer.
-        int maxRangeTiles = trajectory == 2
-                ? SnowWarConstants.THROW_RANGE_LONG_TILES
-                : SnowWarConstants.THROW_RANGE_NORMAL_TILES;
-        int deltaTileX = SnowWarMath.convertToGameCoordinate(worldX) - attr.getCurrentPosition().getX();
-        int deltaTileY = SnowWarMath.convertToGameCoordinate(worldY) - attr.getCurrentPosition().getY();
+        int maxRangeTiles =
+                trajectory == 2 ? SnowWarConstants.THROW_RANGE_LONG_TILES : SnowWarConstants.THROW_RANGE_NORMAL_TILES;
+        int deltaTileX = SnowWarMath.convertToGameCoordinate(worldX)
+                - attr.getCurrentPosition().getX();
+        int deltaTileY = SnowWarMath.convertToGameCoordinate(worldY)
+                - attr.getCurrentPosition().getY();
         if ((deltaTileX * deltaTileX) + (deltaTileY * deltaTileY) > maxRangeTiles * maxRangeTiles) {
             return;
         }

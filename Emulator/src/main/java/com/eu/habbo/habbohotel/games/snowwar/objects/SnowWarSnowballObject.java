@@ -34,8 +34,15 @@ public class SnowWarSnowballObject extends SnowWarGameObject {
      * @param targetTileY target tile Y
      * @param trajectory 0 = quick throw, 1 = lob, 2 = long throw
      */
-    public SnowWarSnowballObject(int objectId, SnowWarMap map, SnowWarGamePlayer thrower,
-                                 int fromTileX, int fromTileY, int targetTileX, int targetTileY, int trajectory) {
+    public SnowWarSnowballObject(
+            int objectId,
+            SnowWarMap map,
+            SnowWarGamePlayer thrower,
+            int fromTileX,
+            int fromTileY,
+            int targetTileX,
+            int targetTileY,
+            int trajectory) {
         super(objectId);
         this.map = map;
         this.thrower = thrower;
@@ -107,8 +114,9 @@ public class SnowWarSnowballObject extends SnowWarGameObject {
                 break;
         }
 
-        return baseHeight + heightMultiplier
-                * ((this.parabolaOffset * this.parabolaOffset) - (distanceFromPeak * distanceFromPeak));
+        return baseHeight
+                + heightMultiplier
+                        * ((this.parabolaOffset * this.parabolaOffset) - (distanceFromPeak * distanceFromPeak));
     }
 
     /**
@@ -140,27 +148,26 @@ public class SnowWarSnowballObject extends SnowWarGameObject {
         int currentTileY = SnowWarMath.worldToTile(this.locV);
 
         SnowWarTile tile = this.map.getTile(currentTileX, currentTileY);
-        if (tile != null && tile.getHighestItem() != null) {
-            int collisionHeight = tile.getHighestItem().getCollisionHeight();
-            if (collisionHeight > 0 && this.height < collisionHeight) {
-                this.alive = false;
-            }
+        // Straight/lob throws are stopped by furni taller than 0.4; long
+        // (curved) throws arc over. isHeightBlocking encodes that per trajectory.
+        if (tile != null && tile.isHeightBlocking(this.trajectory)) {
+            this.alive = false;
         }
     }
 
     @Override
     public int[] getChecksumValues() {
-        return new int[]{
-                SnowWarConstants.OBJECT_TYPE_SNOWBALL,
-                this.objectId,
-                this.locH,
-                this.locV,
-                this.height,
-                this.direction,
-                this.trajectory,
-                this.timeToLive,
-                this.thrower.getObjectId(),
-                this.parabolaOffset
+        return new int[] {
+            SnowWarConstants.OBJECT_TYPE_SNOWBALL,
+            this.objectId,
+            this.locH,
+            this.locV,
+            this.height,
+            this.direction,
+            this.trajectory,
+            this.timeToLive,
+            this.thrower.getObjectId(),
+            this.parabolaOffset
         };
     }
 

@@ -39,9 +39,10 @@ public final class SnowWarConstants {
     public static final int THROW_COOLDOWN_MS = 300;
 
     // Throw ranges, in tiles, as a circle around the thrower: a normal
-    // throw covers up to 5 tiles, the long (high-arc) throw up to 15.
-    public static final int THROW_RANGE_NORMAL_TILES = 5;
-    public static final int THROW_RANGE_LONG_TILES = 15;
+    // throw covers up to 10 tiles, the long (high-arc) throw up to 20. Range is
+    // measured as a circle around the thrower (squared-distance check).
+    public static final int THROW_RANGE_NORMAL_TILES = 10;
+    public static final int THROW_RANGE_LONG_TILES = 20;
 
     // Snowball machine (timers in subturns/frames)
     public static final int MACHINE_SNOWBALL_GENERATOR_TIME = 100;
@@ -59,6 +60,5 @@ public final class SnowWarConstants {
     public static final int ERROR_NO_TICKETS = 4;
     public static final int ERROR_INTERNAL = 5;
 
-    private SnowWarConstants() {
-    }
+    private SnowWarConstants() {}
 }

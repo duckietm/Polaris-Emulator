@@ -16,47 +16,27 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Loads and caches SnowWar arenas (README 5.3).
- *
- * The primary source is the room_models table: the row named by
- * gamecenter.snowwar.map.model.&lt;mapId&gt; (default snowstorm_arena_&lt;mapId&gt;)
- * provides the heightmap column plus the public_items column, which stores
- * one entry per line:
- *
- *   &lt;classname&gt; &lt;x&gt; &lt;y&gt; &lt;rotation&gt; [walkableHeight collisionHeight]
- *   snowball_machine &lt;x&gt; &lt;y&gt;
- *   spawn &lt;x&gt; &lt;y&gt; &lt;width&gt; &lt;height&gt;
- *
- * The arena editor (:snowwarsave) rewrites the item lines. When the model
- * row is missing, the bundled classpath resources under /snowwar/ are used
- * (a file with the same name under tools/snowwar_maps/ takes precedence),
- * and missing machine/spawn sections in the DB also fall back to those
- * files so a freshly-edited arena keeps working.
- */
 public final class SnowWarMapsManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SnowWarMapsManager.class);
 
     private static final String RESOURCE_DIR = "/snowwar/";
     private static final String OVERRIDE_DIR = "tools/snowwar_maps/";
-
+    private static final int DEFAULT_MACHINE_COUNT = 4;
+    private static final int MACHINE_MIN_SEPARATION_SQUARED = 5 * 5;
+    private static final double SNOWBALL_BLOCK_HEIGHT = 0.4;
     private static final ConcurrentHashMap<Integer, SnowWarMap> MAPS = new ConcurrentHashMap<>();
-
     private SnowWarMapsManager() {}
 
     public static SnowWarMap getMap(int mapId) {
         return MAPS.computeIfAbsent(mapId, SnowWarMapsManager::parseMap);
     }
 
-    /**
-     * Drops the cached arena so the next game re-reads room_models. Called
-     * after :snowwarsave persists an edited layout.
-     */
     public static void invalidate(int mapId) {
         MAPS.remove(mapId);
     }
@@ -144,9 +124,6 @@ public final class SnowWarMapsManager {
                 int rotation = Integer.parseInt(parts[3]);
 
                 if (parts.length >= 6) {
-                    // Editor-saved hotel furniture carries explicit heights and,
-                    // for room-ad furni, a trailing image URL (7th token) plus an
-                    // optional vertical offset for the backdrop (8th token).
                     String imageUrl = parts.length >= 7 ? parts[6] : "";
                     int offsetZ = parts.length >= 8 ? parseIntSafe(parts[7]) : 0;
                     items.add(new SnowWarItem(
@@ -161,26 +138,16 @@ public final class SnowWarMapsManager {
                 } else if (SnowWarItemProperties.isKnownItem(name)) {
                     items.add(new SnowWarItem(name, x, y, rotation));
                 } else {
-                    // Unknown classname without explicit heights: treat as a
-                    // solid tree-sized obstacle rather than dropping it.
                     items.add(new SnowWarItem(name, x, y, rotation, 3, 4600));
                 }
             }
         }
 
-        // Machines and spawn clusters are required for a playable arena; if
-        // the edited layout doesn't define them, keep the bundled defaults.
-        try {
-            if (machinePositions.isEmpty()) {
-                for (String line : readLines("arena_" + mapId + "_snowmachines.dat")) {
-                    String[] parts = line.trim().split("\\s+");
-                    if (parts.length < 2) {
-                        continue;
-                    }
-                    addMachine(items, machinePositions, Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
-                }
-            }
+        if (machinePositions.isEmpty()) {
+            generateRandomMachines(heightmapRows, items, machinePositions, DEFAULT_MACHINE_COUNT);
+        }
 
+        try {
             if (spawnClusters.isEmpty()) {
                 for (String cluster :
                         readContent("arena_" + mapId + "_spawn_clusters.dat").split("\\|")) {
@@ -199,8 +166,6 @@ public final class SnowWarMapsManager {
             LOGGER.warn("SnowWar map {}: no bundled machine/spawn fallback available.", mapId);
         }
 
-        // Spawn clusters are optional since spawns are picked as random
-        // spread-out walkable tiles; machines remain required for ammo.
         if (machinePositions.isEmpty()) {
             LOGGER.error("SnowWar map {}: room_models row '{}' is missing snowball machines.", mapId, modelName);
             return null;
@@ -219,12 +184,6 @@ public final class SnowWarMapsManager {
         return new SnowWarMap(mapId, heightmapRows, items, machinePositions, spawnClusters);
     }
 
-    /**
-     * Stamps the furni footprint (tile width/length) onto every non-hidden item
-     * from its base furnidata, so the arena blocks the whole footprint and the
-     * client can depth-sort multi-tile props by their front tile. Unknown
-     * classnames (built-in SnowWar props, machine tiles) keep the 1x1 default.
-     */
     private static void applyItemSizes(List<SnowWarItem> items) {
         for (SnowWarItem item : items) {
             if (item.isHidden()) {
@@ -235,6 +194,7 @@ public final class SnowWarMapsManager {
                         Emulator.getGameEnvironment().getItemManager().getItem(item.getName());
                 if (base != null) {
                     item.setSize(base.getWidth(), base.getLength());
+                    item.setBlocksSnowball(base.getHeight() > SNOWBALL_BLOCK_HEIGHT);
                 }
                 LOGGER.info(
                         "SnowWar item '{}' at ({},{}) rot {} -> size {}x{} (base found: {}, walkableHeight {})",
@@ -247,10 +207,70 @@ public final class SnowWarMapsManager {
                         base != null,
                         item.getWalkableHeight());
             } catch (Exception e) {
-                // Item manager not ready or classname unknown: leave the 1x1
-                // default rather than failing the whole arena load.
                 LOGGER.warn("SnowWar item '{}' size lookup failed, keeping 1x1.", item.getName(), e);
             }
+        }
+    }
+
+    private static boolean isWalkableGround(List<String> rows, int x, int y) {
+        if (y < 0 || y >= rows.size()) {
+            return false;
+        }
+        String row = rows.get(y);
+        if (x < 0 || x >= row.length()) {
+            return false;
+        }
+        char tile = row.charAt(x);
+        return tile != 'x' && tile != 'X';
+    }
+
+    private static void generateRandomMachines(
+            List<String> heightmapRows, List<SnowWarItem> items, List<SnowWarPoint> machinePositions, int count) {
+        List<SnowWarPoint> candidates = new ArrayList<>();
+        for (int y = 0; y < heightmapRows.size(); y++) {
+            String row = heightmapRows.get(y);
+            for (int x = 0; x < row.length(); x++) {
+                if (isWalkableGround(heightmapRows, x, y)
+                        && isWalkableGround(heightmapRows, x + 1, y)
+                        && isWalkableGround(heightmapRows, x + 2, y)
+                        && isWalkableGround(heightmapRows, x, y + 1)) {
+                    candidates.add(new SnowWarPoint(x, y));
+                }
+            }
+        }
+
+        if (candidates.isEmpty()) {
+            return;
+        }
+
+        Random random = new Random();
+        List<SnowWarPoint> chosen = new ArrayList<>();
+        chosen.add(candidates.get(random.nextInt(candidates.size())));
+
+        while (chosen.size() < count) {
+            SnowWarPoint best = null;
+            int bestNearest = -1;
+            for (SnowWarPoint candidate : candidates) {
+                int nearest = Integer.MAX_VALUE;
+                for (SnowWarPoint picked : chosen) {
+                    nearest = Math.min(nearest, candidate.getDistanceSquared(picked));
+                }
+                if (nearest < MACHINE_MIN_SEPARATION_SQUARED) {
+                    continue;
+                }
+                if (nearest > bestNearest) {
+                    bestNearest = nearest;
+                    best = candidate;
+                }
+            }
+            if (best == null) {
+                break;
+            }
+            chosen.add(best);
+        }
+
+        for (SnowWarPoint origin : chosen) {
+            addMachine(items, machinePositions, origin.getX(), origin.getY());
         }
     }
 

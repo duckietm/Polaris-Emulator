@@ -198,7 +198,7 @@ public final class RoomArrayVariableManager {
     public void validateDefinitionChange(
             WiredArrayVariableDefinition currentDefinition, WiredArrayDefinition replacement, boolean nextPermanent) {
         if (currentDefinition == null) return;
-        if (currentDefinition.isArray() && currentDefinition.getArrayDefinition() == null) {
+        if (currentDefinition.isArrayUnavailable()) {
             throw new IllegalArgumentException(
                     "This array definition is unavailable and cannot be changed without correcting its stored data.");
         }
@@ -229,7 +229,7 @@ public final class RoomArrayVariableManager {
 
     public void handleDefinitionUpdated(WiredArrayVariableDefinition definition) {
         if (definition == null) return;
-        if (definition.isArray() && definition.getArrayDefinition() == null) {
+        if (definition.isArrayUnavailable()) {
             this.values.keySet().removeIf(key -> key.definitionItemId() == definition.getId());
             return;
         }
@@ -252,7 +252,7 @@ public final class RoomArrayVariableManager {
                 return new State(state.version(), true, current.redefined(definition.getArrayDefinition()));
             });
         }
-        if (!definition.isArray() || !definition.isArrayPermanent()) {
+        if (!definition.isArrayDeclared() || !definition.isArrayPermanent()) {
             try {
                 this.repository.deleteDefinition(this.room.getId(), definition.getId());
             } catch (SQLException exception) {

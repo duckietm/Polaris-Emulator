@@ -9,6 +9,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionState;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType;
@@ -31,9 +32,7 @@ public class WiredExtraRoomVariable extends InteractionWiredExtra
 
     private String variableName = "";
     private int availability = AVAILABILITY_ROOM_ACTIVE;
-    private WiredArrayDefinition arrayDefinition;
-    private boolean arrayDefinitionUnavailable;
-    private WiredVariableDefinitionData unavailableArrayDefinitionData;
+    private final WiredArrayDefinitionState array = new WiredArrayDefinitionState();
 
     public WiredExtraRoomVariable(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -71,7 +70,7 @@ public class WiredExtraRoomVariable extends InteractionWiredExtra
         WiredArrayDefinition nextArrayDefinition;
         try {
             nextArrayDefinition =
-                    WiredArrayDefinitionSupport.parseArrayDefinition(definitionData, this.arrayDefinition);
+                    WiredArrayDefinitionSupport.parseArrayDefinition(definitionData, this.array.definition());
             room.getArrayVariableManager()
                     .validateDefinitionChange(
                             this,
@@ -82,9 +81,7 @@ public class WiredExtraRoomVariable extends InteractionWiredExtra
         }
 
         this.variableName = normalizedName;
-        this.arrayDefinition = nextArrayDefinition;
-        this.arrayDefinitionUnavailable = false;
-        this.unavailableArrayDefinitionData = null;
+        this.array.assign(nextArrayDefinition);
         this.availability = nextAvailability;
 
         room.getRoomVariableManager().handleDefinitionUpdated(this);
@@ -95,7 +92,7 @@ public class WiredExtraRoomVariable extends InteractionWiredExtra
     @Override
     public String getWiredData() {
         return WiredManager.getGson()
-                .toJson(new JsonData(this.variableName, this.availability, this.persistedDefinitionData()));
+                .toJson(new JsonData(this.variableName, this.availability, this.array.persisted(this.variableName)));
     }
 
     @Override
@@ -107,8 +104,7 @@ public class WiredExtraRoomVariable extends InteractionWiredExtra
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(WiredArrayDefinitionSupport.editorString(
-                this.variableName, this.arrayDefinition, this.unavailableArrayDefinitionData));
+        message.appendString(this.array.editorString(this.variableName));
         message.appendInt(2);
         message.appendInt(this.availability);
         message.appendInt(currentValue);
@@ -134,22 +130,12 @@ public class WiredExtraRoomVariable extends InteractionWiredExtra
                 this.variableName = WiredVariableNameValidator.normalizeLegacy(data.variableName);
                 this.availability = normalizeAvailability(data.availability);
                 if (data.definition != null) {
-                    try {
-                        this.arrayDefinition = WiredArrayDefinitionSupport.parseStoredArrayDefinition(data.definition);
-                        this.arrayDefinitionUnavailable = false;
-                        this.unavailableArrayDefinitionData = null;
-                    } catch (IllegalArgumentException exception) {
-                        this.arrayDefinition = null;
-                        this.arrayDefinitionUnavailable = data.definition.isArray();
-                        this.unavailableArrayDefinitionData = this.arrayDefinitionUnavailable
-                                ? WiredVariableDefinitionData.copyOf(data.definition)
-                                : null;
-                        LOGGER.warn(
-                                "Wired room variable {} in room {} has an unavailable array definition: {}",
-                                this.getId(),
-                                room == null ? this.getRoomId() : room.getId(),
-                                exception.getMessage());
-                    }
+                    this.array.restore(
+                            data.definition,
+                            LOGGER,
+                            "room",
+                            this.getId(),
+                            room == null ? this.getRoomId() : room.getId());
                 }
             }
 
@@ -163,9 +149,7 @@ public class WiredExtraRoomVariable extends InteractionWiredExtra
     public void onPickUp() {
         this.variableName = "";
         this.availability = AVAILABILITY_ROOM_ACTIVE;
-        this.arrayDefinition = null;
-        this.arrayDefinitionUnavailable = false;
-        this.unavailableArrayDefinitionData = null;
+        this.array.clear();
     }
 
     @Override
@@ -203,7 +187,7 @@ public class WiredExtraRoomVariable extends InteractionWiredExtra
 
     @Override
     public WiredArrayDefinition getArrayDefinition() {
-        return this.arrayDefinition;
+        return this.array.definition();
     }
 
     @Override
@@ -212,8 +196,8 @@ public class WiredExtraRoomVariable extends InteractionWiredExtra
     }
 
     @Override
-    public boolean isArray() {
-        return this.arrayDefinition != null || this.arrayDefinitionUnavailable;
+    public boolean isArrayUnavailable() {
+        return this.array.isUnavailable();
     }
 
     @Override
@@ -227,18 +211,6 @@ public class WiredExtraRoomVariable extends InteractionWiredExtra
         }
 
         return AVAILABILITY_ROOM_ACTIVE;
-    }
-
-    private WiredVariableDefinitionData persistedDefinitionData() {
-        if (this.arrayDefinition != null) {
-            return WiredVariableDefinitionData.array(this.variableName, this.arrayDefinition);
-        }
-        if (this.unavailableArrayDefinitionData != null) {
-            WiredVariableDefinitionData data = WiredVariableDefinitionData.copyOf(this.unavailableArrayDefinitionData);
-            data.name = this.variableName;
-            return data;
-        }
-        return null;
     }
 
     static class JsonData {

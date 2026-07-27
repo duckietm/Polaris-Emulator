@@ -111,6 +111,20 @@ public final class WiredArrayEditorSupport {
         return isValidScalarReference(address.variableType, address.variableItemId, address.capturePath, room);
     }
 
+    /** Bounds-checks a saved index against a schema without resolving a variable-mode source. */
+    public static boolean isAddressableIndex(WiredArrayAddress address, WiredArrayVariableDefinition definition) {
+        if (!validRawAddress(address) || definition == null || definition.getArrayDefinition() == null) return false;
+        return address.mode != WiredArrayAddress.CONSTANT
+                || (address.value >= 0
+                        && address.value < definition.getArrayDefinition().getMaxEntries());
+    }
+
+    /** As {@link #isAddressableIndex} but for boxes that also read a field out of the addressed entry. */
+    public static boolean isAddressableCell(WiredArrayAddress address, WiredArrayVariableDefinition definition) {
+        return isAddressableIndex(address, definition)
+                && definition.getArrayDefinition().getField(address.fieldId) != null;
+    }
+
     public static boolean isValidReference(WiredArrayReference reference, Room room) {
         if (!validRawReference(reference)) return false;
         if (reference.mode == WiredArrayReference.CONSTANT) {

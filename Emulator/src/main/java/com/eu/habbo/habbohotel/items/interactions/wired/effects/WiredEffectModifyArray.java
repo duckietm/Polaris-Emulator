@@ -293,8 +293,7 @@ public final class WiredEffectModifyArray extends InteractionWiredEffect impleme
             WiredArrayAddress address, WiredArrayVariableDefinition definition, boolean required, Room room)
             throws WiredSaveException {
         if (!required) return;
-        if (address == null
-                || (address.mode != WiredArrayAddress.CONSTANT && address.mode != WiredArrayAddress.VARIABLE)) {
+        if (!WiredArrayEditorSupport.validRawAddress(address)) {
             throw new WiredSaveException("Invalid array index");
         }
         WiredArrayAddress normalized = WiredArrayEditorSupport.normalizeAddress(address);
@@ -334,13 +333,9 @@ public final class WiredEffectModifyArray extends InteractionWiredEffect impleme
             throw new WiredSaveException("Too many array field values");
         }
         for (Map.Entry<Integer, WiredArrayReference> entry : inputs.entrySet()) {
-            WiredArrayReference reference = entry.getValue();
             if (entry.getKey() == null
                     || entry.getKey() <= 0
-                    || reference == null
-                    || (reference.mode != WiredArrayReference.CONSTANT
-                            && reference.mode != WiredArrayReference.VARIABLE)
-                    || !WiredArrayEditorSupport.validRawReference(reference)) {
+                    || !WiredArrayEditorSupport.validRawReference(entry.getValue())) {
                 throw new WiredSaveException("Invalid array field input");
             }
         }

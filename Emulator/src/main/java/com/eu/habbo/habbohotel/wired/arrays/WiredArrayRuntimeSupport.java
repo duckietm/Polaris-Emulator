@@ -113,7 +113,7 @@ public final class WiredArrayRuntimeSupport {
             WiredArrayAddress address,
             WiredArrayVariableDefinition arrayDefinition,
             Owner owner) {
-        if (address == null || arrayDefinition == null) return null;
+        if (address == null || arrayDefinition == null || arrayDefinition.getArrayDefinition() == null) return null;
         long value;
         if (address.mode == WiredArrayAddress.CONSTANT) {
             value = address.value;

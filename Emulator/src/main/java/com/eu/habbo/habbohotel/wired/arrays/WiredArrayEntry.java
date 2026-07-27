@@ -42,4 +42,16 @@ public final class WiredArrayEntry {
     public Map<Integer, Long> valuesByFieldId() {
         return this.valuesByFieldId;
     }
+
+    /** Value equality keeps the persistence delta to cells that actually changed. */
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) return true;
+        return other instanceof WiredArrayEntry entry && this.valuesByFieldId.equals(entry.valuesByFieldId);
+    }
+
+    @Override
+    public int hashCode() {
+        return this.valuesByFieldId.hashCode();
+    }
 }

@@ -166,6 +166,29 @@ class RoomArrayVariableRepositoryTest {
     }
 
     @Test
+    void rewritingAnEntryWithItsCurrentValuesTouchesNoEntryRows() throws Exception {
+        RoomJdbcTestSupport.RecordingDataSource dataSource = new RoomJdbcTestSupport.RecordingDataSource();
+        dataSource.rows(sql -> sql.contains("FOR UPDATE") ? List.of(Map.of("version", 4L)) : List.of());
+        RoomArrayVariableRepository repository = new RoomArrayVariableRepository(dataSource);
+        RoomArrayVariableManager.Key key = new RoomArrayVariableManager.Key(44, 91, 1, 44);
+        WiredArrayValue before = WiredArrayValue.empty(definition(), 16);
+        before.apply(WiredArrayStructuralOperation.APPEND, 0, 0, Map.of(1, 10L, 2, 20L));
+        WiredArrayValue after = before.copy();
+        assertEquals(
+                WiredArrayMutationResult.SUCCESS,
+                after.apply(WiredArrayStructuralOperation.SET_ENTRY, 0, 0, Map.of(1, 10L, 2, 20L)));
+
+        WiredArrayPersistenceDelta delta = WiredArrayPersistenceDelta.between(before, after);
+        repository.replace(key, 4L, delta, 123);
+
+        assertTrue(delta.upsertedEntries().isEmpty(), "an identical entry must not be rewritten");
+        assertTrue(delta.removedIndexes().isEmpty());
+        assertTrue(
+                dataSource.calls().stream().noneMatch(call -> "batch".equals(call.operation())),
+                "no entry batch should be issued for an unchanged array");
+    }
+
+    @Test
     void ownerCleanupCannotBroadenPastRoomTypeAndOwner() throws Exception {
         RoomJdbcTestSupport.RecordingDataSource dataSource = new RoomJdbcTestSupport.RecordingDataSource();
         RoomArrayVariableRepository repository = new RoomArrayVariableRepository(dataSource);

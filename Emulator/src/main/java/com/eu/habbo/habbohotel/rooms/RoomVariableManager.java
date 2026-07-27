@@ -364,7 +364,7 @@ public class RoomVariableManager {
             return;
         }
 
-        if (definition.isArray()) {
+        if (definition.isArrayDeclared()) {
             this.removeDefinition(definition.getId());
             return;
         }

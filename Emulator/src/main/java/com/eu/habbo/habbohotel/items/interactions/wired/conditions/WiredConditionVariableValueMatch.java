@@ -18,6 +18,7 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayAddress;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayEditorSupport;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayReference;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayRuntimeSupport;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
@@ -147,12 +148,14 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
                 && !this.isValidReference(room, nextReferenceTargetType, nextReferenceVariableToken)) return false;
         WiredArrayVariableDefinition targetArray =
                 this.resolveArrayDefinition(room, nextTargetType, getCustomItemId(nextVariableToken));
-        if (targetArray != null && !isValidAddress(targetArray, nextArrayData.address)) return false;
+        if (targetArray != null && !WiredArrayEditorSupport.isAddressableCell(nextArrayData.address, targetArray))
+            return false;
         WiredArrayVariableDefinition referenceArray =
                 this.resolveArrayDefinition(room, nextReferenceTargetType, getCustomItemId(nextReferenceVariableToken));
         if (nextReferenceMode == REFERENCE_VARIABLE
                 && referenceArray != null
-                && !isValidAddress(referenceArray, nextArrayData.referenceAddress)) return false;
+                && !WiredArrayEditorSupport.isAddressableCell(nextArrayData.referenceAddress, referenceArray))
+            return false;
         if (targetArray != null && nextReferenceMode == REFERENCE_CONSTANT) {
             try {
                 Long.parseLong(nextArrayData.referenceConstant);
@@ -905,17 +908,6 @@ public class WiredConditionVariableValueMatch extends WiredConditionHasVariable 
             normalized.referenceConstant = normalized.referenceConstant.trim();
         }
         return normalized;
-    }
-
-    private static boolean isValidAddress(WiredArrayVariableDefinition definition, WiredArrayAddress address) {
-        return definition != null
-                && address != null
-                && (address.mode == WiredArrayAddress.CONSTANT || address.mode == WiredArrayAddress.VARIABLE)
-                && definition.getArrayDefinition().getField(address.fieldId) != null
-                && (address.mode != WiredArrayAddress.CONSTANT
-                        || (address.value >= 0
-                                && address.value
-                                        < definition.getArrayDefinition().getMaxEntries()));
     }
 
     private List<Integer> toIds(Set<HabboItem> items) {

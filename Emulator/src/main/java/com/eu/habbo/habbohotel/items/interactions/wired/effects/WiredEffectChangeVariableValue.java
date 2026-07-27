@@ -25,6 +25,7 @@ import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayAddress;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayChange;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayEditorSupport;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayNumericOperation;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayReference;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayRuntimeSupport;
@@ -1085,13 +1086,7 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
 
     private void validateArrayAddress(WiredArrayVariableDefinition definition, WiredArrayAddress address)
             throws WiredSaveException {
-        if (address == null
-                || (address.mode != WiredArrayAddress.CONSTANT && address.mode != WiredArrayAddress.VARIABLE)
-                || definition.getArrayDefinition().getField(address.fieldId) == null
-                || (address.mode == WiredArrayAddress.CONSTANT
-                        && (address.value < 0
-                                || address.value
-                                        >= definition.getArrayDefinition().getMaxEntries()))) {
+        if (!WiredArrayEditorSupport.isAddressableCell(address, definition)) {
             throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_array_address");
         }
     }

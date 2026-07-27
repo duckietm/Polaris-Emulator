@@ -11,6 +11,7 @@ import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayAddress;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayEditorSupport;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
@@ -100,7 +101,8 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
         ArrayData nextArrayData = parseArrayData(stringData[3]);
         WiredArrayVariableDefinition arrayDefinition =
                 resolveArrayDefinition(room, nextTargetType, getCustomItemId(nextVariableToken));
-        if (arrayDefinition != null && !isValidAddress(arrayDefinition, nextArrayData.address)) {
+        if (arrayDefinition != null
+                && !WiredArrayEditorSupport.isAddressableCell(nextArrayData.address, arrayDefinition)) {
             throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_array_address");
         }
 
@@ -544,16 +546,6 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
                 };
         WiredArrayVariableDefinition definition = WiredArrayDefinitionSupport.resolve(room, type.code(), itemId);
         return definition != null && definition.isArray() ? definition : null;
-    }
-
-    private static boolean isValidAddress(WiredArrayVariableDefinition definition, WiredArrayAddress address) {
-        return address != null
-                && (address.mode == WiredArrayAddress.CONSTANT || address.mode == WiredArrayAddress.VARIABLE)
-                && definition.getArrayDefinition().getField(address.fieldId) != null
-                && (address.mode != WiredArrayAddress.CONSTANT
-                        || (address.value >= 0
-                                && address.value
-                                        < definition.getArrayDefinition().getMaxEntries()));
     }
 
     private static ArrayData parseArrayData(String json) {

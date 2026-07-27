@@ -33,7 +33,18 @@ public interface WiredArrayVariableDefinition {
         return true;
     }
 
+    /** True only when {@link #getArrayDefinition()} is usable, so callers may dereference it. */
     default boolean isArray() {
         return this.getArrayDefinition() != null;
+    }
+
+    /** True when a stored array schema exists but this server could not parse it. */
+    default boolean isArrayUnavailable() {
+        return false;
+    }
+
+    /** True when the variable is declared as an array, readable or not — never a scalar. */
+    default boolean isArrayDeclared() {
+        return this.isArray() || this.isArrayUnavailable();
     }
 }

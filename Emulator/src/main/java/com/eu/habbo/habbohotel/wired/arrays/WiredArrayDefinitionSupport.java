@@ -39,22 +39,6 @@ public final class WiredArrayDefinitionSupport {
         return WiredArrayDefinition.fromData(data, WiredArrayDefinition.ABSOLUTE_MAX_ENTRIES);
     }
 
-    public static String editorString(String name, WiredArrayDefinition definition) {
-        return editorString(name, definition, null);
-    }
-
-    public static String editorString(
-            String name, WiredArrayDefinition definition, WiredVariableDefinitionData unavailableDefinition) {
-        if (definition == null && unavailableDefinition == null) return name == null ? "" : name;
-        WiredVariableDefinitionData data = definition == null
-                ? WiredVariableDefinitionData.copyOf(unavailableDefinition)
-                : WiredVariableDefinitionData.array(name, definition);
-        data.name = name == null ? "" : name;
-        data.serverMaxEntries = WiredArraySettings.maxEntries();
-        data.serverMaxPopulatedCells = WiredArraySettings.maxPopulatedCellsPerOwner();
-        return WiredManager.getGson().toJson(data);
-    }
-
     public static WiredArrayVariableDefinition resolve(Room room, int variableType, int definitionItemId) {
         if (room == null || room.getRoomSpecialTypes() == null || definitionItemId <= 0) return null;
         InteractionWiredExtra extra = room.getRoomSpecialTypes().getExtra(definitionItemId);
@@ -94,7 +78,7 @@ public final class WiredArrayDefinitionSupport {
                     definition.getId(),
                     definition.getVariableName(),
                     definition.getArrayVariableType().code(),
-                    array == null ? (definition.isArray() ? "array_unavailable" : "single") : "array",
+                    array == null ? (definition.isArrayUnavailable() ? "array_unavailable" : "single") : "array",
                     array == null
                             ? WiredArrayFormat.SIMPLE.wireName()
                             : array.getFormat().wireName(),

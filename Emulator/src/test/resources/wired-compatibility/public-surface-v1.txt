@@ -3045,8 +3045,8 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraC
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextVariable#getWiredData(-):java.lang.String throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextVariable#hasConfiguration(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextVariable#hasValue(-):boolean throws -
-METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextVariable#isArray(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextVariable#isArrayPermanent(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextVariable#isArrayUnavailable(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextVariable#loadWiredData(java.sql.ResultSet,com.eu.habbo.habbohotel.rooms.Room):void throws java.sql.SQLException
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextVariable#onPickUp(-):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextVariable#onWalk(com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.Room,java.lang.Object[]):void throws -
@@ -3148,8 +3148,8 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraF
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable#getWiredData(-):java.lang.String throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable#hasConfiguration(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable#hasValue(-):boolean throws -
-METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable#isArray(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable#isArrayPermanent(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable#isArrayUnavailable(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable#isPermanentAvailability(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable#loadWiredData(java.sql.ResultSet,com.eu.habbo.habbohotel.rooms.Room):void throws java.sql.SQLException
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable#onPickUp(-):void throws -
@@ -3340,9 +3340,9 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraR
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRoomVariable#getWiredData(-):java.lang.String throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRoomVariable#hasConfiguration(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRoomVariable#hasValue(-):boolean throws -
-METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRoomVariable#isArray(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRoomVariable#isArrayPermanent(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRoomVariable#isArrayShared(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRoomVariable#isArrayUnavailable(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRoomVariable#isPermanentAvailability(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRoomVariable#isSharedAvailability(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRoomVariable#loadWiredData(java.sql.ResultSet,com.eu.habbo.habbohotel.rooms.Room):void throws java.sql.SQLException
@@ -3519,9 +3519,9 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraU
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable#getWiredData(-):java.lang.String throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable#hasConfiguration(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable#hasValue(-):boolean throws -
-METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable#isArray(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable#isArrayPermanent(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable#isArrayShared(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable#isArrayUnavailable(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable#isPermanentAvailability(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable#isSharedAvailability(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable#loadWiredData(java.sql.ResultSet,com.eu.habbo.habbohotel.rooms.Room):void throws java.sql.SQLException
@@ -5186,10 +5186,20 @@ METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition#getNextF
 METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition#isShapeCompatible(com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition):boolean throws -
 METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition#removesFieldsComparedWith(com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition):boolean throws -
 
+TYPE public final com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionState extends java.lang.Object
+CONSTRUCTOR public com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionState(-) throws -
+METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionState#assign(com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition):void throws -
+METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionState#clear(-):void throws -
+METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionState#definition(-):com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition throws -
+METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionState#editorString(java.lang.String):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionState#isArray(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionState#isDeclared(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionState#isUnavailable(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionState#persisted(java.lang.String):com.eu.habbo.habbohotel.wired.arrays.WiredVariableDefinitionData throws -
+METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionState#restore(com.eu.habbo.habbohotel.wired.arrays.WiredVariableDefinitionData,org.slf4j.Logger,java.lang.String,int,int):void throws -
+
 TYPE public final com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport extends java.lang.Object
 METHOD public static com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport#collect(com.eu.habbo.habbohotel.rooms.Room):java.util.List<com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport$EditorDefinition> throws -
-METHOD public static com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport#editorString(java.lang.String,com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition):java.lang.String throws -
-METHOD public static com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport#editorString(java.lang.String,com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition,com.eu.habbo.habbohotel.wired.arrays.WiredVariableDefinitionData):java.lang.String throws -
 METHOD public static com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport#parseArrayDefinition(com.eu.habbo.habbohotel.wired.arrays.WiredVariableDefinitionData):com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition throws -
 METHOD public static com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport#parseArrayDefinition(com.eu.habbo.habbohotel.wired.arrays.WiredVariableDefinitionData,com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition):com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition throws -
 METHOD public static com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport#parseStoredArrayDefinition(com.eu.habbo.habbohotel.wired.arrays.WiredVariableDefinitionData):com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition throws -
@@ -5223,6 +5233,8 @@ METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport$E
 METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport$EditorDefinition#variableType(-):int throws -
 
 TYPE public final com.eu.habbo.habbohotel.wired.arrays.WiredArrayEditorSupport extends java.lang.Object
+METHOD public static com.eu.habbo.habbohotel.wired.arrays.WiredArrayEditorSupport#isAddressableCell(com.eu.habbo.habbohotel.wired.arrays.WiredArrayAddress,com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition):boolean throws -
+METHOD public static com.eu.habbo.habbohotel.wired.arrays.WiredArrayEditorSupport#isAddressableIndex(com.eu.habbo.habbohotel.wired.arrays.WiredArrayAddress,com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition):boolean throws -
 METHOD public static com.eu.habbo.habbohotel.wired.arrays.WiredArrayEditorSupport#isValidAddress(com.eu.habbo.habbohotel.wired.arrays.WiredArrayAddress,com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition,com.eu.habbo.habbohotel.rooms.Room):boolean throws -
 METHOD public static com.eu.habbo.habbohotel.wired.arrays.WiredArrayEditorSupport#isValidReference(com.eu.habbo.habbohotel.wired.arrays.WiredArrayReference,com.eu.habbo.habbohotel.rooms.Room):boolean throws -
 METHOD public static com.eu.habbo.habbohotel.wired.arrays.WiredArrayEditorSupport#isValidScalarReference(int,int,java.lang.String,com.eu.habbo.habbohotel.rooms.Room):boolean throws -
@@ -5255,8 +5267,10 @@ METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayEditorSupport$Resol
 METHOD public final com.eu.habbo.habbohotel.wired.arrays.WiredArrayEditorSupport$ResolvedCriterion#toString(-):java.lang.String throws -
 
 TYPE public final com.eu.habbo.habbohotel.wired.arrays.WiredArrayEntry extends java.lang.Object
+METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayEntry#equals(java.lang.Object):boolean throws -
 METHOD public static com.eu.habbo.habbohotel.wired.arrays.WiredArrayEntry#fromValues(com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition,java.util.Map<java.lang.Integer, java.lang.Long>):com.eu.habbo.habbohotel.wired.arrays.WiredArrayEntry throws -
 METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayEntry#getValue(int):long throws -
+METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayEntry#hashCode(-):int throws -
 METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayEntry#valuesByFieldId(-):java.util.Map<java.lang.Integer, java.lang.Long> throws -
 
 TYPE public final com.eu.habbo.habbohotel.wired.arrays.WiredArrayFieldDefinition extends java.lang.Object
@@ -5533,9 +5547,11 @@ METHOD public abstract com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDe
 METHOD public abstract com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition#getVariableName(-):java.lang.String throws -
 METHOD public abstract com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition#hasValue(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition#isArray(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition#isArrayDeclared(-):boolean throws -
 METHOD public abstract com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition#isArrayPermanent(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition#isArrayShared(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition#isArraySourceValid(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition#isArrayUnavailable(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition#isArrayWritable(-):boolean throws -
 
 TYPE public final com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType extends java.lang.Enum<com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType>

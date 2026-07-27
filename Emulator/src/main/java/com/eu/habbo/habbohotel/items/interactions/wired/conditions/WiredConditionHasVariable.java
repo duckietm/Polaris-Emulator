@@ -11,6 +11,7 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayAddress;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayEditorSupport;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayRuntimeSupport;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType;
@@ -124,7 +125,7 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
         WiredArrayVariableDefinition arrayDefinition = this.resolveArrayDefinition(room);
         if (arrayDefinition != null
                 && this.arrayExistenceMode == ARRAY_ENTRY_EXISTS
-                && !isValidAddress(arrayDefinition, this.arrayAddress)) return false;
+                && !WiredArrayEditorSupport.isAddressableIndex(this.arrayAddress, arrayDefinition)) return false;
 
         this.selectedItems.clear();
 
@@ -490,16 +491,6 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
         } catch (RuntimeException ignored) {
             return new ArrayData();
         }
-    }
-
-    private static boolean isValidAddress(WiredArrayVariableDefinition definition, WiredArrayAddress address) {
-        return definition != null
-                && address != null
-                && (address.mode == WiredArrayAddress.CONSTANT || address.mode == WiredArrayAddress.VARIABLE)
-                && (address.mode != WiredArrayAddress.CONSTANT
-                        || (address.value >= 0
-                                && address.value
-                                        < definition.getArrayDefinition().getMaxEntries()));
     }
 
     protected boolean hasRoomEntryMethod(Habbo habbo) {

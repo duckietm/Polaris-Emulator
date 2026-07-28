@@ -37,6 +37,11 @@ jobs:
           java-version: "25"
           cache: maven
 
+      # Keep this test independent of suite order: CatalogManager must be
+      # mockable before any other test has installed global configuration.
+      - name: Verify lifecycle test isolation
+        run: ./mvnw -B -Dtest=GameEnvironmentDisposalTest test
+
       # `verify` runs the unit tests (Surefire) and the *IT integration tests
       # (Failsafe), which build the schema by running the real timestamped migrations
       # against a Testcontainers MariaDB. A broken migration fails the build.

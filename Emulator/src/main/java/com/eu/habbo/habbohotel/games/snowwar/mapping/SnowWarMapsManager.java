@@ -155,12 +155,18 @@ public final class SnowWarMapsManager {
                 int rotation = Integer.parseInt(parts[3]);
 
                 if (parts.length >= 6) {
-                    // Editor-saved hotel furniture carries explicit heights and,
-                    // for room-ad furni, a trailing image URL (7th token) plus an
-                    // optional vertical offset for the backdrop (8th token).
-                    String imageUrl = parts.length >= 7 ? parts[6] : "";
-                    int offsetZ = parts.length >= 8 ? parseIntSafe(parts[7]) : 0;
-                    items.add(new SnowWarItem(
+                    // Tokens: name x y rot walkableHeight collisionHeight
+                    //   [imageUrl offsetZ] [state]
+                    // A room-ad furni carries a non-numeric image URL at token 7;
+                    // a normal furni carries only the (numeric) multistate index
+                    // there, if any. This keeps older 6/8-token saves valid.
+                    boolean hasImage = parts.length >= 7 && !isInteger(parts[6]);
+                    String imageUrl = hasImage ? parts[6] : "";
+                    int offsetZ = (hasImage && parts.length >= 8) ? parseIntSafe(parts[7]) : 0;
+                    int state = hasImage
+                            ? (parts.length >= 9 ? parseIntSafe(parts[8]) : 0)
+                            : (parts.length >= 7 ? parseIntSafe(parts[6]) : 0);
+                    SnowWarItem item = new SnowWarItem(
                             name,
                             x,
                             y,
@@ -168,7 +174,9 @@ public final class SnowWarMapsManager {
                             Integer.parseInt(parts[4]),
                             Integer.parseInt(parts[5]),
                             imageUrl,
-                            offsetZ));
+                            offsetZ);
+                    item.setState(state);
+                    items.add(item);
                 } else if (SnowWarItemProperties.isKnownItem(name)) {
                     items.add(new SnowWarItem(name, x, y, rotation));
                 } else {
@@ -247,6 +255,9 @@ public final class SnowWarMapsManager {
                     // A furni taller than 0.4 (stack height) stops a straight/lob
                     // snowball; flat props (rugs, low pits) let it fly over.
                     item.setBlocksSnowball(base.getHeight() > SNOWBALL_BLOCK_HEIGHT);
+                    // interaction_modes_count from items_base so the editor caps
+                    // the state stepper at the furni's real number of states.
+                    item.setStateCount(base.getStateCount());
                 }
                 LOGGER.info(
                         "SnowWar item '{}' at ({},{}) rot {} -> size {}x{} (base found: {}, walkableHeight {})",
@@ -346,6 +357,19 @@ public final class SnowWarMapsManager {
         } catch (NumberFormatException e) {
             return 0;
         }
+    }
+
+    private static boolean isInteger(String value) {
+        if (value == null || value.isEmpty()) {
+            return false;
+        }
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (!Character.isDigit(c) && !(i == 0 && c == '-')) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static void addMachine(List<SnowWarItem> items, List<SnowWarPoint> machinePositions, int x, int y) {

@@ -68,6 +68,12 @@ public class SnowStormLevelDataComposer extends MessageComposer {
             // tile, so a 3x3 prop no longer draws over adjacent avatars.
             this.response.appendInt(item.getWidth());
             this.response.appendInt(item.getLength());
+            // Multistate furni state index (0 = single-state) so the client draws
+            // the furni in the state chosen in the editor.
+            this.response.appendInt(item.getState());
+            // Number of interaction states (items_base.interaction_modes_count) so
+            // the editor caps the state stepper at the furni's real range.
+            this.response.appendInt(item.getStateCount());
         }
 
         List<SnowWarMachineObject> machines = this.game.getMachines();

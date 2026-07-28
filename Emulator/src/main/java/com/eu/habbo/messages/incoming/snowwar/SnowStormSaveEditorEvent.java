@@ -60,6 +60,7 @@ public class SnowStormSaveEditorEvent extends MessageHandler {
             int rotation = this.packet.readInt();
             String imageUrl = this.packet.readString();
             int offsetZ = this.packet.readInt();
+            int state = Math.max(0, this.packet.readInt());
 
             if (name == null || name.trim().isEmpty()) {
                 continue;
@@ -105,6 +106,10 @@ public class SnowStormSaveEditorEvent extends MessageHandler {
                     boolean walkable = base.allowWalk() || base.allowSit();
                     walkableHeight = walkable ? 0 : 3;
                     collisionHeight = Math.max(1150, (int) Math.round(base.getHeight() * 2300));
+                    // Clamp the saved state to the furni's real state range
+                    // (items_base.interaction_modes_count) so a tampered client
+                    // can't persist a state past the last one.
+                    state = Math.min(state, Math.max(0, base.getStateCount() - 1));
                 } else {
                     // Truly unknown classname: treat as a solid tree-sized obstacle.
                     walkableHeight = 3;
@@ -128,6 +133,11 @@ public class SnowStormSaveEditorEvent extends MessageHandler {
                 builder.append(' ').append(imageUrl.trim()).append(' ').append(offsetZ);
                 adImages++;
             }
+
+            // Multistate index is the last token: "... [imageUrl offsetZ] state".
+            // A room-ad line therefore keeps its non-numeric URL at token 7, so
+            // the loader can tell an ad apart from a normal furni's state token.
+            builder.append(' ').append(state);
 
             builder.append("\r\n");
         }

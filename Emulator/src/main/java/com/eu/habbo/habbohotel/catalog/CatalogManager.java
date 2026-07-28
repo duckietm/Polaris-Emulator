@@ -110,6 +110,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,7 +122,7 @@ public class CatalogManager {
     public record GiftWrappingSnapshot(Map<Integer, Integer> wrappers, Map<Integer, Integer> furniture) {}
 
     public static final Map<String, Class<? extends CatalogPage>> pageDefinitions =
-            new HashMap<String, Class<? extends CatalogPage>>(CatalogPageLayouts.values().length) {
+            new ConcurrentHashMap<String, Class<? extends CatalogPage>>(CatalogPageLayouts.values().length) {
                 {
                     for (CatalogPageLayouts layout : CatalogPageLayouts.values()) {
                         switch (layout) {
@@ -156,23 +157,12 @@ public class CatalogManager {
                                 this.put(layout.name().toLowerCase(), RoomAdsLayout.class);
                                 break;
                             case recycler:
-                                if (Emulator.getConfig().getBoolean("hotel.ecotron.enabled"))
-                                    this.put(layout.name().toLowerCase(), RecyclerLayout.class);
-                                break;
                             case recycler_info:
-                                if (Emulator.getConfig().getBoolean("hotel.ecotron.enabled"))
-                                    this.put(layout.name().toLowerCase(), RecyclerInfoLayout.class);
                             case recycler_prizes:
-                                if (Emulator.getConfig().getBoolean("hotel.ecotron.enabled"))
-                                    this.put(layout.name().toLowerCase(), RecyclerPrizesLayout.class);
-                                break;
                             case marketplace:
-                                if (Emulator.getConfig().getBoolean("hotel.marketplace.enabled"))
-                                    this.put(layout.name().toLowerCase(), MarketplaceLayout.class);
-                                break;
                             case marketplace_own_items:
-                                if (Emulator.getConfig().getBoolean("hotel.marketplace.enabled"))
-                                    this.put(layout.name().toLowerCase(), MarketplaceOwnItems.class);
+                                // Configuration is not available during class loading. Optional
+                                // layouts are registered when the catalog is initialized.
                                 break;
                             case info_duckets:
                                 this.put(layout.name().toLowerCase(), InfoDucketsLayout.class);
@@ -257,6 +247,28 @@ public class CatalogManager {
                     }
                 }
             };
+
+    private static void configureOptionalPageDefinitions() {
+        boolean ecotronEnabled = Emulator.getConfig().getBoolean("hotel.ecotron.enabled");
+        configurePageDefinition(CatalogPageLayouts.recycler, RecyclerLayout.class, ecotronEnabled);
+        configurePageDefinition(CatalogPageLayouts.recycler_info, RecyclerInfoLayout.class, ecotronEnabled);
+        configurePageDefinition(CatalogPageLayouts.recycler_prizes, RecyclerPrizesLayout.class, ecotronEnabled);
+
+        boolean marketplaceEnabled = Emulator.getConfig().getBoolean("hotel.marketplace.enabled");
+        configurePageDefinition(CatalogPageLayouts.marketplace, MarketplaceLayout.class, marketplaceEnabled);
+        configurePageDefinition(
+                CatalogPageLayouts.marketplace_own_items, MarketplaceOwnItems.class, marketplaceEnabled);
+    }
+
+    private static void configurePageDefinition(
+            CatalogPageLayouts layout, Class<? extends CatalogPage> pageClass, boolean enabled) {
+        if (enabled) {
+            pageDefinitions.put(layout.name().toLowerCase(), pageClass);
+        } else {
+            pageDefinitions.remove(layout.name().toLowerCase());
+        }
+    }
+
     public static int catalogItemAmount;
     public static volatile int PURCHASE_COOLDOWN = 1;
     public static volatile boolean SORT_USING_ORDERNUM = false;
@@ -310,6 +322,7 @@ public class CatalogManager {
     }
 
     public synchronized void initialize() {
+        configureOptionalPageDefinitions();
         Emulator.getPluginManager().fireEvent(new EmulatorLoadCatalogManagerEvent());
 
         this.loadLimitedNumbers();

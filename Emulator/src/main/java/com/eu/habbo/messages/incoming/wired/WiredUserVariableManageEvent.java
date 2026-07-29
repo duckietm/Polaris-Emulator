@@ -3,6 +3,12 @@ package com.eu.habbo.messages.incoming.wired;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayChange;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType;
+import com.eu.habbo.habbohotel.wired.core.WiredEvent;
+import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.incoming.MessageHandler;
 
 public class WiredUserVariableManageEvent extends MessageHandler {
@@ -33,6 +39,11 @@ public class WiredUserVariableManageEvent extends MessageHandler {
         int targetId = this.packet.readInt();
         int definitionItemId = this.packet.readInt();
         int value = this.packet.readInt();
+
+        if (handleArray(room, action, targetType, targetId, definitionItemId)) {
+            room.getRoomVariableManager().sendSnapshot(this.client.getHabbo());
+            return;
+        }
 
         switch (targetType) {
             case com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveVariable.TARGET_FURNI:
@@ -65,6 +76,49 @@ public class WiredUserVariableManageEvent extends MessageHandler {
         }
 
         room.getRoomVariableManager().sendSnapshot(this.client.getHabbo());
+    }
+
+    private boolean handleArray(Room room, int action, int targetType, int targetId, int definitionItemId) {
+        int arrayType = WiredArrayVariableType.USER.code();
+        if (targetType
+                == com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveVariable.TARGET_FURNI) {
+            arrayType = WiredArrayVariableType.FURNI.code();
+        } else if (targetType == TARGET_ROOM) {
+            arrayType = WiredArrayVariableType.ROOM.code();
+        }
+        WiredArrayVariableDefinition definition =
+                WiredArrayDefinitionSupport.resolve(room, arrayType, definitionItemId);
+        if (definition == null || !definition.isArray()) return false;
+
+        int ownerId;
+        Habbo habbo = null;
+        HabboItem item = null;
+        if (definition.getArrayVariableType() == WiredArrayVariableType.ROOM) {
+            ownerId = definition.getArrayStorageRoomId(room.getId());
+        } else if (definition.getArrayVariableType() == WiredArrayVariableType.FURNI) {
+            item = room.getHabboItem(targetId);
+            if (item == null) return true;
+            ownerId = item.getId();
+        } else {
+            habbo = room.getHabbo(targetId);
+            if (habbo == null || habbo.getHabboInfo() == null) return true;
+            ownerId = habbo.getHabboInfo().getId();
+        }
+
+        boolean changed = action == ACTION_REMOVE
+                ? room.getArrayVariableManager().remove(definition, ownerId)
+                : room.getArrayVariableManager().give(definition, ownerId, true).changed();
+        if (!changed) return true;
+
+        WiredEvent.Builder event = WiredEvent.builder(WiredEvent.Type.VARIABLE_CHANGED, room)
+                .actor(habbo == null ? null : habbo.getRoomUnit())
+                .sourceItem(item)
+                .variableTargetType(targetType)
+                .variableDefinitionItemId(definition.getId());
+        if (action == ACTION_REMOVE) event.variableDeleted(true);
+        else event.arrayChange(WiredArrayChange.created()).variableCreated(true);
+        WiredManager.handleEvent(event.build());
+        return true;
     }
 
     @Override

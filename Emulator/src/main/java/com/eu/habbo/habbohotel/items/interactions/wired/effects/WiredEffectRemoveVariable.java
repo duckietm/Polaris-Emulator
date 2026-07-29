@@ -12,6 +12,10 @@ import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayRuntimeSupport;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
@@ -57,6 +61,12 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect {
             return;
         }
 
+        WiredArrayVariableDefinition arrayDefinition = this.getArrayDefinition(room);
+        if (arrayDefinition != null && arrayDefinition.isArray()) {
+            this.removeArray(ctx, room, arrayDefinition);
+            return;
+        }
+
         switch (this.targetType) {
             case TARGET_USER:
                 this.executeUserVariables(ctx, room);
@@ -94,6 +104,31 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect {
 
             room.getUserVariableManager().removeVariable(habbo.getHabboInfo().getId(), this.variableItemId);
         }
+    }
+
+    private void removeArray(WiredContext ctx, Room room, WiredArrayVariableDefinition definition) {
+        List<WiredArrayRuntimeSupport.Owner> owners = WiredArrayRuntimeSupport.resolveOwners(
+                ctx,
+                this.selectedFurni,
+                definition,
+                this.targetType == TARGET_FURNI ? this.furniSource : this.userSource);
+        for (WiredArrayRuntimeSupport.Owner owner : owners) {
+            if (definition.getArrayVariableType() == WiredArrayVariableType.CONTEXT) {
+                ctx.contextVariables().removeArray(definition.getId());
+            } else {
+                room.getArrayVariableManager().remove(definition, owner.id());
+            }
+        }
+    }
+
+    private WiredArrayVariableDefinition getArrayDefinition(Room room) {
+        int variableType =
+                switch (this.targetType) {
+                    case TARGET_FURNI -> WiredArrayVariableType.FURNI.code();
+                    case TARGET_CONTEXT -> WiredArrayVariableType.CONTEXT.code();
+                    default -> WiredArrayVariableType.USER.code();
+                };
+        return WiredArrayDefinitionSupport.resolve(room, variableType, this.variableItemId);
     }
 
     private void executeFurniVariables(WiredContext ctx, Room room) {

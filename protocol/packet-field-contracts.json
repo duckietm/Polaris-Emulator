@@ -7984,6 +7984,105 @@
       ]
     },
     {
+      "name": "WIRED_ARRAY_INSPECTION_REQUEST",
+      "direction": "client_to_server",
+      "header": 10034,
+      "java": {
+        "symbol": "WiredArrayInspectionRequestEvent",
+        "className": "WiredArrayInspectionRequestEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredArrayInspectionRequestEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_ARRAY_INSPECTION_REQUEST",
+        "className": "WiredArrayInspectionRequestComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredArrayInspectionRequestComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "variableType"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "requestedOwnerId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "definitionItemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "page"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "pageSize"
+        }
+      ]
+    },
+    {
+      "name": "WIRED_ARRAY_INSPECTION_UPDATE",
+      "direction": "client_to_server",
+      "header": 10035,
+      "java": {
+        "symbol": "WiredArrayInspectionUpdateEvent",
+        "className": "WiredArrayInspectionUpdateEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredArrayInspectionUpdateEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_ARRAY_INSPECTION_UPDATE",
+        "className": "WiredArrayInspectionUpdateComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredArrayInspectionUpdateComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "variableType"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "requestedOwnerId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "definitionItemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "index"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "fieldId"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "value"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "page"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "pageSize"
+        }
+      ]
+    },
+    {
       "name": "FURNI_EDITOR_SEARCH",
       "direction": "client_to_server",
       "header": 10040,
@@ -15414,6 +15513,28 @@
         {
           "kind": "scalar",
           "type": "boolean",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "WIRED_ARRAY_INSPECTION_DATA",
+      "direction": "server_to_client",
+      "header": 5111,
+      "java": {
+        "symbol": "WiredArrayInspectionDataComposer",
+        "className": "WiredArrayInspectionDataComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredArrayInspectionDataComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_ARRAY_INSPECTION_DATA",
+        "className": "WiredArrayInspectionDataParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredArrayInspectionDataParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
           "name": ""
         }
       ]

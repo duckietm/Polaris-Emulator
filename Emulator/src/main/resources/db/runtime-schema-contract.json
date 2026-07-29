@@ -112,6 +112,8 @@
     "room_trax_playlist": ["item_id", "room_id"],
     "room_user_wired_variables": ["created_at", "room_id", "updated_at", "user_id", "value", "variable_item_id"],
     "room_votes": ["room_id", "user_id"],
+    "room_wired_array_entries": ["entry_data", "entry_index", "owner_id", "owner_type", "room_id", "variable_item_id"],
+    "room_wired_array_values": ["created_at", "logical_length", "owner_id", "owner_type", "room_id", "updated_at", "variable_item_id", "version"],
     "room_wired_settings": ["inspect_mask", "modify_mask", "room_id"],
     "room_wired_variables": ["created_at", "room_id", "updated_at", "value", "variable_item_id"],
     "room_wordfilter": ["room_id", "word"],

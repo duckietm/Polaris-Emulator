@@ -75,6 +75,7 @@ final class RoomDisposer {
     }
 
     private void clearWiredCaches() {
+        this.room.getArrayVariableManager().clearCache();
         if (WiredManager.getStackIndex() != null) {
             WiredManager.getStackIndex().invalidateAll(this.room);
         }

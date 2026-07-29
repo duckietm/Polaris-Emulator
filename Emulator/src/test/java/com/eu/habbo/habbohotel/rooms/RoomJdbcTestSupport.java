@@ -182,6 +182,7 @@ final class RoomJdbcTestSupport {
             wasNull[0] = value == null;
             return switch (name) {
                 case "getInt" -> value == null ? 0 : ((Number) value).intValue();
+                case "getLong" -> value == null ? 0L : ((Number) value).longValue();
                 case "getShort" -> value == null ? (short) 0 : ((Number) value).shortValue();
                 case "getDouble" -> value == null ? 0D : ((Number) value).doubleValue();
                 case "getBoolean" ->

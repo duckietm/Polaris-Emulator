@@ -8,14 +8,21 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayFieldDefinition;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayFormat;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
@@ -25,7 +32,8 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
     private static final String PRESERVED_SPACE = "\u00A0";
 
     private String mappingsText = "";
-    private LinkedHashMap<Integer, String> mappings = new LinkedHashMap<>();
+    private int fieldId;
+    private LinkedHashMap<Long, String> longMappings = new LinkedHashMap<>();
 
     public WiredExtraVariableTextConnector(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -43,11 +51,14 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        String mappingsText = normalizeMappingsText(settings.getStringParam());
+        ConfigData config = parseConfigData(settings.getStringParam());
+        String mappingsText = normalizeMappingsText(config.mappingsText);
         validateMappingsText(mappingsText);
-        this.setMappingsText(mappingsText);
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
+        validateField(room, config.fieldId);
+        this.fieldId = Math.max(0, config.fieldId);
+        this.setMappingsText(mappingsText);
         if (room != null) {
             WiredContextVariableSupport.broadcastDefinitions(room);
         }
@@ -57,7 +68,10 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(this.mappingsText));
+        if (this.fieldId == 0) {
+            return WiredManager.getGson().toJson(new LegacyJsonData(this.mappingsText));
+        }
+        return WiredManager.getGson().toJson(new JsonData(this.mappingsText, this.fieldId));
     }
 
     @Override
@@ -67,7 +81,7 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.mappingsText);
+        message.appendString(buildEditorPayload(room));
         message.appendInt(0);
         message.appendInt(0);
         message.appendInt(CODE);
@@ -89,6 +103,7 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
 
             if (data != null) {
                 this.setMappingsText(data.mappingsText);
+                this.fieldId = Math.max(0, data.fieldId);
             }
 
             return;
@@ -100,7 +115,8 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
     @Override
     public void onPickUp() {
         this.mappingsText = "";
-        this.mappings = new LinkedHashMap<>();
+        this.fieldId = 0;
+        this.longMappings = new LinkedHashMap<>();
     }
 
     @Override
@@ -116,7 +132,30 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
     }
 
     public Map<Integer, String> getMappings() {
-        return Collections.unmodifiableMap(this.mappings);
+        LinkedHashMap<Integer, String> compatibleMappings = new LinkedHashMap<>();
+        this.longMappings.forEach((key, value) -> {
+            if (key >= Integer.MIN_VALUE && key <= Integer.MAX_VALUE) {
+                compatibleMappings.put(key.intValue(), value);
+            }
+        });
+        return Collections.unmodifiableMap(compatibleMappings);
+    }
+
+    public int getFieldId() {
+        return this.fieldId;
+    }
+
+    public boolean appliesToField(int requestedFieldId) {
+        return this.fieldId == Math.max(0, requestedFieldId);
+    }
+
+    public boolean appliesToField(WiredArrayVariableDefinition definition, int requestedFieldId) {
+        if (definition == null || !definition.isArray()) return this.appliesToField(requestedFieldId);
+        if (definition.getArrayDefinition().getFormat() == WiredArrayFormat.SIMPLE
+                && requestedFieldId == WiredArrayDefinition.SIMPLE_VALUE_FIELD_ID) {
+            return this.fieldId == 0 || this.fieldId == WiredArrayDefinition.SIMPLE_VALUE_FIELD_ID;
+        }
+        return this.appliesToField(requestedFieldId);
     }
 
     public String resolveText(Integer value) {
@@ -124,8 +163,12 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
             return "";
         }
 
-        if (this.mappings.containsKey(value)) {
-            String mappedValue = this.mappings.get(value);
+        return this.resolveText(value.longValue());
+    }
+
+    public String resolveText(long value) {
+        if (this.longMappings.containsKey(value)) {
+            String mappedValue = this.longMappings.get(value);
             return mappedValue != null ? preserveSpaces(mappedValue) : "";
         }
 
@@ -137,9 +180,15 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
             return null;
         }
 
+        Long value = this.resolveLongValue(text);
+        return value != null && value >= Integer.MIN_VALUE && value <= Integer.MAX_VALUE ? value.intValue() : null;
+    }
+
+    public Long resolveLongValue(String text) {
+        if (text == null) return null;
         String normalizedText = normalizePreservedSpaces(text);
 
-        for (Map.Entry<Integer, String> entry : this.mappings.entrySet()) {
+        for (Map.Entry<Long, String> entry : this.longMappings.entrySet()) {
             if (entry == null || entry.getKey() == null || entry.getValue() == null) {
                 continue;
             }
@@ -156,7 +205,7 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
 
     private void setMappingsText(String value) {
         this.mappingsText = normalizeMappingsText(value);
-        this.mappings = parseMappings(this.mappingsText);
+        this.longMappings = parseMappings(this.mappingsText);
     }
 
     private static String normalizeMappingsText(String value) {
@@ -188,8 +237,8 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
         }
     }
 
-    private static LinkedHashMap<Integer, String> parseMappings(String value) {
-        LinkedHashMap<Integer, String> result = new LinkedHashMap<>();
+    private static LinkedHashMap<Long, String> parseMappings(String value) {
+        LinkedHashMap<Long, String> result = new LinkedHashMap<>();
         if (value == null || value.isEmpty()) {
             return result;
         }
@@ -217,7 +266,7 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
             String valuePart = line.substring(separatorIndex + 1);
 
             try {
-                result.put(Integer.parseInt(keyPart), valuePart);
+                result.put(Long.parseLong(keyPart), valuePart);
             } catch (NumberFormatException ignored) {
                 WiredCompatibilityDiagnostics.record(
                         WiredCompatibilityDiagnostics.FailurePoint.EXTRA_TEXT_CONNECTOR_INDEX, ignored);
@@ -235,11 +284,85 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
         return value.replace(PRESERVED_SPACE, " ");
     }
 
-    static class JsonData {
+    private String buildEditorPayload(Room room) {
+        List<FieldOption> fields = new ArrayList<>();
+        if (room != null && room.getRoomSpecialTypes() != null) {
+            for (InteractionWiredExtra extra : room.getRoomSpecialTypes().getExtras(this.getX(), this.getY())) {
+                if (!(extra instanceof WiredArrayVariableDefinition definition) || !definition.isArray()) continue;
+                for (WiredArrayFieldDefinition field :
+                        definition.getArrayDefinition().getFields()) {
+                    if (fields.stream().noneMatch(option -> option.id == field.getId())) {
+                        fields.add(new FieldOption(field.getId(), field.getName()));
+                    }
+                }
+            }
+        }
+        fields.sort(Comparator.comparingInt(option -> option.id));
+        return WiredManager.getGson().toJson(new EditorPayload(this.mappingsText, this.fieldId, fields));
+    }
+
+    private static ConfigData parseConfigData(String value) {
+        if (value == null || !value.trim().startsWith("{")) return new ConfigData(value, 0);
+        ConfigData data = WiredExtraPayloadGuard.fromJson(value, ConfigData.class);
+        return data == null ? new ConfigData("", 0) : data;
+    }
+
+    private void validateField(Room room, int requestedFieldId) throws WiredSaveException {
+        if (requestedFieldId < 0) throw new WiredSaveException("Array connector field is invalid.");
+        if (requestedFieldId == 0) return;
+        if (room == null || room.getRoomSpecialTypes() == null) {
+            throw new WiredSaveException("Array connector field is unavailable.");
+        }
+        for (InteractionWiredExtra extra : room.getRoomSpecialTypes().getExtras(this.getX(), this.getY())) {
+            if (extra instanceof WiredArrayVariableDefinition definition
+                    && definition.isArray()
+                    && definition.getArrayDefinition().getField(requestedFieldId) != null) return;
+        }
+        throw new WiredSaveException("Array connector field is not present on this stack.");
+    }
+
+    static class ConfigData {
+        String mappingsText;
+        int fieldId;
+
+        ConfigData() {}
+
+        ConfigData(String mappingsText, int fieldId) {
+            this.mappingsText = mappingsText;
+            this.fieldId = fieldId;
+        }
+    }
+
+    static class JsonData extends ConfigData {
+        JsonData(String mappingsText, int fieldId) {
+            super(mappingsText, fieldId);
+        }
+    }
+
+    static final class LegacyJsonData {
         String mappingsText;
 
-        JsonData(String mappingsText) {
+        LegacyJsonData(String mappingsText) {
             this.mappingsText = mappingsText;
+        }
+    }
+
+    static final class EditorPayload extends ConfigData {
+        List<FieldOption> fields;
+
+        EditorPayload(String mappingsText, int fieldId, List<FieldOption> fields) {
+            super(mappingsText, fieldId);
+            this.fields = fields;
+        }
+    }
+
+    static final class FieldOption {
+        int id;
+        String name;
+
+        FieldOption(int id, String name) {
+            this.id = id;
+            this.name = name;
         }
     }
 }

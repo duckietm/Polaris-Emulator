@@ -35,7 +35,16 @@ class WiredStackExecutorTest {
 
         assertTrue(executor.executeEvent(stack, event(room), 1_000L, false));
         assertEquals(
-                List.of("trigger", "selectors", "filters", "targets", "condition", "finalize:1000", "effect"), calls);
+                List.of(
+                        "trigger",
+                        "selectors",
+                        "filters",
+                        "targets",
+                        "arrayCapture",
+                        "condition",
+                        "finalize:1000",
+                        "effect"),
+                calls);
     }
 
     @Test
@@ -47,7 +56,7 @@ class WiredStackExecutorTest {
         WiredStackExecutor executor = executor(calls, 2_345L);
 
         assertTrue(executor.executeDirect(stack, event(room), false));
-        assertEquals(List.of("selectors", "filters", "targets", "finalize:2345", "effect"), calls);
+        assertEquals(List.of("selectors", "filters", "targets", "arrayCapture", "finalize:2345", "effect"), calls);
     }
 
     @Test
@@ -106,6 +115,11 @@ class WiredStackExecutorTest {
                     List<InteractionWiredEffect> executedSelectors, WiredContext context) {
                 calls.add("targets");
                 return true;
+            }
+
+            @Override
+            public void captureArrayEntries(Room room, WiredStack stack, WiredContext context) {
+                calls.add("arrayCapture");
             }
 
             @Override

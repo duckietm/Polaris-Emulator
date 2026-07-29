@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraArrayCaptureVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraExecutionLimit;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRandom;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUnseen;
@@ -24,6 +25,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -187,6 +189,11 @@ public final class WiredEngine {
                     }
 
                     @Override
+                    public void captureArrayEntries(Room room, WiredStack stack, WiredContext context) {
+                        WiredEngine.this.captureArrayEntries(room, stack, context);
+                    }
+
+                    @Override
                     public void finalizeSelectors(
                             List<InteractionWiredEffect> executedSelectors, WiredContext context, long currentTime) {
                         WiredEngine.this.finalizeSelectors(executedSelectors, context, currentTime);
@@ -269,6 +276,7 @@ public final class WiredEngine {
             return false;
         }
 
+        captureArrayEntries(room, stack, ctx);
         boolean conditionsPassedForExecution =
                 this.conditionEvaluator.outcomeForExecution(stack, ctx, negateConditions);
         List<IWiredEffect> executableEffects =
@@ -308,6 +316,7 @@ public final class WiredEngine {
             return false;
         }
 
+        captureArrayEntries(room, stack, ctx);
         boolean conditionsPassedForExecution = this.conditionEvaluator.outcomeForExecution(stack, ctx, false);
         if (!conditionsPassedForExecution) {
             return false;
@@ -826,6 +835,57 @@ public final class WiredEngine {
 
         String message = String.format(format.replace("{}", "%s"), args);
         LOGGER.debug("[WiredEngine][Room {}] {}", room.getId(), message);
+    }
+
+    /** Publishes array captures before conditions so every consumer observes one immutable run scope. */
+    private void captureArrayEntries(Room room, WiredStack stack, WiredContext ctx) {
+        if (room == null
+                || stack == null
+                || stack.triggerItem() == null
+                || room.getRoomSpecialTypes() == null
+                || ctx == null) {
+            return;
+        }
+
+        List<WiredExtraArrayCaptureVariable> capturers = new ArrayList<>();
+        for (InteractionWiredExtra extra : WiredExecutionOrderUtil.sort(room.getRoomSpecialTypes()
+                .getExtras(stack.triggerItem().getX(), stack.triggerItem().getY()))) {
+            if (extra instanceof WiredExtraArrayCaptureVariable capturer) {
+                capturers.add(capturer);
+            }
+        }
+        if (capturers.isEmpty()) {
+            return;
+        }
+
+        Map<String, Integer> aliasCounts = new HashMap<>();
+        for (WiredExtraArrayCaptureVariable capturer : capturers) {
+            String alias = capturer.getCaptureAlias(room);
+            if (alias != null && !alias.isBlank()) {
+                aliasCounts.merge(alias.toLowerCase(Locale.ROOT), 1, Integer::sum);
+            }
+        }
+
+        for (WiredExtraArrayCaptureVariable capturer : capturers) {
+            String alias = capturer.getCaptureAlias(room);
+            if (alias == null || alias.isBlank()) {
+                continue;
+            }
+            ctx.state().step();
+            if (aliasCounts.getOrDefault(alias.toLowerCase(Locale.ROOT), 0) > 1) {
+                capturer.publishMissing(ctx);
+                debug(room, "Skipped duplicate array capture alias {}", alias);
+                continue;
+            }
+            try {
+                capturer.capture(ctx);
+            } catch (WiredLimitException exception) {
+                throw exception;
+            } catch (RuntimeException exception) {
+                capturer.publishMissing(ctx);
+                LOGGER.warn("Error capturing array entry for item {}", capturer.getId(), exception);
+            }
+        }
     }
 
     private WiredExtraRandom getRandomExtra(Room room, WiredStack stack) {

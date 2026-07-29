@@ -83,7 +83,8 @@ public enum WiredEffectType {
     PLAY_YOUTUBE(92),
     QUICK_BOPPER(93),
     SET_ROOM_AD(94),
-    CHANGE_OPACITY(114);
+    CHANGE_OPACITY(114),
+    MODIFY_ARRAY(115);
 
     public final int code;
 

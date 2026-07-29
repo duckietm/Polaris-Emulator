@@ -4,6 +4,8 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredInputGuard;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredLargePayload;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
@@ -26,11 +28,17 @@ public class WiredEffectSaveDataEvent extends MessageHandler {
 
                 try {
                     if (effect == null && extra == null)
-                        throw new WiredSaveException(String.format("Wired effect/extra with item id %s not found in room", itemId));
+                        throw new WiredSaveException(
+                                String.format("Wired effect/extra with item id %s not found in room", itemId));
 
                     WiredSettings settings;
                     try {
-                        settings = InteractionWired.readSettings(this.packet, true);
+                        int maximumStringLength =
+                                effect instanceof WiredLargePayload || extra instanceof WiredLargePayload
+                                        ? WiredLargePayload.MAX_STRING_PARAM_LENGTH
+                                        : WiredInputGuard.MAX_STRING_PARAM_LENGTH;
+                        settings = InteractionWired.readSettings(this.packet, true, maximumStringLength);
+                        settings.setRoom(room);
                     } catch (IllegalArgumentException e) {
                         this.client.sendResponse(new UpdateFailedComposer("Invalid wired effect settings"));
                         return;
@@ -50,7 +58,9 @@ public class WiredEffectSaveDataEvent extends MessageHandler {
                                 if (effect.usesExistingSelectorTargets()) {
                                     effect.setExtradata("3");
                                     room.sendComposer(new ItemStateComposer(effect).compose());
-                                } else if ("3".equals(effect.getExtradata()) || "4".equals(effect.getExtradata()) || "5".equals(effect.getExtradata())) {
+                                } else if ("3".equals(effect.getExtradata())
+                                        || "4".equals(effect.getExtradata())
+                                        || "5".equals(effect.getExtradata())) {
                                     effect.setExtradata("0");
                                     room.sendComposer(new ItemStateComposer(effect).compose());
                                 }
@@ -66,10 +76,10 @@ public class WiredEffectSaveDataEvent extends MessageHandler {
                         // Invalidate wired cache when effect is saved
                         WiredManager.invalidateRoom(room);
                     } else {
-                        this.client.sendResponse(new UpdateFailedComposer("There was an error while saving that effect"));
+                        this.client.sendResponse(
+                                new UpdateFailedComposer("There was an error while saving that effect"));
                     }
-                }
-                catch (WiredSaveException e) {
+                } catch (WiredSaveException e) {
                     this.client.sendResponse(new UpdateFailedComposer(e.getMessage()));
                 }
             }

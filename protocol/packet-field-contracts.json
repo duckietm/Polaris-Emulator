@@ -15077,43 +15077,6 @@
       ]
     },
     {
-      "name": "SNOWWAR_GAMES_INFORMATION",
-      "direction": "server_to_client",
-      "header": 5012,
-      "java": {
-        "symbol": "SnowStormGamesInformationComposer",
-        "className": "SnowStormGamesInformationComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormGamesInformationComposer.java"
-      },
-      "typescript": {
-        "symbol": "SNOWWAR_GAMES_INFORMATION",
-        "className": "SnowWarGamesInformationParser",
-        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarGamesInformationParser.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "boolean",
-          "name": ""
-        }
-      ]
-    },
-    {
       "name": "SNOWWAR_ON_STAGE_START",
       "direction": "server_to_client",
       "header": 5017,
@@ -18797,6 +18760,22 @@
         "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarLobbyTeamsParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in ForStmt inside composeInternal (per-player roster loop)"
+    },
+    {
+      "name": "SNOWWAR_GAMES_INFORMATION",
+      "direction": "server_to_client",
+      "header": 5012,
+      "java": {
+        "symbol": "SnowStormGamesInformationComposer",
+        "className": "SnowStormGamesInformationComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormGamesInformationComposer.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_GAMES_INFORMATION",
+        "className": "SnowWarGamesInformationParser",
+        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarGamesInformationParser.ts"
+      },
+      "reason": "Java composer appends the trailing min-players int and can-edit boolean unconditionally; TypeScript parser reads them as an optional bytesAvailable-gated tail for older servers"
     },
     {
       "name": "SNOWWAR_SAVE_EDITOR",

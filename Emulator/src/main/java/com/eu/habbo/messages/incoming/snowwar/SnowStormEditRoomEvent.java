@@ -1,18 +1,16 @@
 package com.eu.habbo.messages.incoming.snowwar;
 
-import com.eu.habbo.habbohotel.games.snowwar.SnowWarGame;
 import com.eu.habbo.habbohotel.games.snowwar.SnowWarManager;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 
 /**
- * Header 6010: a permitted user (acc_snowwar_edit, rank 7 by default) opens
- * the in-game arena editor. There is no separate editor room any more - the
- * client edits the arena WYSIWYG in the SnowWar view itself and publishes the
- * layout with the save-editor packet (6011). All the server does here is take
- * the player out of the running game/queue so nothing keeps ticking behind the
- * editor; the client keeps the level snapshot it already has and switches to
- * edit mode locally.
+ * Header 6010: a permitted user (acc_snowwar_edit, rank 7 by default) opens the
+ * in-game arena editor - either from a running game or straight from the queue.
+ * The manager takes the player out of any game/queue, freezes matchmaking and
+ * ends every running game (nothing may tick behind the editor), then sends the
+ * editor the current arena map to edit. The client switches to edit mode and
+ * publishes changes with the save-editor packet (6011).
  */
 public class SnowStormEditRoomEvent extends MessageHandler {
     @Override
@@ -22,11 +20,6 @@ public class SnowStormEditRoomEvent extends MessageHandler {
             return;
         }
 
-        int userId = habbo.getHabboInfo().getId();
-        SnowWarGame game = SnowWarManager.getInstance().getGameByUserId(userId);
-        if (game != null) {
-            game.exitGame(userId);
-        }
-        SnowWarManager.getInstance().leaveQueue(habbo);
+        SnowWarManager.getInstance().enterEditor(habbo);
     }
 }

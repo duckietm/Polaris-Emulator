@@ -543,6 +543,7 @@ public class Outgoing {
     public static final int SnowStormUnusedAlertGenericComposer = 5004;
     public static final int SnowStormLongDataComposer = 5005;
     public static final int SnowStormGameEndedComposer = 5006;
+    public static final int SnowStormLobbyTeamsComposer = 5007;
     public static final int SnowStormQuePlayerAddedComposer = 5008;
     public static final int SnowStormPlayAgainComposer = 5009;
     public static final int SnowStormGamesLeftComposer = 5010;

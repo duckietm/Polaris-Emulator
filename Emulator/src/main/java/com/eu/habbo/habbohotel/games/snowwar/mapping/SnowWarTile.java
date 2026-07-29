@@ -71,14 +71,12 @@ public class SnowWarTile {
             return false;
         }
 
+        // A long (curved) throw arcs over everything; a straight or lob throw is
+        // stopped by any furni tall enough to block snowballs (stack height > 0.4).
         if (trajectory == 2) {
             return false;
         }
 
-        if (trajectory == 1) {
-            return this.highestItem.getWalkableHeight() > 1;
-        }
-
-        return this.highestItem.getWalkableHeight() > 0;
+        return this.highestItem.blocksSnowball();
     }
 }

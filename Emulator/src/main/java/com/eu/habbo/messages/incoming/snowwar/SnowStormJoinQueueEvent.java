@@ -10,6 +10,11 @@ public class SnowStormJoinQueueEvent extends MessageHandler {
             return;
         }
 
+        if (!SnowWarManager.getInstance()
+            .allowPacket(this.client.getHabbo().getHabboInfo().getId())) {
+            return;
+        }
+
         SnowWarManager.getInstance().joinQueue(this.client.getHabbo());
     }
 }

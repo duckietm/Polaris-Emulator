@@ -16,6 +16,11 @@ game.host=127.0.0.1
 game.port=${E2E_RAW_PORT}
 rcon.host=127.0.0.1
 rcon.port=${E2E_RCON_PORT}
+# The emulator_settings overlay is applied after the database connects and wins
+# over this file, so ws.*, enc.enabled, crypto.ws.enabled, client.release.allowed
+# and session.reconnect.grace.seconds are really set by e2e/seed.sql. They are
+# repeated here so a run against a database without those rows still works —
+# keep both copies in sync.
 ws.enabled=true
 ws.host=127.0.0.1
 ws.port=${E2E_GAME_PORT}

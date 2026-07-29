@@ -1,20 +1,18 @@
 package com.eu.habbo.habbohotel.games.snowwar;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.games.snowwar.mapping.SnowWarMap;
 import com.eu.habbo.habbohotel.games.snowwar.mapping.SnowWarMapsManager;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
-import com.eu.habbo.messages.outgoing.snowwar.SnowStormGamesInformationComposer;
-import com.eu.habbo.messages.outgoing.snowwar.SnowStormGamesLeftComposer;
-import com.eu.habbo.messages.outgoing.snowwar.SnowStormGenericErrorComposer;
-import com.eu.habbo.messages.outgoing.snowwar.SnowStormQuePositionComposer;
-import com.eu.habbo.messages.outgoing.snowwar.SnowStormStartLobbyCounterComposer;
+import com.eu.habbo.messages.outgoing.snowwar.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -47,14 +45,28 @@ public class SnowWarManager {
     private final ConcurrentHashMap<Integer, SnowWarGame> games = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, SnowWarGame> userGames = new ConcurrentHashMap<>();
 
+    // Per-user fixed-window packet counter for the generic SnowWar flood cap.
+    // Value is [windowStartMillis, countInWindow]; guarded per-entry by the
+    // entry object itself (see allowPacket).
+    private final ConcurrentHashMap<Integer, long[]> packetWindows = new ConcurrentHashMap<>();
+
     private final AtomicInteger gameIdCounter = new AtomicInteger(0);
     private final AtomicInteger gamesPlayed = new AtomicInteger(0);
 
     private volatile boolean countdownRunning = false;
     private volatile int countdownSeconds = 0;
 
-    private SnowWarManager() {
-    }
+    /**
+     * Users (acc_snowwar_edit) currently in the arena editor. While non-empty,
+     * matchmaking is frozen and no game may run; cleared as editors leave
+     * (exitEditor / disconnect), which resumes matching.
+     */
+    private final Set<Integer> editors = ConcurrentHashMap.newKeySet();
+
+    /** Arena map the editor edits (games run on map 1). */
+    private static final int EDITOR_MAP_ID = 1;
+
+    private SnowWarManager() {}
 
     public boolean isEnabled() {
         return Emulator.getConfig().getBoolean("gamecenter.snowwar.enabled", true);
@@ -82,10 +94,36 @@ public class SnowWarManager {
 
     public void clearUserGame(int userId) {
         this.userGames.remove(userId);
+        this.packetWindows.remove(userId);
+        // A disconnecting editor must release the matchmaking lock.
+        if (this.editors.remove(userId) && this.editors.isEmpty()) {
+            this.maybeStartCountdown();
+        }
     }
 
     public void clearUserGameIfMatches(int userId, SnowWarGame game) {
         this.userGames.remove(userId, game);
+    }
+
+    /**
+     * Generic per-user flood cap across every SnowWar packet. Fixed-window
+     * counter: at most PACKET_FLOOD_MAX_PER_WINDOW packets per
+     * PACKET_FLOOD_WINDOW_MS. Returns false when the packet should be dropped.
+     * This is a blanket backstop on top of the per-action cooldowns, so a mix
+     * of packet types can't be spun in a tight loop.
+     */
+    public boolean allowPacket(int userId) {
+        long now = System.currentTimeMillis();
+        long[] window = this.packetWindows.computeIfAbsent(userId, id -> new long[] {now, 0});
+        synchronized (window) {
+            if (now - window[0] > SnowWarConstants.PACKET_FLOOD_WINDOW_MS) {
+                window[0] = now;
+                window[1] = 1;
+                return true;
+            }
+            window[1]++;
+            return window[1] <= SnowWarConstants.PACKET_FLOOD_MAX_PER_WINDOW;
+        }
     }
 
     // ========================================================================
@@ -109,12 +147,36 @@ public class SnowWarManager {
             return;
         }
 
+        boolean added;
         synchronized (this.queue) {
-            this.queue.add(userId);
+            added = this.queue.add(userId);
+        }
+
+        // Already queued: don't re-add or re-broadcast to everyone, but DO
+        // re-send THIS user their current queue state. A client that lost the
+        // waiting screen (reload, earlier desync) would otherwise look stuck -
+        // its repeat Join gets no response and nothing happens on screen.
+        if (!added) {
+            this.send(
+                habbo,
+                new SnowStormGamesInformationComposer(
+                    this.getQueueSize(),
+                    this.gamesPlayed.get(),
+                    this.getMinimumPlayers(),
+                    habbo.hasPermission(EDIT_PERMISSION)));
+            this.sendQueuePositionTo(habbo);
+            this.broadcastLobbyTeams();
+            return;
         }
 
         this.send(habbo, new SnowStormGamesLeftComposer(-1));
-        this.send(habbo, new SnowStormGamesInformationComposer(this.getQueueSize(), this.gamesPlayed.get()));
+        this.send(
+            habbo,
+            new SnowStormGamesInformationComposer(
+                this.getQueueSize(),
+                this.gamesPlayed.get(),
+                this.getMinimumPlayers(),
+                habbo.hasPermission(EDIT_PERMISSION)));
 
         this.broadcastQueuePositions();
         this.maybeStartCountdown();
@@ -125,10 +187,13 @@ public class SnowWarManager {
             return;
         }
 
+        int userId = habbo.getHabboInfo().getId();
         boolean removed;
         synchronized (this.queue) {
-            removed = this.queue.remove(habbo.getHabboInfo().getId());
+            removed = this.queue.remove(userId);
         }
+
+        this.packetWindows.remove(userId);
 
         if (removed) {
             this.broadcastQueuePositions();
@@ -153,6 +218,15 @@ public class SnowWarManager {
         }
     }
 
+    private void sendQueuePositionTo(Habbo habbo) {
+        List<Integer> queued = this.getQueueSnapshot();
+        int index = queued.indexOf(habbo.getHabboInfo().getId());
+        if (index < 0) {
+            return;
+        }
+        this.send(habbo, new SnowStormQuePositionComposer(index + 1, queued.size()));
+    }
+
     private void broadcastQueuePositions() {
         List<Integer> queued = this.getQueueSnapshot();
         int position = 1;
@@ -164,6 +238,11 @@ public class SnowWarManager {
             }
             position++;
         }
+
+        // Re-send the provisional team line-up on every queue change so the
+        // client's "getting ready" screen shows the waiting players (and their
+        // teams) live while below the minimum, not just during the countdown.
+        this.broadcastLobbyTeams();
     }
 
     private void broadcastToQueue(com.eu.habbo.messages.outgoing.MessageComposer composer) {
@@ -183,6 +262,11 @@ public class SnowWarManager {
 
     private synchronized void maybeStartCountdown() {
         if (this.countdownRunning) {
+            return;
+        }
+
+        // No games may start while anyone is editing the arena.
+        if (!this.editors.isEmpty()) {
             return;
         }
 
@@ -211,7 +295,8 @@ public class SnowWarManager {
 
         // Drop offline users from the queue before evaluating.
         synchronized (this.queue) {
-            this.queue.removeIf(userId -> Emulator.getGameEnvironment().getHabboManager().getHabbo(userId) == null);
+            this.queue.removeIf(
+                userId -> Emulator.getGameEnvironment().getHabboManager().getHabbo(userId) == null);
         }
 
         if (this.getQueueSize() < this.getMinimumPlayers()) {
@@ -232,7 +317,31 @@ public class SnowWarManager {
         }
 
         this.broadcastToQueue(new SnowStormStartLobbyCounterComposer(this.countdownSeconds));
+        // Re-send the (possibly changed) line-up each tick so a player who
+        // joined/left the queue during the countdown is reflected live.
+        this.broadcastLobbyTeams();
         Emulator.getThreading().run(this::countdownTick, 1000);
+    }
+
+    /**
+     * Build the provisional match line-up from the current queue snapshot and
+     * broadcast it so queued clients can show the pre-match "getting ready"
+     * team screen. Team split mirrors {@link SnowWarGame}'s round-robin
+     * assignment at creation (index % teamCount).
+     */
+    private void broadcastLobbyTeams() {
+        List<Habbo> roster = new ArrayList<>();
+        for (Integer userId : this.getQueueSnapshot()) {
+            if (roster.size() >= this.getMaximumMatchPlayers()) {
+                break;
+            }
+            Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
+            if (habbo != null) {
+                roster.add(habbo);
+            }
+        }
+        // teamCount 2 matches SnowWarGame (Red / Blue).
+        this.broadcastToQueue(new SnowStormLobbyTeamsComposer(roster, 2));
     }
 
     // ========================================================================
@@ -240,6 +349,12 @@ public class SnowWarManager {
     // ========================================================================
 
     private void createMatch() {
+        // Never form a match while the arena is being edited.
+        if (!this.editors.isEmpty()) {
+            this.broadcastQueuePositions();
+            return;
+        }
+
         // Re-check the cap: a game may have started while we counted down.
         if (this.games.size() >= this.getMaxConcurrentGames()) {
             this.broadcastQueuePositions();
@@ -258,6 +373,13 @@ public class SnowWarManager {
 
                 Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
                 if (habbo == null) {
+                    this.queue.remove(userId);
+                    continue;
+                }
+
+                // Never pull a user who is already in a game into a second one
+                // (would overwrite userGames and orphan their first game).
+                if (this.userGames.containsKey(userId)) {
                     this.queue.remove(userId);
                     continue;
                 }
@@ -293,6 +415,62 @@ public class SnowWarManager {
         game.start();
     }
 
+    // ========================================================================
+    // Arena editor
+    // ========================================================================
+
+    /**
+     * A permitted user opens the arena editor. Takes them out of any game/queue,
+     * freezes matchmaking (no game may run while anyone edits), ends every
+     * running game so nothing ticks behind the editor, and hands the editor the
+     * current arena map to edit.
+     */
+    public void enterEditor(Habbo habbo) {
+        if (habbo == null || !habbo.hasPermission(EDIT_PERMISSION)) {
+            return;
+        }
+
+        int userId = habbo.getHabboInfo().getId();
+
+        SnowWarGame game = this.getGameByUserId(userId);
+        if (game != null) {
+            game.exitGame(userId);
+        }
+        this.leaveQueue(habbo);
+
+        this.editors.add(userId);
+        this.countdownRunning = false;
+        this.endAllGames();
+
+        SnowWarMap map = SnowWarMapsManager.getMap(EDITOR_MAP_ID);
+        if (map != null) {
+            this.send(habbo, new SnowStormEditorDataComposer(map));
+        }
+    }
+
+    /**
+     * A user leaves the arena editor. Once the last editor is out, matchmaking
+     * resumes.
+     */
+    public void exitEditor(Habbo habbo) {
+        if (habbo == null) {
+            return;
+        }
+        if (this.editors.remove(habbo.getHabboInfo().getId()) && this.editors.isEmpty()) {
+            this.maybeStartCountdown();
+        }
+    }
+
+    public boolean isEditing() {
+        return !this.editors.isEmpty();
+    }
+
+    private void endAllGames() {
+        for (SnowWarGame game : new ArrayList<>(this.games.values())) {
+            game.endGame();
+        }
+    }
+
     /**
      * The arena editor is a normal room built on the SnowWar room model, so
      * furniture can be placed with the standard room tools. The first room
@@ -302,9 +480,10 @@ public class SnowWarManager {
         String modelName = SnowWarMapsManager.getModelName(mapId);
 
         int roomId = 0;
-        try (java.sql.Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                java.sql.PreparedStatement statement = connection.prepareStatement(
-                        "SELECT id FROM rooms WHERE model = ? ORDER BY id LIMIT 1")) {
+        try (java.sql.Connection connection =
+                 Emulator.getDatabase().getDataSource().getConnection();
+             java.sql.PreparedStatement statement =
+                 connection.prepareStatement("SELECT id FROM rooms WHERE model = ? ORDER BY id LIMIT 1")) {
             statement.setString(1, modelName);
             try (java.sql.ResultSet set = statement.executeQuery()) {
                 if (set.next()) {
@@ -320,7 +499,9 @@ public class SnowWarManager {
             return Emulator.getGameEnvironment().getRoomManager().loadRoom(roomId);
         }
 
-        Room room = Emulator.getGameEnvironment().getRoomManager().createRoom(
+        Room room = Emulator.getGameEnvironment()
+            .getRoomManager()
+            .createRoom(
                 habbo.getHabboInfo().getId(),
                 habbo.getHabboInfo().getUsername(),
                 "SnowStorm Arena Editor",
@@ -331,7 +512,9 @@ public class SnowWarManager {
                 0);
 
         if (room == null) {
-            LOGGER.error("Failed to create the SnowWar editor room with model '{}'. Is the room_models row present?", modelName);
+            LOGGER.error(
+                "Failed to create the SnowWar editor room with model '{}'. Is the room_models row present?",
+                modelName);
         }
 
         return room;

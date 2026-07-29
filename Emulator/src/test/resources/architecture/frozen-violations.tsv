@@ -419,7 +419,7 @@ U|com/eu/habbo/habbohotel/games/snowwar/SnowWarGameTask.java|CALL|getGameEnviron
 U|com/eu/habbo/habbohotel/games/snowwar/SnowWarGameTask.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/games/snowwar/SnowWarManager.java|CALL|getConfig|5
 U|com/eu/habbo/habbohotel/games/snowwar/SnowWarManager.java|CALL|getDatabase|1
-U|com/eu/habbo/habbohotel/games/snowwar/SnowWarManager.java|CALL|getGameEnvironment|6
+U|com/eu/habbo/habbohotel/games/snowwar/SnowWarManager.java|CALL|getGameEnvironment|7
 U|com/eu/habbo/habbohotel/games/snowwar/SnowWarManager.java|CALL|getThreading|2
 U|com/eu/habbo/habbohotel/games/snowwar/mapping/SnowWarMapsManager.java|CALL|getConfig|1
 U|com/eu/habbo/habbohotel/games/snowwar/mapping/SnowWarMapsManager.java|CALL|getDatabase|1
@@ -1670,6 +1670,7 @@ U|com/eu/habbo/messages/outgoing/rooms/pets/breeding/PetBreedingResultComposer.j
 U|com/eu/habbo/messages/outgoing/rooms/promotions/RoomPromotionMessageComposer.java|CALL|getIntUnixTimestamp|2
 U|com/eu/habbo/messages/outgoing/rooms/users/RoomUnitOnRollerComposer.java|CALL|getThreading|1
 U|com/eu/habbo/messages/outgoing/rooms/users/RoomUsersComposer.java|CALL|getGameEnvironment|2
+U|com/eu/habbo/messages/outgoing/snowwar/SnowStormEditorDataComposer.java|CALL|getConfig|1
 U|com/eu/habbo/messages/outgoing/users/FavoriteRoomsCountComposer.java|CALL|getConfig|1
 U|com/eu/habbo/messages/outgoing/users/UserClothesComposer.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/outgoing/users/UserClubComposer.java|CALL|getGameEnvironment|1

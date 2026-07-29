@@ -90,6 +90,7 @@ How it works, what it covers and how to configure it is documented in
 - **Dippy** — Improved wired architecture base
 - **Seth / iSetht** — Opacity & Gravity wireds
 - **Puffin** — the MyBoBBa catalogue assets, **xlRaiko** — the clothing pack
+- **bop** — Easter egg exploit & Nitro Memory Leaks
 
 ## Community
 

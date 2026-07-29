@@ -14,20 +14,19 @@ import com.eu.habbo.habbohotel.rooms.RoomRightLevels;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserTypingComposer;
 import com.eu.habbo.plugin.events.users.UserCommandEvent;
 import com.eu.habbo.plugin.events.users.UserExecuteCommandEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CommandHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CommandHandler.class);
 
-    private final static Map<String, Command> commands = new HashMap<>(5);
+    private static final Map<String, Command> commands = new HashMap<>(5);
     private static final Comparator<Command> ALPHABETICAL_ORDER = new Comparator<Command>() {
         public int compare(Command c1, Command c2) {
             int res = String.CASE_INSENSITIVE_ORDER.compare(c1.permission, c2.permission);
@@ -42,23 +41,20 @@ public class CommandHandler {
     }
 
     public static void addCommand(Command command) {
-        if (command == null)
-            return;
+        if (command == null) return;
 
         commands.put(command.getClass().getName(), command);
     }
 
-
     public static void addCommand(Class<? extends Command> command) {
         try {
-            //command.getConstructor().setAccessible(true);
+            // command.getConstructor().setAccessible(true);
             addCommand(command.getDeclaredConstructor().newInstance());
             LOGGER.debug("Added command: {}", command.getName());
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
         }
     }
-
 
     public static boolean handleCommand(GameClient gameClient, String commandLine) {
         if (gameClient != null && commandLine != null) {
@@ -72,19 +68,67 @@ public class CommandHandler {
                         for (String s : command.keys) {
                             if (s.equalsIgnoreCase(parts[0])) {
                                 boolean succes = false;
-                                if (command.permission == null || gameClient.getHabbo().hasPermission(command.permission, gameClient.getHabbo().getHabboInfo().getCurrentRoom() != null && (gameClient.getHabbo().getHabboInfo().getCurrentRoom().hasRights(gameClient.getHabbo())) || gameClient.getHabbo().hasPermission(Permission.ACC_PLACEFURNI) || (gameClient.getHabbo().getHabboInfo().getCurrentRoom() != null && gameClient.getHabbo().getHabboInfo().getCurrentRoom().getGuildId() > 0 && gameClient.getHabbo().getHabboInfo().getCurrentRoom().getGuildRightLevel(gameClient.getHabbo()).isEqualOrGreaterThan(RoomRightLevels.GUILD_RIGHTS)))) {
+                                if (command.permission == null
+                                        || gameClient
+                                                .getHabbo()
+                                                .hasPermission(
+                                                        command.permission,
+                                                        gameClient
+                                                                                        .getHabbo()
+                                                                                        .getHabboInfo()
+                                                                                        .getCurrentRoom()
+                                                                                != null
+                                                                        && (gameClient
+                                                                                .getHabbo()
+                                                                                .getHabboInfo()
+                                                                                .getCurrentRoom()
+                                                                                .hasRights(gameClient.getHabbo()))
+                                                                || gameClient
+                                                                        .getHabbo()
+                                                                        .hasPermission(Permission.ACC_PLACEFURNI)
+                                                                || (gameClient
+                                                                                        .getHabbo()
+                                                                                        .getHabboInfo()
+                                                                                        .getCurrentRoom()
+                                                                                != null
+                                                                        && gameClient
+                                                                                        .getHabbo()
+                                                                                        .getHabboInfo()
+                                                                                        .getCurrentRoom()
+                                                                                        .getGuildId()
+                                                                                > 0
+                                                                        && gameClient
+                                                                                .getHabbo()
+                                                                                .getHabboInfo()
+                                                                                .getCurrentRoom()
+                                                                                .getGuildRightLevel(
+                                                                                        gameClient.getHabbo())
+                                                                                .isEqualOrGreaterThan(
+                                                                                        RoomRightLevels
+                                                                                                .GUILD_RIGHTS)))) {
                                     try {
-                                        UserExecuteCommandEvent userExecuteCommandEvent = new UserExecuteCommandEvent(gameClient.getHabbo(), command, parts);
+                                        UserExecuteCommandEvent userExecuteCommandEvent =
+                                                new UserExecuteCommandEvent(gameClient.getHabbo(), command, parts);
                                         Emulator.getPluginManager().fireEvent(userExecuteCommandEvent);
 
-                                        if(userExecuteCommandEvent.isCancelled()) {
+                                        if (userExecuteCommandEvent.isCancelled()) {
                                             return userExecuteCommandEvent.isSuccess();
                                         }
 
                                         if (gameClient.getHabbo().getHabboInfo().getCurrentRoom() != null)
-                                            gameClient.getHabbo().getHabboInfo().getCurrentRoom().sendComposer(new RoomUserTypingComposer(gameClient.getHabbo().getRoomUnit(), false).compose());
+                                            gameClient
+                                                    .getHabbo()
+                                                    .getHabboInfo()
+                                                    .getCurrentRoom()
+                                                    .sendComposer(new RoomUserTypingComposer(
+                                                                    gameClient
+                                                                            .getHabbo()
+                                                                            .getRoomUnit(),
+                                                                    false)
+                                                            .compose());
 
-                                        UserCommandEvent event = new UserCommandEvent(gameClient.getHabbo(), parts, command.handle(gameClient, parts));
+                                        UserCommandEvent event = new UserCommandEvent(
+                                                gameClient.getHabbo(), parts, command.handle(gameClient, parts));
                                         Emulator.getPluginManager().fireEvent(event);
 
                                         succes = event.succes;
@@ -92,8 +136,20 @@ public class CommandHandler {
                                         LOGGER.error("Caught exception", e);
                                     }
 
-                                    if (gameClient.getHabbo().getHabboInfo().getRank().isLogCommands()) {
-                                        Emulator.getDatabaseLogger().store(new CommandLog(gameClient.getHabbo().getHabboInfo().getId(), command, commandLine, succes));
+                                    if (gameClient
+                                            .getHabbo()
+                                            .getHabboInfo()
+                                            .getRank()
+                                            .isLogCommands()) {
+                                        Emulator.getDatabaseLogger()
+                                                .store(new CommandLog(
+                                                        gameClient
+                                                                .getHabbo()
+                                                                .getHabboInfo()
+                                                                .getId(),
+                                                        command,
+                                                        commandLine,
+                                                        succes));
                                     }
                                 }
 
@@ -105,14 +161,12 @@ public class CommandHandler {
             } else {
                 String[] args = commandLine.split(" ");
 
-                if (args.length <= 1)
-                    return false;
+                if (args.length <= 1) return false;
 
                 if (gameClient.getHabbo().getHabboInfo().getCurrentRoom() != null) {
                     Room room = gameClient.getHabbo().getHabboInfo().getCurrentRoom();
 
-                    if (room.getCurrentPets().isEmpty())
-                        return false;
+                    if (room.getCurrentPets().isEmpty()) return false;
 
                     for (Pet pet : room.getCurrentPets().values()) {
                         if (pet != null) {
@@ -128,16 +182,25 @@ public class CommandHandler {
                                 for (PetCommand command : pet.getPetData().getPetCommands()) {
                                     if (command.key.equalsIgnoreCase(s.toString())) {
                                         if (pet instanceof RideablePet && ((RideablePet) pet).getRider() != null) {
-                                            if (((RideablePet) pet).getRider().getHabboInfo().getId() == gameClient.getHabbo().getHabboInfo().getId()) {
-                                                ((RideablePet) pet).getRider().getHabboInfo().dismountPet();
+                                            if (((RideablePet) pet)
+                                                            .getRider()
+                                                            .getHabboInfo()
+                                                            .getId()
+                                                    == gameClient
+                                                            .getHabbo()
+                                                            .getHabboInfo()
+                                                            .getId()) {
+                                                ((RideablePet) pet)
+                                                        .getRider()
+                                                        .getHabboInfo()
+                                                        .dismountPet();
                                             }
                                             break;
                                         }
 
                                         if (command.level <= pet.getLevel())
                                             pet.handleCommand(command, gameClient.getHabbo(), args);
-                                        else
-                                            pet.say(pet.getPetData().randomVocal(PetVocalsType.UNKNOWN_COMMAND));
+                                        else pet.say(pet.getPetData().randomVocal(PetVocalsType.UNKNOWN_COMMAND));
 
                                         break;
                                     }
@@ -301,13 +364,16 @@ public class CommandHandler {
     public List<Command> getCommandsForRank(int rankId) {
         List<Command> allowedCommands = new ArrayList<>();
         if (Emulator.getGameEnvironment().getPermissionsManager().rankExists(rankId)) {
-            Map<String, Permission> permissions = Emulator.getGameEnvironment().getPermissionsManager().getRank(rankId).getPermissions();
+            Map<String, Permission> permissions = Emulator.getGameEnvironment()
+                    .getPermissionsManager()
+                    .getRank(rankId)
+                    .getPermissions();
 
             for (Command command : commands.values()) {
-                if (allowedCommands.contains(command))
-                    continue;
+                if (allowedCommands.contains(command)) continue;
 
-                if (permissions.containsKey(command.permission) && permissions.get(command.permission).setting != PermissionSetting.DISALLOWED) {
+                if (permissions.containsKey(command.permission)
+                        && permissions.get(command.permission).setting != PermissionSetting.DISALLOWED) {
                     allowedCommands.add(command);
                 }
             }

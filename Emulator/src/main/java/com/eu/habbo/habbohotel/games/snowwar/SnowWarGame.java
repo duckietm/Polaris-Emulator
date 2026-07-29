@@ -12,26 +12,11 @@ import com.eu.habbo.habbohotel.games.snowwar.objects.SnowWarSnowballObject;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
-import com.eu.habbo.messages.outgoing.snowwar.SnowStormFullGameStatusComposer;
-import com.eu.habbo.messages.outgoing.snowwar.SnowStormGameEndedComposer;
-import com.eu.habbo.messages.outgoing.snowwar.SnowStormIntializeGameArenaViewComposer;
-import com.eu.habbo.messages.outgoing.snowwar.SnowStormLevelDataComposer;
-import com.eu.habbo.messages.outgoing.snowwar.SnowStormOnGameEndingComposer;
-import com.eu.habbo.messages.outgoing.snowwar.SnowStormOnPlayerExitedArenaComposer;
-import com.eu.habbo.messages.outgoing.snowwar.SnowStormOnStageEndingComposer;
-import com.eu.habbo.messages.outgoing.snowwar.SnowStormOnStageRunningComposer;
-import com.eu.habbo.messages.outgoing.snowwar.SnowStormOnStageStartComposer;
-import com.eu.habbo.messages.outgoing.snowwar.SnowStormRejoinPreviousRoomComposer;
-import com.eu.habbo.messages.outgoing.snowwar.SnowStormUserChatMessageComposer;
-import com.eu.habbo.messages.outgoing.snowwar.SnowStormUserRematchedComposer;
+import com.eu.habbo.messages.outgoing.snowwar.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -85,8 +70,8 @@ public class SnowWarGame {
 
         if (this.map != null) {
             for (SnowWarPoint machinePosition : this.map.getMachinePositions()) {
-                this.machines.add(new SnowWarMachineObject(this.nextObjectId(),
-                        machinePosition.getX(), machinePosition.getY()));
+                this.machines.add(
+                    new SnowWarMachineObject(this.nextObjectId(), machinePosition.getX(), machinePosition.getY()));
             }
         }
     }
@@ -183,12 +168,15 @@ public class SnowWarGame {
 
         this.broadcast(new SnowStormIntializeGameArenaViewComposer());
 
-        Emulator.getThreading().run(() -> {
-            if (this.state == SnowWarGameState.WAITING_FOR_PLAYERS) {
-                LOGGER.info("SnowWar game {}: load stage timeout reached, starting anyway.", this.id);
-                this.beginPreparing();
-            }
-        }, LOAD_STAGE_TIMEOUT_MS);
+        Emulator.getThreading()
+            .run(
+                () -> {
+                    if (this.state == SnowWarGameState.WAITING_FOR_PLAYERS) {
+                        LOGGER.info("SnowWar game {}: load stage timeout reached, starting anyway.", this.id);
+                        this.beginPreparing();
+                    }
+                },
+                LOAD_STAGE_TIMEOUT_MS);
     }
 
     public void onLoadStageReady(int userId) {
@@ -247,8 +235,8 @@ public class SnowWarGame {
 
             // Face the middle of the arena.
             int direction = SnowWarMath.getAngleFromComponents(
-                    SnowWarMath.tileToWorld(centerX) - attr.getWorldPosition().getX(),
-                    SnowWarMath.tileToWorld(centerY) - attr.getWorldPosition().getY());
+                SnowWarMath.tileToWorld(centerX) - attr.getWorldPosition().getX(),
+                SnowWarMath.tileToWorld(centerY) - attr.getWorldPosition().getY());
             attr.setRotation(SnowWarMath.direction360To8(direction));
 
             player.setAvatar(new SnowWarAvatarObject(this, player));
@@ -335,9 +323,10 @@ public class SnowWarGame {
         // player may keep playing until they leave.
         int endThreshold = Math.min(2, SnowWarManager.getInstance().getMinimumPlayers());
 
-        if (remainingPlayers < endThreshold && (this.state == SnowWarGameState.WAITING_FOR_PLAYERS
-                || this.state == SnowWarGameState.PREPARING
-                || this.state == SnowWarGameState.RUNNING)) {
+        if (remainingPlayers < endThreshold
+            && (this.state == SnowWarGameState.WAITING_FOR_PLAYERS
+            || this.state == SnowWarGameState.PREPARING
+            || this.state == SnowWarGameState.RUNNING)) {
             this.endGame();
             return;
         }
@@ -390,9 +379,21 @@ public class SnowWarGame {
     }
 
     public void handleThrowAtLocation(SnowWarGamePlayer player, int worldX, int worldY, int trajectory) {
-        if (trajectory != 1 && trajectory != 2) {
+        // 0 = straight (flat) throw, 1 = lob, 2 = long high-arc throw. Plain
+        // right-click sends 0, Shift+right-click sends 2.
+        if (trajectory != 0 && trajectory != 1 && trajectory != 2) {
             return;
         }
+
+        // worldX/worldY are client-supplied. Clamp them to the arena so a crafted
+        // value can't overflow the (delta*delta) range-gate math below; an
+        // off-map target would only ever hit nothing, but this keeps the maths
+        // well-defined. throwAtPlayer uses the target's real position, so it
+        // needs no clamp.
+        int maxWorldX = this.map.getSizeX() * SnowWarConstants.TILE_SIZE;
+        int maxWorldY = this.map.getSizeY() * SnowWarConstants.TILE_SIZE;
+        worldX = Math.max(0, Math.min(worldX, maxWorldX));
+        worldY = Math.max(0, Math.min(worldY, maxWorldY));
 
         this.throwSnowball(player, worldX, worldY, trajectory);
     }
@@ -429,11 +430,12 @@ public class SnowWarGame {
         }
         // Range gate: normal throws reach 5 tiles, long throws 15. Outside
         // that the client must use a long throw or move closer.
-        int maxRangeTiles = trajectory == 2
-                ? SnowWarConstants.THROW_RANGE_LONG_TILES
-                : SnowWarConstants.THROW_RANGE_NORMAL_TILES;
-        int deltaTileX = SnowWarMath.convertToGameCoordinate(worldX) - attr.getCurrentPosition().getX();
-        int deltaTileY = SnowWarMath.convertToGameCoordinate(worldY) - attr.getCurrentPosition().getY();
+        int maxRangeTiles =
+            trajectory == 2 ? SnowWarConstants.THROW_RANGE_LONG_TILES : SnowWarConstants.THROW_RANGE_NORMAL_TILES;
+        int deltaTileX = SnowWarMath.convertToGameCoordinate(worldX)
+            - attr.getCurrentPosition().getX();
+        int deltaTileY = SnowWarMath.convertToGameCoordinate(worldY)
+            - attr.getCurrentPosition().getY();
         if ((deltaTileX * deltaTileX) + (deltaTileY * deltaTileY) > maxRangeTiles * maxRangeTiles) {
             return;
         }
@@ -451,14 +453,14 @@ public class SnowWarGame {
         int targetTileY = SnowWarMath.convertToGameCoordinate(worldY);
 
         SnowWarSnowballObject snowball = new SnowWarSnowballObject(
-                objectId,
-                this.map,
-                player,
-                attr.getCurrentPosition().getX(),
-                attr.getCurrentPosition().getY(),
-                targetTileX,
-                targetTileY,
-                trajectory);
+            objectId,
+            this.map,
+            player,
+            attr.getCurrentPosition().getX(),
+            attr.getCurrentPosition().getY(),
+            targetTileX,
+            targetTileY,
+            trajectory);
 
         this.task.addSnowball(snowball);
         attr.getSnowballCount().decrementAndGet();
@@ -474,7 +476,7 @@ public class SnowWarGame {
         int convertedTargetY = SnowWarMath.convertToWorldCoordinate(targetTileY);
 
         this.task.queueEvent(new SnowWarLaunchSnowballEvent(
-                objectId, player.getObjectId(), convertedTargetX, convertedTargetY, trajectory));
+            objectId, player.getObjectId(), convertedTargetX, convertedTargetY, trajectory));
     }
 
     public void handleCreateSnowball(SnowWarGamePlayer player) {
@@ -501,6 +503,14 @@ public class SnowWarGame {
         if (message == null) {
             return;
         }
+
+        // Anti-flood: chat is broadcast to every player, so rate-limit it.
+        SnowWarAttributes chatAttr = player.getAttributes();
+        long now = System.currentTimeMillis();
+        if (chatAttr.getLastChatTime() + SnowWarConstants.CHAT_COOLDOWN_MS > now) {
+            return;
+        }
+        chatAttr.setLastChatTime(now);
 
         String trimmed = message.trim();
         if (trimmed.isEmpty()) {
@@ -537,6 +547,15 @@ public class SnowWarGame {
     }
 
     public void sendFullGameStatus(SnowWarGamePlayer player) {
+        // Anti-flood: serializing + sending the whole game state is expensive,
+        // so rate-limit client-driven full-status requests per player.
+        SnowWarAttributes attr = player.getAttributes();
+        long now = System.currentTimeMillis();
+        if (attr.getLastStatusRequestTime() + SnowWarConstants.STATUS_REQUEST_COOLDOWN_MS > now) {
+            return;
+        }
+        attr.setLastStatusRequestTime(now);
+
         if (player.getHabbo().getClient() != null) {
             player.getHabbo().getClient().sendResponse(this.createFullGameStatusComposer());
         }

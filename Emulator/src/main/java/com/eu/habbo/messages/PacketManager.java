@@ -8,64 +8,15 @@ import com.eu.habbo.messages.incoming.achievements.RequestAchievementConfigurati
 import com.eu.habbo.messages.incoming.achievements.RequestAchievementsEvent;
 import com.eu.habbo.messages.incoming.ambassadors.AmbassadorAlertCommandEvent;
 import com.eu.habbo.messages.incoming.ambassadors.AmbassadorVisitCommandEvent;
-import com.eu.habbo.messages.incoming.camera.CameraPublishToWebEvent;
-import com.eu.habbo.messages.incoming.camera.CameraPurchaseEvent;
-import com.eu.habbo.messages.incoming.camera.CameraRoomPictureEvent;
-import com.eu.habbo.messages.incoming.camera.CameraRoomThumbnailEvent;
-import com.eu.habbo.messages.incoming.camera.RequestCameraConfigurationEvent;
-import com.eu.habbo.messages.incoming.catalog.BuildersClubPlaceRoomItemEvent;
-import com.eu.habbo.messages.incoming.catalog.BuildersClubPlaceWallItemEvent;
-import com.eu.habbo.messages.incoming.catalog.BuildersClubQueryFurniCountEvent;
-import com.eu.habbo.messages.incoming.catalog.CatalogBuyClubDiscountEvent;
-import com.eu.habbo.messages.incoming.catalog.CatalogBuyItemAsGiftEvent;
-import com.eu.habbo.messages.incoming.catalog.CatalogBuyItemEvent;
-import com.eu.habbo.messages.incoming.catalog.CatalogRequestClubDiscountEvent;
-import com.eu.habbo.messages.incoming.catalog.CatalogSearchedItemEvent;
-import com.eu.habbo.messages.incoming.catalog.CatalogSelectClubGiftEvent;
-import com.eu.habbo.messages.incoming.catalog.CheckPetNameEvent;
-import com.eu.habbo.messages.incoming.catalog.JukeBoxRequestTrackCodeEvent;
-import com.eu.habbo.messages.incoming.catalog.JukeBoxRequestTrackDataEvent;
-import com.eu.habbo.messages.incoming.catalog.PurchaseTargetOfferEvent;
-import com.eu.habbo.messages.incoming.catalog.RedeemVoucherEvent;
-import com.eu.habbo.messages.incoming.catalog.RequestCatalogModeEvent;
-import com.eu.habbo.messages.incoming.catalog.RequestCatalogPageEvent;
-import com.eu.habbo.messages.incoming.catalog.RequestClubDataEvent;
-import com.eu.habbo.messages.incoming.catalog.RequestClubGiftsEvent;
-import com.eu.habbo.messages.incoming.catalog.RequestDiscountEvent;
-import com.eu.habbo.messages.incoming.catalog.RequestGiftConfigurationEvent;
-import com.eu.habbo.messages.incoming.catalog.RequestMarketplaceConfigEvent;
-import com.eu.habbo.messages.incoming.catalog.RequestPetBreedsEvent;
-import com.eu.habbo.messages.incoming.catalog.TargetOfferStateEvent;
-import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminCreateOfferEvent;
-import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminCreatePageEvent;
-import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminDeleteOfferEvent;
-import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminDeletePageEvent;
-import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminLoadOfferEvent;
-import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminLoadPageEvent;
-import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminMoveOfferEvent;
-import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminMovePageEvent;
-import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminPublishEvent;
-import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminSaveOfferEvent;
-import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminSavePageEvent;
-import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminSavePageIconEvent;
-import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminSavePageImagesEvent;
-import com.eu.habbo.messages.incoming.catalog.marketplace.BuyItemEvent;
-import com.eu.habbo.messages.incoming.catalog.marketplace.RequestCreditsEvent;
-import com.eu.habbo.messages.incoming.catalog.marketplace.RequestItemInfoEvent;
-import com.eu.habbo.messages.incoming.catalog.marketplace.RequestOffersEvent;
-import com.eu.habbo.messages.incoming.catalog.marketplace.RequestOwnItemsEvent;
-import com.eu.habbo.messages.incoming.catalog.marketplace.RequestSellItemEvent;
-import com.eu.habbo.messages.incoming.catalog.marketplace.SellItemEvent;
-import com.eu.habbo.messages.incoming.catalog.marketplace.TakeBackItemEvent;
+import com.eu.habbo.messages.incoming.camera.*;
+import com.eu.habbo.messages.incoming.catalog.*;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.*;
+import com.eu.habbo.messages.incoming.catalog.marketplace.*;
 import com.eu.habbo.messages.incoming.catalog.recycler.OpenRecycleBoxEvent;
 import com.eu.habbo.messages.incoming.catalog.recycler.RecycleEvent;
 import com.eu.habbo.messages.incoming.catalog.recycler.ReloadRecyclerEvent;
 import com.eu.habbo.messages.incoming.catalog.recycler.RequestRecyclerLogicEvent;
-import com.eu.habbo.messages.incoming.crafting.CraftingAddRecipeEvent;
-import com.eu.habbo.messages.incoming.crafting.CraftingCraftItemEvent;
-import com.eu.habbo.messages.incoming.crafting.CraftingCraftSecretEvent;
-import com.eu.habbo.messages.incoming.crafting.RequestCraftingRecipesAvailableEvent;
-import com.eu.habbo.messages.incoming.crafting.RequestCraftingRecipesEvent;
+import com.eu.habbo.messages.incoming.crafting.*;
 import com.eu.habbo.messages.incoming.earnings.ClaimAllEarningsRewardsEvent;
 import com.eu.habbo.messages.incoming.earnings.ClaimEarningsRewardEvent;
 import com.eu.habbo.messages.incoming.earnings.RequestEarningsCenterEvent;
@@ -74,380 +25,69 @@ import com.eu.habbo.messages.incoming.events.calendar.AdventCalendarOpenDayEvent
 import com.eu.habbo.messages.incoming.floorplaneditor.FloorPlanEditorRequestBlockedTilesEvent;
 import com.eu.habbo.messages.incoming.floorplaneditor.FloorPlanEditorRequestDoorSettingsEvent;
 import com.eu.habbo.messages.incoming.floorplaneditor.FloorPlanEditorSaveEvent;
-import com.eu.habbo.messages.incoming.friends.AcceptFriendRequestEvent;
-import com.eu.habbo.messages.incoming.friends.AddFriendCategoryEvent;
-import com.eu.habbo.messages.incoming.friends.ChangeRelationEvent;
-import com.eu.habbo.messages.incoming.friends.DeclineFriendRequestEvent;
-import com.eu.habbo.messages.incoming.friends.FindNewFriendsEvent;
-import com.eu.habbo.messages.incoming.friends.FriendPrivateMessageEvent;
-import com.eu.habbo.messages.incoming.friends.FriendRequestEvent;
-import com.eu.habbo.messages.incoming.friends.InviteFriendsEvent;
-import com.eu.habbo.messages.incoming.friends.MarkMessengerReadEvent;
-import com.eu.habbo.messages.incoming.friends.MoveFriendToCategoryEvent;
-import com.eu.habbo.messages.incoming.friends.RemoveFriendCategoryEvent;
-import com.eu.habbo.messages.incoming.friends.RemoveFriendEvent;
-import com.eu.habbo.messages.incoming.friends.RenameFriendCategoryEvent;
-import com.eu.habbo.messages.incoming.friends.RequestFriendRequestsEvent;
-import com.eu.habbo.messages.incoming.friends.RequestFriendsEvent;
-import com.eu.habbo.messages.incoming.friends.RequestInitFriendsEvent;
-import com.eu.habbo.messages.incoming.friends.RequestMessengerConversationsEvent;
-import com.eu.habbo.messages.incoming.friends.RequestMessengerHistoryEvent;
-import com.eu.habbo.messages.incoming.friends.RequestOfflineMessagesEvent;
-import com.eu.habbo.messages.incoming.friends.SearchUserEvent;
-import com.eu.habbo.messages.incoming.friends.SendMessengerMessageEvent;
-import com.eu.habbo.messages.incoming.friends.StalkFriendEvent;
-import com.eu.habbo.messages.incoming.furnieditor.FurniEditorBySpriteEvent;
-import com.eu.habbo.messages.incoming.furnieditor.FurniEditorDeleteEvent;
-import com.eu.habbo.messages.incoming.furnieditor.FurniEditorDetailEvent;
-import com.eu.habbo.messages.incoming.furnieditor.FurniEditorImportTextEvent;
-import com.eu.habbo.messages.incoming.furnieditor.FurniEditorInteractionsEvent;
-import com.eu.habbo.messages.incoming.furnieditor.FurniEditorRevertFurnidataEvent;
-import com.eu.habbo.messages.incoming.furnieditor.FurniEditorSearchEvent;
-import com.eu.habbo.messages.incoming.furnieditor.FurniEditorUpdateEvent;
-import com.eu.habbo.messages.incoming.furnieditor.FurniEditorUpdateFurnidataEvent;
-import com.eu.habbo.messages.incoming.gamecenter.GameCenterEvent;
-import com.eu.habbo.messages.incoming.gamecenter.GameCenterJoinGameEvent;
-import com.eu.habbo.messages.incoming.gamecenter.GameCenterLeaveGameEvent;
-import com.eu.habbo.messages.incoming.gamecenter.GameCenterLoadGameEvent;
-import com.eu.habbo.messages.incoming.gamecenter.GameCenterRequestAccountStatusEvent;
-import com.eu.habbo.messages.incoming.gamecenter.GameCenterRequestGameStatusEvent;
-import com.eu.habbo.messages.incoming.gamecenter.GameCenterRequestGamesEvent;
+import com.eu.habbo.messages.incoming.friends.*;
+import com.eu.habbo.messages.incoming.furnieditor.*;
+import com.eu.habbo.messages.incoming.gamecenter.*;
 import com.eu.habbo.messages.incoming.guardians.GuardianAcceptRequestEvent;
 import com.eu.habbo.messages.incoming.guardians.GuardianNoUpdatesWantedEvent;
 import com.eu.habbo.messages.incoming.guardians.GuardianVoteEvent;
-import com.eu.habbo.messages.incoming.guides.GuideCancelHelpRequestEvent;
-import com.eu.habbo.messages.incoming.guides.GuideCloseHelpRequestEvent;
-import com.eu.habbo.messages.incoming.guides.GuideHandleHelpRequestEvent;
-import com.eu.habbo.messages.incoming.guides.GuideInviteUserEvent;
-import com.eu.habbo.messages.incoming.guides.GuideRecommendHelperEvent;
-import com.eu.habbo.messages.incoming.guides.GuideReportHelperEvent;
-import com.eu.habbo.messages.incoming.guides.GuideUserMessageEvent;
-import com.eu.habbo.messages.incoming.guides.GuideUserTypingEvent;
-import com.eu.habbo.messages.incoming.guides.GuideVisitUserEvent;
-import com.eu.habbo.messages.incoming.guides.RequestGuideAssistanceEvent;
-import com.eu.habbo.messages.incoming.guides.RequestGuideToolEvent;
-import com.eu.habbo.messages.incoming.guilds.GetHabboGuildBadgesMessageEvent;
-import com.eu.habbo.messages.incoming.guilds.GuildAcceptMembershipEvent;
-import com.eu.habbo.messages.incoming.guilds.GuildChangeBadgeEvent;
-import com.eu.habbo.messages.incoming.guilds.GuildChangeColorsEvent;
-import com.eu.habbo.messages.incoming.guilds.GuildChangeNameDescEvent;
-import com.eu.habbo.messages.incoming.guilds.GuildChangeSettingsEvent;
-import com.eu.habbo.messages.incoming.guilds.GuildConfirmRemoveMemberEvent;
-import com.eu.habbo.messages.incoming.guilds.GuildDeclineMembershipEvent;
-import com.eu.habbo.messages.incoming.guilds.GuildDeleteEvent;
-import com.eu.habbo.messages.incoming.guilds.GuildRemoveAdminEvent;
-import com.eu.habbo.messages.incoming.guilds.GuildRemoveFavoriteEvent;
-import com.eu.habbo.messages.incoming.guilds.GuildRemoveMemberEvent;
-import com.eu.habbo.messages.incoming.guilds.GuildSetAdminEvent;
-import com.eu.habbo.messages.incoming.guilds.GuildSetFavoriteEvent;
-import com.eu.habbo.messages.incoming.guilds.RequestGuildBuyEvent;
-import com.eu.habbo.messages.incoming.guilds.RequestGuildBuyRoomsEvent;
-import com.eu.habbo.messages.incoming.guilds.RequestGuildFurniWidgetEvent;
-import com.eu.habbo.messages.incoming.guilds.RequestGuildInfoEvent;
-import com.eu.habbo.messages.incoming.guilds.RequestGuildJoinEvent;
-import com.eu.habbo.messages.incoming.guilds.RequestGuildManageEvent;
-import com.eu.habbo.messages.incoming.guilds.RequestGuildMembersEvent;
-import com.eu.habbo.messages.incoming.guilds.RequestGuildPartsEvent;
-import com.eu.habbo.messages.incoming.guilds.RequestOwnGuildsEvent;
-import com.eu.habbo.messages.incoming.guilds.forums.GuildForumDataEvent;
-import com.eu.habbo.messages.incoming.guilds.forums.GuildForumListEvent;
-import com.eu.habbo.messages.incoming.guilds.forums.GuildForumMarkAsReadEvent;
-import com.eu.habbo.messages.incoming.guilds.forums.GuildForumModerateMessageEvent;
-import com.eu.habbo.messages.incoming.guilds.forums.GuildForumModerateThreadEvent;
-import com.eu.habbo.messages.incoming.guilds.forums.GuildForumPostThreadEvent;
-import com.eu.habbo.messages.incoming.guilds.forums.GuildForumThreadUpdateEvent;
-import com.eu.habbo.messages.incoming.guilds.forums.GuildForumThreadsEvent;
-import com.eu.habbo.messages.incoming.guilds.forums.GuildForumThreadsMessagesEvent;
-import com.eu.habbo.messages.incoming.guilds.forums.GuildForumUpdateSettingsEvent;
-import com.eu.habbo.messages.incoming.handshake.CompleteDiffieHandshakeEvent;
-import com.eu.habbo.messages.incoming.handshake.DisconnectEvent;
-import com.eu.habbo.messages.incoming.handshake.InitDiffieHandshakeEvent;
-import com.eu.habbo.messages.incoming.handshake.MachineIDEvent;
-import com.eu.habbo.messages.incoming.handshake.PingEvent;
-import com.eu.habbo.messages.incoming.handshake.ReleaseVersionEvent;
-import com.eu.habbo.messages.incoming.handshake.SecureLoginEvent;
+import com.eu.habbo.messages.incoming.guides.*;
+import com.eu.habbo.messages.incoming.guilds.*;
+import com.eu.habbo.messages.incoming.guilds.forums.*;
+import com.eu.habbo.messages.incoming.handshake.*;
 import com.eu.habbo.messages.incoming.helper.MySanctionStatusEvent;
 import com.eu.habbo.messages.incoming.helper.RequestTalentTrackEvent;
-import com.eu.habbo.messages.incoming.hotelview.HotelViewClaimBadgeRewardEvent;
-import com.eu.habbo.messages.incoming.hotelview.HotelViewDataEvent;
-import com.eu.habbo.messages.incoming.hotelview.HotelViewEvent;
-import com.eu.habbo.messages.incoming.hotelview.HotelViewLandingRequestEvent;
-import com.eu.habbo.messages.incoming.hotelview.HotelViewLandingResetVotesEvent;
-import com.eu.habbo.messages.incoming.hotelview.HotelViewLandingSaveEvent;
-import com.eu.habbo.messages.incoming.hotelview.HotelViewLandingSaveSceneEvent;
-import com.eu.habbo.messages.incoming.hotelview.HotelViewLandingVoteEvent;
-import com.eu.habbo.messages.incoming.hotelview.HotelViewRequestBadgeRewardEvent;
-import com.eu.habbo.messages.incoming.hotelview.HotelViewRequestBonusRareEvent;
-import com.eu.habbo.messages.incoming.hotelview.HotelViewRequestLTDAvailabilityEvent;
-import com.eu.habbo.messages.incoming.hotelview.HotelViewRequestSecondsUntilEvent;
-import com.eu.habbo.messages.incoming.hotelview.RequestNewsListEvent;
-import com.eu.habbo.messages.incoming.inventory.HotelViewInventoryEvent;
-import com.eu.habbo.messages.incoming.inventory.RequestInventoryBadgeDelete;
-import com.eu.habbo.messages.incoming.inventory.RequestInventoryBadgesEvent;
-import com.eu.habbo.messages.incoming.inventory.RequestInventoryBotsEvent;
-import com.eu.habbo.messages.incoming.inventory.RequestInventoryItemsDelete;
-import com.eu.habbo.messages.incoming.inventory.RequestInventoryItemsEvent;
-import com.eu.habbo.messages.incoming.inventory.RequestInventoryPetDelete;
-import com.eu.habbo.messages.incoming.inventory.RequestInventoryPetsEvent;
+import com.eu.habbo.messages.incoming.hotelview.*;
+import com.eu.habbo.messages.incoming.inventory.*;
 import com.eu.habbo.messages.incoming.inventory.nickicons.PurchaseNickIconEvent;
 import com.eu.habbo.messages.incoming.inventory.nickicons.RequestUserNickIconsEvent;
 import com.eu.habbo.messages.incoming.inventory.nickicons.SetActiveNickIconEvent;
-import com.eu.habbo.messages.incoming.inventory.prefixes.DeletePrefixEvent;
-import com.eu.habbo.messages.incoming.inventory.prefixes.PurchaseCatalogPrefixEvent;
-import com.eu.habbo.messages.incoming.inventory.prefixes.PurchasePrefixEvent;
-import com.eu.habbo.messages.incoming.inventory.prefixes.RequestUserPrefixesEvent;
-import com.eu.habbo.messages.incoming.inventory.prefixes.SetActivePrefixEvent;
-import com.eu.habbo.messages.incoming.inventory.prefixes.SetDisplayOrderEvent;
+import com.eu.habbo.messages.incoming.inventory.prefixes.*;
 import com.eu.habbo.messages.incoming.mentions.DeleteMentionEvent;
 import com.eu.habbo.messages.incoming.mentions.MarkMentionsReadEvent;
 import com.eu.habbo.messages.incoming.mentions.RequestMentionsEvent;
-import com.eu.habbo.messages.incoming.modtool.ModToolAlertEvent;
-import com.eu.habbo.messages.incoming.modtool.ModToolChangeRoomSettingsEvent;
-import com.eu.habbo.messages.incoming.modtool.ModToolCloseTicketEvent;
-import com.eu.habbo.messages.incoming.modtool.ModToolIssueChangeTopicEvent;
-import com.eu.habbo.messages.incoming.modtool.ModToolIssueDefaultSanctionEvent;
-import com.eu.habbo.messages.incoming.modtool.ModToolKickEvent;
-import com.eu.habbo.messages.incoming.modtool.ModToolPickTicketEvent;
-import com.eu.habbo.messages.incoming.modtool.ModToolReleaseTicketEvent;
-import com.eu.habbo.messages.incoming.modtool.ModToolRequestIssueChatlogEvent;
-import com.eu.habbo.messages.incoming.modtool.ModToolRequestRoomChatlogEvent;
-import com.eu.habbo.messages.incoming.modtool.ModToolRequestRoomInfoEvent;
-import com.eu.habbo.messages.incoming.modtool.ModToolRequestRoomUserChatlogEvent;
-import com.eu.habbo.messages.incoming.modtool.ModToolRequestRoomVisitsEvent;
-import com.eu.habbo.messages.incoming.modtool.ModToolRequestUserChatlogEvent;
-import com.eu.habbo.messages.incoming.modtool.ModToolRequestUserInfoEvent;
-import com.eu.habbo.messages.incoming.modtool.ModToolRoomAlertEvent;
-import com.eu.habbo.messages.incoming.modtool.ModToolSanctionAlertEvent;
-import com.eu.habbo.messages.incoming.modtool.ModToolSanctionBanEvent;
-import com.eu.habbo.messages.incoming.modtool.ModToolSanctionMuteEvent;
-import com.eu.habbo.messages.incoming.modtool.ModToolSanctionTradeLockEvent;
-import com.eu.habbo.messages.incoming.modtool.ModToolWarnEvent;
-import com.eu.habbo.messages.incoming.modtool.ReportBullyEvent;
-import com.eu.habbo.messages.incoming.modtool.ReportCommentEvent;
-import com.eu.habbo.messages.incoming.modtool.ReportEvent;
-import com.eu.habbo.messages.incoming.modtool.ReportFriendPrivateChatEvent;
-import com.eu.habbo.messages.incoming.modtool.ReportPhotoEvent;
-import com.eu.habbo.messages.incoming.modtool.ReportThreadEvent;
-import com.eu.habbo.messages.incoming.modtool.RequestReportRoomEvent;
-import com.eu.habbo.messages.incoming.modtool.RequestReportUserBullyingEvent;
-import com.eu.habbo.messages.incoming.navigator.AddSavedSearchEvent;
-import com.eu.habbo.messages.incoming.navigator.DeleteSavedSearchEvent;
-import com.eu.habbo.messages.incoming.navigator.GetCategoriesWithUserCountEvent;
-import com.eu.habbo.messages.incoming.navigator.NavigatorCategoryListModeEvent;
-import com.eu.habbo.messages.incoming.navigator.NavigatorCollapseCategoryEvent;
-import com.eu.habbo.messages.incoming.navigator.NavigatorUncollapseCategoryEvent;
-import com.eu.habbo.messages.incoming.navigator.NewNavigatorActionEvent;
-import com.eu.habbo.messages.incoming.navigator.RequestCanCreateRoomEvent;
-import com.eu.habbo.messages.incoming.navigator.RequestCreateRoomEvent;
-import com.eu.habbo.messages.incoming.navigator.RequestDeleteRoomEvent;
-import com.eu.habbo.messages.incoming.navigator.RequestHighestScoreRoomsEvent;
-import com.eu.habbo.messages.incoming.navigator.RequestMyRoomsEvent;
-import com.eu.habbo.messages.incoming.navigator.RequestNavigatorSettingsEvent;
-import com.eu.habbo.messages.incoming.navigator.RequestNewNavigatorDataEvent;
-import com.eu.habbo.messages.incoming.navigator.RequestNewNavigatorRoomsEvent;
-import com.eu.habbo.messages.incoming.navigator.RequestPopularRoomsEvent;
-import com.eu.habbo.messages.incoming.navigator.RequestPromotedRoomsEvent;
-import com.eu.habbo.messages.incoming.navigator.RequestRoomCategoriesEvent;
-import com.eu.habbo.messages.incoming.navigator.RequestTagsEvent;
-import com.eu.habbo.messages.incoming.navigator.SaveWindowSettingsEvent;
-import com.eu.habbo.messages.incoming.navigator.SearchRoomsByTagEvent;
-import com.eu.habbo.messages.incoming.navigator.SearchRoomsEvent;
-import com.eu.habbo.messages.incoming.navigator.SearchRoomsFriendsNowEvent;
-import com.eu.habbo.messages.incoming.navigator.SearchRoomsFriendsOwnEvent;
-import com.eu.habbo.messages.incoming.navigator.SearchRoomsInGroupEvent;
-import com.eu.habbo.messages.incoming.navigator.SearchRoomsMyFavouriteEvent;
-import com.eu.habbo.messages.incoming.navigator.SearchRoomsVisitedEvent;
-import com.eu.habbo.messages.incoming.navigator.SearchRoomsWithRightsEvent;
+import com.eu.habbo.messages.incoming.modtool.*;
+import com.eu.habbo.messages.incoming.navigator.*;
 import com.eu.habbo.messages.incoming.polls.AnswerPollEvent;
 import com.eu.habbo.messages.incoming.polls.CancelPollEvent;
 import com.eu.habbo.messages.incoming.polls.GetPollDataEvent;
-import com.eu.habbo.messages.incoming.rooms.HandleDoorbellEvent;
-import com.eu.habbo.messages.incoming.rooms.RequestRoomDataEvent;
-import com.eu.habbo.messages.incoming.rooms.RequestRoomHeightmapEvent;
-import com.eu.habbo.messages.incoming.rooms.RequestRoomLoadEvent;
-import com.eu.habbo.messages.incoming.rooms.RequestRoomRightsEvent;
-import com.eu.habbo.messages.incoming.rooms.RequestRoomSettingsEvent;
-import com.eu.habbo.messages.incoming.rooms.RequestRoomWordFilterEvent;
-import com.eu.habbo.messages.incoming.rooms.RoomBackgroundEvent;
-import com.eu.habbo.messages.incoming.rooms.RoomFavoriteEvent;
-import com.eu.habbo.messages.incoming.rooms.RoomMuteEvent;
-import com.eu.habbo.messages.incoming.rooms.RoomPlacePaintEvent;
-import com.eu.habbo.messages.incoming.rooms.RoomRemoveAllRightsEvent;
-import com.eu.habbo.messages.incoming.rooms.RoomRemoveRightsEvent;
-import com.eu.habbo.messages.incoming.rooms.RoomRequestBannedUsersEvent;
-import com.eu.habbo.messages.incoming.rooms.RoomSettingsSaveEvent;
-import com.eu.habbo.messages.incoming.rooms.RoomStaffPickEvent;
-import com.eu.habbo.messages.incoming.rooms.RoomUnFavoriteEvent;
-import com.eu.habbo.messages.incoming.rooms.RoomVoteEvent;
-import com.eu.habbo.messages.incoming.rooms.RoomWordFilterModifyEvent;
-import com.eu.habbo.messages.incoming.rooms.SetHomeRoomEvent;
+import com.eu.habbo.messages.incoming.rooms.*;
 import com.eu.habbo.messages.incoming.rooms.bots.BotPickupEvent;
 import com.eu.habbo.messages.incoming.rooms.bots.BotPlaceEvent;
 import com.eu.habbo.messages.incoming.rooms.bots.BotSaveSettingsEvent;
 import com.eu.habbo.messages.incoming.rooms.bots.BotSettingsEvent;
-import com.eu.habbo.messages.incoming.rooms.items.AdvertisingSaveEvent;
-import com.eu.habbo.messages.incoming.rooms.items.ChestDepositEvent;
-import com.eu.habbo.messages.incoming.rooms.items.ChestDepositFurniEvent;
-import com.eu.habbo.messages.incoming.rooms.items.ChestDepositInventoryItemEvent;
-import com.eu.habbo.messages.incoming.rooms.items.ChestOpenEvent;
-import com.eu.habbo.messages.incoming.rooms.items.ChestRequestLogEvent;
-import com.eu.habbo.messages.incoming.rooms.items.ChestSaveNotificationsEvent;
-import com.eu.habbo.messages.incoming.rooms.items.ChestSaveSettingsEvent;
-import com.eu.habbo.messages.incoming.rooms.items.ChestStartDepositEvent;
-import com.eu.habbo.messages.incoming.rooms.items.ChestUpgradeCapacityEvent;
-import com.eu.habbo.messages.incoming.rooms.items.ChestWithdrawAllFurniEvent;
-import com.eu.habbo.messages.incoming.rooms.items.ChestWithdrawEvent;
-import com.eu.habbo.messages.incoming.rooms.items.ChestWithdrawFurniEvent;
-import com.eu.habbo.messages.incoming.rooms.items.ClickFurniEvent;
-import com.eu.habbo.messages.incoming.rooms.items.CloseDiceEvent;
-import com.eu.habbo.messages.incoming.rooms.items.FootballGateSaveLookEvent;
-import com.eu.habbo.messages.incoming.rooms.items.MannequinSaveLookEvent;
-import com.eu.habbo.messages.incoming.rooms.items.MannequinSaveNameEvent;
-import com.eu.habbo.messages.incoming.rooms.items.MoodLightSaveSettingsEvent;
-import com.eu.habbo.messages.incoming.rooms.items.MoodLightSettingsEvent;
-import com.eu.habbo.messages.incoming.rooms.items.MoodLightTurnOnEvent;
-import com.eu.habbo.messages.incoming.rooms.items.MoveWallItemEvent;
-import com.eu.habbo.messages.incoming.rooms.items.PostItDeleteEvent;
-import com.eu.habbo.messages.incoming.rooms.items.PostItPlaceEvent;
-import com.eu.habbo.messages.incoming.rooms.items.PostItRequestDataEvent;
-import com.eu.habbo.messages.incoming.rooms.items.PostItSaveDataEvent;
-import com.eu.habbo.messages.incoming.rooms.items.RedeemClothingEvent;
-import com.eu.habbo.messages.incoming.rooms.items.RedeemItemEvent;
-import com.eu.habbo.messages.incoming.rooms.items.RoomPickupChooserEvent;
-import com.eu.habbo.messages.incoming.rooms.items.RoomPickupItemEvent;
-import com.eu.habbo.messages.incoming.rooms.items.RoomPlaceItemEvent;
-import com.eu.habbo.messages.incoming.rooms.items.RotateMoveItemEvent;
-import com.eu.habbo.messages.incoming.rooms.items.SavePostItStickyPoleEvent;
-import com.eu.habbo.messages.incoming.rooms.items.SetStackHelperHeightEvent;
-import com.eu.habbo.messages.incoming.rooms.items.ToggleFloorItemEvent;
-import com.eu.habbo.messages.incoming.rooms.items.ToggleWallItemEvent;
-import com.eu.habbo.messages.incoming.rooms.items.TriggerColorWheelEvent;
-import com.eu.habbo.messages.incoming.rooms.items.TriggerDiceEvent;
-import com.eu.habbo.messages.incoming.rooms.items.TriggerOneWayGateEvent;
-import com.eu.habbo.messages.incoming.rooms.items.UpdateFurniturePositionEvent;
-import com.eu.habbo.messages.incoming.rooms.items.UseRandomStateItemEvent;
-import com.eu.habbo.messages.incoming.rooms.items.jukebox.JukeBoxAddSoundTrackEvent;
-import com.eu.habbo.messages.incoming.rooms.items.jukebox.JukeBoxEventOne;
-import com.eu.habbo.messages.incoming.rooms.items.jukebox.JukeBoxEventTwo;
-import com.eu.habbo.messages.incoming.rooms.items.jukebox.JukeBoxRemoveSoundTrackEvent;
-import com.eu.habbo.messages.incoming.rooms.items.jukebox.JukeBoxRequestPlayListEvent;
+import com.eu.habbo.messages.incoming.rooms.items.*;
+import com.eu.habbo.messages.incoming.rooms.items.jukebox.*;
 import com.eu.habbo.messages.incoming.rooms.items.lovelock.LoveLockStartConfirmEvent;
 import com.eu.habbo.messages.incoming.rooms.items.rentablespace.RentSpaceCancelEvent;
 import com.eu.habbo.messages.incoming.rooms.items.rentablespace.RentSpaceEvent;
 import com.eu.habbo.messages.incoming.rooms.items.youtube.YoutubeRequestPlaylistChange;
 import com.eu.habbo.messages.incoming.rooms.items.youtube.YoutubeRequestPlaylists;
 import com.eu.habbo.messages.incoming.rooms.items.youtube.YoutubeRequestStateChange;
-import com.eu.habbo.messages.incoming.rooms.pets.BreedMonsterplantsEvent;
-import com.eu.habbo.messages.incoming.rooms.pets.CompostMonsterplantEvent;
-import com.eu.habbo.messages.incoming.rooms.pets.ConfirmPetBreedingEvent;
-import com.eu.habbo.messages.incoming.rooms.pets.HorseRemoveSaddleEvent;
-import com.eu.habbo.messages.incoming.rooms.pets.MovePetEvent;
-import com.eu.habbo.messages.incoming.rooms.pets.PetPackageNameEvent;
-import com.eu.habbo.messages.incoming.rooms.pets.PetPickupEvent;
-import com.eu.habbo.messages.incoming.rooms.pets.PetPlaceEvent;
-import com.eu.habbo.messages.incoming.rooms.pets.PetRideEvent;
-import com.eu.habbo.messages.incoming.rooms.pets.PetRideSettingsEvent;
-import com.eu.habbo.messages.incoming.rooms.pets.PetUseItemEvent;
-import com.eu.habbo.messages.incoming.rooms.pets.RequestPetInformationEvent;
-import com.eu.habbo.messages.incoming.rooms.pets.RequestPetTrainingPanelEvent;
-import com.eu.habbo.messages.incoming.rooms.pets.ScratchPetEvent;
-import com.eu.habbo.messages.incoming.rooms.pets.StopBreedingEvent;
-import com.eu.habbo.messages.incoming.rooms.pets.ToggleMonsterplantBreedableEvent;
+import com.eu.habbo.messages.incoming.rooms.pets.*;
 import com.eu.habbo.messages.incoming.rooms.promotions.BuyRoomPromotionEvent;
 import com.eu.habbo.messages.incoming.rooms.promotions.RequestPromotionRoomsEvent;
 import com.eu.habbo.messages.incoming.rooms.promotions.UpdateRoomPromotionEvent;
-import com.eu.habbo.messages.incoming.rooms.users.ClickUserEvent;
-import com.eu.habbo.messages.incoming.rooms.users.IgnoreRoomUserEvent;
-import com.eu.habbo.messages.incoming.rooms.users.RequestRoomUserTagsEvent;
-import com.eu.habbo.messages.incoming.rooms.users.RoomUserActionEvent;
-import com.eu.habbo.messages.incoming.rooms.users.RoomUserBanEvent;
-import com.eu.habbo.messages.incoming.rooms.users.RoomUserDanceEvent;
-import com.eu.habbo.messages.incoming.rooms.users.RoomUserDropHandItemEvent;
-import com.eu.habbo.messages.incoming.rooms.users.RoomUserGiveHandItemEvent;
-import com.eu.habbo.messages.incoming.rooms.users.RoomUserGiveRespectEvent;
-import com.eu.habbo.messages.incoming.rooms.users.RoomUserGiveRightsEvent;
-import com.eu.habbo.messages.incoming.rooms.users.RoomUserHabbiconEvent;
-import com.eu.habbo.messages.incoming.rooms.users.RoomUserKickEvent;
-import com.eu.habbo.messages.incoming.rooms.users.RoomUserLookAtPoint;
-import com.eu.habbo.messages.incoming.rooms.users.RoomUserMuteEvent;
-import com.eu.habbo.messages.incoming.rooms.users.RoomUserRemoveRightsEvent;
-import com.eu.habbo.messages.incoming.rooms.users.RoomUserShoutEvent;
-import com.eu.habbo.messages.incoming.rooms.users.RoomUserSignEvent;
-import com.eu.habbo.messages.incoming.rooms.users.RoomUserSitEvent;
-import com.eu.habbo.messages.incoming.rooms.users.RoomUserStartTypingEvent;
-import com.eu.habbo.messages.incoming.rooms.users.RoomUserStopTypingEvent;
-import com.eu.habbo.messages.incoming.rooms.users.RoomUserTalkEvent;
-import com.eu.habbo.messages.incoming.rooms.users.RoomUserWalkEvent;
-import com.eu.habbo.messages.incoming.rooms.users.RoomUserWhisperEvent;
-import com.eu.habbo.messages.incoming.rooms.users.UnIgnoreRoomUserEvent;
-import com.eu.habbo.messages.incoming.rooms.users.UnbanRoomUserEvent;
-import com.eu.habbo.messages.incoming.trading.TradeAcceptEvent;
-import com.eu.habbo.messages.incoming.trading.TradeCancelEvent;
-import com.eu.habbo.messages.incoming.trading.TradeCancelOfferItemEvent;
-import com.eu.habbo.messages.incoming.trading.TradeCloseEvent;
-import com.eu.habbo.messages.incoming.trading.TradeConfirmEvent;
-import com.eu.habbo.messages.incoming.trading.TradeOfferItemEvent;
-import com.eu.habbo.messages.incoming.trading.TradeOfferMultipleItemsEvent;
-import com.eu.habbo.messages.incoming.trading.TradeStartEvent;
-import com.eu.habbo.messages.incoming.trading.TradeUnAcceptEvent;
+import com.eu.habbo.messages.incoming.rooms.users.*;
+import com.eu.habbo.messages.incoming.trading.*;
 import com.eu.habbo.messages.incoming.translation.TranslationLanguagesRequestEvent;
 import com.eu.habbo.messages.incoming.translation.TranslationTextRequestEvent;
 import com.eu.habbo.messages.incoming.unknown.RequestResolutionEvent;
 import com.eu.habbo.messages.incoming.unknown.UnknownEvent1;
-import com.eu.habbo.messages.incoming.users.ActivateEffectEvent;
-import com.eu.habbo.messages.incoming.users.ChangeChatBubbleEvent;
-import com.eu.habbo.messages.incoming.users.ChangeInfostandBgEvent;
-import com.eu.habbo.messages.incoming.users.ChangeNameCheckUsernameEvent;
-import com.eu.habbo.messages.incoming.users.ConfirmChangeNameEvent;
-import com.eu.habbo.messages.incoming.users.EnableEffectEvent;
-import com.eu.habbo.messages.incoming.users.GetIgnoredUsersEvent;
-import com.eu.habbo.messages.incoming.users.PickNewUserGiftEvent;
-import com.eu.habbo.messages.incoming.users.RequestClubCenterEvent;
-import com.eu.habbo.messages.incoming.users.RequestMeMenuSettingsEvent;
-import com.eu.habbo.messages.incoming.users.RequestProfileFriendsEvent;
-import com.eu.habbo.messages.incoming.users.RequestUserCitizinShipEvent;
-import com.eu.habbo.messages.incoming.users.RequestUserClubEvent;
-import com.eu.habbo.messages.incoming.users.RequestUserCreditsEvent;
-import com.eu.habbo.messages.incoming.users.RequestUserDataEvent;
-import com.eu.habbo.messages.incoming.users.RequestUserProfileEvent;
-import com.eu.habbo.messages.incoming.users.RequestUserWardrobeEvent;
-import com.eu.habbo.messages.incoming.users.RequestWearingBadgesEvent;
-import com.eu.habbo.messages.incoming.users.SaveBlockCameraFollowEvent;
-import com.eu.habbo.messages.incoming.users.SaveGamePrivacySettingsEvent;
-import com.eu.habbo.messages.incoming.users.SaveIgnoreRoomInvitesEvent;
-import com.eu.habbo.messages.incoming.users.SaveMottoEvent;
-import com.eu.habbo.messages.incoming.users.SavePreferOldChatEvent;
-import com.eu.habbo.messages.incoming.users.SaveUserVolumesEvent;
-import com.eu.habbo.messages.incoming.users.SaveWardrobeEvent;
-import com.eu.habbo.messages.incoming.users.UpdateUIFlagsEvent;
-import com.eu.habbo.messages.incoming.users.UserActivityEvent;
-import com.eu.habbo.messages.incoming.users.UserNuxEvent;
-import com.eu.habbo.messages.incoming.users.UserSaveLookEvent;
-import com.eu.habbo.messages.incoming.users.UserWearBadgeEvent;
-import com.eu.habbo.messages.incoming.wired.WiredApplySetConditionsEvent;
-import com.eu.habbo.messages.incoming.wired.WiredConditionSaveDataEvent;
-import com.eu.habbo.messages.incoming.wired.WiredEffectSaveDataEvent;
-import com.eu.habbo.messages.incoming.wired.WiredFeatureCapabilitiesEvent;
-import com.eu.habbo.messages.incoming.wired.WiredFurniRuntimeStateRequestEvent;
-import com.eu.habbo.messages.incoming.wired.WiredMonitorRequestEvent;
-import com.eu.habbo.messages.incoming.wired.WiredRoomSettingsRequestEvent;
-import com.eu.habbo.messages.incoming.wired.WiredRoomSettingsSaveEvent;
-import com.eu.habbo.messages.incoming.wired.WiredTriggerSaveDataEvent;
-import com.eu.habbo.messages.incoming.wired.WiredUserInspectMoveEvent;
-import com.eu.habbo.messages.incoming.wired.WiredUserVariableManageEvent;
-import com.eu.habbo.messages.incoming.wired.WiredUserVariableUpdateEvent;
-import com.eu.habbo.messages.incoming.wired.WiredUserVariablesRequestEvent;
+import com.eu.habbo.messages.incoming.users.*;
+import com.eu.habbo.messages.incoming.wired.*;
 import com.eu.habbo.monitoring.EmulatorNetworkStats;
 import com.eu.habbo.plugin.EventHandler;
 import com.eu.habbo.plugin.events.emulator.EmulatorConfigUpdatedEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class PacketManager {
 
@@ -459,7 +99,7 @@ public class PacketManager {
                 return type.asSubclass(MessageHandler.class).getDeclaredConstructor();
             } catch (NoSuchMethodException exception) {
                 throw new IllegalArgumentException(
-                        "Incoming handler has no default constructor: " + type.getName(), exception);
+                    "Incoming handler has no default constructor: " + type.getName(), exception);
             }
         }
     };
@@ -530,7 +170,7 @@ public class PacketManager {
 
         if (this.incoming.containsKey(header)) {
             throw new Exception(
-                    "Header already registered. Failed to register " + handler.getName() + " with header " + header);
+                "Header already registered. Failed to register " + handler.getName() + " with header " + header);
         }
 
         this.incoming.putIfAbsent(header, handler);
@@ -581,10 +221,10 @@ public class PacketManager {
 
                     if (rateLimitGroup != null && !rateLimitGroup.isBlank()) {
                         rateLimited = !acquireGroupedRateLimit(
-                                client.groupedMessageRateLimitDeadlines, rateLimitGroup, handler.getRatelimit(), now);
+                            client.groupedMessageRateLimitDeadlines, rateLimitGroup, handler.getRatelimit(), now);
                     } else {
                         rateLimited = client.messageTimestamps.containsKey(handlerClass)
-                                && now - client.messageTimestamps.get(handlerClass) < handler.getRatelimit();
+                            && now - client.messageTimestamps.get(handlerClass) < handler.getRatelimit();
                     }
 
                     if (rateLimited) {
@@ -602,10 +242,10 @@ public class PacketManager {
 
                 if (logList.contains(packet.getMessageId()) && client.getHabbo() != null) {
                     LOGGER.info(
-                            "User {} sent packet {} with body {}",
-                            client.getHabbo().getHabboInfo().getUsername(),
-                            packet.getMessageId(),
-                            packet.getMessageBody());
+                        "User {} sent packet {} with body {}",
+                        client.getHabbo().getHabboInfo().getUsername(),
+                        packet.getMessageId(),
+                        packet.getMessageBody());
                 }
 
                 handler.client = client;
@@ -927,7 +567,7 @@ public class PacketManager {
         this.registerHandler(Incoming.BotSettingsEvent, BotSettingsEvent.class);
         this.registerHandler(Incoming.TriggerDiceEvent, TriggerDiceEvent.class);
         this.registerHandler(
-                Incoming.PressKeybindEvent, com.eu.habbo.messages.incoming.rooms.items.PressKeybindEvent.class);
+            Incoming.PressKeybindEvent, com.eu.habbo.messages.incoming.rooms.items.PressKeybindEvent.class);
         this.registerHandler(Incoming.CloseDiceEvent, CloseDiceEvent.class);
         this.registerHandler(Incoming.TriggerColorWheelEvent, TriggerColorWheelEvent.class);
         this.registerHandler(Incoming.RedeemItemEvent, RedeemItemEvent.class);
@@ -1121,9 +761,9 @@ public class PacketManager {
     void registerFloorPlanEditor() throws Exception {
         this.registerHandler(Incoming.FloorPlanEditorSaveEvent, FloorPlanEditorSaveEvent.class);
         this.registerHandler(
-                Incoming.FloorPlanEditorRequestBlockedTilesEvent, FloorPlanEditorRequestBlockedTilesEvent.class);
+            Incoming.FloorPlanEditorRequestBlockedTilesEvent, FloorPlanEditorRequestBlockedTilesEvent.class);
         this.registerHandler(
-                Incoming.FloorPlanEditorRequestDoorSettingsEvent, FloorPlanEditorRequestDoorSettingsEvent.class);
+            Incoming.FloorPlanEditorRequestDoorSettingsEvent, FloorPlanEditorRequestDoorSettingsEvent.class);
     }
 
     void registerAchievements() throws Exception {
@@ -1171,43 +811,46 @@ public class PacketManager {
         // PacketNamesContractTest, so the legacy names stay canonical. The
         // handler class names document what each header actually is.
         this.registerHandler(
-                Incoming.UNKNOWN_SNOWSTORM_6000, // load stage ready
-                com.eu.habbo.messages.incoming.snowwar.SnowStormLoadStageReadyEvent.class);
+            Incoming.UNKNOWN_SNOWSTORM_6000, // load stage ready
+            com.eu.habbo.messages.incoming.snowwar.SnowStormLoadStageReadyEvent.class);
         this.registerHandler(
-                Incoming.UNKNOWN_SNOWSTORM_6001, // exit game
-                com.eu.habbo.messages.incoming.snowwar.SnowStormExitGameEvent.class);
+            Incoming.UNKNOWN_SNOWSTORM_6001, // exit game
+            com.eu.habbo.messages.incoming.snowwar.SnowStormExitGameEvent.class);
         this.registerHandler(
-                Incoming.UNKNOWN_SNOWSTORM_6010, // open arena editor (6002 is taken by ClickFurniEvent)
-                com.eu.habbo.messages.incoming.snowwar.SnowStormEditRoomEvent.class);
+            Incoming.UNKNOWN_SNOWSTORM_6010, // open arena editor (6002 is taken by ClickFurniEvent)
+            com.eu.habbo.messages.incoming.snowwar.SnowStormEditRoomEvent.class);
         this.registerHandler(
-                Incoming.UNKNOWN_SNOWSTORM_6003, // walk
-                com.eu.habbo.messages.incoming.snowwar.SnowStormWalkEvent.class);
+            Incoming.UNKNOWN_SNOWSTORM_6003, // walk
+            com.eu.habbo.messages.incoming.snowwar.SnowStormWalkEvent.class);
         this.registerHandler(
-                Incoming.UNKNOWN_SNOWSTORM_6004, // throw at location
-                com.eu.habbo.messages.incoming.snowwar.SnowStormThrowAtLocationEvent.class);
+            Incoming.UNKNOWN_SNOWSTORM_6004, // throw at location
+            com.eu.habbo.messages.incoming.snowwar.SnowStormThrowAtLocationEvent.class);
         this.registerHandler(
-                Incoming.UNKNOWN_SNOWSTORM_6005, // throw at player
-                com.eu.habbo.messages.incoming.snowwar.SnowStormThrowAtPlayerEvent.class);
+            Incoming.UNKNOWN_SNOWSTORM_6005, // throw at player
+            com.eu.habbo.messages.incoming.snowwar.SnowStormThrowAtPlayerEvent.class);
         this.registerHandler(
-                Incoming.UNKNOWN_SNOWSTORM_6006, // create snowball
-                com.eu.habbo.messages.incoming.snowwar.SnowStormCreateSnowballEvent.class);
+            Incoming.UNKNOWN_SNOWSTORM_6006, // create snowball
+            com.eu.habbo.messages.incoming.snowwar.SnowStormCreateSnowballEvent.class);
         this.registerHandler(
-                Incoming.UNKNOWN_SNOWSTORM_6007, // request full game status
-                com.eu.habbo.messages.incoming.snowwar.SnowStormRequestFullGameStatusEvent.class);
+            Incoming.UNKNOWN_SNOWSTORM_6007, // request full game status
+            com.eu.habbo.messages.incoming.snowwar.SnowStormRequestFullGameStatusEvent.class);
         this.registerHandler(
-                Incoming.UNKNOWN_SNOWSTORM_6008, // play again
-                com.eu.habbo.messages.incoming.snowwar.SnowStormPlayAgainEvent.class);
+            Incoming.UNKNOWN_SNOWSTORM_6008, // play again
+            com.eu.habbo.messages.incoming.snowwar.SnowStormPlayAgainEvent.class);
         this.registerHandler(
-                Incoming.UNKNOWN_SNOWSTORM_6009, // game chat
-                com.eu.habbo.messages.incoming.snowwar.SnowStormGameChatEvent.class);
+            Incoming.UNKNOWN_SNOWSTORM_6009, // game chat
+            com.eu.habbo.messages.incoming.snowwar.SnowStormGameChatEvent.class);
         this.registerHandler(
-                Incoming.SnowStormJoinQueueEvent, com.eu.habbo.messages.incoming.snowwar.SnowStormJoinQueueEvent.class);
+            Incoming.SnowStormJoinQueueEvent, com.eu.habbo.messages.incoming.snowwar.SnowStormJoinQueueEvent.class);
         this.registerHandler(
-                Incoming.UNKNOWN_SNOWSTORM_6013, // leave queue
-                com.eu.habbo.messages.incoming.snowwar.SnowStormLeaveQueueEvent.class);
+            Incoming.UNKNOWN_SNOWSTORM_6013, // leave queue
+            com.eu.habbo.messages.incoming.snowwar.SnowStormLeaveQueueEvent.class);
         this.registerHandler(
-                Incoming.UNKNOWN_SNOWSTORM_6011, // save in-game arena editor layout
-                com.eu.habbo.messages.incoming.snowwar.SnowStormSaveEditorEvent.class);
+            Incoming.UNKNOWN_SNOWSTORM_6011, // save in-game arena editor layout
+            com.eu.habbo.messages.incoming.snowwar.SnowStormSaveEditorEvent.class);
+        this.registerHandler(
+            Incoming.UNKNOWN_SNOWSTORM_6014, // close arena editor (release matchmaking lock)
+            com.eu.habbo.messages.incoming.snowwar.SnowStormExitEditorEvent.class);
     }
 
     void registerGameCenter() throws Exception {
@@ -1221,119 +864,119 @@ public class PacketManager {
 
         // YouTube Room Broadcast
         this.registerHandler(
-                Incoming.YouTubeRoomPlayEvent, com.eu.habbo.messages.incoming.rooms.youtube.YouTubeRoomPlayEvent.class);
+            Incoming.YouTubeRoomPlayEvent, com.eu.habbo.messages.incoming.rooms.youtube.YouTubeRoomPlayEvent.class);
         this.registerHandler(
-                Incoming.YouTubeRoomWatchingEvent,
-                com.eu.habbo.messages.incoming.rooms.youtube.YouTubeRoomWatchingEvent.class);
+            Incoming.YouTubeRoomWatchingEvent,
+            com.eu.habbo.messages.incoming.rooms.youtube.YouTubeRoomWatchingEvent.class);
         this.registerHandler(
-                Incoming.YouTubeRoomSettingsEvent,
-                com.eu.habbo.messages.incoming.rooms.youtube.YouTubeRoomSettingsEvent.class);
+            Incoming.YouTubeRoomSettingsEvent,
+            com.eu.habbo.messages.incoming.rooms.youtube.YouTubeRoomSettingsEvent.class);
 
         // Housekeeping (in-client admin panel)
         this.registerHandler(
-                Incoming.HousekeepingFindUserByNameEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingFindUserByNameEvent.class);
+            Incoming.HousekeepingFindUserByNameEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingFindUserByNameEvent.class);
         this.registerHandler(
-                Incoming.HousekeepingFindUserByIdEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingFindUserByIdEvent.class);
+            Incoming.HousekeepingFindUserByIdEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingFindUserByIdEvent.class);
         this.registerHandler(
-                Incoming.HousekeepingBanUserEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingBanUserEvent.class);
+            Incoming.HousekeepingBanUserEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingBanUserEvent.class);
         this.registerHandler(
-                Incoming.HousekeepingUnbanUserEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingUnbanUserEvent.class);
+            Incoming.HousekeepingUnbanUserEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingUnbanUserEvent.class);
         this.registerHandler(
-                Incoming.HousekeepingMuteUserEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingMuteUserEvent.class);
+            Incoming.HousekeepingMuteUserEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingMuteUserEvent.class);
         this.registerHandler(
-                Incoming.HousekeepingKickUserEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingKickUserEvent.class);
+            Incoming.HousekeepingKickUserEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingKickUserEvent.class);
         this.registerHandler(
-                Incoming.HousekeepingForceDisconnectUserEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingForceDisconnectUserEvent.class);
+            Incoming.HousekeepingForceDisconnectUserEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingForceDisconnectUserEvent.class);
         this.registerHandler(
-                Incoming.HousekeepingSetUserRankEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingSetUserRankEvent.class);
+            Incoming.HousekeepingSetUserRankEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingSetUserRankEvent.class);
         this.registerHandler(
-                Incoming.HousekeepingTradeLockUserEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingTradeLockUserEvent.class);
+            Incoming.HousekeepingTradeLockUserEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingTradeLockUserEvent.class);
         this.registerHandler(
-                Incoming.HousekeepingResetUserPasswordEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingResetUserPasswordEvent.class);
+            Incoming.HousekeepingResetUserPasswordEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingResetUserPasswordEvent.class);
         this.registerHandler(
-                Incoming.HousekeepingFindRoomByIdEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingFindRoomByIdEvent.class);
+            Incoming.HousekeepingFindRoomByIdEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingFindRoomByIdEvent.class);
         this.registerHandler(
-                Incoming.HousekeepingSearchRoomsEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingSearchRoomsEvent.class);
+            Incoming.HousekeepingSearchRoomsEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingSearchRoomsEvent.class);
         this.registerHandler(
-                Incoming.HousekeepingRoomStateEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingRoomStateEvent.class);
+            Incoming.HousekeepingRoomStateEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingRoomStateEvent.class);
         this.registerHandler(
-                Incoming.HousekeepingMuteRoomEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingMuteRoomEvent.class);
+            Incoming.HousekeepingMuteRoomEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingMuteRoomEvent.class);
         this.registerHandler(
-                Incoming.HousekeepingKickAllFromRoomEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingKickAllFromRoomEvent.class);
+            Incoming.HousekeepingKickAllFromRoomEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingKickAllFromRoomEvent.class);
         this.registerHandler(
-                Incoming.HousekeepingTransferRoomOwnershipEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingTransferRoomOwnershipEvent.class);
+            Incoming.HousekeepingTransferRoomOwnershipEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingTransferRoomOwnershipEvent.class);
         this.registerHandler(
-                Incoming.HousekeepingDeleteRoomEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingDeleteRoomEvent.class);
+            Incoming.HousekeepingDeleteRoomEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingDeleteRoomEvent.class);
         this.registerHandler(
-                Incoming.HousekeepingGiveCreditsEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingGiveCreditsEvent.class);
+            Incoming.HousekeepingGiveCreditsEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingGiveCreditsEvent.class);
         this.registerHandler(
-                Incoming.HousekeepingGiveCurrencyEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingGiveCurrencyEvent.class);
+            Incoming.HousekeepingGiveCurrencyEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingGiveCurrencyEvent.class);
         this.registerHandler(
-                Incoming.HousekeepingGrantItemEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingGrantItemEvent.class);
+            Incoming.HousekeepingGrantItemEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingGrantItemEvent.class);
         this.registerHandler(
-                Incoming.HousekeepingSetHcSubscriptionEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingSetHcSubscriptionEvent.class);
+            Incoming.HousekeepingSetHcSubscriptionEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingSetHcSubscriptionEvent.class);
         this.registerHandler(
-                Incoming.HousekeepingSendHotelAlertEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingSendHotelAlertEvent.class);
+            Incoming.HousekeepingSendHotelAlertEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingSendHotelAlertEvent.class);
         this.registerHandler(
-                Incoming.HousekeepingGetDashboardEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingGetDashboardEvent.class);
+            Incoming.HousekeepingGetDashboardEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingGetDashboardEvent.class);
         this.registerHandler(
-                Incoming.HousekeepingListActionLogEvent,
-                com.eu.habbo.messages.incoming.housekeeping.HousekeepingListActionLogEvent.class);
+            Incoming.HousekeepingListActionLogEvent,
+            com.eu.habbo.messages.incoming.housekeeping.HousekeepingListActionLogEvent.class);
 
         this.registerHandler(
-                Incoming.RequestRareValuesEvent,
-                com.eu.habbo.messages.incoming.rarevalues.RequestRareValuesEvent.class);
+            Incoming.RequestRareValuesEvent,
+            com.eu.habbo.messages.incoming.rarevalues.RequestRareValuesEvent.class);
 
         this.registerHandler(Incoming.WheelOpenEvent, com.eu.habbo.messages.incoming.wheel.WheelOpenEvent.class);
         this.registerHandler(Incoming.WheelSpinEvent, com.eu.habbo.messages.incoming.wheel.WheelSpinEvent.class);
         this.registerHandler(Incoming.WheelBuySpinEvent, com.eu.habbo.messages.incoming.wheel.WheelBuySpinEvent.class);
         this.registerHandler(
-                Incoming.WheelAdminGetPrizesEvent, com.eu.habbo.messages.incoming.wheel.WheelAdminGetPrizesEvent.class);
+            Incoming.WheelAdminGetPrizesEvent, com.eu.habbo.messages.incoming.wheel.WheelAdminGetPrizesEvent.class);
         this.registerHandler(
-                Incoming.WheelAdminSavePrizesEvent,
-                com.eu.habbo.messages.incoming.wheel.WheelAdminSavePrizesEvent.class);
+            Incoming.WheelAdminSavePrizesEvent,
+            com.eu.habbo.messages.incoming.wheel.WheelAdminSavePrizesEvent.class);
 
         this.registerHandler(
-                Incoming.SoundboardPlayEvent, com.eu.habbo.messages.incoming.soundboard.SoundboardPlayEvent.class);
+            Incoming.SoundboardPlayEvent, com.eu.habbo.messages.incoming.soundboard.SoundboardPlayEvent.class);
         this.registerHandler(
-                Incoming.SoundboardSetEnabledEvent,
-                com.eu.habbo.messages.incoming.soundboard.SoundboardSetEnabledEvent.class);
+            Incoming.SoundboardSetEnabledEvent,
+            com.eu.habbo.messages.incoming.soundboard.SoundboardSetEnabledEvent.class);
 
         this.registerHandler(
-                Incoming.TraxEditorRequestSongsEvent,
-                com.eu.habbo.messages.incoming.traxeditor.TraxEditorRequestSongsEvent.class);
+            Incoming.TraxEditorRequestSongsEvent,
+            com.eu.habbo.messages.incoming.traxeditor.TraxEditorRequestSongsEvent.class);
         this.registerHandler(
-                Incoming.TraxEditorBuySongEvent,
-                com.eu.habbo.messages.incoming.traxeditor.TraxEditorBuySongEvent.class);
+            Incoming.TraxEditorBuySongEvent,
+            com.eu.habbo.messages.incoming.traxeditor.TraxEditorBuySongEvent.class);
         this.registerHandler(
-                Incoming.TraxEditorSaveSongEvent,
-                com.eu.habbo.messages.incoming.traxeditor.TraxEditorSaveSongEvent.class);
+            Incoming.TraxEditorSaveSongEvent,
+            com.eu.habbo.messages.incoming.traxeditor.TraxEditorSaveSongEvent.class);
         this.registerHandler(
-                Incoming.TraxEditorDeleteSongEvent,
-                com.eu.habbo.messages.incoming.traxeditor.TraxEditorDeleteSongEvent.class);
+            Incoming.TraxEditorDeleteSongEvent,
+            com.eu.habbo.messages.incoming.traxeditor.TraxEditorDeleteSongEvent.class);
     }
 
     void registerEarnings() throws Exception {

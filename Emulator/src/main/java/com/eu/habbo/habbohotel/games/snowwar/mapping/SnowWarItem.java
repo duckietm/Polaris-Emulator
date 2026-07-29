@@ -24,6 +24,23 @@ public class SnowWarItem {
     private int width = 1;
     private int length = 1;
 
+    // Multistate furni state index (0 for single-state props). Set at map load
+    // from the editor-saved public_items and sent to the client so the arena
+    // draws the furni in the chosen state.
+    private int state = 0;
+
+    // Number of interaction states this furni actually has
+    // (items_base.interaction_modes_count). Defaults to 1 (single-state) and is
+    // filled at map load from the base item so the editor can cap the state
+    // stepper at the real range instead of letting it run past the last state.
+    private int stateCount = 1;
+
+    // True when this furni is tall enough (base stack height > 0.4) to stop a
+    // straight or lob snowball; a long (curved) throw still arcs over it. Set at
+    // map load from the base item, defaulting to true so unknown/built-in
+    // obstacles block.
+    private boolean blocksSnowball = true;
+
     public SnowWarItem(String name, int x, int y, int rotation) {
         this(
                 name,
@@ -105,6 +122,30 @@ public class SnowWarItem {
     public void setSize(int width, int length) {
         this.width = Math.max(1, width);
         this.length = Math.max(1, length);
+    }
+
+    public int getState() {
+        return this.state;
+    }
+
+    public void setState(int state) {
+        this.state = Math.max(0, state);
+    }
+
+    public int getStateCount() {
+        return this.stateCount;
+    }
+
+    public void setStateCount(int stateCount) {
+        this.stateCount = Math.max(1, stateCount);
+    }
+
+    public boolean blocksSnowball() {
+        return this.blocksSnowball;
+    }
+
+    public void setBlocksSnowball(boolean blocksSnowball) {
+        this.blocksSnowball = blocksSnowball;
     }
 
     /**

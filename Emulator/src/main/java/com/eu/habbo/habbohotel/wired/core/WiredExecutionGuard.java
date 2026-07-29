@@ -348,9 +348,10 @@ final class WiredExecutionGuard {
         int maximumEvents = maxEventsPerWindow();
         RateTrackerCache cached = this.recentRateTracker;
         EventRateTracker tracker;
+        boolean limited;
         if (cached != null && cached.roomId() == roomId && cached.eventType() == eventType) {
             tracker = cached.tracker();
-            tracker.recordEvent(now, windowMs);
+            limited = tracker.recordEventAndCheckLimit(now, windowMs, maximumEvents);
         } else {
             String key = roomId + ":" + eventType.name();
             tracker = this.eventRateLimiters.get(key);
@@ -358,17 +359,18 @@ final class WiredExecutionGuard {
                 EventRateTracker candidate = new EventRateTracker(now);
                 tracker = this.eventRateLimiters.putIfAbsent(key, candidate);
                 if (tracker == null) {
+                    // The constructor already counted this admission as the first in the window.
                     tracker = candidate;
+                    limited = candidate.isRateLimited(maximumEvents);
                 } else {
-                    tracker.recordEvent(now, windowMs);
+                    limited = tracker.recordEventAndCheckLimit(now, windowMs, maximumEvents);
                 }
             } else {
-                tracker.recordEvent(now, windowMs);
+                limited = tracker.recordEventAndCheckLimit(now, windowMs, maximumEvents);
             }
             this.recentRateTracker = new RateTrackerCache(roomId, eventType, tracker);
         }
 
-        boolean limited = tracker.isRateLimited(maximumEvents);
         if (limited && tracker.shouldBan(maximumEvents)) {
             int eventCount = tracker.eventCount();
             diagnostics(roomId)
@@ -548,7 +550,16 @@ final class WiredExecutionGuard {
             this.eventCount = 1;
         }
 
-        private synchronized void recordEvent(long now, long windowMs) {
+        /**
+         * Records one admission and reports whether that admission exceeded the limit,
+         * as a single atomic step.
+         *
+         * <p>Recording and checking must not be separate synchronized calls. Concurrent
+         * callers would each increment the counter before any of them checked it, so
+         * every caller would then observe the final count and be rejected — admitting
+         * far fewer than {@code maximumEvents}, or none at all.
+         */
+        private synchronized boolean recordEventAndCheckLimit(long now, long windowMs, int maximumEvents) {
             if (now - this.windowStart > windowMs) {
                 this.windowStart = now;
                 this.eventCount = 1;
@@ -556,6 +567,7 @@ final class WiredExecutionGuard {
             } else {
                 this.eventCount++;
             }
+            return this.eventCount > maximumEvents;
         }
 
         private synchronized boolean isRateLimited(int maximumEvents) {

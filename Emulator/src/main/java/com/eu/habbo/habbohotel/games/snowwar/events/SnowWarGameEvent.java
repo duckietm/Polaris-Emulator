@@ -12,10 +12,12 @@ public abstract class SnowWarGameEvent {
     public static final int TYPE_CREATE_SNOWBALL = 3;
     public static final int TYPE_LAUNCH_SNOWBALL = 4;
     public static final int TYPE_HIT = 5;
-    public static final int TYPE_MACHINE_ADD_SNOWBALL = 6;
-    public static final int TYPE_MACHINE_TRANSFER_SNOWBALL = 7;
+    public static final int TYPE_MACHINE_ADD_SNOWBALL = 11;
+    public static final int TYPE_MACHINE_TRANSFER_SNOWBALL = 12;
+    public static final int TYPE_TREE_HIT = 13;
     public static final int TYPE_DELETE_OBJECT = 8;
     public static final int TYPE_STUN = 9;
+    public static final int TYPE_RAY_GUN_BURST = 10;
 
     private final int type;
 

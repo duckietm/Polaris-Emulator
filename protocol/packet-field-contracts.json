@@ -6195,22 +6195,6 @@
       ]
     },
     {
-      "name": "SNOWWAR_LOAD_STAGE_READY",
-      "direction": "client_to_server",
-      "header": 6000,
-      "java": {
-        "symbol": "UNKNOWN_SNOWSTORM_6000",
-        "className": "SnowStormLoadStageReadyEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormLoadStageReadyEvent.java"
-      },
-      "typescript": {
-        "symbol": "SNOWWAR_LOAD_STAGE_READY",
-        "className": "SnowWarLoadStageReadyComposer",
-        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarLoadStageReadyComposer.ts"
-      },
-      "fields": []
-    },
-    {
       "name": "SNOWWAR_EXIT_GAME",
       "direction": "client_to_server",
       "header": 6001,
@@ -6252,108 +6236,6 @@
           "name": ""
         }
       ]
-    },
-    {
-      "name": "SNOWWAR_WALK",
-      "direction": "client_to_server",
-      "header": 6003,
-      "java": {
-        "symbol": "UNKNOWN_SNOWSTORM_6003",
-        "className": "SnowStormWalkEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormWalkEvent.java"
-      },
-      "typescript": {
-        "symbol": "SNOWWAR_WALK",
-        "className": "SnowWarWalkComposer",
-        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarWalkComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "worldX"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "worldY"
-        }
-      ]
-    },
-    {
-      "name": "SNOWWAR_THROW_AT_LOCATION",
-      "direction": "client_to_server",
-      "header": 6004,
-      "java": {
-        "symbol": "UNKNOWN_SNOWSTORM_6004",
-        "className": "SnowStormThrowAtLocationEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormThrowAtLocationEvent.java"
-      },
-      "typescript": {
-        "symbol": "SNOWWAR_THROW_AT_LOCATION",
-        "className": "SnowWarThrowAtLocationComposer",
-        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarThrowAtLocationComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "worldX"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "worldY"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "trajectory"
-        }
-      ]
-    },
-    {
-      "name": "SNOWWAR_THROW_AT_PLAYER",
-      "direction": "client_to_server",
-      "header": 6005,
-      "java": {
-        "symbol": "UNKNOWN_SNOWSTORM_6005",
-        "className": "SnowStormThrowAtPlayerEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormThrowAtPlayerEvent.java"
-      },
-      "typescript": {
-        "symbol": "SNOWWAR_THROW_AT_PLAYER",
-        "className": "SnowWarThrowAtPlayerComposer",
-        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarThrowAtPlayerComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "targetObjectId"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "trajectory"
-        }
-      ]
-    },
-    {
-      "name": "SNOWWAR_CREATE_SNOWBALL",
-      "direction": "client_to_server",
-      "header": 6006,
-      "java": {
-        "symbol": "UNKNOWN_SNOWSTORM_6006",
-        "className": "SnowStormCreateSnowballEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormCreateSnowballEvent.java"
-      },
-      "typescript": {
-        "symbol": "SNOWWAR_CREATE_SNOWBALL",
-        "className": "SnowWarCreateSnowballComposer",
-        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarCreateSnowballComposer.ts"
-      },
-      "fields": []
     },
     {
       "name": "SNOWWAR_REQUEST_FULL_GAME_STATUS",
@@ -6472,6 +6354,118 @@
         "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarExitEditorComposer.ts"
       },
       "fields": []
+    },
+    {
+      "name": "SNOWWAR_SELECT_ARENA",
+      "direction": "client_to_server",
+      "header": 6015,
+      "java": {
+        "symbol": "UNKNOWN_SNOWSTORM_6015",
+        "className": "SnowStormSelectArenaEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormSelectArenaEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_SELECT_ARENA",
+        "className": "SnowWarSelectArenaComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarSelectArenaComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "name": "arenaId",
+          "type": "int"
+        }
+      ]
+    },
+    {
+      "name": "SNOWWAR_GET_ALL_TIME_LEADERBOARD",
+      "direction": "client_to_server",
+      "header": 6027,
+      "java": {
+        "symbol": "SnowStormGetAllTimeLeaderboardEvent",
+        "className": "SnowStormGetAllTimeLeaderboardEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormGetAllTimeLeaderboardEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_GET_ALL_TIME_LEADERBOARD",
+        "className": "SnowWarGetAllTimeLeaderboardComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarGetAllTimeLeaderboardComposer.ts"
+      },
+      "fields": [
+        { "kind": "scalar", "name": "gameTypeId", "type": "int" },
+        { "kind": "scalar", "name": "startRank", "type": "int" },
+        { "kind": "scalar", "name": "direction", "type": "int" },
+        { "kind": "scalar", "name": "viewSize", "type": "int" },
+        { "kind": "scalar", "name": "windowSize", "type": "int" }
+      ]
+    },
+    {
+      "name": "SNOWWAR_GET_ALL_TIME_FRIENDS_LEADERBOARD",
+      "direction": "client_to_server",
+      "header": 6028,
+      "java": {
+        "symbol": "SnowStormGetAllTimeFriendsLeaderboardEvent",
+        "className": "SnowStormGetAllTimeFriendsLeaderboardEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormGetAllTimeFriendsLeaderboardEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_GET_ALL_TIME_FRIENDS_LEADERBOARD",
+        "className": "SnowWarGetAllTimeFriendsLeaderboardComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarGetAllTimeFriendsLeaderboardComposer.ts"
+      },
+      "fields": [
+        { "kind": "scalar", "name": "gameTypeId", "type": "int" },
+        { "kind": "scalar", "name": "startRank", "type": "int" },
+        { "kind": "scalar", "name": "direction", "type": "int" },
+        { "kind": "scalar", "name": "viewSize", "type": "int" },
+        { "kind": "scalar", "name": "windowSize", "type": "int" }
+      ]
+    },
+    {
+      "name": "SNOWWAR_GET_WEEKLY_LEADERBOARD",
+      "direction": "client_to_server",
+      "header": 6029,
+      "java": {
+        "symbol": "SnowStormGetWeeklyLeaderboardEvent",
+        "className": "SnowStormGetWeeklyLeaderboardEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormGetWeeklyLeaderboardEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_GET_WEEKLY_LEADERBOARD",
+        "className": "SnowWarGetWeeklyLeaderboardComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarGetWeeklyLeaderboardComposer.ts"
+      },
+      "fields": [
+        { "kind": "scalar", "name": "gameTypeId", "type": "int" },
+        { "kind": "scalar", "name": "weekOffset", "type": "int" },
+        { "kind": "scalar", "name": "startRank", "type": "int" },
+        { "kind": "scalar", "name": "direction", "type": "int" },
+        { "kind": "scalar", "name": "viewSize", "type": "int" },
+        { "kind": "scalar", "name": "windowSize", "type": "int" }
+      ]
+    },
+    {
+      "name": "SNOWWAR_GET_WEEKLY_FRIENDS_LEADERBOARD",
+      "direction": "client_to_server",
+      "header": 6030,
+      "java": {
+        "symbol": "SnowStormGetWeeklyFriendsLeaderboardEvent",
+        "className": "SnowStormGetWeeklyFriendsLeaderboardEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormGetWeeklyFriendsLeaderboardEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_GET_WEEKLY_FRIENDS_LEADERBOARD",
+        "className": "SnowWarGetWeeklyFriendsLeaderboardComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarGetWeeklyFriendsLeaderboardComposer.ts"
+      },
+      "fields": [
+        { "kind": "scalar", "name": "gameTypeId", "type": "int" },
+        { "kind": "scalar", "name": "weekOffset", "type": "int" },
+        { "kind": "scalar", "name": "startRank", "type": "int" },
+        { "kind": "scalar", "name": "direction", "type": "int" },
+        { "kind": "scalar", "name": "viewSize", "type": "int" },
+        { "kind": "scalar", "name": "windowSize", "type": "int" }
+      ]
     },
     {
       "name": "REQUEST_PREFIXES",
@@ -18744,6 +18738,86 @@
         "path": "packages/communication/src/messages/outgoing/handshake/ClientHelloMessageComposer.ts"
       },
       "reason": "TypeScript analyzer: Outgoing value `NITRO-${NitroVersion.RENDERER_VERSION.replaceAll(\u0027.\u0027, \u0027-\u0027)}` has no statically resolvable wire type"
+    },
+    {
+      "name": "SNOWWAR_LOAD_STAGE_READY",
+      "direction": "client_to_server",
+      "header": 6000,
+      "java": {
+        "symbol": "UNKNOWN_SNOWSTORM_6000",
+        "className": "SnowStormLoadStageReadyEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormLoadStageReadyEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_LOAD_STAGE_READY",
+        "className": "SnowWarLoadStageReadyComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarLoadStageReadyComposer.ts"
+      },
+      "reason": "AIR percentage is an optional trailing field; the legacy Java handler intentionally accepts both payload shapes by ignoring isolated trailing bytes"
+    },
+    {
+      "name": "SNOWWAR_WALK",
+      "direction": "client_to_server",
+      "header": 6003,
+      "java": {
+        "symbol": "UNKNOWN_SNOWSTORM_6003",
+        "className": "SnowStormWalkEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormWalkEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_WALK",
+        "className": "SnowWarWalkComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarWalkComposer.ts"
+      },
+      "reason": "AIR turn and subturn are optional trailing fields; the legacy Java handler intentionally accepts both payload shapes by ignoring isolated trailing bytes"
+    },
+    {
+      "name": "SNOWWAR_THROW_AT_LOCATION",
+      "direction": "client_to_server",
+      "header": 6004,
+      "java": {
+        "symbol": "UNKNOWN_SNOWSTORM_6004",
+        "className": "SnowStormThrowAtLocationEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormThrowAtLocationEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_THROW_AT_LOCATION",
+        "className": "SnowWarThrowAtLocationComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarThrowAtLocationComposer.ts"
+      },
+      "reason": "AIR turn and subturn are optional trailing fields; the legacy Java handler intentionally accepts both payload shapes by ignoring isolated trailing bytes"
+    },
+    {
+      "name": "SNOWWAR_THROW_AT_PLAYER",
+      "direction": "client_to_server",
+      "header": 6005,
+      "java": {
+        "symbol": "UNKNOWN_SNOWSTORM_6005",
+        "className": "SnowStormThrowAtPlayerEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormThrowAtPlayerEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_THROW_AT_PLAYER",
+        "className": "SnowWarThrowAtPlayerComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarThrowAtPlayerComposer.ts"
+      },
+      "reason": "AIR turn and subturn are optional trailing fields; the legacy Java handler intentionally accepts both payload shapes by ignoring isolated trailing bytes"
+    },
+    {
+      "name": "SNOWWAR_CREATE_SNOWBALL",
+      "direction": "client_to_server",
+      "header": 6006,
+      "java": {
+        "symbol": "UNKNOWN_SNOWSTORM_6006",
+        "className": "SnowStormCreateSnowballEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormCreateSnowballEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_CREATE_SNOWBALL",
+        "className": "SnowWarCreateSnowballComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarCreateSnowballComposer.ts"
+      },
+      "reason": "AIR turn and subturn are optional trailing fields; the legacy Java handler intentionally accepts both payload shapes by ignoring isolated trailing bytes"
     },
     {
       "name": "SNOWWAR_LOBBY_TEAMS",

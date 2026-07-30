@@ -27,7 +27,7 @@ public class SnowStormGamesInformationComposer extends MessageComposer {
         // client can show an "awaiting players" state instead of a bare queue
         // count. Trailing int - old clients simply don't read it.
         this.response.appendInt(this.minPlayers);
-        // Whether this user may open the arena editor (acc_snowwar_edit), so the
+        // Whether this user may build custom arenas (acc_snowwar_arena_build), so the
         // client can show the Edit button in the queue. Trailing boolean.
         this.response.appendBoolean(this.canEdit);
         return this.response;

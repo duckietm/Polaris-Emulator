@@ -13,13 +13,26 @@ public final class SnowWarItemProperties {
 
     static {
         // name -> { walkableHeight, collisionHeight }
-        // Trees: not walkable + stack height 1.0 (2300), so they behave like a
-        // height-1.0 furni - a straight/lob snowball is stopped, a long (curved)
-        // throw still arcs over them.
+        // Trees are removed from the tile height and use AIR's dedicated
+        // circular TreeGameObject collision instead (see SnowWarTreeObject).
         PROPERTIES.put("sw_tree1", new int[] {1, 2300});
         PROPERTIES.put("sw_tree2", new int[] {1, 2300});
         PROPERTIES.put("sw_tree3", new int[] {1, 2300});
         PROPERTIES.put("sw_tree4", new int[] {1, 2300});
+        // AIR SnowStorm (GameCenter) furniture. These classnames are resolved
+        // through the regular RoomEngine/Nitro furni pipeline; the legacy sw_*
+        // entries above remain available to Duckie's custom arena editor.
+        PROPERTIES.put("snst_tree1", new int[] {1, 2300});
+        PROPERTIES.put("snst_tree1_d", new int[] {1, 2300});
+        PROPERTIES.put("snst_block1", new int[] {1, 2300});
+        PROPERTIES.put("snst_iceblock", new int[] {1, 2300});
+        // The pile occupies its tile; players collect from one of its four
+        // cardinal neighbours while snowballs pass over it.
+        PROPERTIES.put("snst_ballpile", new int[] {1, 0});
+        PROPERTIES.put("xm09_man_a", new int[] {1, 3450});
+        PROPERTIES.put("xm09_man_b", new int[] {1, 3450});
+        PROPERTIES.put("xm09_man_c", new int[] {1, 3450});
+        PROPERTIES.put("ads_igorraygun", new int[] {1, 230});
 
         // Flat floor tiles: walkable (height 0) and non-blocking, so a snowball
         // flies over them. The N x N footprint is purely visual and handled
@@ -27,6 +40,7 @@ public final class SnowWarItemProperties {
         PROPERTIES.put("block_basic", new int[] {0, 0});
         PROPERTIES.put("block_basic2", new int[] {0, 0});
         PROPERTIES.put("block_basic3", new int[] {0, 0});
+        PROPERTIES.put("block_small", new int[] {0, 0});
 
         PROPERTIES.put("block_ice", new int[] {0, 0});
         PROPERTIES.put("block_ice2", new int[] {0, 0});
@@ -56,6 +70,7 @@ public final class SnowWarItemProperties {
         // sw_fence2 is just the other-angle variant.
         PROPERTIES.put("sw_fence", new int[] {1, 1150});
         PROPERTIES.put("sw_fence2", new int[] {1, 1150});
+        PROPERTIES.put("snst_fence", new int[] {1, 0});
 
         PROPERTIES.put("snowball_machine", new int[] {1, 2400});
         PROPERTIES.put("snowball_machine_hidden", new int[] {1, 0});
@@ -75,5 +90,9 @@ public final class SnowWarItemProperties {
 
     public static boolean isKnownItem(String itemName) {
         return PROPERTIES.containsKey(itemName);
+    }
+
+    public static boolean isTreeName(String itemName) {
+        return itemName.startsWith("sw_tree") || itemName.startsWith("snst_tree");
     }
 }

@@ -24,6 +24,7 @@ public class SnowWarAttributes {
     private volatile long lastThrowTime = 0;
     private volatile long lastChatTime = 0;
     private volatile long lastStatusRequestTime = 0;
+    private volatile int snowballPickupTimer = 0;
 
     // Pathfinding guard (SnowWarPathfinder.MAX_PATHFIND_ITERATIONS)
     private volatile int pathfindIterations = 0;
@@ -141,6 +142,17 @@ public class SnowWarAttributes {
         this.lastStatusRequestTime = lastStatusRequestTime;
     }
 
+    public boolean tickSnowballPickupTimer() {
+        if (this.snowballPickupTimer > 0) {
+            this.snowballPickupTimer--;
+        }
+        return this.snowballPickupTimer == 0;
+    }
+
+    public void resetSnowballPickupTimer() {
+        this.snowballPickupTimer = SnowWarConstants.SNOWBALL_SOURCE_PICKUP_TIME;
+    }
+
     public int getPathfindIterations() {
         return this.pathfindIterations;
     }
@@ -195,6 +207,7 @@ public class SnowWarAttributes {
         this.lastThrowTime = 0;
         this.lastChatTime = 0;
         this.lastStatusRequestTime = 0;
+        this.snowballPickupTimer = 0;
         this.pathfindIterations = 0;
         this.activityState = SnowWarActivityState.NORMAL;
         this.activityTimer = 0;

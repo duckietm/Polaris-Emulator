@@ -3,21 +3,39 @@ package com.eu.habbo.habbohotel.games.snowwar;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.games.snowwar.events.SnowWarCreateSnowballEvent;
 import com.eu.habbo.habbohotel.games.snowwar.events.SnowWarLaunchSnowballEvent;
+import com.eu.habbo.habbohotel.games.snowwar.mapping.SnowWarItemProperties;
 import com.eu.habbo.habbohotel.games.snowwar.mapping.SnowWarMap;
 import com.eu.habbo.habbohotel.games.snowwar.mapping.SnowWarMapsManager;
+import com.eu.habbo.habbohotel.games.snowwar.mapping.SnowWarTile;
 import com.eu.habbo.habbohotel.games.snowwar.objects.SnowWarAvatarObject;
 import com.eu.habbo.habbohotel.games.snowwar.objects.SnowWarGameObject;
 import com.eu.habbo.habbohotel.games.snowwar.objects.SnowWarMachineObject;
+import com.eu.habbo.habbohotel.games.snowwar.objects.SnowWarPileObject;
 import com.eu.habbo.habbohotel.games.snowwar.objects.SnowWarSnowballObject;
+import com.eu.habbo.habbohotel.games.snowwar.objects.SnowWarTreeObject;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
-import com.eu.habbo.messages.outgoing.snowwar.*;
+import com.eu.habbo.messages.outgoing.snowwar.SnowStormFullGameStatusComposer;
+import com.eu.habbo.messages.outgoing.snowwar.SnowStormGameEndedComposer;
+import com.eu.habbo.messages.outgoing.snowwar.SnowStormIntializeGameArenaViewComposer;
+import com.eu.habbo.messages.outgoing.snowwar.SnowStormLevelDataComposer;
+import com.eu.habbo.messages.outgoing.snowwar.SnowStormOnGameEndingComposer;
+import com.eu.habbo.messages.outgoing.snowwar.SnowStormOnPlayerExitedArenaComposer;
+import com.eu.habbo.messages.outgoing.snowwar.SnowStormOnStageEndingComposer;
+import com.eu.habbo.messages.outgoing.snowwar.SnowStormOnStageRunningComposer;
+import com.eu.habbo.messages.outgoing.snowwar.SnowStormOnStageStartComposer;
+import com.eu.habbo.messages.outgoing.snowwar.SnowStormRejoinPreviousRoomComposer;
+import com.eu.habbo.messages.outgoing.snowwar.SnowStormUserChatMessageComposer;
+import com.eu.habbo.messages.outgoing.snowwar.SnowStormUserRematchedComposer;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * One SnowWar match. Lifecycle per PROTOCOL.md "Game flow":
@@ -37,6 +55,8 @@ public class SnowWarGame {
 
     private final Map<Integer, SnowWarGamePlayer> players = new LinkedHashMap<>();
     private final List<SnowWarMachineObject> machines = new ArrayList<>();
+    private final List<SnowWarPileObject> piles = new ArrayList<>();
+    private final List<SnowWarTreeObject> trees = new ArrayList<>();
     private final AtomicInteger objectIdCounter = new AtomicInteger(0);
     private final Random random = new Random();
 
@@ -69,9 +89,17 @@ public class SnowWarGame {
         }
 
         if (this.map != null) {
+            this.map.getItems().stream()
+                    .filter(item -> SnowWarItemProperties.isTreeName(item.getName()))
+                    .map(item -> new SnowWarTreeObject(this.nextObjectId(), item))
+                    .forEach(this.trees::add);
+            this.map.getItems().stream()
+                    .filter(item -> item.getName().equals("snst_ballpile"))
+                    .map(item -> new SnowWarPileObject(this.nextObjectId(), item.getX(), item.getY()))
+                    .forEach(this.piles::add);
             for (SnowWarPoint machinePosition : this.map.getMachinePositions()) {
                 this.machines.add(
-                    new SnowWarMachineObject(this.nextObjectId(), machinePosition.getX(), machinePosition.getY()));
+                        new SnowWarMachineObject(this.nextObjectId(), machinePosition.getX(), machinePosition.getY()));
             }
         }
     }
@@ -108,8 +136,20 @@ public class SnowWarGame {
         return this.machines;
     }
 
+    public List<SnowWarTreeObject> getTrees() {
+        return this.trees;
+    }
+
+    public List<SnowWarPileObject> getPiles() {
+        return this.piles;
+    }
+
     public int nextObjectId() {
         return this.objectIdCounter.incrementAndGet();
+    }
+
+    public int reserveObjectIds(int count) {
+        return this.objectIdCounter.getAndAdd(count) + 1;
     }
 
     public List<SnowWarGamePlayer> getActivePlayers() {
@@ -169,14 +209,14 @@ public class SnowWarGame {
         this.broadcast(new SnowStormIntializeGameArenaViewComposer());
 
         Emulator.getThreading()
-            .run(
-                () -> {
-                    if (this.state == SnowWarGameState.WAITING_FOR_PLAYERS) {
-                        LOGGER.info("SnowWar game {}: load stage timeout reached, starting anyway.", this.id);
-                        this.beginPreparing();
-                    }
-                },
-                LOAD_STAGE_TIMEOUT_MS);
+                .run(
+                        () -> {
+                            if (this.state == SnowWarGameState.WAITING_FOR_PLAYERS) {
+                                LOGGER.info("SnowWar game {}: load stage timeout reached, starting anyway.", this.id);
+                                this.beginPreparing();
+                            }
+                        },
+                        LOAD_STAGE_TIMEOUT_MS);
     }
 
     public void onLoadStageReady(int userId) {
@@ -210,7 +250,7 @@ public class SnowWarGame {
             if (player.getHabbo() == null || player.getHabbo().getClient() == null) {
                 continue;
             }
-            boolean canEdit = player.getHabbo().hasPermission(SnowWarManager.EDIT_PERMISSION);
+            boolean canEdit = player.getHabbo().hasPermission(SnowWarManager.BUILD_PERMISSION);
             player.getHabbo().getClient().sendResponse(new SnowStormLevelDataComposer(this, canEdit));
         }
         this.broadcast(this.createFullGameStatusComposer());
@@ -235,8 +275,8 @@ public class SnowWarGame {
 
             // Face the middle of the arena.
             int direction = SnowWarMath.getAngleFromComponents(
-                SnowWarMath.tileToWorld(centerX) - attr.getWorldPosition().getX(),
-                SnowWarMath.tileToWorld(centerY) - attr.getWorldPosition().getY());
+                    SnowWarMath.tileToWorld(centerX) - attr.getWorldPosition().getX(),
+                    SnowWarMath.tileToWorld(centerY) - attr.getWorldPosition().getY());
             attr.setRotation(SnowWarMath.direction360To8(direction));
 
             player.setAvatar(new SnowWarAvatarObject(this, player));
@@ -267,6 +307,8 @@ public class SnowWarGame {
         }
 
         this.state = SnowWarGameState.ENDING;
+
+        SnowWarManager.getInstance().recordScores(this.getActivePlayers());
 
         this.broadcast(new SnowStormOnStageEndingComposer());
         this.broadcast(new SnowStormOnGameEndingComposer(this.restartSeconds, this));
@@ -324,9 +366,9 @@ public class SnowWarGame {
         int endThreshold = Math.min(2, SnowWarManager.getInstance().getMinimumPlayers());
 
         if (remainingPlayers < endThreshold
-            && (this.state == SnowWarGameState.WAITING_FOR_PLAYERS
-            || this.state == SnowWarGameState.PREPARING
-            || this.state == SnowWarGameState.RUNNING)) {
+                && (this.state == SnowWarGameState.WAITING_FOR_PLAYERS
+                        || this.state == SnowWarGameState.PREPARING
+                        || this.state == SnowWarGameState.RUNNING)) {
             this.endGame();
             return;
         }
@@ -361,14 +403,22 @@ public class SnowWarGame {
 
         SnowWarAttributes attr = player.getAttributes();
 
-        if (!attr.isWalkableState() && attr.getActivityState() != SnowWarActivityState.CREATING_SNOWBALL) {
+        // AIR's HumanGameObject.changeMoveTarget cancels an in-progress
+        // snowball build before applying the new movement target.
+        if (attr.getActivityState() == SnowWarActivityState.CREATING_SNOWBALL) {
+            attr.setActivityState(SnowWarActivityState.NORMAL);
+            attr.setActivityTimer(0);
+        }
+
+        if (!attr.isWalkableState()) {
             return;
         }
 
         int tileX = SnowWarMath.convertToGameCoordinate(worldX);
         int tileY = SnowWarMath.convertToGameCoordinate(worldY);
 
-        if (this.map.getTile(tileX, tileY) == null) {
+        SnowWarTile targetTile = this.map.getTile(tileX, tileY);
+        if (targetTile == null || targetTile.isBlocked()) {
             return;
         }
 
@@ -379,9 +429,8 @@ public class SnowWarGame {
     }
 
     public void handleThrowAtLocation(SnowWarGamePlayer player, int worldX, int worldY, int trajectory) {
-        // 0 = straight (flat) throw, 1 = lob, 2 = long high-arc throw. Plain
-        // right-click sends 0, Shift+right-click sends 2.
-        if (trajectory != 0 && trajectory != 1 && trajectory != 2) {
+        // 0 = quick, 1 = short lob, 2 = long lob, 3 = AIR's adaptive throw.
+        if (trajectory < SnowWarConstants.TRAJECTORY_QUICK || trajectory > SnowWarConstants.TRAJECTORY_DEFAULT) {
             return;
         }
 
@@ -399,7 +448,7 @@ public class SnowWarGame {
     }
 
     public void handleThrowAtPlayer(SnowWarGamePlayer player, int targetObjectId, int trajectory) {
-        if (trajectory != 0 && trajectory != 1 && trajectory != 2) {
+        if (trajectory < SnowWarConstants.TRAJECTORY_QUICK || trajectory > SnowWarConstants.TRAJECTORY_DEFAULT) {
             return;
         }
 
@@ -428,15 +477,15 @@ public class SnowWarGame {
         if (attr.getLastThrowTime() + SnowWarConstants.THROW_COOLDOWN_MS > System.currentTimeMillis()) {
             return;
         }
-        // Range gate: normal throws reach 5 tiles, long throws 15. Outside
-        // that the client must use a long throw or move closer.
-        int maxRangeTiles =
-            trajectory == 2 ? SnowWarConstants.THROW_RANGE_LONG_TILES : SnowWarConstants.THROW_RANGE_NORMAL_TILES;
-        int deltaTileX = SnowWarMath.convertToGameCoordinate(worldX)
-            - attr.getCurrentPosition().getX();
-        int deltaTileY = SnowWarMath.convertToGameCoordinate(worldY)
-            - attr.getCurrentPosition().getY();
-        if ((deltaTileX * deltaTileX) + (deltaTileY * deltaTileY) > maxRangeTiles * maxRangeTiles) {
+        int maxRangeWorld =
+                switch (trajectory) {
+                    case SnowWarConstants.TRAJECTORY_QUICK -> SnowWarConstants.QUICK_THROW_MAX_RANGE;
+                    case SnowWarConstants.TRAJECTORY_SHORT_LOB -> SnowWarConstants.SHORT_LOB_MAX_RANGE;
+                    default -> SnowWarConstants.LONG_LOB_MAX_RANGE;
+                };
+        long deltaWorldX = (long) worldX - attr.getWorldPosition().getX();
+        long deltaWorldY = (long) worldY - attr.getWorldPosition().getY();
+        if ((deltaWorldX * deltaWorldX) + (deltaWorldY * deltaWorldY) > (long) maxRangeWorld * maxRangeWorld) {
             return;
         }
 
@@ -449,34 +498,28 @@ public class SnowWarGame {
         }
 
         int objectId = this.nextObjectId();
-        int targetTileX = SnowWarMath.convertToGameCoordinate(worldX);
-        int targetTileY = SnowWarMath.convertToGameCoordinate(worldY);
-
         SnowWarSnowballObject snowball = new SnowWarSnowballObject(
-            objectId,
-            this.map,
-            player,
-            attr.getCurrentPosition().getX(),
-            attr.getCurrentPosition().getY(),
-            targetTileX,
-            targetTileY,
-            trajectory);
+                objectId,
+                this.map,
+                player,
+                attr.getWorldPosition().getX(),
+                attr.getWorldPosition().getY(),
+                worldX,
+                worldY,
+                trajectory);
 
         this.task.addSnowball(snowball);
         attr.getSnowballCount().decrementAndGet();
         attr.setLastThrowTime(System.currentTimeMillis());
 
         // Update facing direction.
-        int currentWorldX = SnowWarMath.tileToWorld(attr.getCurrentPosition().getX());
-        int currentWorldY = SnowWarMath.tileToWorld(attr.getCurrentPosition().getY());
+        int currentWorldX = attr.getWorldPosition().getX();
+        int currentWorldY = attr.getWorldPosition().getY();
         int direction = SnowWarMath.getAngleFromComponents(worldX - currentWorldX, worldY - currentWorldY);
         attr.setRotation(SnowWarMath.direction360To8(direction));
 
-        int convertedTargetX = SnowWarMath.convertToWorldCoordinate(targetTileX);
-        int convertedTargetY = SnowWarMath.convertToWorldCoordinate(targetTileY);
-
         this.task.queueEvent(new SnowWarLaunchSnowballEvent(
-            objectId, player.getObjectId(), convertedTargetX, convertedTargetY, trajectory));
+                objectId, player.getObjectId(), worldX, worldY, snowball.getTrajectory()));
     }
 
     public void handleCreateSnowball(SnowWarGamePlayer player) {
@@ -532,15 +575,19 @@ public class SnowWarGame {
         if (this.state != SnowWarGameState.ENDED) {
             return;
         }
-        if (System.currentTimeMillis() > this.restartWindowEndMillis) {
-            return;
-        }
         if (player.isPlayAgain()) {
             return;
         }
 
-        player.setPlayAgain(true);
-        this.broadcast(new SnowStormUserRematchedComposer(player.getUserId()));
+        // Inside the restart window this counts as an official rematch; after
+        // it, still honour the click as a plain fresh queue join so the
+        // results-screen button never goes silently dead.
+        boolean withinWindow = System.currentTimeMillis() <= this.restartWindowEndMillis;
+
+        if (withinWindow) {
+            player.setPlayAgain(true);
+            this.broadcast(new SnowStormUserRematchedComposer(player.getUserId()));
+        }
 
         SnowWarManager.getInstance().clearUserGame(player.getUserId());
         SnowWarManager.getInstance().joinQueue(player.getHabbo());
@@ -565,6 +612,8 @@ public class SnowWarGame {
         List<SnowWarGameObject> objects = new ArrayList<>();
 
         objects.addAll(this.machines);
+        this.piles.stream().filter(SnowWarPileObject::isAlive).forEach(objects::add);
+        this.trees.stream().filter(SnowWarTreeObject::isAlive).forEach(objects::add);
 
         for (SnowWarGamePlayer player : this.getActivePlayers()) {
             if (player.getAvatar() != null) {

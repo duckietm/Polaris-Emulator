@@ -14,6 +14,8 @@ public class SnowStormWalkEvent extends MessageHandler {
 
         int worldX = this.packet.readInt();
         int worldY = this.packet.readInt();
+        // AIR turn/subturn values may follow. Polaris remains authoritative and
+        // safely ignores those trailing fields in this isolated packet buffer.
 
         int userId = this.client.getHabbo().getHabboInfo().getId();
         if (!SnowWarManager.getInstance().allowPacket(userId)) {

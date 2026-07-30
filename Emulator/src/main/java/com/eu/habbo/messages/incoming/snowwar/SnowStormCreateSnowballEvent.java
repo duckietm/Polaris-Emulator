@@ -12,6 +12,9 @@ public class SnowStormCreateSnowballEvent extends MessageHandler {
             return;
         }
 
+        // AIR turn/subturn values may follow; the server-authoritative Polaris
+        // handler safely ignores them as trailing bytes.
+
         int userId = this.client.getHabbo().getHabboInfo().getId();
         if (!SnowWarManager.getInstance().allowPacket(userId)) {
             return;

@@ -82,4 +82,60 @@ class FurnidataReaderTest {
         assertTrue(entries.stream().noneMatch(e -> e.id() == 99),
             "traversal file outside the base dir must be ignored");
     }
+
+    @Test
+    void readsJsoncManifestsAndFragments(@TempDir Path dir) throws Exception {
+        Path base = dir.resolve("furnidata");
+        Path core = base.resolve("core");
+        Files.createDirectories(core);
+        Files.writeString(base.resolve("manifest.jsonc"), """
+            {
+              // Load the base tier.
+              "tiers": [ "core", ],
+            }
+            """);
+        Files.writeString(core.resolve("manifest.jsonc"), """
+            {
+              /* JSONC fragment list. */
+              "files": [ "floor.jsonc", ],
+            }
+            """);
+        Files.writeString(core.resolve("floor.jsonc"), SINGLE);
+
+        List<FurnidataEntry> entries = new FurnidataReader(base, 64 * 1024 * 1024).read();
+
+        assertEquals(2, entries.size());
+    }
+
+    @Test
+    void rejectsJson5SingleFile(@TempDir Path dir) throws Exception {
+        Path file = dir.resolve("FurnitureData.json5");
+        Files.writeString(file, SINGLE);
+
+        assertTrue(new FurnidataReader(file, 64 * 1024 * 1024).read().isEmpty());
+    }
+
+    @Test
+    void ignoresJson5Manifests(@TempDir Path dir) throws Exception {
+        Path base = dir.resolve("furnidata");
+        Path unsupported = base.resolve("unsupported");
+        Files.createDirectories(unsupported);
+        Files.writeString(base.resolve("manifest.json5"), "{ \"tiers\": [ \"unsupported\" ] }");
+        Files.writeString(unsupported.resolve("manifest.json"), "{ \"files\": [ \"item.json\" ] }");
+        Files.writeString(unsupported.resolve("item.json"), SINGLE);
+
+        assertTrue(new FurnidataReader(base, 64 * 1024 * 1024).read().isEmpty());
+    }
+
+    @Test
+    void ignoresJson5FragmentsReferencedByJsoncManifest(@TempDir Path dir) throws Exception {
+        Path base = dir.resolve("furnidata");
+        Path core = base.resolve("core");
+        Files.createDirectories(core);
+        Files.writeString(base.resolve("manifest.jsonc"), "{ \"tiers\": [ \"core\" ] }");
+        Files.writeString(core.resolve("manifest.jsonc"), "{ \"files\": [ \"item.json5\" ] }");
+        Files.writeString(core.resolve("item.json5"), SINGLE);
+
+        assertTrue(new FurnidataReader(base, 64 * 1024 * 1024).read().isEmpty());
+    }
 }

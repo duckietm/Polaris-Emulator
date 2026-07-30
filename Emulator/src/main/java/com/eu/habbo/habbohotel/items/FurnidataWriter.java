@@ -292,10 +292,8 @@ public class FurnidataWriter {
             Path m = dir.resolve(name);
             if (!Files.exists(m)) continue;
             try {
-                String stripped = FurnidataReader.stripJson5(
+                com.google.gson.JsonObject obj = FurnidataJson.parseObject(
                     Files.readString(m, StandardCharsets.UTF_8));
-                com.google.gson.JsonObject obj =
-                    com.google.gson.JsonParser.parseString(stripped).getAsJsonObject();
                 if (obj.has(key) && obj.get(key).isJsonArray()) {
                     List<String> list = new ArrayList<>();
                     for (com.google.gson.JsonElement el : obj.getAsJsonArray(key))

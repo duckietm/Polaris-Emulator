@@ -2,7 +2,6 @@ package com.eu.habbo.habbohotel.items;
 
 import com.eu.habbo.Emulator;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +56,9 @@ public final class FurnidataSourceResolver {
 
         if (legacyOverridePath != null && !legacyOverridePath.isEmpty()) {
             Path p = Paths.get(legacyOverridePath);
+            if (!Files.isDirectory(p) && !FurnidataJson.isSupportedDocument(p)) {
+                return new Source(p, false, Status.ERROR, "Unsupported furnidata format; use .json or .jsonc");
+            }
             if (Files.exists(p)) return new Source(p, Files.isDirectory(p), Status.RESOLVED, "items.furnidata.path fallback");
             return new Source(p, Files.isDirectory(p), Status.SOURCE_MISSING, "items.furnidata.path fallback does not exist");
         }
@@ -71,9 +73,12 @@ public final class FurnidataSourceResolver {
             if (rendererConfig == null || !Files.exists(rendererConfig)) {
                 return new Source(rendererConfig, false, Status.SOURCE_MISSING, "renderer-config path does not exist");
             }
+            if (!FurnidataJson.isSupportedDocument(rendererConfig)) {
+                return new Source(rendererConfig, false, Status.ERROR, "Unsupported renderer-config format; use .json or .jsonc");
+            }
 
             String raw = Files.readString(rendererConfig, StandardCharsets.UTF_8);
-            JsonObject rendererObj = JsonParser.parseString(FurnidataReader.stripJson5(raw)).getAsJsonObject();
+            JsonObject rendererObj = FurnidataJson.parseObject(raw);
             String furniUrl = expandRendererUrl(rendererObj, "furnidata.url");
 
             if (furniUrl.isBlank()) return new Source(null, false, Status.CONFIG_MISSING, "furnidata.url is missing");
@@ -81,6 +86,9 @@ public final class FurnidataSourceResolver {
 
             Source source = toLocalSource(assetBase, furniUrl);
             if (source == null) return new Source(null, false, Status.CONFIG_MISSING, "furni.editor.asset.base.path is missing");
+            if (!source.directory() && !FurnidataJson.isSupportedDocument(source.path())) {
+                return new Source(source.path(), false, Status.ERROR, "Unsupported furnidata format; use .json or .jsonc");
+            }
             if (!Files.exists(source.path())) return new Source(source.path(), source.directory(), Status.SOURCE_MISSING, "Resolved source does not exist");
 
             return source;

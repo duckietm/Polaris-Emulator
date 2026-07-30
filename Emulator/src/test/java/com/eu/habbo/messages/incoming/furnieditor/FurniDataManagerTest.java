@@ -107,4 +107,57 @@ class FurniDataManagerTest {
         assertEquals(rendererSource, source.path());
         assertEquals("renderer-config furnidata.url", source.message());
     }
+
+    @Test
+    void rejectsJson5FurnidataSource(@TempDir Path dir) throws Exception {
+        Path file = dir.resolve("FurnitureData.json5");
+        Files.writeString(file, """
+            {
+              "roomitemtypes": { "furnitype": [
+                { "id": 230, "classname": "unsupported", "name": "Unsupported", "description": "" }
+              ]},
+              "wallitemtypes": { "furnitype": [] }
+            }
+            """);
+
+        assertEquals("{}", FurniDataManager.findItemJson(file, false, 230, "unsupported"));
+    }
+
+    @Test
+    void resolvesJsoncRendererConfig(@TempDir Path dir) throws Exception {
+        Path assetBase = dir.resolve("nitro-assets");
+        Path rendererSource = assetBase.resolve("gamedata").resolve("FurnitureData.jsonc");
+        Files.createDirectories(rendererSource.getParent());
+        Files.writeString(rendererSource, "{}");
+
+        Path rendererConfig = dir.resolve("renderer-config.jsonc");
+        Files.writeString(rendererConfig, """
+            {
+              // URLs can stay documented in configuration files.
+              "gamedata.url": "http://localhost:5173/nitro-assets/gamedata",
+              "furnidata.url": "${gamedata.url}/FurnitureData.jsonc",
+            }
+            """);
+
+        FurnidataSourceResolver.Source source =
+            FurnidataSourceResolver.resolveFromRendererConfig(rendererConfig, assetBase);
+
+        assertTrue(source.ok());
+        assertEquals(rendererSource, source.path());
+    }
+
+    @Test
+    void rejectsJson5OnlyRendererSyntax(@TempDir Path dir) throws Exception {
+        Path rendererConfig = dir.resolve("renderer-config.jsonc");
+        Files.writeString(rendererConfig, """
+            {
+              'furnidata.url': 'FurnitureData.json',
+            }
+            """);
+
+        FurnidataSourceResolver.Source source =
+            FurnidataSourceResolver.resolveFromRendererConfig(rendererConfig, dir);
+
+        assertEquals(FurnidataSourceResolver.Status.ERROR, source.status());
+    }
 }

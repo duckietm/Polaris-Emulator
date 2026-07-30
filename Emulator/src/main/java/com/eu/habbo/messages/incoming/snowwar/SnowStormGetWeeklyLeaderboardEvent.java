@@ -26,6 +26,6 @@ public class SnowStormGetWeeklyLeaderboardEvent extends SnowStormLeaderboardEven
 
     @Override
     protected int responseHeader() {
-        return Outgoing.WeeklyCompetitiveLeaderboardComposer;
+        return Outgoing.UnknowComposer_1390;
     }
 }

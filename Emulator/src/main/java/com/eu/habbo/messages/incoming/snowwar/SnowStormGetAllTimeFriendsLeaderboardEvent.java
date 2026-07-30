@@ -25,6 +25,6 @@ public class SnowStormGetAllTimeFriendsLeaderboardEvent extends SnowStormLeaderb
 
     @Override
     protected int responseHeader() {
-        return Outgoing.Game2WeeklyFriendsLeaderboardComposer;
+        return Outgoing.Game2WeeklySmallLeaderboardComposer;
     }
 }

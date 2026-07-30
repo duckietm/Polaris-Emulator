@@ -1,16 +1,18 @@
 package com.eu.habbo.messages.incoming.furnieditor;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.eu.habbo.habbohotel.items.FurnidataSourceResolver;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class FurniDataManagerTest {
 
@@ -70,9 +72,7 @@ class FurniDataManagerTest {
         Path assetBase = dir.resolve("nitro-assets");
 
         FurnidataSourceResolver.Source source = FurnidataSourceResolver.toLocalSource(
-            assetBase,
-            "http://localhost:5173/nitro-assets/gamedata/FurnitureData.json?t=123"
-        );
+                assetBase, "http://localhost:5173/nitro-assets/gamedata/FurnitureData.json?t=123");
 
         assertNotNull(source);
         assertEquals(assetBase.resolve("gamedata").resolve("FurnitureData.json"), source.path());
@@ -99,9 +99,7 @@ class FurniDataManagerTest {
             """);
 
         FurnidataSourceResolver.Source source = FurnidataSourceResolver.resolveConfigured(
-                legacy.toString(),
-                rendererConfig.toString(),
-                assetBase.toString());
+                legacy.toString(), rendererConfig.toString(), assetBase.toString());
 
         assertTrue(source.ok());
         assertEquals(rendererSource, source.path());
@@ -140,7 +138,7 @@ class FurniDataManagerTest {
             """);
 
         FurnidataSourceResolver.Source source =
-            FurnidataSourceResolver.resolveFromRendererConfig(rendererConfig, assetBase);
+                FurnidataSourceResolver.resolveFromRendererConfig(rendererConfig, assetBase);
 
         assertTrue(source.ok());
         assertEquals(rendererSource, source.path());
@@ -155,8 +153,7 @@ class FurniDataManagerTest {
             }
             """);
 
-        FurnidataSourceResolver.Source source =
-            FurnidataSourceResolver.resolveFromRendererConfig(rendererConfig, dir);
+        FurnidataSourceResolver.Source source = FurnidataSourceResolver.resolveFromRendererConfig(rendererConfig, dir);
 
         assertEquals(FurnidataSourceResolver.Status.ERROR, source.status());
     }

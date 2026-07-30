@@ -1,13 +1,14 @@
 package com.eu.habbo.habbohotel.items;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class FurnidataReaderTest {
 
@@ -31,11 +32,13 @@ class FurnidataReaderTest {
         List<FurnidataEntry> entries = new FurnidataReader(file, 64 * 1024 * 1024).read();
 
         assertEquals(2, entries.size());
-        FurnidataEntry floor = entries.stream().filter(e -> e.id() == 10).findFirst().orElseThrow();
+        FurnidataEntry floor =
+                entries.stream().filter(e -> e.id() == 10).findFirst().orElseThrow();
         assertEquals("chair_norja", floor.classname());
         assertEquals(FurnitureType.FLOOR, floor.type());
         assertEquals("Chair", floor.name());
-        FurnidataEntry wall = entries.stream().filter(e -> e.id() == 20).findFirst().orElseThrow();
+        FurnidataEntry wall =
+                entries.stream().filter(e -> e.id() == 20).findFirst().orElseThrow();
         assertEquals(FurnitureType.WALL, wall.type());
     }
 
@@ -69,7 +72,9 @@ class FurnidataReaderTest {
     @Test
     void splitDirRejectsTraversalFiles(@TempDir Path dir) throws Exception {
         Path secret = dir.resolve("secret.json");
-        Files.writeString(secret, "{ \"roomitemtypes\": { \"furnitype\": [ { \"id\": 99, \"classname\": \"x\", \"name\": \"LEAK\", \"description\": \"\" } ] } }");
+        Files.writeString(
+                secret,
+                "{ \"roomitemtypes\": { \"furnitype\": [ { \"id\": 99, \"classname\": \"x\", \"name\": \"LEAK\", \"description\": \"\" } ] } }");
 
         Path base = dir.resolve("furnidata");
         Path core = base.resolve("core");
@@ -79,8 +84,8 @@ class FurnidataReaderTest {
 
         List<FurnidataEntry> entries = new FurnidataReader(base, 64 * 1024 * 1024).read();
 
-        assertTrue(entries.stream().noneMatch(e -> e.id() == 99),
-            "traversal file outside the base dir must be ignored");
+        assertTrue(
+                entries.stream().noneMatch(e -> e.id() == 99), "traversal file outside the base dir must be ignored");
     }
 
     @Test

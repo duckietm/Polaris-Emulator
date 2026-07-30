@@ -89,15 +89,13 @@ public final class FurnidataJson {
                     boolean closed = false;
                     while (index < content.length()) {
                         char commentChar = content.charAt(index);
-                        if (commentChar == '*' && index + 1 < content.length()
-                                && content.charAt(index + 1) == '/') {
+                        if (commentChar == '*' && index + 1 < content.length() && content.charAt(index + 1) == '/') {
                             withoutComments.append("  ");
                             index++;
                             closed = true;
                             break;
                         }
-                        withoutComments.append(
-                                commentChar == '\r' || commentChar == '\n' ? commentChar : ' ');
+                        withoutComments.append(commentChar == '\r' || commentChar == '\n' ? commentChar : ' ');
                         index++;
                     }
                     if (!closed) throw new JsonSyntaxException("Unterminated JSONC block comment");
@@ -136,8 +134,7 @@ public final class FurnidataJson {
 
             if (current == ',') {
                 int nextIndex = index + 1;
-                while (nextIndex < stripped.length()
-                        && Character.isWhitespace(stripped.charAt(nextIndex))) {
+                while (nextIndex < stripped.length() && Character.isWhitespace(stripped.charAt(nextIndex))) {
                     nextIndex++;
                 }
                 if (nextIndex < stripped.length()) {

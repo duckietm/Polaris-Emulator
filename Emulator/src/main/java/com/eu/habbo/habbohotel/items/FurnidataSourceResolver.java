@@ -2,14 +2,13 @@ package com.eu.habbo.habbohotel.items;
 
 import com.eu.habbo.Emulator;
 import com.google.gson.JsonObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class FurnidataSourceResolver {
 
@@ -29,8 +28,7 @@ public final class FurnidataSourceResolver {
         }
     }
 
-    private FurnidataSourceResolver() {
-    }
+    private FurnidataSourceResolver() {}
 
     public static Source resolve() {
         try {
@@ -47,7 +45,9 @@ public final class FurnidataSourceResolver {
 
     public static Source resolveConfigured(String legacyOverridePath, String rendererConfigPath, String assetBasePath) {
         if (rendererConfigPath != null && !rendererConfigPath.isEmpty()) {
-            Source fromRenderer = resolveFromRendererConfig(Paths.get(rendererConfigPath), assetBasePath == null || assetBasePath.isEmpty() ? null : Paths.get(assetBasePath));
+            Source fromRenderer = resolveFromRendererConfig(
+                    Paths.get(rendererConfigPath),
+                    assetBasePath == null || assetBasePath.isEmpty() ? null : Paths.get(assetBasePath));
             if (fromRenderer.ok() || fromRenderer.status() == Status.UNRESOLVED_PLACEHOLDER) return fromRenderer;
         }
 
@@ -59,8 +59,10 @@ public final class FurnidataSourceResolver {
             if (!Files.isDirectory(p) && !FurnidataJson.isSupportedDocument(p)) {
                 return new Source(p, false, Status.ERROR, "Unsupported furnidata format; use .json or .jsonc");
             }
-            if (Files.exists(p)) return new Source(p, Files.isDirectory(p), Status.RESOLVED, "items.furnidata.path fallback");
-            return new Source(p, Files.isDirectory(p), Status.SOURCE_MISSING, "items.furnidata.path fallback does not exist");
+            if (Files.exists(p))
+                return new Source(p, Files.isDirectory(p), Status.RESOLVED, "items.furnidata.path fallback");
+            return new Source(
+                    p, Files.isDirectory(p), Status.SOURCE_MISSING, "items.furnidata.path fallback does not exist");
         }
 
         if (fromAssetBase != null) return fromAssetBase;
@@ -74,7 +76,8 @@ public final class FurnidataSourceResolver {
                 return new Source(rendererConfig, false, Status.SOURCE_MISSING, "renderer-config path does not exist");
             }
             if (!FurnidataJson.isSupportedDocument(rendererConfig)) {
-                return new Source(rendererConfig, false, Status.ERROR, "Unsupported renderer-config format; use .json or .jsonc");
+                return new Source(
+                        rendererConfig, false, Status.ERROR, "Unsupported renderer-config format; use .json or .jsonc");
             }
 
             String raw = Files.readString(rendererConfig, StandardCharsets.UTF_8);
@@ -82,18 +85,27 @@ public final class FurnidataSourceResolver {
             String furniUrl = expandRendererUrl(rendererObj, "furnidata.url");
 
             if (furniUrl.isBlank()) return new Source(null, false, Status.CONFIG_MISSING, "furnidata.url is missing");
-            if (hasUnresolvedPathPlaceholder(furniUrl)) return new Source(null, false, Status.UNRESOLVED_PLACEHOLDER, furniUrl);
+            if (hasUnresolvedPathPlaceholder(furniUrl))
+                return new Source(null, false, Status.UNRESOLVED_PLACEHOLDER, furniUrl);
 
             Source source = toLocalSource(assetBase, furniUrl);
-            if (source == null) return new Source(null, false, Status.CONFIG_MISSING, "furni.editor.asset.base.path is missing");
+            if (source == null)
+                return new Source(null, false, Status.CONFIG_MISSING, "furni.editor.asset.base.path is missing");
             if (!source.directory() && !FurnidataJson.isSupportedDocument(source.path())) {
-                return new Source(source.path(), false, Status.ERROR, "Unsupported furnidata format; use .json or .jsonc");
+                return new Source(
+                        source.path(), false, Status.ERROR, "Unsupported furnidata format; use .json or .jsonc");
             }
-            if (!Files.exists(source.path())) return new Source(source.path(), source.directory(), Status.SOURCE_MISSING, "Resolved source does not exist");
+            if (!Files.exists(source.path()))
+                return new Source(
+                        source.path(), source.directory(), Status.SOURCE_MISSING, "Resolved source does not exist");
 
             return source;
         } catch (Exception e) {
-            return new Source(null, false, Status.ERROR, e.getMessage() != null ? e.getMessage() : "renderer-config parse failed");
+            return new Source(
+                    null,
+                    false,
+                    Status.ERROR,
+                    e.getMessage() != null ? e.getMessage() : "renderer-config parse failed");
         }
     }
 
@@ -153,7 +165,8 @@ public final class FurnidataSourceResolver {
         }
 
         String normalized = urlPath.replace('\\', '/');
-        String baseName = assetBase.getFileName() != null ? assetBase.getFileName().toString() : "";
+        String baseName =
+                assetBase.getFileName() != null ? assetBase.getFileName().toString() : "";
         String marker = "/" + baseName + "/";
         int markerIndex = baseName.isEmpty() ? -1 : normalized.indexOf(marker);
 
@@ -167,7 +180,8 @@ public final class FurnidataSourceResolver {
             candidate = assetBase.resolve(normalized.substring(normalized.lastIndexOf('/') + 1));
         }
 
-        return new Source(candidate, splitMode || Files.isDirectory(candidate), Status.RESOLVED, "renderer-config furnidata.url");
+        return new Source(
+                candidate, splitMode || Files.isDirectory(candidate), Status.RESOLVED, "renderer-config furnidata.url");
     }
 
     private static boolean hasUnresolvedPathPlaceholder(String value) {

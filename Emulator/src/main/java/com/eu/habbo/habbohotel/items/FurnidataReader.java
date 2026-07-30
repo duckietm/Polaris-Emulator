@@ -3,15 +3,14 @@ package com.eu.habbo.habbohotel.items;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Neutral furnidata reader. Supports a single JSON/JSONC file or a split-tier
@@ -108,14 +107,20 @@ public class FurnidataReader {
             JsonArray types = sectionObj.getAsJsonArray("furnitype");
             for (JsonElement el : types) {
                 JsonObject o = el.getAsJsonObject();
-                if (!o.has("id") || o.get("id").isJsonNull() || !o.has("classname") || o.get("classname").isJsonNull()) continue;
+                if (!o.has("id")
+                        || o.get("id").isJsonNull()
+                        || !o.has("classname")
+                        || o.get("classname").isJsonNull()) continue;
                 out.add(new FurnidataEntry(
-                    o.get("id").getAsInt(),
-                    o.get("classname").getAsString(),
-                    type,
-                    (o.has("name") && !o.get("name").isJsonNull()) ? o.get("name").getAsString() : "",
-                    (o.has("description") && !o.get("description").isJsonNull()) ? o.get("description").getAsString() : ""
-                ));
+                        o.get("id").getAsInt(),
+                        o.get("classname").getAsString(),
+                        type,
+                        (o.has("name") && !o.get("name").isJsonNull())
+                                ? o.get("name").getAsString()
+                                : "",
+                        (o.has("description") && !o.get("description").isJsonNull())
+                                ? o.get("description").getAsString()
+                                : ""));
             }
         }
     }
@@ -133,5 +138,4 @@ public class FurnidataReader {
     private static boolean isInside(Path baseNorm, Path candidate) {
         return candidate.toAbsolutePath().normalize().startsWith(baseNorm);
     }
-
 }

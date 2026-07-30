@@ -2,7 +2,10 @@ package com.eu.habbo.habbohotel.items;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -23,8 +26,8 @@ public class FurnidataWriter {
     /** Manifest filenames tried in order (JSONC first, strict JSON second). */
     private static final List<String> MANIFEST_NAMES = Arrays.asList("manifest.jsonc", "manifest.json");
 
-    private final Path source;        // file (single) or base dir (split-tier)
-    private final boolean directory;  // true => split-tier
+    private final Path source; // file (single) or base dir (split-tier)
+    private final boolean directory; // true => split-tier
     private final long maxBytes;
     private final int backupKeep;
 
@@ -57,7 +60,13 @@ public class FurnidataWriter {
     }
 
     /** Outcome of a {@link #create} attempt. */
-    public enum CreateResult { CREATED, ALREADY_EXISTS, ID_COLLISION, NO_TARGET, IO_ERROR }
+    public enum CreateResult {
+        CREATED,
+        ALREADY_EXISTS,
+        ID_COLLISION,
+        NO_TARGET,
+        IO_ERROR
+    }
 
     /**
      * Append a brand-new furnidata entry (upsert's "create" half). Refuses if the
@@ -121,9 +130,10 @@ public class FurnidataWriter {
         }
         Path def = tierDir.resolve("furnidata.jsonc");
         if (!Files.exists(def)) {
-            Files.writeString(def,
-                "{\n  \"roomitemtypes\": { \"furnitype\": [\n] },\n  \"wallitemtypes\": { \"furnitype\": [\n] }\n}\n",
-                StandardCharsets.UTF_8);
+            Files.writeString(
+                    def,
+                    "{\n  \"roomitemtypes\": { \"furnitype\": [\n] },\n  \"wallitemtypes\": { \"furnitype\": [\n] }\n}\n",
+                    StandardCharsets.UTF_8);
         }
         return def;
     }
@@ -134,12 +144,19 @@ public class FurnidataWriter {
         if (s < 0) return -1;
         int ft = indexOfKey(raw, "furnitype", s);
         if (ft < 0) return -1;
-        boolean inStr = false; char q = 0;
+        boolean inStr = false;
+        char q = 0;
         for (int i = ft; i < raw.length(); i++) {
             char c = raw.charAt(i);
-            if (inStr) { if (c == '\\') i++; else if (c == q) inStr = false; continue; }
-            if (c == '"') { inStr = true; q = c; }
-            else if (c == '[') return i + 1;
+            if (inStr) {
+                if (c == '\\') i++;
+                else if (c == q) inStr = false;
+                continue;
+            }
+            if (c == '"') {
+                inStr = true;
+                q = c;
+            } else if (c == '[') return i + 1;
         }
         return -1;
     }
@@ -165,7 +182,8 @@ public class FurnidataWriter {
 
     private boolean containsClassname(Path file, String cn) {
         for (FurnidataEntry e : new FurnidataReader(file, maxBytes).read()) {
-            if (e.classname() != null && e.classname().trim().toLowerCase(java.util.Locale.ROOT).equals(cn)) return true;
+            if (e.classname() != null
+                    && e.classname().trim().toLowerCase(java.util.Locale.ROOT).equals(cn)) return true;
         }
         return false;
     }
@@ -177,8 +195,7 @@ public class FurnidataWriter {
      */
     static String replaceEntryFields(String raw, String cn, String name, String description) {
         // find the classname value occurrence (case-insensitive on the value)
-        Pattern classProp = Pattern.compile(
-            "\"classname\"\\s*:\\s*\"((?:\\\\.|[^\"])*)\"", Pattern.CASE_INSENSITIVE);
+        Pattern classProp = Pattern.compile("\"classname\"\\s*:\\s*\"((?:\\\\.|[^\"])*)\"", Pattern.CASE_INSENSITIVE);
         Matcher m = classProp.matcher(raw);
         int objStart = -1, objEnd = -1;
         while (m.find()) {
@@ -197,8 +214,7 @@ public class FurnidataWriter {
     }
 
     private static String replaceField(String obj, String field, String value) {
-        Pattern p = Pattern.compile(
-            "(\"" + Pattern.quote(field) + "\"\\s*:\\s*)\"((?:\\\\.|[^\"])*)\"");
+        Pattern p = Pattern.compile("(\"" + Pattern.quote(field) + "\"\\s*:\\s*)\"((?:\\\\.|[^\"])*)\"");
         Matcher m = p.matcher(obj);
         if (!m.find()) return obj; // field absent → leave object as-is
         String replacement = m.group(1) + '"' + jsonEscape(value) + '"';
@@ -210,19 +226,34 @@ public class FurnidataWriter {
         for (int i = from; i >= 0; i--) {
             char c = s.charAt(i);
             if (c == '}') depth++;
-            else if (c == '{') { if (depth == 0) return i; depth--; }
+            else if (c == '{') {
+                if (depth == 0) return i;
+                depth--;
+            }
         }
         return -1;
     }
 
     private static int matchingClose(String s, int open) {
-        int depth = 0; boolean inStr = false; char q = 0;
+        int depth = 0;
+        boolean inStr = false;
+        char q = 0;
         for (int i = open; i < s.length(); i++) {
             char c = s.charAt(i);
-            if (inStr) { if (c == '\\') { i++; } else if (c == q) inStr = false; continue; }
-            if (c == '"') { inStr = true; q = c; }
-            else if (c == '{') depth++;
-            else if (c == '}') { depth--; if (depth == 0) return i; }
+            if (inStr) {
+                if (c == '\\') {
+                    i++;
+                } else if (c == q) inStr = false;
+                continue;
+            }
+            if (c == '"') {
+                inStr = true;
+                q = c;
+            } else if (c == '{') depth++;
+            else if (c == '}') {
+                depth--;
+                if (depth == 0) return i;
+            }
         }
         return -1;
     }
@@ -293,12 +324,10 @@ public class FurnidataWriter {
             Path m = dir.resolve(name);
             if (!Files.exists(m)) continue;
             try {
-                com.google.gson.JsonObject obj = FurnidataJson.parseObject(
-                    Files.readString(m, StandardCharsets.UTF_8));
+                com.google.gson.JsonObject obj = FurnidataJson.parseObject(Files.readString(m, StandardCharsets.UTF_8));
                 if (obj.has(key) && obj.get(key).isJsonArray()) {
                     List<String> list = new ArrayList<>();
-                    for (com.google.gson.JsonElement el : obj.getAsJsonArray(key))
-                        list.add(el.getAsString());
+                    for (com.google.gson.JsonElement el : obj.getAsJsonArray(key)) list.add(el.getAsString());
                     if (!list.isEmpty()) return list;
                 }
             } catch (Exception ignored) {
@@ -318,14 +347,19 @@ public class FurnidataWriter {
         String prefix = target.getFileName() + ".bak.";
         try (var stream = Files.list(target.getParent())) {
             List<Path> baks = stream.filter(p -> p.getFileName().toString().startsWith(prefix))
-                .sorted(Comparator.comparingLong(p -> backupStamp(p))).toList();
+                    .sorted(Comparator.comparingLong(p -> backupStamp(p)))
+                    .toList();
             for (int i = 0; i < baks.size() - backupKeep; i++) Files.deleteIfExists(baks.get(i));
         }
     }
 
     private static long backupStamp(Path p) {
         String s = p.getFileName().toString();
-        try { return Long.parseLong(s.substring(s.lastIndexOf('.') + 1)); } catch (Exception e) { return 0L; }
+        try {
+            return Long.parseLong(s.substring(s.lastIndexOf('.') + 1));
+        } catch (Exception e) {
+            return 0L;
+        }
     }
 
     private void atomicWrite(Path target, String content) throws IOException {
@@ -348,7 +382,8 @@ public class FurnidataWriter {
         String prefix = target.getFileName() + ".bak.";
         try (var stream = Files.list(target.getParent())) {
             Path latest = stream.filter(p -> p.getFileName().toString().startsWith(prefix))
-                .max(Comparator.comparingLong(FurnidataWriter::backupStamp)).orElse(null);
+                    .max(Comparator.comparingLong(FurnidataWriter::backupStamp))
+                    .orElse(null);
             if (latest == null) return false;
             atomicWrite(target, Files.readString(latest, StandardCharsets.UTF_8));
             return true;

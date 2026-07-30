@@ -1,16 +1,16 @@
 package com.eu.habbo.habbohotel.items;
 
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonObject;
-import java.nio.file.Path;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class FurnidataJsonTest {
 
@@ -37,17 +37,11 @@ class FurnidataJsonTest {
     @Test
     void rejectsJson5OnlySyntax() {
         assertAll(
-            () -> assertThrows(
-                    JsonParseException.class, () -> FurnidataJson.parseObject("{'value':1}")),
-            () -> assertThrows(
-                    JsonParseException.class, () -> FurnidataJson.parseObject("{value:1}")),
-            () -> assertThrows(
-                    JsonParseException.class, () -> FurnidataJson.parseObject("{\"value\":0x10}")),
-            () -> assertThrows(
-                    JsonParseException.class,
-                    () -> FurnidataJson.parseObject("{\"value\":Infinity}")),
-            () -> assertThrows(
-                    JsonParseException.class, () -> FurnidataJson.parseObject("{\"value\":NaN}")));
+                () -> assertThrows(JsonParseException.class, () -> FurnidataJson.parseObject("{'value':1}")),
+                () -> assertThrows(JsonParseException.class, () -> FurnidataJson.parseObject("{value:1}")),
+                () -> assertThrows(JsonParseException.class, () -> FurnidataJson.parseObject("{\"value\":0x10}")),
+                () -> assertThrows(JsonParseException.class, () -> FurnidataJson.parseObject("{\"value\":Infinity}")),
+                () -> assertThrows(JsonParseException.class, () -> FurnidataJson.parseObject("{\"value\":NaN}")));
     }
 
     @Test

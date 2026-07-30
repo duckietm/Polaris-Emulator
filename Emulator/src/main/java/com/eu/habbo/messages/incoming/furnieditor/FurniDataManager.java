@@ -6,9 +6,6 @@ import com.eu.habbo.habbohotel.items.FurnidataSourceResolver;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,6 +14,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Manages reading and writing of FurnitureData entries.
@@ -47,8 +46,7 @@ public class FurniDataManager {
     private static final List<String> SECTIONS = Arrays.asList("roomitemtypes", "wallitemtypes");
     private static volatile CachedIndex cachedIndex = null;
 
-    public record LookupResult(String itemJson, String diagnosticJson) {
-    }
+    public record LookupResult(String itemJson, String diagnosticJson) {}
 
     /**
      * Get the JSON string for a specific item.
@@ -90,7 +88,8 @@ public class FurniDataManager {
             if (strippedKey != null && !strippedKey.equals(key)) {
                 String byStripped = index.byClassname.get(strippedKey);
                 if (byStripped != null) {
-                    return new LookupResult(byStripped, diagnostic(source, itemId, classname, "matched_classname_stripped"));
+                    return new LookupResult(
+                            byStripped, diagnostic(source, itemId, classname, "matched_classname_stripped"));
                 }
             }
 
@@ -103,7 +102,8 @@ public class FurniDataManager {
             return new LookupResult("{}", diagnostic(source, itemId, classname, reason));
         } catch (Exception e) {
             LOGGER.warn("Failed to read FurnitureData for item " + itemId, e);
-            FurnidataSourceResolver.Source errorSource = new FurnidataSourceResolver.Source(source.path(), source.directory(), FurnidataSourceResolver.Status.ERROR, e.getMessage());
+            FurnidataSourceResolver.Source errorSource = new FurnidataSourceResolver.Source(
+                    source.path(), source.directory(), FurnidataSourceResolver.Status.ERROR, e.getMessage());
             return new LookupResult("{}", diagnostic(errorSource, itemId, classname, "error"));
         }
     }
@@ -133,7 +133,12 @@ public class FurniDataManager {
             }
         }
 
-        return new CachedIndex(sourceKey, signature, Map.copyOf(byId), Map.copyOf(byClassname), byId.isEmpty() && byClassname.isEmpty());
+        return new CachedIndex(
+                sourceKey,
+                signature,
+                Map.copyOf(byId),
+                Map.copyOf(byClassname),
+                byId.isEmpty() && byClassname.isEmpty());
     }
 
     private static void indexSplitDir(Path baseDir, Map<Integer, String> byId, Map<String, String> byClassname) {
@@ -178,13 +183,16 @@ public class FurniDataManager {
     private static long sourceSignature(Path source) {
         try {
             if (source == null || !Files.exists(source)) return -1L;
-            if (!Files.isDirectory(source)) return Files.getLastModifiedTime(source).toMillis() ^ Files.size(source);
+            if (!Files.isDirectory(source))
+                return Files.getLastModifiedTime(source).toMillis() ^ Files.size(source);
 
-            final long[] signature = { 17L };
+            final long[] signature = {17L};
             try (var stream = Files.walk(source)) {
                 stream.filter(Files::isRegularFile).forEach(path -> {
                     try {
-                        signature[0] = (signature[0] * 31L) ^ Files.getLastModifiedTime(path).toMillis() ^ Files.size(path);
+                        signature[0] = (signature[0] * 31L)
+                                ^ Files.getLastModifiedTime(path).toMillis()
+                                ^ Files.size(path);
                     } catch (Exception ignored) {
                     }
                 });
@@ -195,20 +203,27 @@ public class FurniDataManager {
         }
     }
 
-    private static String diagnostic(FurnidataSourceResolver.Source source, int itemId, String classname, String reason) {
+    private static String diagnostic(
+            FurnidataSourceResolver.Source source, int itemId, String classname, String reason) {
         JsonObject obj = new JsonObject();
         obj.addProperty("reason", reason);
         obj.addProperty("itemId", itemId);
         obj.addProperty("classname", classname != null ? classname : "");
-        obj.addProperty("sourcePath", source != null && source.path() != null ? source.path().toString() : "");
+        obj.addProperty(
+                "sourcePath",
+                source != null && source.path() != null ? source.path().toString() : "");
         obj.addProperty("sourceDirectory", source != null && source.directory());
         obj.addProperty("sourceStatus", source != null ? source.status().name() : "CONFIG_MISSING");
         obj.addProperty("message", source != null && source.message() != null ? source.message() : "");
         return obj.toString();
     }
 
-    private record CachedIndex(String sourceKey, long signature, Map<Integer, String> byId, Map<String, String> byClassname, boolean empty) {
-    }
+    private record CachedIndex(
+            String sourceKey,
+            long signature,
+            Map<Integer, String> byId,
+            Map<String, String> byClassname,
+            boolean empty) {}
 
     static String findItemJson(Path source, boolean directory, int itemId, String classname) {
         try {
@@ -549,7 +564,8 @@ public class FurniDataManager {
         }
 
         String normalizedUrlPath = urlPath.replace('\\', '/');
-        String baseName = assetBase.getFileName() != null ? assetBase.getFileName().toString() : "";
+        String baseName =
+                assetBase.getFileName() != null ? assetBase.getFileName().toString() : "";
         String marker = "/" + baseName + "/";
 
         Path candidate;
@@ -559,8 +575,8 @@ public class FurniDataManager {
             candidate = assetBase.resolve(relative);
         } else if (splitMode) {
             String trimmed = normalizedUrlPath.endsWith("/")
-                ? normalizedUrlPath.substring(0, normalizedUrlPath.length() - 1)
-                : normalizedUrlPath;
+                    ? normalizedUrlPath.substring(0, normalizedUrlPath.length() - 1)
+                    : normalizedUrlPath;
             String dirName = trimmed.substring(trimmed.lastIndexOf('/') + 1);
             candidate = assetBase.resolve(dirName);
         } else {

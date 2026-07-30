@@ -13,9 +13,9 @@ public final class FurnidataEntryBuilder {
 
     public static String build(Item item, String name, String description) {
         String classname = item.getName() != null ? item.getName() : "";
-        String safeName = (name != null && !name.isBlank()) ? name
-                : (item.getFullName() != null && !item.getFullName().isBlank()) ? item.getFullName()
-                : classname;
+        String safeName = (name != null && !name.isBlank())
+                ? name
+                : (item.getFullName() != null && !item.getFullName().isBlank()) ? item.getFullName() : classname;
         String safeDesc = description != null ? description : "";
         String customParams = item.getCustomParams() != null ? item.getCustomParams() : "";
 
@@ -28,7 +28,8 @@ public final class FurnidataEntryBuilder {
         b.append(",\"partcolors\":{\"color\":[]}");
         b.append(",\"name\":\"").append(esc(safeName)).append('"');
         b.append(",\"description\":\"").append(esc(safeDesc)).append('"');
-        b.append(",\"adurl\":\"\",\"offerid\":-1,\"buyout\":false,\"rentofferid\":-1,\"rentbuyout\":false,\"bc\":false,\"excludeddynamic\":false");
+        b.append(
+                ",\"adurl\":\"\",\"offerid\":-1,\"buyout\":false,\"rentofferid\":-1,\"rentbuyout\":false,\"bc\":false,\"excludeddynamic\":false");
         b.append(",\"customparams\":\"").append(esc(customParams)).append('"');
         b.append(",\"specialtype\":1");
         b.append(",\"canstandon\":").append(item.allowWalk());

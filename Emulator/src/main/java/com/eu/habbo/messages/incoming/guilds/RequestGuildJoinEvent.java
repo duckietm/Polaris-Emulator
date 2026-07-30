@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.guilds.GuildInfoComposer;
 import com.eu.habbo.messages.outgoing.guilds.GuildJoinErrorComposer;
+import com.eu.habbo.plugin.events.guilds.GuildUserJoinEvent;
 
 public class RequestGuildJoinEvent extends MessageHandler {
     @Override
@@ -34,6 +35,12 @@ public class RequestGuildJoinEvent extends MessageHandler {
             this.client.sendResponse(new GuildJoinErrorComposer(GuildJoinErrorComposer.GROUP_CLOSED));
             return;
         }
+
+        GuildUserJoinEvent joinEvent = new GuildUserJoinEvent(guild, this.client.getHabbo().getHabboInfo().getId(), this.client.getHabbo());
+        Emulator.getPluginManager().fireEvent(joinEvent);
+
+        if (joinEvent.isCancelled())
+            return;
 
         Emulator.getGameEnvironment().getGuildManager().joinGuild(guild, this.client, 0, false);
         this.client.sendResponse(new GuildInfoComposer(guild, this.client, false, Emulator.getGameEnvironment().getGuildManager().getGuildMember(guild, this.client.getHabbo())));

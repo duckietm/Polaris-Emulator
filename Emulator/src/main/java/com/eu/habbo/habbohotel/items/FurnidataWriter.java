@@ -20,8 +20,8 @@ public class FurnidataWriter {
     /** Default tier names in override order (later = higher priority, wins on conflict). */
     private static final List<String> DEFAULT_TIERS = Arrays.asList("core", "custom", "seasonal");
 
-    /** Manifest filenames tried in order (json5 first, plain json second). */
-    private static final List<String> MANIFEST_NAMES = Arrays.asList("manifest.json5", "manifest.json");
+    /** Manifest filenames tried in order (JSONC first, strict JSON second). */
+    private static final List<String> MANIFEST_NAMES = Arrays.asList("manifest.jsonc", "manifest.json");
 
     private final Path source;        // file (single) or base dir (split-tier)
     private final boolean directory;  // true => split-tier
@@ -70,12 +70,17 @@ public class FurnidataWriter {
      * @param classname  new classname (must be absent from furnidata)
      * @param id         furnidata id (= item sprite id); must not collide
      * @param type       FLOOR -> roomitemtypes, WALL -> wallitemtypes
-     * @param entryJson5 the complete entry object as a single-line JSON5 string
+     * @param entryJson the complete entry object as a single-line JSON string
      * @param createTier split-tier only: the tier dir to write into (e.g. "custom"); ignored for single-file
      */
-    public CreateResult create(String classname, int id, FurnitureType type, String entryJson5, String createTier) {
+    public CreateResult create(String classname, int id, FurnitureType type, String entryJson, String createTier) {
         String cn = classname == null ? "" : classname.trim().toLowerCase(java.util.Locale.ROOT);
-        if (cn.isEmpty() || entryJson5 == null || entryJson5.isBlank()) return CreateResult.NO_TARGET;
+        if (cn.isEmpty() || entryJson == null || entryJson.isBlank()) return CreateResult.NO_TARGET;
+        try {
+            FurnidataJson.parseObject(entryJson);
+        } catch (Exception e) {
+            return CreateResult.NO_TARGET;
+        }
 
         // Guard: duplicate classname / id collision (scan the whole source).
         for (FurnidataEntry e : new FurnidataReader(source, maxBytes).read()) {
@@ -93,7 +98,7 @@ public class FurnidataWriter {
             int open = furnitypeArrayOpenIndex(raw, section);
             if (open < 0) return CreateResult.NO_TARGET; // section/array absent in target file
 
-            String edited = raw.substring(0, open) + "\n" + entryJson5 + "," + raw.substring(open);
+            String edited = raw.substring(0, open) + "\n" + entryJson + "," + raw.substring(open);
             backup(target);
             atomicWrite(target, edited);
             return CreateResult.CREATED;
@@ -104,7 +109,7 @@ public class FurnidataWriter {
 
     /** Single-file: the source. Split-tier: the create-tier file (created with a shell if absent). */
     private Path resolveCreateTarget(String createTier) throws IOException {
-        if (!directory) return source;
+        if (!directory) return FurnidataJson.isSupportedDocument(source) ? source : null;
         String tier = (createTier == null || createTier.isBlank()) ? "custom" : createTier.trim();
         Path base = source.toAbsolutePath().normalize();
         Path tierDir = safeResolve(base, tier);
@@ -112,9 +117,9 @@ public class FurnidataWriter {
         if (!Files.isDirectory(tierDir)) Files.createDirectories(tierDir);
         for (String fileName : manifestList(tierDir, "files", List.of())) {
             Path f = safeResolve(base, tierDir.resolve(fileName).toString());
-            if (f != null && Files.isRegularFile(f)) return f;
+            if (f != null && Files.isRegularFile(f) && FurnidataJson.isSupportedDocument(f)) return f;
         }
-        Path def = tierDir.resolve("furnidata.json5");
+        Path def = tierDir.resolve("furnidata.jsonc");
         if (!Files.exists(def)) {
             Files.writeString(def,
                 "{\n  \"roomitemtypes\": { \"furnitype\": [\n] },\n  \"wallitemtypes\": { \"furnitype\": [\n] }\n}\n",
@@ -133,19 +138,15 @@ public class FurnidataWriter {
         for (int i = ft; i < raw.length(); i++) {
             char c = raw.charAt(i);
             if (inStr) { if (c == '\\') i++; else if (c == q) inStr = false; continue; }
-            if (c == '"' || c == '\'') { inStr = true; q = c; }
+            if (c == '"') { inStr = true; q = c; }
             else if (c == '[') return i + 1;
         }
         return -1;
     }
 
-    /** First occurrence of a quoted key ("key" or 'key') at/after {@code from}, or -1. */
+    /** First occurrence of a double-quoted key at/after {@code from}, or -1. */
     private static int indexOfKey(String raw, String key, int from) {
-        int a = raw.indexOf("\"" + key + "\"", from);
-        int b = raw.indexOf("'" + key + "'", from);
-        if (a < 0) return b;
-        if (b < 0) return a;
-        return Math.min(a, b);
+        return raw.indexOf("\"" + key + "\"", from);
     }
 
     /** For single-file just returns the file; for split-tier, the tier file that contains cn. */
@@ -172,16 +173,16 @@ public class FurnidataWriter {
     /**
      * Replace the "name" and "description" string values inside the JSON object that holds
      * "classname": "<cn>". Preserves everything else (comments, ordering, formatting).
-     * Handles double- and single-quoted JSON5 keys/values. Returns null if cn not found.
+     * Handles strict double-quoted JSON keys and values. Returns null if cn is not found.
      */
     static String replaceEntryFields(String raw, String cn, String name, String description) {
         // find the classname value occurrence (case-insensitive on the value)
         Pattern classProp = Pattern.compile(
-            "([\"'])classname\\1\\s*:\\s*([\"'])((?:\\\\.|(?!\\2).)*)\\2", Pattern.CASE_INSENSITIVE);
+            "\"classname\"\\s*:\\s*\"((?:\\\\.|[^\"])*)\"", Pattern.CASE_INSENSITIVE);
         Matcher m = classProp.matcher(raw);
         int objStart = -1, objEnd = -1;
         while (m.find()) {
-            String val = m.group(3).trim().toLowerCase(java.util.Locale.ROOT);
+            String val = m.group(1).trim().toLowerCase(java.util.Locale.ROOT);
             if (!val.equals(cn)) continue;
             // expand to the enclosing { ... }
             objStart = lastUnbalancedBrace(raw, m.start());
@@ -197,7 +198,7 @@ public class FurnidataWriter {
 
     private static String replaceField(String obj, String field, String value) {
         Pattern p = Pattern.compile(
-            "(([\"'])" + Pattern.quote(field) + "\\2\\s*:\\s*)([\"'])((?:\\\\.|(?!\\3).)*)\\3");
+            "(\"" + Pattern.quote(field) + "\"\\s*:\\s*)\"((?:\\\\.|[^\"])*)\"");
         Matcher m = p.matcher(obj);
         if (!m.find()) return obj; // field absent → leave object as-is
         String replacement = m.group(1) + '"' + jsonEscape(value) + '"';
@@ -219,7 +220,7 @@ public class FurnidataWriter {
         for (int i = open; i < s.length(); i++) {
             char c = s.charAt(i);
             if (inStr) { if (c == '\\') { i++; } else if (c == q) inStr = false; continue; }
-            if (c == '"' || c == '\'') { inStr = true; q = c; }
+            if (c == '"') { inStr = true; q = c; }
             else if (c == '{') depth++;
             else if (c == '}') { depth--; if (depth == 0) return i; }
         }
@@ -239,7 +240,7 @@ public class FurnidataWriter {
     /**
      * Enumerate every data file reachable from the split-tier base directory, in
      * override order (core → custom → seasonal, or the order declared in the top-level
-     * {@code manifest.json(5)}).  Within each tier the per-tier manifest's {@code files}
+     * {@code manifest.jsonc} or {@code manifest.json}). Within each tier the manifest's {@code files}
      * array determines the file order.
      *
      * <p>All resolved paths are checked against the normalised base directory via
@@ -258,7 +259,7 @@ public class FurnidataWriter {
 
             for (String fileName : manifestList(tierDir, "files", List.of())) {
                 Path file = safeResolve(base, tierDir.resolve(fileName).toString());
-                if (file == null || !Files.isRegularFile(file)) continue;
+                if (file == null || !Files.isRegularFile(file) || !FurnidataJson.isSupportedDocument(file)) continue;
                 result.add(file);
             }
         }
@@ -284,7 +285,7 @@ public class FurnidataWriter {
 
     /**
      * Read the {@code key} string-array from the first manifest file found in {@code dir}
-     * ({@code manifest.json5} then {@code manifest.json}).  Falls back to {@code fallback}
+     * ({@code manifest.jsonc} then {@code manifest.json}). Falls back to {@code fallback}
      * if no manifest exists or the key is absent/empty.
      */
     private List<String> manifestList(Path dir, String key, List<String> fallback) {

@@ -1,7 +1,7 @@
 package com.eu.habbo.habbohotel.items;
 
 /**
- * Builds a complete furnidata entry object (single-line JSON5) from an {@link Item}
+ * Builds a complete furnidata entry object (single-line strict JSON) from an {@link Item}
  * (its items_base row) plus a display name/description. Used by the Furni Editor
  * upsert path when a furni has no furnidata entry yet. Field shape mirrors the
  * hotel's existing furnidata entries; {@code id} is the item's sprite id so the

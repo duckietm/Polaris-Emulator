@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -126,5 +127,82 @@ class FurnidataWriterTest {
         // The secret file must not have been touched
         String secretAfter = Files.readString(escapeDir.resolve("secret.json"));
         assertTrue(secretAfter.contains("secret old"), "traversal target must be untouched");
+    }
+
+    @Test
+    void createsJsoncFileForMissingTier(@TempDir Path base) {
+        FurnidataWriter writer = new FurnidataWriter(base, true, 64L * 1024 * 1024, 10);
+
+        FurnidataWriter.CreateResult result = writer.create(
+            "new_chair",
+            50,
+            FurnitureType.FLOOR,
+            "{\"id\":50,\"classname\":\"new_chair\",\"name\":\"New chair\",\"description\":\"\"}",
+            "custom");
+
+        assertEquals(FurnidataWriter.CreateResult.CREATED, result);
+        assertTrue(Files.exists(base.resolve("custom").resolve("furnidata.jsonc")));
+        assertFalse(Files.exists(base.resolve("custom").resolve("furnidata.json5")));
+    }
+
+    @Test
+    void discoversJsoncManifests(@TempDir Path base) throws Exception {
+        Path custom = base.resolve("custom");
+        Files.createDirectories(custom);
+        Files.writeString(base.resolve("manifest.jsonc"), """
+            {
+              // Later tiers override earlier tiers.
+              "tiers": [ "custom", ],
+            }
+            """);
+        Files.writeString(custom.resolve("manifest.jsonc"), """
+            {
+              "files": [ "furnidata.jsonc", ],
+            }
+            """);
+        Path data = custom.resolve("furnidata.jsonc");
+        Files.writeString(data, CUSTOM_DATA);
+
+        FurnidataWriter writer = new FurnidataWriter(base, true, 64L * 1024 * 1024, 10);
+
+        assertTrue(writer.write("split_chair", "JSONC name", "JSONC description"));
+        assertTrue(Files.readString(data).contains("\"JSONC name\""));
+    }
+
+    @Test
+    void refusesJson5SingleFile(@TempDir Path dir) throws Exception {
+        Path file = dir.resolve("FurnitureData.json5");
+        Files.writeString(file, SINGLE);
+
+        FurnidataWriter writer = new FurnidataWriter(file, false, 64L * 1024 * 1024, 10);
+
+        assertFalse(writer.write("01_caterhead", "Changed", "Changed"));
+        assertEquals(SINGLE, Files.readString(file));
+    }
+
+    @Test
+    void ignoresJson5Manifest(@TempDir Path base) throws Exception {
+        Path unsupported = base.resolve("unsupported");
+        Files.createDirectories(unsupported);
+        Files.writeString(base.resolve("manifest.json5"), "{ \"tiers\": [ \"unsupported\" ] }");
+        Files.writeString(unsupported.resolve("manifest.json"), "{ \"files\": [ \"furnidata.json\" ] }");
+        Path data = unsupported.resolve("furnidata.json");
+        Files.writeString(data, CUSTOM_DATA);
+
+        FurnidataWriter writer = new FurnidataWriter(base, true, 64L * 1024 * 1024, 10);
+
+        assertFalse(writer.write("split_chair", "Changed", "Changed"));
+        assertEquals(CUSTOM_DATA, Files.readString(data));
+    }
+
+    @Test
+    void revertsJsoncBackup(@TempDir Path dir) throws Exception {
+        Path file = dir.resolve("FurnitureData.jsonc");
+        Files.writeString(file, SINGLE);
+        FurnidataWriter writer = new FurnidataWriter(file, false, 64L * 1024 * 1024, 10);
+
+        assertTrue(writer.write("01_caterhead", "Changed", "Changed"));
+        assertTrue(writer.revertLastBackup());
+        assertEquals(SINGLE, Files.readString(file));
     }
 }

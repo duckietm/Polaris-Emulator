@@ -5,7 +5,7 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 
 /**
- * Header 6010: a permitted user (acc_snowwar_edit, rank 7 by default) opens the
+ * Header 6010: a permitted user (acc_snowwar_arena_build, rank 7 by default) opens the
  * in-game arena editor - either from a running game or straight from the queue.
  * The manager takes the player out of any game/queue, freezes matchmaking and
  * ends every running game (nothing may tick behind the editor), then sends the
@@ -16,7 +16,7 @@ public class SnowStormEditRoomEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         Habbo habbo = this.client.getHabbo();
-        if (habbo == null || !habbo.hasPermission(SnowWarManager.EDIT_PERMISSION)) {
+        if (habbo == null || !habbo.hasPermission(SnowWarManager.BUILD_PERMISSION)) {
             return;
         }
 

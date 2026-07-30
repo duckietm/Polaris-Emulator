@@ -118,6 +118,8 @@
     "rooms": ["allow_hidewall", "allow_other_pets", "allow_other_pets_eat", "allow_underpass", "allow_walkthrough", "builders_club_original_state", "builders_club_trial_locked", "category", "chat_hearing_distance", "chat_mode", "chat_protection", "chat_speed", "chat_weight", "description", "guild_id", "hidewired", "id", "idle_autokick_enabled", "idle_autokick_timeout_seconds", "idle_sleep_enabled", "idle_sleep_timeout_seconds", "is_forsale", "is_public", "is_staff_picked", "jukebox_active", "leave_on_door_tile", "model", "moodlight_data", "move_diagonally", "mute_all_pets", "name", "override_model", "owner_id", "owner_name", "paper_floor", "paper_landscape", "paper_wall", "password", "poll_id", "promoted", "roller_speed", "score", "soundboard_enabled", "state", "tags", "thickness_floor", "thickness_wall", "trade_mode", "users", "users_max", "wall_height", "who_can_ban", "who_can_kick", "who_can_mute", "youtube_enabled"],
     "sanction_levels": ["hour_length", "level", "probation_days", "type"],
     "sanctions": ["habbo_id", "id", "is_muted", "mute_duration", "probation_timestamp", "reason", "sanction_level", "trade_locked_until"],
+    "snowwar_arenas": ["created_at", "created_by", "id", "is_active", "is_official", "model_name", "name", "updated_at"],
+    "snowwar_scores": ["matches", "score", "user_id", "week_start"],
     "soundboard_sounds": ["enabled", "id", "name", "sort_order", "url"],
     "soundtracks": ["author", "code", "id", "length", "name", "track"],
     "special_enables": ["effect_id", "min_rank"],

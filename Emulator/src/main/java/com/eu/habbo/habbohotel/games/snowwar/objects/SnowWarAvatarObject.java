@@ -31,7 +31,7 @@ public class SnowWarAvatarObject extends SnowWarGameObject {
     /**
      * Processes one subturn/frame for this avatar: activity timers + movement.
      */
-    public void calculateFrameMovement() {
+    public boolean calculateFrameMovement() {
         SnowWarAttributes attr = this.gamePlayer.getAttributes();
 
         if (attr.getActivityTimer() > 0) {
@@ -43,11 +43,11 @@ public class SnowWarAvatarObject extends SnowWarGameObject {
         }
 
         if (!this.hasDestination(attr)) {
-            return;
+            return false;
         }
 
         if (!this.canMoveInCurrentState(attr)) {
-            return;
+            return false;
         }
 
         boolean reachedDestination = this.moveOneFrame(attr);
@@ -55,6 +55,8 @@ public class SnowWarAvatarObject extends SnowWarGameObject {
         if (reachedDestination) {
             this.stopWalking();
         }
+
+        return reachedDestination;
     }
 
     private boolean hasDestination(SnowWarAttributes attr) {
@@ -63,9 +65,7 @@ public class SnowWarAvatarObject extends SnowWarGameObject {
 
     private boolean canMoveInCurrentState(SnowWarAttributes attr) {
         SnowWarActivityState state = attr.getActivityState();
-        return state == SnowWarActivityState.NORMAL
-                || state == SnowWarActivityState.CREATING_SNOWBALL
-                || state == SnowWarActivityState.INVINCIBLE;
+        return state == SnowWarActivityState.NORMAL || state == SnowWarActivityState.INVINCIBLE;
     }
 
     private boolean moveOneFrame(SnowWarAttributes attr) {
@@ -114,7 +114,8 @@ public class SnowWarAvatarObject extends SnowWarGameObject {
         int newTileX = SnowWarMath.worldToTile(currentWorldX);
         int newTileY = SnowWarMath.worldToTile(currentWorldY);
 
-        if (newTileX != attr.getCurrentPosition().getX() || newTileY != attr.getCurrentPosition().getY()) {
+        if (newTileX != attr.getCurrentPosition().getX()
+                || newTileY != attr.getCurrentPosition().getY()) {
             attr.setCurrentPosition(new SnowWarPoint(newTileX, newTileY));
         }
 
@@ -180,31 +181,24 @@ public class SnowWarAvatarObject extends SnowWarGameObject {
      * Circle-to-circle collision test against a snowball (README 10).
      */
     public boolean testCollision(SnowWarSnowballObject ball) {
-        if (ball.getHeight() > SnowWarConstants.BALL_HEIGHT_THRESHOLD) {
-            return false;
-        }
-
-        if (!this.game.isOpponent(this.gamePlayer, ball.getThrower())) {
-            return false;
-        }
-
         SnowWarAttributes attr = this.gamePlayer.getAttributes();
+        if (ball.getThrower() == this.gamePlayer
+                || this.isImmune()
+                || attr.isPendingStun()
+                || ball.getHeight() >= SnowWarConstants.AVATAR_COLLISION_HEIGHT) {
+            return false;
+        }
 
         int playerX = attr.getWorldPosition().getX();
         int playerY = attr.getWorldPosition().getY();
 
-        int distanceX = Math.abs(ball.getLocH() - playerX);
-        int distanceY = Math.abs(ball.getLocV() - playerY);
-
-        if (distanceX >= SnowWarConstants.COLLISION_DISTANCE) {
-            return false;
-        }
-        if (distanceY >= SnowWarConstants.COLLISION_DISTANCE) {
-            return false;
-        }
-
-        int distanceSquared = (distanceX * distanceX) + (distanceY * distanceY);
-        return distanceSquared < SnowWarConstants.COLLISION_DISTANCE * SnowWarConstants.COLLISION_DISTANCE;
+        return SnowWarMath.circlesOverlap(
+                ball.getLocH(),
+                ball.getLocV(),
+                SnowWarConstants.SNOWBALL_RADIUS,
+                playerX,
+                playerY,
+                SnowWarConstants.AVATAR_RADIUS);
     }
 
     @Override
@@ -215,25 +209,25 @@ public class SnowWarAvatarObject extends SnowWarGameObject {
         SnowWarPoint nextGoal = attr.getNextGoal() != null ? attr.getNextGoal() : current;
         SnowWarPoint walkGoal = attr.getWalkGoal() != null ? attr.getWalkGoal() : current;
 
-        return new int[]{
-                SnowWarConstants.OBJECT_TYPE_AVATAR,
-                this.objectId,
-                SnowWarMath.tileToWorld(current.getX()),
-                SnowWarMath.tileToWorld(current.getY()),
-                attr.getRotation(),
-                attr.getHealth().get(),
-                attr.getSnowballCount().get(),
-                0, // is_bot
-                attr.getActivityTimer(),
-                attr.getActivityState().getStateId(),
-                nextGoal.getX(),
-                nextGoal.getY(),
-                SnowWarMath.tileToWorld(walkGoal.getX()),
-                SnowWarMath.tileToWorld(walkGoal.getY()),
-                attr.getScore().get(),
-                this.gamePlayer.getUserId(),
-                this.gamePlayer.getTeamId(),
-                this.objectId
+        return new int[] {
+            SnowWarConstants.OBJECT_TYPE_AVATAR,
+            this.objectId,
+            SnowWarMath.tileToWorld(current.getX()),
+            SnowWarMath.tileToWorld(current.getY()),
+            attr.getRotation(),
+            attr.getHealth().get(),
+            attr.getSnowballCount().get(),
+            0, // is_bot
+            attr.getActivityTimer(),
+            attr.getActivityState().getStateId(),
+            nextGoal.getX(),
+            nextGoal.getY(),
+            SnowWarMath.tileToWorld(walkGoal.getX()),
+            SnowWarMath.tileToWorld(walkGoal.getY()),
+            attr.getScore().get(),
+            this.gamePlayer.getUserId(),
+            this.gamePlayer.getTeamId(),
+            this.objectId
         };
     }
 
@@ -266,7 +260,8 @@ public class SnowWarAvatarObject extends SnowWarGameObject {
         response.appendString(this.gamePlayer.getHabbo().getHabboInfo().getUsername());
         response.appendString("");
         response.appendString(this.gamePlayer.getHabbo().getHabboInfo().getLook());
-        response.appendString(this.gamePlayer.getHabbo().getHabboInfo().getGender().name().toUpperCase());
+        response.appendString(
+                this.gamePlayer.getHabbo().getHabboInfo().getGender().name().toUpperCase());
     }
 
     @Override

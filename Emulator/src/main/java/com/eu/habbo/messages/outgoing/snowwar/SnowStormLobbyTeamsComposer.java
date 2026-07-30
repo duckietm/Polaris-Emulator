@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.snowwar;
 
+import com.eu.habbo.habbohotel.games.snowwar.SnowWarArenaDefinition;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -22,10 +23,21 @@ public class SnowStormLobbyTeamsComposer extends MessageComposer {
 
     private final List<Habbo> players;
     private final int teamCount;
+    private final int leaderUserId;
+    private final int selectedArenaId;
+    private final List<SnowWarArenaDefinition> arenas;
 
-    public SnowStormLobbyTeamsComposer(List<Habbo> players, int teamCount) {
+    public SnowStormLobbyTeamsComposer(
+            List<Habbo> players,
+            int teamCount,
+            int leaderUserId,
+            int selectedArenaId,
+            List<SnowWarArenaDefinition> arenas) {
         this.players = players;
         this.teamCount = teamCount;
+        this.leaderUserId = leaderUserId;
+        this.selectedArenaId = selectedArenaId;
+        this.arenas = arenas;
     }
 
     @Override
@@ -44,6 +56,15 @@ public class SnowStormLobbyTeamsComposer extends MessageComposer {
             this.response.appendString(habbo.getHabboInfo().getLook());
             this.response.appendString(habbo.getHabboInfo().getGender().name().toUpperCase());
             index++;
+        }
+
+        this.response.appendInt(this.leaderUserId);
+        this.response.appendInt(this.selectedArenaId);
+        this.response.appendInt(this.arenas.size());
+        for (SnowWarArenaDefinition arena : this.arenas) {
+            this.response.appendInt(arena.id());
+            this.response.appendString(arena.name());
+            this.response.appendBoolean(arena.official());
         }
 
         return this.response;

@@ -420,6 +420,10 @@ public class Incoming {
     public static final int UNKNOWN_SNOWSTORM_6024 = 6024;
     public static final int UNKNOWN_SNOWSTORM_6025 = 6025;
     public static final int SnowStormUserPickSnowballEvent = 6026;
+    public static final int SnowStormGetAllTimeLeaderboardEvent = 6027;
+    public static final int SnowStormGetAllTimeFriendsLeaderboardEvent = 6028;
+    public static final int SnowStormGetWeeklyLeaderboardEvent = 6029;
+    public static final int SnowStormGetWeeklyFriendsLeaderboardEvent = 6030;
 
     // CUSTOM
     public static final int UpdateFurniturePositionEvent = 10019;

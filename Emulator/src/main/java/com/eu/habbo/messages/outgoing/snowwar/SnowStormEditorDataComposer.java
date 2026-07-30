@@ -17,9 +17,11 @@ import java.util.List;
 public class SnowStormEditorDataComposer extends MessageComposer {
 
     private final SnowWarMap map;
+    private final String arenaName;
 
-    public SnowStormEditorDataComposer(SnowWarMap map) {
+    public SnowStormEditorDataComposer(SnowWarMap map, String arenaName) {
         this.map = map;
+        this.arenaName = arenaName;
     }
 
     @Override
@@ -52,6 +54,7 @@ public class SnowStormEditorDataComposer extends MessageComposer {
 
         this.response.appendInt(0); // no machines in the editor
         this.response.appendBoolean(true); // canEditRoom
+        this.response.appendString(this.arenaName);
 
         return this.response;
     }

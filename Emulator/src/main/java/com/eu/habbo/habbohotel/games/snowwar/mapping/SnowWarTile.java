@@ -62,21 +62,14 @@ public class SnowWarTile {
         return this.highestItem == null || this.highestItem.getWalkableHeight() <= 0;
     }
 
-    /**
-     * Snowball collision: does this tile block a ball flying with the given
-     * trajectory? (README 5.5; trajectory 0 = quick, 1 = short/lob, 2 = long)
-     */
-    public boolean isHeightBlocking(int trajectory) {
-        if (this.highestItem == null) {
-            return false;
+    /** AIR adds solid furni heights; trees collide through TreeGameObject. */
+    public int getSnowballCollisionHeight() {
+        int height = 0;
+        for (SnowWarItem item : this.items) {
+            if (!SnowWarItemProperties.isTreeName(item.getName()) && item.getCollisionHeight() > 0) {
+                height += item.getCollisionHeight();
+            }
         }
-
-        // A long (curved) throw arcs over everything; a straight or lob throw is
-        // stopped by any furni tall enough to block snowballs (stack height > 0.4).
-        if (trajectory == 2) {
-            return false;
-        }
-
-        return this.highestItem.blocksSnowball();
+        return height;
     }
 }

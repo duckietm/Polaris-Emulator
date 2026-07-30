@@ -21,6 +21,7 @@ public class SnowWarSnowballObject extends SnowWarGameObject {
     private int height;
 
     private final int direction;
+    private final int planarVelocity;
     private int timeToLive;
     private final int parabolaOffset;
     private final int trajectory;
@@ -28,35 +29,36 @@ public class SnowWarSnowballObject extends SnowWarGameObject {
     private volatile boolean alive = true;
 
     /**
-     * @param fromTileX  thrower tile X
-     * @param fromTileY  thrower tile Y
-     * @param targetTileX target tile X
-     * @param targetTileY target tile Y
-     * @param trajectory 0 = quick throw, 1 = lob, 2 = long throw
+     * @param fromWorldX thrower world X
+     * @param fromWorldY thrower world Y
+     * @param targetWorldX target world X
+     * @param targetWorldY target world Y
+     * @param trajectory 0 = quick, 1 = short lob, 2 = long lob, 3 = adaptive
      */
     public SnowWarSnowballObject(
             int objectId,
             SnowWarMap map,
             SnowWarGamePlayer thrower,
-            int fromTileX,
-            int fromTileY,
-            int targetTileX,
-            int targetTileY,
+            int fromWorldX,
+            int fromWorldY,
+            int targetWorldX,
+            int targetWorldY,
             int trajectory) {
         super(objectId);
         this.map = map;
         this.thrower = thrower;
-        this.trajectory = trajectory;
 
-        this.locH = SnowWarMath.tileToWorld(fromTileX);
-        this.locV = SnowWarMath.tileToWorld(fromTileY);
+        this.locH = fromWorldX;
+        this.locV = fromWorldY;
 
-        int[] flightPath = SnowWarMath.calculateFlightPath(fromTileX, fromTileY, targetTileX, targetTileY, trajectory);
+        int[] flightPath =
+                SnowWarMath.calculateFlightPathWorld(fromWorldX, fromWorldY, targetWorldX, targetWorldY, trajectory);
         this.direction = flightPath[0];
         this.timeToLive = flightPath[1];
         this.parabolaOffset = flightPath[2];
-
-        this.height = this.calculateHeight(this.timeToLive);
+        this.planarVelocity = flightPath[3];
+        this.trajectory = flightPath[4];
+        this.height = 3000;
     }
 
     public SnowWarGamePlayer getThrower() {
@@ -87,6 +89,10 @@ public class SnowWarSnowballObject extends SnowWarGameObject {
         return this.trajectory;
     }
 
+    public int getPlanarVelocity() {
+        return this.planarVelocity;
+    }
+
     public void kill() {
         this.alive = false;
     }
@@ -94,29 +100,25 @@ public class SnowWarSnowballObject extends SnowWarGameObject {
     private int calculateHeight(int timeToLive) {
         int distanceFromPeak = timeToLive - this.parabolaOffset;
         int heightMultiplier;
-        int baseHeight;
-
         switch (this.trajectory) {
             case 0: // Quick throw (flat arc)
                 if (timeToLive > 3) {
                     distanceFromPeak = 3 - this.parabolaOffset;
                 }
-                heightMultiplier = 4;
-                baseHeight = 4000;
-                break;
-            case 1: // Medium lob
                 heightMultiplier = 10;
-                baseHeight = 3000;
                 break;
-            default: // 2: High arc
-                heightMultiplier = 100;
-                baseHeight = 3000;
+            case 1: // Short lob
+                heightMultiplier = 25;
+                break;
+            default: // 2: Long lob
+                heightMultiplier = 50;
                 break;
         }
 
-        return baseHeight
+        int calculated = 3000
                 + heightMultiplier
                         * ((this.parabolaOffset * this.parabolaOffset) - (distanceFromPeak * distanceFromPeak));
+        return this.trajectory == SnowWarConstants.TRAJECTORY_QUICK ? Math.min(calculated, 3000) : calculated;
     }
 
     /**
@@ -129,30 +131,24 @@ public class SnowWarSnowballObject extends SnowWarGameObject {
 
         this.timeToLive--;
 
-        int deltaH = (SnowWarMath.getBaseVelX(this.direction) * SnowWarConstants.BASE_VELOCITY_MULTIPLIER)
-                / SnowWarConstants.VELOCITY_DIVISOR;
-        int deltaV = (SnowWarMath.getBaseVelY(this.direction) * SnowWarConstants.BASE_VELOCITY_MULTIPLIER)
-                / SnowWarConstants.VELOCITY_DIVISOR;
+        int deltaH =
+                (SnowWarMath.getBaseVelX(this.direction) * this.planarVelocity) / SnowWarConstants.VELOCITY_DIVISOR;
+        int deltaV =
+                (SnowWarMath.getBaseVelY(this.direction) * this.planarVelocity) / SnowWarConstants.VELOCITY_DIVISOR;
 
         this.locH = this.locH + deltaH;
         this.locV = this.locV + deltaV;
 
         this.height = this.calculateHeight(this.timeToLive);
+    }
 
-        if (this.height < 0) {
-            this.alive = false;
-            return;
+    /** AIR tests the live ball altitude against the current tile after objects. */
+    public boolean hasFloorCollision() {
+        if (this.height < 1) {
+            return true;
         }
-
-        int currentTileX = SnowWarMath.worldToTile(this.locH);
-        int currentTileY = SnowWarMath.worldToTile(this.locV);
-
-        SnowWarTile tile = this.map.getTile(currentTileX, currentTileY);
-        // Straight/lob throws are stopped by furni taller than 0.4; long
-        // (curved) throws arc over. isHeightBlocking encodes that per trajectory.
-        if (tile != null && tile.isHeightBlocking(this.trajectory)) {
-            this.alive = false;
-        }
+        SnowWarTile tile = this.map.getTile(SnowWarMath.worldToTile(this.locH), SnowWarMath.worldToTile(this.locV));
+        return tile != null && this.height < tile.getSnowballCollisionHeight();
     }
 
     @Override

@@ -14,6 +14,8 @@ public class SnowStormThrowAtPlayerEvent extends MessageHandler {
 
         int targetObjectId = this.packet.readInt();
         int trajectory = this.packet.readInt();
+        // AIR turn/subturn values may follow; the server-authoritative Polaris
+        // handler safely ignores them as trailing bytes.
 
         int userId = this.client.getHabbo().getHabboInfo().getId();
         if (!SnowWarManager.getInstance().allowPacket(userId)) {

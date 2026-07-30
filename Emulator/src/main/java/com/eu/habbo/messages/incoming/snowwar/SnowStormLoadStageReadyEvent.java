@@ -11,6 +11,9 @@ public class SnowStormLoadStageReadyEvent extends MessageHandler {
             return;
         }
 
+        // AIR sends a trailing percentage (normally 100), while legacy Polaris
+        // sends no payload. The isolated packet buffer safely discards either.
+
         int userId = this.client.getHabbo().getHabboInfo().getId();
         SnowWarGame game = SnowWarManager.getInstance().getGameByUserId(userId);
 

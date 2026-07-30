@@ -35,17 +35,17 @@ public class RequestGuildJoinEvent extends MessageHandler {
         }
 
         GuildUserJoinEvent joinEvent = new GuildUserJoinEvent(
-            guild, this.client.getHabbo().getHabboInfo().getId(), this.client.getHabbo());
+                guild, this.client.getHabbo().getHabboInfo().getId(), this.client.getHabbo());
         Emulator.getPluginManager().fireEvent(joinEvent);
 
         if (joinEvent.isCancelled()) return;
 
         Emulator.getGameEnvironment().getGuildManager().joinGuild(guild, this.client, 0, false);
         this.client.sendResponse(new GuildInfoComposer(
-            guild,
-            this.client,
-            false,
-            Emulator.getGameEnvironment().getGuildManager().getGuildMember(guild, this.client.getHabbo())));
+                guild,
+                this.client,
+                false,
+                Emulator.getGameEnvironment().getGuildManager().getGuildMember(guild, this.client.getHabbo())));
 
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 

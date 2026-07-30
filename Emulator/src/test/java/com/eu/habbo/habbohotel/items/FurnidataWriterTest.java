@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.items;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
@@ -41,6 +42,13 @@ class FurnidataWriterTest {
         assertFalse(after.contains("old name"));
         // backup created
         assertTrue(Files.list(dir).anyMatch(p -> p.getFileName().toString().startsWith("FurnitureData.json.bak")));
+    }
+
+    @Test
+    void rejectsLongUnterminatedClassnameWithoutOverflow() {
+        String malformed = "{\"classname\":\"" + "\\!".repeat(10_000);
+
+        assertNull(FurnidataWriter.replaceEntryFields(malformed, "missing", "name", "description"));
     }
 
     @Test

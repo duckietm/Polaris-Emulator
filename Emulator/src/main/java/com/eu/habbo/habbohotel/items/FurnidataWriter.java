@@ -195,7 +195,8 @@ public class FurnidataWriter {
      */
     static String replaceEntryFields(String raw, String cn, String name, String description) {
         // find the classname value occurrence (case-insensitive on the value)
-        Pattern classProp = Pattern.compile("\"classname\"\\s*:\\s*\"((?:\\\\.|[^\"])*)\"", Pattern.CASE_INSENSITIVE);
+        Pattern classProp =
+                Pattern.compile("\"classname\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*+)\"", Pattern.CASE_INSENSITIVE);
         Matcher m = classProp.matcher(raw);
         int objStart = -1, objEnd = -1;
         while (m.find()) {
@@ -214,7 +215,7 @@ public class FurnidataWriter {
     }
 
     private static String replaceField(String obj, String field, String value) {
-        Pattern p = Pattern.compile("(\"" + Pattern.quote(field) + "\"\\s*:\\s*)\"((?:\\\\.|[^\"])*)\"");
+        Pattern p = Pattern.compile("(\"" + Pattern.quote(field) + "\"\\s*:\\s*)\"((?:[^\"\\\\]|\\\\.)*+)\"");
         Matcher m = p.matcher(obj);
         if (!m.find()) return obj; // field absent → leave object as-is
         String replacement = m.group(1) + '"' + jsonEscape(value) + '"';

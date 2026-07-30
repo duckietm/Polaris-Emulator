@@ -244,7 +244,7 @@ public final class MigrationRunner {
                 .baselineVersion(BASELINE_VERSION)
                 .baselineDescription("Existing Arcturus/Polaris installation")
                 .validateOnMigrate(true)
-                .outOfOrder(false)
+                .outOfOrder(true)
                 // Reference data contains literal ${...} client template strings.
                 .placeholderReplacement(false)
                 .load();

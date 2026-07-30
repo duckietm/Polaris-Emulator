@@ -7,9 +7,7 @@ public class GuildUserJoinEvent extends GuildEvent {
 
     public final int userId;
 
-
     public final Habbo user;
-
 
     public GuildUserJoinEvent(Guild guild, int userId, Habbo user) {
         super(guild);

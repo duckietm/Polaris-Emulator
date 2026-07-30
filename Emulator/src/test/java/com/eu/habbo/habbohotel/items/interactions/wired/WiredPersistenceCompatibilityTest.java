@@ -6,11 +6,9 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.WiredInteractionRegistryFixture;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
 import com.eu.habbo.habbohotel.rooms.Room;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,8 +17,6 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,11 +42,6 @@ class WiredPersistenceCompatibilityTest {
     private static final String REGENERATE_PROPERTY = "polaris.wired.persistence.regenerate";
     private static final Path CONTRACT =
             Path.of("src", "test", "resources", "wired-compatibility", "persistence-matrix-v1.txt");
-    private static final Path ITEM_MANAGER =
-            Path.of("src", "main", "java", "com", "eu", "habbo", "habbohotel", "items", "ItemManager.java");
-    private static final Pattern IMPORT = Pattern.compile("import\\s+([A-Za-z0-9_$.]+);", Pattern.MULTILINE);
-    private static final Pattern INTERACTION = Pattern.compile(
-            "new\\s+ItemInteraction\\(\\s*\"(wf_[^\"]+)\"\\s*,\\s*([A-Za-z0-9_$.]+)\\.class\\s*\\)", Pattern.MULTILINE);
     private static final Pattern FAILURE_ROW = Pattern.compile("^CASE (\\S+) ERROR (\\S+)$");
 
     private static final Map<String, String> PAYLOADS = Map.of(
@@ -81,7 +72,7 @@ class WiredPersistenceCompatibilityTest {
 
     @Test
     void matrixCoversEveryRegisteredInteractionWiredClass() throws Exception {
-        Set<Class<? extends InteractionWired>> types = wiredTypes();
+        Set<Class<? extends InteractionWired>> types = WiredInteractionRegistryFixture.wiredTypes();
         assertEquals(235, types.size(), "Review every added or removed registered wired persistence type");
     }
 
@@ -126,7 +117,7 @@ class WiredPersistenceCompatibilityTest {
         lines.add("# OUT is Base64 UTF-8. ERROR records current load/serialize failure behavior.");
         lines.add("");
 
-        for (Class<? extends InteractionWired> type : wiredTypes().stream()
+        for (Class<? extends InteractionWired> type : WiredInteractionRegistryFixture.wiredTypes().stream()
                 .sorted(Comparator.comparing(Class::getName))
                 .toList()) {
             lines.add("TYPE " + type.getName());
@@ -152,7 +143,7 @@ class WiredPersistenceCompatibilityTest {
 
     private static String outcome(Class<? extends InteractionWired> type, String payload) {
         try {
-            InteractionWired item = instantiate(type);
+            InteractionWired item = WiredInteractionRegistryFixture.instantiate(type);
             ResultSet resultSet = resultSet(payload);
             Room room = mock(Room.class, Answers.RETURNS_DEEP_STUBS);
             item.loadWiredData(resultSet, room);
@@ -161,18 +152,9 @@ class WiredPersistenceCompatibilityTest {
                     .encodeToString((serialized == null ? "<null>" : serialized).getBytes(StandardCharsets.UTF_8));
             return encoded.isEmpty() ? "OUT" : "OUT " + encoded;
         } catch (Throwable failure) {
-            Throwable root = rootCause(failure);
+            Throwable root = WiredInteractionRegistryFixture.rootCause(failure);
             return "ERROR " + root.getClass().getName();
         }
-    }
-
-    private static InteractionWired instantiate(Class<? extends InteractionWired> type) throws Exception {
-        Constructor<? extends InteractionWired> constructor =
-                type.getConstructor(int.class, int.class, Item.class, String.class, int.class, int.class);
-        Item baseItem = mock(Item.class);
-        when(baseItem.getSpriteId()).thenReturn(123);
-        when(baseItem.getName()).thenReturn("wired_fixture");
-        return constructor.newInstance(4242, 7, baseItem, "0", 0, 0);
     }
 
     private static ResultSet resultSet(String payload) throws Exception {
@@ -182,52 +164,5 @@ class WiredPersistenceCompatibilityTest {
             return "wired_data".equals(column) ? payload : "";
         });
         return resultSet;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Set<Class<? extends InteractionWired>> wiredTypes() throws Exception {
-        String source = Files.readString(ITEM_MANAGER, StandardCharsets.UTF_8);
-        Map<String, String> imports = imports(source);
-        Matcher matcher = INTERACTION.matcher(source);
-        Set<Class<? extends InteractionWired>> result = new LinkedHashSet<>();
-        while (matcher.find()) {
-            Class<?> type = resolveType(imports, matcher.group(2));
-            if (InteractionWired.class.isAssignableFrom(type)) {
-                result.add((Class<? extends InteractionWired>) type);
-            }
-        }
-        return result;
-    }
-
-    private static Map<String, String> imports(String source) {
-        Map<String, String> imports = new LinkedHashMap<>();
-        Matcher matcher = IMPORT.matcher(source);
-        while (matcher.find()) {
-            String name = matcher.group(1);
-            imports.put(name.substring(name.lastIndexOf('.') + 1), name);
-        }
-        return imports;
-    }
-
-    private static Class<?> resolveType(Map<String, String> imports, String sourceName) throws ClassNotFoundException {
-        int nestedSeparator = sourceName.indexOf('.');
-        String outerName = nestedSeparator < 0 ? sourceName : sourceName.substring(0, nestedSeparator);
-        String fullyQualifiedOuter = imports.get(outerName);
-        if (fullyQualifiedOuter == null) {
-            throw new ClassNotFoundException("No import found for registered type " + sourceName);
-        }
-        String nestedName = nestedSeparator < 0 ? "" : "$" + sourceName.substring(nestedSeparator + 1);
-        return Class.forName(fullyQualifiedOuter + nestedName);
-    }
-
-    private static Throwable rootCause(Throwable failure) {
-        Throwable result = failure;
-        if (result instanceof InvocationTargetException invocation && invocation.getCause() != null) {
-            result = invocation.getCause();
-        }
-        while (result.getCause() != null && result.getCause() != result) {
-            result = result.getCause();
-        }
-        return result;
     }
 }

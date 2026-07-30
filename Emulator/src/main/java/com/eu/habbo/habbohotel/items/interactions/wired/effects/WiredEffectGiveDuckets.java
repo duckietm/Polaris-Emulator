@@ -97,7 +97,7 @@ public class WiredEffectGiveDuckets extends InteractionWiredEffect {
         for (RoomUnit unit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
             Habbo habbo = room.getHabbo(unit);
             if (habbo == null) continue;
-            habbo.givePoints(0, this.amount);
+            habbo.givePixels(this.amount);
         }
     }
 

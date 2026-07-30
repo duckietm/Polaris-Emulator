@@ -2,9 +2,14 @@ package com.eu.habbo.habbohotel.rooms;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveDuckets;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -61,20 +66,22 @@ class RoomItemPersistenceBehaviorTest {
         assertEquals(
                 "UPDATE items SET user_id = ?, room_id = ?, wall_pos = ?, "
                         + "x = ?, y = ?, z = ?, rot = ?, extra_data = ?, "
-                        + "limited_data = ? WHERE id = ?",
+                        + "limited_data = ?, wired_data = CASE WHEN ? = 1 THEN ? ELSE wired_data END WHERE id = ?",
                 update.sql());
         assertEquals(
-                Map.of(
-                        1, 7,
-                        2, 41,
-                        3, ":w=1,2 l=3,4",
-                        4, 5,
-                        5, 6,
-                        6, 7.125D,
-                        7, 3,
-                        8, "updated",
-                        9, "11:2",
-                        10, 1001),
+                Map.ofEntries(
+                        Map.entry(1, 7),
+                        Map.entry(2, 41),
+                        Map.entry(3, ":w=1,2 l=3,4"),
+                        Map.entry(4, 5),
+                        Map.entry(5, 6),
+                        Map.entry(6, 7.125D),
+                        Map.entry(7, 3),
+                        Map.entry(8, "updated"),
+                        Map.entry(9, "11:2"),
+                        Map.entry(10, 0),
+                        Map.entry(11, ""),
+                        Map.entry(12, 1001)),
                 update.parameters());
         RoomJdbcTestSupport.SqlCall delete = dataSource.calls().stream()
                 .filter(call -> call.sql().startsWith("DELETE FROM items"))
@@ -88,6 +95,31 @@ class RoomItemPersistenceBehaviorTest {
         assertFalse(deleted.needsDelete());
         assertFalse(clean.needsUpdate());
         assertFalse(clean.needsDelete());
+    }
+
+    @Test
+    void pendingWiredItemSaveIncludesItsWiredData() throws Exception {
+        RoomJdbcTestSupport.RecordingDataSource dataSource = new RoomJdbcTestSupport.RecordingDataSource();
+        RoomItemManager manager = new RoomItemManager(new Room(41, 7));
+        WiredEffectGiveDuckets wired = new WiredEffectGiveDuckets(1001, 7, mock(Item.class), "0", 0, 0);
+        wired.setRoomId(41);
+        assertTrue(wired.saveData(
+                new WiredSettings(new int[] {WiredSourceUtil.SOURCE_TRIGGER}, "25", new int[0], 0), null));
+        wired.needsUpdate(true);
+        items(manager).put(wired.getId(), wired);
+
+        try (RoomJdbcTestSupport.InstalledDatabase ignored = RoomJdbcTestSupport.install(dataSource)) {
+            manager.saveAllPendingItems();
+        }
+
+        RoomJdbcTestSupport.SqlCall update = dataSource.calls().stream()
+                .filter(call -> call.sql().startsWith("UPDATE items"))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(1, update.parameters().get(10));
+        assertEquals(wired.getWiredData(), update.parameters().get(11));
+        assertEquals(wired.getId(), update.parameters().get(12));
+        assertFalse(wired.needsUpdate());
     }
 
     private static TestItem item(int id, String extraData) {

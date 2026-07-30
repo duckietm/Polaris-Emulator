@@ -1253,6 +1253,7 @@ U|com/eu/habbo/messages/incoming/guilds/RequestGuildBuyRoomsEvent.java|CALL|getG
 U|com/eu/habbo/messages/incoming/guilds/RequestGuildFurniWidgetEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/guilds/RequestGuildInfoEvent.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/messages/incoming/guilds/RequestGuildJoinEvent.java|CALL|getGameEnvironment|3
+U|com/eu/habbo/messages/incoming/guilds/RequestGuildJoinEvent.java|CALL|getPluginManager|1
 U|com/eu/habbo/messages/incoming/guilds/RequestGuildManageEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/guilds/RequestGuildMembersEvent.java|CALL|getGameEnvironment|4
 U|com/eu/habbo/messages/incoming/guilds/RequestOwnGuildsEvent.java|CALL|getGameEnvironment|1

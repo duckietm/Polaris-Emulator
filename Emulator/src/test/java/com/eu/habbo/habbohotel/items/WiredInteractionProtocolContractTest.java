@@ -19,8 +19,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.ToIntFunction;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -40,10 +38,6 @@ class WiredInteractionProtocolContractTest {
     private static final String REGENERATE_PROPERTY = "polaris.wired.protocol.regenerate";
     private static final Path CONTRACT =
             Path.of("src", "test", "resources", "wired-compatibility", "interaction-protocol-v1.txt");
-    private static final Path ITEM_MANAGER =
-            Path.of("src", "main", "java", "com", "eu", "habbo", "habbohotel", "items", "ItemManager.java");
-    private static final Pattern INTERACTION = Pattern.compile(
-            "new\\s+ItemInteraction\\(\\s*\"([^\"]+)\"\\s*,\\s*([A-Za-z0-9_$.]+)\\.class\\s*\\)", Pattern.MULTILINE);
 
     private static final List<String> INCOMING_HEADERS = List.of(
             "WiredTriggerSaveDataEvent",
@@ -101,8 +95,8 @@ class WiredInteractionProtocolContractTest {
         TestItemManager manager = new TestItemManager();
         manager.loadDefaults();
 
-        List<String> expectedNames = registrations().stream()
-                .map(InteractionRegistration::key)
+        List<String> expectedNames = WiredInteractionRegistryFixture.registrations().stream()
+                .map(WiredInteractionRegistryFixture.Registration::key)
                 .distinct()
                 .sorted()
                 .toList();
@@ -120,11 +114,12 @@ class WiredInteractionProtocolContractTest {
         lines.add("# Every interaction key has one canonical source registration.");
         lines.add("");
 
-        List<InteractionRegistration> registrations = registrations();
+        List<WiredInteractionRegistryFixture.Registration> registrations =
+                WiredInteractionRegistryFixture.registrations();
         for (int index = 0; index < registrations.size(); index++) {
-            InteractionRegistration registration = registrations.get(index);
+            WiredInteractionRegistryFixture.Registration registration = registrations.get(index);
             lines.add("INTERACTION " + String.format("%03d", index) + " " + registration.key() + "="
-                    + registration.type());
+                    + registration.sourceType());
         }
 
         lines.add("");
@@ -166,29 +161,14 @@ class WiredInteractionProtocolContractTest {
 
     private static Map<String, List<String>> duplicateRegistrations() throws Exception {
         Map<String, List<String>> byKey = new LinkedHashMap<>();
-        for (InteractionRegistration registration : registrations()) {
+        for (WiredInteractionRegistryFixture.Registration registration :
+                WiredInteractionRegistryFixture.registrations()) {
             byKey.computeIfAbsent(registration.key(), ignored -> new ArrayList<>())
-                    .add(registration.type());
+                    .add(registration.sourceType());
         }
         byKey.entrySet().removeIf(entry -> entry.getValue().size() < 2);
         return byKey;
     }
-
-    private static List<InteractionRegistration> registrations() throws Exception {
-        String source = Files.readString(ITEM_MANAGER, StandardCharsets.UTF_8);
-        Matcher matcher = INTERACTION.matcher(source);
-        List<InteractionRegistration> registrations = new ArrayList<>();
-        while (matcher.find()) {
-            String key = matcher.group(1);
-            if (key.startsWith("wf_")) {
-                registrations.add(new InteractionRegistration(key, matcher.group(2)));
-            }
-        }
-        assertTrue(!registrations.isEmpty(), "No wired interactions found in " + ITEM_MANAGER);
-        return registrations;
-    }
-
-    private record InteractionRegistration(String key, String type) {}
 
     private static final class TestItemManager extends ItemManager {
         private void loadDefaults() {

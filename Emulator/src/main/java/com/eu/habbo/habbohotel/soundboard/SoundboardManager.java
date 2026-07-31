@@ -12,7 +12,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.IntUnaryOperator;
 
 public class SoundboardManager {
@@ -20,7 +22,7 @@ public class SoundboardManager {
 
     private final SoundboardCooldownGate cooldownGate = new SoundboardCooldownGate();
     private final IntUnaryOperator cooldownByRank;
-    private volatile List<SoundboardSound> sounds = List.of();
+    private volatile SoundSnapshot snapshot = SoundSnapshot.empty();
 
     public SoundboardManager() {
         this(rankId -> 60);
@@ -35,11 +37,11 @@ public class SoundboardManager {
         long millis = System.currentTimeMillis();
         this.bootstrap();
         this.reload();
-        LOGGER.info("Soundboard Manager -> Loaded! ({} MS, {} sounds)", System.currentTimeMillis() - millis, this.sounds.size());
+        LOGGER.info("Soundboard Manager -> Loaded! ({} MS, {} sounds)", System.currentTimeMillis() - millis, this.snapshot.ordered().size());
     }
 
     SoundboardManager(List<SoundboardSound> sounds, IntUnaryOperator cooldownByRank) {
-        this.sounds = List.copyOf(sounds);
+        this.snapshot = SoundSnapshot.from(sounds);
         this.cooldownByRank = cooldownByRank;
     }
 
@@ -68,25 +70,22 @@ public class SoundboardManager {
             while (set.next()) {
                 loadedSounds.add(new SoundboardSound(set));
             }
-            this.sounds = List.copyOf(loadedSounds);
+            this.snapshot = SoundSnapshot.from(loadedSounds);
         } catch (SQLException e) {
             LOGGER.error("Failed to load soundboard sounds", e);
         }
     }
 
     public List<SoundboardSound> getSounds() {
-        return this.sounds;
+        return this.snapshot.ordered();
     }
 
     public SoundboardSound getSound(int id) {
-        for (SoundboardSound sound : this.sounds) {
-            if (sound.id == id) return sound;
-        }
-        return null;
+        return this.snapshot.byId().get(id);
     }
 
     public List<SoundboardSound> getSoundsForRank(int rankId) {
-        return this.sounds.stream()
+        return this.snapshot.ordered().stream()
                 .filter(sound -> sound.isAvailableTo(rankId))
                 .toList();
     }
@@ -139,6 +138,21 @@ public class SoundboardManager {
             SoundboardSound sound,
             DenialReason denialReason,
             int remainingSeconds) {
+    }
+
+    private record SoundSnapshot(List<SoundboardSound> ordered, Map<Integer, SoundboardSound> byId) {
+        private static SoundSnapshot empty() {
+            return new SoundSnapshot(List.of(), Map.of());
+        }
+
+        private static SoundSnapshot from(List<SoundboardSound> sounds) {
+            List<SoundboardSound> ordered = List.copyOf(sounds);
+            Map<Integer, SoundboardSound> byId = new LinkedHashMap<>();
+            for (SoundboardSound sound : ordered) {
+                byId.putIfAbsent(sound.id, sound);
+            }
+            return new SoundSnapshot(ordered, Map.copyOf(byId));
+        }
     }
 
     // Owner toggle — persists the room flag with a dedicated UPDATE (kept out of

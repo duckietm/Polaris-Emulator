@@ -6,6 +6,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -49,5 +51,19 @@ class SoundboardManagerContractTest {
     @Test
     void unknownOrInvalidRankCooldownFallsBackToSixtySeconds() {
         assertEquals(60, this.manager.getCooldownSecondsForRank(99));
+    }
+
+    @Test
+    void keepsOrderedSoundsAndUsesTheFirstDuplicateIdForLookup() {
+        SoundboardSound duplicate =
+                new SoundboardSound(this.publicSound.id, "Duplicate", "/sounds/duplicate.mp3", 1);
+        SoundboardManager duplicateManager = new SoundboardManager(
+                List.of(this.publicSound, duplicate, this.staffSound),
+                rankId -> 0);
+
+        assertEquals(List.of(this.publicSound, duplicate, this.staffSound), duplicateManager.getSounds());
+        assertSame(this.publicSound, duplicateManager.getSound(this.publicSound.id));
+        assertSame(this.staffSound, duplicateManager.getSound(this.staffSound.id));
+        assertNull(duplicateManager.getSound(999));
     }
 }

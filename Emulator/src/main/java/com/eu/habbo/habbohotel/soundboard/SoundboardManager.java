@@ -10,7 +10,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,7 +34,6 @@ public class SoundboardManager {
     private SoundboardManager(IntUnaryOperator cooldownByRank) {
         this.cooldownByRank = cooldownByRank;
         long millis = System.currentTimeMillis();
-        this.bootstrap();
         this.reload();
         LOGGER.info("Soundboard Manager -> Loaded! ({} MS, {} sounds)", System.currentTimeMillis() - millis, this.snapshot.ordered().size());
     }
@@ -43,23 +41,6 @@ public class SoundboardManager {
     SoundboardManager(List<SoundboardSound> sounds, IntUnaryOperator cooldownByRank) {
         this.snapshot = SoundSnapshot.from(sounds);
         this.cooldownByRank = cooldownByRank;
-    }
-
-    // Self-bootstrap: room flag column + sounds table, so the feature works even
-    // before the manual migration is applied.
-    private void bootstrap() {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             Statement statement = connection.createStatement()) {
-            statement.execute("ALTER TABLE `rooms` ADD COLUMN IF NOT EXISTS `soundboard_enabled` TINYINT(1) NOT NULL DEFAULT 0");
-            statement.execute("CREATE TABLE IF NOT EXISTS `soundboard_sounds` (" +
-                    "`id` INT(11) NOT NULL AUTO_INCREMENT, `name` VARCHAR(64) NOT NULL DEFAULT '', " +
-                    "`url` VARCHAR(255) NOT NULL DEFAULT '', `enabled` TINYINT(1) NOT NULL DEFAULT 1, " +
-                    "`sort_order` INT(11) NOT NULL DEFAULT 0, `min_rank` INT NOT NULL DEFAULT 1, " +
-                    "PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-            statement.execute("ALTER TABLE `soundboard_sounds` ADD COLUMN IF NOT EXISTS `min_rank` INT NOT NULL DEFAULT 1");
-        } catch (SQLException e) {
-            LOGGER.error("Failed to bootstrap soundboard schema", e);
-        }
     }
 
     public void reload() {

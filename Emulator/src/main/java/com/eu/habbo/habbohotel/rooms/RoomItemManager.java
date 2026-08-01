@@ -27,6 +27,24 @@ import org.slf4j.LoggerFactory;
 public class RoomItemManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomItemManager.class);
 
+    /**
+     * Whether wired furniture whose {@code wired_data} fails to parse is pulled out of the
+     * executable indexes and the tick service.
+     *
+     * <p>Deliberately hardcoded rather than configurable — this is a temporary switch, not a
+     * supported setting.
+     *
+     * <p>{@code false} (current) restores the pre-modernization outcome: a parse failure is
+     * logged and the furniture stays registered, running on the defaults its constructor set.
+     * Operators saw degraded settings, never dead furniture.
+     *
+     * <p>{@code true} quarantines the item. It stays visible in the room but is removed from the
+     * trigger/effect/condition indexes and unregistered from the tick service, so it is inert with
+     * no in-game signal. Safer for the emulator, but it silently breaks working hotels — a repeater
+     * quarantined this way never fires again.
+     */
+    static final boolean QUARANTINE_MALFORMED_WIRED = false;
+
     private final Room room;
     private final RoomItemIndex index;
     private final RoomItemMovementService movement;
@@ -100,15 +118,7 @@ public class RoomItemManager {
                             wired.loadWiredData(set, this.room);
                         }
                     } catch (Exception exception) {
-                        if (item instanceof InteractionWired) {
-                            this.registry.quarantineWired(item);
-                        }
-                        LOGGER.error(
-                                "Quarantined malformed wired item room={} item={} type={} cause={}",
-                                this.room.getId(),
-                                itemId,
-                                item == null ? "unknown" : item.getClass().getSimpleName(),
-                                exception.getClass().getSimpleName());
+                        handleMalformedWiredData(item, itemId, exception);
                     }
                 }
             }
@@ -117,6 +127,37 @@ public class RoomItemManager {
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
         }
+    }
+
+    /**
+     * Decides what happens to a wired item whose stored data could not be parsed.
+     *
+     * <p>Package-visible so the behaviour can be asserted without a database.
+     *
+     * @see #QUARANTINE_MALFORMED_WIRED
+     */
+    void handleMalformedWiredData(HabboItem item, int itemId, Exception exception) {
+        String type = item == null ? "unknown" : item.getClass().getSimpleName();
+
+        if (QUARANTINE_MALFORMED_WIRED && item instanceof InteractionWired) {
+            this.registry.quarantineWired(item);
+            LOGGER.error(
+                    "Quarantined malformed wired item room={} item={} type={} cause={}",
+                    this.room.getId(),
+                    itemId,
+                    type,
+                    exception.getClass().getSimpleName());
+            return;
+        }
+
+        // Left registered on purpose: the item keeps running on its constructor defaults, which is
+        // how the emulator behaved before quarantining was introduced.
+        LOGGER.error(
+                "Malformed wired item kept active on defaults (quarantine disabled) room={} item={} type={} cause={}",
+                this.room.getId(),
+                itemId,
+                type,
+                exception.getClass().getSimpleName());
     }
 
     // ==================== ITEM RETRIEVAL ====================

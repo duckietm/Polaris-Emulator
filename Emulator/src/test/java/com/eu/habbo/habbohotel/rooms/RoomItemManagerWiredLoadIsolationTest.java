@@ -20,7 +20,11 @@ import org.mockito.ArgumentCaptor;
 class RoomItemManagerWiredLoadIsolationTest {
 
     @Test
-    void malformedWiredRowIsQuarantinedWithoutBlockingLaterItems() throws Exception {
+    void malformedWiredRowStaysActiveWithoutBlockingLaterItems() throws Exception {
+        assertFalse(
+                RoomItemManager.QUARANTINE_MALFORMED_WIRED,
+                "This test characterises the quarantine-disabled path; flip it back or update the test.");
+
         Room room = new Room(41, 7);
         room.replaceSpecialTypes(new RoomSpecialTypes());
         RoomItemManager manager = room.getItemManager();
@@ -51,10 +55,12 @@ class RoomItemManagerWiredLoadIsolationTest {
                 "The production loader must continue excluding never-configured blank rows");
         verify(malformed).loadWiredData(rows, room);
         verify(healthy).loadWiredData(rows, room);
-        assertFalse(room.getRoomSpecialTypes()
-                .getTriggers(WiredTriggerType.SAY_SOMETHING)
-                .contains(malformed));
-        assertSame(malformed, manager.getRoomItems().get(1001), "quarantine must not delete hotel furniture");
+        assertTrue(
+                room.getRoomSpecialTypes()
+                        .getTriggers(WiredTriggerType.SAY_SOMETHING)
+                        .contains(malformed),
+                "With quarantine disabled the furni must stay in the executable index and keep running on defaults");
+        assertSame(malformed, manager.getRoomItems().get(1001), "loading must not delete hotel furniture");
     }
 
     private static InteractionWiredTrigger trigger(int id, WiredTriggerType type) {

@@ -129,7 +129,7 @@ public class RoomTile {
 
     public void setgCosts(RoomTile previousRoomTile) {
         this.setgCosts(
-            previousRoomTile, this.diagonally ? RoomLayout.DIAGONALMOVEMENTCOST : RoomLayout.BASICMOVEMENTCOST);
+                previousRoomTile, this.diagonally ? RoomLayout.DIAGONALMOVEMENTCOST : RoomLayout.BASICMOVEMENTCOST);
     }
 
     private void setgCosts(short gCosts) {
@@ -154,7 +154,7 @@ public class RoomTile {
 
     public String toString() {
         return "RoomTile (" + this.x + ", " + this.y + ", " + this.z + "): h: " + this.hCosts + " g: " + this.gCosts
-            + " f: " + this.getfCosts();
+                + " f: " + this.getfCosts();
     }
 
     public boolean isWalkable() {
@@ -196,7 +196,7 @@ public class RoomTile {
 
     public boolean unitIsOnFurniOnTile(RoomUnit unit, Item item) {
         return (unit.getX() >= this.x && unit.getX() < this.x + item.getLength())
-            && (unit.getY() >= this.y && unit.getY() < this.y + item.getWidth());
+                && (unit.getY() >= this.y && unit.getY() < this.y + item.getWidth());
     }
 
     public short getX() {

@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class CatalogAdminPageMutationContractTest {
     private static final Path CREATE_SOURCE = Path.of(
@@ -32,16 +33,15 @@ class CatalogAdminPageMutationContractTest {
     }
 
     @Test
-    void movePageValidatesTargetBeforeTogglingVisibilityOrEnabledState() throws IOException {
+    void movePageDoesNotOverloadRootParentIdsAsPageStateToggles() throws IOException {
         String move = Files.readString(MOVE_SOURCE);
 
         int pageLookup = move.indexOf("getCatalogPage(pageId, pageType)");
-        int enabledToggle = move.indexOf("SET enabled = IF");
-        int visibleToggle = move.indexOf("SET visible = IF");
 
         assertTrue(pageLookup >= 0, "move page should load the page before mutating it");
-        assertTrue(pageLookup < enabledToggle, "enabled toggle must not run before page existence is checked");
-        assertTrue(pageLookup < visibleToggle, "visible toggle must not run before page existence is checked");
+        assertFalse(move.contains("SET enabled = IF"), "enabled changes must use their dedicated packet");
+        assertFalse(move.contains("SET visible = IF"), "visibility changes must use their dedicated packet");
+        assertTrue(move.contains("newParentId != ROOT_PARENT_ID"), "root must remain a valid page parent");
     }
 
     @Test

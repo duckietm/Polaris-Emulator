@@ -57,6 +57,7 @@ final class CatalogAdminOfferPayload {
 
         if (pageId <= 0
                 || cleanItemIds == null
+                || (pageType != CatalogPageType.BUILDER && cleanItemIds.isEmpty())
                 || cleanCatalogName.isBlank()
                 || !isInRange(orderNumber, 0, MAX_ORDER_NUMBER)) {
             return null;
@@ -79,9 +80,22 @@ final class CatalogAdminOfferPayload {
                 pageType);
     }
 
+    int[] baseItemIds() {
+        if (this.itemIds.isEmpty()) return new int[0];
+
+        String[] entries = this.itemIds.split(";");
+        int[] ids = new int[entries.length];
+        for (int index = 0; index < entries.length; index++) {
+            String entry = entries[index];
+            int separator = entry.indexOf(':');
+            ids[index] = Integer.parseInt(separator >= 0 ? entry.substring(0, separator) : entry);
+        }
+        return ids;
+    }
+
     private static String normalizeItemIds(String value) {
         if (value == null || value.trim().isEmpty()) {
-            return "0";
+            return "";
         }
 
         String clean = value.trim().replaceAll("\\s+", "");
@@ -101,9 +115,18 @@ final class CatalogAdminOfferPayload {
                 return null;
             }
 
+            String[] itemAndQuantity = part.split(":", -1);
+            if (itemAndQuantity.length > 2) {
+                return null;
+            }
+
             try {
-                if (Integer.parseInt(part) < 0) {
-                    return null;
+                int itemId = Integer.parseInt(itemAndQuantity[0]);
+                if (itemId <= 0) return null;
+
+                if (itemAndQuantity.length == 2) {
+                    int quantity = Integer.parseInt(itemAndQuantity[1]);
+                    if (!isInRange(quantity, 1, MAX_AMOUNT)) return null;
                 }
             } catch (NumberFormatException e) {
                 return null;

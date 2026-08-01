@@ -6392,11 +6392,31 @@
         "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarGetAllTimeLeaderboardComposer.ts"
       },
       "fields": [
-        { "kind": "scalar", "name": "gameTypeId", "type": "int" },
-        { "kind": "scalar", "name": "startRank", "type": "int" },
-        { "kind": "scalar", "name": "direction", "type": "int" },
-        { "kind": "scalar", "name": "viewSize", "type": "int" },
-        { "kind": "scalar", "name": "windowSize", "type": "int" }
+        {
+          "kind": "scalar",
+          "name": "gameTypeId",
+          "type": "int"
+        },
+        {
+          "kind": "scalar",
+          "name": "startRank",
+          "type": "int"
+        },
+        {
+          "kind": "scalar",
+          "name": "direction",
+          "type": "int"
+        },
+        {
+          "kind": "scalar",
+          "name": "viewSize",
+          "type": "int"
+        },
+        {
+          "kind": "scalar",
+          "name": "windowSize",
+          "type": "int"
+        }
       ]
     },
     {
@@ -6414,11 +6434,31 @@
         "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarGetAllTimeFriendsLeaderboardComposer.ts"
       },
       "fields": [
-        { "kind": "scalar", "name": "gameTypeId", "type": "int" },
-        { "kind": "scalar", "name": "startRank", "type": "int" },
-        { "kind": "scalar", "name": "direction", "type": "int" },
-        { "kind": "scalar", "name": "viewSize", "type": "int" },
-        { "kind": "scalar", "name": "windowSize", "type": "int" }
+        {
+          "kind": "scalar",
+          "name": "gameTypeId",
+          "type": "int"
+        },
+        {
+          "kind": "scalar",
+          "name": "startRank",
+          "type": "int"
+        },
+        {
+          "kind": "scalar",
+          "name": "direction",
+          "type": "int"
+        },
+        {
+          "kind": "scalar",
+          "name": "viewSize",
+          "type": "int"
+        },
+        {
+          "kind": "scalar",
+          "name": "windowSize",
+          "type": "int"
+        }
       ]
     },
     {
@@ -6436,12 +6476,36 @@
         "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarGetWeeklyLeaderboardComposer.ts"
       },
       "fields": [
-        { "kind": "scalar", "name": "gameTypeId", "type": "int" },
-        { "kind": "scalar", "name": "weekOffset", "type": "int" },
-        { "kind": "scalar", "name": "startRank", "type": "int" },
-        { "kind": "scalar", "name": "direction", "type": "int" },
-        { "kind": "scalar", "name": "viewSize", "type": "int" },
-        { "kind": "scalar", "name": "windowSize", "type": "int" }
+        {
+          "kind": "scalar",
+          "name": "gameTypeId",
+          "type": "int"
+        },
+        {
+          "kind": "scalar",
+          "name": "weekOffset",
+          "type": "int"
+        },
+        {
+          "kind": "scalar",
+          "name": "startRank",
+          "type": "int"
+        },
+        {
+          "kind": "scalar",
+          "name": "direction",
+          "type": "int"
+        },
+        {
+          "kind": "scalar",
+          "name": "viewSize",
+          "type": "int"
+        },
+        {
+          "kind": "scalar",
+          "name": "windowSize",
+          "type": "int"
+        }
       ]
     },
     {
@@ -6459,12 +6523,36 @@
         "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarGetWeeklyFriendsLeaderboardComposer.ts"
       },
       "fields": [
-        { "kind": "scalar", "name": "gameTypeId", "type": "int" },
-        { "kind": "scalar", "name": "weekOffset", "type": "int" },
-        { "kind": "scalar", "name": "startRank", "type": "int" },
-        { "kind": "scalar", "name": "direction", "type": "int" },
-        { "kind": "scalar", "name": "viewSize", "type": "int" },
-        { "kind": "scalar", "name": "windowSize", "type": "int" }
+        {
+          "kind": "scalar",
+          "name": "gameTypeId",
+          "type": "int"
+        },
+        {
+          "kind": "scalar",
+          "name": "weekOffset",
+          "type": "int"
+        },
+        {
+          "kind": "scalar",
+          "name": "startRank",
+          "type": "int"
+        },
+        {
+          "kind": "scalar",
+          "name": "direction",
+          "type": "int"
+        },
+        {
+          "kind": "scalar",
+          "name": "viewSize",
+          "type": "int"
+        },
+        {
+          "kind": "scalar",
+          "name": "windowSize",
+          "type": "int"
+        }
       ]
     },
     {
@@ -8309,6 +8397,46 @@
           "kind": "scalar",
           "type": "string",
           "name": "text1"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "iconColor"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "clubOnly"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "vipOnly"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "special"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "text2"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "textTeaser"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "roomId"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "includes"
         }
       ]
     },
@@ -8381,6 +8509,66 @@
           "kind": "scalar",
           "type": "string",
           "name": "catalogMode"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "iconColor"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "clubOnly"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "vipOnly"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "headline"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "teaser"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "special"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "text1"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "text2"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "textDetails"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "textTeaser"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "roomId"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "includes"
         }
       ]
     },
@@ -8807,6 +8995,70 @@
           "kind": "scalar",
           "type": "int",
           "name": "pageId"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "pageType"
+        }
+      ]
+    },
+    {
+      "name": "CATALOG_ADMIN_SET_PAGE_ENABLED",
+      "direction": "client_to_server",
+      "header": 10064,
+      "java": {
+        "symbol": "CatalogAdminSetPageEnabledEvent",
+        "className": "CatalogAdminSetPageEnabledEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSetPageEnabledEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_ADMIN_SET_PAGE_ENABLED",
+        "className": "CatalogAdminSetPageEnabledComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminSetPageEnabledComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "pageId"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "enabled"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "pageType"
+        }
+      ]
+    },
+    {
+      "name": "CATALOG_ADMIN_SET_PAGE_VISIBLE",
+      "direction": "client_to_server",
+      "header": 10065,
+      "java": {
+        "symbol": "CatalogAdminSetPageVisibleEvent",
+        "className": "CatalogAdminSetPageVisibleEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSetPageVisibleEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_ADMIN_SET_PAGE_VISIBLE",
+        "className": "CatalogAdminSetPageVisibleComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminSetPageVisibleComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "pageId"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "visible"
         },
         {
           "kind": "scalar",
@@ -15808,22 +16060,82 @@
         {
           "kind": "scalar",
           "type": "int",
-          "name": ""
+          "name": "offerId"
         },
         {
           "kind": "scalar",
           "type": "int",
-          "name": ""
+          "name": "pageId"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "itemIds"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "catalogName"
         },
         {
           "kind": "scalar",
           "type": "int",
-          "name": ""
+          "name": "costCredits"
         },
         {
           "kind": "scalar",
           "type": "int",
-          "name": ""
+          "name": "costPoints"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "pointsType"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "amount"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "clubOnly"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "extradata"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "haveOffer"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "offerIdGroup"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "limitedStack"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "limitedSells"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "orderNumber"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "catalogMode"
         }
       ]
     },
@@ -15845,37 +16157,117 @@
         {
           "kind": "scalar",
           "type": "int",
-          "name": ""
+          "name": "pageId"
         },
         {
           "kind": "scalar",
           "type": "string",
-          "name": ""
+          "name": "caption"
         },
         {
           "kind": "scalar",
           "type": "string",
-          "name": ""
+          "name": "captionSave"
         },
         {
           "kind": "scalar",
           "type": "int",
-          "name": ""
+          "name": "parentId"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "catalogMode"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "pageLayout"
         },
         {
           "kind": "scalar",
           "type": "int",
-          "name": ""
+          "name": "iconColor"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "iconImage"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "minRank"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "orderNum"
         },
         {
           "kind": "scalar",
           "type": "boolean",
-          "name": ""
+          "name": "visible"
         },
         {
           "kind": "scalar",
           "type": "boolean",
-          "name": ""
+          "name": "enabled"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "clubOnly"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "vipOnly"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "pageHeadline"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "pageTeaser"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "pageSpecial"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "pageText1"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "pageText2"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "pageTextDetails"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "pageTextTeaser"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "roomId"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "includes"
         }
       ]
     }
@@ -17412,6 +17804,22 @@
   ],
   "exemptions": [
     {
+      "name": "CATALOG_ADMIN_REORDER_OFFERS",
+      "direction": "client_to_server",
+      "header": 10066,
+      "java": {
+        "symbol": "CatalogAdminReorderOffersEvent",
+        "className": "CatalogAdminReorderOffersEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminReorderOffersEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_ADMIN_REORDER_OFFERS",
+        "className": "CatalogAdminReorderOffersComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminReorderOffersComposer.ts"
+      },
+      "reason": "The packet contains a count-prefixed variable list of offer and order pairs"
+    },
+    {
       "name": "PICK_ISSUES",
       "direction": "client_to_server",
       "header": 15,
@@ -17777,7 +18185,7 @@
         "className": "RoomUnitChatWhisperComposer",
         "path": "packages/communication/src/messages/outgoing/room/unit/chat/RoomUnitChatWhisperComposer.ts"
       },
-      "reason": "Java analyzer: Packet fields delegated to external constructor RoomChatMessage inside handle; TypeScript analyzer: Outgoing value recipientName + \u0027 \u0027 + message has no statically resolvable wire type"
+      "reason": "Java analyzer: Packet fields delegated to external constructor RoomChatMessage inside handle; TypeScript analyzer: Outgoing value recipientName + ' ' + message has no statically resolvable wire type"
     },
     {
       "name": "RELEASE_ISSUES",
@@ -18401,7 +18809,7 @@
         "className": "FurnitureExchangeComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/logic/FurnitureExchangeComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 195,col 5) Record Declarations are not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 195,col 5) Record Declarations are not supported. Pay attention that this feature is supported starting from 'JAVA_14' language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "GROUP_SAVE_INFORMATION",
@@ -18657,7 +19065,7 @@
         "className": "FriendFurniConfirmLockMessageComposer",
         "path": "packages/communication/src/messages/outgoing/friendfurni/FriendFurniConfirmLockMessageComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 27,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 27,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from 'JAVA_14' language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "COMPOST_PLANT",
@@ -18737,7 +19145,7 @@
         "className": "ClientHelloMessageComposer",
         "path": "packages/communication/src/messages/outgoing/handshake/ClientHelloMessageComposer.ts"
       },
-      "reason": "TypeScript analyzer: Outgoing value `NITRO-${NitroVersion.RENDERER_VERSION.replaceAll(\u0027.\u0027, \u0027-\u0027)}` has no statically resolvable wire type"
+      "reason": "TypeScript analyzer: Outgoing value `NITRO-${NitroVersion.RENDERER_VERSION.replaceAll('.', '-')}` has no statically resolvable wire type"
     },
     {
       "name": "SNOWWAR_LOAD_STAGE_READY",
@@ -18961,7 +19369,7 @@
         "className": "ChestDepositComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestDepositComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 39,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 39,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from 'JAVA_14' language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "CHEST_WITHDRAW",
@@ -18977,7 +19385,7 @@
         "className": "ChestWithdrawComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestWithdrawComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 36,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 36,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from 'JAVA_14' language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "CHEST_SAVE_SETTINGS",
@@ -18993,7 +19401,7 @@
         "className": "ChestSaveSettingsComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestSaveSettingsComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 37,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 37,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from 'JAVA_14' language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "CHEST_SAVE_NOTIFICATIONS",
@@ -19009,7 +19417,7 @@
         "className": "ChestSaveNotificationsComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestSaveNotificationsComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 37,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 37,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from 'JAVA_14' language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "CHEST_UPGRADE_CAPACITY",
@@ -19025,7 +19433,7 @@
         "className": "ChestUpgradeCapacityComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestUpgradeCapacityComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 41,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 41,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from 'JAVA_14' language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "CHEST_REQUEST_LOG",
@@ -19041,7 +19449,7 @@
         "className": "ChestRequestLogComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestRequestLogComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 30,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 30,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from 'JAVA_14' language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "CHEST_WITHDRAW_FURNI",
@@ -19057,7 +19465,7 @@
         "className": "ChestWithdrawFurniComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestWithdrawFurniComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 36,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 36,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from 'JAVA_14' language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "CHEST_DEPOSIT_FURNI",
@@ -19073,7 +19481,7 @@
         "className": "ChestDepositFurniComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestDepositFurniComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 49,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 49,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from 'JAVA_14' language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "CHEST_START_DEPOSIT",
@@ -19089,7 +19497,7 @@
         "className": "ChestStartDepositComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestStartDepositComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 25,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 25,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from 'JAVA_14' language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "CHEST_DEPOSIT_INVENTORY_ITEM",
@@ -19105,7 +19513,7 @@
         "className": "ChestDepositInventoryItemComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestDepositInventoryItemComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 33,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 33,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from 'JAVA_14' language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "CHEST_WITHDRAW_ALL_FURNI",
@@ -19121,7 +19529,7 @@
         "className": "ChestWithdrawAllFurniComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestWithdrawAllFurniComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 30,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 30,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from 'JAVA_14' language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "CHEST_OPEN",
@@ -19137,7 +19545,7 @@
         "className": "ChestOpenComposer",
         "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestOpenComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 30,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 30,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from 'JAVA_14' language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
     },
     {
       "name": "FURNITURE_PICKUP_ALL",

@@ -44,9 +44,17 @@ public class CatalogAdminCreateOfferEvent extends MessageHandler {
             return;
         }
 
-        if (Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(payload.pageId, payload.pageType) == null) {
+        var gameEnvironment = Emulator.getGameEnvironment();
+        if (gameEnvironment.getCatalogManager().getCatalogPage(payload.pageId, payload.pageType) == null) {
             this.client.sendResponse(new CatalogAdminResultComposer(false, "Page not found: " + payload.pageId));
             return;
+        }
+
+        for (int itemId : payload.baseItemIds()) {
+            if (gameEnvironment.getItemManager().getItem(itemId) == null) {
+                this.client.sendResponse(new CatalogAdminResultComposer(false, "Base item not found: " + itemId));
+                return;
+            }
         }
 
         int newId = -1;

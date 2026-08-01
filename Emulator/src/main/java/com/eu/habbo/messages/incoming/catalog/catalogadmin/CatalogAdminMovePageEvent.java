@@ -35,50 +35,22 @@ public class CatalogAdminMovePageEvent extends MessageHandler {
             return;
         }
 
-        if (newParentId == -1) {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                 PreparedStatement statement = connection.prepareStatement(
-                         "UPDATE " + tableName + " SET enabled = IF(enabled = '1', '0', '1') WHERE id = ?")) {
-                statement.setInt(1, pageId);
-                if (statement.executeUpdate() == 0) {
-                    this.client.sendResponse(new CatalogAdminResultComposer(false, "Page not found: " + pageId));
-                    return;
-                }
-            }
-            CatalogAdminCacheSync.refreshPageFlagsFromDb(pageId, pageType);
-            this.client.sendResponse(new CatalogAdminResultComposer(true, "Page toggled"));
-            return;
-        }
-
-        if (newParentId == -2) {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                 PreparedStatement statement = connection.prepareStatement(
-                         "UPDATE " + tableName + " SET visible = IF(visible = '1', '0', '1') WHERE id = ?")) {
-                statement.setInt(1, pageId);
-                if (statement.executeUpdate() == 0) {
-                    this.client.sendResponse(new CatalogAdminResultComposer(false, "Page not found: " + pageId));
-                    return;
-                }
-            }
-            CatalogAdminCacheSync.refreshPageFlagsFromDb(pageId, pageType);
-            this.client.sendResponse(new CatalogAdminResultComposer(true, "Visibility toggled"));
-            return;
-        }
-
         if (newParentId == pageId) {
             this.client.sendResponse(new CatalogAdminResultComposer(false, "A page cannot be its own parent"));
             return;
         }
 
-        CatalogPage parent = Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(newParentId, pageType);
-        if (parent == null) {
-            this.client.sendResponse(new CatalogAdminResultComposer(false, "Parent page not found: " + newParentId));
-            return;
-        }
+        if (newParentId != ROOT_PARENT_ID) {
+            CatalogPage parent = Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(newParentId, pageType);
+            if (parent == null) {
+                this.client.sendResponse(new CatalogAdminResultComposer(false, "Parent page not found: " + newParentId));
+                return;
+            }
 
-        if (this.wouldCreateCycle(pageId, newParentId, pageType)) {
-            this.client.sendResponse(new CatalogAdminResultComposer(false, "Refusing to move: that would create a cycle"));
-            return;
+            if (this.wouldCreateCycle(pageId, newParentId, pageType)) {
+                this.client.sendResponse(new CatalogAdminResultComposer(false, "Refusing to move: that would create a cycle"));
+                return;
+            }
         }
 
         if (newIndex < 0) newIndex = 0;

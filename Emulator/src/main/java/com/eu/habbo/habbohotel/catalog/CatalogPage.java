@@ -34,6 +34,8 @@ public abstract class CatalogPage implements Comparable<CatalogPage>, ISerialize
     protected boolean visible;
     protected boolean enabled;
     protected boolean clubOnly;
+    protected boolean vipOnly;
+    protected int roomId;
     protected CatalogPageType catalogPageType = CatalogPageType.NORMAL;
     protected String layout;
     protected String headerImage;
@@ -62,6 +64,16 @@ public abstract class CatalogPage implements Comparable<CatalogPage>, ISerialize
         this.visible = set.getBoolean("visible");
         this.enabled = set.getBoolean("enabled");
         this.clubOnly = set.getBoolean("club_only");
+        try {
+            this.vipOnly = set.getBoolean("vip_only");
+        } catch (SQLException ignored) {
+            this.vipOnly = false;
+        }
+        try {
+            this.roomId = set.getInt("room_id");
+        } catch (SQLException ignored) {
+            this.roomId = 0;
+        }
         try {
             this.catalogPageType = CatalogPageType.fromString(set.getString("catalog_mode"));
         } catch (SQLException ignored) {
@@ -121,6 +133,8 @@ public abstract class CatalogPage implements Comparable<CatalogPage>, ISerialize
         this.iconImage = iconImage;
     }
 
+    public void setIconColor(int iconColor) { this.iconColor = iconColor; }
+
     public void setOrderNum(int orderNum) {
         this.orderNum = orderNum;
     }
@@ -132,6 +146,10 @@ public abstract class CatalogPage implements Comparable<CatalogPage>, ISerialize
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
+
+    public void setClubOnly(boolean clubOnly) { this.clubOnly = clubOnly; }
+
+    public void setVipOnly(boolean vipOnly) { this.vipOnly = vipOnly; }
 
     public void setLayout(String layout) {
         this.layout = layout;
@@ -149,12 +167,26 @@ public abstract class CatalogPage implements Comparable<CatalogPage>, ISerialize
         this.teaserImage = teaserImage;
     }
 
+    public void setSpecialImage(String specialImage) { this.specialImage = specialImage; }
+
     public void setTextOne(String textOne) {
         this.textOne = textOne;
     }
 
+    public void setTextTwo(String textTwo) { this.textTwo = textTwo; }
+
     public void setTextDetails(String textDetails) {
         this.textDetails = textDetails;
+    }
+
+    public void setTextTeaser(String textTeaser) { this.textTeaser = textTeaser; }
+
+    public void setRoomId(int roomId) { this.roomId = roomId; }
+
+    public void setIncluded(String includes) {
+        this.included.clear();
+        if (includes == null || includes.isBlank()) return;
+        for (String id : includes.split(";")) this.included.add(Integer.parseInt(id));
     }
 
     public String getCaption() {
@@ -187,6 +219,14 @@ public abstract class CatalogPage implements Comparable<CatalogPage>, ISerialize
 
     public boolean isClubOnly() {
         return this.clubOnly;
+    }
+
+    public boolean isVipOnly() {
+        return this.vipOnly;
+    }
+
+    public int getRoomId() {
+        return this.roomId;
     }
 
     public CatalogPageType getCatalogPageType() {

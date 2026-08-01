@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.catalog.CatalogAdminCacheSync;
+import com.eu.habbo.habbohotel.catalog.CatalogItem;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -48,8 +49,26 @@ public class CatalogAdminSaveOfferEvent extends MessageHandler {
             return;
         }
 
-        if (Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(payload.pageId, payload.pageType) == null) {
+        var gameEnvironment = Emulator.getGameEnvironment();
+        if (gameEnvironment.getCatalogManager().getCatalogPage(payload.pageId, payload.pageType) == null) {
             this.client.sendResponse(new CatalogAdminResultComposer(false, "Page not found: " + payload.pageId));
+            return;
+        }
+
+        for (int itemId : payload.baseItemIds()) {
+            if (gameEnvironment.getItemManager().getItem(itemId) == null) {
+                this.client.sendResponse(new CatalogAdminResultComposer(false, "Base item not found: " + itemId));
+                return;
+            }
+        }
+
+        CatalogItem existingItem = gameEnvironment.getCatalogManager().getCatalogItem(offerId, pageType);
+        if (existingItem == null) {
+            this.client.sendResponse(new CatalogAdminResultComposer(false, "Offer not found: " + offerId));
+            return;
+        }
+        if (pageType != CatalogPageType.BUILDER && payload.limitedStack < existingItem.getLimitedStack()) {
+            this.client.sendResponse(new CatalogAdminResultComposer(false, "Limited stack cannot be reduced"));
             return;
         }
 

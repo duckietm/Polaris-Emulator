@@ -8,6 +8,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.stream.Collectors;
 
 /**
  * Keeps the in-memory catalog cache aligned with catalog admin DB mutations
@@ -24,6 +25,14 @@ public final class CatalogAdminCacheSync {
     private CatalogAdminCacheSync() {
     }
 
+    public static CatalogManager currentCatalogManager() {
+        return Emulator.getGameEnvironment().getCatalogManager();
+    }
+
+    public static Connection openCatalogConnection() throws SQLException {
+        return Emulator.getDatabase().getDataSource().getConnection();
+    }
+
     public static void attachCreatedPage(CatalogPage page, int parentId, int orderNum, CatalogPageType pageType) {
         if (page == null) return;
         reparentPage(page, parentId, orderNum, pageType);
@@ -32,7 +41,7 @@ public final class CatalogAdminCacheSync {
     public static void reparentPage(CatalogPage page, int newParentId, int newOrderNum, CatalogPageType pageType) {
         if (page == null) return;
 
-        CatalogManager catalogManager = Emulator.getGameEnvironment().getCatalogManager();
+        CatalogManager catalogManager = currentCatalogManager();
         int oldParentId = page.getParentId();
 
         if (oldParentId != newParentId) {
@@ -53,14 +62,14 @@ public final class CatalogAdminCacheSync {
     }
 
     public static void refreshPageFlagsFromDb(int pageId, CatalogPageType pageType) {
-        CatalogManager catalogManager = Emulator.getGameEnvironment().getCatalogManager();
+        CatalogManager catalogManager = currentCatalogManager();
         CatalogPage page = catalogManager.getCatalogPage(pageId, pageType);
         if (page == null) return;
 
         String tableName = (pageType == CatalogPageType.BUILDER) ? "catalog_pages_bc" : "catalog_pages";
         String sql = "SELECT visible, enabled FROM " + tableName + " WHERE id = ? LIMIT 1";
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection connection = openCatalogConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, pageId);
 
@@ -94,6 +103,39 @@ public final class CatalogAdminCacheSync {
             CatalogPageType pageType
     ) {
         if (page == null) return;
+        applyPageSave(page, caption, captionSave, layout, iconImage, page.getIconColor(), minRank, visible, enabled,
+                page.isClubOnly(), page.isVipOnly(), orderNum, parentId, headline, teaser, page.getSpecialImage(),
+                textDetails, textOne, page.getTextTwo(), page.getTextTeaser(), page.getRoomId(),
+                page.getIncluded().stream().map(String::valueOf).collect(Collectors.joining(";")), catalogMode, pageType);
+    }
+
+    public static void applyPageSave(
+            CatalogPage page,
+            String caption,
+            String captionSave,
+            String layout,
+            int iconImage,
+            int iconColor,
+            int minRank,
+            boolean visible,
+            boolean enabled,
+            boolean clubOnly,
+            boolean vipOnly,
+            int orderNum,
+            int parentId,
+            String headline,
+            String teaser,
+            String special,
+            String textDetails,
+            String textOne,
+            String textTwo,
+            String textTeaser,
+            int roomId,
+            String includes,
+            CatalogPageType catalogMode,
+            CatalogPageType pageType
+    ) {
+        if (page == null) return;
 
         if (page.getParentId() != parentId) {
             reparentPage(page, parentId, orderNum, pageType);
@@ -105,13 +147,21 @@ public final class CatalogAdminCacheSync {
         page.setPageName(captionSave);
         page.setLayout(layout);
         page.setIconImage(iconImage);
+        page.setIconColor(iconColor);
         page.setRank(minRank);
         page.setVisible(visible);
         page.setEnabled(enabled);
+        page.setClubOnly(clubOnly);
+        page.setVipOnly(vipOnly);
         page.setHeaderImage(headline);
         page.setTeaserImage(teaser);
+        page.setSpecialImage(special);
         page.setTextDetails(textDetails);
         page.setTextOne(textOne);
+        page.setTextTwo(textTwo);
+        page.setTextTeaser(textTeaser);
+        page.setRoomId(roomId);
+        page.setIncluded(includes);
 
         if (pageType != CatalogPageType.BUILDER) {
             page.setCatalogPageType(catalogMode);
@@ -121,7 +171,7 @@ public final class CatalogAdminCacheSync {
     public static void detachDeletedPage(CatalogPage page, CatalogPageType pageType) {
         if (page == null) return;
 
-        CatalogManager catalogManager = Emulator.getGameEnvironment().getCatalogManager();
+        CatalogManager catalogManager = currentCatalogManager();
         CatalogPage parent = catalogManager.getCatalogPage(page.getParentId(), pageType);
 
         if (parent != null) {
@@ -132,7 +182,7 @@ public final class CatalogAdminCacheSync {
     }
 
     public static boolean reloadCatalogItem(int offerId, CatalogPageType pageType) {
-        CatalogManager catalogManager = Emulator.getGameEnvironment().getCatalogManager();
+        CatalogManager catalogManager = currentCatalogManager();
         CatalogItem existing = catalogManager.getCatalogItem(offerId, pageType);
         int previousPageId = existing != null ? existing.getPageId() : -1;
 
@@ -140,7 +190,7 @@ public final class CatalogAdminCacheSync {
                 ? BC_ITEM_SELECT
                 : "SELECT * FROM catalog_items WHERE id = ? LIMIT 1";
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection connection = openCatalogConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, offerId);
 
@@ -163,6 +213,7 @@ public final class CatalogAdminCacheSync {
                     existing.update(set);
                     attachItemToPage(existing, pageType);
                     registerOfferSearchIndex(existing, pageType);
+                    syncLimitedConfiguration(existing, pageType, catalogManager);
                     return true;
                 }
 
@@ -173,6 +224,7 @@ public final class CatalogAdminCacheSync {
                 CatalogItem created = new CatalogItem(set);
                 attachItemToPage(created, pageType);
                 registerOfferSearchIndex(created, pageType);
+                syncLimitedConfiguration(created, pageType, catalogManager);
                 return true;
             }
         } catch (SQLException e) {
@@ -181,12 +233,23 @@ public final class CatalogAdminCacheSync {
         }
     }
 
+    private static void syncLimitedConfiguration(
+            CatalogItem item, CatalogPageType pageType, CatalogManager catalogManager) {
+        if (item == null || pageType == CatalogPageType.BUILDER || !item.isLimited()) return;
+        catalogManager.createOrUpdateLimitedConfig(item);
+    }
+
     public static void removeCatalogItem(int offerId, CatalogPageType pageType, int pageIdHint) {
-        CatalogManager catalogManager = Emulator.getGameEnvironment().getCatalogManager();
+        CatalogManager catalogManager = currentCatalogManager();
         CatalogItem item = catalogManager.getCatalogItem(offerId, pageType);
 
         if (item != null) {
             unregisterOfferSearchIndex(item, pageType);
+            if (pageType != CatalogPageType.BUILDER) {
+                synchronized (catalogManager.limitedNumbers) {
+                    catalogManager.limitedNumbers.remove(offerId);
+                }
+            }
         }
 
         int pageId = item != null ? item.getPageId() : pageIdHint;
@@ -202,7 +265,7 @@ public final class CatalogAdminCacheSync {
     private static void unregisterOfferSearchIndex(CatalogItem item, CatalogPageType pageType) {
         if (item == null) return;
 
-        CatalogManager catalogManager = Emulator.getGameEnvironment().getCatalogManager();
+        CatalogManager catalogManager = currentCatalogManager();
         int searchOfferId = item.getSearchOfferId();
 
         if (searchOfferId != -1) {
@@ -229,7 +292,7 @@ public final class CatalogAdminCacheSync {
     }
 
     private static void attachItemToPage(CatalogItem item, CatalogPageType pageType) {
-        CatalogManager catalogManager = Emulator.getGameEnvironment().getCatalogManager();
+        CatalogManager catalogManager = currentCatalogManager();
         CatalogPage page = catalogManager.getCatalogPage(item.getPageId(), pageType);
 
         if (page == null) return;
@@ -238,7 +301,7 @@ public final class CatalogAdminCacheSync {
     }
 
     private static void registerOfferSearchIndex(CatalogItem item, CatalogPageType pageType) {
-        CatalogManager catalogManager = Emulator.getGameEnvironment().getCatalogManager();
+        CatalogManager catalogManager = currentCatalogManager();
         CatalogPage page = catalogManager.getCatalogPage(item.getPageId(), pageType);
 
         if (page == null) return;

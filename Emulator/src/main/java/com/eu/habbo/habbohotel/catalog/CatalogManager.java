@@ -132,6 +132,7 @@ public class CatalogManager {
                             case badge_display:
                                 this.put(layout.name().toLowerCase(), BadgeDisplayLayout.class);
                                 break;
+                            case spaces:
                             case spaces_new:
                                 this.put(layout.name().toLowerCase(), SpacesLayout.class);
                                 break;
@@ -238,6 +239,11 @@ public class CatalogManager {
                                 break;
                             case custom_prefix:
                                 this.put(layout.name().toLowerCase(), CustomPrefixLayout.class);
+                                break;
+                            case root:
+                            case productpage1:
+                            case collectibles:
+                                this.put(layout.name().toLowerCase(), Default_3x3Layout.class);
                                 break;
                             case default_3x3:
                             default:
@@ -1101,11 +1107,40 @@ public class CatalogManager {
             boolean visible,
             boolean enabled,
             int orderNum) {
+        return createCatalogPage(caption, captionSave, roomId, icon, layout, minRank, parentId, pageType,
+                catalogMode, visible, enabled, orderNum, "", "", "", "", "", "", "", 1,
+                false, false, "");
+    }
+
+    public CatalogPage createCatalogPage(
+            String caption,
+            String captionSave,
+            int roomId,
+            int icon,
+            CatalogPageLayouts layout,
+            int minRank,
+            int parentId,
+            CatalogPageType pageType,
+            CatalogPageType catalogMode,
+            boolean visible,
+            boolean enabled,
+            int orderNum,
+            String headline,
+            String teaser,
+            String special,
+            String textOne,
+            String textTwo,
+            String textDetails,
+            String textTeaser,
+            int iconColor,
+            boolean clubOnly,
+            boolean vipOnly,
+            String includes) {
         CatalogPage catalogPage = null;
         boolean buildersClubPage = (pageType == CatalogPageType.BUILDER);
         String insertQuery = buildersClubPage
-                ? "INSERT INTO catalog_pages_bc (parent_id, caption, page_layout, icon_color, icon_image, order_num, visible, enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-                : "INSERT INTO catalog_pages (parent_id, caption, caption_save, icon_image, visible, enabled, min_rank, page_layout, room_id, catalog_mode, order_num) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                ? "INSERT INTO catalog_pages_bc (parent_id, caption, page_layout, icon_color, icon_image, order_num, visible, enabled, page_headline, page_teaser, page_special, page_text1, page_text2, page_text_details, page_text_teaser) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                : "INSERT INTO catalog_pages (parent_id, caption, caption_save, icon_image, icon_color, visible, enabled, min_rank, page_layout, room_id, catalog_mode, order_num, club_only, vip_only, page_headline, page_teaser, page_special, page_text1, page_text2, page_text_details, page_text_teaser, includes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         String selectQuery = buildersClubPage
                 ? "SELECT id, parent_id, caption, caption AS caption_save, page_layout, icon_color, icon_image, 1 AS min_rank, order_num, visible, enabled, '0' AS club_only, 'BUILDERS_CLUB' AS catalog_mode, page_headline, page_teaser, page_special, page_text1, page_text2, page_text_details, page_text_teaser, '' AS includes FROM catalog_pages_bc WHERE id = ?"
                 : "SELECT * FROM catalog_pages WHERE id = ?";
@@ -1118,21 +1153,39 @@ public class CatalogManager {
 
             if (buildersClubPage) {
                 statement.setString(3, layout.name());
-                statement.setInt(4, 1);
+                statement.setInt(4, iconColor);
                 statement.setInt(5, icon);
                 statement.setInt(6, orderNum < 0 ? 0 : orderNum);
                 statement.setString(7, visible ? "1" : "0");
                 statement.setString(8, enabled ? "1" : "0");
+                statement.setString(9, headline);
+                statement.setString(10, teaser);
+                statement.setString(11, special);
+                statement.setString(12, textOne);
+                statement.setString(13, textTwo);
+                statement.setString(14, textDetails);
+                statement.setString(15, textTeaser);
             } else {
                 statement.setString(3, captionSave);
                 statement.setInt(4, icon);
-                statement.setString(5, visible ? "1" : "0");
-                statement.setString(6, enabled ? "1" : "0");
-                statement.setInt(7, minRank);
-                statement.setString(8, layout.name());
-                statement.setInt(9, roomId);
-                statement.setString(10, catalogMode.name());
-                statement.setInt(11, orderNum < 0 ? 0 : orderNum);
+                statement.setInt(5, iconColor);
+                statement.setString(6, visible ? "1" : "0");
+                statement.setString(7, enabled ? "1" : "0");
+                statement.setInt(8, minRank);
+                statement.setString(9, layout.name());
+                statement.setInt(10, roomId);
+                statement.setString(11, catalogMode.name());
+                statement.setInt(12, orderNum < 0 ? 0 : orderNum);
+                statement.setString(13, clubOnly ? "1" : "0");
+                statement.setString(14, vipOnly ? "1" : "0");
+                statement.setString(15, headline);
+                statement.setString(16, teaser);
+                statement.setString(17, special);
+                statement.setString(18, textOne);
+                statement.setString(19, textTwo);
+                statement.setString(20, textDetails);
+                statement.setString(21, textTeaser);
+                statement.setString(22, includes);
             }
             statement.execute();
             try (ResultSet set = statement.getGeneratedKeys()) {
@@ -1179,9 +1232,10 @@ public class CatalogManager {
     }
 
     public CatalogLimitedConfiguration createOrUpdateLimitedConfig(CatalogItem item) {
-        if (item.isLimited()) {
-            CatalogLimitedConfiguration limitedConfiguration = this.limitedNumbers.get(item.getId());
+        if (!item.isLimited()) return null;
 
+        synchronized (this.limitedNumbers) {
+            CatalogLimitedConfiguration limitedConfiguration = this.limitedNumbers.get(item.getId());
             if (limitedConfiguration == null) {
                 limitedConfiguration = new CatalogLimitedConfiguration(item.getId(), new LinkedList<>(), 0);
                 limitedConfiguration.generateNumbers(1, item.limitedStack);
@@ -1201,8 +1255,6 @@ public class CatalogManager {
 
             return limitedConfiguration;
         }
-
-        return null;
     }
 
     public void dispose() {

@@ -3,70 +3,97 @@ package com.eu.habbo.habbohotel.soundboard;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.permissions.PermissionsManager;
 import com.eu.habbo.habbohotel.permissions.Rank;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.IntPredicate;
+import java.util.function.IntUnaryOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.IntUnaryOperator;
-
 public class SoundboardManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(SoundboardManager.class);
+    private static final int MAX_REORDER_SIZE = 500;
 
     private final SoundboardCooldownGate cooldownGate = new SoundboardCooldownGate();
     private final IntUnaryOperator cooldownByRank;
+    private final IntPredicate rankExists;
+    private final SoundboardCatalogRepository repository;
     private volatile SoundSnapshot snapshot = SoundSnapshot.empty();
 
     public SoundboardManager() {
-        this(rankId -> 60);
+        this(
+                rankId -> 60,
+                rankId -> rankId > 0,
+                new SoundboardCatalogRepository(Emulator.getDatabase().getDataSource()));
     }
 
     public SoundboardManager(PermissionsManager permissionsManager) {
-        this(rankId -> loadCooldownFromPermissions(permissionsManager, rankId));
+        this(
+                rankId -> loadCooldownFromPermissions(permissionsManager, rankId),
+                rankId -> permissionsManager != null && permissionsManager.getRank(rankId) != null,
+                new SoundboardCatalogRepository(Emulator.getDatabase().getDataSource()));
     }
 
-    private SoundboardManager(IntUnaryOperator cooldownByRank) {
+    private SoundboardManager(
+            IntUnaryOperator cooldownByRank, IntPredicate rankExists, SoundboardCatalogRepository repository) {
         this.cooldownByRank = cooldownByRank;
+        this.rankExists = rankExists;
+        this.repository = repository;
         long millis = System.currentTimeMillis();
         this.reload();
-        LOGGER.info("Soundboard Manager -> Loaded! ({} MS, {} sounds)", System.currentTimeMillis() - millis, this.snapshot.ordered().size());
+        LOGGER.info(
+                "Soundboard Manager -> Loaded! ({} MS, {} sounds)",
+                System.currentTimeMillis() - millis,
+                this.snapshot.playableOrdered().size());
     }
 
     SoundboardManager(List<SoundboardSound> sounds, IntUnaryOperator cooldownByRank) {
+        this(sounds, cooldownByRank, rankId -> rankId > 0, null);
+    }
+
+    SoundboardManager(
+            List<SoundboardSound> sounds,
+            IntUnaryOperator cooldownByRank,
+            IntPredicate rankExists,
+            SoundboardCatalogRepository repository) {
         this.snapshot = SoundSnapshot.from(sounds);
         this.cooldownByRank = cooldownByRank;
+        this.rankExists = rankExists;
+        this.repository = repository;
     }
 
     public void reload() {
-        List<SoundboardSound> loadedSounds = new ArrayList<>();
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT id, name, url, min_rank FROM soundboard_sounds WHERE enabled = 1 ORDER BY sort_order ASC, id ASC");
-             ResultSet set = statement.executeQuery()) {
-            while (set.next()) {
-                loadedSounds.add(new SoundboardSound(set));
-            }
-            this.snapshot = SoundSnapshot.from(loadedSounds);
-        } catch (SQLException e) {
-            LOGGER.error("Failed to load soundboard sounds", e);
+        if (this.repository == null) {
+            return;
+        }
+
+        try {
+            this.snapshot = SoundSnapshot.from(this.repository.loadAll());
+        } catch (SQLException exception) {
+            LOGGER.error("Failed to load Soundboard catalog", exception);
         }
     }
 
     public List<SoundboardSound> getSounds() {
-        return this.snapshot.ordered();
+        return this.snapshot.playableOrdered();
+    }
+
+    public List<SoundboardSound> getCatalog() {
+        return this.snapshot.catalogOrdered();
     }
 
     public SoundboardSound getSound(int id) {
-        return this.snapshot.byId().get(id);
+        return this.snapshot.playableById().get(id);
     }
 
     public List<SoundboardSound> getSoundsForRank(int rankId) {
-        return this.snapshot.ordered().stream()
+        return this.snapshot.playableOrdered().stream()
                 .filter(sound -> sound.isAvailableTo(rankId))
                 .toList();
     }
@@ -76,7 +103,7 @@ public class SoundboardManager {
         try {
             cooldown = this.cooldownByRank.applyAsInt(rankId);
         } catch (RuntimeException exception) {
-            LOGGER.warn("Unable to resolve soundboard cooldown for rank {}", rankId, exception);
+            LOGGER.warn("Unable to resolve Soundboard cooldown for rank {}", rankId, exception);
             return 60;
         }
         return cooldown < 0 ? 60 : cooldown;
@@ -88,15 +115,73 @@ public class SoundboardManager {
             return new PlayDecision(false, null, DenialReason.NOT_AVAILABLE, 0);
         }
 
-        SoundboardCooldownGate.Decision cooldown = this.cooldownGate.tryAcquire(
-                userId,
-                nowMillis,
-                this.getCooldownSecondsForRank(rankId));
+        SoundboardCooldownGate.Decision cooldown =
+                this.cooldownGate.tryAcquire(userId, nowMillis, this.getCooldownSecondsForRank(rankId));
         if (!cooldown.allowed()) {
             return new PlayDecision(false, sound, DenialReason.COOLDOWN, cooldown.remainingSeconds());
         }
 
         return new PlayDecision(true, sound, DenialReason.NONE, 0);
+    }
+
+    public SoundboardCatalogResult upsert(int staffUserId, SoundboardCatalogCommand command) {
+        if (command == null) {
+            return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.INVALID_NAME);
+        }
+
+        String name = command.name() == null ? "" : command.name().trim();
+        if (name.isEmpty() || name.length() > 64) {
+            return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.INVALID_NAME);
+        }
+
+        String url = command.url() == null ? "" : command.url().trim();
+        if (!SoundboardUrlPolicy.isAllowed(url)) {
+            return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.INVALID_URL);
+        }
+
+        if (command.minRank() < 1 || !this.rankExists.test(command.minRank())) {
+            return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.INVALID_RANK);
+        }
+
+        if (command.id() < 0) {
+            return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.NOT_FOUND);
+        }
+
+        if (this.repository == null) {
+            return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.PERSISTENCE_FAILURE);
+        }
+
+        SoundboardCatalogResult result = this.repository.upsert(
+                staffUserId,
+                new SoundboardCatalogCommand(command.id(), name, url, command.minRank(), command.enabled()));
+        if (result.successful()) {
+            this.reload();
+        }
+        return result;
+    }
+
+    public SoundboardCatalogResult reorder(int staffUserId, List<Integer> orderedIds) {
+        if (orderedIds == null || orderedIds.size() > MAX_REORDER_SIZE) {
+            return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.INVALID_ORDER);
+        }
+
+        Set<Integer> submitted = new LinkedHashSet<>(orderedIds);
+        Set<Integer> expected = this.snapshot.catalogOrdered().stream()
+                .map(sound -> sound.id)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        if (submitted.size() != orderedIds.size() || !submitted.equals(expected)) {
+            return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.INVALID_ORDER);
+        }
+
+        if (this.repository == null) {
+            return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.PERSISTENCE_FAILURE);
+        }
+
+        SoundboardCatalogResult result = this.repository.reorder(staffUserId, List.copyOf(orderedIds));
+        if (result.successful()) {
+            this.reload();
+        }
+        return result;
     }
 
     private static int loadCooldownFromPermissions(PermissionsManager permissionsManager, int rankId) {
@@ -115,37 +200,37 @@ public class SoundboardManager {
     }
 
     public record PlayDecision(
-            boolean allowed,
-            SoundboardSound sound,
-            DenialReason denialReason,
-            int remainingSeconds) {
-    }
+            boolean allowed, SoundboardSound sound, DenialReason denialReason, int remainingSeconds) {}
 
-    private record SoundSnapshot(List<SoundboardSound> ordered, Map<Integer, SoundboardSound> byId) {
+    private record SoundSnapshot(
+            List<SoundboardSound> catalogOrdered,
+            List<SoundboardSound> playableOrdered,
+            Map<Integer, SoundboardSound> playableById) {
         private static SoundSnapshot empty() {
-            return new SoundSnapshot(List.of(), Map.of());
+            return new SoundSnapshot(List.of(), List.of(), Map.of());
         }
 
         private static SoundSnapshot from(List<SoundboardSound> sounds) {
-            List<SoundboardSound> ordered = List.copyOf(sounds);
+            List<SoundboardSound> catalog = List.copyOf(sounds);
+            List<SoundboardSound> playable =
+                    catalog.stream().filter(sound -> sound.enabled).toList();
             Map<Integer, SoundboardSound> byId = new LinkedHashMap<>();
-            for (SoundboardSound sound : ordered) {
+            for (SoundboardSound sound : playable) {
                 byId.putIfAbsent(sound.id, sound);
             }
-            return new SoundSnapshot(ordered, Map.copyOf(byId));
+            return new SoundSnapshot(catalog, playable, Map.copyOf(byId));
         }
     }
 
-    // Owner toggle — persists the room flag with a dedicated UPDATE (kept out of
-    // the big room-settings save to avoid touching that statement).
     public void setRoomEnabled(int roomId, boolean enabled) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("UPDATE rooms SET soundboard_enabled = ? WHERE id = ? LIMIT 1")) {
+                PreparedStatement statement =
+                        connection.prepareStatement("UPDATE rooms SET soundboard_enabled = ? WHERE id = ? LIMIT 1")) {
             statement.setString(1, enabled ? "1" : "0");
             statement.setInt(2, roomId);
             statement.executeUpdate();
-        } catch (SQLException e) {
-            LOGGER.error("Failed to set soundboard_enabled for room {}", roomId, e);
+        } catch (SQLException exception) {
+            LOGGER.error("Failed to set soundboard_enabled for room {}", roomId, exception);
         }
     }
 }

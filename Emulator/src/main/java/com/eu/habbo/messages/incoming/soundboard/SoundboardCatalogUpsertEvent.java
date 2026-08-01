@@ -6,7 +6,6 @@ import com.eu.habbo.habbohotel.soundboard.SoundboardCatalogResult;
 import com.eu.habbo.habbohotel.soundboard.SoundboardManager;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
-import com.eu.habbo.messages.outgoing.soundboard.SoundboardCatalogComposer;
 import com.eu.habbo.messages.outgoing.soundboard.SoundboardCatalogResultComposer;
 
 public class SoundboardCatalogUpsertEvent extends MessageHandler {
@@ -33,9 +32,6 @@ public class SoundboardCatalogUpsertEvent extends MessageHandler {
         SoundboardManager manager = Emulator.getGameEnvironment().getSoundboardManager();
         SoundboardCatalogResult result = manager.upsert(habbo.getHabboInfo().getId(), command);
         this.sendResult(result);
-        if (result.successful()) {
-            this.client.sendResponse(new SoundboardCatalogComposer(manager.getCatalog()).compose());
-        }
     }
 
     private void sendResult(SoundboardCatalogResult result) {

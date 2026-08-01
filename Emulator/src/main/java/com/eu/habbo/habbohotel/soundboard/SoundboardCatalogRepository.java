@@ -11,6 +11,7 @@ import java.util.List;
 import javax.sql.DataSource;
 
 public class SoundboardCatalogRepository {
+    public static final int MAX_CATALOG_SIZE = 500;
     private static final Gson GSON = new Gson();
     private static final String SELECT_FIELDS = "id, name, url, enabled, sort_order, min_rank";
 
@@ -27,6 +28,9 @@ public class SoundboardCatalogRepository {
                 ResultSet resultSet = statement.executeQuery()) {
             List<SoundboardSound> sounds = new ArrayList<>();
             while (resultSet.next()) {
+                if (sounds.size() >= MAX_CATALOG_SIZE) {
+                    throw new SQLException("Soundboard catalog exceeds the supported limit of " + MAX_CATALOG_SIZE);
+                }
                 sounds.add(new SoundboardSound(resultSet));
             }
             return List.copyOf(sounds);
@@ -38,14 +42,21 @@ public class SoundboardCatalogRepository {
             boolean previousAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try {
+                List<SoundboardSound> lockedCatalog = command.id() == 0 ? this.loadAllForUpdate(connection) : List.of();
+                if (command.id() == 0 && lockedCatalog.size() >= MAX_CATALOG_SIZE) {
+                    connection.rollback();
+                    return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.CATALOG_FULL);
+                }
+
                 SoundboardSound before = command.id() > 0 ? this.findForUpdate(connection, command.id()) : null;
                 if (command.id() > 0 && before == null) {
                     connection.rollback();
                     return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.NOT_FOUND);
                 }
 
-                SoundboardSound after =
-                        command.id() == 0 ? this.insert(connection, command) : this.update(connection, before, command);
+                SoundboardSound after = command.id() == 0
+                        ? this.insert(connection, command, nextSortOrder(lockedCatalog))
+                        : this.update(connection, before, command);
                 this.insertAudit(connection, staffUserId, actionFor(before, after), after.id, before, after);
                 connection.commit();
                 return SoundboardCatalogResult.success(after.id);
@@ -111,8 +122,8 @@ public class SoundboardCatalogRepository {
         }
     }
 
-    private SoundboardSound insert(Connection connection, SoundboardCatalogCommand command) throws SQLException {
-        int sortOrder = this.nextSortOrder(connection);
+    private SoundboardSound insert(Connection connection, SoundboardCatalogCommand command, int sortOrder)
+            throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
                 "INSERT INTO soundboard_sounds (name, url, enabled, sort_order, min_rank) VALUES (?, ?, ?, ?, ?)",
                 Statement.RETURN_GENERATED_KEYS)) {
@@ -149,15 +160,8 @@ public class SoundboardCatalogRepository {
                 before.id, command.name(), command.url(), command.enabled(), before.sortOrder, command.minRank());
     }
 
-    private int nextSortOrder(Connection connection) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                        "SELECT COALESCE(MAX(sort_order), 0) + 10 FROM soundboard_sounds FOR UPDATE");
-                ResultSet resultSet = statement.executeQuery()) {
-            if (!resultSet.next()) {
-                throw new SQLException("Unable to allocate Soundboard sort order");
-            }
-            return resultSet.getInt(1);
-        }
+    private static int nextSortOrder(List<SoundboardSound> catalog) {
+        return catalog.stream().mapToInt(sound -> sound.sortOrder).max().orElse(0) + 10;
     }
 
     private void insertAudit(

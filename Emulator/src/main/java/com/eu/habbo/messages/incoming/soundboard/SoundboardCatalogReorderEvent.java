@@ -5,7 +5,6 @@ import com.eu.habbo.habbohotel.soundboard.SoundboardCatalogResult;
 import com.eu.habbo.habbohotel.soundboard.SoundboardManager;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
-import com.eu.habbo.messages.outgoing.soundboard.SoundboardCatalogComposer;
 import com.eu.habbo.messages.outgoing.soundboard.SoundboardCatalogResultComposer;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,9 +39,6 @@ public class SoundboardCatalogReorderEvent extends MessageHandler {
         SoundboardManager manager = Emulator.getGameEnvironment().getSoundboardManager();
         SoundboardCatalogResult result = manager.reorder(habbo.getHabboInfo().getId(), orderedIds);
         this.sendResult(result);
-        if (result.successful()) {
-            this.client.sendResponse(new SoundboardCatalogComposer(manager.getCatalog()).compose());
-        }
     }
 
     static boolean isCountAllowed(int count) {

@@ -929,20 +929,6 @@ public class HabboStats implements Runnable {
         }
     }
 
-    public void saveSoundboardVolume(int volume) {
-        this.volumeSoundboard = Math.max(0, Math.min(100, volume));
-
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE users_settings SET volume_soundboard = ? WHERE user_id = ? LIMIT 1")) {
-            statement.setInt(1, this.volumeSoundboard);
-            statement.setInt(2, this.habboInfo.getId());
-            statement.executeUpdate();
-        } catch (SQLException e) {
-            LOGGER.error("Failed to persist Soundboard volume for user {}", this.habboInfo.getId(), e);
-        }
-    }
-
     private static final Set<String> PERSIST_FLAG_COLUMNS = Set.of("mentions_enabled", "mass_mentions_enabled");
 
     private void persistFlag(String column, boolean enabled) {

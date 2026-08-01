@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.soundboard;
 
+import static com.eu.habbo.habbohotel.soundboard.SoundboardCatalogResult.Code.CATALOG_FULL;
 import static com.eu.habbo.habbohotel.soundboard.SoundboardCatalogResult.Code.PERSISTENCE_FAILURE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -12,10 +13,37 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 
 class SoundboardCatalogRepositoryTest {
+
+    @Test
+    void creationIsRejectedTransactionallyAtTheCatalogLimit() throws Exception {
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        PreparedStatement lockCatalog = mock(PreparedStatement.class);
+        ResultSet rows = mock(ResultSet.class);
+        AtomicInteger row = new AtomicInteger();
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(anyString())).thenReturn(lockCatalog);
+        when(lockCatalog.executeQuery()).thenReturn(rows);
+        when(rows.next()).thenAnswer(ignored -> row.getAndIncrement() < SoundboardCatalogRepository.MAX_CATALOG_SIZE);
+        when(rows.getInt("id")).thenAnswer(ignored -> row.get());
+        when(rows.getString("name")).thenReturn("Sound");
+        when(rows.getString("url")).thenReturn("/sound.ogg");
+        when(rows.getBoolean("enabled")).thenReturn(true);
+        when(rows.getInt("sort_order")).thenAnswer(ignored -> row.get() * 10);
+        when(rows.getInt("min_rank")).thenReturn(1);
+
+        SoundboardCatalogResult result = new SoundboardCatalogRepository(dataSource)
+                .upsert(42, new SoundboardCatalogCommand(0, "Extra", "/extra.ogg", 1, true));
+
+        assertEquals(CATALOG_FULL, result.code());
+        verify(connection).rollback();
+        verify(connection, never()).commit();
+    }
 
     @Test
     void auditFailureRollsBackTheCatalogMutation() throws Exception {

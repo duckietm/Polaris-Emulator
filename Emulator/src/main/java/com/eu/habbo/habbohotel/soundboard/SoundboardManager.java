@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class SoundboardManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(SoundboardManager.class);
-    private static final int MAX_REORDER_SIZE = 500;
+    private static final int MAX_REORDER_SIZE = SoundboardCatalogRepository.MAX_CATALOG_SIZE;
 
     private final SoundboardCooldownGate cooldownGate = new SoundboardCooldownGate();
     private final IntUnaryOperator cooldownByRank;

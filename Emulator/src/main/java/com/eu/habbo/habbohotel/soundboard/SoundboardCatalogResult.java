@@ -22,7 +22,8 @@ public record SoundboardCatalogResult(Code code, int soundId) {
         INVALID_RANK(4),
         INVALID_ORDER(5),
         NOT_FOUND(6),
-        PERSISTENCE_FAILURE(7);
+        PERSISTENCE_FAILURE(7),
+        CATALOG_FULL(8);
 
         private final int wireCode;
 

@@ -19,7 +19,7 @@ public class SoundboardSaveVolumeEvent extends MessageHandler {
             return;
         }
 
-        habbo.getHabboStats().saveSoundboardVolume(clampVolume(this.packet.readInt()));
+        habbo.getHabboStats().volumeSoundboard = clampVolume(this.packet.readInt());
         Emulator.getPluginManager().fireEvent(new UserSavedSettingsEvent(habbo));
     }
 

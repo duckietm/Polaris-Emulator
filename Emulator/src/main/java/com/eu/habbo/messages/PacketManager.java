@@ -45,13 +45,13 @@ import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminLoadPageE
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminMoveOfferEvent;
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminMovePageEvent;
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminPublishEvent;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminReorderOffersEvent;
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminSaveOfferEvent;
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminSavePageEvent;
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminSavePageIconEvent;
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminSavePageImagesEvent;
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminSetPageEnabledEvent;
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminSetPageVisibleEvent;
-import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminReorderOffersEvent;
 import com.eu.habbo.messages.incoming.catalog.marketplace.BuyItemEvent;
 import com.eu.habbo.messages.incoming.catalog.marketplace.RequestCreditsEvent;
 import com.eu.habbo.messages.incoming.catalog.marketplace.RequestItemInfoEvent;

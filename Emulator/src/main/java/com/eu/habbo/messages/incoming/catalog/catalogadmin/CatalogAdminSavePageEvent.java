@@ -2,18 +2,17 @@ package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.catalog.CatalogAdminCacheSync;
+import com.eu.habbo.habbohotel.catalog.CatalogManager;
 import com.eu.habbo.habbohotel.catalog.CatalogPage;
 import com.eu.habbo.habbohotel.catalog.CatalogPageLayouts;
-import com.eu.habbo.habbohotel.catalog.CatalogManager;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.CatalogAdminResultComposer;
-import org.jsoup.Jsoup;
-import org.jsoup.safety.Safelist;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Safelist;
 
 public class CatalogAdminSavePageEvent extends MessageHandler {
 
@@ -93,7 +92,8 @@ public class CatalogAdminSavePageEvent extends MessageHandler {
             }
 
             if (this.wouldCreateCycle(pageId, parentId, pageType, catalogManager)) {
-                this.client.sendResponse(new CatalogAdminResultComposer(false, "Refusing to re-parent: that would create a cycle"));
+                this.client.sendResponse(
+                        new CatalogAdminResultComposer(false, "Refusing to re-parent: that would create a cycle"));
                 return;
             }
         }
@@ -103,7 +103,7 @@ public class CatalogAdminSavePageEvent extends MessageHandler {
         if (minRank < 1) minRank = 1;
         if (orderNum < 0) orderNum = 0;
         if (roomId < 0) roomId = 0;
-		
+
         headline = this.sanitizeHtml(headline);
         teaser = this.sanitizeHtml(teaser);
         textDetails = this.sanitizeHtml(textDetails);
@@ -126,7 +126,8 @@ public class CatalogAdminSavePageEvent extends MessageHandler {
             return;
         }
         if (!this.includesExist(includes, pageId, pageType, catalogManager)) {
-            this.client.sendResponse(new CatalogAdminResultComposer(false, "Included pages must exist and cannot include the current page"));
+            this.client.sendResponse(new CatalogAdminResultComposer(
+                    false, "Included pages must exist and cannot include the current page"));
             return;
         }
 
@@ -135,7 +136,7 @@ public class CatalogAdminSavePageEvent extends MessageHandler {
                 : "UPDATE catalog_pages SET caption = ?, caption_save = ?, page_layout = ?, icon_image = ?, icon_color = ?, min_rank = ?, visible = ?, enabled = ?, club_only = ?, vip_only = ?, order_num = ?, parent_id = ?, page_headline = ?, page_teaser = ?, page_special = ?, page_text_details = ?, page_text1 = ?, page_text2 = ?, page_text_teaser = ?, room_id = ?, includes = ?, catalog_mode = ? WHERE id = ?";
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(query)) {
+                PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, caption);
 
             if (pageType == CatalogPageType.BUILDER) {
@@ -185,9 +186,31 @@ public class CatalogAdminSavePageEvent extends MessageHandler {
             }
         }
 
-        CatalogAdminCacheSync.applyPageSave(page, caption, caption2, layout, iconType, iconColor, minRank, visible, enabled,
-                clubOnly, vipOnly, orderNum, parentId, headline, teaser, special, textDetails, text1, text2,
-                textTeaser, roomId, includes, catalogMode, pageType);
+        CatalogAdminCacheSync.applyPageSave(
+                page,
+                caption,
+                caption2,
+                layout,
+                iconType,
+                iconColor,
+                minRank,
+                visible,
+                enabled,
+                clubOnly,
+                vipOnly,
+                orderNum,
+                parentId,
+                headline,
+                teaser,
+                special,
+                textDetails,
+                text1,
+                text2,
+                textTeaser,
+                roomId,
+                includes,
+                catalogMode,
+                pageType);
         this.client.sendResponse(new CatalogAdminResultComposer(true, "Page saved"));
     }
 
@@ -209,7 +232,6 @@ public class CatalogAdminSavePageEvent extends MessageHandler {
         if (value.length() <= max) return value;
         return value.substring(0, max);
     }
-
 
     private String sanitizeHtml(String value) {
         if (value == null || value.isEmpty()) return "";
@@ -240,8 +262,7 @@ public class CatalogAdminSavePageEvent extends MessageHandler {
         if (includes.isEmpty()) return true;
         for (String entry : includes.split(";")) {
             int includedPageId = Integer.parseInt(entry);
-            if (includedPageId == currentPageId
-                    || catalogManager.getCatalogPage(includedPageId, pageType) == null) {
+            if (includedPageId == currentPageId || catalogManager.getCatalogPage(includedPageId, pageType) == null) {
                 return false;
             }
         }

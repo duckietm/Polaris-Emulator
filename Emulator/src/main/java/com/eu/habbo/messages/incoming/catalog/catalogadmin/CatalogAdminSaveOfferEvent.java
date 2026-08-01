@@ -7,7 +7,6 @@ import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.CatalogAdminResultComposer;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
@@ -41,9 +40,21 @@ public class CatalogAdminSaveOfferEvent extends MessageHandler {
             return;
         }
 
-        CatalogAdminOfferPayload payload = CatalogAdminOfferPayload.validate(pageId, itemIds, catalogName, costCredits,
-                costPoints, pointsType, amount, clubOnly, extradata, haveOffer, offerIdGroup, limitedStack,
-                orderNumber, pageType);
+        CatalogAdminOfferPayload payload = CatalogAdminOfferPayload.validate(
+                pageId,
+                itemIds,
+                catalogName,
+                costCredits,
+                costPoints,
+                pointsType,
+                amount,
+                clubOnly,
+                extradata,
+                haveOffer,
+                offerIdGroup,
+                limitedStack,
+                orderNumber,
+                pageType);
         if (payload == null) {
             this.client.sendResponse(new CatalogAdminResultComposer(false, "Invalid offer payload"));
             return;
@@ -86,7 +97,7 @@ public class CatalogAdminSaveOfferEvent extends MessageHandler {
         }
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+                PreparedStatement statement = connection.prepareStatement(sql)) {
             int idx = 1;
             statement.setInt(idx++, payload.pageId);
             if (updateItemIds) {

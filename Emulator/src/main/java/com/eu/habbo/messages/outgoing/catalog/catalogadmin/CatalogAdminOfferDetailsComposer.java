@@ -23,14 +23,26 @@ public class CatalogAdminOfferDetailsComposer extends MessageComposer {
     private final String catalogMode;
 
     public CatalogAdminOfferDetailsComposer(int offerId, int offerIdGroup, int limitedStack, int orderNumber) {
-        this(offerId, 0, "", "", 0, 0, 0, 1, false, "", false,
-                offerIdGroup, limitedStack, 0, orderNumber, "NORMAL");
+        this(offerId, 0, "", "", 0, 0, 0, 1, false, "", false, offerIdGroup, limitedStack, 0, orderNumber, "NORMAL");
     }
 
     public CatalogAdminOfferDetailsComposer(
-            int offerId, int pageId, String itemIds, String catalogName, int costCredits, int costPoints,
-            int pointsType, int amount, boolean clubOnly, String extradata, boolean haveOffer, int offerIdGroup,
-            int limitedStack, int limitedSells, int orderNumber, String catalogMode) {
+            int offerId,
+            int pageId,
+            String itemIds,
+            String catalogName,
+            int costCredits,
+            int costPoints,
+            int pointsType,
+            int amount,
+            boolean clubOnly,
+            String extradata,
+            boolean haveOffer,
+            int offerIdGroup,
+            int limitedStack,
+            int limitedSells,
+            int orderNumber,
+            String catalogMode) {
         this.offerId = offerId;
         this.pageId = pageId;
         this.itemIds = itemIds;

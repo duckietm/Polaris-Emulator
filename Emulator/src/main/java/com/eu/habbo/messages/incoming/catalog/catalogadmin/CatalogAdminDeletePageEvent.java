@@ -7,7 +7,6 @@ import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.CatalogAdminResultComposer;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
@@ -44,30 +43,32 @@ public class CatalogAdminDeletePageEvent extends MessageHandler {
         String itemTable = pageType == CatalogPageType.BUILDER ? "catalog_items_bc" : "catalog_items";
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-            try (PreparedStatement children = connection.prepareStatement(
-                    "SELECT 1 FROM " + pageTable + " WHERE parent_id = ? LIMIT 1")) {
+            try (PreparedStatement children =
+                    connection.prepareStatement("SELECT 1 FROM " + pageTable + " WHERE parent_id = ? LIMIT 1")) {
                 children.setInt(1, pageId);
                 try (var set = children.executeQuery()) {
                     if (set.next()) {
-                        this.client.sendResponse(new CatalogAdminResultComposer(false, "Move or delete child pages first"));
+                        this.client.sendResponse(
+                                new CatalogAdminResultComposer(false, "Move or delete child pages first"));
                         return;
                     }
                 }
             }
 
-            try (PreparedStatement offers = connection.prepareStatement(
-                    "SELECT 1 FROM " + itemTable + " WHERE page_id = ? LIMIT 1")) {
+            try (PreparedStatement offers =
+                    connection.prepareStatement("SELECT 1 FROM " + itemTable + " WHERE page_id = ? LIMIT 1")) {
                 offers.setInt(1, pageId);
                 try (var set = offers.executeQuery()) {
                     if (set.next()) {
-                        this.client.sendResponse(new CatalogAdminResultComposer(false, "Move or delete offers on this page first"));
+                        this.client.sendResponse(
+                                new CatalogAdminResultComposer(false, "Move or delete offers on this page first"));
                         return;
                     }
                 }
             }
 
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "DELETE FROM " + pageTable + " WHERE id = ?")) {
+            try (PreparedStatement statement =
+                    connection.prepareStatement("DELETE FROM " + pageTable + " WHERE id = ?")) {
                 statement.setInt(1, pageId);
                 if (statement.executeUpdate() == 0) {
                     this.client.sendResponse(new CatalogAdminResultComposer(false, "Page not found: " + pageId));

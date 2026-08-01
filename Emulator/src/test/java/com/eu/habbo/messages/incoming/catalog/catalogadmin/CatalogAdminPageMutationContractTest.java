@@ -1,21 +1,20 @@
 package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import org.junit.jupiter.api.Test;
 
 class CatalogAdminPageMutationContractTest {
     private static final Path CREATE_SOURCE = Path.of(
             "src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminCreatePageEvent.java");
-    private static final Path SAVE_SOURCE = Path.of(
-            "src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSavePageEvent.java");
-    private static final Path MOVE_SOURCE = Path.of(
-            "src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminMovePageEvent.java");
+    private static final Path SAVE_SOURCE =
+            Path.of("src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSavePageEvent.java");
+    private static final Path MOVE_SOURCE =
+            Path.of("src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminMovePageEvent.java");
     private static final Path DELETE_SOURCE = Path.of(
             "src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminDeletePageEvent.java");
 

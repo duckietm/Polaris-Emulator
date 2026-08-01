@@ -1107,9 +1107,30 @@ public class CatalogManager {
             boolean visible,
             boolean enabled,
             int orderNum) {
-        return createCatalogPage(caption, captionSave, roomId, icon, layout, minRank, parentId, pageType,
-                catalogMode, visible, enabled, orderNum, "", "", "", "", "", "", "", 1,
-                false, false, "");
+        return createCatalogPage(
+                caption,
+                captionSave,
+                roomId,
+                icon,
+                layout,
+                minRank,
+                parentId,
+                pageType,
+                catalogMode,
+                visible,
+                enabled,
+                orderNum,
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                1,
+                false,
+                false,
+                "");
     }
 
     public CatalogPage createCatalogPage(

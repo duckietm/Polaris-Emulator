@@ -28,9 +28,21 @@ final class CatalogAdminOfferPayload {
     final int orderNumber;
     final CatalogPageType pageType;
 
-    private CatalogAdminOfferPayload(int pageId, String itemIds, String catalogName, int costCredits, int costPoints,
-                                     int pointsType, int amount, int clubOnly, String extradata, boolean haveOffer,
-                                     int offerIdGroup, int limitedStack, int orderNumber, CatalogPageType pageType) {
+    private CatalogAdminOfferPayload(
+            int pageId,
+            String itemIds,
+            String catalogName,
+            int costCredits,
+            int costPoints,
+            int pointsType,
+            int amount,
+            int clubOnly,
+            String extradata,
+            boolean haveOffer,
+            int offerIdGroup,
+            int limitedStack,
+            int orderNumber,
+            CatalogPageType pageType) {
         this.pageId = pageId;
         this.itemIds = itemIds;
         this.catalogName = catalogName;
@@ -47,10 +59,21 @@ final class CatalogAdminOfferPayload {
         this.pageType = pageType;
     }
 
-    static CatalogAdminOfferPayload validate(int pageId, String itemIds, String catalogName, int costCredits,
-                                             int costPoints, int pointsType, int amount, int clubOnly,
-                                             String extradata, boolean haveOffer, int offerIdGroup,
-                                             int limitedStack, int orderNumber, CatalogPageType pageType) {
+    static CatalogAdminOfferPayload validate(
+            int pageId,
+            String itemIds,
+            String catalogName,
+            int costCredits,
+            int costPoints,
+            int pointsType,
+            int amount,
+            int clubOnly,
+            String extradata,
+            boolean haveOffer,
+            int offerIdGroup,
+            int limitedStack,
+            int orderNumber,
+            CatalogPageType pageType) {
         String cleanItemIds = normalizeItemIds(itemIds);
         String cleanCatalogName = clamp(catalogName, MAX_CATALOG_NAME_LENGTH);
         String cleanExtradata = clamp(extradata, MAX_EXTRADATA_LENGTH);
@@ -75,8 +98,20 @@ final class CatalogAdminOfferPayload {
             }
         }
 
-        return new CatalogAdminOfferPayload(pageId, cleanItemIds, cleanCatalogName, costCredits, costPoints,
-                pointsType, amount, clubOnly, cleanExtradata, haveOffer, offerIdGroup, limitedStack, orderNumber,
+        return new CatalogAdminOfferPayload(
+                pageId,
+                cleanItemIds,
+                cleanCatalogName,
+                costCredits,
+                costPoints,
+                pointsType,
+                amount,
+                clubOnly,
+                cleanExtradata,
+                haveOffer,
+                offerIdGroup,
+                limitedStack,
+                orderNumber,
                 pageType);
     }
 

@@ -1,8 +1,8 @@
 package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.catalog.CatalogPageLayouts;
 import com.eu.habbo.habbohotel.catalog.CatalogManager;
+import com.eu.habbo.habbohotel.catalog.CatalogPageLayouts;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -102,10 +102,29 @@ public class CatalogAdminCreatePageEvent extends MessageHandler {
         }
 
         var page = catalogManager.createCatalogPage(
-                caption, caption2, roomId, iconType, pageLayout, minRank, parentId, pageType, catalogMode,
-                visible, enabled, orderNum, headline, teaser, special, textOne, textTwo, textDetails,
-                textTeaser, iconColor, clubOnly, vipOnly, includes
-        );
+                caption,
+                caption2,
+                roomId,
+                iconType,
+                pageLayout,
+                minRank,
+                parentId,
+                pageType,
+                catalogMode,
+                visible,
+                enabled,
+                orderNum,
+                headline,
+                teaser,
+                special,
+                textOne,
+                textTwo,
+                textDetails,
+                textTeaser,
+                iconColor,
+                clubOnly,
+                vipOnly,
+                includes);
 
         if (page == null) {
             this.client.sendResponse(new CatalogAdminResultComposer(false, "Failed to create page"));

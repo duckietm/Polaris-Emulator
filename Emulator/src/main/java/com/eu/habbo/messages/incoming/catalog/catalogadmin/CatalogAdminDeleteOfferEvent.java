@@ -6,7 +6,6 @@ import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.CatalogAdminResultComposer;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
@@ -37,8 +36,8 @@ public class CatalogAdminDeleteOfferEvent extends MessageHandler {
                         try (var set = sold.executeQuery()) {
                             if (set.next()) {
                                 connection.rollback();
-                                this.client.sendResponse(new CatalogAdminResultComposer(false,
-                                        "Cannot delete a limited offer after items have been sold"));
+                                this.client.sendResponse(new CatalogAdminResultComposer(
+                                        false, "Cannot delete a limited offer after items have been sold"));
                                 return;
                             }
                         }

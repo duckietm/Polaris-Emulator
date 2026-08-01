@@ -1,7 +1,6 @@
 package com.eu.habbo.habbohotel.catalog;
 
 public enum CatalogPageLayouts {
-
     default_3x3,
     guild_furni,
     guilds,

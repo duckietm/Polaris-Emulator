@@ -1,14 +1,13 @@
 package com.eu.habbo.habbohotel.catalog;
 
 import com.eu.habbo.Emulator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Keeps the in-memory catalog cache aligned with catalog admin DB mutations
@@ -22,8 +21,7 @@ public final class CatalogAdminCacheSync {
                     + "0 AS limited_stack, 0 AS limited_sells, extradata, '0' AS club_only, '1' AS have_offer, id AS offer_id, order_number "
                     + "FROM catalog_items_bc WHERE id = ? LIMIT 1";
 
-    private CatalogAdminCacheSync() {
-    }
+    private CatalogAdminCacheSync() {}
 
     public static CatalogManager currentCatalogManager() {
         return Emulator.getGameEnvironment().getCatalogManager();
@@ -70,7 +68,7 @@ public final class CatalogAdminCacheSync {
         String sql = "SELECT visible, enabled FROM " + tableName + " WHERE id = ? LIMIT 1";
 
         try (Connection connection = openCatalogConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+                PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, pageId);
 
             try (ResultSet set = statement.executeQuery()) {
@@ -100,13 +98,33 @@ public final class CatalogAdminCacheSync {
             String textDetails,
             String textOne,
             CatalogPageType catalogMode,
-            CatalogPageType pageType
-    ) {
+            CatalogPageType pageType) {
         if (page == null) return;
-        applyPageSave(page, caption, captionSave, layout, iconImage, page.getIconColor(), minRank, visible, enabled,
-                page.isClubOnly(), page.isVipOnly(), orderNum, parentId, headline, teaser, page.getSpecialImage(),
-                textDetails, textOne, page.getTextTwo(), page.getTextTeaser(), page.getRoomId(),
-                page.getIncluded().stream().map(String::valueOf).collect(Collectors.joining(";")), catalogMode, pageType);
+        applyPageSave(
+                page,
+                caption,
+                captionSave,
+                layout,
+                iconImage,
+                page.getIconColor(),
+                minRank,
+                visible,
+                enabled,
+                page.isClubOnly(),
+                page.isVipOnly(),
+                orderNum,
+                parentId,
+                headline,
+                teaser,
+                page.getSpecialImage(),
+                textDetails,
+                textOne,
+                page.getTextTwo(),
+                page.getTextTeaser(),
+                page.getRoomId(),
+                page.getIncluded().stream().map(String::valueOf).collect(Collectors.joining(";")),
+                catalogMode,
+                pageType);
     }
 
     public static void applyPageSave(
@@ -133,8 +151,7 @@ public final class CatalogAdminCacheSync {
             int roomId,
             String includes,
             CatalogPageType catalogMode,
-            CatalogPageType pageType
-    ) {
+            CatalogPageType pageType) {
         if (page == null) return;
 
         if (page.getParentId() != parentId) {
@@ -191,7 +208,7 @@ public final class CatalogAdminCacheSync {
                 : "SELECT * FROM catalog_items WHERE id = ? LIMIT 1";
 
         try (Connection connection = openCatalogConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+                PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, offerId);
 
             try (ResultSet set = statement.executeQuery()) {

@@ -14,8 +14,7 @@ public final class CatalogAdminMutationService {
 
     public record OfferOrder(int offerId, int orderNumber) {}
 
-    private CatalogAdminMutationService() {
-    }
+    private CatalogAdminMutationService() {}
 
     public static MutationResult setPageEnabled(int pageId, boolean enabled, CatalogPageType pageType) {
         return setPageState(pageId, enabled, pageType, "enabled", "Page enabled state saved");
@@ -33,8 +32,8 @@ public final class CatalogAdminMutationService {
 
         String tableName = pageType == CatalogPageType.BUILDER ? "catalog_pages_bc" : "catalog_pages";
         try (Connection connection = CatalogAdminCacheSync.openCatalogConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "UPDATE " + tableName + " SET " + column + " = ? WHERE id = ?")) {
+                PreparedStatement statement =
+                        connection.prepareStatement("UPDATE " + tableName + " SET " + column + " = ? WHERE id = ?")) {
             statement.setString(1, state ? "1" : "0");
             statement.setInt(2, pageId);
             if (statement.executeUpdate() == 0) return new MutationResult(false, "Page not found: " + pageId);
@@ -67,8 +66,8 @@ public final class CatalogAdminMutationService {
         String tableName = pageType == CatalogPageType.BUILDER ? "catalog_items_bc" : "catalog_items";
         try (Connection connection = CatalogAdminCacheSync.openCatalogConnection()) {
             connection.setAutoCommit(false);
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "UPDATE " + tableName + " SET order_number = ? WHERE id = ?")) {
+            try (PreparedStatement statement =
+                    connection.prepareStatement("UPDATE " + tableName + " SET order_number = ? WHERE id = ?")) {
                 for (OfferOrder order : orders) {
                     statement.setInt(1, order.orderNumber());
                     statement.setInt(2, order.offerId());

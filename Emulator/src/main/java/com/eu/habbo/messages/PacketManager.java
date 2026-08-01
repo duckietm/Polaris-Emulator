@@ -1339,6 +1339,9 @@ public class PacketManager {
         this.registerHandler(
                 Incoming.SoundboardSetEnabledEvent,
                 com.eu.habbo.messages.incoming.soundboard.SoundboardSetEnabledEvent.class);
+        this.registerHandler(
+                Incoming.SoundboardSaveVolumeEvent,
+                com.eu.habbo.messages.incoming.soundboard.SoundboardSaveVolumeEvent.class);
 
         this.registerHandler(
                 Incoming.TraxEditorRequestSongsEvent,

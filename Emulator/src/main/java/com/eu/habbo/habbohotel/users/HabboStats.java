@@ -68,6 +68,7 @@ public class HabboStats implements Runnable {
     public int volumeSystem;
     public int volumeFurni;
     public int volumeTrax;
+    public int volumeSoundboard;
     public int guild;
     public List<Integer> guilds;
     public String[] tags;
@@ -154,6 +155,7 @@ public class HabboStats implements Runnable {
         this.volumeSystem = set.getInt("volume_system");
         this.volumeFurni = set.getInt("volume_furni");
         this.volumeTrax = set.getInt("volume_trax");
+        this.volumeSoundboard = set.getInt("volume_soundboard");
         this.chatColor = RoomChatMessageBubbles.getBubble(set.getInt("chat_color"));
         this.hofPoints = set.getInt("hof_points");
         this.blockStaffAlerts = set.getString("block_alerts").equals("1");
@@ -375,7 +377,7 @@ public class HabboStats implements Runnable {
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement(
-                    "UPDATE users_settings SET achievement_score = ?, respects_received = ?, respects_given = ?, daily_respect_points = ?, block_following = ?, block_friendrequests = ?, online_time = online_time + ?, guild_id = ?, daily_pet_respect_points = ?, club_expire_timestamp = ?, login_streak = ?, rent_space_id = ?, rent_space_endtime = ?, volume_system = ?, volume_furni = ?, volume_trax = ?, block_roominvites = ?, old_chat = ?, block_camera_follow = ?, chat_color = ?, hof_points = ?, block_alerts = ?, talent_track_citizenship_level = ?, talent_track_helpers_level = ?, ignore_bots = ?, ignore_pets = ?, nux = ?, mute_end_timestamp = ?, allow_name_change = ?, perk_trade = ?, can_trade = ?, `forums_post_count` = ?, ui_flags = ?, has_gotten_default_saved_searches = ?, max_friends = ?, max_rooms = ?, last_hc_payday = ?, hc_gifts_claimed = ?, builders_club_bonus_furni = ?, hide_online = ? WHERE user_id = ? LIMIT 1")) {
+                    "UPDATE users_settings SET achievement_score = ?, respects_received = ?, respects_given = ?, daily_respect_points = ?, block_following = ?, block_friendrequests = ?, online_time = online_time + ?, guild_id = ?, daily_pet_respect_points = ?, club_expire_timestamp = ?, login_streak = ?, rent_space_id = ?, rent_space_endtime = ?, volume_system = ?, volume_furni = ?, volume_trax = ?, block_roominvites = ?, old_chat = ?, block_camera_follow = ?, chat_color = ?, hof_points = ?, block_alerts = ?, talent_track_citizenship_level = ?, talent_track_helpers_level = ?, ignore_bots = ?, ignore_pets = ?, nux = ?, mute_end_timestamp = ?, allow_name_change = ?, perk_trade = ?, can_trade = ?, `forums_post_count` = ?, ui_flags = ?, has_gotten_default_saved_searches = ?, max_friends = ?, max_rooms = ?, last_hc_payday = ?, hc_gifts_claimed = ?, builders_club_bonus_furni = ?, hide_online = ?, volume_soundboard = ? WHERE user_id = ? LIMIT 1")) {
                 statement.setInt(1, this.achievementScore);
                 statement.setInt(2, this.respectPointsReceived);
                 statement.setInt(3, this.respectPointsGiven);
@@ -416,7 +418,8 @@ public class HabboStats implements Runnable {
                 statement.setInt(38, this.hcGiftsClaimed);
                 statement.setInt(39, this.buildersClubBonusFurni);
                 statement.setString(40, this.hideOnline ? "1" : "0");
-                statement.setInt(41, this.habboInfo.getId());
+                statement.setInt(41, this.volumeSoundboard);
+                statement.setInt(42, this.habboInfo.getId());
 
                 statement.executeUpdate();
             }
@@ -923,6 +926,20 @@ public class HabboStats implements Runnable {
             statement.executeUpdate();
         } catch (SQLException e) {
             LOGGER.error("Failed to persist game privacy for user {}", this.habboInfo.getId(), e);
+        }
+    }
+
+    public void saveSoundboardVolume(int volume) {
+        this.volumeSoundboard = Math.max(0, Math.min(100, volume));
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE users_settings SET volume_soundboard = ? WHERE user_id = ? LIMIT 1")) {
+            statement.setInt(1, this.volumeSoundboard);
+            statement.setInt(2, this.habboInfo.getId());
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.error("Failed to persist Soundboard volume for user {}", this.habboInfo.getId(), e);
         }
     }
 

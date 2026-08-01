@@ -21,18 +21,18 @@
         <hikaricp.version>7.1.0</hikaricp.version>
         <caffeine.version>3.2.4</caffeine.version>
         <resilience4j.version>2.4.0</resilience4j.version>
-        <hibernate-validator.version>9.1.2.Final</hibernate-validator.version>
+        <hibernate-validator.version>9.1.3.Final</hibernate-validator.version>
         <commons-lang3.version>3.20.0</commons-lang3.version>
         <commons-math3.version>3.6.1</commons-math3.version>
         <jsoup.version>1.22.2</jsoup.version>
         <slf4j.version>2.0.18</slf4j.version>
         <error-prone-annotations.version>2.50.0</error-prone-annotations.version>
-        <logback.version>1.5.38</logback.version>
+        <logback.version>1.6.1</logback.version>
         <jansi.version>2.4.3</jansi.version>
         <bcrypt.version>0.10.2</bcrypt.version>
         <jakarta-mail.version>2.0.5</jakarta-mail.version>
         <junit.version>6.1.2</junit.version>
-        <javaparser.version>3.27.1</javaparser.version>
+        <javaparser.version>3.28.2</javaparser.version>
         <flyway.version>13.0.0</flyway.version>
         <testcontainers.version>1.21.4</testcontainers.version>
         <mockito.version>5.23.0</mockito.version>
@@ -55,7 +55,7 @@
         <jacoco-plugin.version>0.8.15</jacoco-plugin.version>
         <jacoco.minimum.instruction.coveredratio>0.07</jacoco.minimum.instruction.coveredratio>
         <japicmp.version>0.26.1</japicmp.version>
-        <spotless-maven-plugin.version>3.8.0</spotless-maven-plugin.version>
+        <spotless-maven-plugin.version>3.9.0</spotless-maven-plugin.version>
         <palantir-java-format.version>2.96.0</palantir-java-format.version>
         <spotbugs-maven-plugin.version>4.10.3.0</spotbugs-maven-plugin.version>
         <spotless.ratchetFrom>HEAD^</spotless.ratchetFrom>
@@ -468,7 +468,7 @@
         <dependency>
             <groupId>it.unimi.dsi</groupId>
             <artifactId>fastutil</artifactId>
-            <version>8.5.18</version>
+            <version>8.5.19</version>
             <scope>compile</scope>
         </dependency>
 

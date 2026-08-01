@@ -7,10 +7,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
+import com.eu.habbo.habbohotel.soundboard.SoundboardCatalogResult;
 import com.eu.habbo.habbohotel.soundboard.SoundboardSound;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboStats;
+import com.eu.habbo.messages.outgoing.soundboard.SoundboardCatalogComposer;
+import com.eu.habbo.messages.outgoing.soundboard.SoundboardCatalogResultComposer;
 import com.eu.habbo.messages.outgoing.soundboard.SoundboardPlayComposer;
+import com.eu.habbo.messages.outgoing.soundboard.SoundboardPlayDeniedComposer;
 import com.eu.habbo.messages.outgoing.soundboard.SoundboardSettingsComposer;
 import com.eu.habbo.messages.outgoing.users.MeMenuSettingsComposer;
 import io.netty.buffer.ByteBuf;
@@ -87,6 +91,50 @@ class SoundboardPacketContractTest {
         assertFalse(packet.readBoolean());
         assertTrue(packet.readBoolean());
         assertEquals(40, packet.readInt());
+        assertFalse(packet.isReadable());
+    }
+
+    @Test
+    void playDenialCarriesStableReasonAndRemainingCooldown() {
+        ByteBuf packet = new SoundboardPlayDeniedComposer(SoundboardPlayDeniedComposer.Reason.COOLDOWN, 13)
+                .compose()
+                .get();
+        packet.skipBytes(6);
+
+        assertEquals(1, packet.readInt());
+        assertEquals(13, packet.readInt());
+        assertFalse(packet.isReadable());
+    }
+
+    @Test
+    void catalogCarriesEnabledAndDisabledManagementFields() {
+        SoundboardSound disabled = new SoundboardSound(7, "Campanella", "/sounds/bell.mp3", false, 20, 5);
+        ByteBuf packet =
+                new SoundboardCatalogComposer(List.of(disabled)).compose().get();
+        packet.skipBytes(6);
+
+        assertEquals(1, packet.readInt());
+        assertEquals(7, packet.readInt());
+        assertEquals("Campanella", readString(packet));
+        assertEquals("/sounds/bell.mp3", readString(packet));
+        assertFalse(packet.readBoolean());
+        assertEquals(20, packet.readInt());
+        assertEquals(5, packet.readInt());
+        assertFalse(packet.isReadable());
+    }
+
+    @Test
+    void catalogResultCarriesOperationCodeResultCodeAndSoundId() {
+        ByteBuf packet = new SoundboardCatalogResultComposer(
+                        SoundboardCatalogResultComposer.Operation.UPSERT,
+                        new SoundboardCatalogResult(SoundboardCatalogResult.Code.INVALID_URL, 7))
+                .compose()
+                .get();
+        packet.skipBytes(6);
+
+        assertEquals(1, packet.readInt());
+        assertEquals(3, packet.readInt());
+        assertEquals(7, packet.readInt());
         assertFalse(packet.isReadable());
     }
 

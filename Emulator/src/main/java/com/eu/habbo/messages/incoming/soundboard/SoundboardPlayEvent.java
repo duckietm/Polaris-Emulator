@@ -2,12 +2,12 @@ package com.eu.habbo.messages.incoming.soundboard;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.rooms.Room;
-import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.soundboard.SoundboardManager;
 import com.eu.habbo.habbohotel.soundboard.SoundboardSound;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.soundboard.SoundboardPlayComposer;
+import com.eu.habbo.messages.outgoing.soundboard.SoundboardPlayDeniedComposer;
 
 public class SoundboardPlayEvent extends MessageHandler {
     @Override
@@ -21,7 +21,14 @@ public class SoundboardPlayEvent extends MessageHandler {
         if (habbo == null) return;
 
         Room room = this.currentRoom();
-        if (room == null || !room.isSoundboardEnabled()) return;
+        if (room == null) {
+            this.sendDenied(SoundboardPlayDeniedComposer.Reason.UNAVAILABLE, 0);
+            return;
+        }
+        if (!room.isSoundboardEnabled()) {
+            this.sendDenied(SoundboardPlayDeniedComposer.Reason.ROOM_DISABLED, 0);
+            return;
+        }
 
         int soundId = this.packet.readInt();
         SoundboardManager.PlayDecision decision = Emulator.getGameEnvironment()
@@ -33,11 +40,9 @@ public class SoundboardPlayEvent extends MessageHandler {
                         System.currentTimeMillis());
         if (!decision.allowed()) {
             if (decision.denialReason() == SoundboardManager.DenialReason.COOLDOWN) {
-                habbo.whisperLocalized(
-                        "soundboard.cooldown.remaining",
-                        "%seconds%",
-                        Integer.toString(decision.remainingSeconds()),
-                        RoomChatMessageBubbles.ALERT);
+                this.sendDenied(SoundboardPlayDeniedComposer.Reason.COOLDOWN, decision.remainingSeconds());
+            } else {
+                this.sendDenied(SoundboardPlayDeniedComposer.Reason.UNAVAILABLE, 0);
             }
             return;
         }
@@ -51,5 +56,9 @@ public class SoundboardPlayEvent extends MessageHandler {
                         habbo.getRoomUnit().getId(),
                         habbo.getHabboInfo().getUsername())
                 .compose());
+    }
+
+    private void sendDenied(SoundboardPlayDeniedComposer.Reason reason, int remainingSeconds) {
+        this.client.sendResponse(new SoundboardPlayDeniedComposer(reason, remainingSeconds).compose());
     }
 }

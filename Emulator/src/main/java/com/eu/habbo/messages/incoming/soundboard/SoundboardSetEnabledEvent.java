@@ -6,7 +6,6 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.soundboard.SoundboardManager;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
-import com.eu.habbo.messages.outgoing.soundboard.SoundboardSettingsComposer;
 
 public class SoundboardSetEnabledEvent extends MessageHandler {
     @Override
@@ -22,23 +21,20 @@ public class SoundboardSetEnabledEvent extends MessageHandler {
         Room room = this.currentRoom();
         if (room == null) return;
 
-        // Only the room owner (or staff) may toggle the soundboard for the room.
-        boolean isOwner = room.getOwnerId() == habbo.getHabboInfo().getId();
-        if (!isOwner && !habbo.hasPermission(Permission.ACC_SUPPORTTOOL)) return;
+        if (!canToggle(habbo, room)) return;
 
         boolean enabled = this.packet.readInt() == 1;
 
         room.setSoundboardEnabled(enabled);
-        Emulator.getGameEnvironment().getSoundboardManager().setRoomEnabled(room.getId(), enabled);
-
         SoundboardManager manager = Emulator.getGameEnvironment().getSoundboardManager();
-        for (Habbo recipient : room.getHabbos()) {
-            int rankId = recipient.getHabboInfo().getRank().getId();
-            recipient.getClient().sendResponse(new SoundboardSettingsComposer(
-                            enabled,
-                            manager.getCooldownSecondsForRank(rankId),
-                            manager.getSoundsForRank(rankId))
-                    .compose());
-        }
+        manager.setRoomEnabled(room.getId(), enabled);
+
+        SoundboardSettingsSender.sendToRoom(room, manager);
+    }
+
+    static boolean canToggle(Habbo habbo, Room room) {
+        if (habbo == null || room == null) return false;
+
+        return room.getOwnerId() == habbo.getHabboInfo().getId() || habbo.hasPermission(Permission.ACC_ANYROOMOWNER);
     }
 }

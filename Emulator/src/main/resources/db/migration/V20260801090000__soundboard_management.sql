@@ -70,7 +70,10 @@ DEALLOCATE PREPARE soundboard_permission_stmt;
 
 SET @soundboard_legacy_cases := NULL;
 SELECT GROUP_CONCAT(
-        CONCAT('WHEN ', SUBSTRING(`column_name`, 6), ' THEN src.`', `column_name`, '`')
+        CONCAT(
+            'WHEN ', SUBSTRING(`column_name`, 6),
+            ' THEN IF(src.`', `column_name`, '` > 0, ''1'', ''0'')'
+        )
         ORDER BY CAST(SUBSTRING(`column_name`, 6) AS UNSIGNED)
         SEPARATOR ' '
     )
@@ -88,7 +91,7 @@ SET @soundboard_legacy_sql := IF(
         'JOIN `permission_definitions` src ON src.`permission_key` = ''acc_soundboard_manage'' ',
         'SET legacy_permissions.`acc_soundboard_manage` = CASE legacy_permissions.`id` ',
         @soundboard_legacy_cases,
-        ' ELSE 0 END'
+        ' ELSE ''0'' END'
     )
 );
 PREPARE soundboard_legacy_stmt FROM @soundboard_legacy_sql;

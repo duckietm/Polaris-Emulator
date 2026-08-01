@@ -36,6 +36,5 @@ public class SoundboardCooldownGate {
         return decision.get();
     }
 
-    public record Decision(boolean allowed, int remainingSeconds) {
-    }
+    public record Decision(boolean allowed, int remainingSeconds) {}
 }

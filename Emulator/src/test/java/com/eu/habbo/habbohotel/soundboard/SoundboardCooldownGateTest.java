@@ -1,15 +1,14 @@
 package com.eu.habbo.habbohotel.soundboard;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class SoundboardCooldownGateTest {
 
@@ -18,9 +17,7 @@ class SoundboardCooldownGateTest {
         SoundboardCooldownGate gate = new SoundboardCooldownGate();
 
         assertTrue(gate.tryAcquire(42, 1_000L, 60).allowed());
-        assertEquals(
-                new SoundboardCooldownGate.Decision(false, 59),
-                gate.tryAcquire(42, 2_000L, 60));
+        assertEquals(new SoundboardCooldownGate.Decision(false, 59), gate.tryAcquire(42, 2_000L, 60));
         assertTrue(gate.tryAcquire(42, 61_000L, 60).allowed());
     }
 
@@ -60,10 +57,8 @@ class SoundboardCooldownGateTest {
         }
     }
 
-    private static boolean acquireTogether(
-            SoundboardCooldownGate gate,
-            CountDownLatch ready,
-            CountDownLatch start) throws InterruptedException {
+    private static boolean acquireTogether(SoundboardCooldownGate gate, CountDownLatch ready, CountDownLatch start)
+            throws InterruptedException {
         ready.countDown();
         start.await();
         return gate.tryAcquire(42, 1_000L, 60).allowed();

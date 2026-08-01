@@ -1,14 +1,13 @@
 package com.eu.habbo.database.compat;
 
-import org.junit.jupiter.api.Test;
-
-import java.sql.SQLException;
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.sql.SQLException;
+import java.util.List;
+import org.junit.jupiter.api.Test;
 
 class LegacyPermissionsSqlTranslatorTest {
 
@@ -47,7 +46,8 @@ class LegacyPermissionsSqlTranslatorTest {
     @Test
     void inactiveOnLegacySchema() throws SQLException {
         TranslationContext legacy = new FakeContext(false, List.of());
-        assertNull(translator.translate("ALTER TABLE `permissions` ADD `cmd_x` ENUM('0','1') NOT NULL DEFAULT '0'", legacy));
+        assertNull(translator.translate(
+                "ALTER TABLE `permissions` ADD `cmd_x` ENUM('0','1') NOT NULL DEFAULT '0'", legacy));
     }
 
     @Test
@@ -62,7 +62,8 @@ class LegacyPermissionsSqlTranslatorTest {
 
     @Test
     void enumUpperBoundBecomesMaxValue() throws SQLException {
-        String translated = translator.translate("ALTER TABLE permissions ADD cmd_x ENUM('0','1','2') NOT NULL DEFAULT '0'", context);
+        String translated = translator.translate(
+                "ALTER TABLE permissions ADD cmd_x ENUM('0','1','2') NOT NULL DEFAULT '0'", context);
 
         assertEquals(
                 "INSERT INTO permission_definitions (permission_key, max_value, comment) VALUES ('cmd_x', 2, 'Registered by a legacy plugin through the Polaris legacy bridge')",
@@ -71,7 +72,8 @@ class LegacyPermissionsSqlTranslatorTest {
 
     @Test
     void multipleAddClausesBecomeMultiRowInsert() throws SQLException {
-        String translated = translator.translate("ALTER TABLE permissions ADD cmd_a ENUM('0','1'), ADD cmd_b ENUM('0','1','2')", context);
+        String translated = translator.translate(
+                "ALTER TABLE permissions ADD cmd_a ENUM('0','1'), ADD cmd_b ENUM('0','1','2')", context);
 
         assertEquals(
                 "INSERT INTO permission_definitions (permission_key, max_value, comment) VALUES "

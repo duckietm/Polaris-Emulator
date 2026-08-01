@@ -18,12 +18,7 @@ public class SoundboardPlayComposer extends MessageComposer {
     }
 
     public SoundboardPlayComposer(
-            int soundId,
-            String url,
-            String soundName,
-            int actorUserId,
-            int actorRoomIndex,
-            String username) {
+            int soundId, String url, String soundName, int actorUserId, int actorRoomIndex, String username) {
         this.soundId = soundId;
         this.url = url != null ? url : "";
         this.soundName = soundName != null ? soundName : "";

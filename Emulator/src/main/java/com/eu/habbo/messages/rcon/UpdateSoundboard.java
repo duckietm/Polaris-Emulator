@@ -18,6 +18,5 @@ public class UpdateSoundboard extends RCONMessage<UpdateSoundboard.SoundboardJSO
         environment.getSoundboardManager().reload();
     }
 
-    static class SoundboardJSON {
-    }
+    static class SoundboardJSON {}
 }

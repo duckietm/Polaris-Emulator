@@ -1083,8 +1083,10 @@ public class RoomManager {
         habbo.getClient()
                 .sendResponse(new com.eu.habbo.messages.outgoing.soundboard.SoundboardSettingsComposer(
                                 room.isSoundboardEnabled(),
-                                soundboardManager.getCooldownSecondsForRank(habbo.getHabboInfo().getRank().getId()),
-                                soundboardManager.getSoundsForRank(habbo.getHabboInfo().getRank().getId()))
+                                soundboardManager.getCooldownSecondsForRank(
+                                        habbo.getHabboInfo().getRank().getId()),
+                                soundboardManager.getSoundsForRank(
+                                        habbo.getHabboInfo().getRank().getId()))
                         .compose());
 
         WiredManager.triggerUserEntersRoom(room, habbo.getRoomUnit());

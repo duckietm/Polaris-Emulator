@@ -4,7 +4,6 @@ import com.eu.habbo.habbohotel.soundboard.SoundboardSound;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-
 import java.util.List;
 
 // Sent on room enter (and on toggle): whether the soundboard is active in this

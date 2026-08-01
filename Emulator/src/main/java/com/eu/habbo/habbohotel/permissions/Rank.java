@@ -10,7 +10,6 @@ public class Rank {
 
     private final int id;
 
-
     private int level;
     private final Map<String, Permission> permissions;
     private final Map<String, String> variables;
@@ -18,15 +17,11 @@ public class Rank {
     private String badge;
     private int roomEffect;
 
-
     private boolean logCommands;
-
 
     private String prefix;
 
-
     private String prefixColor;
-
 
     private boolean hasPrefix;
     private int diamondsTimerAmount;
@@ -63,7 +58,9 @@ public class Rank {
         for (int i = 1; i < meta.getColumnCount() + 1; i++) {
             String columnName = meta.getColumnName(i);
             if (columnName.startsWith("cmd_") || columnName.startsWith("acc_")) {
-                this.permissions.put(meta.getColumnName(i), new Permission(columnName, PermissionSetting.fromString(set.getString(i))));
+                this.permissions.put(
+                        meta.getColumnName(i),
+                        new Permission(columnName, PermissionSetting.fromString(set.getString(i))));
             } else {
                 this.variables.put(meta.getColumnName(i), set.getString(i));
             }
@@ -94,9 +91,7 @@ public class Rank {
         this.pixelsTimerAmount = set.getInt("auto_pixels_amount");
         this.gotwTimerAmount = set.getInt("auto_gotw_amount");
         int loadedSoundboardCooldown = set.getInt("soundboard_cooldown_seconds");
-        this.soundboardCooldownSeconds = set.wasNull() || loadedSoundboardCooldown < 0
-                ? 60
-                : loadedSoundboardCooldown;
+        this.soundboardCooldownSeconds = set.wasNull() || loadedSoundboardCooldown < 0 ? 60 : loadedSoundboardCooldown;
         this.hasPrefix = !this.prefix.isEmpty();
     }
 
@@ -128,23 +123,20 @@ public class Rank {
         if (this.permissions.containsKey(key)) {
             Permission permission = this.permissions.get(key);
 
-            return permission.setting == PermissionSetting.ALLOWED || permission.setting == PermissionSetting.ROOM_OWNER && isRoomOwner;
-
+            return permission.setting == PermissionSetting.ALLOWED
+                    || permission.setting == PermissionSetting.ROOM_OWNER && isRoomOwner;
         }
 
         return false;
     }
 
-
     public int getId() {
         return this.id;
     }
 
-
     public int getLevel() {
         return this.level;
     }
-
 
     public String getName() {
         return this.name;
@@ -182,14 +174,23 @@ public class Rank {
         return this.hasPrefix;
     }
 
-    public int getDiamondsTimerAmount() { return this.diamondsTimerAmount; }
+    public int getDiamondsTimerAmount() {
+        return this.diamondsTimerAmount;
+    }
 
-    public int getCreditsTimerAmount() { return this.creditsTimerAmount; }
+    public int getCreditsTimerAmount() {
+        return this.creditsTimerAmount;
+    }
 
-    public int getPixelsTimerAmount() { return this.pixelsTimerAmount; }
+    public int getPixelsTimerAmount() {
+        return this.pixelsTimerAmount;
+    }
 
-    public int getGotwTimerAmount() { return this.gotwTimerAmount; }
+    public int getGotwTimerAmount() {
+        return this.gotwTimerAmount;
+    }
 
-    public int getSoundboardCooldownSeconds() { return this.soundboardCooldownSeconds; }
+    public int getSoundboardCooldownSeconds() {
+        return this.soundboardCooldownSeconds;
+    }
 }
-

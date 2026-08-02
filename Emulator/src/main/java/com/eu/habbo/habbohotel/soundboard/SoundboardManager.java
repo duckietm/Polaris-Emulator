@@ -1,78 +1,236 @@
 package com.eu.habbo.habbohotel.soundboard;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.permissions.PermissionsManager;
+import com.eu.habbo.habbohotel.permissions.Rank;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.IntPredicate;
+import java.util.function.IntUnaryOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.List;
-
 public class SoundboardManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(SoundboardManager.class);
+    private static final int MAX_REORDER_SIZE = SoundboardCatalogRepository.MAX_CATALOG_SIZE;
 
-    private final List<SoundboardSound> sounds = new ArrayList<>();
+    private final SoundboardCooldownGate cooldownGate = new SoundboardCooldownGate();
+    private final IntUnaryOperator cooldownByRank;
+    private final IntPredicate rankExists;
+    private final SoundboardCatalogRepository repository;
+    private volatile SoundSnapshot snapshot = SoundSnapshot.empty();
 
     public SoundboardManager() {
-        long millis = System.currentTimeMillis();
-        this.bootstrap();
-        this.reload();
-        LOGGER.info("Soundboard Manager -> Loaded! ({} MS, {} sounds)", System.currentTimeMillis() - millis, this.sounds.size());
+        this(
+                rankId -> 60,
+                rankId -> rankId > 0,
+                new SoundboardCatalogRepository(Emulator.getDatabase().getDataSource()));
     }
 
-    // Self-bootstrap: room flag column + sounds table, so the feature works even
-    // before the manual migration is applied.
-    private void bootstrap() {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             Statement statement = connection.createStatement()) {
-            statement.execute("ALTER TABLE `rooms` ADD COLUMN IF NOT EXISTS `soundboard_enabled` TINYINT(1) NOT NULL DEFAULT 0");
-            statement.execute("CREATE TABLE IF NOT EXISTS `soundboard_sounds` (" +
-                    "`id` INT(11) NOT NULL AUTO_INCREMENT, `name` VARCHAR(64) NOT NULL DEFAULT '', " +
-                    "`url` VARCHAR(255) NOT NULL DEFAULT '', `enabled` TINYINT(1) NOT NULL DEFAULT 1, " +
-                    "`sort_order` INT(11) NOT NULL DEFAULT 0, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-        } catch (SQLException e) {
-            LOGGER.error("Failed to bootstrap soundboard schema", e);
-        }
+    public SoundboardManager(PermissionsManager permissionsManager) {
+        this(
+                rankId -> loadCooldownFromPermissions(permissionsManager, rankId),
+                rankId -> permissionsManager != null && permissionsManager.getRank(rankId) != null,
+                new SoundboardCatalogRepository(Emulator.getDatabase().getDataSource()));
+    }
+
+    private SoundboardManager(
+            IntUnaryOperator cooldownByRank, IntPredicate rankExists, SoundboardCatalogRepository repository) {
+        this.cooldownByRank = cooldownByRank;
+        this.rankExists = rankExists;
+        this.repository = repository;
+        long millis = System.currentTimeMillis();
+        this.reload();
+        LOGGER.info(
+                "Soundboard Manager -> Loaded! ({} MS, {} sounds)",
+                System.currentTimeMillis() - millis,
+                this.snapshot.playableOrdered().size());
+    }
+
+    SoundboardManager(List<SoundboardSound> sounds, IntUnaryOperator cooldownByRank) {
+        this(sounds, cooldownByRank, rankId -> rankId > 0, null);
+    }
+
+    SoundboardManager(
+            List<SoundboardSound> sounds,
+            IntUnaryOperator cooldownByRank,
+            IntPredicate rankExists,
+            SoundboardCatalogRepository repository) {
+        this.snapshot = SoundSnapshot.from(sounds);
+        this.cooldownByRank = cooldownByRank;
+        this.rankExists = rankExists;
+        this.repository = repository;
     }
 
     public void reload() {
-        this.sounds.clear();
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT id, name, url FROM soundboard_sounds WHERE enabled = 1 ORDER BY sort_order ASC, id ASC");
-             ResultSet set = statement.executeQuery()) {
-            while (set.next()) {
-                this.sounds.add(new SoundboardSound(set));
-            }
-        } catch (SQLException e) {
-            LOGGER.error("Failed to load soundboard sounds", e);
+        if (this.repository == null) {
+            return;
+        }
+
+        try {
+            this.snapshot = SoundSnapshot.from(this.repository.loadAll());
+        } catch (SQLException exception) {
+            LOGGER.error("Failed to load Soundboard catalog", exception);
         }
     }
 
     public List<SoundboardSound> getSounds() {
-        return this.sounds;
+        return this.snapshot.playableOrdered();
+    }
+
+    public List<SoundboardSound> getCatalog() {
+        return this.snapshot.catalogOrdered();
     }
 
     public SoundboardSound getSound(int id) {
-        for (SoundboardSound sound : this.sounds) {
-            if (sound.id == id) return sound;
-        }
-        return null;
+        return this.snapshot.playableById().get(id);
     }
 
-    // Owner toggle — persists the room flag with a dedicated UPDATE (kept out of
-    // the big room-settings save to avoid touching that statement).
+    public List<SoundboardSound> getSoundsForRank(int rankId) {
+        return this.snapshot.playableOrdered().stream()
+                .filter(sound -> sound.isAvailableTo(rankId))
+                .toList();
+    }
+
+    public int getCooldownSecondsForRank(int rankId) {
+        int cooldown;
+        try {
+            cooldown = this.cooldownByRank.applyAsInt(rankId);
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Unable to resolve Soundboard cooldown for rank {}", rankId, exception);
+            return 60;
+        }
+        return cooldown < 0 ? 60 : cooldown;
+    }
+
+    public PlayDecision tryPlay(int userId, int rankId, int soundId, long nowMillis) {
+        SoundboardSound sound = this.getSound(soundId);
+        if (sound == null || !sound.isAvailableTo(rankId)) {
+            return new PlayDecision(false, null, DenialReason.NOT_AVAILABLE, 0);
+        }
+
+        SoundboardCooldownGate.Decision cooldown =
+                this.cooldownGate.tryAcquire(userId, nowMillis, this.getCooldownSecondsForRank(rankId));
+        if (!cooldown.allowed()) {
+            return new PlayDecision(false, sound, DenialReason.COOLDOWN, cooldown.remainingSeconds());
+        }
+
+        return new PlayDecision(true, sound, DenialReason.NONE, 0);
+    }
+
+    public SoundboardCatalogResult upsert(int staffUserId, SoundboardCatalogCommand command) {
+        if (command == null) {
+            return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.INVALID_NAME);
+        }
+
+        String name = command.name() == null ? "" : command.name().trim();
+        if (name.isEmpty() || name.length() > 64) {
+            return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.INVALID_NAME);
+        }
+
+        String url = command.url() == null ? "" : command.url().trim();
+        if (!SoundboardUrlPolicy.isAllowed(url)) {
+            return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.INVALID_URL);
+        }
+
+        if (command.minRank() < 1 || !this.rankExists.test(command.minRank())) {
+            return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.INVALID_RANK);
+        }
+
+        if (command.id() < 0) {
+            return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.NOT_FOUND);
+        }
+
+        if (this.repository == null) {
+            return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.PERSISTENCE_FAILURE);
+        }
+
+        SoundboardCatalogResult result = this.repository.upsert(
+                staffUserId,
+                new SoundboardCatalogCommand(command.id(), name, url, command.minRank(), command.enabled()));
+        if (result.successful()) {
+            this.reload();
+        }
+        return result;
+    }
+
+    public SoundboardCatalogResult reorder(int staffUserId, List<Integer> orderedIds) {
+        if (orderedIds == null || orderedIds.size() > MAX_REORDER_SIZE) {
+            return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.INVALID_ORDER);
+        }
+
+        Set<Integer> submitted = new LinkedHashSet<>(orderedIds);
+        Set<Integer> expected = this.snapshot.catalogOrdered().stream()
+                .map(sound -> sound.id)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        if (submitted.size() != orderedIds.size() || !submitted.equals(expected)) {
+            return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.INVALID_ORDER);
+        }
+
+        if (this.repository == null) {
+            return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.PERSISTENCE_FAILURE);
+        }
+
+        SoundboardCatalogResult result = this.repository.reorder(staffUserId, List.copyOf(orderedIds));
+        if (result.successful()) {
+            this.reload();
+        }
+        return result;
+    }
+
+    private static int loadCooldownFromPermissions(PermissionsManager permissionsManager, int rankId) {
+        if (permissionsManager == null) {
+            return -1;
+        }
+
+        Rank rank = permissionsManager.getRank(rankId);
+        return rank == null ? -1 : rank.getSoundboardCooldownSeconds();
+    }
+
+    public enum DenialReason {
+        NONE,
+        NOT_AVAILABLE,
+        COOLDOWN
+    }
+
+    public record PlayDecision(
+            boolean allowed, SoundboardSound sound, DenialReason denialReason, int remainingSeconds) {}
+
+    private record SoundSnapshot(
+            List<SoundboardSound> catalogOrdered,
+            List<SoundboardSound> playableOrdered,
+            Map<Integer, SoundboardSound> playableById) {
+        private static SoundSnapshot empty() {
+            return new SoundSnapshot(List.of(), List.of(), Map.of());
+        }
+
+        private static SoundSnapshot from(List<SoundboardSound> sounds) {
+            List<SoundboardSound> catalog = List.copyOf(sounds);
+            List<SoundboardSound> playable =
+                    catalog.stream().filter(sound -> sound.enabled).toList();
+            Map<Integer, SoundboardSound> byId = new LinkedHashMap<>();
+            for (SoundboardSound sound : playable) {
+                byId.putIfAbsent(sound.id, sound);
+            }
+            return new SoundSnapshot(catalog, playable, Map.copyOf(byId));
+        }
+    }
+
     public void setRoomEnabled(int roomId, boolean enabled) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("UPDATE rooms SET soundboard_enabled = ? WHERE id = ? LIMIT 1")) {
+                PreparedStatement statement =
+                        connection.prepareStatement("UPDATE rooms SET soundboard_enabled = ? WHERE id = ? LIMIT 1")) {
             statement.setString(1, enabled ? "1" : "0");
             statement.setInt(2, roomId);
             statement.executeUpdate();
-        } catch (SQLException e) {
-            LOGGER.error("Failed to set soundboard_enabled for room {}", roomId, e);
+        } catch (SQLException exception) {
+            LOGGER.error("Failed to set soundboard_enabled for room {}", roomId, exception);
         }
     }
 }

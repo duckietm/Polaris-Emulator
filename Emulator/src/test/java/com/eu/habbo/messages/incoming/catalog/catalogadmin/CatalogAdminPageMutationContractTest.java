@@ -36,6 +36,8 @@ class CatalogAdminPageMutationContractTest {
 
         assertTrue(create.contains("CATALOG_ROOT_LOCK_ID"));
         assertTrue(move.contains("newParentId != ROOT_PARENT_ID"));
+        assertTrue(move.contains("CatalogPageMovePlanner.plan"));
+        assertTrue(move.contains("mutations.applyBatch(requests)"));
         assertFalse(move.contains("SET enabled = IF"));
         assertFalse(move.contains("SET visible = IF"));
     }

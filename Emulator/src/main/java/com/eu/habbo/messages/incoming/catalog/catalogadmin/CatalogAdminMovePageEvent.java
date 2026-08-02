@@ -5,7 +5,7 @@ import com.eu.habbo.habbohotel.catalog.versioning.CatalogChangeOperation;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftMutationRequest;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogEntityType;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogLockKey;
-import com.eu.habbo.habbohotel.catalog.versioning.CatalogSnapshotPatch;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogPageMovePlanner;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogVersionSnapshot;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -61,20 +61,28 @@ public class CatalogAdminMovePageEvent extends MessageHandler {
             }
         }
 
-        if (newIndex < 0) newIndex = 0;
+        var editedPages = CatalogPageMovePlanner.plan(draft.pages(), pageType, pageId, newParentId, newIndex);
+        if (editedPages.isEmpty()) {
+            this.client.sendResponse(new CatalogAdminResultComposer(true, "Page is already in the requested position"));
+            return;
+        }
 
-        var edited = CatalogSnapshotPatch.movePage(page, newParentId, newIndex);
-        var result = mutations.apply(new CatalogDraftMutationRequest(
-                envelope.draftVersionId(),
-                envelope.expectedRevision(),
-                this.client.getHabbo().getHabboInfo().getId(),
-                new CatalogLockKey(CatalogEntityType.PAGE, pageType, pageId),
-                envelope.lockToken(),
-                envelope.summary(),
-                CatalogEntityType.PAGE,
-                pageId,
-                CatalogChangeOperation.MOVE,
-                new Gson().toJson(edited)));
+        var lockKey = new CatalogLockKey(CatalogEntityType.PAGE, pageType, pageId);
+        var gson = new Gson();
+        var requests = editedPages.stream()
+                .map(edited -> new CatalogDraftMutationRequest(
+                        envelope.draftVersionId(),
+                        envelope.expectedRevision(),
+                        this.client.getHabbo().getHabboInfo().getId(),
+                        lockKey,
+                        envelope.lockToken(),
+                        envelope.summary(),
+                        CatalogEntityType.PAGE,
+                        edited.pageId(),
+                        edited.pageId() == pageId ? CatalogChangeOperation.MOVE : CatalogChangeOperation.UPDATE,
+                        gson.toJson(edited)))
+                .toList();
+        var result = mutations.applyBatch(requests);
         this.client.sendResponse(
                 new CatalogAdminResultComposer(true, "Page moved in shared draft at revision " + result.revision()));
     }

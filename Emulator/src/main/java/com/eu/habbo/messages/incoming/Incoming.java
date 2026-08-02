@@ -530,6 +530,11 @@ public class Incoming {
     public static final int TraxEditorBuySongEvent = 9331;
     public static final int TraxEditorSaveSongEvent = 9332;
     public static final int TraxEditorDeleteSongEvent = 9333;
+    public static final int SoundboardRequestSettingsEvent = 9340;
+    public static final int SoundboardSaveVolumeEvent = 9341;
+    public static final int SoundboardCatalogRequestEvent = 9342;
+    public static final int SoundboardCatalogUpsertEvent = 9343;
+    public static final int SoundboardCatalogReorderEvent = 9344;
     public static final int HotelViewLandingRequestEvent = 9410;
     public static final int HotelViewLandingSaveEvent = 9411;
     public static final int HotelViewLandingSaveSceneEvent = 9412;

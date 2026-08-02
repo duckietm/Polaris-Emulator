@@ -616,6 +616,9 @@ public class Outgoing {
     public static final int RoomUserHabbiconComposer = 9410;
     public static final int TraxEditorSongsComposer = 9430;
     public static final int TraxEditorErrorComposer = 9431;
+    public static final int SoundboardPlayDeniedComposer = 9440;
+    public static final int SoundboardCatalogComposer = 9441;
+    public static final int SoundboardCatalogResultComposer = 9442;
     public static final int MentionReceivedComposer = 4801;
     public static final int MentionsListComposer = 4802;
     public static final int MessengerConversationsComposer = 4900;

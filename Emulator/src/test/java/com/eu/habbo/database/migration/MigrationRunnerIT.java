@@ -67,6 +67,11 @@ class MigrationRunnerIT {
             assertTrue(tableExists(ds, "furnidata_edit_log"), "current furnidata audit schema must exist");
             assertTrue(tableExists(ds, "messenger_messages"), "dev messenger history schema must exist");
             assertTrue(tableExists(ds, "logs_economy"), "dev economy audit schema must exist");
+            assertTrue(tableExists(ds, "logs_soundboard"), "soundboard management audit schema must exist");
+            assertEquals(
+                    "InnoDB",
+                    tableEngine(ds, "logs_soundboard"),
+                    "soundboard management and audit must share one transactional engine");
 
             // Polaris-added column on a shared table.
             assertTrue(
@@ -75,6 +80,16 @@ class MigrationRunnerIT {
             assertTrue(
                     columnExists(ds, "users", "background_border_id"), "current profile background schema must exist");
             assertTrue(columnExists(ds, "users", "access_token_version"), "credential revocation state must exist");
+            assertTrue(
+                    columnExists(ds, "users_settings", "volume_soundboard"),
+                    "users_settings must persist the personal Soundboard volume");
+            assertEquals(80, intValue(ds, """
+                            SELECT COLUMN_DEFAULT
+                            FROM information_schema.COLUMNS
+                            WHERE TABLE_SCHEMA = DATABASE()
+                              AND TABLE_NAME = 'users_settings'
+                              AND COLUMN_NAME = 'volume_soundboard'
+                            """));
 
             // The engine conversion took effect.
             assertEquals(
@@ -91,6 +106,20 @@ class MigrationRunnerIT {
             assertEquals(
                     1,
                     intValue(ds, "SELECT rank_7 FROM permission_definitions WHERE permission_key = 'acc_supporttool'"));
+            assertEquals(1, intValue(ds, """
+                            SELECT COUNT(*)
+                            FROM permission_definitions
+                            WHERE permission_key = 'acc_soundboard_manage'
+                            """));
+            assertEquals(intValue(ds, """
+                            SELECT rank_7
+                            FROM permission_definitions
+                            WHERE permission_key = 'acc_housekeeping'
+                            """), intValue(ds, """
+                            SELECT rank_7
+                            FROM permission_definitions
+                            WHERE permission_key = 'acc_soundboard_manage'
+                            """));
             assertEquals(5, intValue(ds, "SELECT COUNT(*) FROM pet_breeding"));
             assertEquals(100, intValue(ds, """
                     SELECT COUNT(*) FROM pet_breeding_races
@@ -287,6 +316,49 @@ class MigrationRunnerIT {
             MigrationRunner.migrate(ds);
             assertEquals(1, singleColumnUniqueKeyCount(ds, "password_resets", "user_id"));
             assertEquals(1, singleColumnUniqueKeyCount(ds, "password_resets", "token"));
+        }
+    }
+
+    @Test
+    void soundboardMigrationPreservesPreexistingPermissionAssignments() throws Exception {
+        requireDocker();
+        try (HikariDataSource ds = TestDatabase.freshDatabase("mig_existing_soundboard_permission")) {
+            Flyway.configure()
+                    .dataSource(ds)
+                    .locations(MigrationRunner.MIGRATION_LOCATION)
+                    .target("20260721090000")
+                    .placeholderReplacement(false)
+                    .load()
+                    .migrate();
+
+            try (Connection connection = ds.getConnection();
+                    Statement statement = connection.createStatement()) {
+                statement.execute("""
+                        ALTER TABLE permissions
+                        ADD COLUMN acc_soundboard_manage ENUM('0','1') NOT NULL DEFAULT '0'
+                        """);
+                statement.execute("UPDATE permissions SET acc_soundboard_manage = '1' WHERE id = 1");
+                statement.execute("UPDATE permissions SET acc_soundboard_manage = '0' WHERE id = 7");
+                statement.execute("""
+                        INSERT INTO permission_definitions
+                            (permission_key, max_value, comment, rank_1, rank_7)
+                        VALUES
+                            ('acc_soundboard_manage', 1, 'operator-owned assignment', 1, 0)
+                        """);
+            }
+
+            MigrationRunner.migrate(ds);
+
+            assertEquals(1, intValue(ds, """
+                    SELECT rank_1 FROM permission_definitions
+                    WHERE permission_key = 'acc_soundboard_manage'
+                    """));
+            assertEquals(0, intValue(ds, """
+                    SELECT rank_7 FROM permission_definitions
+                    WHERE permission_key = 'acc_soundboard_manage'
+                    """));
+            assertEquals("1", stringValue(ds, "SELECT acc_soundboard_manage FROM permissions WHERE id = 1"));
+            assertEquals("0", stringValue(ds, "SELECT acc_soundboard_manage FROM permissions WHERE id = 7"));
         }
     }
 

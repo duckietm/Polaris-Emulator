@@ -52,6 +52,20 @@ import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminSavePageI
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminSavePageImagesEvent;
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminSetPageEnabledEvent;
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.CatalogAdminSetPageVisibleEvent;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioAcquireLockEvent;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioDiscardEvent;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioDocumentApplyEvent;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioDocumentDryRunEvent;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioExportEvent;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioLoadHistoryEvent;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioOpenSessionEvent;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioPreviewEvent;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioPublishEvent;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioReleaseLockEvent;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioRenewLockEvent;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioRestoreEvent;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioUndoEvent;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioValidateEvent;
 import com.eu.habbo.messages.incoming.catalog.marketplace.BuyItemEvent;
 import com.eu.habbo.messages.incoming.catalog.marketplace.RequestCreditsEvent;
 import com.eu.habbo.messages.incoming.catalog.marketplace.RequestItemInfoEvent;
@@ -723,6 +737,20 @@ public class PacketManager {
         this.registerHandler(Incoming.CatalogAdminSetPageEnabledEvent, CatalogAdminSetPageEnabledEvent.class);
         this.registerHandler(Incoming.CatalogAdminSetPageVisibleEvent, CatalogAdminSetPageVisibleEvent.class);
         this.registerHandler(Incoming.CatalogAdminReorderOffersEvent, CatalogAdminReorderOffersEvent.class);
+        this.registerHandler(Incoming.CatalogStudioOpenSessionEvent, CatalogStudioOpenSessionEvent.class);
+        this.registerHandler(Incoming.CatalogStudioAcquireLockEvent, CatalogStudioAcquireLockEvent.class);
+        this.registerHandler(Incoming.CatalogStudioRenewLockEvent, CatalogStudioRenewLockEvent.class);
+        this.registerHandler(Incoming.CatalogStudioReleaseLockEvent, CatalogStudioReleaseLockEvent.class);
+        this.registerHandler(Incoming.CatalogStudioLoadHistoryEvent, CatalogStudioLoadHistoryEvent.class);
+        this.registerHandler(Incoming.CatalogStudioUndoEvent, CatalogStudioUndoEvent.class);
+        this.registerHandler(Incoming.CatalogStudioValidateEvent, CatalogStudioValidateEvent.class);
+        this.registerHandler(Incoming.CatalogStudioPublishEvent, CatalogStudioPublishEvent.class);
+        this.registerHandler(Incoming.CatalogStudioDiscardEvent, CatalogStudioDiscardEvent.class);
+        this.registerHandler(Incoming.CatalogStudioRestoreEvent, CatalogStudioRestoreEvent.class);
+        this.registerHandler(Incoming.CatalogStudioPreviewEvent, CatalogStudioPreviewEvent.class);
+        this.registerHandler(Incoming.CatalogStudioExportEvent, CatalogStudioExportEvent.class);
+        this.registerHandler(Incoming.CatalogStudioDocumentDryRunEvent, CatalogStudioDocumentDryRunEvent.class);
+        this.registerHandler(Incoming.CatalogStudioDocumentApplyEvent, CatalogStudioDocumentApplyEvent.class);
     }
 
     private void registerEvent() throws Exception {

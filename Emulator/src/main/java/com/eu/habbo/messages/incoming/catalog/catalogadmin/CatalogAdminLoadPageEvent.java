@@ -1,10 +1,9 @@
 package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
-import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.catalog.CatalogPage;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioRuntime;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.CatalogAdminPageDetailsComposer;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.CatalogAdminResultComposer;
 
@@ -19,10 +18,16 @@ public class CatalogAdminLoadPageEvent extends MessageHandler {
 
         int pageId = this.packet.readInt();
         CatalogPageType pageType = CatalogPageType.fromString(this.packet.readString());
-
-        CatalogPage page = Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(pageId, pageType);
+        long draftVersionId = this.packet.readInt();
+        long expectedRevision = this.packet.readInt();
+        var page = CatalogStudioRuntime.services()
+                .mutations()
+                .loadDraft(draftVersionId, expectedRevision)
+                .page(pageType, pageId)
+                .orElse(null);
         if (page == null) {
-            this.client.sendResponse(new CatalogAdminResultComposer(false, "Page not found: " + pageId));
+            this.client.sendResponse(
+                    new CatalogAdminResultComposer(false, "Page not found in shared draft: " + pageId));
             return;
         }
 

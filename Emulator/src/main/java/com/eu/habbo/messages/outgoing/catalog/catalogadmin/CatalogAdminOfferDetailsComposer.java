@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.catalog.catalogadmin;
 
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogOfferSnapshot;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
@@ -24,6 +25,26 @@ public class CatalogAdminOfferDetailsComposer extends MessageComposer {
 
     public CatalogAdminOfferDetailsComposer(int offerId, int offerIdGroup, int limitedStack, int orderNumber) {
         this(offerId, 0, "", "", 0, 0, 0, 1, false, "", false, offerIdGroup, limitedStack, 0, orderNumber, "NORMAL");
+    }
+
+    public CatalogAdminOfferDetailsComposer(CatalogOfferSnapshot offer, int limitedSells) {
+        this(
+                offer.offerId(),
+                offer.pageId(),
+                offer.itemIds(),
+                offer.catalogName(),
+                offer.costCredits(),
+                offer.costPoints(),
+                offer.pointsType(),
+                offer.amount(),
+                offer.clubOnly(),
+                offer.extradata(),
+                offer.haveOffer(),
+                offer.offerIdClient(),
+                offer.limitedStack(),
+                limitedSells,
+                offer.orderNumber(),
+                "NORMAL");
     }
 
     public CatalogAdminOfferDetailsComposer(

@@ -1,14 +1,19 @@
 package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.catalog.CatalogAdminCacheSync;
-import com.eu.habbo.habbohotel.catalog.CatalogItem;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogChangeOperation;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftMutationRequest;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogEntityType;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogLockKey;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogOfferSnapshot;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioMutationEnvelope;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioRequestParser;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioRuntime;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.CatalogAdminResultComposer;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
+import com.google.gson.Gson;
 
 public class CatalogAdminSaveOfferEvent extends MessageHandler {
 
@@ -60,75 +65,61 @@ public class CatalogAdminSaveOfferEvent extends MessageHandler {
             return;
         }
 
-        var gameEnvironment = Emulator.getGameEnvironment();
-        if (gameEnvironment.getCatalogManager().getCatalogPage(payload.pageId, payload.pageType) == null) {
-            this.client.sendResponse(new CatalogAdminResultComposer(false, "Page not found: " + payload.pageId));
+        CatalogStudioMutationEnvelope envelope = CatalogStudioRequestParser.parseMutationEnvelope(this.packet);
+        var mutations = CatalogStudioRuntime.services().mutations();
+        var draft = mutations.loadDraft(envelope.draftVersionId(), envelope.expectedRevision());
+        if (draft.page(pageType, payload.pageId).isEmpty()) {
+            this.client.sendResponse(
+                    new CatalogAdminResultComposer(false, "Page not found in shared draft: " + payload.pageId));
             return;
         }
 
         for (int itemId : payload.baseItemIds()) {
-            if (gameEnvironment.getItemManager().getItem(itemId) == null) {
+            if (Emulator.getGameEnvironment().getItemManager().getItem(itemId) == null) {
                 this.client.sendResponse(new CatalogAdminResultComposer(false, "Base item not found: " + itemId));
                 return;
             }
         }
 
-        CatalogItem existingItem = gameEnvironment.getCatalogManager().getCatalogItem(offerId, pageType);
+        CatalogOfferSnapshot existingItem = draft.offer(pageType, offerId).orElse(null);
         if (existingItem == null) {
             this.client.sendResponse(new CatalogAdminResultComposer(false, "Offer not found: " + offerId));
             return;
         }
-        if (pageType != CatalogPageType.BUILDER && payload.limitedStack < existingItem.getLimitedStack()) {
+        if (payload.limitedStack < existingItem.limitedStack()) {
             this.client.sendResponse(new CatalogAdminResultComposer(false, "Limited stack cannot be reduced"));
             return;
         }
 
-        boolean updateItemIds = itemIds != null && !itemIds.trim().isEmpty();
-
-        String sql;
-        if (payload.pageType == CatalogPageType.BUILDER) {
-            sql = updateItemIds
-                    ? "UPDATE catalog_items_bc SET page_id = ?, item_ids = ?, catalog_name = ?, order_number = ?, extradata = ? WHERE id = ?"
-                    : "UPDATE catalog_items_bc SET page_id = ?, catalog_name = ?, order_number = ?, extradata = ? WHERE id = ?";
-        } else {
-            sql = updateItemIds
-                    ? "UPDATE catalog_items SET page_id = ?, item_ids = ?, catalog_name = ?, cost_credits = ?, cost_points = ?, points_type = ?, amount = ?, club_only = ?, extradata = ?, have_offer = ?, offer_id = ?, limited_stack = ?, order_number = ? WHERE id = ?"
-                    : "UPDATE catalog_items SET page_id = ?, catalog_name = ?, cost_credits = ?, cost_points = ?, points_type = ?, amount = ?, club_only = ?, extradata = ?, have_offer = ?, offer_id = ?, limited_stack = ?, order_number = ? WHERE id = ?";
-        }
-
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement = connection.prepareStatement(sql)) {
-            int idx = 1;
-            statement.setInt(idx++, payload.pageId);
-            if (updateItemIds) {
-                statement.setString(idx++, payload.itemIds);
-            }
-            statement.setString(idx++, payload.catalogName);
-
-            if (payload.pageType == CatalogPageType.BUILDER) {
-                statement.setInt(idx++, payload.orderNumber);
-                statement.setString(idx++, payload.extradata);
-                statement.setInt(idx, offerId);
-            } else {
-                statement.setInt(idx++, payload.costCredits);
-                statement.setInt(idx++, payload.costPoints);
-                statement.setInt(idx++, payload.pointsType);
-                statement.setInt(idx++, payload.amount);
-                statement.setString(idx++, payload.clubOnly == 1 ? "1" : "0");
-                statement.setString(idx++, payload.extradata);
-                statement.setString(idx++, payload.haveOffer ? "1" : "0");
-                statement.setInt(idx++, payload.offerIdGroup);
-                statement.setInt(idx++, payload.limitedStack);
-                statement.setInt(idx++, payload.orderNumber);
-                statement.setInt(idx, offerId);
-            }
-            if (statement.executeUpdate() == 0) {
-                this.client.sendResponse(new CatalogAdminResultComposer(false, "Offer not found: " + offerId));
-                return;
-            }
-        }
-
-        CatalogAdminCacheSync.reloadCatalogItem(offerId, pageType);
-        this.client.sendResponse(new CatalogAdminResultComposer(true, "Offer saved"));
+        CatalogOfferSnapshot edited = new CatalogOfferSnapshot(
+                pageType,
+                offerId,
+                itemIds == null || itemIds.isBlank() ? existingItem.itemIds() : payload.itemIds,
+                payload.pageId,
+                payload.catalogName,
+                pageType == CatalogPageType.BUILDER ? 0 : payload.costCredits,
+                pageType == CatalogPageType.BUILDER ? 0 : payload.costPoints,
+                pageType == CatalogPageType.BUILDER ? 0 : payload.pointsType,
+                pageType == CatalogPageType.BUILDER ? 1 : payload.amount,
+                pageType == CatalogPageType.BUILDER ? 0 : payload.limitedStack,
+                payload.orderNumber,
+                pageType == CatalogPageType.BUILDER ? -1 : payload.offerIdGroup,
+                existingItem.songId(),
+                payload.extradata,
+                pageType == CatalogPageType.BUILDER || payload.haveOffer,
+                pageType != CatalogPageType.BUILDER && payload.clubOnly == 1);
+        var result = mutations.apply(new CatalogDraftMutationRequest(
+                envelope.draftVersionId(),
+                envelope.expectedRevision(),
+                this.client.getHabbo().getHabboInfo().getId(),
+                new CatalogLockKey(CatalogEntityType.OFFER, pageType, offerId),
+                envelope.lockToken(),
+                envelope.summary(),
+                CatalogEntityType.OFFER,
+                offerId,
+                CatalogChangeOperation.UPDATE,
+                new Gson().toJson(edited)));
+        this.client.sendResponse(
+                new CatalogAdminResultComposer(true, "Offer saved in shared draft at revision " + result.revision()));
     }
 }

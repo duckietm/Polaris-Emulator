@@ -11,6 +11,8 @@ class CatalogVersionedDraftSchemaTest {
 
     private static final Path MIGRATION =
             Path.of("src/main/resources/db/migration/V20260802090000__catalog_versioned_drafts.sql");
+    private static final Path COMPATIBILITY_MIGRATION =
+            Path.of("src/main/resources/db/migration/V20260802100000__catalog_versioned_drafts_compatibility.sql");
 
     @Test
     void migrationDefinesVersionRuntimeSnapshotJournalAndLocks() throws Exception {
@@ -44,5 +46,24 @@ class CatalogVersionedDraftSchemaTest {
                 sql.indexOf("CREATE TABLE `catalog_change_groups`"));
 
         assertTrue(!offersTable.contains("limited_sells"));
+    }
+
+    @Test
+    void compatibilityMigrationUpgradesEarlyDraftSchemasWithoutDroppingCatalogData() throws Exception {
+        String sql = Files.readString(COMPATIBILITY_MIGRATION);
+
+        assertAll(
+                () -> assertTrue(sql.contains("ADD COLUMN IF NOT EXISTS `catalog_type`")),
+                () -> assertTrue(sql.contains("CREATE TABLE IF NOT EXISTS `catalog_operations`")),
+                () -> assertTrue(sql.contains(
+                        "ADD UNIQUE KEY `uq_catalog_version_page` (`version_id`,`catalog_type`,`page_id`)")),
+                () -> assertTrue(sql.contains(
+                        "ADD UNIQUE KEY `uq_catalog_version_offer` (`version_id`,`catalog_type`,`offer_id`)")),
+                () -> assertTrue(
+                        sql.contains(
+                                "ADD UNIQUE KEY `uq_catalog_edit_lock` (`version_id`,`catalog_type`,`entity_type`,`entity_id`)")),
+                () -> assertTrue(sql.contains("FROM `catalog_pages_bc`")),
+                () -> assertTrue(sql.contains("FROM `catalog_items_bc`")),
+                () -> assertTrue(!sql.toUpperCase().contains("DROP TABLE")));
     }
 }

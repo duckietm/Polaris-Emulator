@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -11,8 +12,7 @@ class CatalogAdminOfferPayloadTest {
     @Test
     void acceptsAndNormalizesValidOfferPayload() {
         CatalogAdminOfferPayload payload = CatalogAdminOfferPayload.validate(
-                42, "1, 2,3", "Rare Chair", 100, 5, 0, 1, 0,
-                "extra", true, 0, 0, 10, CatalogPageType.NORMAL);
+                42, "1, 2,3", "Rare Chair", 100, 5, 0, 1, 0, "extra", true, 0, 0, 10, CatalogPageType.NORMAL);
 
         assertNotNull(payload);
         assertEquals("1;2;3", payload.itemIds);
@@ -21,31 +21,54 @@ class CatalogAdminOfferPayloadTest {
 
     @Test
     void rejectsInvalidItemIdsAndNegativeEconomyValues() {
-        assertNull(CatalogAdminOfferPayload.validate(42, "1,abc", "Name", 0, 0, 0, 1, 0,
-                "", false, 0, 0, 0, CatalogPageType.NORMAL));
-        assertNull(CatalogAdminOfferPayload.validate(42, "1", "Name", -1, 0, 0, 1, 0,
-                "", false, 0, 0, 0, CatalogPageType.NORMAL));
-        assertNull(CatalogAdminOfferPayload.validate(42, "1", "Name", 0, 0, 0, 0, 0,
-                "", false, 0, 0, 0, CatalogPageType.NORMAL));
+        assertNull(CatalogAdminOfferPayload.validate(
+                42, "1,abc", "Name", 0, 0, 0, 1, 0, "", false, 0, 0, 0, CatalogPageType.NORMAL));
+        assertNull(CatalogAdminOfferPayload.validate(
+                42, "1", "Name", -1, 0, 0, 1, 0, "", false, 0, 0, 0, CatalogPageType.NORMAL));
+        assertNull(CatalogAdminOfferPayload.validate(
+                42, "1", "Name", 0, 0, 0, 0, 0, "", false, 0, 0, 0, CatalogPageType.NORMAL));
     }
 
     @Test
     void builderOffersStillRequireSafeCommonFields() {
-        assertNotNull(CatalogAdminOfferPayload.validate(42, "", "BC Offer", -1, -1, -1, -1, -1,
-                "", false, -1, -1, 0, CatalogPageType.BUILDER));
-        assertNull(CatalogAdminOfferPayload.validate(0, "1", "BC Offer", 0, 0, 0, 1, 0,
-                "", false, 0, 0, 0, CatalogPageType.BUILDER));
-        assertNull(CatalogAdminOfferPayload.validate(42, "1", "", 0, 0, 0, 1, 0,
-                "", false, 0, 0, 0, CatalogPageType.BUILDER));
+        assertNotNull(CatalogAdminOfferPayload.validate(
+                42, "", "BC Offer", -1, -1, -1, -1, -1, "", false, -1, -1, 0, CatalogPageType.BUILDER));
+        assertNull(CatalogAdminOfferPayload.validate(
+                0, "1", "BC Offer", 0, 0, 0, 1, 0, "", false, 0, 0, 0, CatalogPageType.BUILDER));
+        assertNull(CatalogAdminOfferPayload.validate(
+                42, "1", "", 0, 0, 0, 1, 0, "", false, 0, 0, 0, CatalogPageType.BUILDER));
     }
 
     @Test
     void acceptsSemicolonSeparatedItemIds() {
         CatalogAdminOfferPayload payload = CatalogAdminOfferPayload.validate(
-                42, "100;200", "Bundle", 10, 0, 0, 1, 0,
-                "", false, 0, 0, 0, CatalogPageType.NORMAL);
+                42, "100;200", "Bundle", 10, 0, 0, 1, 0, "", false, 0, 0, 0, CatalogPageType.NORMAL);
 
         assertNotNull(payload);
         assertEquals("100;200", payload.itemIds);
+    }
+
+    @Test
+    void rejectsEmptyItemIdsForNormalOffers() {
+        assertNull(CatalogAdminOfferPayload.validate(
+                42, "", "Invisible offer", 10, 0, 0, 1, 0, "", false, 0, 0, 0, CatalogPageType.NORMAL));
+    }
+
+    @Test
+    void acceptsAndNormalizesPerItemBundleQuantities() {
+        CatalogAdminOfferPayload payload = CatalogAdminOfferPayload.validate(
+                42, "100:2, 200:5", "Quantity bundle", 10, 0, 0, 1, 0, "", false, 0, 0, 0, CatalogPageType.NORMAL);
+
+        assertNotNull(payload);
+        assertEquals("100:2;200:5", payload.itemIds);
+        assertArrayEquals(new int[] {100, 200}, payload.baseItemIds());
+    }
+
+    @Test
+    void rejectsZeroOrNegativeBundleQuantities() {
+        assertNull(CatalogAdminOfferPayload.validate(
+                42, "100:0", "Invalid bundle", 10, 0, 0, 1, 0, "", false, 0, 0, 0, CatalogPageType.NORMAL));
+        assertNull(CatalogAdminOfferPayload.validate(
+                42, "100:-1", "Invalid bundle", 10, 0, 0, 1, 0, "", false, 0, 0, 0, CatalogPageType.NORMAL));
     }
 }

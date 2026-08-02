@@ -2,11 +2,11 @@ package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.catalog.CatalogAdminCacheSync;
+import com.eu.habbo.habbohotel.catalog.CatalogItem;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.CatalogAdminResultComposer;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
@@ -40,16 +40,46 @@ public class CatalogAdminSaveOfferEvent extends MessageHandler {
             return;
         }
 
-        CatalogAdminOfferPayload payload = CatalogAdminOfferPayload.validate(pageId, itemIds, catalogName, costCredits,
-                costPoints, pointsType, amount, clubOnly, extradata, haveOffer, offerIdGroup, limitedStack,
-                orderNumber, pageType);
+        CatalogAdminOfferPayload payload = CatalogAdminOfferPayload.validate(
+                pageId,
+                itemIds,
+                catalogName,
+                costCredits,
+                costPoints,
+                pointsType,
+                amount,
+                clubOnly,
+                extradata,
+                haveOffer,
+                offerIdGroup,
+                limitedStack,
+                orderNumber,
+                pageType);
         if (payload == null) {
             this.client.sendResponse(new CatalogAdminResultComposer(false, "Invalid offer payload"));
             return;
         }
 
-        if (Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(payload.pageId, payload.pageType) == null) {
+        var gameEnvironment = Emulator.getGameEnvironment();
+        if (gameEnvironment.getCatalogManager().getCatalogPage(payload.pageId, payload.pageType) == null) {
             this.client.sendResponse(new CatalogAdminResultComposer(false, "Page not found: " + payload.pageId));
+            return;
+        }
+
+        for (int itemId : payload.baseItemIds()) {
+            if (gameEnvironment.getItemManager().getItem(itemId) == null) {
+                this.client.sendResponse(new CatalogAdminResultComposer(false, "Base item not found: " + itemId));
+                return;
+            }
+        }
+
+        CatalogItem existingItem = gameEnvironment.getCatalogManager().getCatalogItem(offerId, pageType);
+        if (existingItem == null) {
+            this.client.sendResponse(new CatalogAdminResultComposer(false, "Offer not found: " + offerId));
+            return;
+        }
+        if (pageType != CatalogPageType.BUILDER && payload.limitedStack < existingItem.getLimitedStack()) {
+            this.client.sendResponse(new CatalogAdminResultComposer(false, "Limited stack cannot be reduced"));
             return;
         }
 
@@ -67,7 +97,7 @@ public class CatalogAdminSaveOfferEvent extends MessageHandler {
         }
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+                PreparedStatement statement = connection.prepareStatement(sql)) {
             int idx = 1;
             statement.setInt(idx++, payload.pageId);
             if (updateItemIds) {

@@ -6,7 +6,6 @@ import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.CatalogAdminResultComposer;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -36,27 +35,47 @@ public class CatalogAdminCreateOfferEvent extends MessageHandler {
         int orderNumber = this.packet.readInt();
         CatalogPageType pageType = CatalogPageType.fromString(this.packet.readString());
 
-        CatalogAdminOfferPayload payload = CatalogAdminOfferPayload.validate(pageId, itemIds, catalogName, costCredits,
-                costPoints, pointsType, amount, clubOnly, extradata, haveOffer, offerIdGroup, limitedStack,
-                orderNumber, pageType);
+        CatalogAdminOfferPayload payload = CatalogAdminOfferPayload.validate(
+                pageId,
+                itemIds,
+                catalogName,
+                costCredits,
+                costPoints,
+                pointsType,
+                amount,
+                clubOnly,
+                extradata,
+                haveOffer,
+                offerIdGroup,
+                limitedStack,
+                orderNumber,
+                pageType);
         if (payload == null) {
             this.client.sendResponse(new CatalogAdminResultComposer(false, "Invalid offer payload"));
             return;
         }
 
-        if (Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(payload.pageId, payload.pageType) == null) {
+        var gameEnvironment = Emulator.getGameEnvironment();
+        if (gameEnvironment.getCatalogManager().getCatalogPage(payload.pageId, payload.pageType) == null) {
             this.client.sendResponse(new CatalogAdminResultComposer(false, "Page not found: " + payload.pageId));
             return;
+        }
+
+        for (int itemId : payload.baseItemIds()) {
+            if (gameEnvironment.getItemManager().getItem(itemId) == null) {
+                this.client.sendResponse(new CatalogAdminResultComposer(false, "Base item not found: " + itemId));
+                return;
+            }
         }
 
         int newId = -1;
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     (payload.pageType == CatalogPageType.BUILDER)
-                             ? "INSERT INTO catalog_items_bc (page_id, item_ids, catalog_name, order_number, extradata) VALUES (?, ?, ?, ?, ?)"
-                             : "INSERT INTO catalog_items (page_id, item_ids, catalog_name, cost_credits, cost_points, points_type, amount, club_only, extradata, have_offer, offer_id, limited_stack, order_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                     Statement.RETURN_GENERATED_KEYS)) {
+                PreparedStatement statement = connection.prepareStatement(
+                        (payload.pageType == CatalogPageType.BUILDER)
+                                ? "INSERT INTO catalog_items_bc (page_id, item_ids, catalog_name, order_number, extradata) VALUES (?, ?, ?, ?, ?)"
+                                : "INSERT INTO catalog_items (page_id, item_ids, catalog_name, cost_credits, cost_points, points_type, amount, club_only, extradata, have_offer, offer_id, limited_stack, order_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        Statement.RETURN_GENERATED_KEYS)) {
             statement.setInt(1, payload.pageId);
             statement.setString(2, payload.itemIds);
             statement.setString(3, payload.catalogName);

@@ -135,28 +135,30 @@ public class CatalogLimitedConfiguration implements Runnable {
 
     public void generateNumbers(int starting, int amount) {
         synchronized (this.limitedNumbers) {
+            LinkedList<Integer> generatedNumbers = new LinkedList<>();
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                     PreparedStatement statement = connection.prepareStatement(
                             "INSERT INTO catalog_items_limited (catalog_item_id, number) VALUES (?, ?)")) {
                 statement.setInt(1, this.itemId);
 
-                for (int i = starting; i <= amount; i++) {
+                int endExclusive = starting + amount;
+                for (int i = starting; i < endExclusive; i++) {
                     statement.setInt(2, i);
                     statement.addBatch();
-                    this.limitedNumbers.push(i);
+                    generatedNumbers.add(i);
                 }
 
                 statement.executeBatch();
+                this.limitedNumbers.addAll(generatedNumbers);
+                this.totalSet += generatedNumbers.size();
+
+                if (Emulator.getConfig().getBoolean("catalog.ltd.random", true)) {
+                    Collections.shuffle(this.limitedNumbers);
+                } else {
+                    Collections.reverse(this.limitedNumbers);
+                }
             } catch (SQLException e) {
                 LOGGER.error("Caught SQL exception", e);
-            }
-
-            this.totalSet += amount;
-
-            if (Emulator.getConfig().getBoolean("catalog.ltd.random", true)) {
-                Collections.shuffle(this.limitedNumbers);
-            } else {
-                Collections.reverse(this.limitedNumbers);
             }
         }
     }

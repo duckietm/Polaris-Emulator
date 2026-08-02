@@ -467,6 +467,9 @@ public class Incoming {
     public static final int CatalogAdminSavePageIconEvent = 10061;
     public static final int CatalogAdminLoadOfferEvent = 10062;
     public static final int CatalogAdminLoadPageEvent = 10063;
+    public static final int CatalogAdminSetPageEnabledEvent = 10064;
+    public static final int CatalogAdminSetPageVisibleEvent = 10065;
+    public static final int CatalogAdminReorderOffersEvent = 10066;
 
     // Custom Prefixes
     public static final int RequestUserPrefixesEvent = 7011;

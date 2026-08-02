@@ -19,6 +19,8 @@ public final class JdbcCatalogVersionRepository implements CatalogVersionReposit
             "SELECT next_id FROM catalog_id_sequences WHERE entity_type = 'OFFER' " + "AND catalog_type = ? FOR UPDATE";
     static final String INCREMENT_REVISION_SQL =
             "UPDATE catalog_versions SET revision = revision + 1 WHERE id = ? AND revision = ?";
+    static final String UPDATE_NEXT_ID_SQL =
+            "UPDATE catalog_id_sequences SET next_id = ? WHERE entity_type = ? AND catalog_type = ?";
 
     private static final String LOAD_VERSION_SQL =
             "SELECT id, status, based_on_version_id, revision, label, created_by, created_at, "
@@ -262,12 +264,10 @@ public final class JdbcCatalogVersionRepository implements CatalogVersionReposit
             }
         }
         long nextId = Math.addExact(allocatedId, 1L);
-        try (PreparedStatement statement =
-                connection.prepareStatement("UPDATE catalog_id_sequences SET next_id = ? WHERE entity_type = '"
-                        + entityType.name()
-                        + "' AND catalog_type = ?")) {
+        try (PreparedStatement statement = connection.prepareStatement(UPDATE_NEXT_ID_SQL)) {
             statement.setLong(1, nextId);
-            statement.setString(2, catalogType.name());
+            statement.setString(2, entityType.name());
+            statement.setString(3, catalogType.name());
             if (statement.executeUpdate() != 1) {
                 throw new SQLException(
                         "Stable catalog ID sequence is not initialized: " + catalogType + " " + entityType);

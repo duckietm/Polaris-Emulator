@@ -52,12 +52,8 @@ class JdbcCatalogVersionRepositoryTest {
         when(connection.prepareStatement("SELECT next_id FROM catalog_id_sequences WHERE entity_type = 'OFFER' "
                         + "AND catalog_type = ? FOR UPDATE"))
                 .thenReturn(offerStatement);
-        when(connection.prepareStatement("UPDATE catalog_id_sequences SET next_id = ? WHERE entity_type = 'PAGE' "
-                        + "AND catalog_type = ?"))
-                .thenReturn(pageUpdate);
-        when(connection.prepareStatement("UPDATE catalog_id_sequences SET next_id = ? WHERE entity_type = 'OFFER' "
-                        + "AND catalog_type = ?"))
-                .thenReturn(offerUpdate);
+        when(connection.prepareStatement(JdbcCatalogVersionRepository.UPDATE_NEXT_ID_SQL))
+                .thenReturn(pageUpdate, offerUpdate);
         when(pageStatement.executeQuery()).thenReturn(pageResult);
         when(offerStatement.executeQuery()).thenReturn(offerResult);
         when(pageUpdate.executeUpdate()).thenReturn(1);
@@ -72,7 +68,11 @@ class JdbcCatalogVersionRepositoryTest {
         assertEquals(1121L, repository.nextPageId(connection));
         assertEquals(20541L, repository.nextOfferId(connection));
         verify(pageUpdate).setLong(1, 1122L);
+        verify(pageUpdate).setString(2, "PAGE");
+        verify(pageUpdate).setString(3, "NORMAL");
         verify(offerUpdate).setLong(1, 20542L);
+        verify(offerUpdate).setString(2, "OFFER");
+        verify(offerUpdate).setString(3, "NORMAL");
     }
 
     @Test
@@ -84,8 +84,7 @@ class JdbcCatalogVersionRepositoryTest {
         when(connection.prepareStatement("SELECT next_id FROM catalog_id_sequences WHERE entity_type = 'PAGE' "
                         + "AND catalog_type = ? FOR UPDATE"))
                 .thenReturn(select);
-        when(connection.prepareStatement("UPDATE catalog_id_sequences SET next_id = ? WHERE entity_type = 'PAGE' "
-                        + "AND catalog_type = ?"))
+        when(connection.prepareStatement(JdbcCatalogVersionRepository.UPDATE_NEXT_ID_SQL))
                 .thenReturn(update);
         when(select.executeQuery()).thenReturn(resultSet);
         when(resultSet.next()).thenReturn(true);
@@ -97,7 +96,8 @@ class JdbcCatalogVersionRepositoryTest {
         assertEquals(3L, pageId);
         verify(select).setString(1, "BUILDER");
         verify(update).setLong(1, 4L);
-        verify(update).setString(2, "BUILDER");
+        verify(update).setString(2, "PAGE");
+        verify(update).setString(3, "BUILDER");
     }
 
     @Test

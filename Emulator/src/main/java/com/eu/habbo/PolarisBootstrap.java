@@ -14,6 +14,8 @@ import com.eu.habbo.database.integrity.IntegrityAuditOptions;
 import com.eu.habbo.database.migration.MigrationOptions;
 import com.eu.habbo.database.migration.MigrationRunner;
 import com.eu.habbo.habbohotel.GameEnvironment;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioRuntime;
+import com.eu.habbo.messages.outgoing.catalog.CatalogUpdatedComposer;
 import com.eu.habbo.networking.gameserver.GameServer;
 import com.eu.habbo.networking.rconserver.RCONServer;
 import com.eu.habbo.plugin.PluginManager;
@@ -162,6 +164,10 @@ final class PolarisBootstrap {
         GameServer gameServer = new GameServer(
                 configuration.getValue("game.host", "127.0.0.1"), configuration.getInt("game.port", 30000));
         runtime.installGameServer(gameServer);
+        CatalogStudioRuntime.install(runtime.database().getDataSource(), (published, nextDraftId) -> {
+            runtime.gameEnvironment().getCatalogManager().initialize();
+            gameServer.getGameClientManager().sendBroadcastResponse(new CatalogUpdatedComposer());
+        });
         boolean stressEnabled = configuration.getBoolean("stress.enabled", false);
         StressRunRegistry.install(new StressRunManager(
                 runtime.gameEnvironment().getRoomManager(),

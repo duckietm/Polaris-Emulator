@@ -1,6 +1,5 @@
 package com.eu.habbo.messages.incoming.catalog.catalogadmin.studio;
 
-import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogAdminDraftMutationService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftChangeSetService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftLifecycleService;
@@ -8,6 +7,7 @@ import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftPreviewService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftValidationService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogLockService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogOperationalOfferRepository;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogPublicationHooks;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogPublicationService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogStudioDocumentService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogUndoService;
@@ -19,29 +19,34 @@ import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogSnapshotWriter;
 import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogStudioQueryRepository;
 import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogValidationDataRepository;
 import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogVersionRepository;
-import com.eu.habbo.messages.outgoing.catalog.CatalogUpdatedComposer;
 import com.google.gson.Gson;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.sql.DataSource;
 
 public final class CatalogStudioRuntime {
-    private static volatile Services services;
+    private static final AtomicReference<Services> SERVICES = new AtomicReference<>();
 
     private CatalogStudioRuntime() {}
 
     public static Services services() {
-        Services current = services;
-        if (current != null) return current;
-        synchronized (CatalogStudioRuntime.class) {
-            current = services;
-            if (current == null) {
-                current = create(Emulator.getDatabase().getDataSource());
-                services = current;
-            }
-            return current;
+        Services current = SERVICES.get();
+        if (current == null) {
+            throw new IllegalStateException("Catalog Studio runtime has not been installed");
+        }
+        return current;
+    }
+
+    public static void install(DataSource dataSource, CatalogPublicationHooks publicationHooks) {
+        Services created = create(
+                Objects.requireNonNull(dataSource, "dataSource"),
+                Objects.requireNonNull(publicationHooks, "publicationHooks"));
+        if (!SERVICES.compareAndSet(null, created)) {
+            throw new IllegalStateException("Catalog Studio runtime has already been installed");
         }
     }
 
-    private static Services create(DataSource dataSource) {
+    private static Services create(DataSource dataSource, CatalogPublicationHooks publicationHooks) {
         CatalogVersionRepository versions = new JdbcCatalogVersionRepository();
         JdbcCatalogLockRepository lockRepository = new JdbcCatalogLockRepository(dataSource);
         JdbcCatalogChangeJournal journal = new JdbcCatalogChangeJournal();
@@ -64,12 +69,7 @@ public final class CatalogStudioRuntime {
                         validationData,
                         new JdbcCatalogLiveProjection(),
                         lockRepository,
-                        (published, nextDraftId) -> {
-                            Emulator.getGameEnvironment().getCatalogManager().initialize();
-                            Emulator.getGameServer()
-                                    .getGameClientManager()
-                                    .sendBroadcastResponse(new CatalogUpdatedComposer());
-                        }),
+                        publicationHooks),
                 new CatalogDraftLifecycleService(dataSource, versions, lockRepository),
                 new CatalogDraftPreviewService(),
                 documents,

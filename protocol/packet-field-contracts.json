@@ -16549,6 +16549,38 @@
     {
       "direction": "client_to_server",
       "side": "java",
+      "header": 9341,
+      "symbol": "SoundboardSaveVolumeEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/soundboard/SoundboardSaveVolumeEvent.java",
+      "reason": "Registered incoming handler without a cross-language field contract"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "java",
+      "header": 9344,
+      "symbol": "SoundboardCatalogReorderEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/soundboard/SoundboardCatalogReorderEvent.java",
+      "reason": "Registered incoming handler without a cross-language field contract"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "java",
+      "header": 9411,
+      "symbol": "HotelViewLandingSaveEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingSaveEvent.java",
+      "reason": "Registered incoming handler without a cross-language field contract"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "java",
+      "header": 9412,
+      "symbol": "HotelViewLandingSaveSceneEvent",
+      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingSaveSceneEvent.java",
+      "reason": "Registered incoming handler without a cross-language field contract"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "java",
       "header": 295,
       "symbol": "PingEvent",
       "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/handshake/PingEvent.java",

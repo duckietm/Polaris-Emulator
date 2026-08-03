@@ -5,6 +5,8 @@ Unknown keys remain allowed for plugins. Database-backed hotel settings are docu
 | Key | Type | Default | Environment | Restart | Live reload | Description |
 | --- | --- | --- | --- | --- | --- | --- |
 | `client.release.allowed` | string | `` | — | yes | no | Polaris startup setting. |
+| `cms.api.allowed` | string | `127.0.0.1;::1` | — | yes | no | CMS HTTP API setting. |
+| `cms.api.enabled` | boolean | `false` | — | yes | no | CMS HTTP API setting. |
 | `crypto.ws.enabled` | boolean | `false` | — | yes | no | WebSocket listener setting. |
 | `db.database` | string | `` | `DB_DATABASE` | yes | no | Database startup setting. |
 | `db.hostname` | string | `` | `DB_HOSTNAME` | yes | no | Database startup setting. |

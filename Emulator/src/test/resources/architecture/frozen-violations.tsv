@@ -101,8 +101,8 @@ U|com/eu/habbo/habbohotel/campaign/calendar/CalendarManager.java|CALL|getIntUnix
 U|com/eu/habbo/habbohotel/campaign/calendar/CalendarManager.java|CALL|getPluginManager|1
 U|com/eu/habbo/habbohotel/campaign/calendar/CalendarManager.java|CALL|getRandom|1
 U|com/eu/habbo/habbohotel/campaign/calendar/CalendarRewardObject.java|CALL|getGameEnvironment|2
-U|com/eu/habbo/habbohotel/catalog/CatalogAdminCacheSync.java|CALL|getDatabase|2
-U|com/eu/habbo/habbohotel/catalog/CatalogAdminCacheSync.java|CALL|getGameEnvironment|8
+U|com/eu/habbo/habbohotel/catalog/CatalogAdminCacheSync.java|CALL|getDatabase|1
+U|com/eu/habbo/habbohotel/catalog/CatalogAdminCacheSync.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/catalog/CatalogFeaturedPage.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/habbohotel/catalog/CatalogItem.java|CALL|getConfig|1
 U|com/eu/habbo/habbohotel/catalog/CatalogItem.java|CALL|getDatabase|1
@@ -1054,6 +1054,7 @@ U|com/eu/habbo/habbohotel/wired/tick/WiredTickService.java|CALL|getGameEnvironme
 U|com/eu/habbo/habbohotel/wired/tick/WiredTickService.java|FIELD|isShuttingDown|2
 U|com/eu/habbo/messages/PacketManager.java|CALL|getConfig|1
 U|com/eu/habbo/messages/PacketManager.java|FIELD|isShuttingDown|1
+U|com/eu/habbo/messages/command/CommandRegistry.java|FIELD|debugging|1
 U|com/eu/habbo/messages/incoming/ambassadors/AmbassadorAlertCommandEvent.java|CALL|getPluginManager|1
 U|com/eu/habbo/messages/incoming/ambassadors/AmbassadorAlertCommandEvent.java|CALL|getTexts|1
 U|com/eu/habbo/messages/incoming/ambassadors/AmbassadorVisitCommandEvent.java|CALL|getGameEnvironment|1
@@ -1103,7 +1104,7 @@ U|com/eu/habbo/messages/incoming/catalog/RequestCatalogPageEvent.java|CALL|getTe
 U|com/eu/habbo/messages/incoming/catalog/RequestPetBreedsEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminCreateOfferEvent.java|CALL|getDatabase|1
 U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminCreateOfferEvent.java|CALL|getGameEnvironment|1
-U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminCreatePageEvent.java|CALL|getGameEnvironment|2
+U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminCreatePageEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminDeleteOfferEvent.java|CALL|getDatabase|1
 U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminDeletePageEvent.java|CALL|getDatabase|1
 U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminDeletePageEvent.java|CALL|getGameEnvironment|1
@@ -1111,14 +1112,14 @@ U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminLoadOfferEvent
 U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminLoadPageEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminMoveOfferEvent.java|CALL|getDatabase|1
 U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminMoveOfferEvent.java|CALL|getGameEnvironment|1
-U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminMovePageEvent.java|CALL|getDatabase|3
+U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminMovePageEvent.java|CALL|getDatabase|1
 U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminMovePageEvent.java|CALL|getGameEnvironment|3
 U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminPublishEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminPublishEvent.java|CALL|getGameServer|1
 U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSaveOfferEvent.java|CALL|getDatabase|1
 U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSaveOfferEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSavePageEvent.java|CALL|getDatabase|1
-U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSavePageEvent.java|CALL|getGameEnvironment|3
+U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSavePageEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSavePageIconEvent.java|CALL|getDatabase|1
 U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSavePageIconEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSavePageImagesEvent.java|CALL|getDatabase|1
@@ -1777,6 +1778,11 @@ U|com/eu/habbo/networking/gameserver/auth/StaticContentEndpoints.java|CALL|getDa
 U|com/eu/habbo/networking/gameserver/auth/TurnstileVerifier.java|CALL|getConfig|3
 U|com/eu/habbo/networking/gameserver/badges/BadgeHttpHandler.java|CALL|getGameEnvironment|6
 U|com/eu/habbo/networking/gameserver/badges/BadgeLeaderboardHttpHandler.java|CALL|getDatabase|2
+U|com/eu/habbo/networking/gameserver/cms/CmsApiHandler.java|CALL|getConfig|2
+U|com/eu/habbo/networking/gameserver/cms/CmsApiHandler.java|CALL|getRconServer|1
+U|com/eu/habbo/networking/gameserver/cms/CmsApiHandler.java|REFERENCE|getIntUnixTimestamp|1
+U|com/eu/habbo/networking/gameserver/cms/CmsApiSettings.java|CALL|getConfig|1
+U|com/eu/habbo/networking/gameserver/cms/CmsApiSettings.java|CALL|getDatabase|1
 U|com/eu/habbo/networking/gameserver/crypto/CryptoSigningKeyManager.java|CALL|getConfig|4
 U|com/eu/habbo/networking/gameserver/crypto/CryptoSigningKeyManager.java|CALL|getDatabase|1
 U|com/eu/habbo/networking/gameserver/crypto/WsHandshakeHandler.java|CALL|getConfig|1
@@ -1790,7 +1796,6 @@ U|com/eu/habbo/networking/gameserver/handlers/WebSocketHttpHandler.java|CALL|get
 U|com/eu/habbo/networking/gameserver/handlers/WebSocketHttpHandler.java|CALL|getGameServer|1
 U|com/eu/habbo/networking/gameserver/stats/EmuStatsHttpHandler.java|CALL|getGameServer|1
 U|com/eu/habbo/networking/rconserver/RCONServer.java|CALL|getConfig|5
-U|com/eu/habbo/networking/rconserver/RCONServer.java|FIELD|debugging|1
 U|com/eu/habbo/networking/rconserver/RCONServerHandler.java|CALL|getConfig|2
 U|com/eu/habbo/networking/rconserver/RCONServerHandler.java|CALL|getRconServer|2
 U|com/eu/habbo/plugin/PluginManager.java|CALL|getConfig|1
@@ -2193,7 +2198,7 @@ D|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminDeleteOfferEve
 D|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminDeletePageEvent.java|1
 D|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminLoadOfferEvent.java|1
 D|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminMoveOfferEvent.java|1
-D|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminMovePageEvent.java|3
+D|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminMovePageEvent.java|1
 D|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSaveOfferEvent.java|1
 D|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSavePageEvent.java|1
 D|com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSavePageIconEvent.java|1

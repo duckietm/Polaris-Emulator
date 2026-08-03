@@ -33,6 +33,7 @@
     "custom_prefix_blacklist": ["id", "word"],
     "custom_prefix_settings": ["key_name", "value"],
     "custom_prefixes_catalog": ["color", "display_name", "effect", "enabled", "font", "icon", "id", "points", "points_type", "sort_order", "text"],
+    "emulator_api": ["comment", "key", "value"],
     "emulator_errors": ["build_hash", "id", "stacktrace", "timestamp", "type", "version"],
     "emulator_settings": ["comment", "key", "value"],
     "emulator_texts": ["key", "value"],

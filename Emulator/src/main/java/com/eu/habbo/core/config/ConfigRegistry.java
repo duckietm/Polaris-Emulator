@@ -167,6 +167,7 @@ public final class ConfigRegistry {
                 "ws.enabled",
                 "crypto.ws.enabled",
                 "stress.enabled",
+                "cms.api.enabled",
                 "e2e.enabled");
         keys.add(new ConfigKey(
                 "polaris.events.honor_priority",
@@ -179,6 +180,7 @@ public final class ConfigRegistry {
                 List.of(),
                 "Enables priority-ordered, cancellation-aware plugin event dispatch."));
         keys.add(definition("db.integrity.audit.mode", ConfigKey.ValueType.STRING, "warn", true));
+        keys.add(definition("cms.api.allowed", ConfigKey.ValueType.STRING, "127.0.0.1;::1", true));
         return List.copyOf(keys);
     }
 
@@ -249,6 +251,9 @@ public final class ConfigRegistry {
         }
         if (name.startsWith("rcon.")) {
             return "RCON listener setting.";
+        }
+        if (name.startsWith("cms.api.")) {
+            return "CMS HTTP API setting.";
         }
         if (name.startsWith("stress.")) {
             return "Opt-in transient room stress-lab setting.";

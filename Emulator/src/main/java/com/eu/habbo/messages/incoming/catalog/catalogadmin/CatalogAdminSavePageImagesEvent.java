@@ -1,13 +1,18 @@
 package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
-import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.catalog.CatalogPage;
+import com.eu.habbo.habbohotel.catalog.CatalogPageType;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogChangeOperation;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftMutationRequest;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogEntityType;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogLockKey;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogSnapshotPatch;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioMutationEnvelope;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioRequestParser;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioRuntime;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.CatalogAdminResultComposer;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
+import com.google.gson.Gson;
 
 public class CatalogAdminSavePageImagesEvent extends MessageHandler {
 
@@ -21,23 +26,31 @@ public class CatalogAdminSavePageImagesEvent extends MessageHandler {
         int pageId = this.packet.readInt();
         String headerImage = this.packet.readString();
         String teaserImage = this.packet.readString();
+        CatalogPageType pageType = CatalogPageType.fromString(this.packet.readString());
 
-        CatalogPage page = Emulator.getGameEnvironment().getCatalogManager().catalogPages.get(pageId);
-
+        CatalogStudioMutationEnvelope envelope = CatalogStudioRequestParser.parseMutationEnvelope(this.packet);
+        var mutations = CatalogStudioRuntime.services().mutations();
+        var page = mutations
+                .loadDraft(envelope.draftVersionId(), envelope.expectedRevision())
+                .page(pageType, pageId)
+                .orElse(null);
         if (page == null) {
-            this.client.sendResponse(new CatalogAdminResultComposer(false, "Page not found: " + pageId));
+            this.client.sendResponse(
+                    new CatalogAdminResultComposer(false, "Page not found in shared draft: " + pageId));
             return;
         }
-
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                 "UPDATE catalog_pages SET page_headline = ?, page_teaser = ? WHERE id = ?")) {
-            statement.setString(1, headerImage);
-            statement.setString(2, teaserImage);
-            statement.setInt(3, pageId);
-            statement.execute();
-        }
-
-        this.client.sendResponse(new CatalogAdminResultComposer(true, "Page images saved"));
+        var result = mutations.apply(new CatalogDraftMutationRequest(
+                envelope.draftVersionId(),
+                envelope.expectedRevision(),
+                this.client.getHabbo().getHabboInfo().getId(),
+                new CatalogLockKey(CatalogEntityType.PAGE, pageType, pageId),
+                envelope.lockToken(),
+                envelope.summary(),
+                CatalogEntityType.PAGE,
+                pageId,
+                CatalogChangeOperation.UPDATE,
+                new Gson().toJson(CatalogSnapshotPatch.setPageImages(page, headerImage, teaserImage))));
+        this.client.sendResponse(new CatalogAdminResultComposer(
+                true, "Page images saved in shared draft at revision " + result.revision()));
     }
 }

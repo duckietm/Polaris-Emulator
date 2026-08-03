@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.junit.jupiter.api.Test;
 
 class CatalogAdminOfferMutationContractTest {
@@ -25,13 +24,13 @@ class CatalogAdminOfferMutationContractTest {
 
         assertTrue(create.contains("CatalogAdminOfferPayload.validate("));
         assertTrue(save.contains("CatalogAdminOfferPayload.validate("));
-        assertTrue(create.contains("getCatalogPage(payload.pageId, payload.pageType) == null"));
-        assertTrue(save.contains("getCatalogPage(payload.pageId, payload.pageType) == null"));
+        assertTrue(create.contains("draft.page(pageType, payload.pageId).isEmpty()"));
+        assertTrue(save.contains("draft.page(pageType, payload.pageId).isEmpty()"));
 
         int createValidation = create.indexOf("CatalogAdminOfferPayload.validate(");
-        int createInsert = create.indexOf("INSERT INTO catalog_items");
+        int createInsert = create.indexOf("mutations.apply(");
         int saveValidation = save.indexOf("CatalogAdminOfferPayload.validate(");
-        int saveUpdate = save.indexOf("UPDATE catalog_items");
+        int saveUpdate = save.indexOf("mutations.apply(");
 
         assertTrue(createValidation < createInsert, "create offer should validate before insert SQL is prepared");
         assertTrue(saveValidation < saveUpdate, "save offer should validate before update SQL is prepared");
@@ -41,7 +40,7 @@ class CatalogAdminOfferMutationContractTest {
     void saveOfferReportsMissingRowsInsteadOfAlwaysSucceeding() throws IOException {
         String save = Files.readString(SAVE_SOURCE);
 
-        assertTrue(save.contains("statement.executeUpdate() == 0"));
+        assertTrue(save.contains("draft.offer(pageType, offerId).orElse(null)"));
         assertTrue(save.contains("Offer not found: "));
     }
 
@@ -51,8 +50,8 @@ class CatalogAdminOfferMutationContractTest {
 
         assertTrue(delete.contains("offerId <= 0"));
         assertTrue(delete.contains("Invalid offer id"));
-        assertTrue(delete.contains("statement.executeUpdate() == 0"));
-        assertTrue(delete.contains("Offer not found: "));
+        assertTrue(delete.contains("draft.offer(pageType, offerId).isEmpty()"));
+        assertTrue(delete.contains("Offer not found in shared draft: "));
     }
 
     @Test
@@ -62,7 +61,7 @@ class CatalogAdminOfferMutationContractTest {
         assertTrue(move.contains("offerId <= 0"));
         assertTrue(move.contains("Invalid offer id"));
         assertTrue(move.contains("if (orderNumber < 0) orderNumber = 0;"));
-        assertTrue(move.contains("statement.executeUpdate() == 0"));
-        assertTrue(move.contains("Offer not found: "));
+        assertTrue(move.contains("draft.offer(pageType, offerId).orElse(null)"));
+        assertTrue(move.contains("Offer not found in shared draft: "));
     }
 }

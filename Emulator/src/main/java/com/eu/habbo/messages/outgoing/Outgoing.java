@@ -580,6 +580,18 @@ public class Outgoing {
     public static final int CatalogAdminResultComposer = 10059;
     public static final int CatalogAdminOfferDetailsComposer = 10062;
     public static final int CatalogAdminPageDetailsComposer = 10063;
+    public static final int CatalogStudioSessionComposer = 10067;
+    public static final int CatalogStudioAcquireLockComposer = 10068;
+    public static final int CatalogStudioRenewLockComposer = 10069;
+    public static final int CatalogStudioReleaseLockComposer = 10070;
+    public static final int CatalogStudioHistoryComposer = 10071;
+    public static final int CatalogStudioUndoComposer = 10072;
+    public static final int CatalogStudioValidationComposer = 10073;
+    public static final int CatalogStudioPublishComposer = 10074;
+    public static final int CatalogStudioDiscardComposer = 10075;
+    public static final int CatalogStudioRestoreComposer = 10076;
+    public static final int CatalogStudioPreviewComposer = 10077;
+    public static final int CatalogStudioDocumentResultComposer = 10078;
 
     // Custom Prefixes
     public static final int UserPrefixesComposer = 7001;

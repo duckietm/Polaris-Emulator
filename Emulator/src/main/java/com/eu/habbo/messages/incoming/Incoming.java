@@ -470,6 +470,20 @@ public class Incoming {
     public static final int CatalogAdminSetPageEnabledEvent = 10064;
     public static final int CatalogAdminSetPageVisibleEvent = 10065;
     public static final int CatalogAdminReorderOffersEvent = 10066;
+    public static final int CatalogStudioOpenSessionEvent = 10067;
+    public static final int CatalogStudioAcquireLockEvent = 10068;
+    public static final int CatalogStudioRenewLockEvent = 10069;
+    public static final int CatalogStudioReleaseLockEvent = 10070;
+    public static final int CatalogStudioLoadHistoryEvent = 10071;
+    public static final int CatalogStudioUndoEvent = 10072;
+    public static final int CatalogStudioValidateEvent = 10073;
+    public static final int CatalogStudioPublishEvent = 10074;
+    public static final int CatalogStudioDiscardEvent = 10075;
+    public static final int CatalogStudioRestoreEvent = 10076;
+    public static final int CatalogStudioPreviewEvent = 10077;
+    public static final int CatalogStudioExportEvent = 10078;
+    public static final int CatalogStudioDocumentDryRunEvent = 10079;
+    public static final int CatalogStudioDocumentApplyEvent = 10080;
 
     // Custom Prefixes
     public static final int RequestUserPrefixesEvent = 7011;

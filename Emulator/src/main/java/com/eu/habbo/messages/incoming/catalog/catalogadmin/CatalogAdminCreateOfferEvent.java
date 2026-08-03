@@ -1,15 +1,19 @@
 package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.catalog.CatalogAdminCacheSync;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogChangeOperation;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftMutationRequest;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftOfferData;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogEntityType;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogLockKey;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioMutationEnvelope;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioRequestParser;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioRuntime;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.CatalogAdminResultComposer;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import com.google.gson.Gson;
 
 public class CatalogAdminCreateOfferEvent extends MessageHandler {
 
@@ -55,60 +59,49 @@ public class CatalogAdminCreateOfferEvent extends MessageHandler {
             return;
         }
 
-        var gameEnvironment = Emulator.getGameEnvironment();
-        if (gameEnvironment.getCatalogManager().getCatalogPage(payload.pageId, payload.pageType) == null) {
-            this.client.sendResponse(new CatalogAdminResultComposer(false, "Page not found: " + payload.pageId));
+        CatalogStudioMutationEnvelope envelope = CatalogStudioRequestParser.parseMutationEnvelope(this.packet);
+        var mutations = CatalogStudioRuntime.services().mutations();
+        var draft = mutations.loadDraft(envelope.draftVersionId(), envelope.expectedRevision());
+        if (draft.page(pageType, payload.pageId).isEmpty()) {
+            this.client.sendResponse(
+                    new CatalogAdminResultComposer(false, "Page not found in shared draft: " + payload.pageId));
             return;
         }
 
         for (int itemId : payload.baseItemIds()) {
-            if (gameEnvironment.getItemManager().getItem(itemId) == null) {
+            if (Emulator.getGameEnvironment().getItemManager().getItem(itemId) == null) {
                 this.client.sendResponse(new CatalogAdminResultComposer(false, "Base item not found: " + itemId));
                 return;
             }
         }
 
-        int newId = -1;
-
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement = connection.prepareStatement(
-                        (payload.pageType == CatalogPageType.BUILDER)
-                                ? "INSERT INTO catalog_items_bc (page_id, item_ids, catalog_name, order_number, extradata) VALUES (?, ?, ?, ?, ?)"
-                                : "INSERT INTO catalog_items (page_id, item_ids, catalog_name, cost_credits, cost_points, points_type, amount, club_only, extradata, have_offer, offer_id, limited_stack, order_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                        Statement.RETURN_GENERATED_KEYS)) {
-            statement.setInt(1, payload.pageId);
-            statement.setString(2, payload.itemIds);
-            statement.setString(3, payload.catalogName);
-
-            if (payload.pageType == CatalogPageType.BUILDER) {
-                statement.setInt(4, payload.orderNumber);
-                statement.setString(5, payload.extradata);
-            } else {
-                statement.setInt(4, payload.costCredits);
-                statement.setInt(5, payload.costPoints);
-                statement.setInt(6, payload.pointsType);
-                statement.setInt(7, payload.amount);
-                statement.setString(8, payload.clubOnly == 1 ? "1" : "0");
-                statement.setString(9, payload.extradata);
-                statement.setString(10, payload.haveOffer ? "1" : "0");
-                statement.setInt(11, payload.offerIdGroup);
-                statement.setInt(12, payload.limitedStack);
-                statement.setInt(13, payload.orderNumber);
-            }
-            statement.execute();
-
-            try (ResultSet keys = statement.getGeneratedKeys()) {
-                if (keys.next()) {
-                    newId = keys.getInt(1);
-                }
-            }
-        }
-
-        if (newId > 0) {
-            CatalogAdminCacheSync.reloadCatalogItem(newId, pageType);
-            this.client.sendResponse(new CatalogAdminResultComposer(true, "Offer created: " + newId));
-        } else {
-            this.client.sendResponse(new CatalogAdminResultComposer(false, "Failed to create offer"));
-        }
+        CatalogDraftOfferData offerData = new CatalogDraftOfferData(
+                payload.itemIds,
+                payload.pageId,
+                payload.catalogName,
+                pageType == CatalogPageType.BUILDER ? 0 : payload.costCredits,
+                pageType == CatalogPageType.BUILDER ? 0 : payload.costPoints,
+                pageType == CatalogPageType.BUILDER ? 0 : payload.pointsType,
+                pageType == CatalogPageType.BUILDER ? 1 : payload.amount,
+                pageType == CatalogPageType.BUILDER ? 0 : payload.limitedStack,
+                payload.orderNumber,
+                pageType == CatalogPageType.BUILDER ? -1 : payload.offerIdGroup,
+                0,
+                payload.extradata,
+                true,
+                false);
+        var result = mutations.apply(new CatalogDraftMutationRequest(
+                envelope.draftVersionId(),
+                envelope.expectedRevision(),
+                this.client.getHabbo().getHabboInfo().getId(),
+                new CatalogLockKey(CatalogEntityType.PAGE, pageType, payload.pageId),
+                envelope.lockToken(),
+                envelope.summary(),
+                CatalogEntityType.OFFER,
+                0,
+                CatalogChangeOperation.CREATE,
+                new Gson().toJson(offerData)));
+        this.client.sendResponse(new CatalogAdminResultComposer(
+                true, "Offer created in shared draft: " + result.entityId() + " at revision " + result.revision()));
     }
 }

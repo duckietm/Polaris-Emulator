@@ -24,9 +24,9 @@ public final class JdbcCatalogStudioQueryRepository {
                     + "LEFT JOIN users ON users.id = locks.owner_id "
                     + "WHERE locks.version_id = ? AND locks.expires_at > CURRENT_TIMESTAMP(3) "
                     + "ORDER BY users.username, locks.owner_id";
-    static final String LOAD_PUBLISHED_VERSIONS_SQL =
-            "SELECT id, label, published_at FROM catalog_versions WHERE status = 'PUBLISHED' "
-                    + "ORDER BY published_at DESC, id DESC LIMIT 50";
+    static final String LOAD_PUBLISHED_VERSIONS_SQL = "SELECT id, label, published_at FROM catalog_versions "
+            + "WHERE status IN ('PUBLISHED', 'ARCHIVED') AND published_at IS NOT NULL "
+            + "ORDER BY published_at DESC, id DESC LIMIT 50";
     static final String LOAD_HISTORY_META_SQL =
             "SELECT revision, (SELECT COUNT(*) FROM catalog_change_groups WHERE version_id = ?) AS total_count "
                     + "FROM catalog_versions WHERE id = ?";
@@ -38,6 +38,7 @@ public final class JdbcCatalogStudioQueryRepository {
     static final String LOAD_HISTORY_ENTRIES_SQL =
             "SELECT entity_type, entity_id, operation FROM catalog_change_entries " + "WHERE group_id = ? ORDER BY id";
     static final String LOAD_USERNAME_SQL = "SELECT username FROM users WHERE id = ?";
+    static final String LOAD_DRAFT_STATUS_SQL = "SELECT status FROM catalog_versions WHERE id = ?";
 
     private final DataSource dataSource;
 
@@ -104,6 +105,23 @@ public final class JdbcCatalogStudioQueryRepository {
             return snapshot;
         } catch (SQLException exception) {
             throw new CatalogVersioningException("Catalog Studio draft snapshot load failed", exception);
+        }
+    }
+
+    public List<CatalogPageSnapshot> loadDraftPages(long draftVersionId) {
+        if (draftVersionId <= 0) throw new IllegalArgumentException("Draft version ID must be positive");
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement statement = connection.prepareStatement(LOAD_DRAFT_STATUS_SQL)) {
+            statement.setLong(1, draftVersionId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) throw new SQLException("Catalog draft not found: " + draftVersionId);
+                if (CatalogVersionStatus.valueOf(resultSet.getString("status")) != CatalogVersionStatus.DRAFT) {
+                    throw new IllegalArgumentException("Catalog version is not a draft: " + draftVersionId);
+                }
+            }
+            return List.copyOf(JdbcCatalogVersionRepository.loadPages(connection, draftVersionId));
+        } catch (SQLException exception) {
+            throw new CatalogVersioningException("Catalog Studio draft page index load failed", exception);
         }
     }
 

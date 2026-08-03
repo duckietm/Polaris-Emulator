@@ -8,6 +8,16 @@ import java.util.Objects;
 import java.util.Set;
 
 public final class CatalogDraftPreviewService {
+    private final CatalogPreviewPresentationResolver presentationResolver;
+
+    public CatalogDraftPreviewService() {
+        this(ignored -> CatalogPreviewPresentation.empty());
+    }
+
+    public CatalogDraftPreviewService(CatalogPreviewPresentationResolver presentationResolver) {
+        this.presentationResolver = Objects.requireNonNull(presentationResolver, "presentationResolver");
+    }
+
     public CatalogDraftPreview preview(CatalogVersionSnapshot draft, CatalogPreviewPersona persona) {
         Objects.requireNonNull(draft, "draft");
         Objects.requireNonNull(persona, "persona");
@@ -31,7 +41,9 @@ public final class CatalogDraftPreviewService {
             if (offer.costPoints() > persona.currencies().getOrDefault(offer.pointsType(), 0)) {
                 reasons.add("INSUFFICIENT_CURRENCY_" + offer.pointsType());
             }
-            offers.add(new CatalogPreviewOffer(offer, reasons.isEmpty(), reasons));
+            CatalogPreviewPresentation presentation = presentationResolver.resolve(offer);
+            offers.add(new CatalogPreviewOffer(
+                    offer, reasons.isEmpty(), reasons, presentation.products(), presentation.giftable()));
         }
         return new CatalogDraftPreview(draft.version().id(), draft.version().revision(), pages, offers);
     }

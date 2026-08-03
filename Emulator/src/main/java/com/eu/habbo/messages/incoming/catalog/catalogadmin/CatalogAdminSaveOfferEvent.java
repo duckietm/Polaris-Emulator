@@ -38,6 +38,7 @@ public class CatalogAdminSaveOfferEvent extends MessageHandler {
         int offerIdGroup = this.packet.readInt();
         int limitedStack = this.packet.readInt();
         int orderNumber = this.packet.readInt();
+        int songId = this.packet.readInt();
         CatalogPageType pageType = CatalogPageType.fromString(this.packet.readString());
 
         if (offerId <= 0) {
@@ -59,6 +60,7 @@ public class CatalogAdminSaveOfferEvent extends MessageHandler {
                 offerIdGroup,
                 limitedStack,
                 orderNumber,
+                songId,
                 pageType);
         if (payload == null) {
             this.client.sendResponse(new CatalogAdminResultComposer(false, "Invalid offer payload"));
@@ -104,7 +106,7 @@ public class CatalogAdminSaveOfferEvent extends MessageHandler {
                 pageType == CatalogPageType.BUILDER ? 0 : payload.limitedStack,
                 payload.orderNumber,
                 pageType == CatalogPageType.BUILDER ? -1 : payload.offerIdGroup,
-                existingItem.songId(),
+                pageType == CatalogPageType.BUILDER ? 0 : payload.songId,
                 payload.extradata,
                 pageType == CatalogPageType.BUILDER || payload.haveOffer,
                 pageType != CatalogPageType.BUILDER && payload.clubOnly == 1);

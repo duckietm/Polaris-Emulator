@@ -36,7 +36,6 @@ public record CatalogPageSnapshot(
         }
         if (pageId <= 0) throw new IllegalArgumentException("Page ID must be positive");
         if (minRank < 0) throw new IllegalArgumentException("Minimum rank cannot be negative");
-        if (orderNum < 0) throw new IllegalArgumentException("Page order cannot be negative");
     }
 
     public CatalogPageSnapshot(

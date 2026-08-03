@@ -78,7 +78,6 @@ public class CatalogAdminCreatePageEvent extends MessageHandler {
         if (iconType < 0) iconType = 0;
         if (iconColor < 0) iconColor = 0;
         if (minRank < 1) minRank = 1;
-        if (orderNum < 0) orderNum = 0;
         if (roomId < 0) roomId = 0;
 
         caption = this.clampLength(caption, MAX_CAPTION_LENGTH).trim();

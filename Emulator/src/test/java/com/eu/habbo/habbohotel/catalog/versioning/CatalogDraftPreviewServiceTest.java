@@ -48,6 +48,23 @@ class CatalogDraftPreviewServiceTest {
         assertTrue(offer.reasons().contains("INSUFFICIENT_CREDITS"));
     }
 
+    @Test
+    void carriesResolvedProductPresentationDataForTheRealCatalogTiles() {
+        CatalogVersionSnapshot draft = new CatalogVersionSnapshot(
+                version(),
+                List.of(page(CatalogPageType.NORMAL, 1, 1, true)),
+                List.of(offer(CatalogPageType.NORMAL, 10, 1, 50)));
+        CatalogPreviewProduct product = new CatalogPreviewProduct("S", 456, "", 2, false, 0, 0);
+        CatalogDraftPreviewService service =
+                new CatalogDraftPreviewService(ignored -> new CatalogPreviewPresentation(List.of(product), true));
+
+        CatalogDraftPreview preview =
+                service.preview(draft, new CatalogPreviewPersona(1, false, false, false, false, 100, Map.of()));
+
+        assertEquals(List.of(product), preview.offers().getFirst().products());
+        assertTrue(preview.offers().getFirst().giftable());
+    }
+
     private static CatalogVersion version() {
         return new CatalogVersion(
                 2, CatalogVersionStatus.DRAFT, 1L, 99, "Draft", 7, Instant.parse("2026-08-02T09:00:00Z"), null, null);

@@ -37,6 +37,11 @@ class CatalogStudioPublicationIT {
             CatalogUndoService undo = new CatalogUndoService(dataSource, versions, journal, snapshotWriter, gson);
             CatalogRuntimeState initialState = runtimeState(dataSource, versions);
             CatalogVersionSnapshot initialDraft = snapshot(dataSource, versions, initialState.draftVersionId());
+            CatalogPageSnapshot originalPage = initialDraft.pages().stream()
+                    .filter(page -> page.catalogType() == CatalogPageType.NORMAL)
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("The migrated catalog must contain a normal page"));
+            assertOperationalPageBooleans(dataSource, originalPage);
             CatalogOfferSnapshot original = initialDraft.offers().stream()
                     .filter(offer -> offer.catalogType() == CatalogPageType.NORMAL)
                     .findFirst()
@@ -94,6 +99,7 @@ class CatalogStudioPublicationIT {
                     publishedPrice,
                     purchaseVisibleOffer(dataSource, original.offerId()).getCredits(),
                     "the runtime purchase model must read the newly published price");
+            assertOperationalPageBooleans(dataSource, originalPage);
 
             CatalogRuntimeState afterPublish = runtimeState(dataSource, versions);
             assertTrue(
@@ -154,6 +160,23 @@ class CatalogStudioPublicationIT {
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (!resultSet.next()) throw new AssertionError("Operational catalog offer is missing: " + offerId);
                 return new CatalogItem(resultSet);
+            }
+        }
+    }
+
+    private static void assertOperationalPageBooleans(HikariDataSource dataSource, CatalogPageSnapshot page)
+            throws Exception {
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT visible, enabled, club_only, vip_only FROM catalog_pages WHERE id = ?")) {
+            statement.setInt(1, page.pageId());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next())
+                    throw new AssertionError("Operational catalog page is missing: " + page.pageId());
+                assertEquals(page.visible() ? "1" : "0", resultSet.getString("visible"));
+                assertEquals(page.enabled() ? "1" : "0", resultSet.getString("enabled"));
+                assertEquals(page.clubOnly() ? "1" : "0", resultSet.getString("club_only"));
+                assertEquals(page.vipOnly() ? "1" : "0", resultSet.getString("vip_only"));
             }
         }
     }

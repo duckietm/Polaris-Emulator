@@ -16,7 +16,6 @@ import java.util.Objects;
 import java.util.zip.GZIPOutputStream;
 
 public final class CatalogStudioSessionComposer extends MessageComposer {
-    private static final int SNAPSHOT_PAYLOAD_VERSION = 2;
     private static final String SNAPSHOT_ENCODING = "GZIP_BASE64_JSON";
     private static final int MAX_STRING_CHUNK_LENGTH = Short.MAX_VALUE;
 
@@ -104,18 +103,18 @@ public final class CatalogStudioSessionComposer extends MessageComposer {
             this.response.appendString(version.label());
             this.response.appendString(version.publishedAt().toString());
         }
-        List<String> pageChunks = encodePageChunks(pages);
-        this.response.appendInt(SNAPSHOT_PAYLOAD_VERSION);
+        String pageJson = new Gson().toJson(pages);
+        List<String> pageChunks = encodePageChunks(pages, pageJson);
         this.response.appendString(SNAPSHOT_ENCODING);
         this.response.appendInt(pageChunks.size());
         pageChunks.forEach(this.response::appendString);
         return this.response;
     }
 
-    private static List<String> encodePageChunks(List<CatalogPageSnapshot> pages) {
+    private static List<String> encodePageChunks(List<CatalogPageSnapshot> pages, String pageJson) {
         if (pages.isEmpty()) return List.of();
 
-        byte[] json = new Gson().toJson(pages).getBytes(StandardCharsets.UTF_8);
+        byte[] json = pageJson.getBytes(StandardCharsets.UTF_8);
         ByteArrayOutputStream compressed = new ByteArrayOutputStream();
         try (GZIPOutputStream gzip = new GZIPOutputStream(compressed)) {
             gzip.write(json);

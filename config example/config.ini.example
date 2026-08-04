@@ -37,6 +37,19 @@ rcon.host=127.0.0.1
 rcon.port=3001
 rcon.allowed=127.0.0.1;127.0.0.2
 
+# CMS HTTP API. Secure replacement for RCON, served on the game server port
+# (same paths as the other /api/* endpoints). Runs side by side with RCON so the
+# CMS can migrate command-by-command. Disabled by default.
+cms.api.enabled=false
+# Tier 1 (network): direct-peer IP / CIDR allow-list. Loopback only by default.
+# If the CMS reaches the emulator through a reverse proxy, allow-list the proxy IP.
+cms.api.allowed=127.0.0.1;::1
+# Tier 2 (request auth) and all API tuning — HMAC keys, timestamp skew, nonce TTL,
+# payload cap, TLS requirement and rate limits — live in the `emulator_api`
+# database table (seeded by migration), so they can be managed/rotated from the
+# CMS without editing this file or restarting. Generate a per-key secret with e.g.
+# `openssl rand -hex 32` and add a row to cms.api.keys as `keyId|secret|scopes`.
+
 # Plugin events keep legacy unordered/all-handlers dispatch by default.
 # Set true only when plugins are ready for annotation priority and ignoreCancelled semantics.
 polaris.events.honor_priority=false

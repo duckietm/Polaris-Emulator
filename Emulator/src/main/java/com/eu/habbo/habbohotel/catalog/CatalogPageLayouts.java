@@ -1,7 +1,6 @@
 package com.eu.habbo.habbohotel.catalog;
 
 public enum CatalogPageLayouts {
-
     default_3x3,
     guild_furni,
     guilds,
@@ -18,6 +17,7 @@ public enum CatalogPageLayouts {
     frontpage,
     badge_display,
     spaces_new,
+    spaces,
     soundmachine,
     info_pets,
     club_buy,
@@ -38,6 +38,8 @@ public enum CatalogPageLayouts {
     root,
     vip_buy,
     frontpage_featured,
+    productpage1,
+    collectibles,
     builders_club_addons,
     builders_club_frontpage,
     builders_club_loyalty,

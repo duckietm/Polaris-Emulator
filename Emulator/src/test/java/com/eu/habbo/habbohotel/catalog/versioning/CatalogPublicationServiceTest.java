@@ -1,0 +1,235 @@
+package com.eu.habbo.habbohotel.catalog.versioning;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import javax.sql.DataSource;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+class CatalogPublicationServiceTest {
+    private static final long ACTIVE_ID = 1;
+    private static final long DRAFT_ID = 2;
+    private static final long NEXT_DRAFT_ID = 3;
+    private static final long REVISION = 5;
+    private static final int ACTOR_ID = 7;
+
+    private final List<String> events = new ArrayList<>();
+    private final Connection connection = mock(Connection.class);
+    private final FakeVersionRepository versions = new FakeVersionRepository();
+    private final FakeProjection projection = new FakeProjection();
+    private final FakeLocks locks = new FakeLocks();
+    private final CatalogPublicationHooks hooks = (published, nextDraftId) -> events.add("afterCommit:" + nextDraftId);
+    private DataSource dataSource;
+
+    @BeforeEach
+    void setUp() throws Exception {
+        dataSource = mock(DataSource.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        doAnswer(invocation -> {
+                    events.add("commit");
+                    return null;
+                })
+                .when(connection)
+                .commit();
+        doAnswer(invocation -> {
+                    events.add("rollback");
+                    return null;
+                })
+                .when(connection)
+                .rollback();
+        versions.snapshot = snapshot();
+    }
+
+    @Test
+    void validationFailureLeavesLiveCatalogAndVersionPointersUntouched() throws Exception {
+        CatalogPublicationService service = service(referenceData(Set.of(), Map.of(10, 1)));
+
+        CatalogPublicationResult result = service.publish(request());
+
+        assertFalse(result.published());
+        assertFalse(result.validation().valid());
+        assertEquals(List.of("lockRuntime", "loadSnapshot", "rollback"), events);
+        assertEquals(0, projection.calls);
+        verify(connection, never()).commit();
+    }
+
+    @Test
+    void projectionFailureRollsBackAndDoesNotReloadOrBroadcast() throws Exception {
+        projection.failure = new SQLException("projection failed");
+        CatalogPublicationService service = service(referenceData(Set.of(100), Map.of(10, 1)));
+
+        assertThrows(CatalogPublicationException.class, () -> service.publish(request()));
+
+        assertEquals(List.of("lockRuntime", "loadSnapshot", "project", "rollback"), events);
+        verify(connection, never()).commit();
+        assertFalse(events.stream().anyMatch(event -> event.startsWith("afterCommit")));
+    }
+
+    @Test
+    void publicationProjectsThenSwitchesVersionsAndRunsHooksOnlyAfterCommit() {
+        CatalogPublicationService service = service(referenceData(Set.of(100), Map.of(10, 1)));
+
+        CatalogPublicationResult result = service.publish(request());
+
+        assertTrue(result.published());
+        assertTrue(result.validation().valid());
+        assertEquals(DRAFT_ID, result.activeVersionId());
+        assertEquals(NEXT_DRAFT_ID, result.draftVersionId());
+        assertEquals(
+                List.of(
+                        "lockRuntime",
+                        "loadSnapshot",
+                        "project",
+                        "archive:1",
+                        "publish:2",
+                        "clone:2",
+                        "pointers:2:3",
+                        "releaseLocks:2",
+                        "commit",
+                        "afterCommit:3"),
+                events);
+    }
+
+    private CatalogPublicationService service(CatalogValidationReferenceData referenceData) {
+        return new CatalogPublicationService(
+                dataSource, versions, connection -> referenceData, projection, locks, hooks);
+    }
+
+    private static CatalogPublicationRequest request() {
+        return new CatalogPublicationRequest(DRAFT_ID, REVISION, ACTOR_ID, "Draft after publication");
+    }
+
+    private static CatalogValidationReferenceData referenceData(
+            Set<Integer> itemIds, Map<Integer, Integer> liveLimitedSells) {
+        return new CatalogValidationReferenceData(itemIds, Set.of(5), liveLimitedSells, Set.of("root", "default_3x3"));
+    }
+
+    private static CatalogVersionSnapshot snapshot() {
+        CatalogPageSnapshot root = new CatalogPageSnapshot(
+                1, -1, "root", "Root", "root", 0, 0, 1, 0, true, true, false, "NORMAL", false, "", "", "", "", "", "",
+                "", 0, "");
+        CatalogOfferSnapshot offer =
+                new CatalogOfferSnapshot(10, "100", 1, "Chair", 3, 0, 0, 1, 2, 0, 10, 0, "", true, false);
+        CatalogVersion version = new CatalogVersion(
+                DRAFT_ID,
+                CatalogVersionStatus.DRAFT,
+                ACTIVE_ID,
+                REVISION,
+                "Shared draft",
+                ACTOR_ID,
+                Instant.parse("2026-08-02T11:00:00Z"),
+                null,
+                null);
+        return new CatalogVersionSnapshot(version, List.of(root), List.of(offer));
+    }
+
+    private final class FakeVersionRepository implements CatalogVersionRepository {
+        private CatalogVersionSnapshot snapshot;
+
+        @Override
+        public CatalogRuntimeState lockRuntimeState(Connection ignored) {
+            events.add("lockRuntime");
+            return new CatalogRuntimeState(ACTIVE_ID, DRAFT_ID, Instant.EPOCH);
+        }
+
+        @Override
+        public CatalogVersionSnapshot loadSnapshot(Connection ignored, long versionId) {
+            events.add("loadSnapshot");
+            return snapshot;
+        }
+
+        @Override
+        public long cloneAsDraft(Connection ignored, long sourceVersionId, int actorId, String label) {
+            events.add("clone:" + sourceVersionId);
+            return NEXT_DRAFT_ID;
+        }
+
+        @Override
+        public void archiveVersion(Connection ignored, long versionId) {
+            events.add("archive:" + versionId);
+        }
+
+        @Override
+        public void markPublished(Connection ignored, long versionId, int actorId) {
+            events.add("publish:" + versionId);
+        }
+
+        @Override
+        public void updateRuntimePointers(Connection ignored, long activeVersionId, long draftVersionId) {
+            events.add("pointers:" + activeVersionId + ":" + draftVersionId);
+        }
+
+        @Override
+        public long nextPageId(Connection ignored) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long nextOfferId(Connection ignored) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long incrementRevision(Connection ignored, long versionId, long expectedRevision) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    private final class FakeProjection implements CatalogLiveProjection {
+        private int calls;
+        private SQLException failure;
+
+        @Override
+        public void replace(Connection ignored, CatalogVersionSnapshot snapshot) throws SQLException {
+            calls++;
+            events.add("project");
+            if (failure != null) throw failure;
+        }
+    }
+
+    private final class FakeLocks implements CatalogLockRepository {
+        @Override
+        public void releaseAll(Connection ignored, long versionId) {
+            events.add("releaseLocks:" + versionId);
+        }
+
+        @Override
+        public CatalogLockRecord acquire(
+                long versionId, CatalogLockKey key, int ownerId, UUID token, Instant now, Instant expiresAt) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Optional<CatalogLockRecord> renew(
+                long versionId, CatalogLockKey key, int ownerId, UUID token, Instant now, Instant expiresAt) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean release(long versionId, CatalogLockKey key, int ownerId, UUID token) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void releaseAll(long versionId) {
+            throw new UnsupportedOperationException();
+        }
+    }
+}

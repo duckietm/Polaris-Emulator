@@ -4501,6 +4501,28 @@
       "fields": []
     },
     {
+      "name": "ITEM_EXCHANGE_REDEEM",
+      "direction": "client_to_server",
+      "header": 3115,
+      "java": {
+        "symbol": "RedeemItemEvent",
+        "className": "RedeemItemEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/RedeemItemEvent.java"
+      },
+      "typescript": {
+        "symbol": "ITEM_EXCHANGE_REDEEM",
+        "className": "FurnitureExchangeComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/logic/FurnitureExchangeComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "itemId"
+        }
+      ]
+    },
+    {
       "name": "ROOM_SETTINGS",
       "direction": "client_to_server",
       "header": 3129,
@@ -5573,6 +5595,33 @@
       ]
     },
     {
+      "name": "FRIEND_FURNI_CONFIRM_LOCK",
+      "direction": "client_to_server",
+      "header": 3775,
+      "java": {
+        "symbol": "LoveLockStartConfirmEvent",
+        "className": "LoveLockStartConfirmEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/lovelock/LoveLockStartConfirmEvent.java"
+      },
+      "typescript": {
+        "symbol": "FRIEND_FURNI_CONFIRM_LOCK",
+        "className": "FriendFurniConfirmLockMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/friendfurni/FriendFurniConfirmLockMessageComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "itemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "confirmed"
+        }
+      ]
+    },
+    {
       "name": "GET_CATEGORIES_WITH_USER_COUNT",
       "direction": "client_to_server",
       "header": 3782,
@@ -6195,22 +6244,6 @@
       ]
     },
     {
-      "name": "SNOWWAR_LOAD_STAGE_READY",
-      "direction": "client_to_server",
-      "header": 6000,
-      "java": {
-        "symbol": "UNKNOWN_SNOWSTORM_6000",
-        "className": "SnowStormLoadStageReadyEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormLoadStageReadyEvent.java"
-      },
-      "typescript": {
-        "symbol": "SNOWWAR_LOAD_STAGE_READY",
-        "className": "SnowWarLoadStageReadyComposer",
-        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarLoadStageReadyComposer.ts"
-      },
-      "fields": []
-    },
-    {
       "name": "SNOWWAR_EXIT_GAME",
       "direction": "client_to_server",
       "header": 6001,
@@ -6252,108 +6285,6 @@
           "name": ""
         }
       ]
-    },
-    {
-      "name": "SNOWWAR_WALK",
-      "direction": "client_to_server",
-      "header": 6003,
-      "java": {
-        "symbol": "UNKNOWN_SNOWSTORM_6003",
-        "className": "SnowStormWalkEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormWalkEvent.java"
-      },
-      "typescript": {
-        "symbol": "SNOWWAR_WALK",
-        "className": "SnowWarWalkComposer",
-        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarWalkComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "worldX"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "worldY"
-        }
-      ]
-    },
-    {
-      "name": "SNOWWAR_THROW_AT_LOCATION",
-      "direction": "client_to_server",
-      "header": 6004,
-      "java": {
-        "symbol": "UNKNOWN_SNOWSTORM_6004",
-        "className": "SnowStormThrowAtLocationEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormThrowAtLocationEvent.java"
-      },
-      "typescript": {
-        "symbol": "SNOWWAR_THROW_AT_LOCATION",
-        "className": "SnowWarThrowAtLocationComposer",
-        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarThrowAtLocationComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "worldX"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "worldY"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "trajectory"
-        }
-      ]
-    },
-    {
-      "name": "SNOWWAR_THROW_AT_PLAYER",
-      "direction": "client_to_server",
-      "header": 6005,
-      "java": {
-        "symbol": "UNKNOWN_SNOWSTORM_6005",
-        "className": "SnowStormThrowAtPlayerEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormThrowAtPlayerEvent.java"
-      },
-      "typescript": {
-        "symbol": "SNOWWAR_THROW_AT_PLAYER",
-        "className": "SnowWarThrowAtPlayerComposer",
-        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarThrowAtPlayerComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "targetObjectId"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "trajectory"
-        }
-      ]
-    },
-    {
-      "name": "SNOWWAR_CREATE_SNOWBALL",
-      "direction": "client_to_server",
-      "header": 6006,
-      "java": {
-        "symbol": "UNKNOWN_SNOWSTORM_6006",
-        "className": "SnowStormCreateSnowballEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormCreateSnowballEvent.java"
-      },
-      "typescript": {
-        "symbol": "SNOWWAR_CREATE_SNOWBALL",
-        "className": "SnowWarCreateSnowballComposer",
-        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarCreateSnowballComposer.ts"
-      },
-      "fields": []
     },
     {
       "name": "SNOWWAR_REQUEST_FULL_GAME_STATUS",
@@ -6472,6 +6403,206 @@
         "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarExitEditorComposer.ts"
       },
       "fields": []
+    },
+    {
+      "name": "SNOWWAR_SELECT_ARENA",
+      "direction": "client_to_server",
+      "header": 6015,
+      "java": {
+        "symbol": "UNKNOWN_SNOWSTORM_6015",
+        "className": "SnowStormSelectArenaEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormSelectArenaEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_SELECT_ARENA",
+        "className": "SnowWarSelectArenaComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarSelectArenaComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "SNOWWAR_GET_ALL_TIME_LEADERBOARD",
+      "direction": "client_to_server",
+      "header": 6027,
+      "java": {
+        "symbol": "SnowStormGetAllTimeLeaderboardEvent",
+        "className": "SnowStormGetAllTimeLeaderboardEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormGetAllTimeLeaderboardEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_GET_ALL_TIME_LEADERBOARD",
+        "className": "SnowWarGetAllTimeLeaderboardComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarGetAllTimeLeaderboardComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "gameTypeId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "startRank"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "viewSize"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "windowSize"
+        }
+      ]
+    },
+    {
+      "name": "SNOWWAR_GET_ALL_TIME_FRIENDS_LEADERBOARD",
+      "direction": "client_to_server",
+      "header": 6028,
+      "java": {
+        "symbol": "SnowStormGetAllTimeFriendsLeaderboardEvent",
+        "className": "SnowStormGetAllTimeFriendsLeaderboardEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormGetAllTimeFriendsLeaderboardEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_GET_ALL_TIME_FRIENDS_LEADERBOARD",
+        "className": "SnowWarGetAllTimeFriendsLeaderboardComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarGetAllTimeFriendsLeaderboardComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "gameTypeId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "startRank"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "viewSize"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "windowSize"
+        }
+      ]
+    },
+    {
+      "name": "SNOWWAR_GET_WEEKLY_LEADERBOARD",
+      "direction": "client_to_server",
+      "header": 6029,
+      "java": {
+        "symbol": "SnowStormGetWeeklyLeaderboardEvent",
+        "className": "SnowStormGetWeeklyLeaderboardEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormGetWeeklyLeaderboardEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_GET_WEEKLY_LEADERBOARD",
+        "className": "SnowWarGetWeeklyLeaderboardComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarGetWeeklyLeaderboardComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "gameTypeId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "weekOffset"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "startRank"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "viewSize"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "windowSize"
+        }
+      ]
+    },
+    {
+      "name": "SNOWWAR_GET_WEEKLY_FRIENDS_LEADERBOARD",
+      "direction": "client_to_server",
+      "header": 6030,
+      "java": {
+        "symbol": "SnowStormGetWeeklyFriendsLeaderboardEvent",
+        "className": "SnowStormGetWeeklyFriendsLeaderboardEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormGetWeeklyFriendsLeaderboardEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_GET_WEEKLY_FRIENDS_LEADERBOARD",
+        "className": "SnowWarGetWeeklyFriendsLeaderboardComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarGetWeeklyFriendsLeaderboardComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "gameTypeId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "weekOffset"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "startRank"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "viewSize"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "windowSize"
+        }
+      ]
     },
     {
       "name": "REQUEST_PREFIXES",
@@ -7480,6 +7611,385 @@
       ]
     },
     {
+      "name": "CHEST_DEPOSIT",
+      "direction": "client_to_server",
+      "header": 9313,
+      "java": {
+        "symbol": "ChestDepositEvent",
+        "className": "ChestDepositEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestDepositEvent.java"
+      },
+      "typescript": {
+        "symbol": "CHEST_DEPOSIT",
+        "className": "ChestDepositComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestDepositComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "itemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "currencyType"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "amount"
+        }
+      ]
+    },
+    {
+      "name": "CHEST_WITHDRAW",
+      "direction": "client_to_server",
+      "header": 9314,
+      "java": {
+        "symbol": "ChestWithdrawEvent",
+        "className": "ChestWithdrawEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestWithdrawEvent.java"
+      },
+      "typescript": {
+        "symbol": "CHEST_WITHDRAW",
+        "className": "ChestWithdrawComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestWithdrawComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "itemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "currencyType"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "amount"
+        }
+      ]
+    },
+    {
+      "name": "CHEST_SAVE_SETTINGS",
+      "direction": "client_to_server",
+      "header": 9315,
+      "java": {
+        "symbol": "ChestSaveSettingsEvent",
+        "className": "ChestSaveSettingsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestSaveSettingsEvent.java"
+      },
+      "typescript": {
+        "symbol": "CHEST_SAVE_SETTINGS",
+        "className": "ChestSaveSettingsComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestSaveSettingsComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "itemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "name"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "description"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "accessOpen"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "accessDonate"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "appearanceState"
+        }
+      ]
+    },
+    {
+      "name": "CHEST_SAVE_NOTIFICATIONS",
+      "direction": "client_to_server",
+      "header": 9316,
+      "java": {
+        "symbol": "ChestSaveNotificationsEvent",
+        "className": "ChestSaveNotificationsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestSaveNotificationsEvent.java"
+      },
+      "typescript": {
+        "symbol": "CHEST_SAVE_NOTIFICATIONS",
+        "className": "ChestSaveNotificationsComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestSaveNotificationsComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "itemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "full"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "donation"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "withdraw"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "empty"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "wired"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "mode"
+        }
+      ]
+    },
+    {
+      "name": "CHEST_UPGRADE_CAPACITY",
+      "direction": "client_to_server",
+      "header": 9317,
+      "java": {
+        "symbol": "ChestUpgradeCapacityEvent",
+        "className": "ChestUpgradeCapacityEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestUpgradeCapacityEvent.java"
+      },
+      "typescript": {
+        "symbol": "CHEST_UPGRADE_CAPACITY",
+        "className": "ChestUpgradeCapacityComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestUpgradeCapacityComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "itemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "quantity"
+        }
+      ]
+    },
+    {
+      "name": "CHEST_REQUEST_LOG",
+      "direction": "client_to_server",
+      "header": 9318,
+      "java": {
+        "symbol": "ChestRequestLogEvent",
+        "className": "ChestRequestLogEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestRequestLogEvent.java"
+      },
+      "typescript": {
+        "symbol": "CHEST_REQUEST_LOG",
+        "className": "ChestRequestLogComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestRequestLogComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "itemId"
+        }
+      ]
+    },
+    {
+      "name": "CHEST_WITHDRAW_FURNI",
+      "direction": "client_to_server",
+      "header": 9320,
+      "java": {
+        "symbol": "ChestWithdrawFurniEvent",
+        "className": "ChestWithdrawFurniEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestWithdrawFurniEvent.java"
+      },
+      "typescript": {
+        "symbol": "CHEST_WITHDRAW_FURNI",
+        "className": "ChestWithdrawFurniComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestWithdrawFurniComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "itemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "wallItem"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "typeId"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "legacyPosterId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "amount"
+        }
+      ]
+    },
+    {
+      "name": "CHEST_DEPOSIT_FURNI",
+      "direction": "client_to_server",
+      "header": 9321,
+      "java": {
+        "symbol": "ChestDepositFurniEvent",
+        "className": "ChestDepositFurniEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestDepositFurniEvent.java"
+      },
+      "typescript": {
+        "symbol": "CHEST_DEPOSIT_FURNI",
+        "className": "ChestDepositFurniComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestDepositFurniComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "itemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "baseItemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "amount"
+        }
+      ]
+    },
+    {
+      "name": "CHEST_START_DEPOSIT",
+      "direction": "client_to_server",
+      "header": 9324,
+      "java": {
+        "symbol": "ChestStartDepositEvent",
+        "className": "ChestStartDepositEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestStartDepositEvent.java"
+      },
+      "typescript": {
+        "symbol": "CHEST_START_DEPOSIT",
+        "className": "ChestStartDepositComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestStartDepositComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "chestItemId"
+        }
+      ]
+    },
+    {
+      "name": "CHEST_DEPOSIT_INVENTORY_ITEM",
+      "direction": "client_to_server",
+      "header": 9325,
+      "java": {
+        "symbol": "ChestDepositInventoryItemEvent",
+        "className": "ChestDepositInventoryItemEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestDepositInventoryItemEvent.java"
+      },
+      "typescript": {
+        "symbol": "CHEST_DEPOSIT_INVENTORY_ITEM",
+        "className": "ChestDepositInventoryItemComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestDepositInventoryItemComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "chestItemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "inventoryItemId"
+        }
+      ]
+    },
+    {
+      "name": "CHEST_WITHDRAW_ALL_FURNI",
+      "direction": "client_to_server",
+      "header": 9326,
+      "java": {
+        "symbol": "ChestWithdrawAllFurniEvent",
+        "className": "ChestWithdrawAllFurniEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestWithdrawAllFurniEvent.java"
+      },
+      "typescript": {
+        "symbol": "CHEST_WITHDRAW_ALL_FURNI",
+        "className": "ChestWithdrawAllFurniComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestWithdrawAllFurniComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "itemId"
+        }
+      ]
+    },
+    {
+      "name": "CHEST_OPEN",
+      "direction": "client_to_server",
+      "header": 9327,
+      "java": {
+        "symbol": "ChestOpenEvent",
+        "className": "ChestOpenEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestOpenEvent.java"
+      },
+      "typescript": {
+        "symbol": "CHEST_OPEN",
+        "className": "ChestOpenComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestOpenComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "itemId"
+        }
+      ]
+    },
+    {
       "name": "GET_TRAX_EDITOR_SONGS",
       "direction": "client_to_server",
       "header": 9330,
@@ -7568,6 +8078,215 @@
           "kind": "scalar",
           "type": "int",
           "name": "songId"
+        }
+      ]
+    },
+    {
+      "name": "SOUNDBOARD_REQUEST_SETTINGS",
+      "direction": "client_to_server",
+      "header": 9340,
+      "java": {
+        "symbol": "SoundboardRequestSettingsEvent",
+        "className": "SoundboardRequestSettingsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/soundboard/SoundboardRequestSettingsEvent.java"
+      },
+      "typescript": {
+        "symbol": "SOUNDBOARD_REQUEST_SETTINGS",
+        "className": "SoundboardRequestSettingsComposer",
+        "path": "packages/communication/src/messages/outgoing/soundboard/SoundboardRequestSettingsComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "SOUNDBOARD_CATALOG_REQUEST",
+      "direction": "client_to_server",
+      "header": 9342,
+      "java": {
+        "symbol": "SoundboardCatalogRequestEvent",
+        "className": "SoundboardCatalogRequestEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/soundboard/SoundboardCatalogRequestEvent.java"
+      },
+      "typescript": {
+        "symbol": "SOUNDBOARD_CATALOG_REQUEST",
+        "className": "SoundboardCatalogRequestComposer",
+        "path": "packages/communication/src/messages/outgoing/soundboard/SoundboardCatalogRequestComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "SOUNDBOARD_CATALOG_UPSERT",
+      "direction": "client_to_server",
+      "header": 9343,
+      "java": {
+        "symbol": "SoundboardCatalogUpsertEvent",
+        "className": "SoundboardCatalogUpsertEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/soundboard/SoundboardCatalogUpsertEvent.java"
+      },
+      "typescript": {
+        "symbol": "SOUNDBOARD_CATALOG_UPSERT",
+        "className": "SoundboardCatalogUpsertComposer",
+        "path": "packages/communication/src/messages/outgoing/soundboard/SoundboardCatalogUpsertComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "command"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "command"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "command"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "command"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "command"
+        }
+      ]
+    },
+    {
+      "name": "HOTEL_VIEW_LANDING_REQUEST",
+      "direction": "client_to_server",
+      "header": 9410,
+      "java": {
+        "symbol": "HotelViewLandingRequestEvent",
+        "className": "HotelViewLandingRequestEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingRequestEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOTEL_VIEW_LANDING_REQUEST",
+        "className": "HotelViewLandingRequestComposer",
+        "path": "packages/communication/src/messages/outgoing/landingview/HotelViewLandingRequestComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "HOTEL_VIEW_LANDING_VOTE",
+      "direction": "client_to_server",
+      "header": 9413,
+      "java": {
+        "symbol": "HotelViewLandingVoteEvent",
+        "className": "HotelViewLandingVoteEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingVoteEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOTEL_VIEW_LANDING_VOTE",
+        "className": "HotelViewLandingVoteComposer",
+        "path": "packages/communication/src/messages/outgoing/landingview/HotelViewLandingVoteComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "HOTEL_VIEW_LANDING_RESET_VOTES",
+      "direction": "client_to_server",
+      "header": 9414,
+      "java": {
+        "symbol": "HotelViewLandingResetVotesEvent",
+        "className": "HotelViewLandingResetVotesEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingResetVotesEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOTEL_VIEW_LANDING_RESET_VOTES",
+        "className": "HotelViewLandingResetVotesComposer",
+        "path": "packages/communication/src/messages/outgoing/landingview/HotelViewLandingResetVotesComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "USER_SETTINGS_PRIVACY",
+      "direction": "client_to_server",
+      "header": 9415,
+      "java": {
+        "symbol": "SaveGamePrivacySettingsEvent",
+        "className": "SaveGamePrivacySettingsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/users/SaveGamePrivacySettingsEvent.java"
+      },
+      "typescript": {
+        "symbol": "USER_SETTINGS_PRIVACY",
+        "className": "UserSettingsPrivacyComposer",
+        "path": "packages/communication/src/messages/outgoing/user/settings/UserSettingsPrivacyComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "hideOnline"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "blockFollowing"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "blockFriendRequests"
+        }
+      ]
+    },
+    {
+      "name": "REQUEST_OFFLINE_MESSAGES",
+      "direction": "client_to_server",
+      "header": 9416,
+      "java": {
+        "symbol": "RequestOfflineMessagesEvent",
+        "className": "RequestOfflineMessagesEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/friends/RequestOfflineMessagesEvent.java"
+      },
+      "typescript": {
+        "symbol": "REQUEST_OFFLINE_MESSAGES",
+        "className": "RequestOfflineMessagesComposer",
+        "path": "packages/communication/src/messages/outgoing/friendlist/RequestOfflineMessagesComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "USE_HABBICON",
+      "direction": "client_to_server",
+      "header": 9417,
+      "java": {
+        "symbol": "RoomUserHabbiconEvent",
+        "className": "RoomUserHabbiconEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/users/RoomUserHabbiconEvent.java"
+      },
+      "typescript": {
+        "symbol": "USE_HABBICON",
+        "className": "UseHabbiconComposer",
+        "path": "packages/communication/src/messages/outgoing/room/unit/UseHabbiconComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "habbiconId"
         }
       ]
     },
@@ -8222,477 +8941,6 @@
       ]
     },
     {
-      "name": "CATALOG_ADMIN_SAVE_PAGE",
-      "direction": "client_to_server",
-      "header": 10050,
-      "java": {
-        "symbol": "CatalogAdminSavePageEvent",
-        "className": "CatalogAdminSavePageEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSavePageEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_ADMIN_SAVE_PAGE",
-        "className": "CatalogAdminSavePageComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminSavePageComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "pageId"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "caption"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "caption2"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "layout"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "iconType"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "minRank"
-        },
-        {
-          "kind": "scalar",
-          "type": "boolean",
-          "name": "visible"
-        },
-        {
-          "kind": "scalar",
-          "type": "boolean",
-          "name": "enabled"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "orderNum"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "parentId"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "headline"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "teaser"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "textDetails"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "pageType"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "catalogMode"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "text1"
-        }
-      ]
-    },
-    {
-      "name": "CATALOG_ADMIN_CREATE_PAGE",
-      "direction": "client_to_server",
-      "header": 10051,
-      "java": {
-        "symbol": "CatalogAdminCreatePageEvent",
-        "className": "CatalogAdminCreatePageEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminCreatePageEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_ADMIN_CREATE_PAGE",
-        "className": "CatalogAdminCreatePageComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminCreatePageComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "caption"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "caption2"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "layout"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "iconType"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "minRank"
-        },
-        {
-          "kind": "scalar",
-          "type": "boolean",
-          "name": "visible"
-        },
-        {
-          "kind": "scalar",
-          "type": "boolean",
-          "name": "enabled"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "orderNum"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "parentId"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "pageType"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "catalogMode"
-        }
-      ]
-    },
-    {
-      "name": "CATALOG_ADMIN_DELETE_PAGE",
-      "direction": "client_to_server",
-      "header": 10052,
-      "java": {
-        "symbol": "CatalogAdminDeletePageEvent",
-        "className": "CatalogAdminDeletePageEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminDeletePageEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_ADMIN_DELETE_PAGE",
-        "className": "CatalogAdminDeletePageComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminDeletePageComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "pageId"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "pageType"
-        }
-      ]
-    },
-    {
-      "name": "CATALOG_ADMIN_SAVE_OFFER",
-      "direction": "client_to_server",
-      "header": 10053,
-      "java": {
-        "symbol": "CatalogAdminSaveOfferEvent",
-        "className": "CatalogAdminSaveOfferEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSaveOfferEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_ADMIN_SAVE_OFFER",
-        "className": "CatalogAdminSaveOfferComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminSaveOfferComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "offerId"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "pageId"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "itemIds"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "catalogName"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "costCredits"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "costPoints"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "pointsType"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "amount"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "clubOnly"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "extradata"
-        },
-        {
-          "kind": "scalar",
-          "type": "boolean",
-          "name": "haveOffer"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "offerIdGroup"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "limitedStack"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "orderNumber"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "pageType"
-        }
-      ]
-    },
-    {
-      "name": "CATALOG_ADMIN_CREATE_OFFER",
-      "direction": "client_to_server",
-      "header": 10054,
-      "java": {
-        "symbol": "CatalogAdminCreateOfferEvent",
-        "className": "CatalogAdminCreateOfferEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminCreateOfferEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_ADMIN_CREATE_OFFER",
-        "className": "CatalogAdminCreateOfferComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminCreateOfferComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "pageId"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "itemIds"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "catalogName"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "costCredits"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "costPoints"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "pointsType"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "amount"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "clubOnly"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "extradata"
-        },
-        {
-          "kind": "scalar",
-          "type": "boolean",
-          "name": "haveOffer"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "offerIdGroup"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "limitedStack"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "orderNumber"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "pageType"
-        }
-      ]
-    },
-    {
-      "name": "CATALOG_ADMIN_DELETE_OFFER",
-      "direction": "client_to_server",
-      "header": 10055,
-      "java": {
-        "symbol": "CatalogAdminDeleteOfferEvent",
-        "className": "CatalogAdminDeleteOfferEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminDeleteOfferEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_ADMIN_DELETE_OFFER",
-        "className": "CatalogAdminDeleteOfferComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminDeleteOfferComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "offerId"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "pageType"
-        }
-      ]
-    },
-    {
-      "name": "CATALOG_ADMIN_MOVE_OFFER",
-      "direction": "client_to_server",
-      "header": 10056,
-      "java": {
-        "symbol": "CatalogAdminMoveOfferEvent",
-        "className": "CatalogAdminMoveOfferEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminMoveOfferEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_ADMIN_MOVE_OFFER",
-        "className": "CatalogAdminMoveOfferComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminMoveOfferComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "offerId"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "orderNumber"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "pageType"
-        }
-      ]
-    },
-    {
-      "name": "CATALOG_ADMIN_MOVE_PAGE",
-      "direction": "client_to_server",
-      "header": 10057,
-      "java": {
-        "symbol": "CatalogAdminMovePageEvent",
-        "className": "CatalogAdminMovePageEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminMovePageEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_ADMIN_MOVE_PAGE",
-        "className": "CatalogAdminMovePageComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminMovePageComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "pageId"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "newParentId"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "newIndex"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "pageType"
-        }
-      ]
-    },
-    {
       "name": "CATALOG_ADMIN_PUBLISH",
       "direction": "client_to_server",
       "header": 10058,
@@ -8707,65 +8955,6 @@
         "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminPublishComposer.ts"
       },
       "fields": []
-    },
-    {
-      "name": "CATALOG_ADMIN_SAVE_PAGE_IMAGES",
-      "direction": "client_to_server",
-      "header": 10060,
-      "java": {
-        "symbol": "CatalogAdminSavePageImagesEvent",
-        "className": "CatalogAdminSavePageImagesEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSavePageImagesEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_ADMIN_SAVE_PAGE_IMAGES",
-        "className": "CatalogAdminSavePageImagesComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminSavePageImagesComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "pageId"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "headerImage"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "teaserImage"
-        }
-      ]
-    },
-    {
-      "name": "CATALOG_ADMIN_SAVE_PAGE_ICON",
-      "direction": "client_to_server",
-      "header": 10061,
-      "java": {
-        "symbol": "CatalogAdminSavePageIconEvent",
-        "className": "CatalogAdminSavePageIconEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSavePageIconEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_ADMIN_SAVE_PAGE_ICON",
-        "className": "CatalogAdminSavePageIconComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminSavePageIconComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "pageId"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "iconId"
-        }
-      ]
     },
     {
       "name": "CATALOG_ADMIN_LOAD_OFFER",
@@ -8791,6 +8980,16 @@
           "kind": "scalar",
           "type": "string",
           "name": "pageType"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "draftVersionId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "expectedRevision"
         }
       ]
     },
@@ -8818,8 +9017,34 @@
           "kind": "scalar",
           "type": "string",
           "name": "pageType"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "draftVersionId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "expectedRevision"
         }
       ]
+    },
+    {
+      "name": "CATALOG_STUDIO_OPEN_SESSION",
+      "direction": "client_to_server",
+      "header": 10067,
+      "java": {
+        "symbol": "CatalogStudioOpenSessionEvent",
+        "className": "CatalogStudioOpenSessionEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioOpenSessionEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_OPEN_SESSION",
+        "className": "CatalogStudioOpenSessionComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioOpenSessionComposer.ts"
+      },
+      "fields": []
     },
     {
       "name": "CHAT_REVIEW_SESSION_DETACHED",
@@ -9626,6 +9851,11 @@
         {
           "kind": "scalar",
           "type": "boolean",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
           "name": ""
         }
       ]
@@ -15366,48 +15596,6 @@
       ]
     },
     {
-      "name": "WIRED_FURNI_RUNTIME_STATE",
-      "direction": "server_to_client",
-      "header": 5108,
-      "java": {
-        "symbol": "WiredFurniRuntimeStateComposer",
-        "className": "WiredFurniRuntimeStateComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredFurniRuntimeStateComposer.java"
-      },
-      "typescript": {
-        "symbol": "WIRED_FURNI_RUNTIME_STATE",
-        "className": "WiredFurniRuntimeStateParser",
-        "path": "packages/communication/src/messages/parser/roomevents/WiredFurniRuntimeStateParser.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "boolean",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "boolean",
-          "name": ""
-        }
-      ]
-    },
-    {
       "name": "PREFIX_RECEIVED",
       "direction": "server_to_client",
       "header": 7002,
@@ -15675,6 +15863,48 @@
           "kind": "scalar",
           "type": "string",
           "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "UNIT_HABBICON",
+      "direction": "server_to_client",
+      "header": 9410,
+      "java": {
+        "symbol": "RoomUserHabbiconComposer",
+        "className": "RoomUserHabbiconComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/users/RoomUserHabbiconComposer.java"
+      },
+      "typescript": {
+        "symbol": "UNIT_HABBICON",
+        "className": "RoomUnitHabbiconParser",
+        "path": "packages/communication/src/messages/parser/room/unit/RoomUnitHabbiconParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
         }
       ]
     },
@@ -15693,6 +15923,65 @@
         "path": "packages/communication/src/messages/parser/traxeditor/TraxEditorErrorParser.ts"
       },
       "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "SOUNDBOARD_PLAY_DENIED",
+      "direction": "server_to_client",
+      "header": 9440,
+      "java": {
+        "symbol": "SoundboardPlayDeniedComposer",
+        "className": "SoundboardPlayDeniedComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/soundboard/SoundboardPlayDeniedComposer.java"
+      },
+      "typescript": {
+        "symbol": "SOUNDBOARD_PLAY_DENIED",
+        "className": "SoundboardPlayDeniedParser",
+        "path": "packages/communication/src/messages/parser/soundboard/SoundboardPlayDeniedParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "SOUNDBOARD_CATALOG_RESULT",
+      "direction": "server_to_client",
+      "header": 9442,
+      "java": {
+        "symbol": "SoundboardCatalogResultComposer",
+        "className": "SoundboardCatalogResultComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/soundboard/SoundboardCatalogResultComposer.java"
+      },
+      "typescript": {
+        "symbol": "SOUNDBOARD_CATALOG_RESULT",
+        "className": "SoundboardCatalogResultParser",
+        "path": "packages/communication/src/messages/parser/soundboard/SoundboardCatalogResultParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
         {
           "kind": "scalar",
           "type": "int",
@@ -15823,38 +16112,6 @@
         },
         {
           "kind": "scalar",
-          "type": "int",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": ""
-        }
-      ]
-    },
-    {
-      "name": "CATALOG_ADMIN_PAGE_DETAILS",
-      "direction": "server_to_client",
-      "header": 10063,
-      "java": {
-        "symbol": "CatalogAdminPageDetailsComposer",
-        "className": "CatalogAdminPageDetailsComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/CatalogAdminPageDetailsComposer.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_ADMIN_PAGE_DETAILS",
-        "className": "CatalogAdminPageDetailsMessageParser",
-        "path": "packages/communication/src/messages/parser/catalog/CatalogAdminPageDetailsMessageParser.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
           "type": "string",
           "name": ""
         },
@@ -15875,12 +16132,52 @@
         },
         {
           "kind": "scalar",
-          "type": "boolean",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
           "name": ""
         },
         {
           "kind": "scalar",
           "type": "boolean",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
           "name": ""
         }
       ]
@@ -15933,70 +16230,6 @@
       "header": 3457,
       "symbol": "UserActivityEvent",
       "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/users/UserActivityEvent.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "java",
-      "header": 9410,
-      "symbol": "HotelViewLandingRequestEvent",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingRequestEvent.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "java",
-      "header": 9411,
-      "symbol": "HotelViewLandingSaveEvent",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingSaveEvent.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "java",
-      "header": 9412,
-      "symbol": "HotelViewLandingSaveSceneEvent",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingSaveSceneEvent.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "java",
-      "header": 9413,
-      "symbol": "HotelViewLandingVoteEvent",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingVoteEvent.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "java",
-      "header": 9414,
-      "symbol": "HotelViewLandingResetVotesEvent",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingResetVotesEvent.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "java",
-      "header": 9415,
-      "symbol": "SaveGamePrivacySettingsEvent",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/users/SaveGamePrivacySettingsEvent.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "java",
-      "header": 9416,
-      "symbol": "RequestOfflineMessagesEvent",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/friends/RequestOfflineMessagesEvent.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "java",
-      "header": 9417,
-      "symbol": "RoomUserHabbiconEvent",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/users/RoomUserHabbiconEvent.java",
       "reason": "Header is registered only by the Polaris Emulator packet registry"
     },
     {
@@ -16125,22 +16358,6 @@
       "header": 3786,
       "symbol": "RoomFloorThicknessUpdatedComposer",
       "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/RoomFloorThicknessUpdatedComposer.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "server_to_client",
-      "side": "java",
-      "header": 9409,
-      "symbol": "HotelViewLandingComposer",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/hotelview/HotelViewLandingComposer.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "server_to_client",
-      "side": "java",
-      "header": 9410,
-      "symbol": "RoomUserHabbiconComposer",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/users/RoomUserHabbiconComposer.java",
       "reason": "Header is registered only by the Polaris Emulator packet registry"
     },
     {
@@ -17394,6 +17611,30 @@
     {
       "direction": "server_to_client",
       "side": "typescript",
+      "header": 5108,
+      "symbol": "WIRED_FURNI_RUNTIME_STATE",
+      "path": "packages/communication/src/messages/parser/roomevents/WiredFurniRuntimeStateParser.ts",
+      "reason": "Header is registered only by the Nitro Renderer packet registry"
+    },
+    {
+      "direction": "server_to_client",
+      "side": "typescript",
+      "header": 5109,
+      "symbol": "WIRED_FURNI_OPACITY",
+      "path": "packages/communication/src/messages/parser/roomevents/WiredFurniOpacityParser.ts",
+      "reason": "Header is registered only by the Nitro Renderer packet registry"
+    },
+    {
+      "direction": "server_to_client",
+      "side": "typescript",
+      "header": 5110,
+      "symbol": "WIRED_FURNI_MOVE_STYLE",
+      "path": "packages/communication/src/messages/parser/roomevents/WiredFurniMoveStyleParser.ts",
+      "reason": "Header is registered only by the Nitro Renderer packet registry"
+    },
+    {
+      "direction": "server_to_client",
+      "side": "typescript",
       "header": 5200,
       "symbol": "POLL_START_ROOM",
       "path": "packages/communication/src/messages/parser/poll/RoomPollDataParser.ts",
@@ -18394,22 +18635,6 @@
       "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle; TypeScript analyzer: Outgoing composer message array cannot be resolved statically"
     },
     {
-      "name": "ITEM_EXCHANGE_REDEEM",
-      "direction": "client_to_server",
-      "header": 3115,
-      "java": {
-        "symbol": "RedeemItemEvent",
-        "className": "RedeemItemEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/RedeemItemEvent.java"
-      },
-      "typescript": {
-        "symbol": "ITEM_EXCHANGE_REDEEM",
-        "className": "FurnitureExchangeComposer",
-        "path": "packages/communication/src/messages/outgoing/room/furniture/logic/FurnitureExchangeComposer.ts"
-      },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 195,col 5) Record Declarations are not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
-    },
-    {
       "name": "GROUP_SAVE_INFORMATION",
       "direction": "client_to_server",
       "header": 3137,
@@ -18567,7 +18792,7 @@
         "className": "RequestFurniInventoryWhenNotInRoomComposer",
         "path": "packages/communication/src/messages/outgoing/inventory/furni/RequestFurniInventoryWhenNotInRoomComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: Method handle not found in /home/user/Nitro-Cool-UI-Renderer/Gameserver/Emulator/src/main/java/com/eu/habbo/messages/incoming/inventory/HotelViewInventoryEvent.java"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: Method handle not found in E:\\Users\\simol\\Desktop\\DEV\\emulatore\\Emulator\\src\\main\\java\\com\\eu\\habbo\\messages\\incoming\\inventory\\HotelViewInventoryEvent.java"
     },
     {
       "name": "POLL_ANSWER",
@@ -18650,22 +18875,6 @@
       "reason": "TypeScript analyzer: Outgoing message array _data is mutated with push"
     },
     {
-      "name": "FRIEND_FURNI_CONFIRM_LOCK",
-      "direction": "client_to_server",
-      "header": 3775,
-      "java": {
-        "symbol": "LoveLockStartConfirmEvent",
-        "className": "LoveLockStartConfirmEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/lovelock/LoveLockStartConfirmEvent.java"
-      },
-      "typescript": {
-        "symbol": "FRIEND_FURNI_CONFIRM_LOCK",
-        "className": "FriendFurniConfirmLockMessageComposer",
-        "path": "packages/communication/src/messages/outgoing/friendfurni/FriendFurniConfirmLockMessageComposer.ts"
-      },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 27,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
-    },
-    {
       "name": "COMPOST_PLANT",
       "direction": "client_to_server",
       "header": 3835,
@@ -18746,36 +18955,84 @@
       "reason": "TypeScript analyzer: Outgoing value `NITRO-${NitroVersion.RENDERER_VERSION.replaceAll(\u0027.\u0027, \u0027-\u0027)}` has no statically resolvable wire type"
     },
     {
-      "name": "SNOWWAR_LOBBY_TEAMS",
-      "direction": "server_to_client",
-      "header": 5007,
+      "name": "SNOWWAR_LOAD_STAGE_READY",
+      "direction": "client_to_server",
+      "header": 6000,
       "java": {
-        "symbol": "SnowStormLobbyTeamsComposer",
-        "className": "SnowStormLobbyTeamsComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormLobbyTeamsComposer.java"
+        "symbol": "UNKNOWN_SNOWSTORM_6000",
+        "className": "SnowStormLoadStageReadyEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormLoadStageReadyEvent.java"
       },
       "typescript": {
-        "symbol": "SNOWWAR_LOBBY_TEAMS",
-        "className": "SnowWarLobbyTeamsParser",
-        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarLobbyTeamsParser.ts"
+        "symbol": "SNOWWAR_LOAD_STAGE_READY",
+        "className": "SnowWarLoadStageReadyComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarLoadStageReadyComposer.ts"
       },
-      "reason": "Java analyzer: Data-dependent packet operations in ForStmt inside composeInternal (per-player roster loop)"
+      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [int]"
     },
     {
-      "name": "SNOWWAR_GAMES_INFORMATION",
-      "direction": "server_to_client",
-      "header": 5012,
+      "name": "SNOWWAR_WALK",
+      "direction": "client_to_server",
+      "header": 6003,
       "java": {
-        "symbol": "SnowStormGamesInformationComposer",
-        "className": "SnowStormGamesInformationComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormGamesInformationComposer.java"
+        "symbol": "UNKNOWN_SNOWSTORM_6003",
+        "className": "SnowStormWalkEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormWalkEvent.java"
       },
       "typescript": {
-        "symbol": "SNOWWAR_GAMES_INFORMATION",
-        "className": "SnowWarGamesInformationParser",
-        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarGamesInformationParser.ts"
+        "symbol": "SNOWWAR_WALK",
+        "className": "SnowWarWalkComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarWalkComposer.ts"
       },
-      "reason": "Java composer appends the trailing min-players int and can-edit boolean unconditionally; TypeScript parser reads them as an optional bytesAvailable-gated tail for older servers"
+      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [int, int] versus TypeScript [int, int, int, int]"
+    },
+    {
+      "name": "SNOWWAR_THROW_AT_LOCATION",
+      "direction": "client_to_server",
+      "header": 6004,
+      "java": {
+        "symbol": "UNKNOWN_SNOWSTORM_6004",
+        "className": "SnowStormThrowAtLocationEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormThrowAtLocationEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_THROW_AT_LOCATION",
+        "className": "SnowWarThrowAtLocationComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarThrowAtLocationComposer.ts"
+      },
+      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [int, int, int] versus TypeScript [int, int, int, int, int]"
+    },
+    {
+      "name": "SNOWWAR_THROW_AT_PLAYER",
+      "direction": "client_to_server",
+      "header": 6005,
+      "java": {
+        "symbol": "UNKNOWN_SNOWSTORM_6005",
+        "className": "SnowStormThrowAtPlayerEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormThrowAtPlayerEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_THROW_AT_PLAYER",
+        "className": "SnowWarThrowAtPlayerComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarThrowAtPlayerComposer.ts"
+      },
+      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [int, int] versus TypeScript [int, int, int, int]"
+    },
+    {
+      "name": "SNOWWAR_CREATE_SNOWBALL",
+      "direction": "client_to_server",
+      "header": 6006,
+      "java": {
+        "symbol": "UNKNOWN_SNOWSTORM_6006",
+        "className": "SnowStormCreateSnowballEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/snowwar/SnowStormCreateSnowballEvent.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_CREATE_SNOWBALL",
+        "className": "SnowWarCreateSnowballComposer",
+        "path": "packages/communication/src/messages/outgoing/game/snowwar/SnowWarCreateSnowballComposer.ts"
+      },
+      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [int, int]"
     },
     {
       "name": "SNOWWAR_SAVE_EDITOR",
@@ -18874,196 +19131,68 @@
       "reason": "TypeScript analyzer: Outgoing value enabled ? 1 : 0 has no statically resolvable wire type"
     },
     {
-      "name": "CHEST_DEPOSIT",
+      "name": "SOUNDBOARD_SAVE_VOLUME",
       "direction": "client_to_server",
-      "header": 9313,
+      "header": 9341,
       "java": {
-        "symbol": "ChestDepositEvent",
-        "className": "ChestDepositEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestDepositEvent.java"
+        "symbol": "SoundboardSaveVolumeEvent",
+        "className": "SoundboardSaveVolumeEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/soundboard/SoundboardSaveVolumeEvent.java"
       },
       "typescript": {
-        "symbol": "CHEST_DEPOSIT",
-        "className": "ChestDepositComposer",
-        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestDepositComposer.ts"
+        "symbol": "SOUNDBOARD_SAVE_VOLUME",
+        "className": "SoundboardSaveVolumeComposer",
+        "path": "packages/communication/src/messages/outgoing/soundboard/SoundboardSaveVolumeComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 39,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
+      "reason": "TypeScript analyzer: Outgoing value Math.max(0, Math.min(100, Math.round(volume))) has no statically resolvable wire type"
     },
     {
-      "name": "CHEST_WITHDRAW",
+      "name": "SOUNDBOARD_CATALOG_REORDER",
       "direction": "client_to_server",
-      "header": 9314,
+      "header": 9344,
       "java": {
-        "symbol": "ChestWithdrawEvent",
-        "className": "ChestWithdrawEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestWithdrawEvent.java"
+        "symbol": "SoundboardCatalogReorderEvent",
+        "className": "SoundboardCatalogReorderEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/soundboard/SoundboardCatalogReorderEvent.java"
       },
       "typescript": {
-        "symbol": "CHEST_WITHDRAW",
-        "className": "ChestWithdrawComposer",
-        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestWithdrawComposer.ts"
+        "symbol": "SOUNDBOARD_CATALOG_REORDER",
+        "className": "SoundboardCatalogReorderComposer",
+        "path": "packages/communication/src/messages/outgoing/soundboard/SoundboardCatalogReorderComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 36,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
+      "reason": "Java analyzer: Data-dependent packet operations in ForStmt inside handle; TypeScript analyzer: Outgoing value orderedIds.length has no statically resolvable wire type"
     },
     {
-      "name": "CHEST_SAVE_SETTINGS",
+      "name": "HOTEL_VIEW_LANDING_SAVE",
       "direction": "client_to_server",
-      "header": 9315,
+      "header": 9411,
       "java": {
-        "symbol": "ChestSaveSettingsEvent",
-        "className": "ChestSaveSettingsEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestSaveSettingsEvent.java"
+        "symbol": "HotelViewLandingSaveEvent",
+        "className": "HotelViewLandingSaveEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingSaveEvent.java"
       },
       "typescript": {
-        "symbol": "CHEST_SAVE_SETTINGS",
-        "className": "ChestSaveSettingsComposer",
-        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestSaveSettingsComposer.ts"
+        "symbol": "HOTEL_VIEW_LANDING_SAVE",
+        "className": "HotelViewLandingSaveComposer",
+        "path": "packages/communication/src/messages/outgoing/landingview/HotelViewLandingSaveComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 37,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
+      "reason": "TypeScript analyzer: Outgoing value slot.id has no statically resolvable wire type"
     },
     {
-      "name": "CHEST_SAVE_NOTIFICATIONS",
+      "name": "HOTEL_VIEW_LANDING_SAVE_SCENE",
       "direction": "client_to_server",
-      "header": 9316,
+      "header": 9412,
       "java": {
-        "symbol": "ChestSaveNotificationsEvent",
-        "className": "ChestSaveNotificationsEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestSaveNotificationsEvent.java"
+        "symbol": "HotelViewLandingSaveSceneEvent",
+        "className": "HotelViewLandingSaveSceneEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewLandingSaveSceneEvent.java"
       },
       "typescript": {
-        "symbol": "CHEST_SAVE_NOTIFICATIONS",
-        "className": "ChestSaveNotificationsComposer",
-        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestSaveNotificationsComposer.ts"
+        "symbol": "HOTEL_VIEW_LANDING_SAVE_SCENE",
+        "className": "HotelViewLandingSaveSceneComposer",
+        "path": "packages/communication/src/messages/outgoing/landingview/HotelViewLandingSaveSceneComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 37,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
-    },
-    {
-      "name": "CHEST_UPGRADE_CAPACITY",
-      "direction": "client_to_server",
-      "header": 9317,
-      "java": {
-        "symbol": "ChestUpgradeCapacityEvent",
-        "className": "ChestUpgradeCapacityEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestUpgradeCapacityEvent.java"
-      },
-      "typescript": {
-        "symbol": "CHEST_UPGRADE_CAPACITY",
-        "className": "ChestUpgradeCapacityComposer",
-        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestUpgradeCapacityComposer.ts"
-      },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 41,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
-    },
-    {
-      "name": "CHEST_REQUEST_LOG",
-      "direction": "client_to_server",
-      "header": 9318,
-      "java": {
-        "symbol": "ChestRequestLogEvent",
-        "className": "ChestRequestLogEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestRequestLogEvent.java"
-      },
-      "typescript": {
-        "symbol": "CHEST_REQUEST_LOG",
-        "className": "ChestRequestLogComposer",
-        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestRequestLogComposer.ts"
-      },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 30,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
-    },
-    {
-      "name": "CHEST_WITHDRAW_FURNI",
-      "direction": "client_to_server",
-      "header": 9320,
-      "java": {
-        "symbol": "ChestWithdrawFurniEvent",
-        "className": "ChestWithdrawFurniEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestWithdrawFurniEvent.java"
-      },
-      "typescript": {
-        "symbol": "CHEST_WITHDRAW_FURNI",
-        "className": "ChestWithdrawFurniComposer",
-        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestWithdrawFurniComposer.ts"
-      },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 36,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
-    },
-    {
-      "name": "CHEST_DEPOSIT_FURNI",
-      "direction": "client_to_server",
-      "header": 9321,
-      "java": {
-        "symbol": "ChestDepositFurniEvent",
-        "className": "ChestDepositFurniEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestDepositFurniEvent.java"
-      },
-      "typescript": {
-        "symbol": "CHEST_DEPOSIT_FURNI",
-        "className": "ChestDepositFurniComposer",
-        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestDepositFurniComposer.ts"
-      },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 49,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
-    },
-    {
-      "name": "CHEST_START_DEPOSIT",
-      "direction": "client_to_server",
-      "header": 9324,
-      "java": {
-        "symbol": "ChestStartDepositEvent",
-        "className": "ChestStartDepositEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestStartDepositEvent.java"
-      },
-      "typescript": {
-        "symbol": "CHEST_START_DEPOSIT",
-        "className": "ChestStartDepositComposer",
-        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestStartDepositComposer.ts"
-      },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 25,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
-    },
-    {
-      "name": "CHEST_DEPOSIT_INVENTORY_ITEM",
-      "direction": "client_to_server",
-      "header": 9325,
-      "java": {
-        "symbol": "ChestDepositInventoryItemEvent",
-        "className": "ChestDepositInventoryItemEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestDepositInventoryItemEvent.java"
-      },
-      "typescript": {
-        "symbol": "CHEST_DEPOSIT_INVENTORY_ITEM",
-        "className": "ChestDepositInventoryItemComposer",
-        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestDepositInventoryItemComposer.ts"
-      },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 33,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
-    },
-    {
-      "name": "CHEST_WITHDRAW_ALL_FURNI",
-      "direction": "client_to_server",
-      "header": 9326,
-      "java": {
-        "symbol": "ChestWithdrawAllFurniEvent",
-        "className": "ChestWithdrawAllFurniEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestWithdrawAllFurniEvent.java"
-      },
-      "typescript": {
-        "symbol": "CHEST_WITHDRAW_ALL_FURNI",
-        "className": "ChestWithdrawAllFurniComposer",
-        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestWithdrawAllFurniComposer.ts"
-      },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 30,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
-    },
-    {
-      "name": "CHEST_OPEN",
-      "direction": "client_to_server",
-      "header": 9327,
-      "java": {
-        "symbol": "ChestOpenEvent",
-        "className": "ChestOpenEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestOpenEvent.java"
-      },
-      "typescript": {
-        "symbol": "CHEST_OPEN",
-        "className": "ChestOpenComposer",
-        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestOpenComposer.ts"
-      },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: (line 30,col 15) Use of patterns with instanceof is not supported. Pay attention that this feature is supported starting from \u0027JAVA_14\u0027 language level. If you need that feature the language level must be configured in the configuration before parsing the source files.\n"
+      "reason": "TypeScript analyzer: Outgoing value scene.backgroundUrl has no statically resolvable wire type"
     },
     {
       "name": "FURNITURE_PICKUP_ALL",
@@ -19096,6 +19225,454 @@
         "path": "packages/communication/src/messages/outgoing/roomevents/WiredMonitorRequestComposer.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle"
+    },
+    {
+      "name": "CATALOG_ADMIN_SAVE_PAGE",
+      "direction": "client_to_server",
+      "header": 10050,
+      "java": {
+        "symbol": "CatalogAdminSavePageEvent",
+        "className": "CatalogAdminSavePageEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSavePageEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_ADMIN_SAVE_PAGE",
+        "className": "CatalogAdminSavePageComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminSavePageComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader parseMutationEnvelope inside handle"
+    },
+    {
+      "name": "CATALOG_ADMIN_CREATE_PAGE",
+      "direction": "client_to_server",
+      "header": 10051,
+      "java": {
+        "symbol": "CatalogAdminCreatePageEvent",
+        "className": "CatalogAdminCreatePageEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminCreatePageEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_ADMIN_CREATE_PAGE",
+        "className": "CatalogAdminCreatePageComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminCreatePageComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader parseMutationEnvelope inside handle"
+    },
+    {
+      "name": "CATALOG_ADMIN_DELETE_PAGE",
+      "direction": "client_to_server",
+      "header": 10052,
+      "java": {
+        "symbol": "CatalogAdminDeletePageEvent",
+        "className": "CatalogAdminDeletePageEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminDeletePageEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_ADMIN_DELETE_PAGE",
+        "className": "CatalogAdminDeletePageComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminDeletePageComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader parseMutationEnvelope inside handle"
+    },
+    {
+      "name": "CATALOG_ADMIN_SAVE_OFFER",
+      "direction": "client_to_server",
+      "header": 10053,
+      "java": {
+        "symbol": "CatalogAdminSaveOfferEvent",
+        "className": "CatalogAdminSaveOfferEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSaveOfferEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_ADMIN_SAVE_OFFER",
+        "className": "CatalogAdminSaveOfferComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminSaveOfferComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader parseMutationEnvelope inside handle"
+    },
+    {
+      "name": "CATALOG_ADMIN_CREATE_OFFER",
+      "direction": "client_to_server",
+      "header": 10054,
+      "java": {
+        "symbol": "CatalogAdminCreateOfferEvent",
+        "className": "CatalogAdminCreateOfferEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminCreateOfferEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_ADMIN_CREATE_OFFER",
+        "className": "CatalogAdminCreateOfferComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminCreateOfferComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader parseMutationEnvelope inside handle"
+    },
+    {
+      "name": "CATALOG_ADMIN_DELETE_OFFER",
+      "direction": "client_to_server",
+      "header": 10055,
+      "java": {
+        "symbol": "CatalogAdminDeleteOfferEvent",
+        "className": "CatalogAdminDeleteOfferEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminDeleteOfferEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_ADMIN_DELETE_OFFER",
+        "className": "CatalogAdminDeleteOfferComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminDeleteOfferComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader parseMutationEnvelope inside handle"
+    },
+    {
+      "name": "CATALOG_ADMIN_MOVE_OFFER",
+      "direction": "client_to_server",
+      "header": 10056,
+      "java": {
+        "symbol": "CatalogAdminMoveOfferEvent",
+        "className": "CatalogAdminMoveOfferEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminMoveOfferEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_ADMIN_MOVE_OFFER",
+        "className": "CatalogAdminMoveOfferComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminMoveOfferComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader parseMutationEnvelope inside handle"
+    },
+    {
+      "name": "CATALOG_ADMIN_MOVE_PAGE",
+      "direction": "client_to_server",
+      "header": 10057,
+      "java": {
+        "symbol": "CatalogAdminMovePageEvent",
+        "className": "CatalogAdminMovePageEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminMovePageEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_ADMIN_MOVE_PAGE",
+        "className": "CatalogAdminMovePageComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminMovePageComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader parseMutationEnvelope inside handle"
+    },
+    {
+      "name": "CATALOG_ADMIN_SAVE_PAGE_IMAGES",
+      "direction": "client_to_server",
+      "header": 10060,
+      "java": {
+        "symbol": "CatalogAdminSavePageImagesEvent",
+        "className": "CatalogAdminSavePageImagesEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSavePageImagesEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_ADMIN_SAVE_PAGE_IMAGES",
+        "className": "CatalogAdminSavePageImagesComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminSavePageImagesComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader parseMutationEnvelope inside handle"
+    },
+    {
+      "name": "CATALOG_ADMIN_SAVE_PAGE_ICON",
+      "direction": "client_to_server",
+      "header": 10061,
+      "java": {
+        "symbol": "CatalogAdminSavePageIconEvent",
+        "className": "CatalogAdminSavePageIconEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSavePageIconEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_ADMIN_SAVE_PAGE_ICON",
+        "className": "CatalogAdminSavePageIconComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminSavePageIconComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader parseMutationEnvelope inside handle"
+    },
+    {
+      "name": "CATALOG_ADMIN_SET_PAGE_ENABLED",
+      "direction": "client_to_server",
+      "header": 10064,
+      "java": {
+        "symbol": "CatalogAdminSetPageEnabledEvent",
+        "className": "CatalogAdminSetPageEnabledEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSetPageEnabledEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_ADMIN_SET_PAGE_ENABLED",
+        "className": "CatalogAdminSetPageEnabledComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminSetPageEnabledComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader parseMutationEnvelope inside handle"
+    },
+    {
+      "name": "CATALOG_ADMIN_SET_PAGE_VISIBLE",
+      "direction": "client_to_server",
+      "header": 10065,
+      "java": {
+        "symbol": "CatalogAdminSetPageVisibleEvent",
+        "className": "CatalogAdminSetPageVisibleEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSetPageVisibleEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_ADMIN_SET_PAGE_VISIBLE",
+        "className": "CatalogAdminSetPageVisibleComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminSetPageVisibleComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader parseMutationEnvelope inside handle"
+    },
+    {
+      "name": "CATALOG_ADMIN_REORDER_OFFERS",
+      "direction": "client_to_server",
+      "header": 10066,
+      "java": {
+        "symbol": "CatalogAdminReorderOffersEvent",
+        "className": "CatalogAdminReorderOffersEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminReorderOffersEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_ADMIN_REORDER_OFFERS",
+        "className": "CatalogAdminReorderOffersComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/CatalogAdminReorderOffersComposer.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForStmt inside handle; TypeScript analyzer: Outgoing message array _data is mutated with push"
+    },
+    {
+      "name": "CATALOG_STUDIO_ACQUIRE_LOCK",
+      "direction": "client_to_server",
+      "header": 10068,
+      "java": {
+        "symbol": "CatalogStudioAcquireLockEvent",
+        "className": "CatalogStudioAcquireLockEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioAcquireLockEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_ACQUIRE_LOCK",
+        "className": "CatalogStudioAcquireLockComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioAcquireLockComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader parseAcquire inside handle"
+    },
+    {
+      "name": "CATALOG_STUDIO_RENEW_LOCK",
+      "direction": "client_to_server",
+      "header": 10069,
+      "java": {
+        "symbol": "CatalogStudioRenewLockEvent",
+        "className": "CatalogStudioRenewLockEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioRenewLockEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_RENEW_LOCK",
+        "className": "CatalogStudioRenewLockComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioRenewLockComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader parseTokenLock inside handle"
+    },
+    {
+      "name": "CATALOG_STUDIO_RELEASE_LOCK",
+      "direction": "client_to_server",
+      "header": 10070,
+      "java": {
+        "symbol": "CatalogStudioReleaseLockEvent",
+        "className": "CatalogStudioReleaseLockEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioReleaseLockEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_RELEASE_LOCK",
+        "className": "CatalogStudioReleaseLockComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioReleaseLockComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader parseTokenLock inside handle"
+    },
+    {
+      "name": "CATALOG_STUDIO_LOAD_HISTORY",
+      "direction": "client_to_server",
+      "header": 10071,
+      "java": {
+        "symbol": "CatalogStudioLoadHistoryEvent",
+        "className": "CatalogStudioLoadHistoryEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioLoadHistoryEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_LOAD_HISTORY",
+        "className": "CatalogStudioHistoryComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioHistoryComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader parseHistory inside handle"
+    },
+    {
+      "name": "CATALOG_STUDIO_UNDO",
+      "direction": "client_to_server",
+      "header": 10072,
+      "java": {
+        "symbol": "CatalogStudioUndoEvent",
+        "className": "CatalogStudioUndoEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioUndoEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_UNDO",
+        "className": "CatalogStudioUndoComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioUndoComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader parseUndo inside handle"
+    },
+    {
+      "name": "CATALOG_STUDIO_VALIDATE",
+      "direction": "client_to_server",
+      "header": 10073,
+      "java": {
+        "symbol": "CatalogStudioValidateEvent",
+        "className": "CatalogStudioValidateEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioValidateEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_VALIDATE",
+        "className": "CatalogStudioValidateComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioValidateComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader parseRevision inside handle"
+    },
+    {
+      "name": "CATALOG_STUDIO_PUBLISH",
+      "direction": "client_to_server",
+      "header": 10074,
+      "java": {
+        "symbol": "CatalogStudioPublishEvent",
+        "className": "CatalogStudioPublishEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioPublishEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_PUBLISH",
+        "className": "CatalogStudioPublishComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioPublishComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader parseRevision inside handle"
+    },
+    {
+      "name": "CATALOG_STUDIO_DISCARD",
+      "direction": "client_to_server",
+      "header": 10075,
+      "java": {
+        "symbol": "CatalogStudioDiscardEvent",
+        "className": "CatalogStudioDiscardEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioDiscardEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_DISCARD",
+        "className": "CatalogStudioDiscardComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioDiscardComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader parseRevision inside handle"
+    },
+    {
+      "name": "CATALOG_STUDIO_RESTORE",
+      "direction": "client_to_server",
+      "header": 10076,
+      "java": {
+        "symbol": "CatalogStudioRestoreEvent",
+        "className": "CatalogStudioRestoreEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioRestoreEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_RESTORE",
+        "className": "CatalogStudioRestoreComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioRestoreComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external reader parseRestore inside handle"
+    },
+    {
+      "name": "CATALOG_STUDIO_PREVIEW",
+      "direction": "client_to_server",
+      "header": 10077,
+      "java": {
+        "symbol": "CatalogStudioPreviewEvent",
+        "className": "CatalogStudioPreviewEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioPreviewEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_PREVIEW",
+        "className": "CatalogStudioPreviewComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioPreviewComposer.ts"
+      },
+      "reason": "Dynamic currency map is serialized as a count followed by type and balance pairs"
+    },
+    {
+      "name": "CATALOG_STUDIO_EXPORT",
+      "direction": "client_to_server",
+      "header": 10078,
+      "java": {
+        "symbol": "CatalogStudioExportEvent",
+        "className": "CatalogStudioExportEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioExportEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_EXPORT",
+        "className": "CatalogStudioExportComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioExportComposer.ts"
+      },
+      "reason": "Catalog Studio document protocol is verified by dedicated round-trip packet tests"
+    },
+    {
+      "name": "CATALOG_STUDIO_DOCUMENT_DRY_RUN",
+      "direction": "client_to_server",
+      "header": 10079,
+      "java": {
+        "symbol": "CatalogStudioDocumentDryRunEvent",
+        "className": "CatalogStudioDocumentDryRunEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioDocumentDryRunEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_DOCUMENT_DRY_RUN",
+        "className": "CatalogStudioDocumentDryRunComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioDocumentDryRunComposer.ts"
+      },
+      "reason": "Catalog Studio document protocol is verified by dedicated round-trip packet tests"
+    },
+    {
+      "name": "CATALOG_STUDIO_DOCUMENT_APPLY",
+      "direction": "client_to_server",
+      "header": 10080,
+      "java": {
+        "symbol": "CatalogStudioDocumentApplyEvent",
+        "className": "CatalogStudioDocumentApplyEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioDocumentApplyEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_DOCUMENT_APPLY",
+        "className": "CatalogStudioDocumentApplyComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioDocumentApplyComposer.ts"
+      },
+      "reason": "Catalog Studio document protocol is verified by dedicated round-trip packet tests"
+    },
+    {
+      "name": "CATALOG_STUDIO_PREVIEW",
+      "direction": "server_to_client",
+      "header": 10077,
+      "java": {
+        "symbol": "CatalogStudioPreviewComposer",
+        "className": "CatalogStudioPreviewComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioPreviewComposer.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_PREVIEW",
+        "className": "CatalogStudioPreviewMessageParser",
+        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioPreviewMessageParser.ts"
+      },
+      "reason": "Preview pages and offers are transported as typed JSON snapshot fields"
+    },
+    {
+      "name": "CATALOG_STUDIO_DOCUMENT_RESULT",
+      "direction": "server_to_client",
+      "header": 10078,
+      "java": {
+        "symbol": "CatalogStudioDocumentResultComposer",
+        "className": "CatalogStudioDocumentResultComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioDocumentResultComposer.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_DOCUMENT_RESULT",
+        "className": "CatalogStudioDocumentResultMessageParser",
+        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioDocumentResultMessageParser.ts"
+      },
+      "reason": "Catalog Studio document protocol is verified by dedicated round-trip packet tests"
     },
     {
       "name": "JUKEBOX_SONG_DISKS",
@@ -22106,6 +22683,38 @@
       "reason": "TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },
     {
+      "name": "SNOWWAR_LOBBY_TEAMS",
+      "direction": "server_to_client",
+      "header": 5007,
+      "java": {
+        "symbol": "SnowStormLobbyTeamsComposer",
+        "className": "SnowStormLobbyTeamsComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormLobbyTeamsComposer.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_LOBBY_TEAMS",
+        "className": "SnowWarLobbyTeamsParser",
+        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarLobbyTeamsParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in WhileStatement inside parse"
+    },
+    {
+      "name": "SNOWWAR_GAMES_INFORMATION",
+      "direction": "server_to_client",
+      "header": 5012,
+      "java": {
+        "symbol": "SnowStormGamesInformationComposer",
+        "className": "SnowStormGamesInformationComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/snowwar/SnowStormGamesInformationComposer.java"
+      },
+      "typescript": {
+        "symbol": "SNOWWAR_GAMES_INFORMATION",
+        "className": "SnowWarGamesInformationParser",
+        "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarGamesInformationParser.ts"
+      },
+      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [int, int, int, boolean] versus TypeScript [int, int, {\"type\":\"optional\",\"controller\":\"bytesAvailable\",\"fields\":[{\"type\":\"int\",},{\"type\":\"boolean\",}]}]"
+    },
+    {
       "name": "SNOWWAR_GAME_STATUS",
       "direction": "server_to_client",
       "header": 5015,
@@ -22151,7 +22760,7 @@
         "className": "SnowWarLevelDataParser",
         "path": "packages/communication/src/messages/parser/game/snowwar/SnowWarLevelDataParser.ts"
       },
-      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor SnowWarPlayerData inside parse"
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in IfStatement inside parse"
     },
     {
       "name": "SNOWWAR_ON_GAME_ENDING",
@@ -22264,38 +22873,6 @@
         "path": "packages/communication/src/messages/parser/translation/TranslationLanguagesParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
-    },
-    {
-      "name": "WIRED_FURNI_OPACITY",
-      "direction": "server_to_client",
-      "header": 5109,
-      "java": {
-        "symbol": "WiredFurniOpacityComposer",
-        "className": "WiredFurniOpacityComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/WiredFurniOpacityComposer.java"
-      },
-      "typescript": {
-        "symbol": "WIRED_FURNI_OPACITY",
-        "className": "WiredFurniOpacityParser",
-        "path": "packages/communication/src/messages/parser/roomevents/WiredFurniOpacityParser.ts"
-      },
-      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
-    },
-    {
-      "name": "WIRED_FURNI_MOVE_STYLE",
-      "direction": "server_to_client",
-      "header": 5110,
-      "java": {
-        "symbol": "WiredFurniMoveStyleComposer",
-        "className": "WiredFurniMoveStyleComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/WiredFurniMoveStyleComposer.java"
-      },
-      "typescript": {
-        "symbol": "WIRED_FURNI_MOVE_STYLE",
-        "className": "WiredFurniMoveStyleParser",
-        "path": "packages/communication/src/messages/parser/roomevents/WiredFurniMoveStyleParser.ts"
-      },
-      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },
     {
       "name": "AREA_HIDE",
@@ -22634,6 +23211,22 @@
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },
     {
+      "name": "HOTEL_VIEW_LANDING",
+      "direction": "server_to_client",
+      "header": 9409,
+      "java": {
+        "symbol": "HotelViewLandingComposer",
+        "className": "HotelViewLandingComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/hotelview/HotelViewLandingComposer.java"
+      },
+      "typescript": {
+        "symbol": "HOTEL_VIEW_LANDING",
+        "className": "HotelViewLandingParser",
+        "path": "packages/communication/src/messages/parser/landingview/HotelViewLandingParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
       "name": "TRAX_EDITOR_SONGS",
       "direction": "server_to_client",
       "header": 9430,
@@ -22646,6 +23239,22 @@
         "symbol": "TRAX_EDITOR_SONGS",
         "className": "TraxEditorSongsParser",
         "path": "packages/communication/src/messages/parser/traxeditor/TraxEditorSongsParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
+      "name": "SOUNDBOARD_CATALOG",
+      "direction": "server_to_client",
+      "header": 9441,
+      "java": {
+        "symbol": "SoundboardCatalogComposer",
+        "className": "SoundboardCatalogComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/soundboard/SoundboardCatalogComposer.java"
+      },
+      "typescript": {
+        "symbol": "SOUNDBOARD_CATALOG",
+        "className": "SoundboardCatalogParser",
+        "path": "packages/communication/src/messages/parser/soundboard/SoundboardCatalogParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },
@@ -22712,6 +23321,182 @@
         "path": "packages/communication/src/messages/parser/furniture/FurnitureDataReloadParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in IfStatement inside parse"
+    },
+    {
+      "name": "CATALOG_ADMIN_PAGE_DETAILS",
+      "direction": "server_to_client",
+      "header": 10063,
+      "java": {
+        "symbol": "CatalogAdminPageDetailsComposer",
+        "className": "CatalogAdminPageDetailsComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/CatalogAdminPageDetailsComposer.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_ADMIN_PAGE_DETAILS",
+        "className": "CatalogAdminPageDetailsMessageParser",
+        "path": "packages/communication/src/messages/parser/catalog/CatalogAdminPageDetailsMessageParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside composeInternal"
+    },
+    {
+      "name": "CATALOG_STUDIO_OPEN_SESSION",
+      "direction": "server_to_client",
+      "header": 10067,
+      "java": {
+        "symbol": "CatalogStudioSessionComposer",
+        "className": "CatalogStudioSessionComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioSessionComposer.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_OPEN_SESSION",
+        "className": "CatalogStudioSessionMessageParser",
+        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioSessionMessageParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal"
+    },
+    {
+      "name": "CATALOG_STUDIO_ACQUIRE_LOCK",
+      "direction": "server_to_client",
+      "header": 10068,
+      "java": {
+        "symbol": "CatalogStudioAcquireLockComposer",
+        "className": "CatalogStudioAcquireLockComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioAcquireLockComposer.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_ACQUIRE_LOCK",
+        "className": "CatalogStudioLockMessageParser",
+        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioLockMessageParser.ts"
+      },
+      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, boolean, string, string, int, string, int, int, string, string, string]"
+    },
+    {
+      "name": "CATALOG_STUDIO_RENEW_LOCK",
+      "direction": "server_to_client",
+      "header": 10069,
+      "java": {
+        "symbol": "CatalogStudioRenewLockComposer",
+        "className": "CatalogStudioRenewLockComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioRenewLockComposer.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_RENEW_LOCK",
+        "className": "CatalogStudioLockMessageParser",
+        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioLockMessageParser.ts"
+      },
+      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, boolean, string, string, int, string, int, int, string, string, string]"
+    },
+    {
+      "name": "CATALOG_STUDIO_RELEASE_LOCK",
+      "direction": "server_to_client",
+      "header": 10070,
+      "java": {
+        "symbol": "CatalogStudioReleaseLockComposer",
+        "className": "CatalogStudioReleaseLockComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioReleaseLockComposer.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_RELEASE_LOCK",
+        "className": "CatalogStudioOperationMessageParser",
+        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioOperationMessageParser.ts"
+      },
+      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, boolean, string, string, int, int, string, int]"
+    },
+    {
+      "name": "CATALOG_STUDIO_LOAD_HISTORY",
+      "direction": "server_to_client",
+      "header": 10071,
+      "java": {
+        "symbol": "CatalogStudioHistoryComposer",
+        "className": "CatalogStudioHistoryComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioHistoryComposer.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_LOAD_HISTORY",
+        "className": "CatalogStudioHistoryMessageParser",
+        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioHistoryMessageParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal"
+    },
+    {
+      "name": "CATALOG_STUDIO_UNDO",
+      "direction": "server_to_client",
+      "header": 10072,
+      "java": {
+        "symbol": "CatalogStudioUndoComposer",
+        "className": "CatalogStudioUndoComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioUndoComposer.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_UNDO",
+        "className": "CatalogStudioOperationMessageParser",
+        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioOperationMessageParser.ts"
+      },
+      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, boolean, string, string, int, int, string, int]"
+    },
+    {
+      "name": "CATALOG_STUDIO_VALIDATE",
+      "direction": "server_to_client",
+      "header": 10073,
+      "java": {
+        "symbol": "CatalogStudioValidationComposer",
+        "className": "CatalogStudioValidationComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioValidationComposer.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_VALIDATE",
+        "className": "CatalogStudioValidationMessageParser",
+        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioValidationMessageParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal"
+    },
+    {
+      "name": "CATALOG_STUDIO_PUBLISH",
+      "direction": "server_to_client",
+      "header": 10074,
+      "java": {
+        "symbol": "CatalogStudioPublishComposer",
+        "className": "CatalogStudioPublishComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioPublishComposer.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_PUBLISH",
+        "className": "CatalogStudioOperationMessageParser",
+        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioOperationMessageParser.ts"
+      },
+      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, boolean, string, string, int, int, string, int]"
+    },
+    {
+      "name": "CATALOG_STUDIO_DISCARD",
+      "direction": "server_to_client",
+      "header": 10075,
+      "java": {
+        "symbol": "CatalogStudioDiscardComposer",
+        "className": "CatalogStudioDiscardComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioDiscardComposer.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_DISCARD",
+        "className": "CatalogStudioOperationMessageParser",
+        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioOperationMessageParser.ts"
+      },
+      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, boolean, string, string, int, int, string, int]"
+    },
+    {
+      "name": "CATALOG_STUDIO_RESTORE",
+      "direction": "server_to_client",
+      "header": 10076,
+      "java": {
+        "symbol": "CatalogStudioRestoreComposer",
+        "className": "CatalogStudioRestoreComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioRestoreComposer.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_STUDIO_RESTORE",
+        "className": "CatalogStudioOperationMessageParser",
+        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioOperationMessageParser.ts"
+      },
+      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, boolean, string, string, int, int, string, int]"
     }
   ]
 }

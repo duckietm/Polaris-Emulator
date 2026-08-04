@@ -1,15 +1,19 @@
 package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
-import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.catalog.CatalogAdminCacheSync;
-import com.eu.habbo.habbohotel.catalog.CatalogPage;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogChangeOperation;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftMutationRequest;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogEntityType;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogLockKey;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogPageMovePlanner;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogVersionSnapshot;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioMutationEnvelope;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioRequestParser;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioRuntime;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.CatalogAdminResultComposer;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
+import com.google.gson.Gson;
 
 public class CatalogAdminMovePageEvent extends MessageHandler {
 
@@ -27,41 +31,14 @@ public class CatalogAdminMovePageEvent extends MessageHandler {
         int newParentId = this.packet.readInt();
         int newIndex = this.packet.readInt();
         CatalogPageType pageType = CatalogPageType.fromString(this.packet.readString());
-        String tableName = (pageType == CatalogPageType.BUILDER) ? "catalog_pages_bc" : "catalog_pages";
 
-        CatalogPage page = Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(pageId, pageType);
+        CatalogStudioMutationEnvelope envelope = CatalogStudioRequestParser.parseMutationEnvelope(this.packet);
+        var mutations = CatalogStudioRuntime.services().mutations();
+        CatalogVersionSnapshot draft = mutations.loadDraft(envelope.draftVersionId(), envelope.expectedRevision());
+        var page = draft.page(pageType, pageId).orElse(null);
         if (page == null) {
-            this.client.sendResponse(new CatalogAdminResultComposer(false, "Page not found: " + pageId));
-            return;
-        }
-
-        if (newParentId == -1) {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                 PreparedStatement statement = connection.prepareStatement(
-                         "UPDATE " + tableName + " SET enabled = IF(enabled = '1', '0', '1') WHERE id = ?")) {
-                statement.setInt(1, pageId);
-                if (statement.executeUpdate() == 0) {
-                    this.client.sendResponse(new CatalogAdminResultComposer(false, "Page not found: " + pageId));
-                    return;
-                }
-            }
-            CatalogAdminCacheSync.refreshPageFlagsFromDb(pageId, pageType);
-            this.client.sendResponse(new CatalogAdminResultComposer(true, "Page toggled"));
-            return;
-        }
-
-        if (newParentId == -2) {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                 PreparedStatement statement = connection.prepareStatement(
-                         "UPDATE " + tableName + " SET visible = IF(visible = '1', '0', '1') WHERE id = ?")) {
-                statement.setInt(1, pageId);
-                if (statement.executeUpdate() == 0) {
-                    this.client.sendResponse(new CatalogAdminResultComposer(false, "Page not found: " + pageId));
-                    return;
-                }
-            }
-            CatalogAdminCacheSync.refreshPageFlagsFromDb(pageId, pageType);
-            this.client.sendResponse(new CatalogAdminResultComposer(true, "Visibility toggled"));
+            this.client.sendResponse(
+                    new CatalogAdminResultComposer(false, "Page not found in shared draft: " + pageId));
             return;
         }
 
@@ -70,43 +47,54 @@ public class CatalogAdminMovePageEvent extends MessageHandler {
             return;
         }
 
-        CatalogPage parent = Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(newParentId, pageType);
-        if (parent == null) {
-            this.client.sendResponse(new CatalogAdminResultComposer(false, "Parent page not found: " + newParentId));
-            return;
-        }
+        if (newParentId != ROOT_PARENT_ID) {
+            if (draft.page(pageType, newParentId).isEmpty()) {
+                this.client.sendResponse(
+                        new CatalogAdminResultComposer(false, "Parent page not found: " + newParentId));
+                return;
+            }
 
-        if (this.wouldCreateCycle(pageId, newParentId, pageType)) {
-            this.client.sendResponse(new CatalogAdminResultComposer(false, "Refusing to move: that would create a cycle"));
-            return;
-        }
-
-        if (newIndex < 0) newIndex = 0;
-
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "UPDATE " + tableName + " SET parent_id = ?, order_num = ? WHERE id = ?")) {
-            statement.setInt(1, newParentId);
-            statement.setInt(2, newIndex);
-            statement.setInt(3, pageId);
-            if (statement.executeUpdate() == 0) {
-                this.client.sendResponse(new CatalogAdminResultComposer(false, "Page not found: " + pageId));
+            if (this.wouldCreateCycle(pageType, pageId, newParentId, draft)) {
+                this.client.sendResponse(
+                        new CatalogAdminResultComposer(false, "Refusing to move: that would create a cycle"));
                 return;
             }
         }
 
-        CatalogAdminCacheSync.reparentPage(page, newParentId, newIndex, pageType);
-        this.client.sendResponse(new CatalogAdminResultComposer(true, "Page moved"));
+        var editedPages = CatalogPageMovePlanner.plan(draft.pages(), pageType, pageId, newParentId, newIndex);
+        if (editedPages.isEmpty()) {
+            this.client.sendResponse(new CatalogAdminResultComposer(true, "Page is already in the requested position"));
+            return;
+        }
+
+        var lockKey = new CatalogLockKey(CatalogEntityType.PAGE, pageType, pageId);
+        var gson = new Gson();
+        var requests = editedPages.stream()
+                .map(edited -> new CatalogDraftMutationRequest(
+                        envelope.draftVersionId(),
+                        envelope.expectedRevision(),
+                        this.client.getHabbo().getHabboInfo().getId(),
+                        lockKey,
+                        envelope.lockToken(),
+                        envelope.summary(),
+                        CatalogEntityType.PAGE,
+                        edited.pageId(),
+                        edited.pageId() == pageId ? CatalogChangeOperation.MOVE : CatalogChangeOperation.UPDATE,
+                        gson.toJson(edited)))
+                .toList();
+        var result = mutations.applyBatch(requests);
+        this.client.sendResponse(
+                new CatalogAdminResultComposer(true, "Page moved in shared draft at revision " + result.revision()));
     }
 
-    private boolean wouldCreateCycle(int pageId, int parentId, CatalogPageType pageType) {
+    private boolean wouldCreateCycle(CatalogPageType pageType, int pageId, int parentId, CatalogVersionSnapshot draft) {
         int current = parentId;
         for (int hops = 0; hops < MAX_PARENT_WALK; hops++) {
             if (current == ROOT_PARENT_ID) return false;
             if (current == pageId) return true;
-            CatalogPage parent = Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(current, pageType);
+            var parent = draft.page(pageType, current).orElse(null);
             if (parent == null) return false;
-            current = parent.getParentId();
+            current = parent.parentId();
         }
         return true;
     }

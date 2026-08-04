@@ -1,57 +1,72 @@
 package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.List;
+import org.junit.jupiter.api.Test;
 
 class CatalogAdminPageMutationContractTest {
-    private static final Path CREATE_SOURCE = Path.of(
-            "src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminCreatePageEvent.java");
-    private static final Path SAVE_SOURCE = Path.of(
-            "src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminSavePageEvent.java");
-    private static final Path MOVE_SOURCE = Path.of(
-            "src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminMovePageEvent.java");
-    private static final Path DELETE_SOURCE = Path.of(
-            "src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/CatalogAdminDeletePageEvent.java");
+    private static final Path HANDLER_ROOT =
+            Path.of("src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin");
+    private static final Path CREATE_SOURCE = HANDLER_ROOT.resolve("CatalogAdminCreatePageEvent.java");
+    private static final Path SAVE_SOURCE = HANDLER_ROOT.resolve("CatalogAdminSavePageEvent.java");
+    private static final Path MOVE_SOURCE = HANDLER_ROOT.resolve("CatalogAdminMovePageEvent.java");
 
     @Test
-    void pageParentChecksStayWithinTheSameCatalogPageType() throws IOException {
+    void pageParentChecksUseTheSharedDraftSnapshot() throws IOException {
         String create = Files.readString(CREATE_SOURCE);
         String save = Files.readString(SAVE_SOURCE);
         String move = Files.readString(MOVE_SOURCE);
 
-        assertTrue(create.contains("getCatalogPage(parentId, pageType)"));
-        assertTrue(save.contains("getCatalogPage(parentId, pageType)"));
-        assertTrue(save.contains("getCatalogPage(current, pageType)"));
-        assertTrue(move.contains("getCatalogPage(newParentId, pageType)"));
-        assertTrue(move.contains("getCatalogPage(current, pageType)"));
+        assertTrue(create.contains("draft.page(pageType, parentId)"));
+        assertTrue(save.contains("draft.page(pageType, parentId)"));
+        assertTrue(save.contains("draft.page(pageType, current)"));
+        assertTrue(move.contains("draft.page(pageType, newParentId)"));
+        assertTrue(move.contains("draft.page(pageType, current)"));
     }
 
     @Test
-    void movePageValidatesTargetBeforeTogglingVisibilityOrEnabledState() throws IOException {
+    void rootParentIdsRemainValidForMovesAndRootCreation() throws IOException {
+        String create = Files.readString(CREATE_SOURCE);
         String move = Files.readString(MOVE_SOURCE);
 
-        int pageLookup = move.indexOf("getCatalogPage(pageId, pageType)");
-        int enabledToggle = move.indexOf("SET enabled = IF");
-        int visibleToggle = move.indexOf("SET visible = IF");
-
-        assertTrue(pageLookup >= 0, "move page should load the page before mutating it");
-        assertTrue(pageLookup < enabledToggle, "enabled toggle must not run before page existence is checked");
-        assertTrue(pageLookup < visibleToggle, "visible toggle must not run before page existence is checked");
+        assertTrue(create.contains("CATALOG_ROOT_LOCK_ID"));
+        assertTrue(move.contains("newParentId != ROOT_PARENT_ID"));
+        assertTrue(move.contains("CatalogPageMovePlanner.plan"));
+        assertTrue(move.contains("mutations.applyBatch(requests)"));
+        assertFalse(move.contains("SET enabled = IF"));
+        assertFalse(move.contains("SET visible = IF"));
     }
 
     @Test
-    void pageMutationsReportMissingRowsInsteadOfAlwaysSucceeding() throws IOException {
-        String save = Files.readString(SAVE_SOURCE);
-        String move = Files.readString(MOVE_SOURCE);
-        String delete = Files.readString(DELETE_SOURCE);
+    void registeredCatalogAdminMutationsNeverWriteDirectlyToLiveTables() throws IOException {
+        List<String> mutationHandlers = List.of(
+                "CatalogAdminCreateOfferEvent.java",
+                "CatalogAdminCreatePageEvent.java",
+                "CatalogAdminDeleteOfferEvent.java",
+                "CatalogAdminDeletePageEvent.java",
+                "CatalogAdminMoveOfferEvent.java",
+                "CatalogAdminMovePageEvent.java",
+                "CatalogAdminReorderOffersEvent.java",
+                "CatalogAdminSaveOfferEvent.java",
+                "CatalogAdminSavePageEvent.java",
+                "CatalogAdminSavePageIconEvent.java",
+                "CatalogAdminSavePageImagesEvent.java",
+                "CatalogAdminSetPageEnabledEvent.java",
+                "CatalogAdminSetPageVisibleEvent.java");
 
-        assertTrue(save.contains("statement.executeUpdate() == 0"));
-        assertTrue(move.contains("statement.executeUpdate() == 0"));
-        assertTrue(delete.contains("statement.executeUpdate() == 0"));
+        for (String handler : mutationHandlers) {
+            String source = Files.readString(HANDLER_ROOT.resolve(handler));
+            assertTrue(source.contains("CatalogStudioRuntime.services()"), handler);
+            assertFalse(source.contains("PreparedStatement"), handler);
+            assertFalse(source.contains("CatalogAdminMutationService"), handler);
+            assertFalse(source.contains("UPDATE catalog"), handler);
+            assertFalse(source.contains("INSERT INTO catalog"), handler);
+            assertFalse(source.contains("DELETE FROM catalog"), handler);
+        }
     }
 }

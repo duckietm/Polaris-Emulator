@@ -1,6 +1,7 @@
 package com.eu.habbo.networking.rconserver;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.messages.command.CommandRegistry;
 import com.eu.habbo.messages.rcon.AlertUser;
 import com.eu.habbo.messages.rcon.ChangeRoomOwner;
 import com.eu.habbo.messages.rcon.ChangeUsername;
@@ -42,7 +43,6 @@ import com.eu.habbo.messages.rcon.UpdateWordfilter;
 import com.eu.habbo.networking.Server;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.github.resilience4j.ratelimiter.RateLimiterConfig;
@@ -53,9 +53,7 @@ import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +62,7 @@ public class RCONServer extends Server {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RCONServer.class);
 
-    private final Map<String, Class<? extends RCONMessage>> messages;
+    private final CommandRegistry registry;
     private final GsonBuilder gsonBuilder;
     private final boolean rateLimitEnabled;
     private final LoadingCache<String, RateLimiter> rateLimiters;
@@ -77,7 +75,7 @@ public class RCONServer extends Server {
     public RCONServer(String host, int port, boolean stressEnabled) throws Exception {
         super("RCON Server", host, port, 1, 2);
 
-        this.messages = new HashMap<>();
+        this.registry = new CommandRegistry();
 
         this.gsonBuilder = new GsonBuilder();
         this.gsonBuilder.registerTypeAdapter(RCONMessage.class, new RCONMessage.RCONMessageSerializer());
@@ -153,7 +151,7 @@ public class RCONServer extends Server {
     }
 
     public void addRCONMessage(String key, Class<? extends RCONMessage> clazz) {
-        this.messages.put(key, clazz);
+        this.registry.register(key, clazz);
     }
 
     public String handle(ChannelHandlerContext ctx, String key, String body) throws Exception {
@@ -162,40 +160,23 @@ public class RCONServer extends Server {
             return RconResponse.error(RCONMessage.STATUS_ERROR, "rate limited").toJson(this.gsonBuilder.create());
         }
 
-        Class<? extends RCONMessage> message =
-                this.messages.get(key.replace("_", "").toLowerCase());
-
-        String result;
-        if (message != null) {
-            try {
-                RCONMessage rcon = message.getDeclaredConstructor().newInstance();
-                Gson gson = this.gsonBuilder.create();
-                Object payload = gson.fromJson(body, rcon.type);
-                if (rcon.validate(payload)) {
-                    rcon.handle(gson, payload);
-                }
-                LOGGER.info("Handled RCON Message: {}", message.getSimpleName());
-                result = gson.toJson(rcon, RCONMessage.class);
-
-                if (Emulator.debugging) {
-                    LOGGER.debug("RCON Data {} RCON Result {}", body, result);
-                }
-
-                return result;
-            } catch (Exception ex) {
-                LOGGER.error("Failed to handle RCONMessage", ex);
-            }
-        } else {
-            LOGGER.error("Couldn't find: {}", key);
-            return RconResponse.error(RCONMessage.STATUS_ERROR, "unknown command")
-                    .toJson(this.gsonBuilder.create());
-        }
-
-        return RconResponse.error(RCONMessage.SYSTEM_ERROR, "command failed").toJson(this.gsonBuilder.create());
+        // Command lookup, payload parsing, validation and handling are transport-neutral
+        // and shared with the CMS HTTP API through CommandRegistry. The {status, message}
+        // envelope it produces is byte-identical to the legacy RCON response.
+        return this.registry.dispatch(key, body).toResponseJson();
     }
 
     public List<String> getCommands() {
-        return new ArrayList<>(this.messages.keySet());
+        return this.registry.getCommands();
+    }
+
+    /**
+     * The shared, transport-neutral command registry. Exposed so the CMS HTTP API
+     * can dispatch the exact same commands (with the same validation and response
+     * envelope) without duplicating registrations.
+     */
+    public CommandRegistry getRegistry() {
+        return this.registry;
     }
 
     private boolean acquirePermit(ChannelHandlerContext ctx) {

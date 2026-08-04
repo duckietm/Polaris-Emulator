@@ -86,7 +86,7 @@ public class SnowStormLevelDataComposer extends MessageComposer {
         }
 
         // Trailing per-recipient flag: may this user open the arena editor
-        // (acc_snowwar_edit)? Old clients simply don't read it.
+        // (acc_snowwar_arena_build)? Old clients simply don't read it.
         this.response.appendBoolean(this.canEditRoom);
 
         return this.response;

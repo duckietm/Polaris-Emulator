@@ -1,10 +1,9 @@
 package com.eu.habbo.habbohotel.games.snowwar.mapping;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.games.snowwar.SnowWarArenaDefinition;
+import com.eu.habbo.habbohotel.games.snowwar.SnowWarManager;
 import com.eu.habbo.habbohotel.games.snowwar.SnowWarPoint;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,8 +16,14 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Loads and caches SnowWar arenas (README 5.3).
@@ -29,7 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * one entry per line:
  *
  *   &lt;classname&gt; &lt;x&gt; &lt;y&gt; &lt;rotation&gt; [walkableHeight collisionHeight]
- *   snowball_machine &lt;x&gt; &lt;y&gt;
+ *   snowball_machine|s_snowball_machine &lt;x&gt; &lt;y&gt;
  *   spawn &lt;x&gt; &lt;y&gt; &lt;width&gt; &lt;height&gt;
  *
  * The arena editor (:snowwarsave) rewrites the item lines. When the model
@@ -72,7 +77,15 @@ public final class SnowWarMapsManager {
     }
 
     public static String getModelName(int mapId) {
-        return Emulator.getConfig().getValue("gamecenter.snowwar.map.model." + mapId, "snowstorm_arena_" + mapId);
+        SnowWarArenaDefinition arena = SnowWarManager.getInstance().findArena(mapId);
+        if (arena != null && arena.modelName() != null && !arena.modelName().isBlank()) {
+            return arena.modelName();
+        }
+        return configuration().getValue("gamecenter.snowwar.map.model." + mapId, "snowstorm_arena_" + mapId);
+    }
+
+    private static com.eu.habbo.core.ConfigurationManager configuration() {
+        return Emulator.getConfig();
     }
 
     private static SnowWarMap parseMap(int mapId) {
@@ -91,8 +104,8 @@ public final class SnowWarMapsManager {
         String publicItems = null;
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement =
-                 connection.prepareStatement("SELECT heightmap, public_items FROM room_models WHERE name = ?")) {
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT heightmap, public_items FROM room_models WHERE name = ?")) {
             statement.setString(1, modelName);
             try (ResultSet set = statement.executeQuery()) {
                 if (!set.next()) {
@@ -109,9 +122,9 @@ public final class SnowWarMapsManager {
 
         if (heightmap == null || heightmap.trim().isEmpty()) {
             LOGGER.error(
-                "SnowWar map {}: room_models row '{}' has an empty heightmap, using bundled files.",
-                mapId,
-                modelName);
+                    "SnowWar map {}: room_models row '{}' has an empty heightmap, using bundled files.",
+                    mapId,
+                    modelName);
             return null;
         }
 
@@ -132,14 +145,14 @@ public final class SnowWarMapsManager {
 
                 if (parts.length >= 5 && parts[0].equalsIgnoreCase("spawn")) {
                     spawnClusters.add(new SnowWarSpawnCluster(
-                        Integer.parseInt(parts[1]),
-                        Integer.parseInt(parts[2]),
-                        Integer.parseInt(parts[3]),
-                        Integer.parseInt(parts[4])));
+                            Integer.parseInt(parts[1]),
+                            Integer.parseInt(parts[2]),
+                            Integer.parseInt(parts[3]),
+                            Integer.parseInt(parts[4])));
                     continue;
                 }
 
-                if (parts.length >= 3 && parts[0].equals("snowball_machine")) {
+                if (parts.length >= 3 && isMachineName(parts[0])) {
                     addMachine(items, machinePositions, Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
                     continue;
                 }
@@ -155,25 +168,32 @@ public final class SnowWarMapsManager {
 
                 if (parts.length >= 6) {
                     // Tokens: name x y rot walkableHeight collisionHeight
-                    //   [imageUrl offsetZ] [state]
+                    //   [imageUrl offsetZ] [state] [z=altitude]
                     // A room-ad furni carries a non-numeric image URL at token 7;
                     // a normal furni carries only the (numeric) multistate index
-                    // there, if any. This keeps older 6/8-token saves valid.
+                    // there, if any. AIR arena fixtures may append their native
+                    // 1600-units-per-floor altitude as z=..., which keeps stacked
+                    // SnowStorm blocks at the same elevation as the original.
                     boolean hasImage = parts.length >= 7 && !isInteger(parts[6]);
                     String imageUrl = hasImage ? parts[6] : "";
                     int offsetZ = (hasImage && parts.length >= 8) ? parseIntSafe(parts[7]) : 0;
                     int state = hasImage
-                        ? (parts.length >= 9 ? parseIntSafe(parts[8]) : 0)
-                        : (parts.length >= 7 ? parseIntSafe(parts[6]) : 0);
+                            ? (parts.length >= 9 ? parseIntSafe(parts[8]) : 0)
+                            : (parts.length >= 7 ? parseIntSafe(parts[6]) : 0);
+                    for (String part : parts) {
+                        if (part.startsWith("z=")) {
+                            offsetZ = parseIntSafe(part.substring(2));
+                        }
+                    }
                     SnowWarItem item = new SnowWarItem(
-                        name,
-                        x,
-                        y,
-                        rotation,
-                        Integer.parseInt(parts[4]),
-                        Integer.parseInt(parts[5]),
-                        imageUrl,
-                        offsetZ);
+                            name,
+                            x,
+                            y,
+                            rotation,
+                            Integer.parseInt(parts[4]),
+                            Integer.parseInt(parts[5]),
+                            imageUrl,
+                            offsetZ);
                     item.setState(state);
                     items.add(item);
                 } else if (SnowWarItemProperties.isKnownItem(name)) {
@@ -186,11 +206,12 @@ public final class SnowWarMapsManager {
             }
         }
 
-        // No machines saved in this arena: scatter the default count across the
-        // field (spread out / opposite each other) instead of using a fixed
-        // layout, so an arena the user hasn't placed machines on still plays.
-        // Arenas that DO define machines keep exactly what was placed.
-        if (machinePositions.isEmpty()) {
+        // Official pile-only arenas ship an explicit `none` machine layout.
+        // Custom arenas without a bundled layout retain Duckie's generated
+        // fallback so they remain playable without hand-placing dispensers.
+        boolean hasBundledMachineLayout =
+                !machinePositions.isEmpty() || loadBundledMachines(mapId, items, machinePositions);
+        if (machinePositions.isEmpty() && !hasBundledMachineLayout) {
             generateRandomMachines(heightmapRows, items, machinePositions, DEFAULT_MACHINE_COUNT);
         }
 
@@ -199,16 +220,16 @@ public final class SnowWarMapsManager {
         try {
             if (spawnClusters.isEmpty()) {
                 for (String cluster :
-                    readContent("arena_" + mapId + "_spawn_clusters.dat").split("\\|")) {
+                        readContent("arena_" + mapId + "_spawn_clusters.dat").split("\\|")) {
                     String[] parts = cluster.trim().split("\\s+");
                     if (parts.length < 4) {
                         continue;
                     }
                     spawnClusters.add(new SnowWarSpawnCluster(
-                        Integer.parseInt(parts[0]),
-                        Integer.parseInt(parts[1]),
-                        Integer.parseInt(parts[2]),
-                        Integer.parseInt(parts[3])));
+                            Integer.parseInt(parts[0]),
+                            Integer.parseInt(parts[1]),
+                            Integer.parseInt(parts[2]),
+                            Integer.parseInt(parts[3])));
                 }
             }
         } catch (IOException e) {
@@ -216,8 +237,9 @@ public final class SnowWarMapsManager {
         }
 
         // Spawn clusters are optional since spawns are picked as random
-        // spread-out walkable tiles; machines remain required for ammo.
-        if (machinePositions.isEmpty()) {
+        // spread-out walkable tiles. Machines are optional too: Dragon Cave
+        // and Fight Night use their official snowball piles instead.
+        if (machinePositions.isEmpty() && !hasBundledMachineLayout) {
             LOGGER.error("SnowWar map {}: room_models row '{}' is missing snowball machines.", mapId, modelName);
             return null;
         }
@@ -225,12 +247,12 @@ public final class SnowWarMapsManager {
         applyItemSizes(items);
 
         LOGGER.info(
-            "Loaded SnowWar map {} from room_models '{}' ({} items, {} machines, {} spawn clusters).",
-            mapId,
-            modelName,
-            items.size(),
-            machinePositions.size(),
-            spawnClusters.size());
+                "Loaded SnowWar map {} from room_models '{}' ({} items, {} machines, {} spawn clusters).",
+                mapId,
+                modelName,
+                items.size(),
+                machinePositions.size(),
+                spawnClusters.size());
 
         return new SnowWarMap(mapId, heightmapRows, items, machinePositions, spawnClusters);
     }
@@ -248,12 +270,15 @@ public final class SnowWarMapsManager {
             }
             try {
                 com.eu.habbo.habbohotel.items.Item base =
-                    Emulator.getGameEnvironment().getItemManager().getItem(item.getName());
+                        Emulator.getGameEnvironment().getItemManager().getItem(item.getName());
                 if (base != null) {
                     item.setSize(base.getWidth(), base.getLength());
                     // A furni taller than 0.4 (stack height) stops a straight/lob
                     // snowball; flat props (rugs, low pits) let it fly over.
                     item.setBlocksSnowball(base.getHeight() > SNOWBALL_BLOCK_HEIGHT);
+                    if (item.getName().equals("snst_fence")) {
+                        item.setBlocksSnowball(false);
+                    }
                     // interaction_modes_count from items_base so the editor caps
                     // the state stepper at the furni's real number of states.
                     item.setStateCount(base.getStateCount());
@@ -268,15 +293,15 @@ public final class SnowWarMapsManager {
                     item.setBlocksSnowball(!passSnowball && item.getWalkableHeight() > 0);
                 }
                 LOGGER.info(
-                    "SnowWar item '{}' at ({},{}) rot {} -> size {}x{} (base found: {}, walkableHeight {})",
-                    item.getName(),
-                    item.getX(),
-                    item.getY(),
-                    item.getRotation(),
-                    item.getWidth(),
-                    item.getLength(),
-                    base != null,
-                    item.getWalkableHeight());
+                        "SnowWar item '{}' at ({},{}) rot {} -> size {}x{} (base found: {}, walkableHeight {})",
+                        item.getName(),
+                        item.getX(),
+                        item.getY(),
+                        item.getRotation(),
+                        item.getWidth(),
+                        item.getLength(),
+                        base != null,
+                        item.getWalkableHeight());
             } catch (Exception e) {
                 // Item manager not ready or classname unknown: leave the 1x1
                 // default rather than failing the whole arena load.
@@ -296,7 +321,11 @@ public final class SnowWarMapsManager {
      */
     private static boolean isFlatFloorTile(String name) {
         return name != null
-            && (name.startsWith("block_basic") || name.startsWith("block_ice") || name.startsWith("block_water"));
+                && (name.startsWith("block_basic") || name.startsWith("block_ice") || name.startsWith("block_water"));
+    }
+
+    public static boolean isMachineName(String name) {
+        return "snowball_machine".equals(name) || "s_snowball_machine".equals(name);
     }
 
     /** Packs a tile coordinate into a single long for a HashSet lookup. */
@@ -325,7 +354,7 @@ public final class SnowWarMapsManager {
      * tiles in a row (its footprint) plus the tile in front (the pickup spot).
      */
     private static void generateRandomMachines(
-        List<String> heightmapRows, List<SnowWarItem> items, List<SnowWarPoint> machinePositions, int count) {
+            List<String> heightmapRows, List<SnowWarItem> items, List<SnowWarPoint> machinePositions, int count) {
         // Tiles a machine may NOT sit on: solid obstacles (trees, blocks, fences,
         // solid furni). Walkable furni and the flat floor tiles (basic/ice/water)
         // are fine - a machine may be scattered on top of those.
@@ -341,13 +370,13 @@ public final class SnowWarMapsManager {
             String row = heightmapRows.get(y);
             for (int x = 0; x < row.length(); x++) {
                 if (isWalkableGround(heightmapRows, x, y)
-                    && isWalkableGround(heightmapRows, x + 1, y)
-                    && isWalkableGround(heightmapRows, x + 2, y)
-                    && isWalkableGround(heightmapRows, x, y + 1)
-                    && !blocked.contains(tileKey(x, y))
-                    && !blocked.contains(tileKey(x + 1, y))
-                    && !blocked.contains(tileKey(x + 2, y))
-                    && !blocked.contains(tileKey(x, y + 1))) {
+                        && isWalkableGround(heightmapRows, x + 1, y)
+                        && isWalkableGround(heightmapRows, x + 2, y)
+                        && isWalkableGround(heightmapRows, x, y + 1)
+                        && !blocked.contains(tileKey(x, y))
+                        && !blocked.contains(tileKey(x + 1, y))
+                        && !blocked.contains(tileKey(x + 2, y))
+                        && !blocked.contains(tileKey(x, y + 1))) {
                     candidates.add(new SnowWarPoint(x, y));
                 }
             }
@@ -418,6 +447,21 @@ public final class SnowWarMapsManager {
         items.add(new SnowWarItem("snowball_machine_hidden", x + 2, y, 0));
     }
 
+    static boolean loadBundledMachines(int mapId, List<SnowWarItem> items, List<SnowWarPoint> machinePositions) {
+        try {
+            for (String line : readLines("arena_" + mapId + "_snowmachines.dat")) {
+                String[] parts = line.trim().split("\\s+");
+                if (parts.length < 2) {
+                    continue;
+                }
+                addMachine(items, machinePositions, Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
+            }
+            return true;
+        } catch (IOException ignored) {
+            return false;
+        }
+    }
+
     private static SnowWarMap parseFileMap(int mapId) {
         try {
             List<String> heightmapRows = readLines("arena_" + mapId + "_heightmap.txt");
@@ -440,42 +484,44 @@ public final class SnowWarMapsManager {
                 }
 
                 items.add(new SnowWarItem(
-                    name, Integer.parseInt(parts[1]), Integer.parseInt(parts[2]), Integer.parseInt(parts[3])));
+                        name, Integer.parseInt(parts[1]), Integer.parseInt(parts[2]), Integer.parseInt(parts[3])));
             }
 
-            List<SnowWarPoint> machinePositions = new ArrayList<>();
-            for (String line : readLines("arena_" + mapId + "_snowmachines.dat")) {
-                String[] parts = line.trim().split("\\s+");
-                if (parts.length < 2) {
-                    continue;
-                }
+            addOfficialBackground(mapId, items);
 
-                addMachine(items, machinePositions, Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
+            List<SnowWarPoint> machinePositions = new ArrayList<>();
+            boolean hasBundledMachineLayout = loadBundledMachines(mapId, items, machinePositions);
+            if (machinePositions.isEmpty() && !hasBundledMachineLayout) {
+                generateRandomMachines(heightmapRows, items, machinePositions, DEFAULT_MACHINE_COUNT);
             }
 
             List<SnowWarSpawnCluster> spawnClusters = new ArrayList<>();
-            String spawnsContent = readContent("arena_" + mapId + "_spawn_clusters.dat");
-            for (String cluster : spawnsContent.split("\\|")) {
-                String[] parts = cluster.trim().split("\\s+");
-                if (parts.length < 4) {
-                    continue;
-                }
+            try {
+                String spawnsContent = readContent("arena_" + mapId + "_spawn_clusters.dat");
+                for (String cluster : spawnsContent.split("\\|")) {
+                    String[] parts = cluster.trim().split("\\s+");
+                    if (parts.length < 4) {
+                        continue;
+                    }
 
-                spawnClusters.add(new SnowWarSpawnCluster(
-                    Integer.parseInt(parts[0]),
-                    Integer.parseInt(parts[1]),
-                    Integer.parseInt(parts[2]),
-                    Integer.parseInt(parts[3])));
+                    spawnClusters.add(new SnowWarSpawnCluster(
+                            Integer.parseInt(parts[0]),
+                            Integer.parseInt(parts[1]),
+                            Integer.parseInt(parts[2]),
+                            Integer.parseInt(parts[3])));
+                }
+            } catch (IOException ignored) {
+                // Spawn clusters are optional; SnowWarMap spreads players over walkable tiles.
             }
 
             applyItemSizes(items);
 
             LOGGER.info(
-                "Loaded SnowWar map {} ({} items, {} machines, {} spawn clusters).",
-                mapId,
-                items.size(),
-                machinePositions.size(),
-                spawnClusters.size());
+                    "Loaded SnowWar map {} ({} items, {} machines, {} spawn clusters).",
+                    mapId,
+                    items.size(),
+                    machinePositions.size(),
+                    spawnClusters.size());
 
             return new SnowWarMap(mapId, heightmapRows, items, machinePositions, spawnClusters);
         } catch (Exception e) {
@@ -492,6 +538,37 @@ public final class SnowWarMapsManager {
             }
         }
         return lines;
+    }
+
+    private static void addOfficialBackground(int mapId, List<SnowWarItem> items) {
+        String configKey;
+        int y;
+        int offsetZ;
+        switch (mapId) {
+            case 8 -> {
+                configKey = "gamecenter.snowwar.artic.bg";
+                y = 19;
+                offsetZ = 10000;
+            }
+            case 9 -> {
+                configKey = "gamecenter.snowwar.dragoncave.bg";
+                y = 22;
+                offsetZ = 9920;
+            }
+            case 11 -> {
+                configKey = "gamecenter.snowwar.fightnight.bg";
+                y = 22;
+                offsetZ = 9950;
+            }
+            default -> {
+                return;
+            }
+        }
+
+        String imageUrl = configuration().getValue(configKey, "");
+        if (!imageUrl.isBlank()) {
+            items.add(new SnowWarItem("ads_background", 0, y, 1, 0, 0, imageUrl, offsetZ));
+        }
     }
 
     private static String readContent(String fileName) throws IOException {

@@ -4,11 +4,10 @@ import com.eu.habbo.habbohotel.games.snowwar.events.SnowWarGameEvent;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-
 import java.util.List;
 
 /**
- * Per-tick incremental update: 5 subturns of events plus the state checksum
+ * Per-turn incremental update: 3 subturns of events plus the state checksum
  * (PROTOCOL.md 5015, README 13.6).
  */
 public class SnowStormGameStatusComposer extends MessageComposer {

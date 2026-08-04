@@ -439,7 +439,7 @@ public class Outgoing {
     public static final int BaseJumpUnloadGameComposer = 1715; // PRODUCTION-201611291003-338511768
     public static final int UnknownComposer_137 = 2897; // PRODUCTION-201611291003-338511768
     public static final int GameCenterAccountInfoComposer = 2893; // PRODUCTION-201611291003-338511768
-    public static final int UnknowComposer_1390 = 2270; // PRODUCTION-201611291003-338511768
+    public static final int Game2WeeklySmallLeaderboardComposer = 2270; // PRODUCTION-201611291003-338511768
     public static final int BaseJumpLoadGameComposer = 3654; // PRODUCTION-201611291003-338511768
     public static final int UnknowComposer_1427 = 3319; // PRODUCTION-201611291003-338511768
     public static final int AdventCalendarDataComposer = 2531; // PRODUCTION-201611291003-338511768
@@ -453,7 +453,8 @@ public class Outgoing {
     public static final int UnknownComposer_1965 = 3292; // PRODUCTION-201611291003-338511768
     public static final int GuideSessionPartnerIsPlayingComposer = 448; // PRODUCTION-201611291003-338511768
     public static final int BaseJumpLeaveQueueComposer = 1477; // PRODUCTION-201611291003-338511768
-    public static final int Game2WeeklySmallLeaderboardComposer = 3512; // PRODUCTION-201611291003-338511768
+    public static final int UnknowComposer_1390 = 3512; // PRODUCTION-201611291003-338511768
+    public static final int WeeklyCompetitiveFriendsLeaderboardComposer = 3560; // PRODUCTION-201611291003-338511768
     public static final int GameCenterGameListComposer = 222; // PRODUCTION-201611291003-338511768
     public static final int RoomUsersGuildBadgesComposer = 2402; // PRODUCTION-201611291003-338511768
     public static final int UnknownComposer_2563 = 1774; // PRODUCTION-201611291003-338511768
@@ -579,6 +580,18 @@ public class Outgoing {
     public static final int CatalogAdminResultComposer = 10059;
     public static final int CatalogAdminOfferDetailsComposer = 10062;
     public static final int CatalogAdminPageDetailsComposer = 10063;
+    public static final int CatalogStudioSessionComposer = 10067;
+    public static final int CatalogStudioAcquireLockComposer = 10068;
+    public static final int CatalogStudioRenewLockComposer = 10069;
+    public static final int CatalogStudioReleaseLockComposer = 10070;
+    public static final int CatalogStudioHistoryComposer = 10071;
+    public static final int CatalogStudioUndoComposer = 10072;
+    public static final int CatalogStudioValidationComposer = 10073;
+    public static final int CatalogStudioPublishComposer = 10074;
+    public static final int CatalogStudioDiscardComposer = 10075;
+    public static final int CatalogStudioRestoreComposer = 10076;
+    public static final int CatalogStudioPreviewComposer = 10077;
+    public static final int CatalogStudioDocumentResultComposer = 10078;
 
     // Custom Prefixes
     public static final int UserPrefixesComposer = 7001;
@@ -615,6 +628,9 @@ public class Outgoing {
     public static final int RoomUserHabbiconComposer = 9410;
     public static final int TraxEditorSongsComposer = 9430;
     public static final int TraxEditorErrorComposer = 9431;
+    public static final int SoundboardPlayDeniedComposer = 9440;
+    public static final int SoundboardCatalogComposer = 9441;
+    public static final int SoundboardCatalogResultComposer = 9442;
     public static final int MentionReceivedComposer = 4801;
     public static final int MentionsListComposer = 4802;
     public static final int MessengerConversationsComposer = 4900;

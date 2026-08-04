@@ -28,9 +28,21 @@ final class CatalogAdminOfferPayload {
     final int orderNumber;
     final CatalogPageType pageType;
 
-    private CatalogAdminOfferPayload(int pageId, String itemIds, String catalogName, int costCredits, int costPoints,
-                                     int pointsType, int amount, int clubOnly, String extradata, boolean haveOffer,
-                                     int offerIdGroup, int limitedStack, int orderNumber, CatalogPageType pageType) {
+    private CatalogAdminOfferPayload(
+            int pageId,
+            String itemIds,
+            String catalogName,
+            int costCredits,
+            int costPoints,
+            int pointsType,
+            int amount,
+            int clubOnly,
+            String extradata,
+            boolean haveOffer,
+            int offerIdGroup,
+            int limitedStack,
+            int orderNumber,
+            CatalogPageType pageType) {
         this.pageId = pageId;
         this.itemIds = itemIds;
         this.catalogName = catalogName;
@@ -47,16 +59,28 @@ final class CatalogAdminOfferPayload {
         this.pageType = pageType;
     }
 
-    static CatalogAdminOfferPayload validate(int pageId, String itemIds, String catalogName, int costCredits,
-                                             int costPoints, int pointsType, int amount, int clubOnly,
-                                             String extradata, boolean haveOffer, int offerIdGroup,
-                                             int limitedStack, int orderNumber, CatalogPageType pageType) {
+    static CatalogAdminOfferPayload validate(
+            int pageId,
+            String itemIds,
+            String catalogName,
+            int costCredits,
+            int costPoints,
+            int pointsType,
+            int amount,
+            int clubOnly,
+            String extradata,
+            boolean haveOffer,
+            int offerIdGroup,
+            int limitedStack,
+            int orderNumber,
+            CatalogPageType pageType) {
         String cleanItemIds = normalizeItemIds(itemIds);
         String cleanCatalogName = clamp(catalogName, MAX_CATALOG_NAME_LENGTH);
         String cleanExtradata = clamp(extradata, MAX_EXTRADATA_LENGTH);
 
         if (pageId <= 0
                 || cleanItemIds == null
+                || (pageType != CatalogPageType.BUILDER && cleanItemIds.isEmpty())
                 || cleanCatalogName.isBlank()
                 || !isInRange(orderNumber, 0, MAX_ORDER_NUMBER)) {
             return null;
@@ -74,14 +98,39 @@ final class CatalogAdminOfferPayload {
             }
         }
 
-        return new CatalogAdminOfferPayload(pageId, cleanItemIds, cleanCatalogName, costCredits, costPoints,
-                pointsType, amount, clubOnly, cleanExtradata, haveOffer, offerIdGroup, limitedStack, orderNumber,
+        return new CatalogAdminOfferPayload(
+                pageId,
+                cleanItemIds,
+                cleanCatalogName,
+                costCredits,
+                costPoints,
+                pointsType,
+                amount,
+                clubOnly,
+                cleanExtradata,
+                haveOffer,
+                offerIdGroup,
+                limitedStack,
+                orderNumber,
                 pageType);
+    }
+
+    int[] baseItemIds() {
+        if (this.itemIds.isEmpty()) return new int[0];
+
+        String[] entries = this.itemIds.split(";");
+        int[] ids = new int[entries.length];
+        for (int index = 0; index < entries.length; index++) {
+            String entry = entries[index];
+            int separator = entry.indexOf(':');
+            ids[index] = Integer.parseInt(separator >= 0 ? entry.substring(0, separator) : entry);
+        }
+        return ids;
     }
 
     private static String normalizeItemIds(String value) {
         if (value == null || value.trim().isEmpty()) {
-            return "0";
+            return "";
         }
 
         String clean = value.trim().replaceAll("\\s+", "");
@@ -101,9 +150,18 @@ final class CatalogAdminOfferPayload {
                 return null;
             }
 
+            String[] itemAndQuantity = part.split(":", -1);
+            if (itemAndQuantity.length > 2) {
+                return null;
+            }
+
             try {
-                if (Integer.parseInt(part) < 0) {
-                    return null;
+                int itemId = Integer.parseInt(itemAndQuantity[0]);
+                if (itemId <= 0) return null;
+
+                if (itemAndQuantity.length == 2) {
+                    int quantity = Integer.parseInt(itemAndQuantity[1]);
+                    if (!isInRange(quantity, 1, MAX_AMOUNT)) return null;
                 }
             } catch (NumberFormatException e) {
                 return null;

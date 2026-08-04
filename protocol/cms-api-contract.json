@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "transport": "http-json",
+  "basePath": "/api/cms",
+  "sharesCommandRegistryWith": "rcon-contract.json",
+  "endpoints": {
+    "index": { "method": "GET", "path": "/api/cms", "auth": "network-only" },
+    "ping": { "method": "GET", "path": "/api/cms/ping", "auth": "network-only" },
+    "commands": { "method": "GET", "path": "/api/cms/commands", "auth": "hmac" },
+    "command": { "method": "POST", "path": "/api/cms/command", "auth": "hmac" }
+  },
+  "request": {
+    "key": "string",
+    "data": "object"
+  },
+  "response": {
+    "status": "integer",
+    "message": "string"
+  },
+  "commandNormalization": "remove underscores and lowercase",
+  "auth": {
+    "scheme": "hmac-sha256",
+    "headers": ["X-Cms-Key", "X-Cms-Timestamp", "X-Cms-Nonce", "X-Cms-Signature"],
+    "signingString": "keyId + \"\\n\" + timestamp + \"\\n\" + nonce + \"\\n\" + rawBody",
+    "signatureEncoding": "lowercase-hex",
+    "timestampSkewSeconds": 300,
+    "replayProtection": "per-key nonce cache"
+  },
+  "accessControl": {
+    "tier1": "cms.api.allowed (direct-peer IP / CIDR allow-list, loopback by default)",
+    "tier2": "hmac signature with per-key scopes"
+  },
+  "statuses": {
+    "ok": 0,
+    "error": 1,
+    "habboNotFound": 2,
+    "roomNotFound": 3,
+    "systemError": 4
+  },
+  "httpStatusMapping": {
+    "unknownCommand": 404,
+    "ok": 200,
+    "error": 400,
+    "habboNotFound": 404,
+    "roomNotFound": 404,
+    "systemError": 500,
+    "unauthorized": 401,
+    "replay": 409,
+    "forbidden": 403,
+    "rateLimited": 429,
+    "payloadTooLarge": 413
+  },
+  "alwaysDenied": ["stressstart", "stressstatus", "stressstop"],
+  "commands": [
+    "alertuser",
+    "disconnect",
+    "forwarduser",
+    "givebadge",
+    "givecredits",
+    "givepixels",
+    "givepoints",
+    "hotelalert",
+    "sendgift",
+    "sendroombundle",
+    "setrank",
+    "updatewordfilter",
+    "updatewheel",
+    "updatesoundboard",
+    "updatecatalog",
+    "executecommand",
+    "progressachievement",
+    "updateuser",
+    "friendrequest",
+    "imagehotelalert",
+    "imagealertuser",
+    "stalkuser",
+    "staffalert",
+    "modticket",
+    "talkuser",
+    "changeroomowner",
+    "muteuser",
+    "giverespect",
+    "ignoreuser",
+    "setmotto",
+    "giveuserclothing",
+    "modifysubscription",
+    "changeusername",
+    "updateitems"
+  ]
+}

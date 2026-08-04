@@ -1,14 +1,16 @@
 package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
-import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.catalog.CatalogAdminCacheSync;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogChangeOperation;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftMutationRequest;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogEntityType;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogLockKey;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioMutationEnvelope;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioRequestParser;
+import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioRuntime;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.CatalogAdminResultComposer;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 
 public class CatalogAdminDeleteOfferEvent extends MessageHandler {
 
@@ -27,16 +29,35 @@ public class CatalogAdminDeleteOfferEvent extends MessageHandler {
             return;
         }
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement((pageType == CatalogPageType.BUILDER) ? "DELETE FROM catalog_items_bc WHERE id = ?" : "DELETE FROM catalog_items WHERE id = ?")) {
-            statement.setInt(1, offerId);
-            if (statement.executeUpdate() == 0) {
-                this.client.sendResponse(new CatalogAdminResultComposer(false, "Offer not found: " + offerId));
-                return;
-            }
+        CatalogStudioMutationEnvelope envelope = CatalogStudioRequestParser.parseMutationEnvelope(this.packet);
+        var mutations = CatalogStudioRuntime.services().mutations();
+        var draft = mutations.loadDraft(envelope.draftVersionId(), envelope.expectedRevision());
+        if (draft.offer(pageType, offerId).isEmpty()) {
+            this.client.sendResponse(
+                    new CatalogAdminResultComposer(false, "Offer not found in shared draft: " + offerId));
+            return;
         }
-
-        CatalogAdminCacheSync.removeCatalogItem(offerId, pageType, -1);
-        this.client.sendResponse(new CatalogAdminResultComposer(true, "Offer deleted"));
+        int limitedSells = CatalogStudioRuntime.services()
+                .operationalOffers()
+                .findLimitedSells(offerId)
+                .orElse(0);
+        if (limitedSells > 0) {
+            this.client.sendResponse(
+                    new CatalogAdminResultComposer(false, "Limited offers with completed sales cannot be deleted"));
+            return;
+        }
+        var result = mutations.apply(new CatalogDraftMutationRequest(
+                envelope.draftVersionId(),
+                envelope.expectedRevision(),
+                this.client.getHabbo().getHabboInfo().getId(),
+                new CatalogLockKey(CatalogEntityType.OFFER, pageType, offerId),
+                envelope.lockToken(),
+                envelope.summary(),
+                CatalogEntityType.OFFER,
+                offerId,
+                CatalogChangeOperation.DELETE,
+                null));
+        this.client.sendResponse(new CatalogAdminResultComposer(
+                true, "Offer deleted from shared draft at revision " + result.revision()));
     }
 }

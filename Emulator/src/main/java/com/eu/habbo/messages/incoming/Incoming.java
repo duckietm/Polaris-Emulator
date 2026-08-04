@@ -420,6 +420,10 @@ public class Incoming {
     public static final int UNKNOWN_SNOWSTORM_6024 = 6024;
     public static final int UNKNOWN_SNOWSTORM_6025 = 6025;
     public static final int SnowStormUserPickSnowballEvent = 6026;
+    public static final int SnowStormGetAllTimeLeaderboardEvent = 6027;
+    public static final int SnowStormGetAllTimeFriendsLeaderboardEvent = 6028;
+    public static final int SnowStormGetWeeklyLeaderboardEvent = 6029;
+    public static final int SnowStormGetWeeklyFriendsLeaderboardEvent = 6030;
 
     // CUSTOM
     public static final int UpdateFurniturePositionEvent = 10019;
@@ -463,6 +467,23 @@ public class Incoming {
     public static final int CatalogAdminSavePageIconEvent = 10061;
     public static final int CatalogAdminLoadOfferEvent = 10062;
     public static final int CatalogAdminLoadPageEvent = 10063;
+    public static final int CatalogAdminSetPageEnabledEvent = 10064;
+    public static final int CatalogAdminSetPageVisibleEvent = 10065;
+    public static final int CatalogAdminReorderOffersEvent = 10066;
+    public static final int CatalogStudioOpenSessionEvent = 10067;
+    public static final int CatalogStudioAcquireLockEvent = 10068;
+    public static final int CatalogStudioRenewLockEvent = 10069;
+    public static final int CatalogStudioReleaseLockEvent = 10070;
+    public static final int CatalogStudioLoadHistoryEvent = 10071;
+    public static final int CatalogStudioUndoEvent = 10072;
+    public static final int CatalogStudioValidateEvent = 10073;
+    public static final int CatalogStudioPublishEvent = 10074;
+    public static final int CatalogStudioDiscardEvent = 10075;
+    public static final int CatalogStudioRestoreEvent = 10076;
+    public static final int CatalogStudioPreviewEvent = 10077;
+    public static final int CatalogStudioExportEvent = 10078;
+    public static final int CatalogStudioDocumentDryRunEvent = 10079;
+    public static final int CatalogStudioDocumentApplyEvent = 10080;
 
     // Custom Prefixes
     public static final int RequestUserPrefixesEvent = 7011;
@@ -523,6 +544,11 @@ public class Incoming {
     public static final int TraxEditorBuySongEvent = 9331;
     public static final int TraxEditorSaveSongEvent = 9332;
     public static final int TraxEditorDeleteSongEvent = 9333;
+    public static final int SoundboardRequestSettingsEvent = 9340;
+    public static final int SoundboardSaveVolumeEvent = 9341;
+    public static final int SoundboardCatalogRequestEvent = 9342;
+    public static final int SoundboardCatalogUpsertEvent = 9343;
+    public static final int SoundboardCatalogReorderEvent = 9344;
     public static final int HotelViewLandingRequestEvent = 9410;
     public static final int HotelViewLandingSaveEvent = 9411;
     public static final int HotelViewLandingSaveSceneEvent = 9412;

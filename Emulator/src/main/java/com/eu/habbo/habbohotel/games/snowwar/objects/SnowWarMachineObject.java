@@ -16,6 +16,7 @@ public class SnowWarMachineObject extends SnowWarGameObject {
 
     private int snowballCount = 0;
     private int generatorTimer = SnowWarConstants.MACHINE_SNOWBALL_GENERATOR_TIME;
+    private int reservedPickups = 0;
 
     public SnowWarMachineObject(int objectId, int x, int y) {
         super(objectId);
@@ -68,30 +69,50 @@ public class SnowWarMachineObject extends SnowWarGameObject {
                 && attr.getActivityState() != SnowWarActivityState.INVINCIBLE) {
             return false;
         }
-        return this.snowballCount > 0 && attr.getSnowballCount().get() < SnowWarConstants.MAX_SNOWBALLS;
+        return this.snowballCount > this.reservedPickups
+                && attr.getSnowballCount().get() < SnowWarConstants.MAX_SNOWBALLS;
     }
 
     private boolean isPlayerAtPickupPosition(SnowWarAttributes attr) {
         int pickupX = this.x;
         int pickupY = this.y + 1;
-        return attr.getCurrentPosition().getX() == pickupX && attr.getCurrentPosition().getY() == pickupY;
+        return attr.getCurrentPosition().getX() == pickupX
+                && attr.getCurrentPosition().getY() == pickupY;
     }
 
-    public void transferSnowballTo(SnowWarAttributes attr) {
+    public void reservePickup() {
+        this.reservedPickups++;
+    }
+
+    public void transferReservedSnowballTo(SnowWarAttributes attr) {
+        if (this.reservedPickups > 0) {
+            this.reservedPickups--;
+        }
         if (this.snowballCount > 0 && attr.getSnowballCount().get() < SnowWarConstants.MAX_SNOWBALLS) {
             this.snowballCount--;
             attr.getSnowballCount().incrementAndGet();
         }
     }
 
+    public boolean testCollision(SnowWarSnowballObject ball) {
+        return ball.getHeight() < SnowWarConstants.MACHINE_RADIUS
+                && SnowWarMath.circlesOverlap(
+                        ball.getLocH(),
+                        ball.getLocV(),
+                        SnowWarConstants.SNOWBALL_RADIUS,
+                        SnowWarMath.tileToWorld(this.x),
+                        SnowWarMath.tileToWorld(this.y),
+                        SnowWarConstants.MACHINE_RADIUS);
+    }
+
     @Override
     public int[] getChecksumValues() {
-        return new int[]{
-                SnowWarConstants.OBJECT_TYPE_MACHINE,
-                this.objectId,
-                SnowWarMath.tileToWorld(this.x),
-                SnowWarMath.tileToWorld(this.y),
-                this.snowballCount
+        return new int[] {
+            SnowWarConstants.OBJECT_TYPE_MACHINE,
+            this.objectId,
+            SnowWarMath.tileToWorld(this.x),
+            SnowWarMath.tileToWorld(this.y),
+            this.snowballCount
         };
     }
 

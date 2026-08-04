@@ -1,7 +1,6 @@
 package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.habbohotel.items.Item;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -19,7 +18,6 @@ public class RoomTile {
     private boolean diagonally;
     private short gCosts;
     private short hCosts;
-
 
     public RoomTile(short x, short y, short z, RoomTileState state, boolean allowStack) {
         this.x = x;
@@ -48,8 +46,7 @@ public class RoomTile {
         this.units = tile.units;
     }
 
-    public RoomTile()
-    {
+    public RoomTile() {
         x = 0;
         y = 0;
         z = 0;
@@ -98,9 +95,14 @@ public class RoomTile {
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof RoomTile &&
-                ((RoomTile) o).x == this.x &&
-                ((RoomTile) o).y == this.y;
+        return o instanceof RoomTile && ((RoomTile) o).x == this.x && ((RoomTile) o).y == this.y;
+    }
+
+    @Override
+    public int hashCode() {
+        // Must stay consistent with equals() (x, y only) so RoomTile works as a
+        // key in hashed collections such as RoomItemIndex.tileCache.
+        return (31 * this.x) + this.y;
     }
 
     public RoomTile copy() {
@@ -126,7 +128,8 @@ public class RoomTile {
     }
 
     public void setgCosts(RoomTile previousRoomTile) {
-        this.setgCosts(previousRoomTile, this.diagonally ? RoomLayout.DIAGONALMOVEMENTCOST : RoomLayout.BASICMOVEMENTCOST);
+        this.setgCosts(
+                previousRoomTile, this.diagonally ? RoomLayout.DIAGONALMOVEMENTCOST : RoomLayout.BASICMOVEMENTCOST);
     }
 
     private void setgCosts(short gCosts) {
@@ -150,7 +153,8 @@ public class RoomTile {
     }
 
     public String toString() {
-        return "RoomTile (" + this.x + ", " + this.y + ", " + this.z + "): h: " + this.hCosts + " g: " + this.gCosts + " f: " + this.getfCosts();
+        return "RoomTile (" + this.x + ", " + this.y + ", " + this.z + "): h: " + this.hCosts + " g: " + this.gCosts
+                + " f: " + this.getfCosts();
     }
 
     public boolean isWalkable() {
@@ -182,16 +186,17 @@ public class RoomTile {
     }
 
     public boolean hasUnits() {
-        synchronized(this.units) {
-        if (!this.units.isEmpty()) {
-            this.units.removeIf(unit -> !unit.getCurrentLocation().equals(this));
-        }
-        return !this.units.isEmpty();
+        synchronized (this.units) {
+            if (!this.units.isEmpty()) {
+                this.units.removeIf(unit -> !unit.getCurrentLocation().equals(this));
+            }
+            return !this.units.isEmpty();
         }
     }
 
     public boolean unitIsOnFurniOnTile(RoomUnit unit, Item item) {
-        return (unit.getX() >= this.x && unit.getX() < this.x + item.getLength()) && (unit.getY() >= this.y && unit.getY() < this.y + item.getWidth());
+        return (unit.getX() >= this.x && unit.getX() < this.x + item.getLength())
+                && (unit.getY() >= this.y && unit.getY() < this.y + item.getWidth());
     }
 
     public short getX() {

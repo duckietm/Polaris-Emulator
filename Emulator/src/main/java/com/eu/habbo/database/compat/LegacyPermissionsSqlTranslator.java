@@ -39,29 +39,50 @@ public class LegacyPermissionsSqlTranslator implements LegacySqlTranslator {
      * itself; they moved to permission_ranks unchanged.
      */
     private static final Set<String> RANK_METADATA_COLUMNS = Set.of(
-            "id", "rank_name", "hidden_rank", "badge", "job_description",
-            "staff_color", "staff_background", "level", "room_effect",
-            "log_commands", "prefix", "prefix_color", "auto_credits_amount",
-            "auto_pixels_amount", "auto_gotw_amount", "auto_points_amount");
+            "id",
+            "rank_name",
+            "hidden_rank",
+            "badge",
+            "job_description",
+            "staff_color",
+            "staff_background",
+            "level",
+            "room_effect",
+            "log_commands",
+            "prefix",
+            "prefix_color",
+            "auto_credits_amount",
+            "auto_pixels_amount",
+            "auto_gotw_amount",
+            "auto_points_amount",
+            "soundboard_cooldown_seconds");
 
     private static final Pattern IDENTIFIER = Pattern.compile("^[A-Za-z_][A-Za-z0-9_]*$");
 
-    private static final Pattern ALTER_STATEMENT = Pattern.compile("(?is)^\\s*ALTER\\s+TABLE\\s+`?permissions`?\\s+(.*?)\\s*;?\\s*$");
-    private static final Pattern ALTER_ADD_CLAUSE = Pattern.compile("(?is)^ADD\\s+(?:COLUMN\\s+)?(?:IF\\s+NOT\\s+EXISTS\\s+)?`?([A-Za-z_][A-Za-z0-9_]*)`?\\s+(.*)$");
-    private static final Pattern ALTER_DROP_CLAUSE = Pattern.compile("(?is)^DROP\\s+(?:COLUMN\\s+)?(?:IF\\s+EXISTS\\s+)?`?([A-Za-z_][A-Za-z0-9_]*)`?\\s*$");
+    private static final Pattern ALTER_STATEMENT =
+            Pattern.compile("(?is)^\\s*ALTER\\s+TABLE\\s+`?permissions`?\\s+(.*?)\\s*;?\\s*$");
+    private static final Pattern ALTER_ADD_CLAUSE = Pattern.compile(
+            "(?is)^ADD\\s+(?:COLUMN\\s+)?(?:IF\\s+NOT\\s+EXISTS\\s+)?`?([A-Za-z_][A-Za-z0-9_]*)`?\\s+(.*)$");
+    private static final Pattern ALTER_DROP_CLAUSE =
+            Pattern.compile("(?is)^DROP\\s+(?:COLUMN\\s+)?(?:IF\\s+EXISTS\\s+)?`?([A-Za-z_][A-Za-z0-9_]*)`?\\s*$");
     private static final Pattern ENUM_TYPE = Pattern.compile("(?is)^ENUM\\s*\\(([^)]*)\\)");
 
-    private static final Pattern UPDATE_STATEMENT = Pattern.compile("(?is)^\\s*UPDATE\\s+(`?)permissions\\1\\s+SET\\s+(.*?)\\s*;?\\s*$");
+    private static final Pattern UPDATE_STATEMENT =
+            Pattern.compile("(?is)^\\s*UPDATE\\s+(`?)permissions\\1\\s+SET\\s+(.*?)\\s*;?\\s*$");
     private static final Pattern UPDATE_TABLE_REF = Pattern.compile("(?is)^(\\s*UPDATE\\s+)`?permissions`?");
-    private static final Pattern WHERE_ID_COMPARE = Pattern.compile("(?is)^`?id`?\\s*(=|>=|<=|>|<|!=|<>)\\s*'?(\\d+)'?$");
+    private static final Pattern WHERE_ID_COMPARE =
+            Pattern.compile("(?is)^`?id`?\\s*(=|>=|<=|>|<|!=|<>)\\s*'?(\\d+)'?$");
     private static final Pattern WHERE_ID_IN = Pattern.compile("(?is)^`?id`?\\s+IN\\s*\\(([\\d\\s,']+)\\)$");
 
-    private static final Pattern SELECT_STATEMENT = Pattern.compile("(?is)^\\s*SELECT\\s+(.*?)\\s+FROM\\s+`?permissions`?\\b(.*?)\\s*;?\\s*$");
+    private static final Pattern SELECT_STATEMENT =
+            Pattern.compile("(?is)^\\s*SELECT\\s+(.*?)\\s+FROM\\s+`?permissions`?\\b(.*?)\\s*;?\\s*$");
     private static final Pattern SELECT_FROM_REF = Pattern.compile("(?is)(\\bFROM\\s+)`?permissions`?\\b");
     private static final Pattern SELECT_WHERE_ID = Pattern.compile("(?is)^\\s*WHERE\\s+`?id`?\\s*=\\s*'?(\\d+)'?\\s*$");
 
-    private static final Pattern DELETE_STATEMENT = Pattern.compile("(?is)^(\\s*DELETE\\s+FROM\\s+)`?permissions`?(\\b.*)$");
-    private static final Pattern INSERT_STATEMENT = Pattern.compile("(?is)^(\\s*INSERT\\s+(?:IGNORE\\s+)?INTO\\s+)`?permissions`?(\\s*\\(([^)]*)\\).*)$");
+    private static final Pattern DELETE_STATEMENT =
+            Pattern.compile("(?is)^(\\s*DELETE\\s+FROM\\s+)`?permissions`?(\\b.*)$");
+    private static final Pattern INSERT_STATEMENT =
+            Pattern.compile("(?is)^(\\s*INSERT\\s+(?:IGNORE\\s+)?INTO\\s+)`?permissions`?(\\s*\\(([^)]*)\\).*)$");
 
     @Override
     public boolean appliesTo(String lowerCaseSql) {
@@ -151,14 +172,21 @@ public class LegacyPermissionsSqlTranslator implements LegacySqlTranslator {
         }
 
         if (!addedKeys.isEmpty() && droppedKeys.isEmpty()) {
-            StringBuilder insert = new StringBuilder("INSERT INTO " + DEFINITIONS_TABLE + " (permission_key, max_value, comment) VALUES ");
+            StringBuilder insert = new StringBuilder(
+                    "INSERT INTO " + DEFINITIONS_TABLE + " (permission_key, max_value, comment) VALUES ");
 
             for (int i = 0; i < addedKeys.size(); i++) {
                 if (i > 0) {
                     insert.append(", ");
                 }
 
-                insert.append("('").append(addedKeys.get(i)).append("', ").append(addedMaxValues.get(i)).append(", '").append(REGISTERED_COMMENT).append("')");
+                insert.append("('")
+                        .append(addedKeys.get(i))
+                        .append("', ")
+                        .append(addedMaxValues.get(i))
+                        .append(", '")
+                        .append(REGISTERED_COMMENT)
+                        .append("')");
             }
 
             return insert.toString();
@@ -313,14 +341,15 @@ public class LegacyPermissionsSqlTranslator implements LegacySqlTranslator {
             List<Integer> matched = new ArrayList<>();
 
             for (int rankId : rankIds) {
-                boolean matches = switch (operator) {
-                    case "=" -> rankId == bound;
-                    case ">=" -> rankId >= bound;
-                    case "<=" -> rankId <= bound;
-                    case ">" -> rankId > bound;
-                    case "<" -> rankId < bound;
-                    default -> rankId != bound; // != and <>
-                };
+                boolean matches =
+                        switch (operator) {
+                            case "=" -> rankId == bound;
+                            case ">=" -> rankId >= bound;
+                            case "<=" -> rankId <= bound;
+                            case ">" -> rankId > bound;
+                            case "<" -> rankId < bound;
+                            default -> rankId != bound; // != and <>
+                        };
 
                 if (matches) {
                     matched.add(rankId);
@@ -416,8 +445,13 @@ public class LegacyPermissionsSqlTranslator implements LegacySqlTranslator {
                 select.append(", ");
             }
 
-            select.append("MAX(CASE WHEN permission_key = '").append(columns.get(i))
-                    .append("' THEN rank_").append(rankId).append(" END) AS `").append(columns.get(i)).append("`");
+            select.append("MAX(CASE WHEN permission_key = '")
+                    .append(columns.get(i))
+                    .append("' THEN rank_")
+                    .append(rankId)
+                    .append(" END) AS `")
+                    .append(columns.get(i))
+                    .append("`");
         }
 
         select.append(" FROM ").append(DEFINITIONS_TABLE);
@@ -568,13 +602,15 @@ public class LegacyPermissionsSqlTranslator implements LegacySqlTranslator {
                 depth++;
             } else if (c == ')') {
                 depth--;
-            } else if (depth == 0 && lower.startsWith(needle, i)
+            } else if (depth == 0
+                    && lower.startsWith(needle, i)
                     && (i == 0 || Character.isWhitespace(value.charAt(i - 1)))
-                    && (i + needle.length() >= value.length() || Character.isWhitespace(value.charAt(i + needle.length())))) {
-                return new String[]{value.substring(0, i), value.substring(i + needle.length())};
+                    && (i + needle.length() >= value.length()
+                            || Character.isWhitespace(value.charAt(i + needle.length())))) {
+                return new String[] {value.substring(0, i), value.substring(i + needle.length())};
             }
         }
 
-        return new String[]{value, null};
+        return new String[] {value, null};
     }
 }

@@ -1,17 +1,12 @@
 package com.eu.habbo.messages.incoming.furnieditor;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.items.FurnidataJson;
 import com.eu.habbo.habbohotel.items.FurnidataSourceResolver;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -19,6 +14,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Manages reading and writing of FurnitureData entries.
@@ -27,11 +24,11 @@ import java.util.Map;
  * directory layout introduced by the split-aware loader on the Nitro V3 side:
  *
  *   <base>/
- *     manifest.json5         OPTIONAL  { "tiers": ["core", "custom", "seasonal"] }
- *     core/manifest.json5    REQUIRED  { "files": ["floor-001.json5", ...] }
- *     core/*.json5
- *     custom/manifest.json5  OPTIONAL
- *     seasonal/manifest.json5 OPTIONAL
+ *     manifest.jsonc          OPTIONAL  { "tiers": ["core", "custom", "seasonal"] }
+ *     core/manifest.jsonc     REQUIRED  { "files": ["floor-001.jsonc", ...] }
+ *     core/*.jsonc
+ *     custom/manifest.jsonc   OPTIONAL
+ *     seasonal/manifest.jsonc OPTIONAL
  *
  * The path is resolved from the emulator config:
  *
@@ -45,12 +42,11 @@ public class FurniDataManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(FurniDataManager.class);
 
     private static final List<String> DEFAULT_TIERS = Arrays.asList("core", "custom", "seasonal");
-    private static final List<String> MANIFEST_NAMES = Arrays.asList("manifest.json5", "manifest.json");
+    private static final List<String> MANIFEST_NAMES = Arrays.asList("manifest.jsonc", "manifest.json");
     private static final List<String> SECTIONS = Arrays.asList("roomitemtypes", "wallitemtypes");
     private static volatile CachedIndex cachedIndex = null;
 
-    public record LookupResult(String itemJson, String diagnosticJson) {
-    }
+    public record LookupResult(String itemJson, String diagnosticJson) {}
 
     /**
      * Get the JSON string for a specific item.
@@ -92,7 +88,8 @@ public class FurniDataManager {
             if (strippedKey != null && !strippedKey.equals(key)) {
                 String byStripped = index.byClassname.get(strippedKey);
                 if (byStripped != null) {
-                    return new LookupResult(byStripped, diagnostic(source, itemId, classname, "matched_classname_stripped"));
+                    return new LookupResult(
+                            byStripped, diagnostic(source, itemId, classname, "matched_classname_stripped"));
                 }
             }
 
@@ -105,7 +102,8 @@ public class FurniDataManager {
             return new LookupResult("{}", diagnostic(source, itemId, classname, reason));
         } catch (Exception e) {
             LOGGER.warn("Failed to read FurnitureData for item " + itemId, e);
-            FurnidataSourceResolver.Source errorSource = new FurnidataSourceResolver.Source(source.path(), source.directory(), FurnidataSourceResolver.Status.ERROR, e.getMessage());
+            FurnidataSourceResolver.Source errorSource = new FurnidataSourceResolver.Source(
+                    source.path(), source.directory(), FurnidataSourceResolver.Status.ERROR, e.getMessage());
             return new LookupResult("{}", diagnostic(errorSource, itemId, classname, "error"));
         }
     }
@@ -127,16 +125,20 @@ public class FurniDataManager {
 
         if (source.directory()) {
             indexSplitDir(source.path(), byId, byClassname);
-        } else {
+        } else if (FurnidataJson.isSupportedDocument(source.path())) {
             try {
-                String content = readJson5(source.path());
-                indexRoot(JsonParser.parseString(content).getAsJsonObject(), byId, byClassname);
+                indexRoot(readJsonObject(source.path()), byId, byClassname);
             } catch (Exception e) {
                 LOGGER.warn("Failed to parse furnidata source {}", source.path(), e);
             }
         }
 
-        return new CachedIndex(sourceKey, signature, Map.copyOf(byId), Map.copyOf(byClassname), byId.isEmpty() && byClassname.isEmpty());
+        return new CachedIndex(
+                sourceKey,
+                signature,
+                Map.copyOf(byId),
+                Map.copyOf(byClassname),
+                byId.isEmpty() && byClassname.isEmpty());
     }
 
     private static void indexSplitDir(Path baseDir, Map<Integer, String> byId, Map<String, String> byClassname) {
@@ -148,11 +150,10 @@ public class FurniDataManager {
 
             for (String fileName : readFilesManifest(tierDir)) {
                 Path file = tierDir.resolve(fileName);
-                if (!Files.exists(file)) continue;
+                if (!Files.exists(file) || !FurnidataJson.isSupportedDocument(file)) continue;
 
                 try {
-                    String content = readJson5(file);
-                    indexRoot(JsonParser.parseString(content).getAsJsonObject(), byId, byClassname);
+                    indexRoot(readJsonObject(file), byId, byClassname);
                 } catch (Exception e) {
                     LOGGER.warn("Failed to parse split gamedata file " + file, e);
                 }
@@ -182,13 +183,16 @@ public class FurniDataManager {
     private static long sourceSignature(Path source) {
         try {
             if (source == null || !Files.exists(source)) return -1L;
-            if (!Files.isDirectory(source)) return Files.getLastModifiedTime(source).toMillis() ^ Files.size(source);
+            if (!Files.isDirectory(source))
+                return Files.getLastModifiedTime(source).toMillis() ^ Files.size(source);
 
-            final long[] signature = { 17L };
+            final long[] signature = {17L};
             try (var stream = Files.walk(source)) {
                 stream.filter(Files::isRegularFile).forEach(path -> {
                     try {
-                        signature[0] = (signature[0] * 31L) ^ Files.getLastModifiedTime(path).toMillis() ^ Files.size(path);
+                        signature[0] = (signature[0] * 31L)
+                                ^ Files.getLastModifiedTime(path).toMillis()
+                                ^ Files.size(path);
                     } catch (Exception ignored) {
                     }
                 });
@@ -199,20 +203,27 @@ public class FurniDataManager {
         }
     }
 
-    private static String diagnostic(FurnidataSourceResolver.Source source, int itemId, String classname, String reason) {
+    private static String diagnostic(
+            FurnidataSourceResolver.Source source, int itemId, String classname, String reason) {
         JsonObject obj = new JsonObject();
         obj.addProperty("reason", reason);
         obj.addProperty("itemId", itemId);
         obj.addProperty("classname", classname != null ? classname : "");
-        obj.addProperty("sourcePath", source != null && source.path() != null ? source.path().toString() : "");
+        obj.addProperty(
+                "sourcePath",
+                source != null && source.path() != null ? source.path().toString() : "");
         obj.addProperty("sourceDirectory", source != null && source.directory());
         obj.addProperty("sourceStatus", source != null ? source.status().name() : "CONFIG_MISSING");
         obj.addProperty("message", source != null && source.message() != null ? source.message() : "");
         return obj.toString();
     }
 
-    private record CachedIndex(String sourceKey, long signature, Map<Integer, String> byId, Map<String, String> byClassname, boolean empty) {
-    }
+    private record CachedIndex(
+            String sourceKey,
+            long signature,
+            Map<Integer, String> byId,
+            Map<String, String> byClassname,
+            boolean empty) {}
 
     static String findItemJson(Path source, boolean directory, int itemId, String classname) {
         try {
@@ -220,10 +231,9 @@ public class FurniDataManager {
                 return findItemInSplitDir(source, itemId, classname);
             }
 
-            if (!Files.exists(source)) return "{}";
+            if (!Files.exists(source) || !FurnidataJson.isSupportedDocument(source)) return "{}";
 
-            String content = readJson5(source);
-            String found = findItemInRoot(JsonParser.parseString(content).getAsJsonObject(), itemId, classname);
+            String found = findItemInRoot(readJsonObject(source), itemId, classname);
             return found != null ? found : "{}";
         } catch (Exception e) {
             LOGGER.warn("Failed to read FurnitureData for item " + itemId, e);
@@ -342,11 +352,10 @@ public class FurniDataManager {
             List<String> files = readFilesManifest(tierDir);
             for (String fileName : files) {
                 Path file = tierDir.resolve(fileName);
-                if (!Files.exists(file)) continue;
+                if (!Files.exists(file) || !FurnidataJson.isSupportedDocument(file)) continue;
 
                 try {
-                    String content = readJson5(file);
-                    JsonObject obj = JsonParser.parseString(content).getAsJsonObject();
+                    JsonObject obj = readJsonObject(file);
                     String match = findItemInRoot(obj, itemId, classname);
                     if (match != null) found = match;
                 } catch (Exception e) {
@@ -364,8 +373,7 @@ public class FurniDataManager {
         if (manifest == null) return DEFAULT_TIERS;
 
         try {
-            String content = readJson5(manifest);
-            JsonObject obj = JsonParser.parseString(content).getAsJsonObject();
+            JsonObject obj = readJsonObject(manifest);
             if (obj.has("tiers") && obj.get("tiers").isJsonArray()) {
                 JsonArray arr = obj.getAsJsonArray("tiers");
                 List<String> out = new java.util.ArrayList<>();
@@ -383,8 +391,7 @@ public class FurniDataManager {
         if (manifest == null) return java.util.Collections.emptyList();
 
         try {
-            String content = readJson5(manifest);
-            JsonObject obj = JsonParser.parseString(content).getAsJsonObject();
+            JsonObject obj = readJsonObject(manifest);
             if (obj.has("files") && obj.get("files").isJsonArray()) {
                 JsonArray arr = obj.getAsJsonArray("files");
                 List<String> out = new java.util.ArrayList<>();
@@ -405,74 +412,11 @@ public class FurniDataManager {
         return null;
     }
 
-    /**
-     * Read a JSON or JSON5 file. Strips line and block comments and trailing
-     * commas so Gson can parse the result. String contents are preserved
-     * verbatim; comments embedded inside strings are not removed.
-     */
-    private static String readJson5(Path path) throws IOException {
-        String raw = Files.readString(path, StandardCharsets.UTF_8);
-        return stripJson5(raw);
-    }
-
-    static String stripJson5(String content) {
-        if (content == null || content.isEmpty()) return content;
-
-        StringBuilder out = new StringBuilder(content.length());
-        int i = 0;
-        int len = content.length();
-        boolean inString = false;
-        char stringChar = 0;
-        boolean escape = false;
-
-        while (i < len) {
-            char c = content.charAt(i);
-
-            if (inString) {
-                out.append(c);
-                if (escape) {
-                    escape = false;
-                } else if (c == '\\') {
-                    escape = true;
-                } else if (c == stringChar) {
-                    inString = false;
-                }
-                i++;
-                continue;
-            }
-
-            if (c == '"' || c == '\'') {
-                inString = true;
-                stringChar = c;
-                out.append(c);
-                i++;
-                continue;
-            }
-
-            if (c == '/' && i + 1 < len) {
-                char next = content.charAt(i + 1);
-                if (next == '/') {
-                    int eol = content.indexOf('\n', i + 2);
-                    if (eol < 0) { i = len; break; }
-                    i = eol;
-                    continue;
-                }
-                if (next == '*') {
-                    int end = content.indexOf("*/", i + 2);
-                    if (end < 0) { i = len; break; }
-                    i = end + 2;
-                    continue;
-                }
-            }
-
-            out.append(c);
-            i++;
+    private static JsonObject readJsonObject(Path path) throws Exception {
+        if (!FurnidataJson.isSupportedDocument(path)) {
+            throw new IllegalArgumentException("Unsupported JSON document: " + path);
         }
-
-        String stripped = out.toString();
-        // Remove trailing commas before } or ]
-        stripped = stripped.replaceAll(",(\\s*[}\\]])", "$1");
-        return stripped;
+        return FurnidataJson.parseObject(Files.readString(path));
     }
 
     /**
@@ -503,10 +447,9 @@ public class FurniDataManager {
             }
 
             Path rendererConfig = Paths.get(configPath);
-            if (!Files.exists(rendererConfig)) return null;
+            if (!Files.exists(rendererConfig) || !FurnidataJson.isSupportedDocument(rendererConfig)) return null;
 
-            String rendererContent = readJson5(rendererConfig);
-            JsonObject rendererObj = JsonParser.parseString(rendererContent).getAsJsonObject();
+            JsonObject rendererObj = readJsonObject(rendererConfig);
 
             if (!rendererObj.has("furnidata.url")) return null;
 
@@ -621,7 +564,8 @@ public class FurniDataManager {
         }
 
         String normalizedUrlPath = urlPath.replace('\\', '/');
-        String baseName = assetBase.getFileName() != null ? assetBase.getFileName().toString() : "";
+        String baseName =
+                assetBase.getFileName() != null ? assetBase.getFileName().toString() : "";
         String marker = "/" + baseName + "/";
 
         Path candidate;
@@ -631,8 +575,8 @@ public class FurniDataManager {
             candidate = assetBase.resolve(relative);
         } else if (splitMode) {
             String trimmed = normalizedUrlPath.endsWith("/")
-                ? normalizedUrlPath.substring(0, normalizedUrlPath.length() - 1)
-                : normalizedUrlPath;
+                    ? normalizedUrlPath.substring(0, normalizedUrlPath.length() - 1)
+                    : normalizedUrlPath;
             String dirName = trimmed.substring(trimmed.lastIndexOf('/') + 1);
             candidate = assetBase.resolve(dirName);
         } else {

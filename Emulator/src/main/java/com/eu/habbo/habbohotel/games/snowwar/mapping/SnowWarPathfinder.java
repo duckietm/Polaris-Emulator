@@ -4,7 +4,6 @@ import com.eu.habbo.habbohotel.games.snowwar.SnowWarAttributes;
 import com.eu.habbo.habbohotel.games.snowwar.SnowWarGame;
 import com.eu.habbo.habbohotel.games.snowwar.SnowWarGamePlayer;
 import com.eu.habbo.habbohotel.games.snowwar.SnowWarPoint;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,18 +15,17 @@ public final class SnowWarPathfinder {
     public static final int MAX_PATHFIND_ITERATIONS = 50;
 
     private static final int[][] DIAGONAL_MOVE_POINTS = {
-            {0, -1},   // N
-            {1, -1},   // NE
-            {1, 0},    // E
-            {1, 1},    // SE
-            {0, 1},    // S
-            {-1, 1},   // SW
-            {-1, 0},   // W
-            {-1, -1}   // NW
+        {0, -1}, // N
+        {1, -1}, // NE
+        {1, 0}, // E
+        {1, 1}, // SE
+        {0, 1}, // S
+        {-1, 1}, // SW
+        {-1, 0}, // W
+        {-1, -1} // NW
     };
 
-    private SnowWarPathfinder() {
-    }
+    private SnowWarPathfinder() {}
 
     public static boolean isValidTile(SnowWarGame game, SnowWarGamePlayer player, SnowWarPoint position) {
         SnowWarTile tile = game.getMap().getTile(position);
@@ -73,6 +71,13 @@ public final class SnowWarPathfinder {
         for (int[] direction : DIAGONAL_MOVE_POINTS) {
             SnowWarPoint candidate = attr.getCurrentPosition().add(direction[0], direction[1]);
 
+            if (direction[0] != 0
+                    && direction[1] != 0
+                    && !isValidTile(game, player, attr.getCurrentPosition().add(direction[0], 0))
+                    && !isValidTile(game, player, attr.getCurrentPosition().add(0, direction[1]))) {
+                continue;
+            }
+
             if (isValidTile(game, player, candidate)) {
                 positions.add(candidate);
             }
@@ -88,7 +93,8 @@ public final class SnowWarPathfinder {
         // Only step if it brings us strictly closer to the goal; otherwise
         // stop where we are. Without this, an unreachable goal makes the
         // greedy step oscillate between two equally-close tiles.
-        if (positions.get(0).getDistanceSquared(goal) >= attr.getCurrentPosition().getDistanceSquared(goal)) {
+        if (positions.get(0).getDistanceSquared(goal)
+                >= attr.getCurrentPosition().getDistanceSquared(goal)) {
             return null;
         }
 

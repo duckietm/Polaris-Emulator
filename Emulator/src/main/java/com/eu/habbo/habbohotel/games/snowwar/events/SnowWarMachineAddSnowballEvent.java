@@ -3,7 +3,7 @@ package com.eu.habbo.habbohotel.games.snowwar.events;
 import com.eu.habbo.messages.ServerMessage;
 
 /**
- * Event type 6: a machine generated a new snowball.
+ * AIR event type 11: a machine generated a new snowball.
  */
 public class SnowWarMachineAddSnowballEvent extends SnowWarGameEvent {
 

@@ -475,6 +475,9 @@ public final class Emulator {
         Emulator.config.register("rcon.execute_command.denied_permissions", "cmd_shutdown;cmd_give_rank");
         Emulator.config.register("rcon.execute_command.allowed_permissions", "");
         Emulator.config.register("rcon.max_payload_bytes", "65536");
+        // CMS API defaults are documented in ConfigRegistry (cms.api.enabled /
+        // cms.api.allowed) and the emulator_api migration (keys + tuning); every
+        // reader passes an explicit fallback, so no runtime registration is needed.
         configuration.register(
                 "stress.enabled", "0", "Enable transient room stress controls over the allowlisted RCON listener.");
         configuration.register("stress.max_bots", "5000");

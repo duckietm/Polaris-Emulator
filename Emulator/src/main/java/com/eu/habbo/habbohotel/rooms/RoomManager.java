@@ -1079,12 +1079,14 @@ public class RoomManager {
                             .compose());
         }
 
+        var soundboardManager = Emulator.getGameEnvironment().getSoundboardManager();
         habbo.getClient()
                 .sendResponse(new com.eu.habbo.messages.outgoing.soundboard.SoundboardSettingsComposer(
                                 room.isSoundboardEnabled(),
-                                Emulator.getGameEnvironment()
-                                        .getSoundboardManager()
-                                        .getSounds())
+                                soundboardManager.getCooldownSecondsForRank(
+                                        habbo.getHabboInfo().getRank().getId()),
+                                soundboardManager.getSoundsForRank(
+                                        habbo.getHabboInfo().getRank().getId()))
                         .compose());
 
         WiredManager.triggerUserEntersRoom(room, habbo.getRoomUnit());

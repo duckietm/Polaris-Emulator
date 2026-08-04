@@ -1,7 +1,9 @@
 package com.eu.habbo.habbohotel.rooms;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -38,6 +40,31 @@ class RoomItemRegistryBehaviorTest {
             verify(specialTypes).removeCondition(condition);
             verify(specialTypes).removeExtra(extra);
             wiredManager.verify(() -> WiredManager.invalidateRoom(room), org.mockito.Mockito.times(4));
+        }
+    }
+
+    @Test
+    void malformedWiredStaysRegisteredWhileQuarantineIsDisabled() {
+        assertFalse(
+                RoomItemManager.QUARANTINE_MALFORMED_WIRED,
+                "This test characterises the quarantine-disabled path; flip it back or update the test.");
+
+        Room room = mock(Room.class);
+        RoomSpecialTypes specialTypes = mock(RoomSpecialTypes.class);
+        when(room.getRoomSpecialTypes()).thenReturn(specialTypes);
+
+        RoomItemManager manager = new RoomItemManager(room);
+        InteractionWiredTrigger trigger = mock(InteractionWiredTrigger.class);
+
+        try (MockedStatic<WiredManager> wiredManager = mockStatic(WiredManager.class)) {
+            manager.handleMalformedWiredData(trigger, 1001, new NumberFormatException("legacy value"));
+
+            // Pre-modernization behaviour: the furni keeps running on its constructor defaults,
+            // so it must not leave the executable indexes or the tick service.
+            verify(specialTypes, never()).removeTrigger(trigger);
+            // quarantineWired() always ends with invalidateRoom(), so its absence proves
+            // the item was never pulled from the indexes or the tick service.
+            wiredManager.verify(() -> WiredManager.invalidateRoom(room), never());
         }
     }
 

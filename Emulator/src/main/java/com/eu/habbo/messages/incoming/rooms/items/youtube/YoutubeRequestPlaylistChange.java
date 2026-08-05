@@ -12,6 +12,7 @@ import com.eu.habbo.messages.incoming.rooms.items.RoomItemInputGuard;
 import com.eu.habbo.messages.outgoing.rooms.items.youtube.YoutubeVideoComposer;
 import com.eu.habbo.threading.runnables.YoutubeAdvanceVideo;
 
+import java.util.ArrayList;
 import java.util.Optional;
 
 public class YoutubeRequestPlaylistChange extends MessageHandler {
@@ -38,7 +39,11 @@ public class YoutubeRequestPlaylistChange extends MessageHandler {
 
         if (item == null || !(item instanceof  InteractionYoutubeTV)) return;
 
-        Optional<YoutubeManager.YoutubePlaylist> playlist = Emulator.getGameEnvironment().getItemManager().getYoutubeManager().getPlaylistsForItemId(item.getId()).stream().filter(p -> p.getId().equals(playlistId)).findAny();
+        ArrayList<YoutubeManager.YoutubePlaylist> playlists = Emulator.getGameEnvironment().getItemManager().getYoutubeManager().getPlaylistsForItemId(item.getId());
+
+        if (playlists == null) return;
+
+        Optional<YoutubeManager.YoutubePlaylist> playlist = playlists.stream().filter(p -> p.getId().equals(playlistId)).findAny();
 
         if (playlist.isPresent()) {
             if (playlist.get().getVideos().isEmpty())

@@ -1,16 +1,24 @@
 package com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio;
 
-import com.eu.habbo.habbohotel.catalog.versioning.CatalogOfferSnapshot;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogPageSnapshot;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
 import com.google.gson.Gson;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
+import java.util.zip.GZIPOutputStream;
 
 public final class CatalogStudioSessionComposer extends MessageComposer {
+    private static final String SNAPSHOT_ENCODING = "GZIP_BASE64_JSON";
+    private static final int MAX_STRING_CHUNK_LENGTH = Short.MAX_VALUE;
+
     private final long activeVersionId;
     private final long draftVersionId;
     private final long revision;
@@ -22,7 +30,6 @@ public final class CatalogStudioSessionComposer extends MessageComposer {
     private final int validationIssueCount;
     private final List<CatalogStudioPublishedVersion> publishedVersions;
     private final List<CatalogPageSnapshot> pages;
-    private final List<CatalogOfferSnapshot> offers;
 
     public CatalogStudioSessionComposer(
             long activeVersionId,
@@ -46,7 +53,6 @@ public final class CatalogStudioSessionComposer extends MessageComposer {
                 validationCurrent,
                 validationIssueCount,
                 publishedVersions,
-                List.of(),
                 List.of());
     }
 
@@ -61,8 +67,7 @@ public final class CatalogStudioSessionComposer extends MessageComposer {
             boolean validationCurrent,
             int validationIssueCount,
             List<CatalogStudioPublishedVersion> publishedVersions,
-            List<CatalogPageSnapshot> pages,
-            List<CatalogOfferSnapshot> offers) {
+            List<CatalogPageSnapshot> pages) {
         this.activeVersionId = activeVersionId;
         this.draftVersionId = draftVersionId;
         this.revision = revision;
@@ -74,7 +79,6 @@ public final class CatalogStudioSessionComposer extends MessageComposer {
         this.validationIssueCount = validationIssueCount;
         this.publishedVersions = List.copyOf(publishedVersions);
         this.pages = List.copyOf(pages);
-        this.offers = List.copyOf(offers);
     }
 
     @Override
@@ -99,9 +103,30 @@ public final class CatalogStudioSessionComposer extends MessageComposer {
             this.response.appendString(version.label());
             this.response.appendString(version.publishedAt().toString());
         }
-        Gson gson = new Gson();
-        this.response.appendString(gson.toJson(pages));
-        this.response.appendString(gson.toJson(offers));
+        String pageJson = new Gson().toJson(pages);
+        List<String> pageChunks = encodePageChunks(pages, pageJson);
+        this.response.appendString(SNAPSHOT_ENCODING);
+        this.response.appendInt(pageChunks.size());
+        pageChunks.forEach(this.response::appendString);
         return this.response;
+    }
+
+    private static List<String> encodePageChunks(List<CatalogPageSnapshot> pages, String pageJson) {
+        if (pages.isEmpty()) return List.of();
+
+        byte[] json = pageJson.getBytes(StandardCharsets.UTF_8);
+        ByteArrayOutputStream compressed = new ByteArrayOutputStream();
+        try (GZIPOutputStream gzip = new GZIPOutputStream(compressed)) {
+            gzip.write(json);
+        } catch (IOException exception) {
+            throw new IllegalStateException("Failed to compress the Catalog Studio page index", exception);
+        }
+
+        String encoded = Base64.getEncoder().encodeToString(compressed.toByteArray());
+        List<String> chunks = new ArrayList<>((encoded.length() / MAX_STRING_CHUNK_LENGTH) + 1);
+        for (int offset = 0; offset < encoded.length(); offset += MAX_STRING_CHUNK_LENGTH) {
+            chunks.add(encoded.substring(offset, Math.min(offset + MAX_STRING_CHUNK_LENGTH, encoded.length())));
+        }
+        return List.copyOf(chunks);
     }
 }

@@ -30,7 +30,6 @@ public record CatalogOfferSnapshot(
         if (pageId <= 0) throw new IllegalArgumentException("Page ID must be positive");
         if (amount <= 0) throw new IllegalArgumentException("Offer amount must be positive");
         if (limitedStack < 0) throw new IllegalArgumentException("Limited stack cannot be negative");
-        if (orderNumber < 0) throw new IllegalArgumentException("Offer order cannot be negative");
     }
 
     public CatalogOfferSnapshot(

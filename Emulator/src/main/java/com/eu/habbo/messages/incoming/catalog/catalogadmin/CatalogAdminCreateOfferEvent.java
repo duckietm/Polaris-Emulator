@@ -4,7 +4,6 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogChangeOperation;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftMutationRequest;
-import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftOfferData;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogEntityType;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogLockKey;
 import com.eu.habbo.habbohotel.permissions.Permission;
@@ -37,6 +36,7 @@ public class CatalogAdminCreateOfferEvent extends MessageHandler {
         int offerIdGroup = this.packet.readInt();
         int limitedStack = this.packet.readInt();
         int orderNumber = this.packet.readInt();
+        int songId = this.packet.readInt();
         CatalogPageType pageType = CatalogPageType.fromString(this.packet.readString());
 
         CatalogAdminOfferPayload payload = CatalogAdminOfferPayload.validate(
@@ -53,6 +53,7 @@ public class CatalogAdminCreateOfferEvent extends MessageHandler {
                 offerIdGroup,
                 limitedStack,
                 orderNumber,
+                songId,
                 pageType);
         if (payload == null) {
             this.client.sendResponse(new CatalogAdminResultComposer(false, "Invalid offer payload"));
@@ -75,21 +76,7 @@ public class CatalogAdminCreateOfferEvent extends MessageHandler {
             }
         }
 
-        CatalogDraftOfferData offerData = new CatalogDraftOfferData(
-                payload.itemIds,
-                payload.pageId,
-                payload.catalogName,
-                pageType == CatalogPageType.BUILDER ? 0 : payload.costCredits,
-                pageType == CatalogPageType.BUILDER ? 0 : payload.costPoints,
-                pageType == CatalogPageType.BUILDER ? 0 : payload.pointsType,
-                pageType == CatalogPageType.BUILDER ? 1 : payload.amount,
-                pageType == CatalogPageType.BUILDER ? 0 : payload.limitedStack,
-                payload.orderNumber,
-                pageType == CatalogPageType.BUILDER ? -1 : payload.offerIdGroup,
-                0,
-                payload.extradata,
-                true,
-                false);
+        var offerData = CatalogAdminOfferDraftData.from(payload);
         var result = mutations.apply(new CatalogDraftMutationRequest(
                 envelope.draftVersionId(),
                 envelope.expectedRevision(),

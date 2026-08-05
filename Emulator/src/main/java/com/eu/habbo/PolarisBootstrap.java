@@ -164,10 +164,13 @@ final class PolarisBootstrap {
         GameServer gameServer = new GameServer(
                 configuration.getValue("game.host", "127.0.0.1"), configuration.getInt("game.port", 30000));
         runtime.installGameServer(gameServer);
-        CatalogStudioRuntime.install(runtime.database().getDataSource(), (published, nextDraftId) -> {
-            runtime.gameEnvironment().getCatalogManager().initialize();
-            gameServer.getGameClientManager().sendBroadcastResponse(new CatalogUpdatedComposer());
-        });
+        CatalogStudioRuntime.install(
+                runtime.database().getDataSource(),
+                runtime.gameEnvironment().getItemManager(),
+                (published, nextDraftId) -> {
+                    runtime.gameEnvironment().getCatalogManager().initialize();
+                    gameServer.getGameClientManager().sendBroadcastResponse(new CatalogUpdatedComposer());
+                });
         boolean stressEnabled = configuration.getBoolean("stress.enabled", false);
         StressRunRegistry.install(new StressRunManager(
                 runtime.gameEnvironment().getRoomManager(),

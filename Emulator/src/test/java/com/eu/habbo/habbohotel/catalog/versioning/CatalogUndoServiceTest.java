@@ -134,6 +134,19 @@ class CatalogUndoServiceTest {
                         && entry.operation() == CatalogChangeOperation.UPDATE));
     }
 
+    @Test
+    void restoreAcceptsAPreviouslyPublishedArchivedVersion() {
+        versions.put(snapshot(3, CatalogVersionStatus.ARCHIVED, 0, page(17, "Previous publication")));
+
+        long revision = service.restore(2, 4, 3, 9);
+
+        assertEquals(5, revision);
+        assertEquals(
+                "Previous publication",
+                versions.snapshots.get(2L).page(17).orElseThrow().caption());
+        assertEquals(CatalogChangeSource.RESTORE, journal.groups.getFirst().source());
+    }
+
     private static CatalogVersionSnapshot snapshot(
             long id, CatalogVersionStatus status, long revision, CatalogPageSnapshot page) {
         return new CatalogVersionSnapshot(
@@ -145,8 +158,8 @@ class CatalogUndoServiceTest {
                         status.name(),
                         7,
                         Instant.parse("2026-08-02T09:00:00Z"),
-                        status == CatalogVersionStatus.PUBLISHED ? 7 : null,
-                        status == CatalogVersionStatus.PUBLISHED ? Instant.parse("2026-08-02T09:30:00Z") : null),
+                        status == CatalogVersionStatus.DRAFT ? null : 7,
+                        status == CatalogVersionStatus.DRAFT ? null : Instant.parse("2026-08-02T09:30:00Z")),
                 List.of(page),
                 List.of());
     }

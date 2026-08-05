@@ -21,10 +21,11 @@ public class CatalogAdminOfferDetailsComposer extends MessageComposer {
     private final int limitedStack;
     private final int limitedSells;
     private final int orderNumber;
+    private final int songId;
     private final String catalogMode;
 
     public CatalogAdminOfferDetailsComposer(int offerId, int offerIdGroup, int limitedStack, int orderNumber) {
-        this(offerId, 0, "", "", 0, 0, 0, 1, false, "", false, offerIdGroup, limitedStack, 0, orderNumber, "NORMAL");
+        this(offerId, 0, "", "", 0, 0, 0, 1, false, "", false, offerIdGroup, limitedStack, 0, orderNumber, 0, "NORMAL");
     }
 
     public CatalogAdminOfferDetailsComposer(CatalogOfferSnapshot offer, int limitedSells) {
@@ -44,7 +45,8 @@ public class CatalogAdminOfferDetailsComposer extends MessageComposer {
                 offer.limitedStack(),
                 limitedSells,
                 offer.orderNumber(),
-                "NORMAL");
+                offer.songId(),
+                offer.catalogType().name());
     }
 
     public CatalogAdminOfferDetailsComposer(
@@ -63,6 +65,7 @@ public class CatalogAdminOfferDetailsComposer extends MessageComposer {
             int limitedStack,
             int limitedSells,
             int orderNumber,
+            int songId,
             String catalogMode) {
         this.offerId = offerId;
         this.pageId = pageId;
@@ -79,6 +82,7 @@ public class CatalogAdminOfferDetailsComposer extends MessageComposer {
         this.limitedStack = limitedStack;
         this.limitedSells = limitedSells;
         this.orderNumber = orderNumber;
+        this.songId = songId;
         this.catalogMode = catalogMode;
     }
 
@@ -100,6 +104,7 @@ public class CatalogAdminOfferDetailsComposer extends MessageComposer {
         this.response.appendInt(this.limitedStack);
         this.response.appendInt(this.limitedSells);
         this.response.appendInt(this.orderNumber);
+        this.response.appendInt(this.songId);
         this.response.appendString(this.catalogMode);
         return this.response;
     }

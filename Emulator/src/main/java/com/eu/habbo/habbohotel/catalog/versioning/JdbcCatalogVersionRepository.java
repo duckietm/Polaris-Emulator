@@ -25,7 +25,7 @@ public final class JdbcCatalogVersionRepository implements CatalogVersionReposit
     private static final String LOAD_VERSION_SQL =
             "SELECT id, status, based_on_version_id, revision, label, created_by, created_at, "
                     + "published_by, published_at FROM catalog_versions WHERE id = ?";
-    private static final String LOAD_PAGES_SQL =
+    static final String LOAD_PAGES_SQL =
             "SELECT catalog_type, page_id, parent_id, caption_save, caption, page_layout, icon_color, icon_image, "
                     + "min_rank, order_num, visible, enabled, club_only, catalog_mode, vip_only, "
                     + "page_headline, page_teaser, page_special, page_text1, page_text2, "
@@ -170,7 +170,7 @@ public final class JdbcCatalogVersionRepository implements CatalogVersionReposit
         }
     }
 
-    private static List<CatalogPageSnapshot> loadPages(Connection connection, long versionId) throws SQLException {
+    static List<CatalogPageSnapshot> loadPages(Connection connection, long versionId) throws SQLException {
         List<CatalogPageSnapshot> pages = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(LOAD_PAGES_SQL)) {
             statement.setLong(1, versionId);

@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftPreviewService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftValidationService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogLockService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogOperationalOfferRepository;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogPreviewPresentation;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogPublicationHooks;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogPublicationService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogStudioDocumentService;
@@ -19,6 +20,8 @@ import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogSnapshotWriter;
 import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogStudioQueryRepository;
 import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogValidationDataRepository;
 import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogVersionRepository;
+import com.eu.habbo.habbohotel.catalog.versioning.RuntimeCatalogPreviewPresentationResolver;
+import com.eu.habbo.habbohotel.items.ItemManager;
 import com.google.gson.Gson;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
@@ -38,15 +41,22 @@ public final class CatalogStudioRuntime {
     }
 
     public static void install(DataSource dataSource, CatalogPublicationHooks publicationHooks) {
+        install(dataSource, null, publicationHooks);
+    }
+
+    public static void install(
+            DataSource dataSource, ItemManager itemManager, CatalogPublicationHooks publicationHooks) {
         Services created = create(
                 Objects.requireNonNull(dataSource, "dataSource"),
+                itemManager,
                 Objects.requireNonNull(publicationHooks, "publicationHooks"));
         if (!SERVICES.compareAndSet(null, created)) {
             throw new IllegalStateException("Catalog Studio runtime has already been installed");
         }
     }
 
-    private static Services create(DataSource dataSource, CatalogPublicationHooks publicationHooks) {
+    private static Services create(
+            DataSource dataSource, ItemManager itemManager, CatalogPublicationHooks publicationHooks) {
         CatalogVersionRepository versions = new JdbcCatalogVersionRepository();
         JdbcCatalogLockRepository lockRepository = new JdbcCatalogLockRepository(dataSource);
         JdbcCatalogChangeJournal journal = new JdbcCatalogChangeJournal();
@@ -55,12 +65,13 @@ public final class CatalogStudioRuntime {
         Gson gson = new Gson();
         JdbcCatalogSnapshotWriter snapshotWriter = new JdbcCatalogSnapshotWriter(gson);
         CatalogStudioDocumentService documents = new CatalogStudioDocumentService(gson);
+        CatalogOperationalOfferRepository operationalOffers = new CatalogOperationalOfferRepository(dataSource);
         return new Services(
                 queries,
                 new CatalogLockService(lockRepository),
                 new CatalogAdminDraftMutationService(
                         dataSource, versions, journal, snapshotWriter, lockRepository, gson),
-                new CatalogOperationalOfferRepository(dataSource),
+                operationalOffers,
                 new CatalogUndoService(dataSource, versions, journal, snapshotWriter, gson),
                 new CatalogDraftValidationService(dataSource, versions, validationData),
                 new CatalogPublicationService(
@@ -71,7 +82,10 @@ public final class CatalogStudioRuntime {
                         lockRepository,
                         publicationHooks),
                 new CatalogDraftLifecycleService(dataSource, versions, lockRepository),
-                new CatalogDraftPreviewService(),
+                new CatalogDraftPreviewService(
+                        itemManager == null
+                                ? ignored -> CatalogPreviewPresentation.empty()
+                                : new RuntimeCatalogPreviewPresentationResolver(itemManager, operationalOffers)),
                 documents,
                 new CatalogDraftChangeSetService(
                         dataSource, versions, snapshotWriter, journal, lockRepository, documents));

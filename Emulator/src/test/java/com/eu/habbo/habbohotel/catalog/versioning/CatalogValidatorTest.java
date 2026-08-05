@@ -26,6 +26,35 @@ class CatalogValidatorTest {
     }
 
     @Test
+    void changeValidationReportsOnlyIssuesIntroducedByDraft() {
+        CatalogVersionSnapshot baseline = snapshot(
+                List.of(
+                        page(1, -1, 0, true, true, "root", ""),
+                        page(2, 1, 0, true, true, "default_3x3", ""),
+                        page(3, 1, 0, true, true, "default_3x3", "")),
+                List.of());
+        CatalogVersionSnapshot draft = snapshot(
+                List.of(
+                        page(1, -1, 0, true, true, "root", ""),
+                        page(2, 1, 0, true, true, "default_3x3", ""),
+                        page(3, 1, 0, true, true, "default_3x3", ""),
+                        page(4, 404, 1, true, true, "default_3x3", "")),
+                List.of());
+
+        CatalogValidationReport report = validator(Set.of(), Set.of(), Map.of()).validateChanges(baseline, draft);
+
+        assertFalse(report.valid());
+        assertEquals(
+                List.of(new CatalogValidationIssue(
+                        "PAGE_PARENT_MISSING",
+                        CatalogEntityType.PAGE,
+                        4,
+                        "parentId",
+                        "Parent page 404 does not exist")),
+                report.issues());
+    }
+
+    @Test
     void reportsStructuralReferenceAndCommercialErrorsTogether() {
         CatalogVersionSnapshot snapshot = snapshot(
                 List.of(

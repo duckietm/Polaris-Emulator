@@ -55,19 +55,34 @@ class CatalogPublicationServiceTest {
                 .when(connection)
                 .rollback();
         versions.snapshot = snapshot();
+        versions.activeSnapshot = snapshot();
     }
 
     @Test
     void validationFailureLeavesLiveCatalogAndVersionPointersUntouched() throws Exception {
-        CatalogPublicationService service = service(referenceData(Set.of(), Map.of(10, 1)));
+        versions.snapshot = snapshot("404");
+        CatalogPublicationService service = service(referenceData(Set.of(100), Map.of(10, 1)));
 
         CatalogPublicationResult result = service.publish(request());
 
         assertFalse(result.published());
         assertFalse(result.validation().valid());
-        assertEquals(List.of("lockRuntime", "loadSnapshot", "rollback"), events);
+        assertEquals(List.of("lockRuntime", "loadSnapshot:2", "loadSnapshot:1", "rollback"), events);
         assertEquals(0, projection.calls);
         verify(connection, never()).commit();
+    }
+
+    @Test
+    void inheritedValidationIssuesDoNotBlockPublication() {
+        versions.activeSnapshot = snapshot("404");
+        versions.snapshot = snapshot("404");
+        CatalogPublicationService service = service(referenceData(Set.of(100), Map.of(10, 1)));
+
+        CatalogPublicationResult result = service.publish(request());
+
+        assertTrue(result.published());
+        assertTrue(result.validation().valid());
+        assertEquals(1, projection.calls);
     }
 
     @Test
@@ -77,7 +92,7 @@ class CatalogPublicationServiceTest {
 
         assertThrows(CatalogPublicationException.class, () -> service.publish(request()));
 
-        assertEquals(List.of("lockRuntime", "loadSnapshot", "project", "rollback"), events);
+        assertEquals(List.of("lockRuntime", "loadSnapshot:2", "loadSnapshot:1", "project", "rollback"), events);
         verify(connection, never()).commit();
         assertFalse(events.stream().anyMatch(event -> event.startsWith("afterCommit")));
     }
@@ -95,7 +110,8 @@ class CatalogPublicationServiceTest {
         assertEquals(
                 List.of(
                         "lockRuntime",
-                        "loadSnapshot",
+                        "loadSnapshot:2",
+                        "loadSnapshot:1",
                         "project",
                         "archive:1",
                         "publish:2",
@@ -122,11 +138,15 @@ class CatalogPublicationServiceTest {
     }
 
     private static CatalogVersionSnapshot snapshot() {
+        return snapshot("100");
+    }
+
+    private static CatalogVersionSnapshot snapshot(String itemIds) {
         CatalogPageSnapshot root = new CatalogPageSnapshot(
                 1, -1, "root", "Root", "root", 0, 0, 1, 0, true, true, false, "NORMAL", false, "", "", "", "", "", "",
                 "", 0, "");
         CatalogOfferSnapshot offer =
-                new CatalogOfferSnapshot(10, "100", 1, "Chair", 3, 0, 0, 1, 2, 0, 10, 0, "", true, false);
+                new CatalogOfferSnapshot(10, itemIds, 1, "Chair", 3, 0, 0, 1, 2, 0, 10, 0, "", true, false);
         CatalogVersion version = new CatalogVersion(
                 DRAFT_ID,
                 CatalogVersionStatus.DRAFT,
@@ -142,6 +162,7 @@ class CatalogPublicationServiceTest {
 
     private final class FakeVersionRepository implements CatalogVersionRepository {
         private CatalogVersionSnapshot snapshot;
+        private CatalogVersionSnapshot activeSnapshot;
 
         @Override
         public CatalogRuntimeState lockRuntimeState(Connection ignored) {
@@ -151,8 +172,8 @@ class CatalogPublicationServiceTest {
 
         @Override
         public CatalogVersionSnapshot loadSnapshot(Connection ignored, long versionId) {
-            events.add("loadSnapshot");
-            return snapshot;
+            events.add("loadSnapshot:" + versionId);
+            return versionId == ACTIVE_ID ? activeSnapshot : snapshot;
         }
 
         @Override

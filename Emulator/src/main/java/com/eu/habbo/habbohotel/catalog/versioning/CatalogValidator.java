@@ -33,6 +33,16 @@ public final class CatalogValidator {
         return new CatalogValidationReport(issues);
     }
 
+    public CatalogValidationReport validateChanges(CatalogVersionSnapshot baseline, CatalogVersionSnapshot candidate) {
+        Objects.requireNonNull(baseline, "baseline");
+        Objects.requireNonNull(candidate, "candidate");
+        Set<CatalogValidationIssue> inherited = new HashSet<>(validate(baseline).issues());
+        List<CatalogValidationIssue> introduced = validate(candidate).issues().stream()
+                .filter(issue -> !inherited.contains(issue))
+                .toList();
+        return new CatalogValidationReport(introduced);
+    }
+
     private void validatePages(CatalogVersionSnapshot snapshot, List<CatalogValidationIssue> issues) {
         Map<ParentOrder, List<Integer>> siblingOrders = new HashMap<>();
         for (CatalogPageSnapshot page : snapshot.pages()) {

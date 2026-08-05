@@ -13,6 +13,8 @@ class CatalogVersionedDraftSchemaTest {
             Path.of("src/main/resources/db/migration/V20260802090000__catalog_versioned_drafts.sql");
     private static final Path COMPATIBILITY_MIGRATION =
             Path.of("src/main/resources/db/migration/V20260802100000__catalog_versioned_drafts_compatibility.sql");
+    private static final Path SMART_SAVE_MIGRATION =
+            Path.of("src/main/resources/db/migration/V20260805210000__catalog_smart_save.sql");
 
     @Test
     void migrationDefinesVersionRuntimeSnapshotJournalAndLocks() throws Exception {
@@ -65,5 +67,19 @@ class CatalogVersionedDraftSchemaTest {
                 () -> assertTrue(sql.contains("FROM `catalog_pages_bc`")),
                 () -> assertTrue(sql.contains("FROM `catalog_items_bc`")),
                 () -> assertTrue(!sql.toUpperCase().contains("DROP TABLE")));
+    }
+
+    @Test
+    void smartSaveMigrationAndRuntimeContractExposeReplayMetadata() throws Exception {
+        String sql = Files.readString(SMART_SAVE_MIGRATION);
+        String contract = Files.readString(Path.of("src/main/resources/db/runtime-schema-contract.json"));
+
+        assertAll(
+                () -> assertTrue(sql.contains("ADD COLUMN `request_fingerprint`")),
+                () -> assertTrue(sql.contains("ADD COLUMN `history_group_id`")),
+                () -> assertTrue(sql.contains("ADD COLUMN `result_json`")),
+                () -> assertTrue(contract.contains("request_fingerprint")),
+                () -> assertTrue(contract.contains("history_group_id")),
+                () -> assertTrue(contract.contains("result_json")));
     }
 }

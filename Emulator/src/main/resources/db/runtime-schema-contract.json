@@ -23,7 +23,7 @@
     "catalog_items": ["amount", "catalog_name", "club_only", "cost_credits", "cost_points", "extradata", "have_offer", "id", "item_ids", "limited_sells", "limited_stack", "offer_id", "order_number", "page_id", "points_type", "song_id"],
     "catalog_items_bc": ["catalog_name", "extradata", "id", "item_ids", "order_number", "page_id"],
     "catalog_items_limited": ["catalog_item_id", "item_id", "number", "timestamp", "user_id"],
-    "catalog_operations": ["actor_id", "created_at", "operation_id", "result_revision", "source", "version_id"],
+    "catalog_operations": ["action", "actor_id", "catalog_type", "created_at", "entity_id", "entity_type", "history_group_id", "operation_id", "request_fingerprint", "result_json", "result_revision", "source", "version_id"],
     "catalog_pages": ["caption", "caption_save", "catalog_mode", "club_only", "enabled", "icon_color", "icon_image", "id", "includes", "min_rank", "order_num", "page_headline", "page_layout", "page_special", "page_teaser", "page_text1", "page_text2", "page_text_details", "page_text_teaser", "parent_id", "room_id", "vip_only", "visible"],
     "catalog_pages_bc": ["caption", "enabled", "icon_color", "icon_image", "id", "order_num", "page_headline", "page_layout", "page_special", "page_teaser", "page_text1", "page_text2", "page_text_details", "page_text_teaser", "parent_id", "visible"],
     "catalog_runtime_state": ["active_version_id", "draft_version_id", "singleton_id", "updated_at"],

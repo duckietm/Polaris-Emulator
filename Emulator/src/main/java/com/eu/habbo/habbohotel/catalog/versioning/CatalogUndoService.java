@@ -64,8 +64,10 @@ public final class CatalogUndoService {
         return inTransaction(connection -> {
             CatalogVersionSnapshot draft = lockAndLoadDraft(connection, draftVersionId, expectedRevision);
             CatalogVersionSnapshot source = versions.loadSnapshot(connection, sourceVersionId);
-            if (source == null || source.version().status() != CatalogVersionStatus.PUBLISHED) {
-                throw new CatalogUndoConflictException("Only a published catalog version can be restored");
+            if (source == null
+                    || (source.version().status() != CatalogVersionStatus.PUBLISHED
+                            && source.version().status() != CatalogVersionStatus.ARCHIVED)) {
+                throw new CatalogUndoConflictException("Only a previously published catalog version can be restored");
             }
 
             List<CatalogChangeEntry> changes = diff(draft, source);

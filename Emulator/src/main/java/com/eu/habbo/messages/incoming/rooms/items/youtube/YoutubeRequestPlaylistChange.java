@@ -11,38 +11,43 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.incoming.rooms.items.RoomItemInputGuard;
 import com.eu.habbo.messages.outgoing.rooms.items.youtube.YoutubeVideoComposer;
 import com.eu.habbo.threading.runnables.YoutubeAdvanceVideo;
-
+import java.util.ArrayList;
 import java.util.Optional;
 
 public class YoutubeRequestPlaylistChange extends MessageHandler {
     @Override
     public void handle() throws Exception {
         int itemId = this.packet.readInt();
-        String playlistId = RoomItemInputGuard.trimToMax(this.packet.readString(), RoomItemInputGuard.MAX_YOUTUBE_PLAYLIST_ID_LENGTH);
+        String playlistId = RoomItemInputGuard.trimToMax(
+                this.packet.readString(), RoomItemInputGuard.MAX_YOUTUBE_PLAYLIST_ID_LENGTH);
 
-        if (!RoomItemInputGuard.isPositiveId(itemId) || playlistId.isEmpty())
-            return;
+        if (!RoomItemInputGuard.isPositiveId(itemId) || playlistId.isEmpty()) return;
 
         Habbo habbo = this.client.getHabbo();
 
         if (habbo == null) return;
-
 
         Room room = habbo.getHabboInfo().getCurrentRoom();
 
         if (room == null) return;
         if (!room.isOwner(habbo) && !habbo.hasPermission(Permission.ACC_ANYROOMOWNER)) return;
 
-
         HabboItem item = room.getHabboItem(itemId);
 
-        if (item == null || !(item instanceof  InteractionYoutubeTV)) return;
+        if (item == null || !(item instanceof InteractionYoutubeTV)) return;
 
-        Optional<YoutubeManager.YoutubePlaylist> playlist = Emulator.getGameEnvironment().getItemManager().getYoutubeManager().getPlaylistsForItemId(item.getId()).stream().filter(p -> p.getId().equals(playlistId)).findAny();
+        ArrayList<YoutubeManager.YoutubePlaylist> playlists = Emulator.getGameEnvironment()
+                .getItemManager()
+                .getYoutubeManager()
+                .getPlaylistsForItemId(item.getId());
+
+        if (playlists == null) return;
+
+        Optional<YoutubeManager.YoutubePlaylist> playlist =
+                playlists.stream().filter(p -> p.getId().equals(playlistId)).findAny();
 
         if (playlist.isPresent()) {
-            if (playlist.get().getVideos().isEmpty())
-                return;
+            if (playlist.get().getVideos().isEmpty()) return;
 
             YoutubeManager.YoutubeVideo video = playlist.get().getVideos().get(0);
             if (video == null) return;
@@ -54,7 +59,8 @@ public class YoutubeRequestPlaylistChange extends MessageHandler {
 
             room.updateItem(item);
             room.sendComposer(new YoutubeVideoComposer(itemId, video, true, 0).compose());
-            ((InteractionYoutubeTV) item).autoAdvance = Emulator.getThreading().run(new YoutubeAdvanceVideo((InteractionYoutubeTV) item), video.getDuration() * 1000L);
+            ((InteractionYoutubeTV) item).autoAdvance = Emulator.getThreading()
+                    .run(new YoutubeAdvanceVideo((InteractionYoutubeTV) item), video.getDuration() * 1000L);
 
             item.needsUpdate(true);
         }

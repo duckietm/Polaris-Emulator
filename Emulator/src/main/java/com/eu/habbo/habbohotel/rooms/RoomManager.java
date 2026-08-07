@@ -383,6 +383,27 @@ public class RoomManager {
         return rooms;
     }
 
+    public List<Room> getOwnedRoomsForHabbo(Habbo habbo) {
+        List<Room> rooms = new ArrayList<>();
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(ROOMS_BY_OWNER_ID_SQL)) {
+            statement.setInt(1, habbo.getHabboInfo().getId());
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    if (this.activeRooms.containsKey(set.getInt("id"))) {
+                        rooms.add(this.activeRooms.get(set.getInt("id")));
+                    } else {
+                        rooms.add(new Room(set, this.roomDependencies()));
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+        rooms.sort(Room.SORT_ID);
+        return rooms;
+    }
+
     public List<Room> getRoomsForHabbo(String username) {
         Habbo h = Emulator.getGameEnvironment().getHabboManager().getHabbo(username);
         if (h != null) {

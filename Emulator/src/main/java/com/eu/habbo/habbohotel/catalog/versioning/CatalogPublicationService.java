@@ -49,8 +49,9 @@ public final class CatalogPublicationService {
                             request.draftVersionId(), request.expectedRevision());
                 }
 
+                CatalogVersionSnapshot active = versions.loadSnapshot(connection, runtime.activeVersionId());
                 CatalogValidationReport report =
-                        validationData.load(connection).validator().validate(draft);
+                        validationData.load(connection).validator().validateChanges(active, draft);
                 if (!report.valid()) {
                     connection.rollback();
                     return new CatalogPublicationResult(

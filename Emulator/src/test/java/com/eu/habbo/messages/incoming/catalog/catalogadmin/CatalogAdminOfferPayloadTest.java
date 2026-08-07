@@ -71,4 +71,22 @@ class CatalogAdminOfferPayloadTest {
         assertNull(CatalogAdminOfferPayload.validate(
                 42, "100:-1", "Invalid bundle", 10, 0, 0, 1, 0, "", false, 0, 0, 0, CatalogPageType.NORMAL));
     }
+
+    @Test
+    void acceptsLegacyNegativeOrderNumbers() {
+        CatalogAdminOfferPayload payload = CatalogAdminOfferPayload.validate(
+                42, "100", "Legacy offer", 10, 0, 0, 1, 0, "", true, 0, 0, -1000, CatalogPageType.NORMAL);
+
+        assertNotNull(payload);
+        assertEquals(-1000, payload.orderNumber);
+    }
+
+    @Test
+    void acceptsTheDatabaseDefaultForOffersWithoutAClientGroup() {
+        CatalogAdminOfferPayload payload = CatalogAdminOfferPayload.validate(
+                42, "100", "Ungrouped offer", 10, 0, 0, 1, 0, "", true, -1, 0, 0, CatalogPageType.NORMAL);
+
+        assertNotNull(payload);
+        assertEquals(-1, payload.offerIdGroup);
+    }
 }

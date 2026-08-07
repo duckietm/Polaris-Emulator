@@ -12,6 +12,7 @@ final class CatalogAdminOfferPayload {
     private static final int MAX_POINTS_TYPE = 10_000;
     private static final int MAX_ORDER_NUMBER = 1_000_000;
     private static final int MAX_LIMITED_STACK = 1_000_000;
+    private static final int MAX_SONG_ID = 1_000_000_000;
 
     final int pageId;
     final String itemIds;
@@ -26,6 +27,7 @@ final class CatalogAdminOfferPayload {
     final int offerIdGroup;
     final int limitedStack;
     final int orderNumber;
+    final int songId;
     final CatalogPageType pageType;
 
     private CatalogAdminOfferPayload(
@@ -42,6 +44,7 @@ final class CatalogAdminOfferPayload {
             int offerIdGroup,
             int limitedStack,
             int orderNumber,
+            int songId,
             CatalogPageType pageType) {
         this.pageId = pageId;
         this.itemIds = itemIds;
@@ -56,6 +59,7 @@ final class CatalogAdminOfferPayload {
         this.offerIdGroup = offerIdGroup;
         this.limitedStack = limitedStack;
         this.orderNumber = orderNumber;
+        this.songId = songId;
         this.pageType = pageType;
     }
 
@@ -74,6 +78,40 @@ final class CatalogAdminOfferPayload {
             int limitedStack,
             int orderNumber,
             CatalogPageType pageType) {
+        return validate(
+                pageId,
+                itemIds,
+                catalogName,
+                costCredits,
+                costPoints,
+                pointsType,
+                amount,
+                clubOnly,
+                extradata,
+                haveOffer,
+                offerIdGroup,
+                limitedStack,
+                orderNumber,
+                0,
+                pageType);
+    }
+
+    static CatalogAdminOfferPayload validate(
+            int pageId,
+            String itemIds,
+            String catalogName,
+            int costCredits,
+            int costPoints,
+            int pointsType,
+            int amount,
+            int clubOnly,
+            String extradata,
+            boolean haveOffer,
+            int offerIdGroup,
+            int limitedStack,
+            int orderNumber,
+            int songId,
+            CatalogPageType pageType) {
         String cleanItemIds = normalizeItemIds(itemIds);
         String cleanCatalogName = clamp(catalogName, MAX_CATALOG_NAME_LENGTH);
         String cleanExtradata = clamp(extradata, MAX_EXTRADATA_LENGTH);
@@ -82,7 +120,7 @@ final class CatalogAdminOfferPayload {
                 || cleanItemIds == null
                 || (pageType != CatalogPageType.BUILDER && cleanItemIds.isEmpty())
                 || cleanCatalogName.isBlank()
-                || !isInRange(orderNumber, 0, MAX_ORDER_NUMBER)) {
+                || !isInRange(orderNumber, -MAX_ORDER_NUMBER, MAX_ORDER_NUMBER)) {
             return null;
         }
 
@@ -92,7 +130,8 @@ final class CatalogAdminOfferPayload {
                     || !isInRange(pointsType, 0, MAX_POINTS_TYPE)
                     || !isInRange(amount, 1, MAX_AMOUNT)
                     || !isInRange(clubOnly, 0, 1)
-                    || offerIdGroup < 0
+                    || offerIdGroup < -1
+                    || !isInRange(songId, 0, MAX_SONG_ID)
                     || !isInRange(limitedStack, 0, MAX_LIMITED_STACK)) {
                 return null;
             }
@@ -112,6 +151,7 @@ final class CatalogAdminOfferPayload {
                 offerIdGroup,
                 limitedStack,
                 orderNumber,
+                songId,
                 pageType);
     }
 

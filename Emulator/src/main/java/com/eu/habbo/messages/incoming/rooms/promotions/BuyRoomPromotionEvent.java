@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomRightLevels;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.messages.incoming.rooms.items.RoomItemInputGuard;
 import com.eu.habbo.messages.outgoing.catalog.AlertPurchaseFailedComposer;
 import com.eu.habbo.messages.outgoing.catalog.PurchaseOKComposer;
 import com.eu.habbo.messages.outgoing.navigator.NewNavigatorEventCategoriesComposer;
@@ -20,9 +21,11 @@ public class BuyRoomPromotionEvent extends MessageHandler {
         int pageId = this.packet.readInt();
         int itemId = this.packet.readInt();
         int roomId = this.packet.readInt();
-        String title = this.packet.readString();
+        String title =
+                RoomItemInputGuard.trimToMax(this.packet.readString(), RoomItemInputGuard.MAX_PROMOTION_TITLE_LENGTH);
         this.packet.readBoolean(); // extendedPromotion - not used
-        String description = this.packet.readString();
+        String description = RoomItemInputGuard.trimToMax(
+                this.packet.readString(), RoomItemInputGuard.MAX_PROMOTION_DESCRIPTION_LENGTH);
         int categoryId = this.packet.readInt();
 
         if (NewNavigatorEventCategoriesComposer.CATEGORIES.stream().noneMatch(c -> c.getId() == categoryId)) return;
@@ -34,7 +37,9 @@ public class BuyRoomPromotionEvent extends MessageHandler {
         CatalogItem item = page.getCatalogItem(itemId);
         if (item != null) {
             if (this.client.getHabbo().getHabboInfo().canBuy(item)) {
-                Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
+                Room room = Emulator.getGameEnvironment().getRoomManager().loadRoom(roomId);
+
+                if (room == null) return;
 
                 if (!(room.isOwner(this.client.getHabbo())
                         || room.hasRights(this.client.getHabbo())

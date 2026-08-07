@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftPreview;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogPageSnapshot;
 import com.eu.habbo.messages.outgoing.Outgoing;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio.CatalogStudioActor;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio.CatalogStudioChangedEntity;
@@ -19,10 +20,17 @@ import com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio.CatalogStudioP
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio.CatalogStudioSessionComposer;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio.CatalogStudioValidationComposer;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio.CatalogStudioValidationIssue;
+import com.google.gson.Gson;
 import io.netty.buffer.ByteBuf;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
+import java.util.Random;
+import java.util.zip.GZIPInputStream;
 import org.junit.jupiter.api.Test;
 
 class CatalogStudioPacketContractTest {
@@ -60,8 +68,59 @@ class CatalogStudioPacketContractTest {
         assertEquals(11, payload.readInt());
         assertEquals("Summer catalog", readString(payload));
         assertEquals("2026-08-02T10:00:00Z", readString(payload));
-        assertEquals("[]", readString(payload));
-        assertEquals("[]", readString(payload));
+        assertEquals("GZIP_BASE64_JSON", readString(payload));
+        assertEquals(0, payload.readInt());
+        assertFalse(payload.isReadable());
+    }
+
+    @Test
+    void sessionPayloadKeepsEveryCompressedPageChunkReadableByRenderer() throws IOException {
+        List<CatalogPageSnapshot> pages = new ArrayList<>();
+        Random random = new Random(42);
+        String lastText = "";
+        for (int pageId = 1; pageId <= 700; pageId++) {
+            byte[] content = new byte[1_500];
+            random.nextBytes(content);
+            lastText = Base64.getEncoder().encodeToString(content);
+            pages.add(page(pageId, lastText));
+        }
+
+        ByteBuf payload = new CatalogStudioSessionComposer(
+                        11,
+                        12,
+                        7,
+                        Instant.parse("2026-08-02T10:00:00Z"),
+                        Instant.parse("2026-08-02T10:05:00Z"),
+                        3,
+                        List.of(),
+                        true,
+                        0,
+                        List.of(),
+                        pages)
+                .compose()
+                .get();
+
+        assertHeader(payload, Outgoing.CatalogStudioSessionComposer);
+        skipSessionMetadata(payload);
+        assertEquals("GZIP_BASE64_JSON", readString(payload));
+        int chunkCount = payload.readInt();
+        assertTrue(chunkCount > 1);
+
+        StringBuilder encoded = new StringBuilder();
+        for (int index = 0; index < chunkCount; index++) {
+            String chunk = readString(payload);
+            assertTrue(chunk.getBytes(StandardCharsets.UTF_8).length <= 32_767);
+            encoded.append(chunk);
+        }
+
+        byte[] compressed = Base64.getDecoder().decode(encoded.toString());
+        String json;
+        try (GZIPInputStream input = new GZIPInputStream(new ByteArrayInputStream(compressed))) {
+            json = new String(input.readAllBytes(), StandardCharsets.UTF_8);
+        }
+        CatalogPageSnapshot[] decoded = new Gson().fromJson(json, CatalogPageSnapshot[].class);
+        assertEquals(700, decoded.length);
+        assertEquals(lastText, decoded[699].pageTextDetails());
         assertFalse(payload.isReadable());
     }
 
@@ -239,5 +298,51 @@ class CatalogStudioPacketContractTest {
     private static String readString(ByteBuf payload) {
         int length = payload.readUnsignedShort();
         return payload.readCharSequence(length, StandardCharsets.UTF_8).toString();
+    }
+
+    private static void skipSessionMetadata(ByteBuf payload) {
+        payload.skipBytes(Integer.BYTES * 3);
+        readString(payload);
+        readString(payload);
+        payload.skipBytes(Integer.BYTES);
+        int actorCount = payload.readInt();
+        for (int index = 0; index < actorCount; index++) {
+            payload.skipBytes(Integer.BYTES);
+            readString(payload);
+        }
+        payload.skipBytes(1 + Integer.BYTES);
+        int publishedVersionCount = payload.readInt();
+        for (int index = 0; index < publishedVersionCount; index++) {
+            payload.skipBytes(Integer.BYTES);
+            readString(payload);
+            readString(payload);
+        }
+    }
+
+    private static CatalogPageSnapshot page(int pageId, String textDetails) {
+        return new CatalogPageSnapshot(
+                pageId,
+                -1,
+                "page_" + pageId,
+                "Page " + pageId,
+                "default_3x3",
+                0,
+                1,
+                1,
+                pageId - 1,
+                true,
+                true,
+                false,
+                "NORMAL",
+                false,
+                "",
+                "",
+                "",
+                "",
+                "",
+                textDetails,
+                "",
+                0,
+                "");
     }
 }

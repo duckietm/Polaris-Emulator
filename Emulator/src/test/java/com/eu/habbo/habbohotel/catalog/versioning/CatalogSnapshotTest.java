@@ -85,6 +85,44 @@ class CatalogSnapshotTest {
         assertFalse(normal.equals(builder));
     }
 
+    @Test
+    void preservesLegacyNegativePageOrder() {
+        CatalogPageSnapshot page = page(CatalogPageType.NORMAL, 96, -1);
+
+        assertEquals(-1, page.orderNum());
+    }
+
+    @Test
+    void preservesLegacyNegativeOfferOrder() {
+        CatalogOfferSnapshot offer = offer(CatalogPageType.NORMAL, 26810468, -1000);
+
+        assertEquals(-1000, offer.orderNumber());
+    }
+
+    @Test
+    void preservesLegacyZeroOfferAmount() {
+        CatalogOfferSnapshot offer = new CatalogOfferSnapshot(
+                CatalogPageType.NORMAL, 42, "12", 17, "rare_dragon", 25, 0, 0, 0, 0, 1, -1, 0, "", true, false);
+
+        assertEquals(0, offer.amount());
+    }
+
+    @Test
+    void preservesLegacyNegativeOfferPageId() {
+        CatalogOfferSnapshot offer = new CatalogOfferSnapshot(
+                CatalogPageType.NORMAL, 42, "12", -1, "rare_dragon", 25, 0, 0, 1, 0, 1, -1, 0, "", true, false);
+
+        assertEquals(-1, offer.pageId());
+    }
+
+    @Test
+    void preservesLegacyNegativeOfferLimitedStack() {
+        CatalogOfferSnapshot offer = new CatalogOfferSnapshot(
+                CatalogPageType.NORMAL, 42, "12", 17, "rare_dragon", 25, 0, 0, 1, -5, 1, -1, 0, "", true, false);
+
+        assertEquals(-5, offer.limitedStack());
+    }
+
     private static CatalogVersion version() {
         return new CatalogVersion(
                 2,
@@ -103,6 +141,10 @@ class CatalogSnapshotTest {
     }
 
     private static CatalogPageSnapshot page(CatalogPageType catalogType, int pageId) {
+        return page(catalogType, pageId, 1);
+    }
+
+    private static CatalogPageSnapshot page(CatalogPageType catalogType, int pageId, int orderNum) {
         return new CatalogPageSnapshot(
                 catalogType,
                 pageId,
@@ -113,7 +155,7 @@ class CatalogSnapshotTest {
                 1,
                 145,
                 1,
-                1,
+                orderNum,
                 true,
                 true,
                 false,
@@ -135,7 +177,11 @@ class CatalogSnapshotTest {
     }
 
     private static CatalogOfferSnapshot offer(CatalogPageType catalogType, int offerId) {
+        return offer(catalogType, offerId, 1);
+    }
+
+    private static CatalogOfferSnapshot offer(CatalogPageType catalogType, int offerId, int orderNumber) {
         return new CatalogOfferSnapshot(
-                catalogType, offerId, "12", 17, "rare_dragon", 25, 0, 0, 1, 0, 1, -1, 0, "", true, false);
+                catalogType, offerId, "12", 17, "rare_dragon", 25, 0, 0, 1, 0, orderNumber, -1, 0, "", true, false);
     }
 }

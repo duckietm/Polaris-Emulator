@@ -33,7 +33,8 @@ class CatalogStudioWorkflowServiceTest {
     void setUp() throws Exception {
         dataSource = mock(DataSource.class);
         when(dataSource.getConnection()).thenReturn(connection);
-        versions.snapshot = snapshot();
+        versions.activeSnapshot = snapshot("100");
+        versions.snapshot = snapshot("404");
     }
 
     @Test
@@ -41,7 +42,7 @@ class CatalogStudioWorkflowServiceTest {
         CatalogDraftValidationService service = new CatalogDraftValidationService(
                 dataSource,
                 versions,
-                ignored -> new CatalogValidationReferenceData(Set.of(), Set.of(5), Map.of(), Set.of("root")));
+                ignored -> new CatalogValidationReferenceData(Set.of(100), Set.of(5), Map.of(), Set.of("root")));
 
         CatalogDraftValidationResult result = service.validate(DRAFT_ID, REVISION);
 
@@ -67,12 +68,12 @@ class CatalogStudioWorkflowServiceTest {
         assertEquals(List.of(DRAFT_ID), locks.releasedVersions);
     }
 
-    private static CatalogVersionSnapshot snapshot() {
+    private static CatalogVersionSnapshot snapshot(String itemIds) {
         CatalogPageSnapshot root = new CatalogPageSnapshot(
                 1, -1, "root", "Root", "root", 0, 0, 1, 0, true, true, false, "NORMAL", false, "", "", "", "", "", "",
                 "", 0, "");
         CatalogOfferSnapshot offer =
-                new CatalogOfferSnapshot(10, "100", 1, "Chair", 3, 0, 0, 1, 0, 0, 10, 0, "", true, false);
+                new CatalogOfferSnapshot(10, itemIds, 1, "Chair", 3, 0, 0, 1, 0, 0, 10, 0, "", true, false);
         CatalogVersion version = new CatalogVersion(
                 DRAFT_ID,
                 CatalogVersionStatus.DRAFT,
@@ -88,6 +89,7 @@ class CatalogStudioWorkflowServiceTest {
 
     private static final class FakeVersions implements CatalogVersionRepository {
         private CatalogVersionSnapshot snapshot;
+        private CatalogVersionSnapshot activeSnapshot;
         private final java.util.ArrayList<Long> archived = new java.util.ArrayList<>();
         private long cloneSource;
         private long runtimeActive;
@@ -100,7 +102,7 @@ class CatalogStudioWorkflowServiceTest {
 
         @Override
         public CatalogVersionSnapshot loadSnapshot(Connection ignored, long versionId) {
-            return snapshot;
+            return versionId == ACTIVE_ID ? activeSnapshot : snapshot;
         }
 
         @Override

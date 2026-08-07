@@ -100,11 +100,11 @@ public final class JdbcCatalogLiveProjection implements CatalogLiveProjection {
         statement.setInt(7, page.iconImage());
         statement.setInt(8, page.minRank());
         statement.setInt(9, page.orderNum());
-        statement.setBoolean(10, page.visible());
-        statement.setBoolean(11, page.enabled());
-        statement.setBoolean(12, page.clubOnly());
+        setLegacyEnumBoolean(statement, 10, page.visible());
+        setLegacyEnumBoolean(statement, 11, page.enabled());
+        setLegacyEnumBoolean(statement, 12, page.clubOnly());
         statement.setString(13, page.catalogMode());
-        statement.setBoolean(14, page.vipOnly());
+        setLegacyEnumBoolean(statement, 14, page.vipOnly());
         statement.setString(15, page.pageHeadline());
         statement.setString(16, page.pageTeaser());
         statement.setString(17, page.pageSpecial());
@@ -136,8 +136,8 @@ public final class JdbcCatalogLiveProjection implements CatalogLiveProjection {
                     statement.setInt(12, offer.offerIdClient());
                     statement.setInt(13, offer.songId());
                     statement.setString(14, offer.extradata());
-                    statement.setBoolean(15, offer.haveOffer());
-                    statement.setBoolean(16, offer.clubOnly());
+                    setLegacyEnumBoolean(statement, 15, offer.haveOffer());
+                    setLegacyEnumBoolean(statement, 16, offer.clubOnly());
                     statement.addBatch();
                 }
             } catch (SQLException exception) {
@@ -160,8 +160,8 @@ public final class JdbcCatalogLiveProjection implements CatalogLiveProjection {
                 statement.setInt(5, page.iconColor());
                 statement.setInt(6, page.iconImage());
                 statement.setInt(7, page.orderNum());
-                statement.setBoolean(8, page.visible());
-                statement.setBoolean(9, page.enabled());
+                setLegacyEnumBoolean(statement, 8, page.visible());
+                setLegacyEnumBoolean(statement, 9, page.enabled());
                 statement.setString(10, page.pageHeadline());
                 statement.setString(11, page.pageTeaser());
                 statement.setString(12, page.pageSpecial());
@@ -197,6 +197,11 @@ public final class JdbcCatalogLiveProjection implements CatalogLiveProjection {
             statement.setLong(1, versionId);
             statement.executeUpdate();
         }
+    }
+
+    private static void setLegacyEnumBoolean(PreparedStatement statement, int index, boolean value)
+            throws SQLException {
+        statement.setString(index, value ? "1" : "0");
     }
 
     private static int depth(CatalogVersionSnapshot snapshot, CatalogPageSnapshot page) {

@@ -21,9 +21,11 @@ public final class CatalogDraftValidationService {
         try (Connection connection = dataSource.getConnection()) {
             connection.setAutoCommit(false);
             try {
-                CatalogVersionSnapshot draft = lockAndLoadDraft(connection, draftVersionId, expectedRevision);
+                CatalogRuntimeState runtime = versions.lockRuntimeState(connection);
+                CatalogVersionSnapshot draft = loadDraft(connection, runtime, draftVersionId, expectedRevision);
+                CatalogVersionSnapshot active = versions.loadSnapshot(connection, runtime.activeVersionId());
                 CatalogValidationReport report =
-                        validationData.load(connection).validator().validate(draft);
+                        validationData.load(connection).validator().validateChanges(active, draft);
                 connection.commit();
                 return new CatalogDraftValidationResult(draft.version().revision(), report);
             } catch (SQLException | RuntimeException exception) {
@@ -37,10 +39,10 @@ public final class CatalogDraftValidationService {
         }
     }
 
-    private CatalogVersionSnapshot lockAndLoadDraft(Connection connection, long draftVersionId, long expectedRevision)
+    private CatalogVersionSnapshot loadDraft(
+            Connection connection, CatalogRuntimeState runtime, long draftVersionId, long expectedRevision)
             throws SQLException {
-        CatalogRuntimeState state = versions.lockRuntimeState(connection);
-        if (state.draftVersionId() != draftVersionId) {
+        if (runtime.draftVersionId() != draftVersionId) {
             throw new CatalogConcurrentModificationException(draftVersionId, expectedRevision);
         }
         CatalogVersionSnapshot draft = versions.loadSnapshot(connection, draftVersionId);

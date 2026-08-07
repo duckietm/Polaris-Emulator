@@ -11,11 +11,14 @@ public final class RoomItemInputGuard {
     public static final int MAX_STICKY_POLE_COMMANDS = 10;
     public static final int MAX_STICKY_POLE_COMMAND_LENGTH = 255;
     public static final int MAX_WALL_POSITION_LENGTH = 20;
-    private static final Pattern WALL_POSITION_PATTERN = Pattern.compile("^:w=\\d{1,3},\\d{1,3} l=-?\\d{1,4},-?\\d{1,4} [lr]$");
-    private static final Pattern FIGURE_PATTERN = Pattern.compile("^[a-z]{2,3}-\\d{1,6}(-\\d{1,6})*(\\.[a-z]{2,3}-\\d{1,6}(-\\d{1,6})*)*$");
+    public static final int MAX_PROMOTION_TITLE_LENGTH = 64;
+    public static final int MAX_PROMOTION_DESCRIPTION_LENGTH = 64;
+    private static final Pattern WALL_POSITION_PATTERN =
+            Pattern.compile("^:w=\\d{1,3},\\d{1,3} l=-?\\d{1,4},-?\\d{1,4} [lr]$");
+    private static final Pattern FIGURE_PATTERN =
+            Pattern.compile("^[a-z]{2,3}-\\d{1,6}(-\\d{1,6})*(\\.[a-z]{2,3}-\\d{1,6}(-\\d{1,6})*)*$");
 
-    private RoomItemInputGuard() {
-    }
+    private RoomItemInputGuard() {}
 
     public static boolean isPositiveId(int id) {
         return id > 0;

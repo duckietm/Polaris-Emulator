@@ -3,6 +3,8 @@ package com.eu.habbo.habbohotel.catalog.versioning;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.sql.Connection;
@@ -10,10 +12,16 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.List;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 
 class JdbcCatalogStudioQueryRepositoryTest {
+    @Test
+    void listsCurrentAndPreviousPublishedVersionsForRestore() {
+        assertTrue(JdbcCatalogStudioQueryRepository.LOAD_PUBLISHED_VERSIONS_SQL.contains("'PUBLISHED'"));
+        assertTrue(JdbcCatalogStudioQueryRepository.LOAD_PUBLISHED_VERSIONS_SQL.contains("'ARCHIVED'"));
+    }
 
     @Test
     void loadsACompleteSharedSessionFromServerState() throws Exception {
@@ -43,6 +51,27 @@ class JdbcCatalogStudioQueryRepositoryTest {
         assertEquals("Alice", state.actors().getFirst().username());
         assertEquals("Summer catalog", state.publishedVersions().getFirst().label());
         assertTrue(state.publishedVersions().getFirst().publishedAt().equals(Instant.parse("2026-08-02T10:00:00Z")));
+    }
+
+    @Test
+    void loadsDraftPageIndexWithoutReadingEveryOffer() throws Exception {
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+
+        PreparedStatement statusStatement = statementWith(draftVersionRow());
+        PreparedStatement pagesStatement = statementWith(pageRow());
+        when(connection.prepareStatement(JdbcCatalogStudioQueryRepository.LOAD_DRAFT_STATUS_SQL))
+                .thenReturn(statusStatement);
+        when(connection.prepareStatement(JdbcCatalogVersionRepository.LOAD_PAGES_SQL))
+                .thenReturn(pagesStatement);
+
+        List<CatalogPageSnapshot> pages = new JdbcCatalogStudioQueryRepository(dataSource).loadDraftPages(12);
+
+        assertEquals(1, pages.size());
+        assertEquals(17, pages.getFirst().pageId());
+        assertEquals("Front Page", pages.getFirst().caption());
+        verify(connection, times(2)).prepareStatement(org.mockito.ArgumentMatchers.anyString());
     }
 
     private static PreparedStatement statementWith(ResultSet resultSet) throws Exception {
@@ -80,6 +109,24 @@ class JdbcCatalogStudioQueryRepositoryTest {
         when(result.getLong("id")).thenReturn(11L);
         when(result.getString("label")).thenReturn("Summer catalog");
         when(result.getTimestamp("published_at")).thenReturn(Timestamp.from(Instant.parse("2026-08-02T10:00:00Z")));
+        return result;
+    }
+
+    private static ResultSet draftVersionRow() throws Exception {
+        ResultSet result = oneRow();
+        when(result.getString("status")).thenReturn("DRAFT");
+        return result;
+    }
+
+    private static ResultSet pageRow() throws Exception {
+        ResultSet result = oneRow();
+        when(result.getString("catalog_type")).thenReturn("NORMAL");
+        when(result.getInt("page_id")).thenReturn(17);
+        when(result.getInt("parent_id")).thenReturn(-1);
+        when(result.getString("caption_save")).thenReturn("front_page");
+        when(result.getString("caption")).thenReturn("Front Page");
+        when(result.getString("page_layout")).thenReturn("default_3x3");
+        when(result.getInt("min_rank")).thenReturn(1);
         return result;
     }
 

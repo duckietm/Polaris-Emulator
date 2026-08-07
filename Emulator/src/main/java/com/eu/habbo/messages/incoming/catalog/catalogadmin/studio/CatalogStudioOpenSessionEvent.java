@@ -1,7 +1,6 @@
 package com.eu.habbo.messages.incoming.catalog.catalogadmin.studio;
 
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogStudioSessionState;
-import com.eu.habbo.habbohotel.catalog.versioning.CatalogVersionSnapshot;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio.CatalogStudioActor;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio.CatalogStudioPublishedVersion;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio.CatalogStudioSessionComposer;
@@ -11,7 +10,7 @@ public final class CatalogStudioOpenSessionEvent extends CatalogStudioEvent {
     public void handle() {
         if (!authorize()) return;
         CatalogStudioSessionState state = studio().queries().loadSession();
-        CatalogVersionSnapshot draft = studio().queries().loadDraftSnapshot(state.draftVersionId());
+        var pages = studio().queries().loadDraftPages(state.draftVersionId());
         this.client.sendResponse(new CatalogStudioSessionComposer(
                 state.activeVersionId(),
                 state.draftVersionId(),
@@ -28,7 +27,6 @@ public final class CatalogStudioOpenSessionEvent extends CatalogStudioEvent {
                         .map(version ->
                                 new CatalogStudioPublishedVersion(version.id(), version.label(), version.publishedAt()))
                         .toList(),
-                draft.pages(),
-                draft.offers()));
+                pages));
     }
 }

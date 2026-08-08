@@ -912,7 +912,7 @@ U|com/eu/habbo/habbohotel/rooms/RoomItemPlacementService.java|CALL|getThreading|
 U|com/eu/habbo/habbohotel/rooms/RoomLayout.java|CALL|getConfig|4
 U|com/eu/habbo/habbohotel/rooms/RoomLayout.java|CALL|isNumeric|1
 U|com/eu/habbo/habbohotel/rooms/RoomManager.java|CALL|getConfig|1
-U|com/eu/habbo/habbohotel/rooms/RoomManager.java|CALL|getDatabase|14
+U|com/eu/habbo/habbohotel/rooms/RoomManager.java|CALL|getDatabase|15
 U|com/eu/habbo/habbohotel/rooms/RoomManager.java|CALL|getGameEnvironment|14
 U|com/eu/habbo/habbohotel/rooms/RoomManager.java|CALL|getGameServer|1
 U|com/eu/habbo/habbohotel/rooms/RoomManager.java|CALL|getIntUnixTimestamp|6

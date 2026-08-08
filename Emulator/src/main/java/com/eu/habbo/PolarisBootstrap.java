@@ -27,6 +27,8 @@ import com.eu.habbo.threading.ThreadPooling;
 import com.eu.habbo.util.imager.badges.BadgeImager;
 import java.io.File;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -164,13 +166,22 @@ final class PolarisBootstrap {
         GameServer gameServer = new GameServer(
                 configuration.getValue("game.host", "127.0.0.1"), configuration.getInt("game.port", 30000));
         runtime.installGameServer(gameServer);
+        ExecutorService catalogReloadExecutor = Executors.newSingleThreadExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "CatalogReload");
+            thread.setDaemon(true);
+            return thread;
+        });
         CatalogStudioRuntime.install(
                 runtime.database().getDataSource(),
                 runtime.gameEnvironment().getItemManager(),
-                (published, nextDraftId) -> {
-                    runtime.gameEnvironment().getCatalogManager().initialize();
-                    gameServer.getGameClientManager().sendBroadcastResponse(new CatalogUpdatedComposer());
-                });
+                (published, nextDraftId) -> catalogReloadExecutor.submit(() -> {
+                    try {
+                        runtime.gameEnvironment().getCatalogManager().initialize();
+                        gameServer.getGameClientManager().sendBroadcastResponse(new CatalogUpdatedComposer());
+                    } catch (Exception exception) {
+                        LOGGER.error("Catalog reload after publish failed", exception);
+                    }
+                }));
         boolean stressEnabled = configuration.getBoolean("stress.enabled", false);
         StressRunRegistry.install(new StressRunManager(
                 runtime.gameEnvironment().getRoomManager(),

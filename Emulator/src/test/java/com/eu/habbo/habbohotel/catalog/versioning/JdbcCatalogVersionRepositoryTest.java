@@ -24,7 +24,8 @@ class JdbcCatalogVersionRepositoryTest {
         PreparedStatement statement = mock(PreparedStatement.class);
         ResultSet resultSet = mock(ResultSet.class);
         Instant createdAt = Instant.parse("2026-08-05T10:00:00Z");
-        when(connection.prepareStatement(JdbcCatalogVersionRepository.LOAD_VERSION_SQL)).thenReturn(statement);
+        when(connection.prepareStatement(JdbcCatalogVersionRepository.LOAD_VERSION_SQL))
+                .thenReturn(statement);
         when(statement.executeQuery()).thenReturn(resultSet);
         when(resultSet.next()).thenReturn(true);
         when(resultSet.getLong("id")).thenReturn(12L);
@@ -52,7 +53,8 @@ class JdbcCatalogVersionRepositoryTest {
         Connection connection = mock(Connection.class);
         PreparedStatement statement = mock(PreparedStatement.class);
         ResultSet resultSet = mock(ResultSet.class);
-        when(connection.prepareStatement(JdbcCatalogVersionRepository.LOAD_PAGE_SQL)).thenReturn(statement);
+        when(connection.prepareStatement(JdbcCatalogVersionRepository.LOAD_PAGE_SQL))
+                .thenReturn(statement);
         when(statement.executeQuery()).thenReturn(resultSet);
         when(resultSet.next()).thenReturn(true);
         stubPageRow(resultSet);
@@ -74,7 +76,8 @@ class JdbcCatalogVersionRepositoryTest {
         Connection connection = mock(Connection.class);
         PreparedStatement statement = mock(PreparedStatement.class);
         ResultSet resultSet = mock(ResultSet.class);
-        when(connection.prepareStatement(JdbcCatalogVersionRepository.LOAD_OFFER_SQL)).thenReturn(statement);
+        when(connection.prepareStatement(JdbcCatalogVersionRepository.LOAD_OFFER_SQL))
+                .thenReturn(statement);
         when(statement.executeQuery()).thenReturn(resultSet);
         when(resultSet.next()).thenReturn(false);
 

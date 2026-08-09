@@ -76,7 +76,8 @@ class JdbcCatalogLiveProjectionTest {
         PreparedStatement fallbackStatement = mock(PreparedStatement.class);
         PreparedStatement offerStatement = mock(PreparedStatement.class);
         when(connection.prepareStatement(anyString())).thenReturn(fallbackStatement);
-        when(connection.prepareStatement(JdbcCatalogLiveProjection.UPSERT_OFFER_SQL)).thenReturn(offerStatement);
+        when(connection.prepareStatement(JdbcCatalogLiveProjection.UPSERT_OFFER_SQL))
+                .thenReturn(offerStatement);
         CatalogVersion version = new CatalogVersion(
                 3, CatalogVersionStatus.PUBLISHED, 2L, 1, "Published", 1, Instant.EPOCH, 1, Instant.EPOCH);
         CatalogVersionSnapshot snapshot = new CatalogVersionSnapshot(

@@ -15,9 +15,10 @@ import org.junit.jupiter.api.Test;
 
 class JdbcCatalogOperationRepositoryTest {
 
-    private static final String SELECT_FOR_UPDATE = "SELECT operation_id, actor_id, version_id, source, result_revision, "
-            + "request_fingerprint, action, entity_type, catalog_type, entity_id, history_group_id, result_json "
-            + "FROM catalog_operations WHERE operation_id = ? AND actor_id = ? FOR UPDATE";
+    private static final String SELECT_FOR_UPDATE =
+            "SELECT operation_id, actor_id, version_id, source, result_revision, "
+                    + "request_fingerprint, action, entity_type, catalog_type, entity_id, history_group_id, result_json "
+                    + "FROM catalog_operations WHERE operation_id = ? AND actor_id = ? FOR UPDATE";
     private static final String INSERT = "INSERT INTO catalog_operations "
             + "(operation_id, actor_id, version_id, source, result_revision, request_fingerprint, action, entity_type, "
             + "catalog_type, entity_id, history_group_id, result_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -45,7 +46,8 @@ class JdbcCatalogOperationRepositoryTest {
         when(resultSet.getObject("history_group_id", Long.class)).thenReturn(17L);
         when(resultSet.getString("result_json")).thenReturn("{\"revision\":8}");
 
-        CatalogOperationRecord record = repository.findForUpdate(connection, "save-page-1", 9).orElseThrow();
+        CatalogOperationRecord record =
+                repository.findForUpdate(connection, "save-page-1", 9).orElseThrow();
 
         assertEquals("abc123", record.requestFingerprint());
         assertEquals("{\"revision\":8}", record.resultJson());
@@ -83,9 +85,7 @@ class JdbcCatalogOperationRepositoryTest {
     void findForUpdateRejectsAnOperationIdLongerThanTheDatabaseLimit() {
         Connection connection = mock(Connection.class);
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> repository.findForUpdate(connection, "x".repeat(97), 9));
+        assertThrows(IllegalArgumentException.class, () -> repository.findForUpdate(connection, "x".repeat(97), 9));
     }
 
     @Test

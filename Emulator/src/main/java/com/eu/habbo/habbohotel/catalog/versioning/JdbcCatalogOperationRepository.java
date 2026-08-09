@@ -9,9 +9,10 @@ import java.sql.Types;
 import java.util.Optional;
 
 public final class JdbcCatalogOperationRepository implements CatalogOperationRepository {
-    private static final String SELECT_FOR_UPDATE = "SELECT operation_id, actor_id, version_id, source, result_revision, "
-            + "request_fingerprint, action, entity_type, catalog_type, entity_id, history_group_id, result_json "
-            + "FROM catalog_operations WHERE operation_id = ? AND actor_id = ? FOR UPDATE";
+    private static final String SELECT_FOR_UPDATE =
+            "SELECT operation_id, actor_id, version_id, source, result_revision, "
+                    + "request_fingerprint, action, entity_type, catalog_type, entity_id, history_group_id, result_json "
+                    + "FROM catalog_operations WHERE operation_id = ? AND actor_id = ? FOR UPDATE";
     private static final String INSERT = "INSERT INTO catalog_operations "
             + "(operation_id, actor_id, version_id, source, result_revision, request_fingerprint, action, entity_type, "
             + "catalog_type, entity_id, history_group_id, result_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";

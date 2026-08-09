@@ -53,7 +53,11 @@ public final class JdbcCatalogLiveProjection implements CatalogLiveProjection {
     static final String DELETE_OFFERS_SQL =
             "DELETE FROM catalog_items WHERE NOT EXISTS (SELECT 1 FROM catalog_version_offers version_offer "
                     + "WHERE version_offer.version_id = ? AND version_offer.catalog_type = 'NORMAL' "
-                    + "AND version_offer.offer_id = catalog_items.id)";
+                    + "AND version_offer.offer_id = catalog_items.id "
+                    + "AND EXISTS (SELECT 1 FROM catalog_version_pages version_page "
+                    + "WHERE version_page.version_id = version_offer.version_id "
+                    + "AND version_page.catalog_type = version_offer.catalog_type "
+                    + "AND version_page.page_id = version_offer.page_id))";
     static final String DELETE_PAGES_SQL =
             "DELETE FROM catalog_pages WHERE NOT EXISTS (SELECT 1 FROM catalog_version_pages version_page "
                     + "WHERE version_page.version_id = ? AND version_page.catalog_type = 'NORMAL' "
@@ -61,7 +65,11 @@ public final class JdbcCatalogLiveProjection implements CatalogLiveProjection {
     static final String DELETE_BUILDER_OFFERS_SQL =
             "DELETE FROM catalog_items_bc WHERE NOT EXISTS (SELECT 1 FROM catalog_version_offers version_offer "
                     + "WHERE version_offer.version_id = ? AND version_offer.catalog_type = 'BUILDER' "
-                    + "AND version_offer.offer_id = catalog_items_bc.id)";
+                    + "AND version_offer.offer_id = catalog_items_bc.id "
+                    + "AND EXISTS (SELECT 1 FROM catalog_version_pages version_page "
+                    + "WHERE version_page.version_id = version_offer.version_id "
+                    + "AND version_page.catalog_type = version_offer.catalog_type "
+                    + "AND version_page.page_id = version_offer.page_id))";
     static final String DELETE_BUILDER_PAGES_SQL =
             "DELETE FROM catalog_pages_bc WHERE NOT EXISTS (SELECT 1 FROM catalog_version_pages version_page "
                     + "WHERE version_page.version_id = ? AND version_page.catalog_type = 'BUILDER' "
@@ -122,6 +130,7 @@ public final class JdbcCatalogLiveProjection implements CatalogLiveProjection {
             try {
                 for (CatalogOfferSnapshot offer : snapshot.offers()) {
                     if (offer.catalogType() != CatalogPageType.NORMAL) continue;
+                    if (snapshot.page(offer.catalogType(), offer.pageId()).isEmpty()) continue;
                     statement.setInt(1, offer.offerId());
                     statement.setString(2, offer.itemIds());
                     statement.setInt(3, offer.pageId());
@@ -180,6 +189,7 @@ public final class JdbcCatalogLiveProjection implements CatalogLiveProjection {
         try (PreparedStatement statement = connection.prepareStatement(UPSERT_BUILDER_OFFER_SQL)) {
             for (CatalogOfferSnapshot offer : snapshot.offers()) {
                 if (offer.catalogType() != CatalogPageType.BUILDER) continue;
+                if (snapshot.page(offer.catalogType(), offer.pageId()).isEmpty()) continue;
                 statement.setInt(1, offer.offerId());
                 statement.setString(2, offer.itemIds());
                 statement.setInt(3, offer.pageId());

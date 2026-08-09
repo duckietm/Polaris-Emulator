@@ -15,6 +15,8 @@ class CatalogVersionedDraftSchemaTest {
             Path.of("src/main/resources/db/migration/V20260802100000__catalog_versioned_drafts_compatibility.sql");
     private static final Path SMART_SAVE_MIGRATION =
             Path.of("src/main/resources/db/migration/V20260805210000__catalog_smart_save.sql");
+    private static final Path OFFICIAL_IDENTITY_MIGRATION =
+            Path.of("src/main/resources/db/migration/V20260805213000__catalog_official_identity_utf8mb4.sql");
 
     @Test
     void migrationDefinesVersionRuntimeSnapshotJournalAndLocks() throws Exception {
@@ -81,5 +83,16 @@ class CatalogVersionedDraftSchemaTest {
                 () -> assertTrue(contract.contains("request_fingerprint")),
                 () -> assertTrue(contract.contains("history_group_id")),
                 () -> assertTrue(contract.contains("result_json")));
+    }
+
+    @Test
+    void officialCatalogIdentityMigrationPreservesLongUnicodePageKeys() throws Exception {
+        String sql = Files.readString(OFFICIAL_IDENTITY_MIGRATION);
+
+        assertAll(
+                () -> assertTrue(sql.contains("CONVERT TO CHARACTER SET utf8mb4")),
+                () -> assertTrue(sql.contains("MODIFY COLUMN `caption_save` varchar(128)")),
+                () -> assertTrue(sql.contains("ALTER TABLE `catalog_version_pages`")),
+                () -> assertTrue(sql.contains("ALTER TABLE `catalog_items_bc`")));
     }
 }

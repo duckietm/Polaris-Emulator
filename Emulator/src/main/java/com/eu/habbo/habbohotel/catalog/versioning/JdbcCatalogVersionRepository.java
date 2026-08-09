@@ -9,6 +9,7 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public final class JdbcCatalogVersionRepository implements CatalogVersionRepository {
     static final String LOCK_RUNTIME_STATE_SQL = "SELECT active_version_id, draft_version_id, updated_at "
@@ -22,7 +23,7 @@ public final class JdbcCatalogVersionRepository implements CatalogVersionReposit
     static final String UPDATE_NEXT_ID_SQL =
             "UPDATE catalog_id_sequences SET next_id = ? WHERE entity_type = ? AND catalog_type = ?";
 
-    private static final String LOAD_VERSION_SQL =
+    static final String LOAD_VERSION_SQL =
             "SELECT id, status, based_on_version_id, revision, label, created_by, created_at, "
                     + "published_by, published_at FROM catalog_versions WHERE id = ?";
     static final String LOAD_PAGES_SQL =
@@ -31,11 +32,22 @@ public final class JdbcCatalogVersionRepository implements CatalogVersionReposit
                     + "page_headline, page_teaser, page_special, page_text1, page_text2, "
                     + "page_text_details, page_text_teaser, room_id, includes "
                     + "FROM catalog_version_pages WHERE version_id = ? ORDER BY catalog_type, page_id";
-    private static final String LOAD_OFFERS_SQL =
+    static final String LOAD_OFFERS_SQL =
             "SELECT catalog_type, offer_id, item_ids, page_id, catalog_name, cost_credits, cost_points, points_type, "
                     + "amount, limited_stack, order_number, offer_id_client, song_id, extradata, "
                     + "have_offer, club_only FROM catalog_version_offers "
                     + "WHERE version_id = ? ORDER BY catalog_type, offer_id";
+    static final String LOAD_PAGE_SQL =
+            "SELECT catalog_type, page_id, parent_id, caption_save, caption, page_layout, icon_color, icon_image, "
+                    + "min_rank, order_num, visible, enabled, club_only, catalog_mode, vip_only, "
+                    + "page_headline, page_teaser, page_special, page_text1, page_text2, "
+                    + "page_text_details, page_text_teaser, room_id, includes "
+                    + "FROM catalog_version_pages WHERE version_id = ? AND catalog_type = ? AND page_id = ?";
+    static final String LOAD_OFFER_SQL =
+            "SELECT catalog_type, offer_id, item_ids, page_id, catalog_name, cost_credits, cost_points, points_type, "
+                    + "amount, limited_stack, order_number, offer_id_client, song_id, extradata, "
+                    + "have_offer, club_only FROM catalog_version_offers "
+                    + "WHERE version_id = ? AND catalog_type = ? AND offer_id = ?";
     private static final String CREATE_DRAFT_SQL = "INSERT INTO catalog_versions "
             + "(status, based_on_version_id, revision, label, created_by) "
             + "VALUES ('DRAFT', ?, 0, ?, ?)";
@@ -150,7 +162,8 @@ public final class JdbcCatalogVersionRepository implements CatalogVersionReposit
         }
     }
 
-    private static CatalogVersion loadVersion(Connection connection, long versionId) throws SQLException {
+    @Override
+    public CatalogVersion loadVersion(Connection connection, long versionId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(LOAD_VERSION_SQL)) {
             statement.setLong(1, versionId);
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -166,6 +179,32 @@ public final class JdbcCatalogVersionRepository implements CatalogVersionReposit
                         resultSet.getTimestamp("created_at").toInstant(),
                         nullableInteger(resultSet, "published_by"),
                         publishedAt == null ? null : publishedAt.toInstant());
+            }
+        }
+    }
+
+    @Override
+    public Optional<CatalogPageSnapshot> loadPage(
+            Connection connection, long versionId, CatalogPageType catalogType, int pageId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(LOAD_PAGE_SQL)) {
+            statement.setLong(1, versionId);
+            statement.setString(2, catalogType.name());
+            statement.setInt(3, pageId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? Optional.of(mapPage(resultSet)) : Optional.empty();
+            }
+        }
+    }
+
+    @Override
+    public Optional<CatalogOfferSnapshot> loadOffer(
+            Connection connection, long versionId, CatalogPageType catalogType, int offerId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(LOAD_OFFER_SQL)) {
+            statement.setLong(1, versionId);
+            statement.setString(2, catalogType.name());
+            statement.setInt(3, offerId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? Optional.of(mapOffer(resultSet)) : Optional.empty();
             }
         }
     }

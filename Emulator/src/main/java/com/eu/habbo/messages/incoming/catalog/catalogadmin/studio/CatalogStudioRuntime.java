@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.catalog.catalogadmin.studio;
 
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogAdminDraftMutationService;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogAdminSmartSaveService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftChangeSetService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftLifecycleService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftPreviewService;
@@ -16,6 +17,7 @@ import com.eu.habbo.habbohotel.catalog.versioning.CatalogVersionRepository;
 import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogChangeJournal;
 import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogLiveProjection;
 import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogLockRepository;
+import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogOperationRepository;
 import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogSnapshotWriter;
 import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogStudioQueryRepository;
 import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogValidationDataRepository;
@@ -64,6 +66,7 @@ public final class CatalogStudioRuntime {
         JdbcCatalogStudioQueryRepository queries = new JdbcCatalogStudioQueryRepository(dataSource);
         Gson gson = new Gson();
         JdbcCatalogSnapshotWriter snapshotWriter = new JdbcCatalogSnapshotWriter(gson);
+        JdbcCatalogOperationRepository operationRepository = new JdbcCatalogOperationRepository();
         CatalogStudioDocumentService documents = new CatalogStudioDocumentService(gson);
         CatalogOperationalOfferRepository operationalOffers = new CatalogOperationalOfferRepository(dataSource);
         return new Services(
@@ -71,6 +74,8 @@ public final class CatalogStudioRuntime {
                 new CatalogLockService(lockRepository),
                 new CatalogAdminDraftMutationService(
                         dataSource, versions, journal, snapshotWriter, lockRepository, gson),
+                new CatalogAdminSmartSaveService(
+                        dataSource, versions, journal, snapshotWriter, lockRepository, operationRepository, gson),
                 operationalOffers,
                 new CatalogUndoService(dataSource, versions, journal, snapshotWriter, gson),
                 new CatalogDraftValidationService(dataSource, versions, validationData),
@@ -95,6 +100,7 @@ public final class CatalogStudioRuntime {
             JdbcCatalogStudioQueryRepository queries,
             CatalogLockService locks,
             CatalogAdminDraftMutationService mutations,
+            CatalogAdminSmartSaveService smartSaves,
             CatalogOperationalOfferRepository operationalOffers,
             CatalogUndoService undo,
             CatalogDraftValidationService validation,

@@ -60,11 +60,12 @@ public final class CatalogStudioRequestParser {
     }
 
     public static CatalogStudioMutationEnvelope parseMutationEnvelope(ClientMessage packet) {
-        return new CatalogStudioMutationEnvelope(
-                positive(packet.readInt(), "draftVersionId"),
-                nonNegative(packet.readInt(), "expectedRevision"),
-                UUID.fromString(packet.readString()),
-                packet.readString());
+        long draftVersionId = positive(packet.readInt(), "draftVersionId");
+        long expectedRevision = nonNegative(packet.readInt(), "expectedRevision");
+        UUID lockToken = UUID.fromString(packet.readString());
+        String summary = packet.readString();
+        String operationId = packet.bytesAvailable() > 0 ? packet.readString() : "";
+        return new CatalogStudioMutationEnvelope(draftVersionId, expectedRevision, lockToken, summary, operationId);
     }
 
     private static CatalogLockKey key(ClientMessage packet) {

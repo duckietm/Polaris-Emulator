@@ -3,11 +3,10 @@ package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 import com.eu.habbo.habbohotel.catalog.CatalogPageLayouts;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogChangeOperation;
-import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftMutationRequest;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogEntityType;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogLockKey;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogPageSnapshot;
-import com.eu.habbo.habbohotel.catalog.versioning.CatalogVersionSnapshot;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogSmartSaveRequest;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioMutationEnvelope;
@@ -26,7 +25,6 @@ public class CatalogAdminSavePageEvent extends MessageHandler {
     private static final int MAX_TEASER_LENGTH = 64;
     private static final int MAX_TEXT_LENGTH = 8192;
     private static final int MAX_INCLUDES_LENGTH = 128;
-    private static final int MAX_PARENT_WALK = 64;
     private static final int ROOT_PARENT_ID = -1;
 
     private static final Safelist PAGE_HTML_SAFELIST = new Safelist()
@@ -69,41 +67,12 @@ public class CatalogAdminSavePageEvent extends MessageHandler {
         int roomId = this.packet.bytesAvailable() > 0 ? this.packet.readInt() : 0;
         String includes = this.packet.bytesAvailable() > 0 ? this.packet.readString() : "";
         CatalogStudioMutationEnvelope envelope = CatalogStudioRequestParser.parseMutationEnvelope(this.packet);
-        var mutations = CatalogStudioRuntime.services().mutations();
-        CatalogVersionSnapshot draft = mutations.loadDraft(envelope.draftVersionId(), envelope.expectedRevision());
-        CatalogPageSnapshot page = draft.page(pageType, pageId).orElse(null);
-
-        if (page == null) {
-            this.client.sendResponse(
-                    new CatalogAdminResultComposer(false, "Page not found in shared draft: " + pageId));
-            return;
-        }
 
         try {
             CatalogPageLayouts.valueOf(layout);
         } catch (IllegalArgumentException | NullPointerException e) {
             this.client.sendResponse(new CatalogAdminResultComposer(false, "Invalid layout: " + layout));
             return;
-        }
-
-        if (parentId != ROOT_PARENT_ID) {
-            if (parentId == pageId) {
-                this.client.sendResponse(new CatalogAdminResultComposer(false, "A page cannot be its own parent"));
-                return;
-            }
-
-            CatalogPageSnapshot parent = draft.page(pageType, parentId).orElse(null);
-            if (parent == null) {
-                this.client.sendResponse(
-                        new CatalogAdminResultComposer(false, "Parent page not found in shared draft: " + parentId));
-                return;
-            }
-
-            if (this.wouldCreateCycle(pageType, pageId, parentId, draft)) {
-                this.client.sendResponse(
-                        new CatalogAdminResultComposer(false, "Refusing to re-parent: that would create a cycle"));
-                return;
-            }
         }
 
         if (iconType < 0) iconType = 0;
@@ -132,12 +101,6 @@ public class CatalogAdminSavePageEvent extends MessageHandler {
             this.client.sendResponse(new CatalogAdminResultComposer(false, "Invalid included page IDs"));
             return;
         }
-        if (!this.includesExist(includes, pageType, pageId, draft)) {
-            this.client.sendResponse(new CatalogAdminResultComposer(
-                    false, "Included pages must exist and cannot include the current page"));
-            return;
-        }
-
         CatalogPageSnapshot edited = new CatalogPageSnapshot(
                 pageType,
                 pageId,
@@ -163,31 +126,53 @@ public class CatalogAdminSavePageEvent extends MessageHandler {
                 textTeaser,
                 roomId,
                 includes);
-        var result = mutations.apply(new CatalogDraftMutationRequest(
-                envelope.draftVersionId(),
-                envelope.expectedRevision(),
-                this.client.getHabbo().getHabboInfo().getId(),
-                new CatalogLockKey(CatalogEntityType.PAGE, pageType, pageId),
-                envelope.lockToken(),
-                envelope.summary(),
-                CatalogEntityType.PAGE,
-                pageId,
-                CatalogChangeOperation.UPDATE,
-                new Gson().toJson(edited)));
-        this.client.sendResponse(
-                new CatalogAdminResultComposer(true, "Page saved in shared draft at revision " + result.revision()));
-    }
-
-    private boolean wouldCreateCycle(CatalogPageType pageType, int pageId, int parentId, CatalogVersionSnapshot draft) {
-        int current = parentId;
-        for (int hops = 0; hops < MAX_PARENT_WALK; hops++) {
-            if (current == ROOT_PARENT_ID) return false;
-            if (current == pageId) return true;
-            CatalogPageSnapshot parent = draft.page(pageType, current).orElse(null);
-            if (parent == null) return false;
-            current = parent.parentId();
+        Gson gson = new Gson();
+        String operationId = CatalogAdminSmartSaveResponder.operationId(envelope, "savePage");
+        String validatedIncludes = includes;
+        var smartSaves = CatalogStudioRuntime.services().smartSaves();
+        try {
+            var result = smartSaves.apply(
+                    new CatalogSmartSaveRequest(
+                            operationId,
+                            envelope.draftVersionId(),
+                            envelope.expectedRevision(),
+                            this.client.getHabbo().getHabboInfo().getId(),
+                            this.client.getHabbo().getHabboInfo().getUsername(),
+                            new CatalogLockKey(CatalogEntityType.PAGE, pageType, pageId),
+                            envelope.lockToken(),
+                            envelope.summary(),
+                            CatalogEntityType.PAGE,
+                            pageId,
+                            CatalogChangeOperation.UPDATE,
+                            gson.toJson(edited)),
+                    draft -> {
+                        if (draft.page(pageType, pageId).isEmpty()) {
+                            throw new IllegalArgumentException("Page not found in shared draft: " + pageId);
+                        }
+                        CatalogAdminPageDraftChecks.validateParentAndIncludes(
+                                draft, pageType, pageId, parentId, validatedIncludes);
+                    });
+            this.client.sendResponse(CatalogAdminSmartSaveResponder.success(
+                    "savePage",
+                    "Page saved in shared draft at revision " + result.revision(),
+                    result,
+                    this.client.getHabbo().getHabboInfo().getUsername(),
+                    gson));
+        } catch (IllegalArgumentException
+                | com.eu.habbo.habbohotel.catalog.versioning.CatalogConcurrentModificationException
+                | com.eu.habbo.habbohotel.catalog.versioning.CatalogLockConflictException
+                | com.eu.habbo.habbohotel.catalog.versioning.CatalogUndoConflictException exception) {
+            this.client.sendResponse(CatalogAdminSmartSaveResponder.failure(
+                    operationId,
+                    "savePage",
+                    envelope.draftVersionId(),
+                    envelope.expectedRevision(),
+                    "PAGE",
+                    pageType.name(),
+                    pageId,
+                    exception,
+                    gson));
         }
-        return true;
     }
 
     private String clampLength(String value, int max) {
@@ -218,18 +203,5 @@ public class CatalogAdminSavePageEvent extends MessageHandler {
             }
         }
         return normalized.toString();
-    }
-
-    private boolean includesExist(
-            String includes, CatalogPageType pageType, int currentPageId, CatalogVersionSnapshot draft) {
-        if (includes.isEmpty()) return true;
-        for (String entry : includes.split(";")) {
-            int includedPageId = Integer.parseInt(entry);
-            if (includedPageId == currentPageId
-                    || draft.page(pageType, includedPageId).isEmpty()) {
-                return false;
-            }
-        }
-        return true;
     }
 }

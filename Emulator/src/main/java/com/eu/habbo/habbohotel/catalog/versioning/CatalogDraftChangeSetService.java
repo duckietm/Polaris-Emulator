@@ -4,8 +4,6 @@ import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.util.Objects;
@@ -22,6 +20,7 @@ public final class CatalogDraftChangeSetService {
     private final CatalogChangeJournal journal;
     private final CatalogLockRepository locks;
     private final CatalogStudioDocumentService documents;
+    private final CatalogOperationRepository operations;
     private final Clock clock;
 
     public CatalogDraftChangeSetService(
@@ -31,7 +30,15 @@ public final class CatalogDraftChangeSetService {
             CatalogChangeJournal journal,
             CatalogLockRepository locks,
             CatalogStudioDocumentService documents) {
-        this(dataSource, versions, writer, journal, locks, documents, Clock.systemUTC());
+        this(
+                dataSource,
+                versions,
+                writer,
+                journal,
+                locks,
+                documents,
+                new JdbcCatalogOperationRepository(),
+                Clock.systemUTC());
     }
 
     CatalogDraftChangeSetService(
@@ -42,12 +49,25 @@ public final class CatalogDraftChangeSetService {
             CatalogLockRepository locks,
             CatalogStudioDocumentService documents,
             Clock clock) {
+        this(dataSource, versions, writer, journal, locks, documents, new JdbcCatalogOperationRepository(), clock);
+    }
+
+    CatalogDraftChangeSetService(
+            DataSource dataSource,
+            CatalogVersionRepository versions,
+            CatalogSnapshotWriter writer,
+            CatalogChangeJournal journal,
+            CatalogLockRepository locks,
+            CatalogStudioDocumentService documents,
+            CatalogOperationRepository operations,
+            Clock clock) {
         this.dataSource = Objects.requireNonNull(dataSource, "dataSource");
         this.versions = Objects.requireNonNull(versions, "versions");
         this.writer = Objects.requireNonNull(writer, "writer");
         this.journal = Objects.requireNonNull(journal, "journal");
         this.locks = Objects.requireNonNull(locks, "locks");
         this.documents = Objects.requireNonNull(documents, "documents");
+        this.operations = Objects.requireNonNull(operations, "operations");
         this.clock = Objects.requireNonNull(clock, "clock");
     }
 
@@ -77,7 +97,9 @@ public final class CatalogDraftChangeSetService {
         try (Connection connection = dataSource.getConnection()) {
             connection.setAutoCommit(false);
             try {
-                Optional<Long> replay = replayRevision(connection, operationId, actorId);
+                Optional<Long> replay = operations
+                        .findForUpdate(connection, operationId, actorId)
+                        .map(CatalogOperationRecord::resultRevision);
                 if (replay.isPresent()) {
                     connection.commit();
                     return new CatalogChangeSetApplyResult(replay.get(), 0, true);
@@ -103,7 +125,21 @@ public final class CatalogDraftChangeSetService {
                 long revision = versions.incrementRevision(connection, draftVersionId, expectedRevision);
                 journal.append(
                         connection, draftVersionId, revision, actorId, summary, dryRun.source(), dryRun.changes());
-                recordOperation(connection, operationId, actorId, draftVersionId, dryRun.source(), revision);
+                operations.insert(
+                        connection,
+                        new CatalogOperationRecord(
+                                operationId,
+                                actorId,
+                                draftVersionId,
+                                dryRun.source(),
+                                revision,
+                                fingerprint,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null));
                 connection.commit();
                 return new CatalogChangeSetApplyResult(
                         revision, dryRun.changes().size(), false);
@@ -125,37 +161,6 @@ public final class CatalogDraftChangeSetService {
         }
         if (draft.version().revision() != expectedRevision) {
             throw new CatalogConcurrentModificationException(draftVersionId, expectedRevision);
-        }
-    }
-
-    private static Optional<Long> replayRevision(Connection connection, String operationId, int actorId)
-            throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT result_revision FROM catalog_operations WHERE operation_id = ? AND actor_id = ? FOR UPDATE")) {
-            statement.setString(1, operationId);
-            statement.setInt(2, actorId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                return resultSet.next() ? Optional.of(resultSet.getLong(1)) : Optional.empty();
-            }
-        }
-    }
-
-    private static void recordOperation(
-            Connection connection,
-            String operationId,
-            int actorId,
-            long versionId,
-            CatalogChangeSource source,
-            long revision)
-            throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement("INSERT INTO catalog_operations "
-                + "(operation_id, actor_id, version_id, source, result_revision) VALUES (?, ?, ?, ?, ?)")) {
-            statement.setString(1, operationId);
-            statement.setInt(2, actorId);
-            statement.setLong(3, versionId);
-            statement.setString(4, source.name());
-            statement.setLong(5, revision);
-            statement.executeUpdate();
         }
     }
 }

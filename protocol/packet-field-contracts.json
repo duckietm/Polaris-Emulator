@@ -16082,6 +16082,77 @@
           "kind": "scalar",
           "type": "string",
           "name": ""
+        },
+        {
+          "kind": "optional",
+          "controller": "bytesAvailable",
+          "fields": [
+            {
+              "kind": "scalar",
+              "type": "int",
+              "name": "protocolVersion"
+            },
+            {
+              "kind": "scalar",
+              "type": "string",
+              "name": "operationId"
+            },
+            {
+              "kind": "scalar",
+              "type": "string",
+              "name": "action"
+            },
+            {
+              "kind": "scalar",
+              "type": "string",
+              "name": "code"
+            },
+            {
+              "kind": "scalar",
+              "type": "int",
+              "name": "draftVersionId"
+            },
+            {
+              "kind": "scalar",
+              "type": "int",
+              "name": "revision"
+            },
+            {
+              "kind": "scalar",
+              "type": "string",
+              "name": "entityType"
+            },
+            {
+              "kind": "scalar",
+              "type": "string",
+              "name": "catalogType"
+            },
+            {
+              "kind": "scalar",
+              "type": "int",
+              "name": "entityId"
+            },
+            {
+              "kind": "scalar",
+              "type": "string",
+              "name": "entityJson"
+            },
+            {
+              "kind": "scalar",
+              "type": "string",
+              "name": "historyGroupJson"
+            },
+            {
+              "kind": "scalar",
+              "type": "string",
+              "name": "fieldErrorsJson"
+            },
+            {
+              "kind": "scalar",
+              "type": "int",
+              "name": "serverDurationMs"
+            }
+          ]
         }
       ]
     },
@@ -17318,6 +17389,14 @@
       "reason": "Header is registered only by the Nitro Renderer packet registry"
     },
     {
+      "direction": "client_to_server",
+      "side": "typescript",
+      "header": 9351,
+      "symbol": "SET_BUILD_HEIGHT",
+      "path": "packages/communication/src/messages/outgoing/room/furniture/buildheight/SetBuildHeightComposer.ts",
+      "reason": "Header is registered only by the Nitro Renderer packet registry"
+    },
+    {
       "direction": "server_to_client",
       "side": "typescript",
       "header": 84,
@@ -17659,6 +17738,14 @@
       "header": 5210,
       "symbol": "FIREWORK_CHARGE_DATA",
       "path": "packages/communication/src/messages/parser/catalog/FireworkChargeDataParser.ts",
+      "reason": "Header is registered only by the Nitro Renderer packet registry"
+    },
+    {
+      "direction": "server_to_client",
+      "side": "typescript",
+      "header": 9350,
+      "symbol": "BUILD_HEIGHT_AVAILABLE",
+      "path": "packages/communication/src/messages/parser/room/furniture/BuildHeightAvailableParser.ts",
       "reason": "Header is registered only by the Nitro Renderer packet registry"
     }
   ],

@@ -96,13 +96,19 @@ public class Incoming {
     public static final int GuildAcceptMembershipEvent = 3386;
     public static final int RequestRecylerLogicEvent = 398;
     public static final int RequestGuildJoinEvent = 998;
-    public static int RequestCatalogIndexEvent = 2529;
     public static final int BuildersClubQueryFurniCountEvent = 2529;
+    /** @deprecated Compatibility alias; use {@link #BuildersClubQueryFurniCountEvent}. */
+    @Deprecated
+    public static int RequestCatalogIndexEvent = BuildersClubQueryFurniCountEvent;
+
     public static final int BuildersClubPlaceRoomItemEvent = 1051;
     public static final int BuildersClubPlaceWallItemEvent = 462;
     public static final int RequestInventoryPetsEvent = 3095;
     public static final int ModToolRequestRoomVisitsEvent = 3526;
-    public static final int ModToolWarnEvent = -1; // 3763
+    /** @deprecated Unsupported wire header retained for plugin ABI compatibility. */
+    @Deprecated
+    public static final int ModToolWarnEvent = UnsupportedIncoming.ModToolWarnEvent;
+
     public static final int RequestItemInfoEvent = 3288;
     public static final int ModToolRequestRoomChatlogEvent = 2587;
     public static final int UserSaveLookEvent = 2730;
@@ -160,14 +166,20 @@ public class Incoming {
     public static final int HotelViewInventoryEvent = 3500;
     public static final int RequestPetBreedsEvent = 1756;
     public static final int GuildChangeBadgeEvent = 1991;
-    public static final int ModToolBanEvent = -1;
+    /** @deprecated Unsupported wire header retained for plugin ABI compatibility. */
+    @Deprecated
+    public static final int ModToolBanEvent = UnsupportedIncoming.ModToolBanEvent;
+
     public static final int SaveWardrobeEvent = 800;
     public static final int HotelViewEvent = 105;
     public static final int ModToolPickTicketEvent = 15;
     public static final int ModToolReleaseTicketEvent = 1572;
     public static final int ModToolCloseTicketEvent = 2067;
     public static final int TriggerColorWheelEvent = 2144;
-    public static final int SearchRoomsByTagEvent = -1; // 1956
+    /** @deprecated Unsupported wire header retained for plugin ABI compatibility. */
+    @Deprecated
+    public static final int SearchRoomsByTagEvent = UnsupportedIncoming.SearchRoomsByTagEvent;
+
     public static final int RequestPublicRoomsEvent = 1229;
     public static final int RequestResolutionEvent = 359;
     public static final int RequestInventoryItemsEvent = 3150;
@@ -246,7 +258,10 @@ public class Incoming {
 
     public static final int MoodLightSaveSettingsEvent = 1648;
     public static final int ModToolRequestIssueChatlogEvent = 211;
-    public static final int ModToolRequestRoomUserChatlogEvent = -1;
+    /** @deprecated Unsupported wire header retained for plugin ABI compatibility. */
+    @Deprecated
+    public static final int ModToolRequestRoomUserChatlogEvent = UnsupportedIncoming.ModToolRequestRoomUserChatlogEvent;
+
     public static final int GetIgnoredUsersEvent = 3878;
     public static final int RequestClubGiftsEvent = 487;
     public static final int RentSpaceEvent = 2946;
@@ -298,7 +313,11 @@ public class Incoming {
     public static final int GuardianNoUpdatesWantedEvent = 2501;
     public static final int GuardianVoteEvent = 3961;
     public static final int GuardianAcceptRequestEvent = 3365;
-    public static final int RequestAchievementConfigurationEvent = -1;
+    /** @deprecated Unsupported wire header retained for plugin ABI compatibility. */
+    @Deprecated
+    public static final int RequestAchievementConfigurationEvent =
+            UnsupportedIncoming.RequestAchievementConfigurationEvent;
+
     public static final int RequestReportUserBullyingEvent = 3786;
     public static final int ReportBullyEvent = 3060;
     public static final int CameraRoomPictureEvent = 3226;
@@ -339,7 +358,9 @@ public class Incoming {
     public static final int YoutubeRequestPlaylistChange = 2069;
 
     public static final int HotelViewRequestBadgeRewardEvent = 2318;
-    public static final int HotelViewClaimBadgeRewardEvent = -1;
+    /** @deprecated Unsupported wire header retained for plugin ABI compatibility. */
+    @Deprecated
+    public static final int HotelViewClaimBadgeRewardEvent = UnsupportedIncoming.HotelViewClaimBadgeRewardEvent;
 
     public static final int JukeBoxAddSoundTrackEvent = 753;
     public static final int JukeBoxRemoveSoundTrackEvent = 3050;

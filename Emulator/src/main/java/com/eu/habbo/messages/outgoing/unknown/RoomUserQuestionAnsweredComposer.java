@@ -2,8 +2,7 @@ package com.eu.habbo.messages.outgoing.unknown;
 
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
-import com.eu.habbo.messages.outgoing.Outgoing;
-
+import com.eu.habbo.messages.outgoing.UnsupportedOutgoing;
 import java.util.Map;
 
 public class RoomUserQuestionAnsweredComposer extends MessageComposer {
@@ -19,7 +18,7 @@ public class RoomUserQuestionAnsweredComposer extends MessageComposer {
 
     @Override
     protected ServerMessage composeInternal() {
-        this.response.init(Outgoing.RoomUserQuestionAnsweredComposer);
+        this.response.init(UnsupportedOutgoing.RoomUserQuestionAnsweredComposer);
         this.response.appendInt(this.userId);
         this.response.appendString(this.value);
         this.response.appendInt(this.unknownMap.size());

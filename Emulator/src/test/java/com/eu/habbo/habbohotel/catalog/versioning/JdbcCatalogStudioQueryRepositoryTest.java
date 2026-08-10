@@ -74,6 +74,33 @@ class JdbcCatalogStudioQueryRepositoryTest {
         verify(connection, times(2)).prepareStatement(org.mockito.ArgumentMatchers.anyString());
     }
 
+    @Test
+    void loadsHistoryEntriesForAllSelectedGroupsInOneQuery() throws Exception {
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+
+        PreparedStatement metaStatement = statementWith(historyMetaRow());
+        PreparedStatement groupsStatement = statementWith(historyGroupRows());
+        PreparedStatement entriesStatement = statementWith(historyEntryRows());
+        when(connection.prepareStatement(JdbcCatalogStudioQueryRepository.LOAD_HISTORY_META_SQL))
+                .thenReturn(metaStatement);
+        when(connection.prepareStatement(JdbcCatalogStudioQueryRepository.LOAD_HISTORY_GROUPS_SQL))
+                .thenReturn(groupsStatement);
+        when(connection.prepareStatement(org.mockito.ArgumentMatchers.startsWith(
+                        JdbcCatalogStudioQueryRepository.LOAD_HISTORY_ENTRIES_BATCH_PREFIX)))
+                .thenReturn(entriesStatement);
+
+        CatalogHistoryPage history = new JdbcCatalogStudioQueryRepository(dataSource).loadHistory(12, 0, 3);
+
+        assertEquals(3, history.groups().size());
+        assertEquals(11, history.groups().get(0).id());
+        assertEquals(101, history.groups().get(0).entries().getFirst().entityId());
+        assertEquals(202, history.groups().get(1).entries().getFirst().entityId());
+        assertEquals(303, history.groups().get(2).entries().getFirst().entityId());
+        verify(connection, times(3)).prepareStatement(org.mockito.ArgumentMatchers.anyString());
+    }
+
     private static PreparedStatement statementWith(ResultSet resultSet) throws Exception {
         PreparedStatement statement = mock(PreparedStatement.class);
         when(statement.executeQuery()).thenReturn(resultSet);
@@ -127,6 +154,36 @@ class JdbcCatalogStudioQueryRepositoryTest {
         when(result.getString("caption")).thenReturn("Front Page");
         when(result.getString("page_layout")).thenReturn("default_3x3");
         when(result.getInt("min_rank")).thenReturn(1);
+        return result;
+    }
+
+    private static ResultSet historyMetaRow() throws Exception {
+        ResultSet result = oneRow();
+        when(result.getLong("revision")).thenReturn(8L);
+        when(result.getInt("total_count")).thenReturn(3);
+        return result;
+    }
+
+    private static ResultSet historyGroupRows() throws Exception {
+        ResultSet result = mock(ResultSet.class);
+        when(result.next()).thenReturn(true, true, true, false);
+        when(result.getLong("id")).thenReturn(11L, 12L, 13L);
+        when(result.getLong("revision")).thenReturn(8L, 7L, 6L);
+        when(result.getInt("actor_id")).thenReturn(9);
+        when(result.getString("actor_name")).thenReturn("Alice");
+        when(result.getString("summary")).thenReturn("First", "Second", "Third");
+        when(result.getString("source")).thenReturn("UI");
+        when(result.getTimestamp("created_at")).thenReturn(Timestamp.from(Instant.parse("2026-08-02T10:05:00Z")));
+        return result;
+    }
+
+    private static ResultSet historyEntryRows() throws Exception {
+        ResultSet result = mock(ResultSet.class);
+        when(result.next()).thenReturn(true, true, true, false);
+        when(result.getLong("group_id")).thenReturn(11L, 12L, 13L);
+        when(result.getString("entity_type")).thenReturn("PAGE", "OFFER", "PAGE");
+        when(result.getInt("entity_id")).thenReturn(101, 202, 303);
+        when(result.getString("operation")).thenReturn("UPDATE", "CREATE", "MOVE");
         return result;
     }
 

@@ -6,7 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import javax.sql.DataSource;
 
@@ -35,8 +37,8 @@ public final class JdbcCatalogStudioQueryRepository {
                     + "groups.summary, groups.source, groups.created_at "
                     + "FROM catalog_change_groups groups LEFT JOIN users ON users.id = groups.actor_id "
                     + "WHERE groups.version_id = ? ORDER BY groups.revision DESC, groups.id DESC LIMIT ? OFFSET ?";
-    static final String LOAD_HISTORY_ENTRIES_SQL =
-            "SELECT entity_type, entity_id, operation FROM catalog_change_entries " + "WHERE group_id = ? ORDER BY id";
+    static final String LOAD_HISTORY_ENTRIES_BATCH_PREFIX =
+            "SELECT group_id, entity_type, entity_id, operation FROM catalog_change_entries WHERE group_id IN (";
     static final String LOAD_USERNAME_SQL = "SELECT username FROM users WHERE id = ?";
     static final String LOAD_DRAFT_STATUS_SQL = "SELECT status FROM catalog_versions WHERE id = ?";
 
@@ -190,7 +192,7 @@ public final class JdbcCatalogStudioQueryRepository {
 
     private static List<CatalogHistoryGroupState> loadHistoryGroups(
             Connection connection, long draftVersionId, int offset, int limit) throws SQLException {
-        List<CatalogHistoryGroupState> groups = new ArrayList<>();
+        List<HistoryGroupRow> rows = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(LOAD_HISTORY_GROUPS_SQL)) {
             statement.setLong(1, draftVersionId);
             statement.setInt(2, limit);
@@ -200,35 +202,62 @@ public final class JdbcCatalogStudioQueryRepository {
                     long groupId = resultSet.getLong("id");
                     int actorId = resultSet.getInt("actor_id");
                     String actorName = resultSet.getString("actor_name");
-                    groups.add(new CatalogHistoryGroupState(
+                    rows.add(new HistoryGroupRow(
                             groupId,
                             resultSet.getLong("revision"),
                             actorId,
                             actorName == null ? "#" + actorId : actorName,
                             resultSet.getString("summary"),
                             CatalogChangeSource.valueOf(resultSet.getString("source")),
-                            resultSet.getTimestamp("created_at").toInstant(),
-                            loadHistoryEntries(connection, groupId)));
+                            resultSet.getTimestamp("created_at").toInstant()));
                 }
             }
         }
+        if (rows.isEmpty()) return List.of();
+        Map<Long, List<CatalogHistoryEntryState>> entries = loadHistoryEntries(connection, rows);
+        List<CatalogHistoryGroupState> groups = rows.stream()
+                .map(row -> new CatalogHistoryGroupState(
+                        row.id(),
+                        row.revision(),
+                        row.actorId(),
+                        row.actorName(),
+                        row.summary(),
+                        row.source(),
+                        row.createdAt(),
+                        List.copyOf(entries.getOrDefault(row.id(), List.of()))))
+                .toList();
         return List.copyOf(groups);
     }
 
-    private static List<CatalogHistoryEntryState> loadHistoryEntries(Connection connection, long groupId)
-            throws SQLException {
-        List<CatalogHistoryEntryState> entries = new ArrayList<>();
-        try (PreparedStatement statement = connection.prepareStatement(LOAD_HISTORY_ENTRIES_SQL)) {
-            statement.setLong(1, groupId);
+    private static Map<Long, List<CatalogHistoryEntryState>> loadHistoryEntries(
+            Connection connection, List<HistoryGroupRow> groups) throws SQLException {
+        String placeholders = String.join(",", java.util.Collections.nCopies(groups.size(), "?"));
+        String sql = LOAD_HISTORY_ENTRIES_BATCH_PREFIX + placeholders + ") ORDER BY group_id, id";
+        Map<Long, List<CatalogHistoryEntryState>> entries = new HashMap<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            for (int index = 0; index < groups.size(); index++) {
+                statement.setLong(index + 1, groups.get(index).id());
+            }
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    entries.add(new CatalogHistoryEntryState(
-                            CatalogEntityType.valueOf(resultSet.getString("entity_type")),
-                            resultSet.getInt("entity_id"),
-                            CatalogChangeOperation.valueOf(resultSet.getString("operation"))));
+                    long groupId = resultSet.getLong("group_id");
+                    entries.computeIfAbsent(groupId, ignored -> new ArrayList<>())
+                            .add(new CatalogHistoryEntryState(
+                                    CatalogEntityType.valueOf(resultSet.getString("entity_type")),
+                                    resultSet.getInt("entity_id"),
+                                    CatalogChangeOperation.valueOf(resultSet.getString("operation"))));
                 }
             }
         }
-        return List.copyOf(entries);
+        return entries;
     }
+
+    private record HistoryGroupRow(
+            long id,
+            long revision,
+            int actorId,
+            String actorName,
+            String summary,
+            CatalogChangeSource source,
+            java.time.Instant createdAt) {}
 }

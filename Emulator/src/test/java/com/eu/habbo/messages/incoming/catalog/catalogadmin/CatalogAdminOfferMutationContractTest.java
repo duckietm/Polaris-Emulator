@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -24,13 +25,17 @@ class CatalogAdminOfferMutationContractTest {
 
         assertTrue(create.contains("CatalogAdminOfferPayload.validate("));
         assertTrue(save.contains("CatalogAdminOfferPayload.validate("));
+        assertTrue(create.contains("services().smartSaves()"));
+        assertTrue(save.contains("services().smartSaves()"));
         assertTrue(create.contains("draft.page(pageType, payload.pageId).isEmpty()"));
         assertTrue(save.contains("draft.page(pageType, payload.pageId).isEmpty()"));
+        assertFalse(create.contains("loadDraft("));
+        assertFalse(save.contains("loadDraft("));
 
         int createValidation = create.indexOf("CatalogAdminOfferPayload.validate(");
-        int createInsert = create.indexOf("mutations.apply(");
+        int createInsert = create.indexOf("smartSaves.apply(");
         int saveValidation = save.indexOf("CatalogAdminOfferPayload.validate(");
-        int saveUpdate = save.indexOf("mutations.apply(");
+        int saveUpdate = save.indexOf("smartSaves.apply(");
 
         assertTrue(createValidation < createInsert, "create offer should validate before insert SQL is prepared");
         assertTrue(saveValidation < saveUpdate, "save offer should validate before update SQL is prepared");

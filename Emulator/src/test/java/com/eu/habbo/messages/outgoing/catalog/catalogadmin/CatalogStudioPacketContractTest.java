@@ -4,8 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogChangeEntry;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogChangeGroup;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogChangeOperation;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogChangeSource;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftPreview;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogEntityType;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogPageSnapshot;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogSmartSaveResult;
 import com.eu.habbo.messages.outgoing.Outgoing;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio.CatalogStudioActor;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio.CatalogStudioChangedEntity;
@@ -288,6 +294,95 @@ class CatalogStudioPacketContractTest {
         assertEquals("fingerprint", readString(payload));
         assertEquals(3, payload.readInt());
         assertFalse(payload.isReadable());
+    }
+
+    @Test
+    void catalogAdminResultKeepsLegacyFieldsAndAppendsTheVersionedSmartSavePayload() {
+        CatalogAdminSmartSavePayload smartSave = new CatalogAdminSmartSavePayload(
+                "save-page-1",
+                "savePage",
+                "SAVED",
+                12,
+                8,
+                "PAGE",
+                "NORMAL",
+                44,
+                "{\"pageId\":44}",
+                "{\"id\":91}",
+                "{}",
+                13);
+        ByteBuf payload = new CatalogAdminResultComposer(true, "Page saved", smartSave)
+                .compose()
+                .get();
+
+        assertHeader(payload, Outgoing.CatalogAdminResultComposer);
+        assertTrue(payload.readBoolean());
+        assertEquals("Page saved", readString(payload));
+        assertEquals(1, payload.readInt());
+        assertEquals("save-page-1", readString(payload));
+        assertEquals("savePage", readString(payload));
+        assertEquals("SAVED", readString(payload));
+        assertEquals(12, payload.readInt());
+        assertEquals(8, payload.readInt());
+        assertEquals("PAGE", readString(payload));
+        assertEquals("NORMAL", readString(payload));
+        assertEquals(44, payload.readInt());
+        assertEquals("{\"pageId\":44}", readString(payload));
+        assertEquals("{\"id\":91}", readString(payload));
+        assertEquals("{}", readString(payload));
+        assertEquals(13, payload.readInt());
+        assertFalse(payload.isReadable());
+    }
+
+    @Test
+    void smartSavePayloadFactoryUsesStableHistoryJsonAndAllowsCreateFailures() {
+        CatalogChangeEntry entry = new CatalogChangeEntry(
+                1,
+                CatalogEntityType.PAGE,
+                com.eu.habbo.habbohotel.catalog.CatalogPageType.NORMAL,
+                44,
+                CatalogChangeOperation.UPDATE,
+                "{}",
+                "{\"pageId\":44}");
+        CatalogChangeGroup group = new CatalogChangeGroup(
+                91,
+                12,
+                8,
+                9,
+                "Edit page",
+                CatalogChangeSource.UI,
+                Instant.parse("2026-08-02T10:05:30Z"),
+                List.of(entry));
+        CatalogSmartSaveResult result = new CatalogSmartSaveResult(
+                false,
+                "save-page-1",
+                12,
+                8,
+                CatalogEntityType.PAGE,
+                com.eu.habbo.habbohotel.catalog.CatalogPageType.NORMAL,
+                44,
+                CatalogChangeOperation.UPDATE,
+                group,
+                "{\"pageId\":44}",
+                13);
+
+        CatalogAdminSmartSavePayload success =
+                CatalogAdminSmartSavePayload.success("savePage", "SAVED", result, "Alice", new Gson());
+        CatalogAdminSmartSavePayload failure = CatalogAdminSmartSavePayload.failure(
+                "create-page-1",
+                "createPage",
+                "VALIDATION_FAILED",
+                12,
+                7,
+                "PAGE",
+                "NORMAL",
+                0,
+                "{\"caption\":\"Page caption is required\"}");
+
+        assertTrue(success.historyGroupJson().contains("\"actorName\":\"Alice\""));
+        assertTrue(success.historyGroupJson().contains("\"createdAt\":\"2026-08-02T10:05:30Z\""));
+        assertEquals(0, failure.entityId());
+        assertEquals("{\"caption\":\"Page caption is required\"}", failure.fieldErrorsJson());
     }
 
     private static void assertHeader(ByteBuf payload, int expectedHeader) {

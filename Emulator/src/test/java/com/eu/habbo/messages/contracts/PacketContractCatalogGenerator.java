@@ -1,11 +1,10 @@
 package com.eu.habbo.messages.contracts;
 
-import com.google.gson.GsonBuilder;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -36,8 +35,7 @@ record TypeScriptPacketInventoryEntry(
         String className,
         String path,
         List<JsonObject> fields,
-        String unsupportedReason) {
-}
+        String unsupportedReason) {}
 
 final class PacketContractCatalogGenerator {
     private final Path repositoryRoot;
@@ -88,9 +86,12 @@ final class PacketContractCatalogGenerator {
 
     String generate(Path typescriptInventoryPath) throws IOException {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        PacketRegistryPolicy registry = new PacketContractManifestLoader()
+                .load(repositoryRoot.resolve("protocol/packet-field-contracts.json"))
+                .registry();
         List<TypeScriptPacketInventoryEntry> typescript = gson.fromJson(
                 Files.readString(typescriptInventoryPath, StandardCharsets.UTF_8),
-                new TypeToken<List<TypeScriptPacketInventoryEntry>>() { }.getType());
+                new TypeToken<List<TypeScriptPacketInventoryEntry>>() {}.getType());
         Map<String, JavaPacketInventoryEntry> javaByKey = new LinkedHashMap<>();
         javaInventory().forEach(packet -> javaByKey.put(key(packet.direction(), packet.header()), packet));
         Map<String, TypeScriptPacketInventoryEntry> typescriptByKey = new LinkedHashMap<>();
@@ -102,10 +103,12 @@ final class PacketContractCatalogGenerator {
         javaByKey.values().stream()
                 .filter(javaPacket -> typescriptByKey.containsKey(key(javaPacket.direction(), javaPacket.header())))
                 .forEach(javaPacket -> {
-                    TypeScriptPacketInventoryEntry tsPacket = typescriptByKey.get(
-                            key(javaPacket.direction(), javaPacket.header()));
-                    List<String> javaSignature = javaPacket.fields().stream().map(this::signature).toList();
-                    List<String> tsSignature = tsPacket.fields().stream().map(this::signature).toList();
+                    TypeScriptPacketInventoryEntry tsPacket =
+                            typescriptByKey.get(key(javaPacket.direction(), javaPacket.header()));
+                    List<String> javaSignature =
+                            javaPacket.fields().stream().map(this::signature).toList();
+                    List<String> tsSignature =
+                            tsPacket.fields().stream().map(this::signature).toList();
                     boolean analyzable = javaPacket.unsupportedReason() == null && tsPacket.unsupportedReason() == null;
                     if (analyzable && signaturesCompatible(javaSignature, tsSignature)) {
                         contracts.add(contract(javaPacket, tsPacket, !javaSignature.equals(tsSignature)));
@@ -116,16 +119,25 @@ final class PacketContractCatalogGenerator {
         javaByKey.values().stream()
                 .filter(packet -> !typescriptByKey.containsKey(key(packet.direction(), packet.header())))
                 .forEach(packet -> unpaired.add(unpaired(
-                        packet.direction(), "java", packet.header(), packet.symbol(), packet.path(),
+                        packet.direction(),
+                        "java",
+                        packet.header(),
+                        packet.symbol(),
+                        packet.path(),
                         "Header is registered only by the Polaris Emulator packet registry")));
         typescriptByKey.values().stream()
                 .filter(packet -> !javaByKey.containsKey(key(packet.direction(), packet.header())))
                 .forEach(packet -> unpaired.add(unpaired(
-                        packet.direction(), "typescript", packet.header(), packet.symbol(), packet.path(),
+                        packet.direction(),
+                        "typescript",
+                        packet.header(),
+                        packet.symbol(),
+                        packet.path(),
                         "Header is registered only by the Nitro Renderer packet registry")));
 
         JsonObject manifest = new JsonObject();
-        manifest.addProperty("schemaVersion", 1);
+        manifest.addProperty("schemaVersion", 2);
+        manifest.add("registry", gson.toJsonTree(registry));
         manifest.add("contracts", contracts);
         manifest.add("unpaired", unpaired);
         manifest.add("exemptions", exemptions);
@@ -144,9 +156,7 @@ final class PacketContractCatalogGenerator {
     }
 
     private JsonObject contract(
-            JavaPacketInventoryEntry javaPacket,
-            TypeScriptPacketInventoryEntry tsPacket,
-            boolean useTypeScriptFields) {
+            JavaPacketInventoryEntry javaPacket, TypeScriptPacketInventoryEntry tsPacket, boolean useTypeScriptFields) {
         JsonObject result = base(javaPacket, tsPacket);
         JsonArray fields = new JsonArray();
         if (useTypeScriptFields) {
@@ -163,8 +173,7 @@ final class PacketContractCatalogGenerator {
         if (javaSignature.size() >= typescriptSignature.size()) return false;
         if (!javaSignature.equals(typescriptSignature.subList(0, javaSignature.size()))) return false;
         return typescriptSignature.subList(javaSignature.size(), typescriptSignature.size()).stream()
-                .allMatch(field -> field.startsWith("optional<")
-                        || field.startsWith("{\"type\":\"optional\""));
+                .allMatch(field -> field.startsWith("optional<") || field.startsWith("{\"type\":\"optional\""));
     }
 
     private JsonObject exemption(
@@ -177,8 +186,8 @@ final class PacketContractCatalogGenerator {
         if (javaPacket.unsupportedReason() != null) reasons.add("Java analyzer: " + javaPacket.unsupportedReason());
         if (tsPacket.unsupportedReason() != null) reasons.add("TypeScript analyzer: " + tsPacket.unsupportedReason());
         if (reasons.isEmpty()) {
-            reasons.add("Pre-existing wire mismatch requires runtime protocol decision: Java "
-                    + javaSignature + " versus TypeScript " + tsSignature);
+            reasons.add("Pre-existing wire mismatch requires runtime protocol decision: Java " + javaSignature
+                    + " versus TypeScript " + tsSignature);
         }
         result.addProperty("reason", String.join("; ", reasons));
         return result;
@@ -216,10 +225,12 @@ final class PacketContractCatalogGenerator {
 
     private String signature(WireSchema schema) {
         if (schema instanceof ScalarSchema scalar) return scalar.type();
-        if (schema instanceof ListSchema list) return "list<" + list.countType() + ":"
-                + list.item().stream().map(this::signature).toList() + ">";
-        if (schema instanceof OptionalSchema optional) return "optional<" + optional.controller() + ":"
-                + optional.fields().stream().map(this::signature).toList() + ">";
+        if (schema instanceof ListSchema list)
+            return "list<" + list.countType() + ":"
+                    + list.item().stream().map(this::signature).toList() + ">";
+        if (schema instanceof OptionalSchema optional)
+            return "optional<" + optional.controller() + ":"
+                    + optional.fields().stream().map(this::signature).toList() + ">";
         VariantSchema variant = (VariantSchema) schema;
         return "variant<" + variant.discriminator() + ":" + variant.branches() + ">";
     }
@@ -301,7 +312,8 @@ final class PacketContractCatalogGenerator {
     }
 
     private String relative(Path source) {
-        return repositoryRoot.relativize(source.toAbsolutePath().normalize())
+        return repositoryRoot
+                .relativize(source.toAbsolutePath().normalize())
                 .toString()
                 .replace('\\', '/');
     }

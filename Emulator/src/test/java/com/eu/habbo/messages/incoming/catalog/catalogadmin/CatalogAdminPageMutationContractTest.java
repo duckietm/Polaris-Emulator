@@ -17,16 +17,16 @@ class CatalogAdminPageMutationContractTest {
     private static final Path MOVE_SOURCE = HANDLER_ROOT.resolve("CatalogAdminMovePageEvent.java");
 
     @Test
-    void pageParentChecksUseTheSharedDraftSnapshot() throws IOException {
+    void pageCreateAndSaveUseTargetedSmartSaveChecks() throws IOException {
         String create = Files.readString(CREATE_SOURCE);
         String save = Files.readString(SAVE_SOURCE);
-        String move = Files.readString(MOVE_SOURCE);
 
-        assertTrue(create.contains("draft.page(pageType, parentId)"));
-        assertTrue(save.contains("draft.page(pageType, parentId)"));
-        assertTrue(save.contains("draft.page(pageType, current)"));
-        assertTrue(move.contains("draft.page(pageType, newParentId)"));
-        assertTrue(move.contains("draft.page(pageType, current)"));
+        assertTrue(create.contains("services().smartSaves()"));
+        assertTrue(save.contains("services().smartSaves()"));
+        assertTrue(create.contains("CatalogAdminPageDraftChecks.validateParentAndIncludes"));
+        assertTrue(save.contains("CatalogAdminPageDraftChecks.validateParentAndIncludes"));
+        assertFalse(create.contains("loadDraft("));
+        assertFalse(save.contains("loadDraft("));
     }
 
     @Test

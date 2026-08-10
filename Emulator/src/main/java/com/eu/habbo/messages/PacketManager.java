@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.messages.incoming.Incoming;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.messages.incoming.UnsupportedIncoming;
 import com.eu.habbo.messages.incoming.achievements.RequestAchievementConfigurationEvent;
 import com.eu.habbo.messages.incoming.achievements.RequestAchievementsEvent;
 import com.eu.habbo.messages.incoming.ambassadors.AmbassadorAlertCommandEvent;
@@ -834,7 +835,7 @@ public class PacketManager {
         this.registerHandler(Incoming.RequestPromotedRoomsEvent, RequestPromotedRoomsEvent.class);
         this.registerHandler(Incoming.RequestCreateRoomEvent, RequestCreateRoomEvent.class);
         this.registerHandler(Incoming.RequestTagsEvent, RequestTagsEvent.class);
-        this.registerHandler(Incoming.SearchRoomsByTagEvent, SearchRoomsByTagEvent.class);
+        this.registerHandler(UnsupportedIncoming.SearchRoomsByTagEvent, SearchRoomsByTagEvent.class);
         this.registerHandler(Incoming.SearchRoomsEvent, SearchRoomsEvent.class);
         this.registerHandler(Incoming.SearchRoomsFriendsNowEvent, SearchRoomsFriendsNowEvent.class);
         this.registerHandler(Incoming.SearchRoomsFriendsOwnEvent, SearchRoomsFriendsOwnEvent.class);
@@ -862,7 +863,7 @@ public class PacketManager {
         this.registerHandler(Incoming.RequestNewsListEvent, RequestNewsListEvent.class);
         this.registerHandler(Incoming.HotelViewDataEvent, HotelViewDataEvent.class);
         this.registerHandler(Incoming.HotelViewRequestBadgeRewardEvent, HotelViewRequestBadgeRewardEvent.class);
-        this.registerHandler(Incoming.HotelViewClaimBadgeRewardEvent, HotelViewClaimBadgeRewardEvent.class);
+        this.registerHandler(UnsupportedIncoming.HotelViewClaimBadgeRewardEvent, HotelViewClaimBadgeRewardEvent.class);
         this.registerHandler(Incoming.HotelViewRequestLTDAvailabilityEvent, HotelViewRequestLTDAvailabilityEvent.class);
         this.registerHandler(Incoming.HotelViewRequestSecondsUntilEvent, HotelViewRequestSecondsUntilEvent.class);
         this.registerHandler(Incoming.HotelViewLandingRequestEvent, HotelViewLandingRequestEvent.class);
@@ -1026,13 +1027,14 @@ public class PacketManager {
         this.registerHandler(Incoming.ModToolCloseTicketEvent, ModToolCloseTicketEvent.class);
         this.registerHandler(Incoming.ModToolReleaseTicketEvent, ModToolReleaseTicketEvent.class);
         this.registerHandler(Incoming.ModToolAlertEvent, ModToolAlertEvent.class);
-        this.registerHandler(Incoming.ModToolWarnEvent, ModToolWarnEvent.class);
+        this.registerHandler(UnsupportedIncoming.ModToolWarnEvent, ModToolWarnEvent.class);
         this.registerHandler(Incoming.ModToolKickEvent, ModToolKickEvent.class);
         this.registerHandler(Incoming.ModToolRoomAlertEvent, ModToolRoomAlertEvent.class);
         this.registerHandler(Incoming.ModToolChangeRoomSettingsEvent, ModToolChangeRoomSettingsEvent.class);
         this.registerHandler(Incoming.ModToolRequestRoomVisitsEvent, ModToolRequestRoomVisitsEvent.class);
         this.registerHandler(Incoming.ModToolRequestIssueChatlogEvent, ModToolRequestIssueChatlogEvent.class);
-        this.registerHandler(Incoming.ModToolRequestRoomUserChatlogEvent, ModToolRequestRoomUserChatlogEvent.class);
+        this.registerHandler(
+                UnsupportedIncoming.ModToolRequestRoomUserChatlogEvent, ModToolRequestRoomUserChatlogEvent.class);
         this.registerHandler(Incoming.ModToolRequestUserChatlogEvent, ModToolRequestUserChatlogEvent.class);
         this.registerHandler(Incoming.ModToolSanctionAlertEvent, ModToolSanctionAlertEvent.class);
         this.registerHandler(Incoming.ModToolSanctionMuteEvent, ModToolSanctionMuteEvent.class);
@@ -1162,7 +1164,8 @@ public class PacketManager {
 
     void registerAchievements() throws Exception {
         this.registerHandler(Incoming.RequestAchievementsEvent, RequestAchievementsEvent.class);
-        this.registerHandler(Incoming.RequestAchievementConfigurationEvent, RequestAchievementConfigurationEvent.class);
+        this.registerHandler(
+                UnsupportedIncoming.RequestAchievementConfigurationEvent, RequestAchievementConfigurationEvent.class);
     }
 
     void registerGuides() throws Exception {

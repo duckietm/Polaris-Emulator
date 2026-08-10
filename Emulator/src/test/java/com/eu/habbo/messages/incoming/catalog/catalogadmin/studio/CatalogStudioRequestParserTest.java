@@ -72,6 +72,20 @@ class CatalogStudioRequestParserTest {
         assertEquals(7, envelope.expectedRevision());
         assertEquals(token, envelope.lockToken());
         assertEquals("Edit page", envelope.summary());
+        assertEquals("", envelope.operationId());
+    }
+
+    @Test
+    void parsesAnOptionalSmartSaveOperationIdWithoutChangingTheLegacyEnvelope() {
+        UUID token = UUID.fromString("12345678-1234-1234-1234-123456789abc");
+        CatalogStudioMutationEnvelope envelope =
+                CatalogStudioRequestParser.parseMutationEnvelope(message(buffer().integer(12)
+                        .integer(7)
+                        .string(token.toString())
+                        .string("Edit page")
+                        .string("save-page-1")));
+
+        assertEquals("save-page-1", envelope.operationId());
     }
 
     private static ClientMessage message(BufferBuilder builder) {

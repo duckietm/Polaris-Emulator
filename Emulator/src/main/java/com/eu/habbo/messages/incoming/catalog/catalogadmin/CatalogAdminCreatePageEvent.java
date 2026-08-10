@@ -3,10 +3,10 @@ package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 import com.eu.habbo.habbohotel.catalog.CatalogPageLayouts;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogChangeOperation;
-import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftMutationRequest;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftPageData;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogEntityType;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogLockKey;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogSmartSaveRequest;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioMutationEnvelope;
@@ -103,17 +103,6 @@ public class CatalogAdminCreatePageEvent extends MessageHandler {
             this.client.sendResponse(new CatalogAdminResultComposer(false, "Invalid parent page id"));
             return;
         }
-        var mutations = CatalogStudioRuntime.services().mutations();
-        var draft = mutations.loadDraft(envelope.draftVersionId(), envelope.expectedRevision());
-        if (parentId != ROOT_PARENT_ID && draft.page(pageType, parentId).isEmpty()) {
-            this.client.sendResponse(
-                    new CatalogAdminResultComposer(false, "Parent page not found in shared draft: " + parentId));
-            return;
-        }
-        if (!this.includesExist(includes, pageType, draft)) {
-            this.client.sendResponse(new CatalogAdminResultComposer(false, "Included page not found in shared draft"));
-            return;
-        }
 
         CatalogDraftPageData pageData = new CatalogDraftPageData(
                 parentId,
@@ -138,20 +127,52 @@ public class CatalogAdminCreatePageEvent extends MessageHandler {
                 textTeaser,
                 roomId,
                 includes);
-        var result = mutations.apply(new CatalogDraftMutationRequest(
-                envelope.draftVersionId(),
-                envelope.expectedRevision(),
-                this.client.getHabbo().getHabboInfo().getId(),
-                new CatalogLockKey(
-                        CatalogEntityType.PAGE, pageType, parentId == ROOT_PARENT_ID ? CATALOG_ROOT_LOCK_ID : parentId),
-                envelope.lockToken(),
-                envelope.summary(),
-                CatalogEntityType.PAGE,
-                0,
-                CatalogChangeOperation.CREATE,
-                new Gson().toJson(pageData)));
-        this.client.sendResponse(new CatalogAdminResultComposer(
-                true, "Page created in shared draft: " + result.entityId() + " at revision " + result.revision()));
+        Gson gson = new Gson();
+        String operationId = CatalogAdminSmartSaveResponder.operationId(envelope, "createPage");
+        int targetParentId = parentId;
+        String validatedIncludes = includes;
+        var smartSaves = CatalogStudioRuntime.services().smartSaves();
+        try {
+            var result = smartSaves.apply(
+                    new CatalogSmartSaveRequest(
+                            operationId,
+                            envelope.draftVersionId(),
+                            envelope.expectedRevision(),
+                            this.client.getHabbo().getHabboInfo().getId(),
+                            this.client.getHabbo().getHabboInfo().getUsername(),
+                            new CatalogLockKey(
+                                    CatalogEntityType.PAGE,
+                                    pageType,
+                                    targetParentId == ROOT_PARENT_ID ? CATALOG_ROOT_LOCK_ID : targetParentId),
+                            envelope.lockToken(),
+                            envelope.summary(),
+                            CatalogEntityType.PAGE,
+                            0,
+                            CatalogChangeOperation.CREATE,
+                            gson.toJson(pageData)),
+                    draft -> CatalogAdminPageDraftChecks.validateParentAndIncludes(
+                            draft, pageType, 0, targetParentId, validatedIncludes));
+            this.client.sendResponse(CatalogAdminSmartSaveResponder.success(
+                    "createPage",
+                    "Page created in shared draft: " + result.entityId() + " at revision " + result.revision(),
+                    result,
+                    this.client.getHabbo().getHabboInfo().getUsername(),
+                    gson));
+        } catch (IllegalArgumentException
+                | com.eu.habbo.habbohotel.catalog.versioning.CatalogConcurrentModificationException
+                | com.eu.habbo.habbohotel.catalog.versioning.CatalogLockConflictException
+                | com.eu.habbo.habbohotel.catalog.versioning.CatalogUndoConflictException exception) {
+            this.client.sendResponse(CatalogAdminSmartSaveResponder.failure(
+                    operationId,
+                    "createPage",
+                    envelope.draftVersionId(),
+                    envelope.expectedRevision(),
+                    "PAGE",
+                    pageType.name(),
+                    0,
+                    exception,
+                    gson));
+        }
     }
 
     private String clampLength(String value, int max) {
@@ -182,19 +203,5 @@ public class CatalogAdminCreatePageEvent extends MessageHandler {
             }
         }
         return normalized.toString();
-    }
-
-    private boolean includesExist(
-            String includes,
-            CatalogPageType pageType,
-            com.eu.habbo.habbohotel.catalog.versioning.CatalogVersionSnapshot draft) {
-        if (includes.isEmpty()) return true;
-        for (String entry : includes.split(";")) {
-            int includedPageId = Integer.parseInt(entry);
-            if (draft.page(pageType, includedPageId).isEmpty()) {
-                return false;
-            }
-        }
-        return true;
     }
 }

@@ -119,6 +119,8 @@
 	
 	<logger name="org.mariadb.jdbc" level="WARN"/>
 
+    <logger name="org.mariadb.jdbc.message.server.ErrorPacket" level="ERROR"/>
+
     <logger name="database.slow_query" level="WARN" additivity="true">
         <appender-ref ref="SlowQueries" />
     </logger>

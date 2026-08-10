@@ -1,15 +1,14 @@
 package com.eu.habbo.messages.contracts;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class JavaPacketRegistryTest {
     @TempDir
@@ -25,7 +24,8 @@ class JavaPacketRegistryTest {
                 IllegalArgumentException.class,
                 () -> registry.require(JavaPacketRegistry.Direction.SERVER_TO_CLIENT, 84));
         assertTrue(registry.require(JavaPacketRegistry.Direction.SERVER_TO_CLIENT, 1327)
-                .source().endsWith("RoomRemoveRightsListComposer.java"));
+                .source()
+                .endsWith("RoomRemoveRightsListComposer.java"));
     }
 
     @Test
@@ -50,7 +50,9 @@ class JavaPacketRegistryTest {
                     void register() { registerHandler(Incoming.OpenEvent, OpenEvent.class); }
                 }
                 """);
-        Path handler = write(root, "com/eu/habbo/messages/incoming/test/OpenEvent.java",
+        Path handler = write(
+                root,
+                "com/eu/habbo/messages/incoming/test/OpenEvent.java",
                 "package com.eu.habbo.messages.incoming.test; class OpenEvent {}\n");
         Path composer = write(root, "com/eu/habbo/messages/outgoing/test/OpenComposer.java", """
                 package com.eu.habbo.messages.outgoing.test;
@@ -61,8 +63,14 @@ class JavaPacketRegistryTest {
 
         JavaPacketRegistry registry = JavaPacketRegistry.discover(root);
 
-        assertEquals(handler, registry.require(JavaPacketRegistry.Direction.CLIENT_TO_SERVER, 100).source());
-        assertEquals(composer, registry.require(JavaPacketRegistry.Direction.SERVER_TO_CLIENT, 200).source());
+        assertEquals(
+                handler,
+                registry.require(JavaPacketRegistry.Direction.CLIENT_TO_SERVER, 100)
+                        .source());
+        assertEquals(
+                composer,
+                registry.require(JavaPacketRegistry.Direction.SERVER_TO_CLIENT, 200)
+                        .source());
         assertTrue(registry.declaredOnly().stream().anyMatch(packet -> packet.header() == 101));
     }
 
@@ -76,7 +84,9 @@ class JavaPacketRegistryTest {
                     public static final int SecondEvent = 100;
                 }
                 """);
-        write(root, "com/eu/habbo/messages/outgoing/Outgoing.java",
+        write(
+                root,
+                "com/eu/habbo/messages/outgoing/Outgoing.java",
                 "package com.eu.habbo.messages.outgoing; public class Outgoing {}\n");
         write(root, "com/eu/habbo/messages/PacketManager.java", """
                 package com.eu.habbo.messages;
@@ -85,18 +95,146 @@ class JavaPacketRegistryTest {
                     registerHandler(Incoming.SecondEvent, SecondEvent.class);
                 }}
                 """);
-        write(root, "com/eu/habbo/messages/incoming/test/FirstEvent.java",
+        write(
+                root,
+                "com/eu/habbo/messages/incoming/test/FirstEvent.java",
                 "package com.eu.habbo.messages.incoming.test; class FirstEvent {}\n");
-        write(root, "com/eu/habbo/messages/incoming/test/SecondEvent.java",
+        write(
+                root,
+                "com/eu/habbo/messages/incoming/test/SecondEvent.java",
                 "package com.eu.habbo.messages.incoming.test; class SecondEvent {}\n");
 
-        IllegalArgumentException error = assertThrows(
-                IllegalArgumentException.class,
-                () -> JavaPacketRegistry.discover(root));
+        IllegalArgumentException error =
+                assertThrows(IllegalArgumentException.class, () -> JavaPacketRegistry.discover(root));
 
         assertTrue(error.getMessage().contains("duplicate active client_to_server header 100"));
         assertTrue(error.getMessage().contains("FirstEvent"));
         assertTrue(error.getMessage().contains("SecondEvent"));
+    }
+
+    @Test
+    void rejectsDuplicateDeclaredHeadersThatAreNotExplicitAliases() throws IOException {
+        Path root = fixtureRoot();
+        write(root, "com/eu/habbo/messages/incoming/Incoming.java", """
+                package com.eu.habbo.messages.incoming;
+                public class Incoming {
+                    public static final int ActiveEvent = 100;
+                    public static final int StaleEvent = 100;
+                }
+                """);
+        write(
+                root,
+                "com/eu/habbo/messages/outgoing/Outgoing.java",
+                "package com.eu.habbo.messages.outgoing; public class Outgoing {}\n");
+        write(root, "com/eu/habbo/messages/PacketManager.java", """
+                package com.eu.habbo.messages;
+                class PacketManager { void register() {
+                    registerHandler(Incoming.ActiveEvent, ActiveEvent.class);
+                }}
+                """);
+        write(
+                root,
+                "com/eu/habbo/messages/incoming/test/ActiveEvent.java",
+                "package com.eu.habbo.messages.incoming.test; class ActiveEvent {}\n");
+
+        IllegalArgumentException error =
+                assertThrows(IllegalArgumentException.class, () -> JavaPacketRegistry.discover(root));
+
+        assertTrue(error.getMessage().contains("duplicate declared client_to_server header 100"));
+        assertTrue(error.getMessage().contains("ActiveEvent"));
+        assertTrue(error.getMessage().contains("StaleEvent"));
+    }
+
+    @Test
+    void acceptsExplicitAliasesForTheSameHeader() throws IOException {
+        Path root = fixtureRoot();
+        write(root, "com/eu/habbo/messages/incoming/Incoming.java", """
+                package com.eu.habbo.messages.incoming;
+                public class Incoming {
+                    public static final int ActiveEvent = 100;
+                    public static final int CompatibilityEvent = ActiveEvent;
+                }
+                """);
+        write(
+                root,
+                "com/eu/habbo/messages/outgoing/Outgoing.java",
+                "package com.eu.habbo.messages.outgoing; public class Outgoing {}\n");
+        write(root, "com/eu/habbo/messages/PacketManager.java", """
+                package com.eu.habbo.messages;
+                class PacketManager { void register() {
+                    registerHandler(Incoming.CompatibilityEvent, ActiveEvent.class);
+                }}
+                """);
+        write(
+                root,
+                "com/eu/habbo/messages/incoming/test/ActiveEvent.java",
+                "package com.eu.habbo.messages.incoming.test; class ActiveEvent {}\n");
+
+        JavaPacketRegistry registry = JavaPacketRegistry.discover(root);
+
+        assertEquals(
+                "CompatibilityEvent",
+                registry.require(JavaPacketRegistry.Direction.CLIENT_TO_SERVER, 100)
+                        .symbol());
+    }
+
+    @Test
+    void rejectsNonPositiveHeadersInTheActiveRegistryFiles() throws IOException {
+        Path root = fixtureRoot();
+        write(root, "com/eu/habbo/messages/incoming/Incoming.java", """
+                package com.eu.habbo.messages.incoming;
+                public class Incoming { public static final int UnsupportedEvent = -1; }
+                """);
+        write(
+                root,
+                "com/eu/habbo/messages/outgoing/Outgoing.java",
+                "package com.eu.habbo.messages.outgoing; public class Outgoing {}\n");
+        write(
+                root,
+                "com/eu/habbo/messages/PacketManager.java",
+                "package com.eu.habbo.messages; class PacketManager {}\n");
+
+        IllegalArgumentException error =
+                assertThrows(IllegalArgumentException.class, () -> JavaPacketRegistry.discover(root));
+
+        assertTrue(error.getMessage().contains("non-positive client_to_server header"));
+        assertTrue(error.getMessage().contains("UnsupportedEvent"));
+    }
+
+    @Test
+    void ignoresQualifiedUnsupportedCompatibilityAliases() throws IOException {
+        Path root = fixtureRoot();
+        write(root, "com/eu/habbo/messages/incoming/Incoming.java", """
+                package com.eu.habbo.messages.incoming;
+                public class Incoming {
+                    public static final int ActiveEvent = 100;
+                    @Deprecated
+                    public static final int UnsupportedEvent = UnsupportedIncoming.UnsupportedEvent;
+                }
+                """);
+        write(
+                root,
+                "com/eu/habbo/messages/outgoing/Outgoing.java",
+                "package com.eu.habbo.messages.outgoing; public class Outgoing {}\n");
+        write(root, "com/eu/habbo/messages/PacketManager.java", """
+                package com.eu.habbo.messages;
+                class PacketManager { void register() {
+                    registerHandler(Incoming.ActiveEvent, ActiveEvent.class);
+                }}
+                """);
+        write(
+                root,
+                "com/eu/habbo/messages/incoming/test/ActiveEvent.java",
+                "package com.eu.habbo.messages.incoming.test; class ActiveEvent {}\n");
+
+        JavaPacketRegistry registry = JavaPacketRegistry.discover(root);
+
+        assertEquals(
+                100,
+                registry.require(JavaPacketRegistry.Direction.CLIENT_TO_SERVER, 100)
+                        .header());
+        assertTrue(registry.declaredOnly().stream()
+                .noneMatch(packet -> packet.symbol().equals("UnsupportedEvent")));
     }
 
     @Test
@@ -106,7 +244,9 @@ class JavaPacketRegistryTest {
                 package com.eu.habbo.messages.incoming;
                 public class Incoming { public static final int MissingEvent = 100; }
                 """);
-        write(root, "com/eu/habbo/messages/outgoing/Outgoing.java",
+        write(
+                root,
+                "com/eu/habbo/messages/outgoing/Outgoing.java",
                 "package com.eu.habbo.messages.outgoing; public class Outgoing {}\n");
         write(root, "com/eu/habbo/messages/PacketManager.java", """
                 package com.eu.habbo.messages;
@@ -115,9 +255,8 @@ class JavaPacketRegistryTest {
                 }}
                 """);
 
-        IllegalArgumentException error = assertThrows(
-                IllegalArgumentException.class,
-                () -> JavaPacketRegistry.discover(root));
+        IllegalArgumentException error =
+                assertThrows(IllegalArgumentException.class, () -> JavaPacketRegistry.discover(root));
 
         assertTrue(error.getMessage().contains("source for MissingEvent is missing"));
     }

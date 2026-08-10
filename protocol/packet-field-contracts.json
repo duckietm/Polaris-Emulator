@@ -1,5 +1,436 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "registry": {
+    "defaults": {
+      "origin": "official",
+      "stability": "stable"
+    },
+    "ranges": [
+      {
+        "name": "mentions_client",
+        "direction": "client_to_server",
+        "start": 4800,
+        "end": 4899,
+        "origin": "custom",
+        "feature": "mentions",
+        "stability": "stable"
+      },
+      {
+        "name": "messenger_client",
+        "direction": "client_to_server",
+        "start": 4900,
+        "end": 4999,
+        "origin": "custom",
+        "feature": "messenger",
+        "stability": "stable"
+      },
+      {
+        "name": "custom_gameplay_client",
+        "direction": "client_to_server",
+        "start": 6000,
+        "end": 6099,
+        "origin": "custom",
+        "feature": "custom_gameplay",
+        "stability": "stable"
+      },
+      {
+        "name": "social_client",
+        "direction": "client_to_server",
+        "start": 7000,
+        "end": 7099,
+        "origin": "custom",
+        "feature": "social_extensions",
+        "stability": "stable"
+      },
+      {
+        "name": "youtube_client",
+        "direction": "client_to_server",
+        "start": 8000,
+        "end": 8099,
+        "origin": "custom",
+        "feature": "youtube_room",
+        "stability": "stable"
+      },
+      {
+        "name": "housekeeping_client",
+        "direction": "client_to_server",
+        "start": 9100,
+        "end": 9199,
+        "origin": "custom",
+        "feature": "housekeeping",
+        "stability": "stable"
+      },
+      {
+        "name": "custom_features_client",
+        "direction": "client_to_server",
+        "start": 9300,
+        "end": 9399,
+        "origin": "custom",
+        "feature": "custom_features",
+        "stability": "stable"
+      },
+      {
+        "name": "custom_features_high_client",
+        "direction": "client_to_server",
+        "start": 9400,
+        "end": 9499,
+        "origin": "custom",
+        "feature": "custom_features",
+        "stability": "stable"
+      },
+      {
+        "name": "catalog_tools_client",
+        "direction": "client_to_server",
+        "start": 10000,
+        "end": 10099,
+        "origin": "custom",
+        "feature": "catalog_tools",
+        "stability": "stable"
+      },
+      {
+        "name": "mentions_server",
+        "direction": "server_to_client",
+        "start": 4800,
+        "end": 4899,
+        "origin": "custom",
+        "feature": "mentions",
+        "stability": "stable"
+      },
+      {
+        "name": "messenger_server",
+        "direction": "server_to_client",
+        "start": 4900,
+        "end": 4999,
+        "origin": "custom",
+        "feature": "messenger",
+        "stability": "stable"
+      },
+      {
+        "name": "snowwar_server",
+        "direction": "server_to_client",
+        "start": 5000,
+        "end": 5099,
+        "origin": "custom",
+        "feature": "snowwar",
+        "stability": "stable"
+      },
+      {
+        "name": "custom_gameplay_server",
+        "direction": "server_to_client",
+        "start": 6000,
+        "end": 6099,
+        "origin": "custom",
+        "feature": "custom_gameplay",
+        "stability": "stable"
+      },
+      {
+        "name": "social_server",
+        "direction": "server_to_client",
+        "start": 7000,
+        "end": 7099,
+        "origin": "custom",
+        "feature": "social_extensions",
+        "stability": "stable"
+      },
+      {
+        "name": "youtube_server",
+        "direction": "server_to_client",
+        "start": 8000,
+        "end": 8099,
+        "origin": "custom",
+        "feature": "youtube_room",
+        "stability": "stable"
+      },
+      {
+        "name": "housekeeping_server",
+        "direction": "server_to_client",
+        "start": 9200,
+        "end": 9299,
+        "origin": "custom",
+        "feature": "housekeeping",
+        "stability": "stable"
+      },
+      {
+        "name": "custom_features_server",
+        "direction": "server_to_client",
+        "start": 9300,
+        "end": 9399,
+        "origin": "custom",
+        "feature": "custom_features",
+        "stability": "stable"
+      },
+      {
+        "name": "custom_features_high_server",
+        "direction": "server_to_client",
+        "start": 9400,
+        "end": 9499,
+        "origin": "custom",
+        "feature": "custom_features",
+        "stability": "stable"
+      },
+      {
+        "name": "catalog_tools_server",
+        "direction": "server_to_client",
+        "start": 10000,
+        "end": 10099,
+        "origin": "custom",
+        "feature": "catalog_tools",
+        "stability": "stable"
+      }
+    ],
+    "aliases": [
+      {
+        "side": "typescript",
+        "direction": "server_to_client",
+        "header": 233,
+        "canonical": "USER_BOT_REMOVE",
+        "aliases": [
+          "REMOVE_BOT_FROM_INVENTORY"
+        ],
+        "reason": "Legacy semantic name retained for renderer source compatibility"
+      },
+      {
+        "side": "typescript",
+        "direction": "server_to_client",
+        "header": 286,
+        "canonical": "DESKTOP_NEWS",
+        "aliases": [
+          "PROMO_ARTICLES"
+        ],
+        "reason": "Legacy semantic name retained for renderer source compatibility"
+      },
+      {
+        "side": "typescript",
+        "direction": "server_to_client",
+        "header": 340,
+        "canonical": "USER_EFFECTS",
+        "aliases": [
+          "USER_EFFECT_LIST"
+        ],
+        "reason": "Legacy semantic name retained for renderer source compatibility"
+      },
+      {
+        "side": "typescript",
+        "direction": "server_to_client",
+        "header": 826,
+        "canonical": "ROOM_MUTE_USER",
+        "aliases": [
+          "REMAINING_MUTE"
+        ],
+        "reason": "Legacy semantic name retained for renderer source compatibility"
+      },
+      {
+        "side": "typescript",
+        "direction": "server_to_client",
+        "header": 892,
+        "canonical": "MESSENGER_MESSAGE_ERROR",
+        "aliases": [
+          "MESSENGER_REQUEST_ERROR"
+        ],
+        "reason": "Legacy semantic name retained for renderer source compatibility"
+      },
+      {
+        "side": "typescript",
+        "direction": "server_to_client",
+        "header": 1452,
+        "canonical": "BUILDERS_CLUB_EXPIRED",
+        "aliases": [
+          "BUILDERS_CLUB_SUBSCRIPTION"
+        ],
+        "reason": "Legacy semantic name retained for renderer source compatibility"
+      },
+      {
+        "side": "typescript",
+        "direction": "server_to_client",
+        "header": 1651,
+        "canonical": "MODERATION_REPORT_DISABLED",
+        "aliases": [
+          "CFH_DISABLED_NOTIFY"
+        ],
+        "reason": "Legacy semantic name retained for renderer source compatibility"
+      },
+      {
+        "side": "typescript",
+        "direction": "server_to_client",
+        "header": 1745,
+        "canonical": "DESKTOP_CAMPAIGN",
+        "aliases": [
+          "COMPETITION_TIMING_CODE"
+        ],
+        "reason": "Legacy semantic name retained for renderer source compatibility"
+      },
+      {
+        "side": "typescript",
+        "direction": "server_to_client",
+        "header": 2064,
+        "canonical": "NAVIGATOR_OPEN_ROOM_CREATOR",
+        "aliases": [
+          "COMPETITION_NO_OWNED_ROOMS"
+        ],
+        "reason": "Legacy semantic name retained for renderer source compatibility"
+      },
+      {
+        "side": "typescript",
+        "direction": "server_to_client",
+        "header": 3315,
+        "canonical": "USER_OUTFITS",
+        "aliases": [
+          "USER_WARDROBE_PAGE"
+        ],
+        "reason": "Legacy semantic name retained for renderer source compatibility"
+      },
+      {
+        "side": "typescript",
+        "direction": "client_to_server",
+        "header": 168,
+        "canonical": "FURNITURE_WALL_UPDATE",
+        "aliases": [
+          "ITEM_WALL_UPDATE"
+        ],
+        "reason": "Legacy semantic name retained for renderer source compatibility"
+      },
+      {
+        "side": "typescript",
+        "direction": "client_to_server",
+        "header": 210,
+        "canonical": "FURNITURE_WALL_MULTISTATE",
+        "aliases": [
+          "ITEM_WALL_CLICK"
+        ],
+        "reason": "Legacy semantic name retained for renderer source compatibility"
+      },
+      {
+        "side": "typescript",
+        "direction": "client_to_server",
+        "header": 1036,
+        "canonical": "PET_RIDE",
+        "aliases": [
+          "PET_MOUNT"
+        ],
+        "reason": "Legacy semantic name retained for renderer source compatibility"
+      },
+      {
+        "side": "typescript",
+        "direction": "client_to_server",
+        "header": 1827,
+        "canonical": "DESKTOP_NEWS",
+        "aliases": [
+          "GET_PROMO_ARTICLES"
+        ],
+        "reason": "Legacy semantic name retained for renderer source compatibility"
+      }
+    ],
+    "unsupported": [
+      {
+        "side": "java",
+        "direction": "client_to_server",
+        "symbol": "ModToolWarnEvent",
+        "reason": "Wire header is not known for the supported client revision"
+      },
+      {
+        "side": "java",
+        "direction": "client_to_server",
+        "symbol": "ModToolBanEvent",
+        "reason": "Wire header is not known for the supported client revision"
+      },
+      {
+        "side": "java",
+        "direction": "client_to_server",
+        "symbol": "SearchRoomsByTagEvent",
+        "reason": "Wire header is not known for the supported client revision"
+      },
+      {
+        "side": "java",
+        "direction": "client_to_server",
+        "symbol": "ModToolRequestRoomUserChatlogEvent",
+        "reason": "Wire header is not known for the supported client revision"
+      },
+      {
+        "side": "java",
+        "direction": "client_to_server",
+        "symbol": "RequestAchievementConfigurationEvent",
+        "reason": "Wire header is not known for the supported client revision"
+      },
+      {
+        "side": "java",
+        "direction": "client_to_server",
+        "symbol": "HotelViewClaimBadgeRewardEvent",
+        "reason": "Wire header is not known for the supported client revision"
+      },
+      {
+        "side": "java",
+        "direction": "server_to_client",
+        "symbol": "PublicRoomsComposer",
+        "reason": "Wire header is not known for the supported client revision"
+      },
+      {
+        "side": "java",
+        "direction": "server_to_client",
+        "symbol": "RemoveFriendComposer",
+        "reason": "Wire header is not known for the supported client revision"
+      },
+      {
+        "side": "java",
+        "direction": "server_to_client",
+        "symbol": "RoomEntryInfoComposer",
+        "reason": "Wire header is not known for the supported client revision"
+      },
+      {
+        "side": "java",
+        "direction": "server_to_client",
+        "symbol": "UserBCLimitsComposer",
+        "reason": "Wire header is not known for the supported client revision"
+      },
+      {
+        "side": "java",
+        "direction": "server_to_client",
+        "symbol": "QuestionInfoComposer",
+        "reason": "Wire header is not known for the supported client revision"
+      },
+      {
+        "side": "java",
+        "direction": "server_to_client",
+        "symbol": "UnknownGuildForumComposer6",
+        "reason": "Wire header is not known for the supported client revision"
+      },
+      {
+        "side": "java",
+        "direction": "server_to_client",
+        "symbol": "UnknownGuildForumComposer7",
+        "reason": "Wire header is not known for the supported client revision"
+      },
+      {
+        "side": "java",
+        "direction": "server_to_client",
+        "symbol": "RoomUserQuestionAnsweredComposer",
+        "reason": "Wire header is not known for the supported client revision"
+      },
+      {
+        "side": "java",
+        "direction": "server_to_client",
+        "symbol": "HotelViewCustomTimerComposer",
+        "reason": "Wire header is not known for the supported client revision"
+      },
+      {
+        "side": "java",
+        "direction": "server_to_client",
+        "symbol": "InventoryAddEffectComposer",
+        "reason": "Wire header is not known for the supported client revision"
+      },
+      {
+        "side": "typescript",
+        "direction": "server_to_client",
+        "symbol": "AUTHENTICATION",
+        "reason": "Wire header is not known for the supported client revision"
+      },
+      {
+        "side": "typescript",
+        "direction": "client_to_server",
+        "symbol": "AUTHENTICATION",
+        "reason": "Wire header is not known for the supported client revision"
+      }
+    ]
+  },
   "contracts": [
     {
       "name": "GAME2GETACCOUNTGAMESTATUSMESSAGE",
@@ -16261,6 +16692,14 @@
   ],
   "unpaired": [
     {
+      "direction": "server_to_client",
+      "side": "typescript",
+      "header": 9350,
+      "symbol": "BUILD_HEIGHT_AVAILABLE",
+      "path": "packages/communication/src/messages/parser/room/furniture/BuildHeightAvailableParser.ts",
+      "reason": "Header is registered only by the Nitro Renderer packet registry"
+    },
+    {
       "direction": "client_to_server",
       "side": "java",
       "header": 295,
@@ -17739,14 +18178,6 @@
       "symbol": "FIREWORK_CHARGE_DATA",
       "path": "packages/communication/src/messages/parser/catalog/FireworkChargeDataParser.ts",
       "reason": "Header is registered only by the Nitro Renderer packet registry"
-    },
-    {
-      "direction": "server_to_client",
-      "side": "typescript",
-      "header": 9350,
-      "symbol": "BUILD_HEIGHT_AVAILABLE",
-      "path": "packages/communication/src/messages/parser/room/furniture/BuildHeightAvailableParser.ts",
-      "reason": "Header is registered only by the Nitro Renderer packet registry"
     }
   ],
   "exemptions": [
@@ -18116,7 +18547,7 @@
         "className": "RoomUnitChatWhisperComposer",
         "path": "packages/communication/src/messages/outgoing/room/unit/chat/RoomUnitChatWhisperComposer.ts"
       },
-      "reason": "Java analyzer: Packet fields delegated to external constructor RoomChatMessage inside handle; TypeScript analyzer: Outgoing value recipientName + \u0027 \u0027 + message has no statically resolvable wire type"
+      "reason": "Java analyzer: Packet fields delegated to external constructor RoomChatMessage inside handle; TypeScript analyzer: Outgoing value recipientName + ' ' + message has no statically resolvable wire type"
     },
     {
       "name": "RELEASE_ISSUES",
@@ -19044,7 +19475,7 @@
         "className": "ClientHelloMessageComposer",
         "path": "packages/communication/src/messages/outgoing/handshake/ClientHelloMessageComposer.ts"
       },
-      "reason": "TypeScript analyzer: Outgoing value `NITRO-${NitroVersion.RENDERER_VERSION.replaceAll(\u0027.\u0027, \u0027-\u0027)}` has no statically resolvable wire type"
+      "reason": "TypeScript analyzer: Outgoing value `NITRO-${NitroVersion.RENDERER_VERSION.replaceAll('.', '-')}` has no statically resolvable wire type"
     },
     {
       "name": "SNOWWAR_LOAD_STAGE_READY",

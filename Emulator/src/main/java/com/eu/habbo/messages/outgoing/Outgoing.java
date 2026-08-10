@@ -67,12 +67,18 @@ public class Outgoing {
     public static final int GuildRefreshMembersListComposer = 2445;
     public static final int UserPerksComposer = 2586;
     public static final int UserCitizinShipComposer = 1203;
-    public static final int PublicRoomsComposer = -1; // error 404
+    /** @deprecated Unsupported wire header retained for plugin ABI compatibility. */
+    @Deprecated
+    public static final int PublicRoomsComposer = UnsupportedOutgoing.PublicRoomsComposer;
+
     public static final int MarketplaceOffersComposer = 680;
     public static final int ModToolComposer = 2696;
     public static final int UserBadgesComposer = 1087;
     public static final int GuildManageComposer = 3965;
-    public static final int RemoveFriendComposer = -1; // error 404
+    /** @deprecated Unsupported wire header retained for plugin ABI compatibility. */
+    @Deprecated
+    public static final int RemoveFriendComposer = UnsupportedOutgoing.RemoveFriendComposer;
+
     public static final int InitDiffieHandshakeComposer = 1347;
     public static final int CompleteDiffieHandshakeComposer = 3885;
     public static final int UserDataComposer = 2725;
@@ -152,11 +158,17 @@ public class Outgoing {
     public static final int WallItemUpdateComposer = 2009; // PRODUCTION-201611291003-338511768
     public static final int TradeAcceptedComposer = 2568; // PRODUCTION-201611291003-338511768
     public static final int AddWallItemComposer = 2187; // PRODUCTION-201611291003-338511768
-    public static final int RoomEntryInfoComposer = -1; // PRODUCTION-201611291003-338511768
+    /** @deprecated Unsupported wire header retained for plugin ABI compatibility. */
+    @Deprecated
+    public static final int RoomEntryInfoComposer = UnsupportedOutgoing.RoomEntryInfoComposer;
+
     public static final int HotelViewDataComposer = 1745; // PRODUCTION-201611291003-338511768
     public static final int PresentItemOpenedComposer = 56; // PRODUCTION-201611291003-338511768
     public static final int RoomUserRemoveRightsComposer = 84; // PRODUCTION-201611291003-338511768
-    public static final int UserBCLimitsComposer = -1; // PRODUCTION-201611291003-338511768
+    /** @deprecated Unsupported wire header retained for plugin ABI compatibility. */
+    @Deprecated
+    public static final int UserBCLimitsComposer = UnsupportedOutgoing.UserBCLimitsComposer;
+
     public static final int PetTrainingPanelComposer = 1164; // PRODUCTION-201611291003-338511768
     public static final int RoomPaneComposer = 749; // PRODUCTION-201611291003-338511768
     public static final int RedeemVoucherErrorComposer = 714; // PRODUCTION-201611291003-338511768
@@ -250,7 +262,10 @@ public class Outgoing {
     public static final int ItemExtraDataComposer = 2547; // PRODUCTION-201611291003-338511768
     public static final int PostUpdateMessageComposer = 324; // PRODUCTION-201611291003-338511768
     // NotSure Needs Testing
-    public static final int QuestionInfoComposer = -1; // PRODUCTION-201611291003-338511768
+    /** @deprecated Unsupported wire header retained for plugin ABI compatibility. */
+    @Deprecated
+    public static final int QuestionInfoComposer = UnsupportedOutgoing.QuestionInfoComposer;
+
     public static final int TalentTrackEmailVerifiedComposer = 612; // PRODUCTION-201611291003-338511768
     public static final int TalentTrackEmailFailedComposer = 1815; // PRODUCTION-201611291003-338511768
     public static final int UnknownAvatarEditorComposer = 3473; // PRODUCTION-201611291003-338511768
@@ -262,8 +277,14 @@ public class Outgoing {
     public static final int GuildForumAddCommentComposer = 2049; // PRODUCTION-201611291003-338511768
     public static final int GuildForumDataComposer = 3011; // PRODUCTION-201611291003-338511768
     public static final int GuildForumCommentsComposer = 509; // PRODUCTION-201611291003-338511768
-    public static final int UnknownGuildForumComposer6 = -1; // PRODUCTION-201611291003-338511768
-    public static final int UnknownGuildForumComposer7 = -1; // PRODUCTION-201611291003-338511768
+    /** @deprecated Unsupported wire header retained for plugin ABI compatibility. */
+    @Deprecated
+    public static final int UnknownGuildForumComposer6 = UnsupportedOutgoing.UnknownGuildForumComposer6;
+
+    /** @deprecated Unsupported wire header retained for plugin ABI compatibility. */
+    @Deprecated
+    public static final int UnknownGuildForumComposer7 = UnsupportedOutgoing.UnknownGuildForumComposer7;
+
     public static final int GuildForumThreadsComposer = 1073; // PRODUCTION-201611291003-338511768
     public static final int GuildForumListComposer = 3001; // PRODUCTION-201611291003-338511768
     public static final int ThreadUpdateMessageComposer = 2528;
@@ -356,11 +377,17 @@ public class Outgoing {
     public static final int MostUselessErrorAlertComposer = 662; // PRODUCTION-201611291003-338511768
     public static final int AchievementsConfigurationComposer = 1689; // PRODUCTION-201611291003-338511768
     public static final int PetBreedingResultComposer = 634; // PRODUCTION-201611291003-338511768
-    public static final int RoomUserQuestionAnsweredComposer = -1; // PRODUCTION-201611291003-338511768
+    /** @deprecated Unsupported wire header retained for plugin ABI compatibility. */
+    @Deprecated
+    public static final int RoomUserQuestionAnsweredComposer = UnsupportedOutgoing.RoomUserQuestionAnsweredComposer;
+
     public static final int PetBreedingStartComposer = 1746; // PRODUCTION-201611291003-338511768
     public static final int CustomNotificationComposer = 909; // PRODUCTION-201611291003-338511768
     public static final int UpdateStackHeightTileHeightComposer = 2816; // PRODUCTION-201611291003-338511768
-    public static final int HotelViewCustomTimerComposer = -1; // PRODUCTION-201611291003-338511768
+    /** @deprecated Unsupported wire header retained for plugin ABI compatibility. */
+    @Deprecated
+    public static final int HotelViewCustomTimerComposer = UnsupportedOutgoing.HotelViewCustomTimerComposer;
+
     public static final int MarketplaceItemPostedComposer = 1359; // PRODUCTION-201611291003-338511768
     public static final int HabboWayQuizComposer2 = 2927; // PRODUCTION-201611291003-338511768
     public static final int GuildFavoriteRoomUserUpdateComposer = 3403; // PRODUCTION-201611291003-338511768
@@ -379,7 +406,10 @@ public class Outgoing {
     public static final int CompetitionEntrySubmitResultComposer = 1177; // PRODUCTION-201611291003-338511768
     public static final int ExtendClubMessageComposer = 3964; // PRODUCTION-201611291003-338511768
     public static final int HotelViewConcurrentUsersComposer = 2737; // PRODUCTION-201611291003-338511768
-    public static final int InventoryAddEffectComposer = -1; // error 404
+    /** @deprecated Unsupported wire header retained for plugin ABI compatibility. */
+    @Deprecated
+    public static final int InventoryAddEffectComposer = UnsupportedOutgoing.InventoryAddEffectComposer;
+
     public static final int TalentLevelUpdateComposer = 638; // PRODUCTION-201611291003-338511768
     public static final int BullyReportedMessageComposer = 3285; // PRODUCTION-201611291003-338511768
     public static final int UnknownQuestComposer3 = 1122; // PRODUCTION-201611291003-338511768

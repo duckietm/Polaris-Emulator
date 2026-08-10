@@ -17,6 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 final class JavaPacketRegistry {
@@ -50,6 +51,28 @@ final class JavaPacketRegistry {
 
         String canonical(String symbol) {
             return canonicalSymbols.getOrDefault(symbol, symbol);
+        }
+
+        void validateDeclarations(Direction direction) {
+            Map<Integer, List<String>> symbolsByHeader = new LinkedHashMap<>();
+            for (Map.Entry<String, Integer> declaration : values.entrySet()) {
+                if (declaration.getValue() <= 0) {
+                    throw new IllegalArgumentException("non-positive " + direction.manifestName() + " header "
+                            + declaration.getKey() + "=" + declaration.getValue());
+                }
+                symbolsByHeader
+                        .computeIfAbsent(declaration.getValue(), ignored -> new ArrayList<>())
+                        .add(declaration.getKey());
+            }
+            for (Map.Entry<Integer, List<String>> entry : symbolsByHeader.entrySet()) {
+                if (entry.getValue().size() < 2) continue;
+                Set<String> roots =
+                        entry.getValue().stream().map(this::canonical).collect(java.util.stream.Collectors.toSet());
+                if (roots.size() > 1) {
+                    throw new IllegalArgumentException("duplicate declared " + direction.manifestName() + " header "
+                            + entry.getKey() + ": " + String.join(" and ", entry.getValue()));
+                }
+            }
         }
     }
 
@@ -131,6 +154,9 @@ final class JavaPacketRegistry {
             active.put(key, packet);
         }
 
+        incoming.validateDeclarations(Direction.CLIENT_TO_SERVER);
+        outgoing.validateDeclarations(Direction.SERVER_TO_CLIENT);
+
         List<DeclaredPacket> declaredOnly = new ArrayList<>();
         addDeclaredOnly(declaredOnly, active, Direction.CLIENT_TO_SERVER, incoming);
         addDeclaredOnly(declaredOnly, active, Direction.SERVER_TO_CLIENT, outgoing);
@@ -184,8 +210,10 @@ final class JavaPacketRegistry {
                                 .asString()
                                 .equals("int")
                         || variable.getInitializer().isEmpty()) continue;
-                declarations.put(
-                        variable.getNameAsString(), variable.getInitializer().orElseThrow());
+                Expression initializer = variable.getInitializer().orElseThrow();
+                if (field.getAnnotationByName("Deprecated").isPresent() && isUnsupportedCompatibilityAlias(initializer))
+                    continue;
+                declarations.put(variable.getNameAsString(), initializer);
             }
         }
         Map<String, Integer> headers = new LinkedHashMap<>();
@@ -223,6 +251,12 @@ final class JavaPacketRegistry {
             canonical.put(symbol, root);
         }
         return new HeaderTable(Map.copyOf(headers), Map.copyOf(canonical));
+    }
+
+    private static boolean isUnsupportedCompatibilityAlias(Expression expression) {
+        if (!expression.isFieldAccessExpr()) return false;
+        String owner = expression.asFieldAccessExpr().getScope().toString();
+        return owner.equals("UnsupportedIncoming") || owner.equals("UnsupportedOutgoing");
     }
 
     private static Integer integerLiteral(Expression expression) {

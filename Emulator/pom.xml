@@ -31,7 +31,7 @@
         <jansi.version>2.4.3</jansi.version>
         <bcrypt.version>0.10.2</bcrypt.version>
         <jakarta-mail.version>2.0.5</jakarta-mail.version>
-        <junit.version>6.1.2</junit.version>
+        <junit.version>6.1.3</junit.version>
         <javaparser.version>3.28.2</javaparser.version>
         <flyway.version>13.1.0</flyway.version>
         <testcontainers.version>1.21.4</testcontainers.version>

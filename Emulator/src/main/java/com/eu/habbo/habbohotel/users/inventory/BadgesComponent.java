@@ -4,9 +4,6 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.permissions.Rank;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboBadge;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -15,6 +12,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BadgesComponent {
     private static final Logger LOGGER = LoggerFactory.getLogger(BadgesComponent.class);
@@ -27,8 +26,11 @@ public class BadgesComponent {
 
     private static Set<HabboBadge> loadBadges(Habbo habbo) {
         Set<HabboBadge> badgesList = new HashSet<>();
-        Set<String> staffBadges = Emulator.getGameEnvironment().getPermissionsManager().getStaffBadges();
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM users_badges WHERE user_id = ?")) {
+        Set<String> staffBadges =
+                Emulator.getGameEnvironment().getPermissionsManager().getStaffBadges();
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT * FROM users_badges WHERE user_id = ?")) {
             statement.setInt(1, habbo.getHabboInfo().getId());
 
             try (ResultSet set = statement.executeQuery()) {
@@ -38,7 +40,9 @@ public class BadgesComponent {
                     if (staffBadges.contains(badge.getCode())) {
                         boolean delete = true;
 
-                        for (Rank rank : Emulator.getGameEnvironment().getPermissionsManager().getRanksByBadgeCode(badge.getCode())) {
+                        for (Rank rank : Emulator.getGameEnvironment()
+                                .getPermissionsManager()
+                                .getRanksByBadgeCode(badge.getCode())) {
                             if (rank.getId() == habbo.getHabboInfo().getRank().getId()) {
                                 delete = false;
                                 break;
@@ -63,8 +67,7 @@ public class BadgesComponent {
 
     public static void resetSlots(Habbo habbo) {
         for (HabboBadge badge : habbo.getInventory().getBadgesComponent().getBadges()) {
-            if (badge.getSlot() == 0)
-                continue;
+            if (badge.getSlot() == 0) continue;
 
             badge.setSlot(0);
             badge.needsUpdate(true);
@@ -74,7 +77,9 @@ public class BadgesComponent {
 
     public static ArrayList<HabboBadge> getBadgesOfflineHabbo(int userId) {
         ArrayList<HabboBadge> badgesList = new ArrayList<>();
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM users_badges WHERE slot_id > 0 AND user_id = ? ORDER BY slot_id ASC")) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT * FROM users_badges WHERE slot_id > 0 AND user_id = ? ORDER BY slot_id ASC")) {
             statement.setInt(1, userId);
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
@@ -95,7 +100,9 @@ public class BadgesComponent {
     }
 
     public static void deleteBadge(int userId, String badge) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("DELETE users_badges FROM users_badges WHERE user_id = ? AND badge_code LIKE ?")) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "DELETE users_badges FROM users_badges WHERE user_id = ? AND badge_code LIKE ?")) {
             statement.setInt(1, userId);
             statement.setString(2, badge);
             statement.execute();
@@ -108,8 +115,7 @@ public class BadgesComponent {
         synchronized (this.badges) {
             ArrayList<HabboBadge> badgesList = new ArrayList<>();
             for (HabboBadge badge : this.badges) {
-                if (badge.getSlot() == 0)
-                    continue;
+                if (badge.getSlot() == 0) continue;
 
                 badgesList.add(badge);
             }
@@ -128,6 +134,12 @@ public class BadgesComponent {
         return this.badges;
     }
 
+    public ArrayList<HabboBadge> getBadgesSnapshot() {
+        synchronized (this.badges) {
+            return new ArrayList<>(this.badges);
+        }
+    }
+
     public boolean hasBadge(String badge) {
         return this.getBadge(badge) != null;
     }
@@ -135,8 +147,7 @@ public class BadgesComponent {
     public HabboBadge getBadge(String badgeCode) {
         synchronized (this.badges) {
             for (HabboBadge badge : this.badges) {
-                if (badge.getCode().equalsIgnoreCase(badgeCode))
-                    return badge;
+                if (badge.getCode().equalsIgnoreCase(badgeCode)) return badge;
             }
             return null;
         }

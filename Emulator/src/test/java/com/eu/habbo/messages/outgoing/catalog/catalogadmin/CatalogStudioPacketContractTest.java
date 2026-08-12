@@ -278,8 +278,9 @@ class CatalogStudioPacketContractTest {
 
     @Test
     void documentResultPayloadKeepsFingerprintAndDiffCount() {
+        String document = "UPDATE catalog_pages SET caption = 'Shop' WHERE id = 1;";
         ByteBuf payload = new CatalogStudioDocumentResultComposer(
-                        "op-dry", true, "DRY_RUN_READY", "Dry-run ready", 7, "JSONC", "{}", "fingerprint", 3)
+                        "op-dry", true, "DRY_RUN_READY", "Dry-run ready", 7, "SQL", document, "fingerprint", 3)
                 .compose()
                 .get();
 
@@ -289,8 +290,8 @@ class CatalogStudioPacketContractTest {
         assertEquals("DRY_RUN_READY", readString(payload));
         assertEquals("Dry-run ready", readString(payload));
         assertEquals(7, payload.readInt());
-        assertEquals("JSONC", readString(payload));
-        assertEquals("{}", readString(payload));
+        assertEquals("SQL", readString(payload));
+        assertEquals(document, readString(payload));
         assertEquals("fingerprint", readString(payload));
         assertEquals(3, payload.readInt());
         assertFalse(payload.isReadable());

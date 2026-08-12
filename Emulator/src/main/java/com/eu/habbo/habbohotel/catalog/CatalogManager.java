@@ -443,8 +443,6 @@ public class CatalogManager {
     }
 
     private synchronized void loadCatalogPages() {
-        this.catalogPages.clear();
-
         final Map<Integer, CatalogPage> pages = new HashMap<>();
         pages.put(-1, new CatalogRootLayout());
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
@@ -490,14 +488,12 @@ public class CatalogManager {
             }
         }
 
-        this.catalogPages.putAll(pages);
+        replacePageMap(this.catalogPages, pages);
 
         LOGGER.info("Loaded {} Catalog Pages!", this.catalogPages.size());
     }
 
     private synchronized void loadBuildersClubCatalogPages() {
-        this.buildersClubCatalogPages.clear();
-
         final Map<Integer, CatalogPage> pages = new HashMap<>();
         pages.put(-1, new CatalogRootLayout());
 
@@ -546,9 +542,16 @@ public class CatalogManager {
             }
         }
 
-        this.buildersClubCatalogPages.putAll(pages);
+        replacePageMap(this.buildersClubCatalogPages, pages);
 
         LOGGER.info("Loaded {} Builders Club Catalog Pages!", this.buildersClubCatalogPages.size());
+    }
+
+    static void replacePageMap(Int2ObjectMap<CatalogPage> livePages, Map<Integer, CatalogPage> loadedPages) {
+        synchronized (livePages) {
+            livePages.clear();
+            livePages.putAll(loadedPages);
+        }
     }
 
     private synchronized void loadCatalogFeaturedPages() {

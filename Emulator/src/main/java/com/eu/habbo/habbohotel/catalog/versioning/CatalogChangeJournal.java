@@ -9,6 +9,10 @@ public interface CatalogChangeJournal {
 
     boolean hasLaterChangesToSameEntities(Connection connection, CatalogChangeGroup group) throws SQLException;
 
+    default void delete(Connection connection, long groupId) throws SQLException {
+        throw new UnsupportedOperationException("Catalog change deletion is not supported");
+    }
+
     long append(
             Connection connection,
             long versionId,

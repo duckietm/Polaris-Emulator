@@ -36,7 +36,7 @@ class CatalogUndoServiceTest {
     }
 
     @Test
-    void undoAppliesTheInverseAndAppendsAnUndoGroupWithoutDeletingHistory() {
+    void undoAppliesTheInverseAndRemovesTheRevertedPendingChange() {
         CatalogPageSnapshot before = page(17, "Published");
         CatalogPageSnapshot after = page(17, "Edited");
         CatalogChangeGroup original = journal.addExisting(
@@ -56,11 +56,7 @@ class CatalogUndoServiceTest {
         assertEquals(5, revision);
         assertEquals(
                 "Published", versions.snapshots.get(2L).page(17).orElseThrow().caption());
-        assertEquals(2, journal.groups.size());
-        CatalogChangeGroup undo = journal.groups.get(1);
-        assertEquals(CatalogChangeSource.UNDO, undo.source());
-        assertEquals(gson.toJson(after), undo.entries().getFirst().beforeJson());
-        assertEquals(gson.toJson(before), undo.entries().getFirst().afterJson());
+        assertTrue(journal.groups.isEmpty());
     }
 
     @Test
@@ -296,6 +292,11 @@ class CatalogUndoServiceTest {
         @Override
         public boolean hasLaterChangesToSameEntities(Connection connection, CatalogChangeGroup group) {
             return hasLaterConflict;
+        }
+
+        @Override
+        public void delete(Connection connection, long groupId) {
+            groups.removeIf(group -> group.id() == groupId);
         }
 
         @Override

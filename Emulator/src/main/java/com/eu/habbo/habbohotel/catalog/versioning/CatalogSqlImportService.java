@@ -24,6 +24,8 @@ public final class CatalogSqlImportService {
     private static final Pattern DELETE =
             Pattern.compile("(?is)^DELETE\\s+FROM\\s+(catalog_pages|catalog_items)\\s+WHERE\\s+id\\s*=\\s*(\\d+)"
                     + "(?:\\s+AND\\s+catalog_type\\s*=\\s*('[^']*'|[A-Za-z_]+))?\\s*$");
+    private static final Pattern DELETE_ALL =
+            Pattern.compile("(?is)^DELETE\\s+FROM\\s+(catalog_pages|catalog_items)\\s*$");
     private static final Set<String> PAGE_COLUMNS = Set.of(
             "id",
             "catalog_type",
@@ -95,6 +97,10 @@ public final class CatalogSqlImportService {
     }
 
     private void applyPage(List<CatalogPageSnapshot> pages, CatalogSqlStatement statement) {
+        if (statement.action() == CatalogSqlAction.DELETE_ALL) {
+            pages.clear();
+            return;
+        }
         int id = statement.action() == CatalogSqlAction.INSERT
                 ? Integer.parseInt(statement.values().get("id"))
                 : statement.whereId();
@@ -114,6 +120,10 @@ public final class CatalogSqlImportService {
     }
 
     private void applyOffer(List<CatalogOfferSnapshot> offers, CatalogSqlStatement statement) {
+        if (statement.action() == CatalogSqlAction.DELETE_ALL) {
+            offers.clear();
+            return;
+        }
         int id = statement.action() == CatalogSqlAction.INSERT
                 ? Integer.parseInt(statement.values().get("id"))
                 : statement.whereId();
@@ -248,6 +258,14 @@ public final class CatalogSqlImportService {
                     delete.group(1).toLowerCase(Locale.ROOT),
                     selector,
                     Integer.valueOf(delete.group(2)));
+        }
+        Matcher deleteAll = DELETE_ALL.matcher(sql);
+        if (deleteAll.matches()) {
+            return new CatalogSqlStatement(
+                    CatalogSqlAction.DELETE_ALL,
+                    deleteAll.group(1).toLowerCase(Locale.ROOT),
+                    Map.of(),
+                    null);
         }
         throw new IllegalArgumentException("Only restricted INSERT, UPDATE and DELETE are supported");
     }

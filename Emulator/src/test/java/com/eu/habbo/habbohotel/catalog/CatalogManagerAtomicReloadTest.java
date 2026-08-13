@@ -39,8 +39,8 @@ class CatalogManagerAtomicReloadTest {
             }
         };
 
-        CompletableFuture<Void> reload = CompletableFuture.runAsync(
-                () -> CatalogManager.replacePageMap(live, replacement));
+        CompletableFuture<Void> reload =
+                CompletableFuture.runAsync(() -> CatalogManager.replacePageMap(live, replacement));
         if (!copyStarted.await(5, TimeUnit.SECONDS)) throw new AssertionError("Reload did not start");
 
         CompletableFuture<Integer> observedSize = CompletableFuture.supplyAsync(live::size);

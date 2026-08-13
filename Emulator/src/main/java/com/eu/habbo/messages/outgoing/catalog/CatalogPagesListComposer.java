@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 public class CatalogPagesListComposer extends MessageComposer {
     private static final Logger LOGGER = LoggerFactory.getLogger(CatalogPagesListComposer.class);
 
+    private static final int MAX_OFFERS = 1000;
     private static final int MAX_CHILDREN = 500;
     private static final int MAX_DEPTH = 20;
 
@@ -86,8 +87,17 @@ public class CatalogPagesListComposer extends MessageComposer {
             if (offerId > 0 && seenOfferIds.add(offerId)) offerIds.add(offerId);
         }
 
-        this.response.appendInt(offerIds.size());
-        for (int idx = 0; idx < offerIds.size(); idx++) {
+        int offerCount = Math.min(offerIds.size(), MAX_OFFERS);
+        if (offerIds.size() > MAX_OFFERS) {
+            LOGGER.warn(
+                    "Catalog page {} has {} offers; limiting the index packet to {}",
+                    category.getId(),
+                    offerIds.size(),
+                    MAX_OFFERS);
+        }
+
+        this.response.appendInt(offerCount);
+        for (int idx = 0; idx < offerCount; idx++) {
             this.response.appendInt(offerIds.getInt(idx));
         }
 

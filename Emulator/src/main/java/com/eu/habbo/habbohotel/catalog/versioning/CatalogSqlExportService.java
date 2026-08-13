@@ -6,7 +6,9 @@ import java.util.Objects;
 public final class CatalogSqlExportService {
     public String export(CatalogVersionSnapshot snapshot) {
         Objects.requireNonNull(snapshot, "snapshot");
-        StringBuilder sql = new StringBuilder("-- Catalog Studio restricted SQL export.\n");
+        StringBuilder sql = new StringBuilder("-- Catalog Studio restricted SQL export.\n"
+                + "DELETE FROM catalog_items;\n"
+                + "DELETE FROM catalog_pages;\n");
         snapshot.pages().stream()
                 .sorted(Comparator.comparing(CatalogPageSnapshot::catalogType)
                         .thenComparingInt(CatalogPageSnapshot::pageId))

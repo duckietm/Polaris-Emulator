@@ -204,6 +204,16 @@ class JdbcCatalogVersionRepositoryTest {
                 () -> new JdbcCatalogVersionRepository().incrementRevision(connection, 8, 12));
     }
 
+    @Test
+    void rejectsLegacyEnumOrdinalsInsteadOfTreatingEveryNonZeroValueAsTrue() throws Exception {
+        ResultSet resultSet = mock(ResultSet.class);
+        when(resultSet.getInt("club_only")).thenReturn(2);
+
+        assertThrows(
+                java.sql.SQLException.class,
+                () -> JdbcCatalogVersionRepository.readStrictBoolean(resultSet, "club_only"));
+    }
+
     private static void stubPageRow(ResultSet resultSet) throws Exception {
         when(resultSet.getString("catalog_type")).thenReturn("NORMAL");
         when(resultSet.getInt("page_id")).thenReturn(42);
@@ -215,11 +225,11 @@ class JdbcCatalogVersionRepositoryTest {
         when(resultSet.getInt("icon_image")).thenReturn(2);
         when(resultSet.getInt("min_rank")).thenReturn(1);
         when(resultSet.getInt("order_num")).thenReturn(3);
-        when(resultSet.getBoolean("visible")).thenReturn(true);
-        when(resultSet.getBoolean("enabled")).thenReturn(true);
-        when(resultSet.getBoolean("club_only")).thenReturn(false);
+        when(resultSet.getInt("visible")).thenReturn(1);
+        when(resultSet.getInt("enabled")).thenReturn(1);
+        when(resultSet.getInt("club_only")).thenReturn(0);
         when(resultSet.getString("catalog_mode")).thenReturn("NORMAL");
-        when(resultSet.getBoolean("vip_only")).thenReturn(false);
+        when(resultSet.getInt("vip_only")).thenReturn(0);
         when(resultSet.getString("page_headline")).thenReturn("");
         when(resultSet.getString("page_teaser")).thenReturn("");
         when(resultSet.getString("page_special")).thenReturn("");

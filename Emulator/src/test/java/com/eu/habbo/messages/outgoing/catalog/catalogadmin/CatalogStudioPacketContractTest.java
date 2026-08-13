@@ -12,6 +12,7 @@ import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftPreview;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogEntityType;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogPageSnapshot;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogSmartSaveResult;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogStudioDocumentWireCodec;
 import com.eu.habbo.messages.outgoing.Outgoing;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio.CatalogStudioActor;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio.CatalogStudioChangedEntity;
@@ -278,8 +279,9 @@ class CatalogStudioPacketContractTest {
 
     @Test
     void documentResultPayloadKeepsFingerprintAndDiffCount() {
+        String document = "UPDATE catalog_pages SET caption = 'Shop' WHERE id = 1;";
         ByteBuf payload = new CatalogStudioDocumentResultComposer(
-                        "op-dry", true, "DRY_RUN_READY", "Dry-run ready", 7, "JSONC", "{}", "fingerprint", 3)
+                        "op-dry", true, "DRY_RUN_READY", "Dry-run ready", 7, "SQL", document, "fingerprint", 3)
                 .compose()
                 .get();
 
@@ -289,8 +291,12 @@ class CatalogStudioPacketContractTest {
         assertEquals("DRY_RUN_READY", readString(payload));
         assertEquals("Dry-run ready", readString(payload));
         assertEquals(7, payload.readInt());
-        assertEquals("JSONC", readString(payload));
-        assertEquals("{}", readString(payload));
+        assertEquals("SQL", readString(payload));
+        String encoding = readString(payload);
+        int chunkCount = payload.readInt();
+        java.util.List<String> chunks = new java.util.ArrayList<>(chunkCount);
+        for (int index = 0; index < chunkCount; index++) chunks.add(readString(payload));
+        assertEquals(document, CatalogStudioDocumentWireCodec.decode(encoding, chunks));
         assertEquals("fingerprint", readString(payload));
         assertEquals(3, payload.readInt());
         assertFalse(payload.isReadable());

@@ -28,6 +28,7 @@ public final class JdbcCatalogChangeJournal implements CatalogChangeJournal {
     static final String INSERT_ENTRY_SQL = "INSERT INTO catalog_change_entries "
             + "(group_id, entity_type, catalog_type, entity_id, operation, before_json, after_json) "
             + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+    static final String DELETE_GROUP_SQL = "DELETE FROM catalog_change_groups WHERE id = ?";
 
     @Override
     public CatalogChangeGroup load(Connection connection, long groupId) throws SQLException {
@@ -56,6 +57,16 @@ public final class JdbcCatalogChangeJournal implements CatalogChangeJournal {
             statement.setLong(3, group.revision());
             try (ResultSet resultSet = statement.executeQuery()) {
                 return resultSet.next();
+            }
+        }
+    }
+
+    @Override
+    public void delete(Connection connection, long groupId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(DELETE_GROUP_SQL)) {
+            statement.setLong(1, groupId);
+            if (statement.executeUpdate() != 1) {
+                throw new SQLException("Catalog change group was not deleted: " + groupId);
             }
         }
     }

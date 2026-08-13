@@ -136,12 +136,44 @@ class CatalogSqlImportExportServiceTest {
         CatalogVersionSnapshot current = new CatalogVersionSnapshot(
                 exported.version(), List.of(exported.pages().getFirst(), obsolete), exported.offers());
 
-        CatalogImportDryRun dryRun = new CatalogSqlImportService()
-                .dryRun(current, new CatalogSqlExportService().export(exported));
+        CatalogImportDryRun dryRun =
+                new CatalogSqlImportService().dryRun(current, new CatalogSqlExportService().export(exported));
 
-        assertTrue(dryRun.changes().stream().anyMatch(change ->
-                change.entityType() == CatalogEntityType.PAGE
+        assertTrue(dryRun.changes().stream()
+                .anyMatch(change -> change.entityType() == CatalogEntityType.PAGE
                         && change.entityId() == 999
                         && change.operation() == CatalogChangeOperation.DELETE));
+    }
+
+    @Test
+    void rejectsUpdatesForMissingEntitiesInsteadOfCreatingIncompleteRows() {
+        CatalogVersionSnapshot snapshot = CatalogDocumentTestSupport.snapshot();
+        CatalogSqlImportService service = new CatalogSqlImportService();
+
+        IllegalArgumentException pageError = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.dryRun(snapshot, "UPDATE catalog_pages SET caption='Missing' WHERE id=999;"));
+        IllegalArgumentException offerError = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.dryRun(snapshot, "UPDATE catalog_items SET cost_credits=1 WHERE id=999;"));
+
+        assertTrue(pageError.getMessage().contains("not found"));
+        assertTrue(offerError.getMessage().contains("not found"));
+    }
+
+    @Test
+    void rejectsDuplicateInsertsInsteadOfOverwritingExistingEntities() {
+        CatalogVersionSnapshot snapshot = CatalogDocumentTestSupport.snapshot();
+        CatalogSqlImportService service = new CatalogSqlImportService();
+
+        IllegalArgumentException pageError = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.dryRun(snapshot, "INSERT INTO catalog_pages (id, catalog_type) VALUES (17, 'NORMAL');"));
+        IllegalArgumentException offerError = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.dryRun(snapshot, "INSERT INTO catalog_items (id, catalog_type) VALUES (42, 'NORMAL');"));
+
+        assertTrue(pageError.getMessage().contains("already exists"));
+        assertTrue(offerError.getMessage().contains("already exists"));
     }
 }

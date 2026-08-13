@@ -13,7 +13,7 @@ public final class CatalogStudioDocumentApplyEvent extends CatalogStudioEvent {
         long expectedRevision = this.packet.readInt();
         UUID rootLockToken = UUID.fromString(this.packet.readString());
         String format = this.packet.readString();
-        String document = this.packet.readString();
+        String document = CatalogStudioRequestParser.parseDocument(this.packet);
         String fingerprint = this.packet.readString();
         String summary = this.packet.readString();
         CatalogChangeSetApplyResult result = studio().changeSets()

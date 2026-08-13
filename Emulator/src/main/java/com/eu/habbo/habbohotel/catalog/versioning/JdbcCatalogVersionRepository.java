@@ -243,11 +243,11 @@ public final class JdbcCatalogVersionRepository implements CatalogVersionReposit
                 resultSet.getInt("icon_image"),
                 resultSet.getInt("min_rank"),
                 resultSet.getInt("order_num"),
-                resultSet.getBoolean("visible"),
-                resultSet.getBoolean("enabled"),
-                resultSet.getBoolean("club_only"),
+                readStrictBoolean(resultSet, "visible"),
+                readStrictBoolean(resultSet, "enabled"),
+                readStrictBoolean(resultSet, "club_only"),
                 resultSet.getString("catalog_mode"),
-                resultSet.getBoolean("vip_only"),
+                readStrictBoolean(resultSet, "vip_only"),
                 resultSet.getString("page_headline"),
                 resultSet.getString("page_teaser"),
                 resultSet.getString("page_special"),
@@ -275,8 +275,17 @@ public final class JdbcCatalogVersionRepository implements CatalogVersionReposit
                 resultSet.getInt("offer_id_client"),
                 resultSet.getInt("song_id"),
                 resultSet.getString("extradata"),
-                resultSet.getBoolean("have_offer"),
-                resultSet.getBoolean("club_only"));
+                readStrictBoolean(resultSet, "have_offer"),
+                readStrictBoolean(resultSet, "club_only"));
+    }
+
+    static boolean readStrictBoolean(ResultSet resultSet, String column) throws SQLException {
+        int value = resultSet.getInt(column);
+        if (value != 0 && value != 1) {
+            throw new SQLException(
+                    "Catalog snapshot boolean " + column + " contains the invalid legacy enum ordinal " + value);
+        }
+        return value == 1;
     }
 
     private static void cloneRows(Connection connection, String sql, long draftVersionId, long sourceVersionId)

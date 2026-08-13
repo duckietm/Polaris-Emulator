@@ -111,6 +111,12 @@ public final class CatalogSqlImportService {
             pages.remove(index);
             return;
         }
+        if (statement.action() == CatalogSqlAction.UPDATE && index < 0) {
+            throw new IllegalArgumentException("Catalog page not found: " + id);
+        }
+        if (statement.action() == CatalogSqlAction.INSERT && index >= 0) {
+            throw new IllegalArgumentException("Catalog page already exists: " + id);
+        }
         JsonObject object =
                 index < 0 ? new JsonObject() : gson.toJsonTree(pages.get(index)).getAsJsonObject();
         applyValues(object, statement.values(), true);
@@ -133,6 +139,12 @@ public final class CatalogSqlImportService {
             if (index < 0) throw new IllegalArgumentException("Catalog offer not found: " + id);
             offers.remove(index);
             return;
+        }
+        if (statement.action() == CatalogSqlAction.UPDATE && index < 0) {
+            throw new IllegalArgumentException("Catalog offer not found: " + id);
+        }
+        if (statement.action() == CatalogSqlAction.INSERT && index >= 0) {
+            throw new IllegalArgumentException("Catalog offer already exists: " + id);
         }
         JsonObject object = index < 0
                 ? new JsonObject()
@@ -262,10 +274,7 @@ public final class CatalogSqlImportService {
         Matcher deleteAll = DELETE_ALL.matcher(sql);
         if (deleteAll.matches()) {
             return new CatalogSqlStatement(
-                    CatalogSqlAction.DELETE_ALL,
-                    deleteAll.group(1).toLowerCase(Locale.ROOT),
-                    Map.of(),
-                    null);
+                    CatalogSqlAction.DELETE_ALL, deleteAll.group(1).toLowerCase(Locale.ROOT), Map.of(), null);
         }
         throw new IllegalArgumentException("Only restricted INSERT, UPDATE and DELETE are supported");
     }

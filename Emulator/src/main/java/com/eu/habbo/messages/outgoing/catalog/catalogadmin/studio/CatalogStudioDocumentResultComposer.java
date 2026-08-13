@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio;
 
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogStudioDocumentWireCodec;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
@@ -45,7 +46,10 @@ public final class CatalogStudioDocumentResultComposer extends MessageComposer {
         this.response.appendString(message);
         this.response.appendInt(Math.toIntExact(revision));
         this.response.appendString(format);
-        this.response.appendString(document);
+        CatalogStudioDocumentWireCodec.EncodedDocument encoded = CatalogStudioDocumentWireCodec.encode(document);
+        this.response.appendString(encoded.encoding());
+        this.response.appendInt(encoded.chunks().size());
+        encoded.chunks().forEach(this.response::appendString);
         this.response.appendString(fingerprint);
         this.response.appendInt(changedEntities);
         return this.response;

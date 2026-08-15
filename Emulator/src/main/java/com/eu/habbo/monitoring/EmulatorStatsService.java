@@ -1,6 +1,7 @@
 package com.eu.habbo.monitoring;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.database.PersistenceExecutor;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -8,6 +9,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics;
 import com.eu.habbo.habbohotel.wired.tick.WiredTickService;
 import com.eu.habbo.networking.gameserver.GameServer;
+import com.eu.habbo.threading.ThreadPooling;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.HikariPoolMXBean;
 import java.lang.management.GarbageCollectorMXBean;
@@ -242,7 +244,9 @@ public final class EmulatorStatsService {
         }
 
         HikariPoolMetrics hikariPoolMetrics = collectHikariPoolMetrics();
-        SchedulerMetrics schedulerMetrics = collectSchedulerMetrics();
+        ThreadPooling threading = Emulator.getThreading();
+        PersistenceMetrics persistenceMetrics = collectPersistenceMetrics(threading);
+        SchedulerMetrics schedulerMetrics = collectSchedulerMetrics(threading);
         NetworkMetrics networkMetrics = collectNetworkMetrics(now);
         GarbageCollectorMetrics garbageCollectorMetrics = collectGarbageCollectorMetrics(now);
         HealthSnapshot health =
@@ -281,6 +285,7 @@ public final class EmulatorStatsService {
                 wiredRooms,
                 wiredTopRooms,
                 hikariPoolMetrics,
+                persistenceMetrics,
                 schedulerMetrics,
                 networkMetrics,
                 garbageCollectorMetrics,
@@ -304,12 +309,31 @@ public final class EmulatorStatsService {
                 dataSource.getMaximumPoolSize());
     }
 
-    private static SchedulerMetrics collectSchedulerMetrics() {
-        if (Emulator.getThreading() == null) {
+    private static PersistenceMetrics collectPersistenceMetrics(ThreadPooling threading) {
+        return persistenceMetrics(threading == null ? null : threading.getPersistenceMetrics());
+    }
+
+    static PersistenceMetrics persistenceMetrics(PersistenceExecutor.Metrics metrics) {
+        if (metrics == null) {
+            return new PersistenceMetrics(0, 0, 0, 0, 0L, 0D, false);
+        }
+
+        return new PersistenceMetrics(
+                metrics.activeCount(),
+                metrics.queueDepth(),
+                metrics.queueCapacity(),
+                metrics.highWaterMark(),
+                metrics.saturationCount(),
+                metrics.totalSubmissionWaitNanos() / 1_000_000D,
+                metrics.accepting());
+    }
+
+    private static SchedulerMetrics collectSchedulerMetrics(ThreadPooling threading) {
+        if (threading == null) {
             return new SchedulerMetrics(0, 0, 0, 0, false);
         }
 
-        if (!(Emulator.getThreading().getService() instanceof ScheduledThreadPoolExecutor executor)) {
+        if (!(threading.getService() instanceof ScheduledThreadPoolExecutor executor)) {
             return new SchedulerMetrics(0, 0, 0, 0, false);
         }
 
@@ -578,6 +602,7 @@ public final class EmulatorStatsService {
         public final List<WiredRoomRow> wired;
         public final List<WiredTopRoomRow> wiredTopRooms;
         public final HikariPoolMetrics databasePool;
+        public final PersistenceMetrics persistence;
         public final SchedulerMetrics scheduler;
         public final NetworkMetrics network;
         public final GarbageCollectorMetrics garbageCollector;
@@ -624,6 +649,34 @@ public final class EmulatorStatsService {
                 NetworkMetrics network,
                 GarbageCollectorMetrics garbageCollector,
                 HealthSnapshot health) {
+            this(
+                    overview,
+                    memoryHistory,
+                    users,
+                    rooms,
+                    wired,
+                    wiredTopRooms,
+                    databasePool,
+                    persistenceMetrics(null),
+                    scheduler,
+                    network,
+                    garbageCollector,
+                    health);
+        }
+
+        public Snapshot(
+                Overview overview,
+                List<MemoryPoint> memoryHistory,
+                List<OnlineUserRow> users,
+                List<ActiveRoomRow> rooms,
+                List<WiredRoomRow> wired,
+                List<WiredTopRoomRow> wiredTopRooms,
+                HikariPoolMetrics databasePool,
+                PersistenceMetrics persistence,
+                SchedulerMetrics scheduler,
+                NetworkMetrics network,
+                GarbageCollectorMetrics garbageCollector,
+                HealthSnapshot health) {
             this.overview = overview;
             this.memoryHistory = memoryHistory;
             this.users = users;
@@ -631,6 +684,7 @@ public final class EmulatorStatsService {
             this.wired = wired;
             this.wiredTopRooms = wiredTopRooms;
             this.databasePool = databasePool;
+            this.persistence = persistence;
             this.scheduler = scheduler;
             this.network = network;
             this.garbageCollector = garbageCollector;
@@ -827,6 +881,33 @@ public final class EmulatorStatsService {
             this.delayedEventsPending = delayedEventsPending;
             this.activityPerSecond = activityPerSecond;
             this.heavy = heavy;
+        }
+    }
+
+    public static final class PersistenceMetrics {
+        public final int activeTasks;
+        public final int queueDepth;
+        public final int queueCapacity;
+        public final int highWaterMark;
+        public final long saturationCount;
+        public final double totalSubmissionWaitMs;
+        public final boolean accepting;
+
+        public PersistenceMetrics(
+                int activeTasks,
+                int queueDepth,
+                int queueCapacity,
+                int highWaterMark,
+                long saturationCount,
+                double totalSubmissionWaitMs,
+                boolean accepting) {
+            this.activeTasks = activeTasks;
+            this.queueDepth = queueDepth;
+            this.queueCapacity = queueCapacity;
+            this.highWaterMark = highWaterMark;
+            this.saturationCount = saturationCount;
+            this.totalSubmissionWaitMs = totalSubmissionWaitMs;
+            this.accepting = accepting;
         }
     }
 

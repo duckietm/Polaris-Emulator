@@ -74,7 +74,8 @@ public class RoomTrade {
                 || user.getItems().contains(item)
                 || user.getItems().size() >= MAX_OFFERED_ITEMS) return;
 
-        habbo.getInventory().getItemsComponent().removeHabboItem(item);
+        if (!habbo.getInventory().getItemsComponent().takeHabboItemsAtomically(List.of(item))) return;
+
         user.getItems().add(item);
 
         this.clearAccepted();
@@ -90,7 +91,8 @@ public class RoomTrade {
             if (user.getItems().size() >= MAX_OFFERED_ITEMS) break;
 
             if (!user.getItems().contains(item)) {
-                habbo.getInventory().getItemsComponent().removeHabboItem(item);
+                if (!habbo.getInventory().getItemsComponent().takeHabboItemsAtomically(List.of(item))) continue;
+
                 user.getItems().add(item);
             }
         }

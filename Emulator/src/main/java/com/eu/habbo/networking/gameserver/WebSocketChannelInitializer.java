@@ -51,27 +51,21 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
     private final WebSocketServerProtocolConfig wsConfig;
     private final int unwritableTimeoutSeconds;
     private final int blockingHttpThreads;
-    private final int blockingHttpQueueCapacity;
 
     public WebSocketChannelInitializer() {
-        this(10, 8, 128);
+        this(10, 8);
     }
 
     WebSocketChannelInitializer(int unwritableTimeoutSeconds) {
-        this(unwritableTimeoutSeconds, 8, 128);
+        this(unwritableTimeoutSeconds, 8);
     }
 
     WebSocketChannelInitializer(int unwritableTimeoutSeconds, int blockingHttpThreads) {
-        this(unwritableTimeoutSeconds, blockingHttpThreads, 128);
-    }
-
-    WebSocketChannelInitializer(int unwritableTimeoutSeconds, int blockingHttpThreads, int blockingHttpQueueCapacity) {
         if (unwritableTimeoutSeconds <= 0) {
             throw new IllegalArgumentException("unwritableTimeoutSeconds must be positive");
         }
         this.unwritableTimeoutSeconds = unwritableTimeoutSeconds;
         this.blockingHttpThreads = blockingHttpThreads;
-        this.blockingHttpQueueCapacity = blockingHttpQueueCapacity;
         this.sslContext = SSLCertificateLoader.getContext();
         this.sslEnabled = this.sslContext != null;
         this.wsConfig = WebSocketServerProtocolConfig.newBuilder()
@@ -97,16 +91,10 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
         ch.pipeline().addLast("httpCodec", new HttpServerCodec());
         ch.pipeline().addLast("httpAggregator", new HttpObjectAggregator(MAX_FRAME_SIZE));
         ch.pipeline().addLast("wsHttpHandler", new WebSocketHttpHandler());
-        EventExecutorGroup blockingHttp =
-                BlockingHttpExecutionGroup.get(this.blockingHttpThreads, this.blockingHttpQueueCapacity);
-        ch.pipeline()
-                .addLast(
-                        "blockingHttpAdmission",
-                        ExecutionAdmissionHandler.forBlockingHttp(
-                                "nitroSecureAssetHandler", BlockingHttpExecutionGroup.admissionGate()));
+        EventExecutorGroup blockingHttp = BlockingHttpExecutionGroup.get(this.blockingHttpThreads);
         ch.pipeline().addLast(blockingHttp, "nitroSecureAssetHandler", new NitroSecureAssetHandler());
-        ch.pipeline().addLast(blockingHttp, "nitroSecureApiHandler", new NitroSecureApiHandler());
-        ch.pipeline().addLast(blockingHttp, "authHttpHandler", new AuthHttpHandler());
+        ch.pipeline().addLast("nitroSecureApiHandler", new NitroSecureApiHandler());
+        ch.pipeline().addLast("authHttpHandler", new AuthHttpHandler());
         ch.pipeline().addLast(blockingHttp, "cmsApiHandler", new CmsApiHandler());
         ch.pipeline().addLast(blockingHttp, "badgeHttpHandler", new BadgeHttpHandler());
         ch.pipeline().addLast(blockingHttp, "badgeLeaderboardHttpHandler", new BadgeLeaderboardHttpHandler());
@@ -131,11 +119,6 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
         ch.pipeline().addLast("idleEventHandler", new IdleTimeoutHandler(30, 60));
         ch.pipeline().addLast(new GameMessageRateLimit());
         ch.pipeline().addLast("packetDispatchMarker", new PacketDispatchMarker());
-        ch.pipeline()
-                .addLast(
-                        "packetExecutionAdmission",
-                        ExecutionAdmissionHandler.forGamePackets(
-                                "packetDispatchLatency", GamePacketExecutionGroup.admissionGate()));
         ch.pipeline()
                 .addLast(GamePacketExecutionGroup.get(), "packetDispatchLatency", new PacketDispatchLatencyHandler());
         ch.pipeline().addLast(GamePacketExecutionGroup.get(), "gameMessageHandler", new GameMessageHandler());

@@ -130,10 +130,7 @@ public final class ConfigRegistry {
                 "ws.port",
                 "session.reconnect.grace.seconds");
         keys.add(definition("runtime.threads", ConfigKey.ValueType.INTEGER, "8", true));
-        keys.add(definition("io.packet.handler.threads", ConfigKey.ValueType.INTEGER, "0", true));
-        keys.add(definition("io.packet.handler.queue.capacity", ConfigKey.ValueType.INTEGER, "256", true));
         keys.add(definition("http.blocking.pool.size", ConfigKey.ValueType.INTEGER, "8", true));
-        keys.add(definition("http.blocking.queue.capacity", ConfigKey.ValueType.INTEGER, "128", true));
         keys.add(definition("stress.max_bots", ConfigKey.ValueType.INTEGER, "5000", true));
         keys.add(definition("stress.max_items", ConfigKey.ValueType.INTEGER, "100000", true));
         keys.add(definition("stress.max_rollers", ConfigKey.ValueType.INTEGER, "50000", true));
@@ -266,9 +263,6 @@ public final class ConfigRegistry {
         }
         if (name.startsWith("http.blocking.")) {
             return "Blocking HTTP worker setting.";
-        }
-        if (name.startsWith("io.packet.handler.")) {
-            return "Game packet worker setting.";
         }
         if (name.startsWith("io.netty.")) {
             return "Netty channel flow-control setting.";

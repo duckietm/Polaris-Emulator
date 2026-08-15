@@ -9,11 +9,13 @@ class NetworkDispatchMetricsContractTest {
     @Test
     void networkSnapshotExposesDispatchLatencyWindow() {
         EmulatorStatsService.NetworkMetrics metrics =
-                new EmulatorStatsService.NetworkMetrics(1D, 2D, 3D, 4D, 5L, 6L, 7L, 8D, 9D, 10D);
+                new EmulatorStatsService.NetworkMetrics(1D, 2D, 3D, 4D, 5L, 6L, 7L, 8D, 9D, 10D, 11L, 12L);
 
         assertEquals(7L, metrics.dispatchSamples);
         assertEquals(8D, metrics.dispatchAverageMs);
         assertEquals(9D, metrics.dispatchP95Ms);
         assertEquals(10D, metrics.dispatchMaxMs);
+        assertEquals(11L, metrics.rejectedPacketTasks);
+        assertEquals(12L, metrics.rejectedBlockingHttpTasks);
     }
 }

@@ -1,25 +1,33 @@
 package com.eu.habbo.networking.gameserver;
 
 import com.eu.habbo.Emulator;
-import io.netty.util.concurrent.DefaultEventExecutorGroup;
-import io.netty.util.concurrent.DefaultThreadFactory;
+import com.eu.habbo.core.ConfigurationManager;
+import com.eu.habbo.monitoring.ExecutionBackpressureMetrics;
 import io.netty.util.concurrent.EventExecutorGroup;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.TimeUnit;
-
 final class GamePacketExecutionGroup {
+    private static final int DEFAULT_QUEUE_CAPACITY = 256;
     private static final Logger LOGGER = LoggerFactory.getLogger(GamePacketExecutionGroup.class);
-    private static final EventExecutorGroup GROUP = new DefaultEventExecutorGroup(
+    private static final int APPLICATION_QUEUE_CAPACITY = configuredQueueCapacity();
+    private static final ExecutionCapacityGate ADMISSION_GATE =
+            new ExecutionCapacityGate(APPLICATION_QUEUE_CAPACITY, ExecutionBackpressureMetrics.Lane.GAME_PACKET);
+    private static final EventExecutorGroup GROUP = BoundedEventExecutorGroups.create(
             configuredThreads(),
-            new DefaultThreadFactory("GamePacketHandler", true));
+            BoundedEventExecutorGroups.withControlTaskReserve(APPLICATION_QUEUE_CAPACITY),
+            "GamePacketHandler",
+            ExecutionBackpressureMetrics.Lane.GAME_PACKET);
 
-    private GamePacketExecutionGroup() {
-    }
+    private GamePacketExecutionGroup() {}
 
     static EventExecutorGroup get() {
         return GROUP;
+    }
+
+    static ExecutionCapacityGate admissionGate() {
+        return ADMISSION_GATE;
     }
 
     static void shutdown() {
@@ -32,11 +40,20 @@ final class GamePacketExecutionGroup {
 
     static int configuredThreads() {
         int fallback = Math.max(16, Runtime.getRuntime().availableProcessors() * 2);
-        if (Emulator.getConfig() == null) {
+        ConfigurationManager configuration = Emulator.getConfig();
+        if (configuration == null) {
             return fallback;
         }
 
-        int configured = Emulator.getConfig().getInt("io.packet.handler.threads", fallback);
+        int configured = configuration.getInt("io.packet.handler.threads", fallback);
         return configured > 0 ? configured : fallback;
+    }
+
+    static int configuredQueueCapacity() {
+        ConfigurationManager configuration = Emulator.getConfig();
+        int configured = configuration == null
+                ? DEFAULT_QUEUE_CAPACITY
+                : configuration.getInt("io.packet.handler.queue.capacity", DEFAULT_QUEUE_CAPACITY);
+        return BoundedEventExecutorGroups.configuredQueueCapacity(configured, DEFAULT_QUEUE_CAPACITY);
     }
 }

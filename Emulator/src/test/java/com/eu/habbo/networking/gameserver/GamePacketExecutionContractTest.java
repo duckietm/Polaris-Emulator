@@ -38,11 +38,13 @@ class GamePacketExecutionContractTest {
 
     private static void assertLatencyProbeOrder(String pipelineSource) {
         int marker = pipelineSource.indexOf("new PacketDispatchMarker()");
+        int admission = pipelineSource.indexOf("\"packetExecutionAdmission\"");
         int latency = pipelineSource.indexOf("\"packetDispatchLatency\"");
         int handler = pipelineSource.indexOf("\"gameMessageHandler\"");
 
         assertTrue(marker >= 0);
-        assertTrue(latency > marker, "dispatch latency must start after the I/O marker");
+        assertTrue(admission > marker, "bounded admission must run after the I/O marker");
+        assertTrue(latency > admission, "bounded admission must protect the packet worker queue");
         assertTrue(handler > latency, "dispatch latency must be observed before packet handling");
     }
 }

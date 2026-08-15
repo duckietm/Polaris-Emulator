@@ -43,9 +43,12 @@ Unknown keys remain allowed for plugins. Database-backed hotel settings are docu
 | `game.port` | integer | `0` | `EMU_PORT` | yes | no | Game listener setting. |
 | `habbo.console.style` | string | `` | — | yes | no | Polaris startup setting. |
 | `http.blocking.pool.size` | integer | `8` | — | yes | no | Blocking HTTP worker setting. |
+| `http.blocking.queue.capacity` | integer | `128` | — | yes | no | Blocking HTTP worker setting. |
 | `io.netty.unwritable.timeout.seconds` | integer | `10` | — | yes | no | Netty channel flow-control setting. |
 | `io.netty.write_buffer.high_water_mark` | integer | `65536` | — | yes | no | Netty channel flow-control setting. |
 | `io.netty.write_buffer.low_water_mark` | integer | `32768` | — | yes | no | Netty channel flow-control setting. |
+| `io.packet.handler.queue.capacity` | integer | `256` | — | yes | no | Game packet worker setting. |
+| `io.packet.handler.threads` | integer | `0` | — | yes | no | Game packet worker setting. |
 | `login.news.limit` | integer | `0` | — | yes | no | Built-in login endpoint setting. |
 | `login.remember.duration.days` | integer | `0` | — | yes | no | Built-in login endpoint setting. |
 | `login.remember.enabled` | boolean | `false` | — | yes | no | Built-in login endpoint setting. |

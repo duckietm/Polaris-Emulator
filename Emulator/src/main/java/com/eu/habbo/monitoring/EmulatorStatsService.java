@@ -452,6 +452,7 @@ public final class EmulatorStatsService {
         previousOutgoingBytes = outgoingBytes;
         previousTelemetryAt = now;
         PacketDispatchLatencyMetrics.Snapshot dispatch = PacketDispatchLatencyMetrics.snapshot();
+        ExecutionBackpressureMetrics.Snapshot backpressure = ExecutionBackpressureMetrics.snapshot();
 
         return new NetworkMetrics(
                 Math.max(0D, incomingPacketsPerSecond),
@@ -463,7 +464,9 @@ public final class EmulatorStatsService {
                 dispatch.samples(),
                 dispatch.averageMs(),
                 dispatch.p95Ms(),
-                dispatch.maxMs());
+                dispatch.maxMs(),
+                backpressure.packetRejectedTasks(),
+                backpressure.blockingHttpRejectedTasks());
     }
 
     private static GarbageCollectorMetrics collectGarbageCollectorMetrics(long now) {
@@ -879,6 +882,8 @@ public final class EmulatorStatsService {
         public final double dispatchAverageMs;
         public final double dispatchP95Ms;
         public final double dispatchMaxMs;
+        public final long rejectedPacketTasks;
+        public final long rejectedBlockingHttpTasks;
 
         public NetworkMetrics(
                 double incomingPacketsPerSecond,
@@ -897,7 +902,9 @@ public final class EmulatorStatsService {
                     0L,
                     0D,
                     0D,
-                    0D);
+                    0D,
+                    0L,
+                    0L);
         }
 
         public NetworkMetrics(
@@ -911,6 +918,34 @@ public final class EmulatorStatsService {
                 double dispatchAverageMs,
                 double dispatchP95Ms,
                 double dispatchMaxMs) {
+            this(
+                    incomingPacketsPerSecond,
+                    outgoingPacketsPerSecond,
+                    incomingKilobytesPerSecond,
+                    outgoingKilobytesPerSecond,
+                    totalIncomingPackets,
+                    totalOutgoingPackets,
+                    dispatchSamples,
+                    dispatchAverageMs,
+                    dispatchP95Ms,
+                    dispatchMaxMs,
+                    0L,
+                    0L);
+        }
+
+        public NetworkMetrics(
+                double incomingPacketsPerSecond,
+                double outgoingPacketsPerSecond,
+                double incomingKilobytesPerSecond,
+                double outgoingKilobytesPerSecond,
+                long totalIncomingPackets,
+                long totalOutgoingPackets,
+                long dispatchSamples,
+                double dispatchAverageMs,
+                double dispatchP95Ms,
+                double dispatchMaxMs,
+                long rejectedPacketTasks,
+                long rejectedBlockingHttpTasks) {
             this.incomingPacketsPerSecond = incomingPacketsPerSecond;
             this.outgoingPacketsPerSecond = outgoingPacketsPerSecond;
             this.incomingKilobytesPerSecond = incomingKilobytesPerSecond;
@@ -921,6 +956,8 @@ public final class EmulatorStatsService {
             this.dispatchAverageMs = dispatchAverageMs;
             this.dispatchP95Ms = dispatchP95Ms;
             this.dispatchMaxMs = dispatchMaxMs;
+            this.rejectedPacketTasks = rejectedPacketTasks;
+            this.rejectedBlockingHttpTasks = rejectedBlockingHttpTasks;
         }
     }
 

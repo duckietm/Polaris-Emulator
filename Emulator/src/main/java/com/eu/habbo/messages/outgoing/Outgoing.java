@@ -622,6 +622,8 @@ public class Outgoing {
     public static final int CatalogStudioRestoreComposer = 10076;
     public static final int CatalogStudioPreviewComposer = 10077;
     public static final int CatalogStudioDocumentResultComposer = 10078;
+    public static final int CatalogProductMetadataComposer = 10081;
+    public static final int CatalogRuntimeConfigurationComposer = 10082;
 
     // Custom Prefixes
     public static final int UserPrefixesComposer = 7001;

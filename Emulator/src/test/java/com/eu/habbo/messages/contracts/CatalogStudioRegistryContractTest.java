@@ -33,5 +33,21 @@ class CatalogStudioRegistryContractTest {
                     registry.require(JavaPacketRegistry.Direction.SERVER_TO_CLIENT, header)
                             .header());
         }
+        assertEquals(
+                10081,
+                registry.require(JavaPacketRegistry.Direction.CLIENT_TO_SERVER, 10081)
+                        .header());
+        assertEquals(
+                10081,
+                registry.require(JavaPacketRegistry.Direction.SERVER_TO_CLIENT, 10081)
+                        .header());
+        assertEquals(
+                10082,
+                registry.require(JavaPacketRegistry.Direction.CLIENT_TO_SERVER, 10082)
+                        .header());
+        assertEquals(
+                10082,
+                registry.require(JavaPacketRegistry.Direction.SERVER_TO_CLIENT, 10082)
+                        .header());
     }
 }

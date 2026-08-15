@@ -1,6 +1,7 @@
 package com.eu.habbo.database;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
@@ -64,11 +65,56 @@ class PersistenceExecutorTest {
         assertEquals(0L, completed.getCount());
     }
 
+    @Test
+    void operationSnapshotIdentifiesFailuresAndTracksSuccessfulWork() {
+        PersistenceExecutor executor = new PersistenceExecutor(1, 8);
+        try {
+            executor.execute(new FailingPersistenceTask());
+            executor.execute("test.barrier", () -> {});
+            executor.shutDown(2, TimeUnit.SECONDS);
+
+            PersistenceOperationMonitor.Snapshot snapshot = executor.operationSnapshot();
+            assertEquals(2L, snapshot.submittedCount());
+            assertEquals(1L, snapshot.succeededCount());
+            assertEquals(1L, snapshot.failedCount());
+            assertEquals(0L, snapshot.activeCount());
+            assertEquals(1, snapshot.recentFailures().size());
+            assertEquals(
+                    "FailingPersistenceTask", snapshot.recentFailures().get(0).operationType());
+            assertEquals(
+                    "IllegalStateException", snapshot.recentFailures().get(0).errorType());
+            assertTrue(snapshot.recentFailures().get(0).operationId() > 0L);
+        } finally {
+            executor.shutDown(2, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void rejectedNullTaskDoesNotCreatePhantomActiveOperation() {
+        PersistenceExecutor executor = new PersistenceExecutor(1, 8);
+        try {
+            assertThrows(NullPointerException.class, () -> executor.execute("invalid", null));
+
+            PersistenceOperationMonitor.Snapshot snapshot = executor.operationSnapshot();
+            assertEquals(0L, snapshot.submittedCount());
+            assertEquals(0L, snapshot.activeCount());
+        } finally {
+            executor.shutDown(2, TimeUnit.SECONDS);
+        }
+    }
+
     private static void await(CountDownLatch latch) {
         try {
             latch.await();
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
+        }
+    }
+
+    private static final class FailingPersistenceTask implements Runnable {
+        @Override
+        public void run() {
+            throw new IllegalStateException("sensitive failure detail");
         }
     }
 }

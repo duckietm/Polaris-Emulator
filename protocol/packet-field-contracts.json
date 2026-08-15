@@ -24020,6 +24020,70 @@
         "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioOperationMessageParser.ts"
       },
       "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, boolean, string, string, int, int, string, int]"
+    },
+    {
+      "name": "CATALOG_PRODUCT_METADATA_REQUEST",
+      "direction": "client_to_server",
+      "header": 10081,
+      "java": {
+        "symbol": "CatalogProductMetadataEvent",
+        "className": "CatalogProductMetadataEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/CatalogProductMetadataEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_PRODUCT_METADATA",
+        "className": "CatalogProductMetadataComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/metadata/CatalogProductMetadataComposer.ts"
+      },
+      "reason": "The metadata request is optional and independently versioned so legacy catalog packets remain unchanged"
+    },
+    {
+      "name": "CATALOG_PRODUCT_METADATA_RESPONSE",
+      "direction": "server_to_client",
+      "header": 10081,
+      "java": {
+        "symbol": "CatalogProductMetadataComposer",
+        "className": "CatalogProductMetadataComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/CatalogProductMetadataComposer.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_PRODUCT_METADATA",
+        "className": "CatalogProductMetadataMessageParser",
+        "path": "packages/communication/src/messages/parser/catalog/metadata/CatalogProductMetadataMessageParser.ts"
+      },
+      "reason": "The bounded response contains a dynamic list of product capability entries verified by dedicated packet tests"
+    },
+    {
+      "name": "CATALOG_RUNTIME_CONFIGURATION_REQUEST",
+      "direction": "client_to_server",
+      "header": 10082,
+      "java": {
+        "symbol": "CatalogRuntimeConfigurationEvent",
+        "className": "CatalogRuntimeConfigurationEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/CatalogRuntimeConfigurationEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_RUNTIME_CONFIGURATION",
+        "className": "CatalogRuntimeConfigurationComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/configuration/CatalogRuntimeConfigurationComposer.ts"
+      },
+      "reason": "The optional versioned request keeps the standard recycler packets unchanged"
+    },
+    {
+      "name": "CATALOG_RUNTIME_CONFIGURATION_RESPONSE",
+      "direction": "server_to_client",
+      "header": 10082,
+      "java": {
+        "symbol": "CatalogRuntimeConfigurationComposer",
+        "className": "CatalogRuntimeConfigurationComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/CatalogRuntimeConfigurationComposer.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_RUNTIME_CONFIGURATION",
+        "className": "CatalogRuntimeConfigurationMessageParser",
+        "path": "packages/communication/src/messages/parser/catalog/configuration/CatalogRuntimeConfigurationMessageParser.ts"
+      },
+      "reason": "The bounded response carries emulator-authoritative catalog runtime settings without extending standard packets"
     }
   ]
 }

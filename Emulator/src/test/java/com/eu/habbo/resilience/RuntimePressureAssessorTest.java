@@ -34,8 +34,7 @@ class RuntimePressureAssessorTest {
     @Test
     void unavailableCriticalDependencyIsAlwaysCritical() {
         assertEquals(
-                RuntimeResilienceController.Pressure.CRITICAL,
-                assessor.assess(sample(0D, 0, 0D, 0D, 0D, 0D, true)));
+                RuntimeResilienceController.Pressure.CRITICAL, assessor.assess(sample(0D, 0, 0D, 0D, 0D, 0D, true)));
     }
 
     @Test
@@ -47,12 +46,8 @@ class RuntimePressureAssessorTest {
 
     @Test
     void rejectsInvalidRatiosInsteadOfSilentlyNormalizingBadTelemetry() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> sample(1.01D, 0, 0D, 0D, 0D, 0D, false));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> sample(0D, -1, 0D, 0D, 0D, 0D, false));
+        assertThrows(IllegalArgumentException.class, () -> sample(1.01D, 0, 0D, 0D, 0D, 0D, false));
+        assertThrows(IllegalArgumentException.class, () -> sample(0D, -1, 0D, 0D, 0D, 0D, false));
     }
 
     private static RuntimePressureAssessor.Sample sample(
@@ -64,12 +59,6 @@ class RuntimePressureAssessorTest {
             double memory,
             boolean criticalDependencyUnavailable) {
         return new RuntimePressureAssessor.Sample(
-                database,
-                databaseWaiters,
-                persistence,
-                packets,
-                scheduler,
-                memory,
-                criticalDependencyUnavailable);
+                database, databaseWaiters, persistence, packets, scheduler, memory, criticalDependencyUnavailable);
     }
 }

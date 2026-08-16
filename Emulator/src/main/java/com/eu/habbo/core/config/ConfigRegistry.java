@@ -134,7 +134,7 @@ public final class ConfigRegistry {
         keys.add(definition("runtime.threads", ConfigKey.ValueType.INTEGER, "8", true));
         keys.add(definition("runtime.operational.profile", ConfigKey.ValueType.STRING, "custom", true));
         keys.add(definition("persistence.executor.threads", ConfigKey.ValueType.INTEGER, "0", true));
-        keys.add(definition("persistence.executor.queue.capacity", ConfigKey.ValueType.INTEGER, "0", true));
+        keys.add(definition("db.persistence.queue.capacity", ConfigKey.ValueType.INTEGER, "0", true));
         keys.add(definition("http.blocking.pool.size", ConfigKey.ValueType.INTEGER, "8", true));
         keys.add(definition("http.blocking.queue.capacity", ConfigKey.ValueType.INTEGER, "128", true));
         keys.add(definition("execution.backpressure.pause.timeout_ms", ConfigKey.ValueType.INTEGER, "2000", true));
@@ -254,7 +254,6 @@ public final class ConfigRegistry {
             case "rcon.allowed" -> "RCON_ALLOWED";
             case "runtime.operational.profile" -> "RUNTIME_OPERATIONAL_PROFILE";
             case "persistence.executor.threads" -> "PERSISTENCE_EXECUTOR_THREADS";
-            case "persistence.executor.queue.capacity" -> "PERSISTENCE_EXECUTOR_QUEUE_CAPACITY";
             default -> "";
         };
     }
@@ -271,6 +270,9 @@ public final class ConfigRegistry {
         }
         if (name.startsWith("db.slow_query.")) {
             return "Sanitized slow-query diagnostic setting.";
+        }
+        if (name.equals("db.persistence.queue.capacity")) {
+            return "Persistence queue override; zero uses the selected operational profile.";
         }
         if (name.startsWith("db.")) {
             return "Database startup setting.";

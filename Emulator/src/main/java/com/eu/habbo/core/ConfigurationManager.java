@@ -26,8 +26,8 @@ public class ConfigurationManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigurationManager.class);
     private static final String EMULATOR_SETTINGS_TABLE = "emulator_settings";
     private static final String WIRED_SETTINGS_TABLE = "wired_emulator_settings";
-    private static final Set<String> STARTUP_OWNED_KEYS = Set.of(
-            "runtime.operational.profile", "persistence.executor.threads", "persistence.executor.queue.capacity");
+    private static final Set<String> STARTUP_OWNED_KEYS =
+            Set.of("runtime.operational.profile", "persistence.executor.threads");
 
     private final Properties properties;
     private final Properties wiredProperties;
@@ -103,7 +103,6 @@ public class ConfigurationManager {
             envMapping.put("runtime.threads", "RT_THREADS");
             envMapping.put("runtime.operational.profile", "RUNTIME_OPERATIONAL_PROFILE");
             envMapping.put("persistence.executor.threads", "PERSISTENCE_EXECUTOR_THREADS");
-            envMapping.put("persistence.executor.queue.capacity", "PERSISTENCE_EXECUTOR_QUEUE_CAPACITY");
             envMapping.put("logging.errors.runtime", "RT_LOG_ERRORS");
             envMapping.put("hotel.timezone", "HOTEL_TIMEZONE");
 

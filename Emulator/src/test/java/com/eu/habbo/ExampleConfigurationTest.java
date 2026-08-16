@@ -30,7 +30,6 @@ class ExampleConfigurationTest {
 
         assertEquals("custom", properties.getProperty("runtime.operational.profile"));
         assertEquals("0", properties.getProperty("persistence.executor.threads"));
-        assertEquals("0", properties.getProperty("persistence.executor.queue.capacity"));
     }
 
     private static Properties loadExample() throws Exception {

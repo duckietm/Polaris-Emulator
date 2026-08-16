@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 final class PolarisBootstrap {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PolarisBootstrap.class);
+    private static final int MAX_PERSISTENCE_QUEUE_CAPACITY = 65_536;
 
     private final PolarisRuntime runtime;
     private final Runnable registerConfigurationDefaults;
@@ -116,13 +117,14 @@ final class PolarisBootstrap {
         configuration.loaded = true;
         configuration.loadFromDatabase();
         configuration.register("runtime.threads", "8");
+        configuration.register("db.persistence.queue.capacity", "0");
 
         int runtimeThreads = resolveRuntimeThreads(configuration);
         OperationalProfile.Settings operationalSettings = OperationalProfile.resolve(
                 configuration.getValue("runtime.operational.profile", "custom"),
                 runtimeThreads,
                 configuration.getInt("persistence.executor.threads", 0),
-                configuration.getInt("persistence.executor.queue.capacity", 0));
+                resolvePersistenceQueueCapacityOverride(configuration));
         PersistenceExecutor persistenceExecutor = new PersistenceExecutor(
                 operationalSettings.persistenceThreads(), operationalSettings.persistenceQueueCapacity());
         LOGGER.info(
@@ -143,6 +145,16 @@ final class PolarisBootstrap {
     static int resolveRuntimeThreads(ConfigurationManager configuration) {
         int configured = configuration.getInt("runtime.threads", 8);
         return configured > 0 ? configured : 8;
+    }
+
+    static int resolvePersistenceQueueCapacityOverride(ConfigurationManager configuration) {
+        int configured = configuration.getInt("db.persistence.queue.capacity", 0);
+        if (configured < 0 || configured > MAX_PERSISTENCE_QUEUE_CAPACITY) {
+            LOGGER.warn("Ignoring invalid db.persistence.queue.capacity {}; using profile default", configured);
+            return 0;
+        }
+
+        return configured;
     }
 
     private boolean initializePlugins() {

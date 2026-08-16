@@ -410,8 +410,9 @@ The optional profile presets are intentionally bounded and never run automatical
 Set `runtime.operational.profile` to `small`, `medium`, or `large` to select
 conservative persistence sizing. The default `custom` value preserves the
 existing adaptive behavior. Explicit positive values in
-`persistence.executor.threads` and `persistence.executor.queue.capacity`
-always take precedence. `stress.enabled` remains off by default, and a load
+`persistence.executor.threads` and `db.persistence.queue.capacity` always take
+precedence. A zero queue capacity selects the profile default. `stress.enabled`
+remains off by default, and a load
 scenario still requires a manual allowlisted RCON request.
 
 They are documented for completeness; a CMS API key should never be granted a

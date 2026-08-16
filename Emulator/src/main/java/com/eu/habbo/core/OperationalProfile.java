@@ -23,7 +23,7 @@ public enum OperationalProfile {
             String configuredProfile, int runtimeThreads, int threadOverride, int queueCapacityOverride) {
         OperationalProfile profile = parse(configuredProfile);
         validateOverride("persistence.executor.threads", threadOverride, MAX_PERSISTENCE_THREADS);
-        validateOverride("persistence.executor.queue.capacity", queueCapacityOverride, MAX_PERSISTENCE_QUEUE_CAPACITY);
+        validateOverride("db.persistence.queue.capacity", queueCapacityOverride, MAX_PERSISTENCE_QUEUE_CAPACITY);
 
         int adaptiveThreads = Math.max(2, Math.min(8, runtimeThreads));
         int threads =

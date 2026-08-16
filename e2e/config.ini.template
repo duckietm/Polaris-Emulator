@@ -13,7 +13,7 @@ db.pool.validation_timeout_ms=5000
 db.pool.leak_detection_ms=0
 runtime.operational.profile=custom
 persistence.executor.threads=0
-persistence.executor.queue.capacity=0
+db.persistence.queue.capacity=0
 
 game.host=127.0.0.1
 game.port=${E2E_RAW_PORT}

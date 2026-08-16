@@ -3870,6 +3870,11 @@
           "kind": "scalar",
           "type": "int",
           "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "recoveryToken"
         }
       ]
     },
@@ -13421,6 +13426,11 @@
           "kind": "scalar",
           "type": "int",
           "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "recoveryToken"
         }
       ]
     },

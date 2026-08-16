@@ -86,6 +86,9 @@ Unknown keys remain allowed for plugins. Database-backed hotel settings are docu
 | `runtime.resilience.scheduler.critical_queue` | integer | `10000` | — | yes | no | Polaris startup setting. |
 | `runtime.threads` | integer | `8` | — | yes | no | Polaris startup setting. |
 | `session.reconnect.grace.seconds` | integer | `0` | — | yes | no | Polaris startup setting. |
+| `session.recovery.enabled` | boolean | `false` | — | yes | no | Polaris startup setting. |
+| `session.recovery.ttl.seconds` | integer | `120` | — | yes | no | Polaris startup setting. |
+| `shutdown.drain.timeout.seconds` | integer | `15` | — | yes | no | Polaris startup setting. |
 | `stress.enabled` | boolean | `false` | — | yes | no | Opt-in transient room stress-lab setting. |
 | `stress.max_bots` | integer | `5000` | — | yes | no | Opt-in transient room stress-lab setting. |
 | `stress.max_chat_per_second` | integer | `10000` | — | yes | no | Opt-in transient room stress-lab setting. |

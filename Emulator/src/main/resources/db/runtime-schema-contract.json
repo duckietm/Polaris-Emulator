@@ -121,6 +121,7 @@
     "room_trade_log_items": ["id", "item_id", "user_id"],
     "room_trax": ["room_id", "trax_item_id"],
     "room_trax_playlist": ["item_id", "room_id"],
+    "session_recovery_tickets": ["consumed_at", "issued_at", "recoverable_until", "token_hash", "user_id"],
     "room_user_wired_variables": ["created_at", "room_id", "updated_at", "user_id", "value", "variable_item_id"],
     "room_votes": ["room_id", "user_id"],
     "room_wired_settings": ["inspect_mask", "modify_mask", "room_id"],

@@ -2,6 +2,7 @@ package com.eu.habbo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -48,6 +49,10 @@ class RuntimeLifecycleTest {
                 })
                 .when(threading)
                 .setCanAdd(false);
+        when(persistence.awaitIdle(anyLong(), any())).thenAnswer(invocation -> {
+            calls.add("persistence.await-idle");
+            return true;
+        });
         doAnswer(invocation -> {
                     Object event = invocation.getArgument(0);
                     if (event instanceof EmulatorStartShutdownEvent) {
@@ -122,9 +127,10 @@ class RuntimeLifecycleTest {
 
         assertEquals(
                 List.of(
-                        "threading.reject-new-work",
                         "plugins.before-shutdown",
+                        "threading.reject-new-work",
                         "rcon.stop",
+                        "persistence.await-idle",
                         "game.stop",
                         "sessions.dispose",
                         "hotel.dispose",

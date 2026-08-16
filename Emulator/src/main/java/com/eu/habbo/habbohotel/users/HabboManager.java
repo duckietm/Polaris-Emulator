@@ -118,7 +118,20 @@ public class HabboManager {
             LOGGER.error("Caught SQL exception", e);
         }
 
-        if (!this.awaitDisconnectPersistence(userId)) {
+        return loadHabbo(
+                userId,
+                "SELECT * FROM users WHERE auth_ticket = ? AND "
+                        + "(auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW()) LIMIT 1",
+                statement -> statement.setString(1, sso));
+    }
+
+    public Habbo loadHabboById(int userId) {
+        return loadHabbo(userId, "SELECT * FROM users WHERE id = ? LIMIT 1", statement -> statement.setInt(1, userId));
+    }
+
+    private Habbo loadHabbo(int userId, String query, StatementBinder binder) {
+        Habbo habbo;
+        if (userId <= 0 || !this.awaitDisconnectPersistence(userId)) {
             return null;
         }
 
@@ -139,9 +152,8 @@ public class HabboManager {
         }
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "SELECT * FROM users WHERE auth_ticket = ? AND (auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW()) LIMIT 1")) {
-            statement.setString(1, sso);
+                PreparedStatement statement = connection.prepareStatement(query)) {
+            binder.bind(statement);
             try (ResultSet set = statement.executeQuery()) {
                 if (set.next()) {
                     habbo = new Habbo(set);
@@ -165,6 +177,11 @@ public class HabboManager {
         }
 
         return habbo;
+    }
+
+    @FunctionalInterface
+    private interface StatementBinder {
+        void bind(PreparedStatement statement) throws SQLException;
     }
 
     private boolean awaitDisconnectPersistence(int userId) {

@@ -97,6 +97,10 @@ public final class PersistenceExecutor {
         return this.executor.getQueue().size();
     }
 
+    public int getQueueCapacity() {
+        return this.executor.getQueue().size() + this.executor.getQueue().remainingCapacity();
+    }
+
     public int getActiveCount() {
         return this.executor.getActiveCount();
     }

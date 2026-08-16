@@ -20,6 +20,7 @@ import com.eu.habbo.networking.gameserver.GameServer;
 import com.eu.habbo.networking.rconserver.RCONServer;
 import com.eu.habbo.plugin.PluginManager;
 import com.eu.habbo.plugin.events.emulator.EmulatorConfigUpdatedEvent;
+import com.eu.habbo.resilience.RuntimeResilienceRuntime;
 import com.eu.habbo.stress.StressLimits;
 import com.eu.habbo.stress.StressRunManager;
 import com.eu.habbo.stress.StressRunRegistry;
@@ -125,6 +126,8 @@ final class PolarisBootstrap {
         runtime.installThreading(new ThreadPooling(runtimeThreads, persistenceExecutor));
         Emulator.synchronizeLegacyFacade(runtime);
         registerConfigurationDefaults.run();
+        RuntimeResilienceRuntime.install(
+                configuration, runtime.database(), runtime.persistenceExecutor(), runtime.threading());
         return true;
     }
 

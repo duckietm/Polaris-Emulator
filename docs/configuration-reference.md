@@ -71,6 +71,20 @@ Unknown keys remain allowed for plugins. Database-backed hotel settings are docu
 | `rcon.allowed` | string | `` | `RCON_ALLOWED` | yes | no | RCON listener setting. |
 | `rcon.host` | string | `` | `RCON_HOST` | yes | no | RCON listener setting. |
 | `rcon.port` | integer | `0` | `RCON_PORT` | yes | no | RCON listener setting. |
+| `runtime.resilience.circuit.failure_percent` | integer | `50` | — | yes | no | Polaris startup setting. |
+| `runtime.resilience.circuit.half_open_calls` | integer | `3` | — | yes | no | Polaris startup setting. |
+| `runtime.resilience.circuit.minimum_calls` | integer | `10` | — | yes | no | Polaris startup setting. |
+| `runtime.resilience.circuit.open_ms` | integer | `30000` | — | yes | no | Polaris startup setting. |
+| `runtime.resilience.circuit.window` | integer | `20` | — | yes | no | Polaris startup setting. |
+| `runtime.resilience.critical.percent` | integer | `95` | — | yes | no | Polaris startup setting. |
+| `runtime.resilience.critical.windows` | integer | `2` | — | yes | no | Polaris startup setting. |
+| `runtime.resilience.database.critical_waiters` | integer | `2` | — | yes | no | Polaris startup setting. |
+| `runtime.resilience.degraded.percent` | integer | `75` | — | yes | no | Polaris startup setting. |
+| `runtime.resilience.degraded.windows` | integer | `3` | — | yes | no | Polaris startup setting. |
+| `runtime.resilience.mode` | string | `observe` | — | yes | no | Polaris startup setting. |
+| `runtime.resilience.recovery.windows` | integer | `10` | — | yes | no | Polaris startup setting. |
+| `runtime.resilience.sample.interval_ms` | integer | `1000` | — | yes | no | Polaris startup setting. |
+| `runtime.resilience.scheduler.critical_queue` | integer | `10000` | — | yes | no | Polaris startup setting. |
 | `runtime.threads` | integer | `8` | — | yes | no | Polaris startup setting. |
 | `session.reconnect.grace.seconds` | integer | `0` | — | yes | no | Polaris startup setting. |
 | `stress.enabled` | boolean | `false` | — | yes | no | Opt-in transient room stress-lab setting. |

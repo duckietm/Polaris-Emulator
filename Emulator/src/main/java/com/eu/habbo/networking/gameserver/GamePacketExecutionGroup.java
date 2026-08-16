@@ -4,19 +4,16 @@ import com.eu.habbo.Emulator;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.EventExecutorGroup;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.TimeUnit;
-
 final class GamePacketExecutionGroup {
     private static final Logger LOGGER = LoggerFactory.getLogger(GamePacketExecutionGroup.class);
-    private static final EventExecutorGroup GROUP = new DefaultEventExecutorGroup(
-            configuredThreads(),
-            new DefaultThreadFactory("GamePacketHandler", true));
+    private static final EventExecutorGroup GROUP =
+            new DefaultEventExecutorGroup(configuredThreads(), new DefaultThreadFactory("GamePacketHandler", true));
 
-    private GamePacketExecutionGroup() {
-    }
+    private GamePacketExecutionGroup() {}
 
     static EventExecutorGroup get() {
         return GROUP;

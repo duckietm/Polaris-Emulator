@@ -102,6 +102,7 @@ login.news.limit=5
 ## io.packet.handler.per_connection.low_watermark=16 #Per-connection occupancy required before reads resume.
 ## io.packet.handler.per_connection.pending=16 #Already-decoded packets retained per paused connection.
 ## auth.http.pool.size=16 #Dedicated worker pool for the /api/auth/* HTTP endpoints (BCrypt/JDBC/Turnstile/SMTP run off the event loop). Default 16.
+## db.persistence.queue.capacity=2048 #Maximum queued JDBC writes. Saturation waits for capacity instead of running SQL on gameplay threads.
 ## http.blocking.pool.size=8 #Dedicated workers for blocking badge, asset, leaderboard, and emulator-stats endpoints. Default 8.
 ## http.blocking.queue.capacity=128 #Global blocking HTTP executions allowed in flight while enforcement is active.
 ## runtime.resilience.mode=observe #Observe pressure without changing behavior; use enforce only after reviewing live metrics.

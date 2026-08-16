@@ -9,6 +9,24 @@ import org.junit.jupiter.api.Test;
 class RuntimeResilienceServiceTest {
 
     @Test
+    void samplesImmediatelyWhenTheMonotonicClockStartsNegative() {
+        AtomicInteger samples = new AtomicInteger();
+        AtomicLong clock = new AtomicLong(-100L);
+        RuntimeResilienceService service = service(
+                () -> {
+                    samples.incrementAndGet();
+                    return new RuntimePressureAssessor.Sample(1D, 2, 1D, 1D, 1D, 1D, true);
+                },
+                clock);
+
+        RuntimeResilienceController.Admission admission =
+                service.admit(RuntimeResilienceController.WorkClass.INTERACTIVE);
+
+        assertEquals(1, samples.get());
+        assertEquals(RuntimeResilienceController.Action.REJECT, admission.effectiveAction());
+    }
+
+    @Test
     void refreshesPressureAtMostOncePerSamplingInterval() {
         AtomicInteger samples = new AtomicInteger();
         AtomicLong clock = new AtomicLong();
@@ -41,16 +59,15 @@ class RuntimeResilienceServiceTest {
                 service.admit(RuntimeResilienceController.WorkClass.ESSENTIAL);
 
         assertEquals(RuntimeResilienceController.Action.ALLOW, admission.effectiveAction());
-        assertEquals(RuntimeResilienceController.Pressure.DEGRADED, service.snapshot().lastPressure());
+        assertEquals(
+                RuntimeResilienceController.Pressure.DEGRADED,
+                service.snapshot().lastPressure());
         assertEquals(1L, service.snapshot().samplingFailures());
     }
 
-    private static RuntimeResilienceService service(
-            RuntimeResilienceService.PressureSource source,
-            AtomicLong clock) {
+    private static RuntimeResilienceService service(RuntimeResilienceService.PressureSource source, AtomicLong clock) {
         RuntimeResilienceController controller = new RuntimeResilienceController(
-                RuntimeResilienceController.Mode.ENFORCE,
-                new RuntimeResilienceController.Thresholds(1, 1, 1));
+                RuntimeResilienceController.Mode.ENFORCE, new RuntimeResilienceController.Thresholds(1, 1, 1));
         RuntimePressureAssessor assessor =
                 new RuntimePressureAssessor(new RuntimePressureAssessor.Thresholds(0.75D, 0.95D, 2));
         return new RuntimeResilienceService(controller, assessor, source, 1_000_000_000L, clock::get);

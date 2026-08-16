@@ -72,14 +72,6 @@ public class SecureLoginEvent extends MessageHandler {
 
         if (!Emulator.isReady) return;
 
-        RuntimeResilienceController.Admission admission =
-                RuntimeResilienceRuntime.admit(RuntimeResilienceController.WorkClass.INTERACTIVE);
-        if (admission.effectiveAction() == RuntimeResilienceController.Action.REJECT) {
-            this.client.sendResponse(new GenericAlertComposer("The hotel is temporarily busy. Please try again."));
-            this.client.getChannel().close();
-            return;
-        }
-
         if (Emulator.getConfig().getBoolean("encryption.forced", false)
                 && Emulator.getCrypto().isEnabled()
                 && !this.client.isHandshakeFinished()) {
@@ -94,6 +86,14 @@ public class SecureLoginEvent extends MessageHandler {
             LOGGER.warn(
                     "Rejected client release '{}' (allowed: '{}')", this.client.getReleaseVersion(), allowedReleases);
             Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
+            return;
+        }
+
+        RuntimeResilienceController.Admission admission =
+                RuntimeResilienceRuntime.admit(RuntimeResilienceController.WorkClass.INTERACTIVE);
+        if (admission.effectiveAction() == RuntimeResilienceController.Action.REJECT) {
+            this.client.sendResponse(new GenericAlertComposer("The hotel is temporarily busy. Please try again."));
+            this.client.getChannel().close();
             return;
         }
 

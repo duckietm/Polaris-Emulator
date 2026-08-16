@@ -13,7 +13,7 @@ public final class RuntimeResilienceService {
     private final LongSupplier nanoTime;
     private final AtomicLong samplingFailures = new AtomicLong();
 
-    private volatile long nextSampleAtNanos;
+    private volatile long nextSampleAtNanos = Long.MIN_VALUE;
     private volatile RuntimeResilienceController.Pressure lastPressure = RuntimeResilienceController.Pressure.HEALTHY;
     private volatile String lastSamplingError = "";
 

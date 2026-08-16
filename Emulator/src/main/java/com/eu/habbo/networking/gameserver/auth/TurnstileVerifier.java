@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.resilience.RuntimeResilienceRuntime;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -58,15 +59,18 @@ public final class TurnstileVerifier {
                 .build();
 
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() != 200) {
-            LOGGER.warn("Turnstile siteverify returned HTTP {} for ip={}", response.statusCode(), remoteIp);
-            return false;
+        return parseVerificationResponse(response.statusCode(), response.body(), remoteIp);
+    }
+
+    static boolean parseVerificationResponse(int statusCode, String body, String remoteIp) throws IOException {
+        if (statusCode != 200) {
+            throw new IOException("Turnstile siteverify returned HTTP " + statusCode + " for ip=" + remoteIp);
         }
 
-        JsonObject json = JsonParser.parseString(response.body()).getAsJsonObject();
+        JsonObject json = JsonParser.parseString(body).getAsJsonObject();
         boolean success = json.has("success") && json.get("success").getAsBoolean();
         if (!success) {
-            LOGGER.info("Turnstile token rejected for ip={} body={}", remoteIp, response.body());
+            LOGGER.info("Turnstile token rejected for ip={} body={}", remoteIp, body);
         }
         return success;
     }

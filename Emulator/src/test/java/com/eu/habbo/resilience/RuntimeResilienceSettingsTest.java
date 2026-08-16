@@ -38,7 +38,6 @@ class RuntimeResilienceSettingsTest {
         when(configuration.getInt("runtime.resilience.recovery.windows", 10)).thenReturn(0);
         when(configuration.getInt("runtime.resilience.scheduler.critical_queue", 10000))
                 .thenReturn(0);
-        when(configuration.getInt("persistence.executor.queue.capacity", 2048)).thenReturn(0);
 
         RuntimeResilienceSettings settings = RuntimeResilienceSettings.from(configuration);
 
@@ -51,6 +50,5 @@ class RuntimeResilienceSettingsTest {
         assertEquals(2, settings.criticalWindows());
         assertEquals(10, settings.recoveryWindows());
         assertEquals(10_000, settings.schedulerCriticalQueue());
-        assertEquals(2_048, settings.persistenceQueueCapacity());
     }
 }

@@ -28,7 +28,7 @@ public final class RuntimeResilienceRuntime {
         RuntimeResilienceSettings settings = RuntimeResilienceSettings.from(configuration);
         RuntimePressureSampler sampler = new RuntimePressureSampler(
                 () -> databaseReading(database),
-                () -> persistenceReading(persistenceExecutor, settings.persistenceQueueCapacity()),
+                () -> persistenceReading(persistenceExecutor),
                 RuntimeResilienceRuntime::packetReading,
                 () -> schedulerReading(threading, settings.schedulerCriticalQueue()),
                 RuntimeResilienceRuntime::memoryUtilization);
@@ -90,8 +90,10 @@ public final class RuntimeResilienceRuntime {
                 false);
     }
 
-    private static RuntimePressureSampler.QueueReading persistenceReading(PersistenceExecutor executor, int capacity) {
-        return new RuntimePressureSampler.QueueReading(executor == null ? 0 : executor.getQueueDepth(), capacity);
+    private static RuntimePressureSampler.QueueReading persistenceReading(PersistenceExecutor executor) {
+        return executor == null
+                ? new RuntimePressureSampler.QueueReading(0, 0)
+                : new RuntimePressureSampler.QueueReading(executor.getQueueDepth(), executor.getQueueCapacity());
     }
 
     private static RuntimePressureSampler.QueueReading packetReading() {

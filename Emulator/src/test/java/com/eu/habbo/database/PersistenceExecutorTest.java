@@ -11,6 +11,16 @@ import org.junit.jupiter.api.Test;
 class PersistenceExecutorTest {
 
     @Test
+    void exposesTheConfiguredQueueCapacityForPressureTelemetry() {
+        PersistenceExecutor executor = new PersistenceExecutor(1, 7);
+        try {
+            assertEquals(7, executor.getQueueCapacity());
+        } finally {
+            executor.shutDown(2, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
     void databaseWorkRunsOnDedicatedNamedWorkers() throws Exception {
         PersistenceExecutor executor = new PersistenceExecutor(2, 8);
         CountDownLatch completed = new CountDownLatch(1);

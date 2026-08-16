@@ -15,7 +15,6 @@ public record RuntimeResilienceSettings(
         int criticalWindows,
         int recoveryWindows,
         int schedulerCriticalQueue,
-        int persistenceQueueCapacity,
         DependencyCircuitBreakers.Settings circuitBreaker) {
 
     public static RuntimeResilienceSettings from(ConfigurationManager configuration) {
@@ -49,7 +48,6 @@ public record RuntimeResilienceSettings(
                 positive(configuration.getInt("runtime.resilience.critical.windows", 2), 2),
                 positive(configuration.getInt("runtime.resilience.recovery.windows", 10), 10),
                 positive(configuration.getInt("runtime.resilience.scheduler.critical_queue", 10_000), 10_000),
-                positive(configuration.getInt("persistence.executor.queue.capacity", 2_048), 2_048),
                 new DependencyCircuitBreakers.Settings(
                         percentage(configuration.getInt("runtime.resilience.circuit.failure_percent", 50), 50),
                         circuitWindow,

@@ -28,6 +28,19 @@ class RuntimeResilienceWiringContractTest {
     }
 
     @Test
+    void loginTransportGuardsRunBeforeRuntimeAdmissionCanSendAResponse() throws Exception {
+        String login = source("src/main/java/com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java");
+
+        int encryptionGuard = login.indexOf("encryption.forced");
+        int releaseGuard = login.indexOf("ClientReleaseGuard.isAllowed");
+        int admission = login.indexOf("RuntimeResilienceRuntime.admit(");
+
+        assertTrue(encryptionGuard >= 0);
+        assertTrue(releaseGuard > encryptionGuard);
+        assertTrue(admission > releaseGuard);
+    }
+
+    @Test
     void operationalSnapshotExportsTheSharedResilienceState() throws Exception {
         String stats = source("src/main/java/com/eu/habbo/monitoring/EmulatorStatsService.java");
 

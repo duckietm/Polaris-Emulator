@@ -25,11 +25,21 @@ class MavenBuildEnvironmentContractTest {
         assertTrue(pom.contains("<dependencyConvergence/>"));
         assertTrue(pom.contains("<requirePluginVersions/>"));
         assertTrue(pom.contains("<artifactId>versions-maven-plugin</artifactId>"));
+        assertTrue(pom.contains("<artifactId>maven-dependency-plugin</artifactId>"));
 
         assertImportedBom(pom, "io.netty", "netty-bom");
         assertImportedBom(pom, "org.junit", "junit-bom");
         assertImportedBom(pom, "org.testcontainers", "testcontainers-bom");
         assertImportedBom(pom, "org.mockito", "mockito-bom");
+        assertTrue(pom.contains("<artifactId>netty-common</artifactId>"));
+        assertTrue(pom.contains("<artifactId>netty-buffer</artifactId>"));
+        assertTrue(pom.contains("<artifactId>netty-transport</artifactId>"));
+        assertTrue(pom.contains("<artifactId>netty-codec-base</artifactId>"));
+        assertTrue(pom.contains("<artifactId>netty-codec-http</artifactId>"));
+        assertTrue(pom.contains("<artifactId>netty-handler</artifactId>"));
+        assertFalse(pom.contains("<artifactId>netty-all</artifactId>"));
+        assertTrue(pom.contains("<artifactId>testcontainers-mariadb</artifactId>"));
+        assertTrue(pom.contains("<artifactId>testcontainers-junit-jupiter</artifactId>"));
         assertFalse(pom.contains("datafaker"));
     }
 

@@ -998,7 +998,7 @@ U|com/eu/habbo/habbohotel/users/inventory/EffectsComponent.java|CALL|getDatabase
 U|com/eu/habbo/habbohotel/users/inventory/EffectsComponent.java|CALL|getIntUnixTimestamp|4
 U|com/eu/habbo/habbohotel/users/inventory/ItemsComponent.java|CALL|getDatabase|2
 U|com/eu/habbo/habbohotel/users/inventory/ItemsComponent.java|CALL|getGameEnvironment|1
-U|com/eu/habbo/habbohotel/users/inventory/ItemsComponent.java|CALL|getPluginManager|3
+U|com/eu/habbo/habbohotel/users/inventory/ItemsComponent.java|CALL|getPluginManager|4
 U|com/eu/habbo/habbohotel/users/inventory/NickIconsComponent.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/users/inventory/NickIconsComponent.java|CALL|getThreading|2
 U|com/eu/habbo/habbohotel/users/inventory/PetsComponent.java|CALL|getDatabase|1
@@ -1111,7 +1111,9 @@ U|com/eu/habbo/messages/incoming/catalog/recycler/OpenRecycleBoxEvent.java|CALL|
 U|com/eu/habbo/messages/incoming/catalog/recycler/RecycleEvent.java|CALL|getConfig|1
 U|com/eu/habbo/messages/incoming/catalog/recycler/RecycleEvent.java|CALL|getGameEnvironment|4
 U|com/eu/habbo/messages/incoming/catalog/recycler/RecycleEvent.java|CALL|getIntUnixTimestamp|1
-U|com/eu/habbo/messages/incoming/catalog/recycler/RecycleEvent.java|CALL|getThreading|1
+U|com/eu/habbo/messages/incoming/catalog/recycler/RecycleEvent.java|CALL|getThreading|2
+U|com/eu/habbo/messages/incoming/catalog/CatalogProductMetadataEvent.java|CALL|getGameEnvironment|1
+U|com/eu/habbo/messages/outgoing/catalog/CatalogRuntimeConfigurationComposer.java|CALL|getConfig|1
 U|com/eu/habbo/messages/incoming/crafting/CraftingAddRecipeEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/crafting/CraftingCraftItemEvent.java|CALL|getGameEnvironment|4
 U|com/eu/habbo/messages/incoming/crafting/CraftingCraftItemEvent.java|CALL|getThreading|1

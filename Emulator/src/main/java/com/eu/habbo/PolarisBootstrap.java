@@ -38,6 +38,8 @@ import org.slf4j.LoggerFactory;
 final class PolarisBootstrap {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PolarisBootstrap.class);
+    private static final int DEFAULT_PERSISTENCE_QUEUE_CAPACITY = 2_048;
+    private static final int MAX_PERSISTENCE_QUEUE_CAPACITY = 65_536;
 
     private final PolarisRuntime runtime;
     private final Runnable registerConfigurationDefaults;
@@ -113,9 +115,12 @@ final class PolarisBootstrap {
         configuration.loaded = true;
         configuration.loadFromDatabase();
         configuration.register("runtime.threads", "8");
+        configuration.register("db.persistence.queue.capacity", "2048");
 
         int runtimeThreads = resolveRuntimeThreads(configuration);
-        PersistenceExecutor persistenceExecutor = PersistenceExecutor.forRuntimeThreads(runtimeThreads);
+        int persistenceQueueCapacity = resolvePersistenceQueueCapacity(configuration);
+        PersistenceExecutor persistenceExecutor =
+                PersistenceExecutor.forRuntimeThreads(runtimeThreads, persistenceQueueCapacity);
         runtime.installPersistenceExecutor(persistenceExecutor);
         runtime.installThreading(new ThreadPooling(runtimeThreads, persistenceExecutor));
         Emulator.synchronizeLegacyFacade(runtime);
@@ -126,6 +131,19 @@ final class PolarisBootstrap {
     static int resolveRuntimeThreads(ConfigurationManager configuration) {
         int configured = configuration.getInt("runtime.threads", 8);
         return configured > 0 ? configured : 8;
+    }
+
+    static int resolvePersistenceQueueCapacity(ConfigurationManager configuration) {
+        int configured = configuration.getInt("db.persistence.queue.capacity", DEFAULT_PERSISTENCE_QUEUE_CAPACITY);
+        if (configured < 1 || configured > MAX_PERSISTENCE_QUEUE_CAPACITY) {
+            LOGGER.warn(
+                    "Ignoring invalid db.persistence.queue.capacity {}; using {}",
+                    configured,
+                    DEFAULT_PERSISTENCE_QUEUE_CAPACITY);
+            return DEFAULT_PERSISTENCE_QUEUE_CAPACITY;
+        }
+
+        return configured;
     }
 
     private boolean initializePlugins() {

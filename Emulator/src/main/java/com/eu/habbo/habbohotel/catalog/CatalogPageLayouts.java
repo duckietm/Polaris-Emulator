@@ -46,5 +46,7 @@ public enum CatalogPageLayouts {
     monkey,
     niko,
     mad_money,
+    /** Retained for plugin ABI compatibility; the layout is no longer registered or selectable. */
+    @Deprecated
     custom_prefix
 }

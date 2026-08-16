@@ -4,8 +4,8 @@ import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import java.time.Instant;
 import java.util.List;
 
-final class CatalogJsoncImportExportServiceTestSupport {
-    private CatalogJsoncImportExportServiceTestSupport() {}
+final class CatalogDocumentTestSupport {
+    private CatalogDocumentTestSupport() {}
 
     static CatalogVersionSnapshot snapshot() {
         CatalogVersion version = new CatalogVersion(

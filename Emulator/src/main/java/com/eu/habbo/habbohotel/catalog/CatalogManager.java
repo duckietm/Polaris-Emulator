@@ -12,7 +12,6 @@ import com.eu.habbo.habbohotel.catalog.layouts.CatalogRootLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.ClubBuyLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.ClubGiftsLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.ColorGroupingLayout;
-import com.eu.habbo.habbohotel.catalog.layouts.CustomPrefixLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.Default_3x3Layout;
 import com.eu.habbo.habbohotel.catalog.layouts.FrontPageFeaturedLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.FrontpageLayout;
@@ -238,7 +237,7 @@ public class CatalogManager {
                                 this.put(layout.name().toLowerCase(), MadMoneyLayout.class);
                                 break;
                             case custom_prefix:
-                                this.put(layout.name().toLowerCase(), CustomPrefixLayout.class);
+                                // Retained in the public enum for plugin ABI compatibility only.
                                 break;
                             case root:
                             case productpage1:
@@ -443,8 +442,6 @@ public class CatalogManager {
     }
 
     private synchronized void loadCatalogPages() {
-        this.catalogPages.clear();
-
         final Map<Integer, CatalogPage> pages = new HashMap<>();
         pages.put(-1, new CatalogRootLayout());
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
@@ -490,14 +487,12 @@ public class CatalogManager {
             }
         }
 
-        this.catalogPages.putAll(pages);
+        replacePageMap(this.catalogPages, pages);
 
         LOGGER.info("Loaded {} Catalog Pages!", this.catalogPages.size());
     }
 
     private synchronized void loadBuildersClubCatalogPages() {
-        this.buildersClubCatalogPages.clear();
-
         final Map<Integer, CatalogPage> pages = new HashMap<>();
         pages.put(-1, new CatalogRootLayout());
 
@@ -546,9 +541,16 @@ public class CatalogManager {
             }
         }
 
-        this.buildersClubCatalogPages.putAll(pages);
+        replacePageMap(this.buildersClubCatalogPages, pages);
 
         LOGGER.info("Loaded {} Builders Club Catalog Pages!", this.buildersClubCatalogPages.size());
+    }
+
+    static void replacePageMap(Int2ObjectMap<CatalogPage> livePages, Map<Integer, CatalogPage> loadedPages) {
+        synchronized (livePages) {
+            livePages.clear();
+            livePages.putAll(loadedPages);
+        }
     }
 
     private synchronized void loadCatalogFeaturedPages() {

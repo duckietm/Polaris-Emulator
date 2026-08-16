@@ -11,7 +11,7 @@ public final class CatalogStudioDocumentDryRunEvent extends CatalogStudioEvent {
         long draftVersionId = this.packet.readInt();
         long expectedRevision = this.packet.readInt();
         String format = this.packet.readString();
-        String document = this.packet.readString();
+        String document = CatalogStudioRequestParser.parseDocument(this.packet);
         CatalogImportDryRun dryRun = studio().changeSets().dryRun(draftVersionId, expectedRevision, format, document);
         this.client.sendResponse(new CatalogStudioDocumentResultComposer(
                 operationId,

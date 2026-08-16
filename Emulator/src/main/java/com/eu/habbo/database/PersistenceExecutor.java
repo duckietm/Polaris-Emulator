@@ -3,10 +3,13 @@ package com.eu.habbo.database;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +21,11 @@ public final class PersistenceExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(PersistenceExecutor.class);
     private static final int DEFAULT_QUEUE_CAPACITY = 2_048;
 
+    private final int queueCapacity;
+    private final AtomicInteger highWaterMark = new AtomicInteger();
+    private final AtomicLong saturationCount = new AtomicLong();
+    private final AtomicLong totalSubmissionWaitNanos = new AtomicLong();
+    private final ThreadLocal<Boolean> persistenceWorker = ThreadLocal.withInitial(() -> false);
     private final ThreadPoolExecutor executor;
     private final AtomicBoolean accepting = new AtomicBoolean(true);
 
@@ -29,8 +37,17 @@ public final class PersistenceExecutor {
             throw new IllegalArgumentException("queueCapacity must be positive");
         }
 
-        ThreadFactory threadFactory =
+        this.queueCapacity = queueCapacity;
+        ThreadFactory platformThreadFactory =
                 Thread.ofPlatform().name("Polaris-JDBC-", 0).factory();
+        ThreadFactory threadFactory = task -> platformThreadFactory.newThread(() -> {
+            this.persistenceWorker.set(true);
+            try {
+                task.run();
+            } finally {
+                this.persistenceWorker.remove();
+            }
+        });
         this.executor = new ThreadPoolExecutor(
                 threads,
                 threads,
@@ -38,23 +55,27 @@ public final class PersistenceExecutor {
                 TimeUnit.MILLISECONDS,
                 new ArrayBlockingQueue<>(queueCapacity),
                 threadFactory,
-                (task, ignored) -> task.run());
+                this::enqueueOnSaturation);
         this.executor.prestartAllCoreThreads();
     }
 
     public static PersistenceExecutor forRuntimeThreads(int runtimeThreads) {
+        return forRuntimeThreads(runtimeThreads, DEFAULT_QUEUE_CAPACITY);
+    }
+
+    public static PersistenceExecutor forRuntimeThreads(int runtimeThreads, int queueCapacity) {
         int threads = Math.max(2, Math.min(8, runtimeThreads));
-        return new PersistenceExecutor(threads, DEFAULT_QUEUE_CAPACITY);
+        return new PersistenceExecutor(threads, queueCapacity);
     }
 
     public void execute(Runnable task) {
         Runnable guarded = guard(Objects.requireNonNull(task, "task"));
         if (!this.accepting.get()) {
-            guarded.run();
-            return;
+            throw new RejectedExecutionException("Persistence executor is not accepting work");
         }
 
         this.executor.execute(guarded);
+        this.recordQueueDepth();
     }
 
     public int getQueueDepth() {
@@ -63,6 +84,17 @@ public final class PersistenceExecutor {
 
     public int getActiveCount() {
         return this.executor.getActiveCount();
+    }
+
+    public Metrics metrics() {
+        return new Metrics(
+                this.getActiveCount(),
+                this.getQueueDepth(),
+                this.queueCapacity,
+                this.highWaterMark.get(),
+                this.saturationCount.get(),
+                this.totalSubmissionWaitNanos.get(),
+                this.accepting.get());
     }
 
     public void shutDown() {
@@ -105,6 +137,39 @@ public final class PersistenceExecutor {
         }
     }
 
+    private void enqueueOnSaturation(Runnable task, ThreadPoolExecutor executor) {
+        if (executor.isShutdown()) {
+            throw new RejectedExecutionException("Persistence executor is shutting down");
+        }
+
+        this.saturationCount.incrementAndGet();
+        this.highWaterMark.accumulateAndGet(this.queueCapacity, Math::max);
+        if (this.persistenceWorker.get()) {
+            task.run();
+            return;
+        }
+
+        long startedAt = System.nanoTime();
+        try {
+            executor.getQueue().put(task);
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new RejectedExecutionException("Interrupted while waiting for persistence capacity", exception);
+        } finally {
+            this.totalSubmissionWaitNanos.addAndGet(Math.max(0L, System.nanoTime() - startedAt));
+        }
+
+        if (executor.isShutdown() && executor.remove(task)) {
+            throw new RejectedExecutionException("Persistence executor shut down while accepting work");
+        }
+
+        this.recordQueueDepth();
+    }
+
+    private void recordQueueDepth() {
+        this.highWaterMark.accumulateAndGet(this.executor.getQueue().size(), Math::max);
+    }
+
     private static Runnable guard(Runnable task) {
         return () -> {
             try {
@@ -114,4 +179,13 @@ public final class PersistenceExecutor {
             }
         };
     }
+
+    public record Metrics(
+            int activeCount,
+            int queueDepth,
+            int queueCapacity,
+            int highWaterMark,
+            long saturationCount,
+            long totalSubmissionWaitNanos,
+            boolean accepting) {}
 }

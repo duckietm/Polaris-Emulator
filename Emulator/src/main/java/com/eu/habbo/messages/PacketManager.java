@@ -20,7 +20,9 @@ import com.eu.habbo.messages.incoming.catalog.BuildersClubQueryFurniCountEvent;
 import com.eu.habbo.messages.incoming.catalog.CatalogBuyClubDiscountEvent;
 import com.eu.habbo.messages.incoming.catalog.CatalogBuyItemAsGiftEvent;
 import com.eu.habbo.messages.incoming.catalog.CatalogBuyItemEvent;
+import com.eu.habbo.messages.incoming.catalog.CatalogProductMetadataEvent;
 import com.eu.habbo.messages.incoming.catalog.CatalogRequestClubDiscountEvent;
+import com.eu.habbo.messages.incoming.catalog.CatalogRuntimeConfigurationEvent;
 import com.eu.habbo.messages.incoming.catalog.CatalogSearchedItemEvent;
 import com.eu.habbo.messages.incoming.catalog.CatalogSelectClubGiftEvent;
 import com.eu.habbo.messages.incoming.catalog.CheckPetNameEvent;
@@ -684,6 +686,8 @@ public class PacketManager {
         this.registerHandler(Incoming.BuildersClubPlaceRoomItemEvent, BuildersClubPlaceRoomItemEvent.class);
         this.registerHandler(Incoming.BuildersClubPlaceWallItemEvent, BuildersClubPlaceWallItemEvent.class);
         this.registerHandler(Incoming.RequestCatalogPageEvent, RequestCatalogPageEvent.class);
+        this.registerHandler(Incoming.CatalogProductMetadataEvent, CatalogProductMetadataEvent.class);
+        this.registerHandler(Incoming.CatalogRuntimeConfigurationEvent, CatalogRuntimeConfigurationEvent.class);
         this.registerHandler(Incoming.CatalogBuyItemAsGiftEvent, CatalogBuyItemAsGiftEvent.class);
         this.registerHandler(Incoming.CatalogBuyItemEvent, CatalogBuyItemEvent.class);
         this.registerHandler(Incoming.RedeemVoucherEvent, RedeemVoucherEvent.class);

@@ -506,6 +506,15 @@ public class HabboStats implements Runnable {
         }
     }
 
+    public boolean initAchievementProgressIfAbsent(Achievement achievement) {
+        synchronized (this.achievementProgress) {
+            if (this.achievementProgress.containsKey(achievement)) return false;
+
+            this.achievementProgress.put(achievement, 0);
+            return true;
+        }
+    }
+
     /** Atomic read-add-write so concurrent progress sources don't lose updates. Returns the new total. */
     public int incrementProgress(Achievement achievement, int amount) {
         synchronized (this.achievementProgress) {

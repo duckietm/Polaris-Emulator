@@ -30,10 +30,10 @@ org.flywaydb.core.internal.proprietaryStubs.PATTokenConfigurationExtensionStub
 org.flywaydb.core.internal.proprietaryStubs.PrepareCommandExtensionStub
 org.flywaydb.core.internal.proprietaryStubs.ShouldExecuteEvaluatorStub
 org.flywaydb.core.internal.proprietaryStubs.UndoCommandExtensionStub
-org.flywaydb.core.internal.publishing.PublishingConfigurationExtension
 org.flywaydb.core.internal.resource.CoreResourceTypeProvider
 org.flywaydb.core.internal.scanner.classpath.ClasspathLocationHandlerImpl
 org.flywaydb.core.internal.scanner.filesystem.FilesystemLocationHandler
 org.flywaydb.core.internal.schemahistory.BaseAppliedMigration
 org.flywaydb.database.mysql.MySQLDatabaseType
+org.flywaydb.database.mysql.authentication.MySQLExternalAuthSupportStub
 org.flywaydb.database.mysql.mariadb.MariaDBDatabaseType

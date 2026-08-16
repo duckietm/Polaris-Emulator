@@ -3,7 +3,10 @@ package com.eu.habbo.messages.incoming.catalog.catalogadmin.studio;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogEntityType;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogLockKey;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogStudioDocumentWireCodec;
 import com.eu.habbo.messages.ClientMessage;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -66,6 +69,22 @@ public final class CatalogStudioRequestParser {
         String summary = packet.readString();
         String operationId = packet.bytesAvailable() > 0 ? packet.readString() : "";
         return new CatalogStudioMutationEnvelope(draftVersionId, expectedRevision, lockToken, summary, operationId);
+    }
+
+    public static String parseDocument(ClientMessage packet) {
+        Objects.requireNonNull(packet, "packet");
+        String encodingOrLegacyDocument = packet.readString();
+        if (!CatalogStudioDocumentWireCodec.ENCODING.equals(encodingOrLegacyDocument)) {
+            return encodingOrLegacyDocument;
+        }
+
+        int chunkCount = packet.readInt();
+        if (chunkCount < 0 || chunkCount > CatalogStudioDocumentWireCodec.MAX_CHUNKS) {
+            throw new IllegalArgumentException("Invalid Catalog Studio SQL document chunk count");
+        }
+        List<String> chunks = new ArrayList<>(chunkCount);
+        for (int index = 0; index < chunkCount; index++) chunks.add(packet.readString());
+        return CatalogStudioDocumentWireCodec.decode(encodingOrLegacyDocument, chunks);
     }
 
     private static CatalogLockKey key(ClientMessage packet) {

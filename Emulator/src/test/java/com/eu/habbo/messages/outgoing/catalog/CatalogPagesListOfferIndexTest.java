@@ -65,6 +65,49 @@ class CatalogPagesListOfferIndexTest {
         }
     }
 
+    @Test
+    void indexCapsOffersAtRendererProtocolLimitWithoutCorruptingSuffix() {
+        Habbo habbo = mock(Habbo.class);
+        GameEnvironment environment = mock(GameEnvironment.class);
+        CatalogManager catalogManager = mock(CatalogManager.class);
+        CatalogPage page = mock(CatalogPage.class);
+        int[] offers = new int[1005];
+        for (int index = 0; index < offers.length; index++) offers[index] = index + 1;
+
+        when(environment.getCatalogManager()).thenReturn(catalogManager);
+        when(catalogManager.getCatalogPages(-1, habbo, CatalogPageType.NORMAL)).thenReturn(List.of(page));
+        when(catalogManager.getCatalogPages(42, habbo, CatalogPageType.NORMAL)).thenReturn(List.of());
+        when(page.isVisible()).thenReturn(true);
+        when(page.isEnabled()).thenReturn(true);
+        when(page.getIconImage()).thenReturn(7);
+        when(page.getId()).thenReturn(42);
+        when(page.getParentId()).thenReturn(-1);
+        when(page.getPageName()).thenReturn("chairs");
+        when(page.getCaption()).thenReturn("Chairs");
+        when(page.getOfferIds()).thenReturn(new IntArrayList(offers));
+
+        try (MockedStatic<Emulator> emulator = mockStatic(Emulator.class)) {
+            emulator.when(Emulator::getGameEnvironment).thenReturn(environment);
+
+            ByteBuf packet =
+                    new CatalogPagesListComposer(habbo, "NORMAL").compose().get();
+            packet.skipBytes(Integer.BYTES + Short.BYTES);
+
+            skipNodeHeader(packet);
+            assertEquals(0, packet.readInt());
+            assertEquals(1, packet.readInt());
+
+            skipNodeHeader(packet);
+            assertEquals(1000, packet.readInt());
+            for (int offerId = 1; offerId <= 1000; offerId++) assertEquals(offerId, packet.readInt());
+            assertEquals(0, packet.readInt());
+
+            assertFalse(packet.readBoolean());
+            assertEquals("NORMAL", readString(packet));
+            assertFalse(packet.isReadable());
+        }
+    }
+
     private static void skipNodeHeader(ByteBuf packet) {
         packet.readBoolean();
         packet.readInt();

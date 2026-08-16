@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboBadge;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.users.inventory.BadgesComponent;
 import com.eu.habbo.messages.outgoing.achievements.AchievementProgressComposer;
 import com.eu.habbo.messages.outgoing.achievements.AchievementUnlockedComposer;
 import com.eu.habbo.messages.outgoing.achievements.talenttrack.TalentLevelUpdateComposer;
@@ -79,13 +80,11 @@ public class AchievementManager {
 
         if (!habbo.isOnline()) return;
 
-        int currentProgress = habbo.getHabboStats().getAchievementProgress(achievement);
-
-        if (currentProgress == -1) {
-            currentProgress = 0;
+        if (habbo.getHabboStats().initAchievementProgressIfAbsent(achievement)) {
             createUserEntry(habbo, achievement);
-            habbo.getHabboStats().setProgress(achievement, 0);
         }
+
+        int currentProgress = habbo.getHabboStats().getAchievementProgress(achievement);
 
         if (Emulator.getPluginManager().isRegistered(UserAchievementProgressEvent.class, true)) {
             Event userAchievementProgressedEvent = new UserAchievementProgressEvent(habbo, achievement, amount);
@@ -94,15 +93,16 @@ public class AchievementManager {
             if (userAchievementProgressedEvent.isCancelled()) return;
         }
 
-        AchievementLevel oldLevel = achievement.getLevelForProgress(currentProgress);
+        AchievementLevel currentLevel = achievement.getLevelForProgress(currentProgress);
 
-        if (oldLevel != null
-                && (oldLevel.level == achievement.levels.size()
-                        && currentProgress >= oldLevel.progress)) // Maximum achievement gotten.
+        if (currentLevel != null
+                && (currentLevel.level == achievement.levels.size()
+                        && currentProgress >= currentLevel.progress)) // Maximum achievement gotten.
         return;
 
         int newProgress = habbo.getHabboStats().incrementProgress(achievement, amount);
 
+        AchievementLevel oldLevel = achievement.getLevelForProgress(newProgress - amount);
         AchievementLevel newLevel = achievement.getLevelForProgress(newProgress);
 
         if (AchievementManager.TALENTTRACK_ENABLED) {
@@ -143,39 +143,49 @@ public class AchievementManager {
             habbo.getClient().sendResponse(new AchievementProgressComposer(habbo, achievement));
             habbo.getClient().sendResponse(new AchievementUnlockedComposer(habbo, achievement));
 
-            // Exception could possibly arise when the user disconnects while being in tour.
-            // The achievement is then progressed but the user is already disposed so fetching
-            // the badge would result in an nullpointer exception. This is normal behaviour.
+            String newBadgeCode = "ACH_" + achievement.name + newLevel.level;
+
             HabboBadge badge = null;
 
-            if (oldLevel != null) {
-                try {
-                    badge = habbo.getInventory()
-                            .getBadgesComponent()
-                            .getBadge(("ACH_" + achievement.name + oldLevel.level).toLowerCase());
-                } catch (Exception e) {
-                    LOGGER.error("Caught exception", e);
-                    return;
+            try {
+                BadgesComponent badgesComponent = habbo.getInventory().getBadgesComponent();
+
+                for (HabboBadge owned : badgesComponent.getBadgesSnapshot()) {
+                    if (!isAchievementBadge(owned.getCode(), achievement.name)) continue;
+
+                    if (badge == null) {
+                        badge = owned;
+                        continue;
+                    }
+
+                    if (badge.getSlot() == 0 && owned.getSlot() > 0) {
+                        badge.setSlot(owned.getSlot());
+                    }
+
+                    badgesComponent.removeBadge(owned);
+
+                    if (!owned.getCode().equalsIgnoreCase(badge.getCode())) {
+                        BadgesComponent.deleteBadge(habbo.getHabboInfo().getId(), owned.getCode());
+                    }
                 }
+            } catch (Exception e) {
+                LOGGER.error("Caught exception", e);
+                return;
             }
 
-            String newBadgCode = "ACH_" + achievement.name + newLevel.level;
-
             if (badge != null) {
-                badge.setCode(newBadgCode);
+                badge.setCode(newBadgeCode);
                 badge.needsInsert(false);
                 badge.needsUpdate(true);
             } else {
-                if (habbo.getInventory().getBadgesComponent().hasBadge(newBadgCode)) return;
-
-                badge = new HabboBadge(0, newBadgCode, 0, habbo);
+                badge = new HabboBadge(0, newBadgeCode, 0, habbo);
                 habbo.getClient().sendResponse(new AddUserBadgeComposer(badge));
                 badge.needsInsert(true);
                 badge.needsUpdate(true);
                 habbo.getInventory().getBadgesComponent().addBadge(badge);
             }
 
-            Emulator.getThreading().run(badge);
+            badge.run();
 
             if (badge.getSlot() > 0) {
                 if (habbo.getHabboInfo().getCurrentRoom() != null) {
@@ -204,6 +214,28 @@ public class AchievementManager {
                 habbo.getHabboInfo().getCurrentRoom().sendComposer(new RoomUserDataComposer(habbo).compose());
             }
         }
+    }
+
+    /**
+     * True when the badge code belongs to this achievement's lineage: the "ACH_" prefix,
+     * the achievement name (badge codes vary in case), then the level as trailing digits.
+     * The digits requirement keeps prefix-sharing achievement names apart — "RoomEntry"
+     * must not claim "ACH_RoomEntryFriend5".
+     */
+    static boolean isAchievementBadge(String badgeCode, String achievementName) {
+        if (badgeCode == null || achievementName == null) return false;
+
+        String prefix = "ACH_" + achievementName;
+
+        if (badgeCode.length() <= prefix.length()) return false;
+
+        if (!badgeCode.regionMatches(true, 0, prefix, 0, prefix.length())) return false;
+
+        for (int i = prefix.length(); i < badgeCode.length(); i++) {
+            if (!Character.isDigit(badgeCode.charAt(i))) return false;
+        }
+
+        return true;
     }
 
     public static boolean hasAchieved(Habbo habbo, Achievement achievement) {

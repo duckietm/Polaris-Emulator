@@ -48,14 +48,7 @@ public final class CatalogUndoService {
 
             long newRevision = versions.incrementRevision(
                     connection, draftVersionId, draft.version().revision());
-            journal.append(
-                    connection,
-                    draftVersionId,
-                    newRevision,
-                    actorId,
-                    "Undo change #" + group.id(),
-                    CatalogChangeSource.UNDO,
-                    inverse);
+            journal.delete(connection, group.id());
             return newRevision;
         });
     }

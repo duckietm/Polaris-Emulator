@@ -24,8 +24,7 @@ class RuntimeResilienceRuntimeTest {
     @Test
     void installedServiceDrivesSharedAdmissionDecisions() {
         RuntimeResilienceController controller = new RuntimeResilienceController(
-                RuntimeResilienceController.Mode.ENFORCE,
-                new RuntimeResilienceController.Thresholds(1, 1, 1));
+                RuntimeResilienceController.Mode.ENFORCE, new RuntimeResilienceController.Thresholds(1, 1, 1));
         RuntimeResilienceService service = new RuntimeResilienceService(
                 controller,
                 new RuntimePressureAssessor(new RuntimePressureAssessor.Thresholds(0.75D, 0.95D, 2)),
@@ -42,6 +41,8 @@ class RuntimeResilienceRuntimeTest {
                 RuntimeResilienceController.Action.REJECT,
                 RuntimeResilienceRuntime.admit(RuntimeResilienceController.WorkClass.INTERACTIVE)
                         .effectiveAction());
-        assertEquals(RuntimeResilienceController.State.CRITICAL, RuntimeResilienceRuntime.status().controller().state());
+        assertEquals(
+                RuntimeResilienceController.State.CRITICAL,
+                RuntimeResilienceRuntime.status().controller().state());
     }
 }

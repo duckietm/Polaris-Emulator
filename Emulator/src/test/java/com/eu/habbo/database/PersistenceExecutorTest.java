@@ -103,6 +103,32 @@ class PersistenceExecutorTest {
         }
     }
 
+    @Test
+    void capacityMetricsRemainAvailableAlongsideOperationTelemetry() throws Exception {
+        PersistenceExecutor executor = new PersistenceExecutor(1, 1);
+        CountDownLatch workerStarted = new CountDownLatch(1);
+        CountDownLatch releaseWorker = new CountDownLatch(1);
+        try {
+            executor.execute("test.blocking", () -> {
+                workerStarted.countDown();
+                await(releaseWorker);
+            });
+            assertTrue(workerStarted.await(2, TimeUnit.SECONDS));
+            executor.execute("test.queued", () -> {});
+
+            PersistenceExecutor.Metrics metrics = executor.metrics();
+            PersistenceOperationMonitor.Snapshot operations = executor.operationSnapshot();
+
+            assertEquals(1, metrics.activeCount());
+            assertEquals(1, metrics.queueDepth());
+            assertEquals(1, metrics.queueCapacity());
+            assertEquals(2L, operations.submittedCount());
+        } finally {
+            releaseWorker.countDown();
+            executor.shutDown(2, TimeUnit.SECONDS);
+        }
+    }
+
     private static void await(CountDownLatch latch) {
         try {
             latch.await();

@@ -53,9 +53,10 @@ class ConfigRegistryTest {
     }
 
     @Test
-    void networkWorkerAndBackpressureDefaultsAreTyped() {
+    void boundedWorkerDefaultsAreTyped() {
         String reference = ConfigRegistry.standard().renderMarkdown();
 
+        assertTrue(reference.contains("| `db.persistence.queue.capacity` | integer | `2048` |"));
         assertTrue(reference.contains("| `http.blocking.pool.size` | integer | `8` |"));
         assertTrue(reference.contains("| `http.blocking.queue.capacity` | integer | `128` |"));
         assertTrue(reference.contains("| `execution.backpressure.mode` | string | `observe` |"));

@@ -2,6 +2,7 @@ package com.eu.habbo.threading;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.database.PersistenceExecutor;
+import com.eu.habbo.database.PersistenceOperationMonitor;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -77,6 +78,14 @@ public class ThreadPooling {
         }
 
         this.persistenceExecutor.execute(task);
+    }
+
+    public PersistenceOperationMonitor.Snapshot getPersistenceOperationSnapshot() {
+        return this.persistenceExecutor == null ? null : this.persistenceExecutor.operationSnapshot();
+    }
+
+    public PersistenceExecutor.Metrics getPersistenceMetrics() {
+        return this.persistenceExecutor == null ? null : this.persistenceExecutor.metrics();
     }
 
     public void shutDown() {

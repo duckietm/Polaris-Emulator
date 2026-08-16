@@ -2,6 +2,7 @@ package com.eu.habbo.monitoring;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.database.PersistenceExecutor;
+import com.eu.habbo.database.PersistenceOperationMonitor;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -243,10 +244,12 @@ public final class EmulatorStatsService {
             wiredTopRooms = new ArrayList<>(wiredTopRooms.subList(0, 5));
         }
 
-        HikariPoolMetrics hikariPoolMetrics = collectHikariPoolMetrics();
         ThreadPooling threading = Emulator.getThreading();
+        HikariPoolMetrics hikariPoolMetrics = collectHikariPoolMetrics();
         PersistenceMetrics persistenceMetrics = collectPersistenceMetrics(threading);
         SchedulerMetrics schedulerMetrics = collectSchedulerMetrics(threading);
+        PersistenceOperationMetrics persistenceOperations =
+                persistenceOperationMetrics(threading == null ? null : threading.getPersistenceOperationSnapshot());
         NetworkMetrics networkMetrics = collectNetworkMetrics(now);
         GarbageCollectorMetrics garbageCollectorMetrics = collectGarbageCollectorMetrics(now);
         HealthSnapshot health =
@@ -287,6 +290,7 @@ public final class EmulatorStatsService {
                 hikariPoolMetrics,
                 persistenceMetrics,
                 schedulerMetrics,
+                persistenceOperations,
                 networkMetrics,
                 garbageCollectorMetrics,
                 health);
@@ -343,6 +347,36 @@ public final class EmulatorStatsService {
                 executor.getPoolSize(),
                 executor.getCompletedTaskCount(),
                 !executor.isShutdown());
+    }
+
+    static PersistenceOperationMetrics persistenceOperationMetrics(PersistenceOperationMonitor.Snapshot snapshot) {
+        if (snapshot == null) {
+            return PersistenceOperationMetrics.empty();
+        }
+
+        List<PersistenceFailureRow> failures = snapshot.recentFailures().stream()
+                .map(failure -> new PersistenceFailureRow(
+                        failure.operationId(),
+                        failure.operationType(),
+                        failure.outcome(),
+                        failure.startedAtEpochMs(),
+                        nanosToMillis(failure.durationNanos()),
+                        failure.errorType()))
+                .toList();
+
+        return new PersistenceOperationMetrics(
+                snapshot.submittedCount(),
+                snapshot.succeededCount(),
+                snapshot.failedCount(),
+                snapshot.rejectedCount(),
+                snapshot.activeCount(),
+                nanosToMillis(snapshot.totalDurationNanos()),
+                nanosToMillis(snapshot.maxDurationNanos()),
+                failures);
+    }
+
+    private static double nanosToMillis(long nanos) {
+        return Math.max(0L, nanos) / 1_000_000D;
     }
 
     private static HealthSnapshot collectHealth(
@@ -604,6 +638,7 @@ public final class EmulatorStatsService {
         public final HikariPoolMetrics databasePool;
         public final PersistenceMetrics persistence;
         public final SchedulerMetrics scheduler;
+        public final PersistenceOperationMetrics persistenceOperations;
         public final NetworkMetrics network;
         public final GarbageCollectorMetrics garbageCollector;
         public final HealthSnapshot health;
@@ -627,7 +662,9 @@ public final class EmulatorStatsService {
                     wired,
                     wiredTopRooms,
                     databasePool,
+                    persistenceMetrics(null),
                     scheduler,
+                    PersistenceOperationMetrics.empty(),
                     network,
                     garbageCollector,
                     new HealthSnapshot(
@@ -659,6 +696,36 @@ public final class EmulatorStatsService {
                     databasePool,
                     persistenceMetrics(null),
                     scheduler,
+                    PersistenceOperationMetrics.empty(),
+                    network,
+                    garbageCollector,
+                    health);
+        }
+
+        public Snapshot(
+                Overview overview,
+                List<MemoryPoint> memoryHistory,
+                List<OnlineUserRow> users,
+                List<ActiveRoomRow> rooms,
+                List<WiredRoomRow> wired,
+                List<WiredTopRoomRow> wiredTopRooms,
+                HikariPoolMetrics databasePool,
+                SchedulerMetrics scheduler,
+                PersistenceOperationMetrics persistenceOperations,
+                NetworkMetrics network,
+                GarbageCollectorMetrics garbageCollector,
+                HealthSnapshot health) {
+            this(
+                    overview,
+                    memoryHistory,
+                    users,
+                    rooms,
+                    wired,
+                    wiredTopRooms,
+                    databasePool,
+                    persistenceMetrics(null),
+                    scheduler,
+                    persistenceOperations,
                     network,
                     garbageCollector,
                     health);
@@ -677,6 +744,36 @@ public final class EmulatorStatsService {
                 NetworkMetrics network,
                 GarbageCollectorMetrics garbageCollector,
                 HealthSnapshot health) {
+            this(
+                    overview,
+                    memoryHistory,
+                    users,
+                    rooms,
+                    wired,
+                    wiredTopRooms,
+                    databasePool,
+                    persistence,
+                    scheduler,
+                    PersistenceOperationMetrics.empty(),
+                    network,
+                    garbageCollector,
+                    health);
+        }
+
+        public Snapshot(
+                Overview overview,
+                List<MemoryPoint> memoryHistory,
+                List<OnlineUserRow> users,
+                List<ActiveRoomRow> rooms,
+                List<WiredRoomRow> wired,
+                List<WiredTopRoomRow> wiredTopRooms,
+                HikariPoolMetrics databasePool,
+                PersistenceMetrics persistence,
+                SchedulerMetrics scheduler,
+                PersistenceOperationMetrics persistenceOperations,
+                NetworkMetrics network,
+                GarbageCollectorMetrics garbageCollector,
+                HealthSnapshot health) {
             this.overview = overview;
             this.memoryHistory = memoryHistory;
             this.users = users;
@@ -686,6 +783,7 @@ public final class EmulatorStatsService {
             this.databasePool = databasePool;
             this.persistence = persistence;
             this.scheduler = scheduler;
+            this.persistenceOperations = persistenceOperations;
             this.network = network;
             this.garbageCollector = garbageCollector;
             this.health = health;
@@ -946,6 +1044,64 @@ public final class EmulatorStatsService {
             this.poolSize = poolSize;
             this.completedTasks = completedTasks;
             this.running = running;
+        }
+    }
+
+    public static final class PersistenceOperationMetrics {
+        public final long submitted;
+        public final long succeeded;
+        public final long failed;
+        public final long rejected;
+        public final long active;
+        public final double totalDurationMs;
+        public final double maxDurationMs;
+        public final List<PersistenceFailureRow> recentFailures;
+
+        public PersistenceOperationMetrics(
+                long submitted,
+                long succeeded,
+                long failed,
+                long rejected,
+                long active,
+                double totalDurationMs,
+                double maxDurationMs,
+                List<PersistenceFailureRow> recentFailures) {
+            this.submitted = submitted;
+            this.succeeded = succeeded;
+            this.failed = failed;
+            this.rejected = rejected;
+            this.active = active;
+            this.totalDurationMs = totalDurationMs;
+            this.maxDurationMs = maxDurationMs;
+            this.recentFailures = List.copyOf(recentFailures);
+        }
+
+        private static PersistenceOperationMetrics empty() {
+            return new PersistenceOperationMetrics(0L, 0L, 0L, 0L, 0L, 0D, 0D, List.of());
+        }
+    }
+
+    public static final class PersistenceFailureRow {
+        public final long operationId;
+        public final String operationType;
+        public final String outcome;
+        public final long startedAtEpochMs;
+        public final double durationMs;
+        public final String errorType;
+
+        public PersistenceFailureRow(
+                long operationId,
+                String operationType,
+                String outcome,
+                long startedAtEpochMs,
+                double durationMs,
+                String errorType) {
+            this.operationId = operationId;
+            this.operationType = operationType;
+            this.outcome = outcome;
+            this.startedAtEpochMs = startedAtEpochMs;
+            this.durationMs = durationMs;
+            this.errorType = errorType;
         }
     }
 

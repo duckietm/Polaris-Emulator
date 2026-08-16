@@ -41,6 +41,19 @@ class SessionRecoveryServiceTest {
         assertTrue(service.consume(token).isEmpty());
     }
 
+    @Test
+    void checkpointActivatesOnlyTicketsIssuedByThisServiceInstance() {
+        FakeStore store = new FakeStore();
+        store.hashByUser.put(99, new byte[32]);
+        SessionRecoveryService service = service(store);
+        String currentToken = service.issue(42);
+
+        service.checkpoint(java.util.List.of(42, 99));
+
+        assertEquals(java.util.Set.of(42), store.activatedUsers);
+        assertEquals(OptionalInt.of(42), service.consume(currentToken));
+    }
+
     private static SessionRecoveryService service(FakeStore store) {
         return new SessionRecoveryService(
                 store,
@@ -53,6 +66,7 @@ class SessionRecoveryServiceTest {
         private final Map<Integer, byte[]> hashByUser = new HashMap<>();
         private byte[] activeHash;
         private boolean consumed;
+        private final java.util.Set<Integer> activatedUsers = new java.util.HashSet<>();
 
         @Override
         public void replace(int userId, byte[] tokenHash, Instant issuedAt) {
@@ -62,6 +76,7 @@ class SessionRecoveryServiceTest {
         @Override
         public void activate(Iterable<Integer> userIds, Instant expiresAt) {
             for (int userId : userIds) {
+                activatedUsers.add(userId);
                 activeHash = hashByUser.get(userId);
             }
         }

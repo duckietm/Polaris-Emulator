@@ -44,18 +44,29 @@ final class JdbcRecoveryTicketStore implements RecoveryTicketStore {
             return;
         }
         try (Connection connection = dataSource.getConnection()) {
-            for (int offset = 0; offset < ids.size(); offset += CHECKPOINT_BATCH_SIZE) {
-                List<Integer> batch = ids.subList(offset, Math.min(ids.size(), offset + CHECKPOINT_BATCH_SIZE));
-                String placeholders = String.join(",", java.util.Collections.nCopies(batch.size(), "?"));
-                String sql = "UPDATE session_recovery_tickets SET recoverable_until = ?, consumed_at = NULL "
-                        + "WHERE user_id IN (" + placeholders + ")";
-                try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                    statement.setTimestamp(1, Timestamp.from(expiresAt));
-                    for (int index = 0; index < batch.size(); index++) {
-                        statement.setInt(index + 2, batch.get(index));
+            connection.setAutoCommit(false);
+            try {
+                for (int offset = 0; offset < ids.size(); offset += CHECKPOINT_BATCH_SIZE) {
+                    List<Integer> batch = ids.subList(offset, Math.min(ids.size(), offset + CHECKPOINT_BATCH_SIZE));
+                    String placeholders = String.join(",", java.util.Collections.nCopies(batch.size(), "?"));
+                    String sql = "UPDATE session_recovery_tickets SET recoverable_until = ? "
+                            + "WHERE consumed_at IS NULL AND recoverable_until IS NULL AND user_id IN ("
+                            + placeholders
+                            + ")";
+                    try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                        statement.setTimestamp(1, Timestamp.from(expiresAt));
+                        for (int index = 0; index < batch.size(); index++) {
+                            statement.setInt(index + 2, batch.get(index));
+                        }
+                        statement.executeUpdate();
                     }
-                    statement.executeUpdate();
                 }
+                connection.commit();
+            } catch (SQLException exception) {
+                connection.rollback();
+                throw exception;
+            } finally {
+                connection.setAutoCommit(true);
             }
         } catch (SQLException exception) {
             throw new SessionRecoveryException("Could not checkpoint recovery tickets", exception);

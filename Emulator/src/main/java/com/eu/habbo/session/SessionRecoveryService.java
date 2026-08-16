@@ -6,8 +6,11 @@ import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.OptionalInt;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class SessionRecoveryService {
     private static final int TOKEN_BYTES = 32;
@@ -16,6 +19,7 @@ public final class SessionRecoveryService {
     private final Clock clock;
     private final SecureRandom random;
     private final Duration recoveryWindow;
+    private final Set<Integer> issuedUsers = ConcurrentHashMap.newKeySet();
 
     SessionRecoveryService(RecoveryTicketStore store, Clock clock, SecureRandom random, Duration recoveryWindow) {
         this.store = Objects.requireNonNull(store);
@@ -32,11 +36,19 @@ public final class SessionRecoveryService {
         random.nextBytes(token);
         String encoded = Base64.getUrlEncoder().withoutPadding().encodeToString(token);
         store.replace(userId, digest(encoded), clock.instant());
+        issuedUsers.add(userId);
         return encoded;
     }
 
     public void checkpoint(Iterable<Integer> userIds) {
-        store.activate(userIds, clock.instant().plus(recoveryWindow));
+        Set<Integer> eligibleUsers = new HashSet<>();
+        for (int userId : userIds) {
+            if (issuedUsers.contains(userId)) {
+                eligibleUsers.add(userId);
+            }
+        }
+        store.activate(eligibleUsers, clock.instant().plus(recoveryWindow));
+        issuedUsers.removeAll(eligibleUsers);
     }
 
     public OptionalInt consume(String token) {

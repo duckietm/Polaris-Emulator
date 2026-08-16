@@ -131,6 +131,14 @@ public final class ConfigRegistry {
                 "session.reconnect.grace.seconds");
         keys.add(definition("runtime.threads", ConfigKey.ValueType.INTEGER, "8", true));
         keys.add(definition("http.blocking.pool.size", ConfigKey.ValueType.INTEGER, "8", true));
+        keys.add(definition("http.blocking.queue.capacity", ConfigKey.ValueType.INTEGER, "128", true));
+        keys.add(definition("execution.backpressure.pause.timeout_ms", ConfigKey.ValueType.INTEGER, "2000", true));
+        keys.add(definition("io.packet.handler.threads", ConfigKey.ValueType.INTEGER, "0", true));
+        keys.add(definition("io.packet.handler.queue.capacity", ConfigKey.ValueType.INTEGER, "256", true));
+        keys.add(definition("io.packet.handler.queue.low_watermark", ConfigKey.ValueType.INTEGER, "192", true));
+        keys.add(definition("io.packet.handler.per_connection.capacity", ConfigKey.ValueType.INTEGER, "32", true));
+        keys.add(definition("io.packet.handler.per_connection.low_watermark", ConfigKey.ValueType.INTEGER, "16", true));
+        keys.add(definition("io.packet.handler.per_connection.pending", ConfigKey.ValueType.INTEGER, "16", true));
         keys.add(definition("stress.max_bots", ConfigKey.ValueType.INTEGER, "5000", true));
         keys.add(definition("stress.max_items", ConfigKey.ValueType.INTEGER, "100000", true));
         keys.add(definition("stress.max_rollers", ConfigKey.ValueType.INTEGER, "50000", true));
@@ -181,6 +189,7 @@ public final class ConfigRegistry {
                 "Enables priority-ordered, cancellation-aware plugin event dispatch."));
         keys.add(definition("db.integrity.audit.mode", ConfigKey.ValueType.STRING, "warn", true));
         keys.add(definition("cms.api.allowed", ConfigKey.ValueType.STRING, "127.0.0.1;::1", true));
+        keys.add(definition("execution.backpressure.mode", ConfigKey.ValueType.STRING, "observe", true));
         return List.copyOf(keys);
     }
 
@@ -263,6 +272,9 @@ public final class ConfigRegistry {
         }
         if (name.startsWith("http.blocking.")) {
             return "Blocking HTTP worker setting.";
+        }
+        if (name.startsWith("execution.backpressure.") || name.startsWith("io.packet.handler.")) {
+            return "Inbound execution backpressure setting.";
         }
         if (name.startsWith("io.netty.")) {
             return "Netty channel flow-control setting.";

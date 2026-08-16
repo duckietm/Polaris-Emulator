@@ -94,8 +94,16 @@ login.news.limit=5
 
 #Performance / concurrency (optional — sensible defaults apply if unset; adjust in the Database).
 ## io.packet.handler.threads=24 #Game packet-handler pool size; runs game handlers OFF the Netty I/O loop. Default max(16, 2 x CPU cores).
+## execution.backpressure.mode=observe #Use observe to measure pressure without limiting traffic; switch to enforce after validation.
+## execution.backpressure.pause.timeout_ms=2000 #Maximum packet-lane pause before disconnecting a persistently congested connection.
+## io.packet.handler.queue.capacity=256 #Global packet executions allowed in flight while enforcement is active.
+## io.packet.handler.queue.low_watermark=192 #Resume waiting connections after global occupancy drains to this value.
+## io.packet.handler.per_connection.capacity=32 #Maximum concurrent packet executions owned by one connection.
+## io.packet.handler.per_connection.low_watermark=16 #Per-connection occupancy required before reads resume.
+## io.packet.handler.per_connection.pending=16 #Already-decoded packets retained per paused connection.
 ## auth.http.pool.size=16 #Dedicated worker pool for the /api/auth/* HTTP endpoints (BCrypt/JDBC/Turnstile/SMTP run off the event loop). Default 16.
 ## http.blocking.pool.size=8 #Dedicated workers for blocking badge, asset, leaderboard, and emulator-stats endpoints. Default 8.
+## http.blocking.queue.capacity=128 #Global blocking HTTP executions allowed in flight while enforcement is active.
 ## io.netty.allocator.pooled=false #Set true to opt into Netty's pooled ByteBuf allocator. Default false (unpooled-heap).
 ## io.netty.write_buffer.low_water_mark=32768 #Mark a channel writable again after queued outbound bytes drain below this value.
 ## io.netty.write_buffer.high_water_mark=65536 #Mark a channel unwritable after queued outbound bytes exceed this value.

@@ -39,13 +39,22 @@ Unknown keys remain allowed for plugins. Database-backed hotel settings are docu
 | `enc.e` | string | `` | — | yes | no | Legacy transport encryption setting. |
 | `enc.enabled` | boolean | `false` | — | yes | no | Legacy transport encryption setting. |
 | `enc.n` | string | `` | — | yes | no | Legacy transport encryption setting. |
+| `execution.backpressure.mode` | string | `observe` | — | yes | no | Inbound execution backpressure setting. |
+| `execution.backpressure.pause.timeout_ms` | integer | `2000` | — | yes | no | Inbound execution backpressure setting. |
 | `game.host` | string | `` | `EMU_HOST` | yes | no | Game listener setting. |
 | `game.port` | integer | `0` | `EMU_PORT` | yes | no | Game listener setting. |
 | `habbo.console.style` | string | `` | — | yes | no | Polaris startup setting. |
 | `http.blocking.pool.size` | integer | `8` | — | yes | no | Blocking HTTP worker setting. |
+| `http.blocking.queue.capacity` | integer | `128` | — | yes | no | Blocking HTTP worker setting. |
 | `io.netty.unwritable.timeout.seconds` | integer | `10` | — | yes | no | Netty channel flow-control setting. |
 | `io.netty.write_buffer.high_water_mark` | integer | `65536` | — | yes | no | Netty channel flow-control setting. |
 | `io.netty.write_buffer.low_water_mark` | integer | `32768` | — | yes | no | Netty channel flow-control setting. |
+| `io.packet.handler.per_connection.capacity` | integer | `32` | — | yes | no | Inbound execution backpressure setting. |
+| `io.packet.handler.per_connection.low_watermark` | integer | `16` | — | yes | no | Inbound execution backpressure setting. |
+| `io.packet.handler.per_connection.pending` | integer | `16` | — | yes | no | Inbound execution backpressure setting. |
+| `io.packet.handler.queue.capacity` | integer | `256` | — | yes | no | Inbound execution backpressure setting. |
+| `io.packet.handler.queue.low_watermark` | integer | `192` | — | yes | no | Inbound execution backpressure setting. |
+| `io.packet.handler.threads` | integer | `0` | — | yes | no | Inbound execution backpressure setting. |
 | `login.news.limit` | integer | `0` | — | yes | no | Built-in login endpoint setting. |
 | `login.remember.duration.days` | integer | `0` | — | yes | no | Built-in login endpoint setting. |
 | `login.remember.enabled` | boolean | `false` | — | yes | no | Built-in login endpoint setting. |

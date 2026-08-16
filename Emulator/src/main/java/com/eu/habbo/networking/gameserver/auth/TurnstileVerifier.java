@@ -1,11 +1,9 @@
 package com.eu.habbo.networking.gameserver.auth;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.resilience.RuntimeResilienceRuntime;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -13,20 +11,20 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class TurnstileVerifier {
     private static final Logger LOGGER = LoggerFactory.getLogger(TurnstileVerifier.class);
     private static final String VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
-    private static final HttpClient CLIENT = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(5))
-            .build();
+    private static final HttpClient CLIENT =
+            HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
 
     private TurnstileVerifier() {}
 
     public static boolean isEnabled() {
-        return Emulator.getConfig() != null
-                && Emulator.getConfig().getBoolean("login.turnstile.enabled", false);
+        return Emulator.getConfig() != null && Emulator.getConfig().getBoolean("login.turnstile.enabled", false);
     }
 
     public static boolean verify(String token, String remoteIp) {
@@ -47,30 +45,29 @@ public final class TurnstileVerifier {
             form.append("&remoteip=").append(URLEncoder.encode(remoteIp, StandardCharsets.UTF_8));
         }
 
-        try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(VERIFY_URL))
-                    .timeout(Duration.ofSeconds(8))
-                    .header("Content-Type", "application/x-www-form-urlencoded")
-                    .POST(HttpRequest.BodyPublishers.ofString(form.toString(), StandardCharsets.UTF_8))
-                    .build();
+        return RuntimeResilienceRuntime.executeExternal(
+                "turnstile", () -> verifyRemote(form.toString(), remoteIp), () -> false);
+    }
 
-            HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    private static boolean verifyRemote(String form, String remoteIp) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(VERIFY_URL))
+                .timeout(Duration.ofSeconds(8))
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString(form, StandardCharsets.UTF_8))
+                .build();
 
-            if (response.statusCode() != 200) {
-                LOGGER.warn("Turnstile siteverify returned HTTP {} for ip={}", response.statusCode(), remoteIp);
-                return false;
-            }
-
-            JsonObject json = JsonParser.parseString(response.body()).getAsJsonObject();
-            boolean success = json.has("success") && json.get("success").getAsBoolean();
-            if (!success) {
-                LOGGER.info("Turnstile token rejected for ip={} body={}", remoteIp, response.body());
-            }
-            return success;
-        } catch (Exception e) {
-            LOGGER.error("Turnstile verification failed for ip=" + remoteIp, e);
+        HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            LOGGER.warn("Turnstile siteverify returned HTTP {} for ip={}", response.statusCode(), remoteIp);
             return false;
         }
+
+        JsonObject json = JsonParser.parseString(response.body()).getAsJsonObject();
+        boolean success = json.has("success") && json.get("success").getAsBoolean();
+        if (!success) {
+            LOGGER.info("Turnstile token rejected for ip={} body={}", remoteIp, response.body());
+        }
+        return success;
     }
 }

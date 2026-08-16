@@ -1,5 +1,7 @@
 package com.eu.habbo.messages.rcon;
 
+import com.eu.habbo.resilience.RuntimeResilienceController;
+import com.eu.habbo.resilience.RuntimeResilienceRuntime;
 import com.eu.habbo.stress.StressRunRegistry;
 import com.eu.habbo.stress.StressScenario;
 import com.google.gson.Gson;
@@ -17,6 +19,13 @@ public class StressStart extends RCONMessage<StressStart.JSONStressStart> {
 
     @Override
     public void handle(Gson gson, JSONStressStart json) {
+        RuntimeResilienceController.Admission admission =
+                RuntimeResilienceRuntime.admit(RuntimeResilienceController.WorkClass.BACKGROUND);
+        if (admission.effectiveAction() != RuntimeResilienceController.Action.ALLOW) {
+            this.status = STATUS_ERROR;
+            this.message = "runtime under pressure; retry later";
+            return;
+        }
         try {
             StressScenario scenario = new StressScenario(
                     json.room_id,

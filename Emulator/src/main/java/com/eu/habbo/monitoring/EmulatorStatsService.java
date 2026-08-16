@@ -9,6 +9,9 @@ import com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics;
 import com.eu.habbo.habbohotel.wired.tick.WiredTickService;
 import com.eu.habbo.networking.gameserver.ExecutionBackpressureStatus;
 import com.eu.habbo.networking.gameserver.GameServer;
+import com.eu.habbo.resilience.DependencyCircuitBreakers;
+import com.eu.habbo.resilience.RuntimeResilienceRuntime;
+import com.eu.habbo.resilience.RuntimeResilienceService;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.HikariPoolMXBean;
 import java.lang.management.GarbageCollectorMXBean;
@@ -246,6 +249,9 @@ public final class EmulatorStatsService {
         SchedulerMetrics schedulerMetrics = collectSchedulerMetrics();
         NetworkMetrics networkMetrics = collectNetworkMetrics(now);
         GarbageCollectorMetrics garbageCollectorMetrics = collectGarbageCollectorMetrics(now);
+        RuntimeResilienceService.Status resilience = RuntimeResilienceRuntime.status();
+        DependencyCircuitBreakers.Snapshot turnstileCircuit = RuntimeResilienceRuntime.circuitSnapshot("turnstile");
+        DependencyCircuitBreakers.Snapshot smtpCircuit = RuntimeResilienceRuntime.circuitSnapshot("smtp");
         HealthSnapshot health =
                 collectHealth(now, hikariPoolMetrics, schedulerMetrics, memoryUsagePercent, cpuLoadPercent);
 
@@ -285,7 +291,10 @@ public final class EmulatorStatsService {
                 schedulerMetrics,
                 networkMetrics,
                 garbageCollectorMetrics,
-                health);
+                health,
+                resilience,
+                turnstileCircuit,
+                smtpCircuit);
     }
 
     private static HikariPoolMetrics collectHikariPoolMetrics() {
@@ -587,6 +596,9 @@ public final class EmulatorStatsService {
         public final NetworkMetrics network;
         public final GarbageCollectorMetrics garbageCollector;
         public final HealthSnapshot health;
+        public final RuntimeResilienceService.Status resilience;
+        public final DependencyCircuitBreakers.Snapshot turnstileCircuit;
+        public final DependencyCircuitBreakers.Snapshot smtpCircuit;
 
         public Snapshot(
                 Overview overview,
@@ -629,6 +641,68 @@ public final class EmulatorStatsService {
                 NetworkMetrics network,
                 GarbageCollectorMetrics garbageCollector,
                 HealthSnapshot health) {
+            this(
+                    overview,
+                    memoryHistory,
+                    users,
+                    rooms,
+                    wired,
+                    wiredTopRooms,
+                    databasePool,
+                    scheduler,
+                    network,
+                    garbageCollector,
+                    health,
+                    RuntimeResilienceRuntime.status(),
+                    RuntimeResilienceRuntime.circuitSnapshot("turnstile"),
+                    RuntimeResilienceRuntime.circuitSnapshot("smtp"));
+        }
+
+        public Snapshot(
+                Overview overview,
+                List<MemoryPoint> memoryHistory,
+                List<OnlineUserRow> users,
+                List<ActiveRoomRow> rooms,
+                List<WiredRoomRow> wired,
+                List<WiredTopRoomRow> wiredTopRooms,
+                HikariPoolMetrics databasePool,
+                SchedulerMetrics scheduler,
+                NetworkMetrics network,
+                GarbageCollectorMetrics garbageCollector,
+                HealthSnapshot health,
+                RuntimeResilienceService.Status resilience) {
+            this(
+                    overview,
+                    memoryHistory,
+                    users,
+                    rooms,
+                    wired,
+                    wiredTopRooms,
+                    databasePool,
+                    scheduler,
+                    network,
+                    garbageCollector,
+                    health,
+                    resilience,
+                    RuntimeResilienceRuntime.circuitSnapshot("turnstile"),
+                    RuntimeResilienceRuntime.circuitSnapshot("smtp"));
+        }
+
+        public Snapshot(
+                Overview overview,
+                List<MemoryPoint> memoryHistory,
+                List<OnlineUserRow> users,
+                List<ActiveRoomRow> rooms,
+                List<WiredRoomRow> wired,
+                List<WiredTopRoomRow> wiredTopRooms,
+                HikariPoolMetrics databasePool,
+                SchedulerMetrics scheduler,
+                NetworkMetrics network,
+                GarbageCollectorMetrics garbageCollector,
+                HealthSnapshot health,
+                RuntimeResilienceService.Status resilience,
+                DependencyCircuitBreakers.Snapshot turnstileCircuit,
+                DependencyCircuitBreakers.Snapshot smtpCircuit) {
             this.overview = overview;
             this.memoryHistory = memoryHistory;
             this.users = users;
@@ -640,6 +714,9 @@ public final class EmulatorStatsService {
             this.network = network;
             this.garbageCollector = garbageCollector;
             this.health = health;
+            this.resilience = resilience;
+            this.turnstileCircuit = turnstileCircuit;
+            this.smtpCircuit = smtpCircuit;
         }
     }
 

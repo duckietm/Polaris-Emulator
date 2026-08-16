@@ -116,9 +116,6 @@ final class PolarisBootstrap {
         configuration.loaded = true;
         configuration.loadFromDatabase();
         configuration.register("runtime.threads", "8");
-        configuration.register("runtime.operational.profile", "custom");
-        configuration.register("persistence.executor.threads", "0");
-        configuration.register("persistence.executor.queue.capacity", "0");
 
         int runtimeThreads = resolveRuntimeThreads(configuration);
         OperationalProfile.Settings operationalSettings = OperationalProfile.resolve(

@@ -11,6 +11,9 @@ db.pool.idle_timeout_ms=600000
 db.pool.max_lifetime_ms=1800000
 db.pool.validation_timeout_ms=5000
 db.pool.leak_detection_ms=0
+runtime.operational.profile=custom
+persistence.executor.threads=0
+persistence.executor.queue.capacity=0
 
 game.host=127.0.0.1
 game.port=${E2E_RAW_PORT}

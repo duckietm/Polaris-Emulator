@@ -252,6 +252,9 @@ public final class ConfigRegistry {
             case "rcon.host" -> "RCON_HOST";
             case "rcon.port" -> "RCON_PORT";
             case "rcon.allowed" -> "RCON_ALLOWED";
+            case "runtime.operational.profile" -> "RUNTIME_OPERATIONAL_PROFILE";
+            case "persistence.executor.threads" -> "PERSISTENCE_EXECUTOR_THREADS";
+            case "persistence.executor.queue.capacity" -> "PERSISTENCE_EXECUTOR_QUEUE_CAPACITY";
             default -> "";
         };
     }

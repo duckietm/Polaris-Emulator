@@ -446,14 +446,6 @@ public final class Emulator {
                 "session.recovery.enabled", "0", "Enable one-time session recovery after a controlled restart.");
         configuration.register("session.recovery.ttl.seconds", "120", "Maximum controlled-restart recovery window.");
         configuration.register("shutdown.drain.timeout.seconds", "15", "Maximum wait for accepted persistence work.");
-        configuration.register(
-                "runtime.operational.profile", "custom", "Operational sizing preset: custom, small, medium, or large.");
-        configuration.register(
-                "persistence.executor.threads", "0", "Persistence worker override; zero uses the selected profile.");
-        configuration.register(
-                "persistence.executor.queue.capacity",
-                "0",
-                "Persistence queue override; zero uses the selected profile.");
         configuration.register("camera.url", "http://localhost/camera/");
         Emulator.config.register("imager.location.output.camera", "/public/camera/");
         Emulator.config.register("imager.location.output.thumbnail", "/public/camera/thumbnails/");

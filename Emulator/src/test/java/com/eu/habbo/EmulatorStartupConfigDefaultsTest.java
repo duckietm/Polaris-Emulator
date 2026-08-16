@@ -41,4 +41,16 @@ class EmulatorStartupConfigDefaultsTest {
         assertFalse(source.contains("database.getDataSource().setMaximumPoolSize"));
         assertFalse(source.contains("database.getDataSource().setMinimumIdle"));
     }
+
+    @Test
+    void operationalProfileKeysAreNeverRegisteredInTheDatabase() throws Exception {
+        String bootstrap = Files.readString(Path.of("src/main/java/com/eu/habbo/PolarisBootstrap.java"));
+        String emulator = Files.readString(Path.of("src/main/java/com/eu/habbo/Emulator.java"));
+        String registration = "register\\(\\s*\"(runtime\\.operational\\.profile|persistence\\.executor\\.)";
+
+        assertFalse(
+                java.util.regex.Pattern.compile(registration).matcher(bootstrap).find());
+        assertFalse(
+                java.util.regex.Pattern.compile(registration).matcher(emulator).find());
+    }
 }

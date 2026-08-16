@@ -68,6 +68,12 @@ class ConfigRegistryTest {
         assertTrue(reference.contains("| `runtime.operational.profile` | string | `custom` |"));
         assertTrue(reference.contains("| `persistence.executor.threads` | integer | `0` |"));
         assertTrue(reference.contains("| `persistence.executor.queue.capacity` | integer | `0` |"));
+        assertTrue(reference.contains(
+                "| `runtime.operational.profile` | string | `custom` | `RUNTIME_OPERATIONAL_PROFILE` |"));
+        assertTrue(reference.contains(
+                "| `persistence.executor.threads` | integer | `0` | `PERSISTENCE_EXECUTOR_THREADS` |"));
+        assertTrue(reference.contains(
+                "| `persistence.executor.queue.capacity` | integer | `0` | `PERSISTENCE_EXECUTOR_QUEUE_CAPACITY` |"));
     }
 
     private static Set<String> keys(Path path) throws Exception {

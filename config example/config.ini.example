@@ -92,7 +92,10 @@ login.sso.ticket.ttl.seconds=60
 # Login news API.
 login.news.limit=5
 
-#Performance / concurrency (optional — sensible defaults apply if unset; adjust in the Database).
+# Performance / concurrency (startup-owned; restart after changing these values).
+runtime.operational.profile=custom
+persistence.executor.threads=0
+persistence.executor.queue.capacity=0
 ## io.packet.handler.threads=24 #Game packet-handler pool size; runs game handlers OFF the Netty I/O loop. Default max(16, 2 x CPU cores).
 ## execution.backpressure.mode=observe #Use observe to measure pressure without limiting traffic; switch to enforce after validation.
 ## execution.backpressure.pause.timeout_ms=2000 #Maximum packet-lane pause before disconnecting a persistently congested connection.

@@ -22,7 +22,7 @@ Unknown keys remain allowed for plugins. Database-backed hotel settings are docu
 | `db.migrations.backup.timeout_seconds` | integer | `0` | — | yes | no | Migration backup setting. |
 | `db.params` | string | `` | `DB_PARAMS` | yes | no | Database startup setting. |
 | `db.password` | string | `` | `DB_PASSWORD` | yes | no | Database startup setting. |
-| `db.persistence.queue.capacity` | integer | `2048` | — | yes | no | Database startup setting. |
+| `db.persistence.queue.capacity` | integer | `0` | — | yes | no | Persistence queue override; zero uses the selected operational profile. |
 | `db.pool.connection_timeout_ms` | long | `0` | — | yes | no | Database connection-pool setting. |
 | `db.pool.idle_timeout_ms` | long | `0` | — | yes | no | Database connection-pool setting. |
 | `db.pool.leak_detection_ms` | long | `0` | — | yes | no | Database connection-pool setting. |
@@ -67,10 +67,12 @@ Unknown keys remain allowed for plugins. Database-backed hotel settings are docu
 | `nitro.secure.gamedata.root` | string | `` | — | yes | no | Nitro secure-asset runtime setting. |
 | `nitro.secure.master_key` | string | `` | — | yes | no | Nitro secure-asset runtime setting. |
 | `nitro.secure.session_ttl_sec` | integer | `0` | — | yes | no | Nitro secure-asset runtime setting. |
+| `persistence.executor.threads` | integer | `0` | `PERSISTENCE_EXECUTOR_THREADS` | yes | no | Dedicated persistence executor override; zero uses the selected operational profile. |
 | `polaris.events.honor_priority` | boolean | `false` | — | no | yes | Enables priority-ordered, cancellation-aware plugin event dispatch. |
 | `rcon.allowed` | string | `` | `RCON_ALLOWED` | yes | no | RCON listener setting. |
 | `rcon.host` | string | `` | `RCON_HOST` | yes | no | RCON listener setting. |
 | `rcon.port` | integer | `0` | `RCON_PORT` | yes | no | RCON listener setting. |
+| `runtime.operational.profile` | string | `custom` | `RUNTIME_OPERATIONAL_PROFILE` | yes | no | Operational sizing preset: custom, small, medium, or large. |
 | `runtime.resilience.circuit.failure_percent` | integer | `50` | — | yes | no | Polaris startup setting. |
 | `runtime.resilience.circuit.half_open_calls` | integer | `3` | — | yes | no | Polaris startup setting. |
 | `runtime.resilience.circuit.minimum_calls` | integer | `10` | — | yes | no | Polaris startup setting. |

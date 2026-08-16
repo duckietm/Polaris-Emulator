@@ -26,22 +26,26 @@ class PolarisBootstrapRuntimeThreadsTest {
     }
 
     @Test
-    void invalidPersistenceQueueCapacityUsesDefensiveDefault() {
+    void invalidPersistenceQueueCapacityUsesProfileDefault() {
         ConfigurationManager configuration = mock(ConfigurationManager.class);
-        when(configuration.getInt("db.persistence.queue.capacity", 2_048)).thenReturn(0);
+        when(configuration.getInt("db.persistence.queue.capacity", 0)).thenReturn(-1);
 
-        assertEquals(2_048, PolarisBootstrap.resolvePersistenceQueueCapacity(configuration));
+        assertEquals(0, PolarisBootstrap.resolvePersistenceQueueCapacityOverride(configuration));
 
-        when(configuration.getInt("db.persistence.queue.capacity", 2_048)).thenReturn(65_537);
+        when(configuration.getInt("db.persistence.queue.capacity", 0)).thenReturn(65_537);
 
-        assertEquals(2_048, PolarisBootstrap.resolvePersistenceQueueCapacity(configuration));
+        assertEquals(0, PolarisBootstrap.resolvePersistenceQueueCapacityOverride(configuration));
     }
 
     @Test
-    void validPersistenceQueueCapacityRemainsAuthoritative() {
+    void automaticAndExplicitPersistenceQueueCapacityRemainAuthoritative() {
         ConfigurationManager configuration = mock(ConfigurationManager.class);
-        when(configuration.getInt("db.persistence.queue.capacity", 2_048)).thenReturn(4_096);
+        when(configuration.getInt("db.persistence.queue.capacity", 0)).thenReturn(0);
 
-        assertEquals(4_096, PolarisBootstrap.resolvePersistenceQueueCapacity(configuration));
+        assertEquals(0, PolarisBootstrap.resolvePersistenceQueueCapacityOverride(configuration));
+
+        when(configuration.getInt("db.persistence.queue.capacity", 0)).thenReturn(4_096);
+
+        assertEquals(4_096, PolarisBootstrap.resolvePersistenceQueueCapacityOverride(configuration));
     }
 }

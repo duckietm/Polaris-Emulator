@@ -56,7 +56,7 @@ class ConfigRegistryTest {
     void boundedWorkerDefaultsAreTyped() {
         String reference = ConfigRegistry.standard().renderMarkdown();
 
-        assertTrue(reference.contains("| `db.persistence.queue.capacity` | integer | `2048` |"));
+        assertTrue(reference.contains("| `db.persistence.queue.capacity` | integer | `0` |"));
         assertTrue(reference.contains("| `http.blocking.pool.size` | integer | `8` |"));
         assertTrue(reference.contains("| `http.blocking.queue.capacity` | integer | `128` |"));
         assertTrue(reference.contains("| `execution.backpressure.mode` | string | `observe` |"));
@@ -66,6 +66,12 @@ class ConfigRegistryTest {
         assertTrue(reference.contains("| `io.netty.write_buffer.low_water_mark` | integer | `32768` |"));
         assertTrue(reference.contains("| `io.netty.write_buffer.high_water_mark` | integer | `65536` |"));
         assertTrue(reference.contains("| `io.netty.unwritable.timeout.seconds` | integer | `10` |"));
+        assertTrue(reference.contains("| `runtime.operational.profile` | string | `custom` |"));
+        assertTrue(reference.contains("| `persistence.executor.threads` | integer | `0` |"));
+        assertTrue(reference.contains(
+                "| `runtime.operational.profile` | string | `custom` | `RUNTIME_OPERATIONAL_PROFILE` |"));
+        assertTrue(reference.contains(
+                "| `persistence.executor.threads` | integer | `0` | `PERSISTENCE_EXECUTOR_THREADS` |"));
     }
 
     private static Set<String> keys(Path path) throws Exception {

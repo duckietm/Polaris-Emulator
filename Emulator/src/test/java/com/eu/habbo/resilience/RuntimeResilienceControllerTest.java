@@ -12,10 +12,13 @@ class RuntimeResilienceControllerTest {
 
         controller.record(RuntimeResilienceController.Pressure.DEGRADED);
         controller.record(RuntimeResilienceController.Pressure.DEGRADED);
-        assertEquals(RuntimeResilienceController.State.NORMAL, controller.snapshot().state());
+        assertEquals(
+                RuntimeResilienceController.State.NORMAL, controller.snapshot().state());
 
         controller.record(RuntimeResilienceController.Pressure.DEGRADED);
-        assertEquals(RuntimeResilienceController.State.DEGRADED, controller.snapshot().state());
+        assertEquals(
+                RuntimeResilienceController.State.DEGRADED,
+                controller.snapshot().state());
     }
 
     @Test
@@ -24,13 +27,18 @@ class RuntimeResilienceControllerTest {
 
         controller.record(RuntimeResilienceController.Pressure.CRITICAL);
         controller.record(RuntimeResilienceController.Pressure.CRITICAL);
-        assertEquals(RuntimeResilienceController.State.CRITICAL, controller.snapshot().state());
+        assertEquals(
+                RuntimeResilienceController.State.CRITICAL,
+                controller.snapshot().state());
 
         record(controller, RuntimeResilienceController.Pressure.HEALTHY, 3);
-        assertEquals(RuntimeResilienceController.State.RECOVERING, controller.snapshot().state());
+        assertEquals(
+                RuntimeResilienceController.State.RECOVERING,
+                controller.snapshot().state());
 
         record(controller, RuntimeResilienceController.Pressure.HEALTHY, 3);
-        assertEquals(RuntimeResilienceController.State.NORMAL, controller.snapshot().state());
+        assertEquals(
+                RuntimeResilienceController.State.NORMAL, controller.snapshot().state());
     }
 
     @Test
@@ -39,13 +47,19 @@ class RuntimeResilienceControllerTest {
 
         assertEquals(
                 RuntimeResilienceController.Action.ALLOW,
-                controller.admit(RuntimeResilienceController.WorkClass.ESSENTIAL).effectiveAction());
+                controller
+                        .admit(RuntimeResilienceController.WorkClass.ESSENTIAL)
+                        .effectiveAction());
         assertEquals(
                 RuntimeResilienceController.Action.REJECT,
-                controller.admit(RuntimeResilienceController.WorkClass.INTERACTIVE).effectiveAction());
+                controller
+                        .admit(RuntimeResilienceController.WorkClass.INTERACTIVE)
+                        .effectiveAction());
         assertEquals(
                 RuntimeResilienceController.Action.DEFER,
-                controller.admit(RuntimeResilienceController.WorkClass.BACKGROUND).effectiveAction());
+                controller
+                        .admit(RuntimeResilienceController.WorkClass.BACKGROUND)
+                        .effectiveAction());
     }
 
     @Test
@@ -65,11 +79,15 @@ class RuntimeResilienceControllerTest {
     void renewedPressureCancelsRecoveryWithoutWaitingForAnotherEscalationWindow() {
         RuntimeResilienceController controller = criticalController(RuntimeResilienceController.Mode.ENFORCE);
         record(controller, RuntimeResilienceController.Pressure.HEALTHY, 3);
-        assertEquals(RuntimeResilienceController.State.RECOVERING, controller.snapshot().state());
+        assertEquals(
+                RuntimeResilienceController.State.RECOVERING,
+                controller.snapshot().state());
 
         controller.record(RuntimeResilienceController.Pressure.DEGRADED);
 
-        assertEquals(RuntimeResilienceController.State.DEGRADED, controller.snapshot().state());
+        assertEquals(
+                RuntimeResilienceController.State.DEGRADED,
+                controller.snapshot().state());
     }
 
     private static RuntimeResilienceController controller(RuntimeResilienceController.Mode mode) {
@@ -83,9 +101,7 @@ class RuntimeResilienceControllerTest {
     }
 
     private static void record(
-            RuntimeResilienceController controller,
-            RuntimeResilienceController.Pressure pressure,
-            int count) {
+            RuntimeResilienceController controller, RuntimeResilienceController.Pressure pressure, int count) {
         for (int index = 0; index < count; index++) {
             controller.record(pressure);
         }

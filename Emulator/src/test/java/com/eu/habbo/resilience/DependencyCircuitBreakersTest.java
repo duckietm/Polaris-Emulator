@@ -31,10 +31,13 @@ class DependencyCircuitBreakersTest {
 
         breakers.execute("turnstile", () -> fail(calls), () -> "fallback");
         breakers.execute("turnstile", () -> fail(calls), () -> "fallback");
-        String result = breakers.execute("turnstile", () -> {
-            calls.incrementAndGet();
-            return "live";
-        }, () -> "fallback");
+        String result = breakers.execute(
+                "turnstile",
+                () -> {
+                    calls.incrementAndGet();
+                    return "live";
+                },
+                () -> "fallback");
 
         assertEquals("live", result);
         assertEquals(3, calls.get());
@@ -58,8 +61,7 @@ class DependencyCircuitBreakersTest {
 
     private static DependencyCircuitBreakers breakers(RuntimeResilienceController.Mode mode) {
         return new DependencyCircuitBreakers(
-                mode,
-                new DependencyCircuitBreakers.Settings(50F, 2, 2, Duration.ofMinutes(1), 1));
+                mode, new DependencyCircuitBreakers.Settings(50F, 2, 2, Duration.ofMinutes(1), 1));
     }
 
     private static String fail(AtomicInteger calls) {

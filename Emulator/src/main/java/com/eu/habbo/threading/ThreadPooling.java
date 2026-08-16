@@ -79,6 +79,10 @@ public class ThreadPooling {
         this.persistenceExecutor.execute(task);
     }
 
+    public PersistenceExecutor.Metrics getPersistenceMetrics() {
+        return this.persistenceExecutor == null ? null : this.persistenceExecutor.metrics();
+    }
+
     public void shutDown() {
         this.shutDown(5, TimeUnit.SECONDS);
     }

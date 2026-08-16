@@ -22,6 +22,7 @@ Unknown keys remain allowed for plugins. Database-backed hotel settings are docu
 | `db.migrations.backup.timeout_seconds` | integer | `0` | — | yes | no | Migration backup setting. |
 | `db.params` | string | `` | `DB_PARAMS` | yes | no | Database startup setting. |
 | `db.password` | string | `` | `DB_PASSWORD` | yes | no | Database startup setting. |
+| `db.persistence.queue.capacity` | integer | `2048` | — | yes | no | Database startup setting. |
 | `db.pool.connection_timeout_ms` | long | `0` | — | yes | no | Database connection-pool setting. |
 | `db.pool.idle_timeout_ms` | long | `0` | — | yes | no | Database connection-pool setting. |
 | `db.pool.leak_detection_ms` | long | `0` | — | yes | no | Database connection-pool setting. |

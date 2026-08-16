@@ -53,9 +53,10 @@ class ConfigRegistryTest {
     }
 
     @Test
-    void networkWorkerAndBackpressureDefaultsAreTyped() {
+    void boundedWorkerDefaultsAreTyped() {
         String reference = ConfigRegistry.standard().renderMarkdown();
 
+        assertTrue(reference.contains("| `db.persistence.queue.capacity` | integer | `2048` |"));
         assertTrue(reference.contains("| `http.blocking.pool.size` | integer | `8` |"));
         assertTrue(reference.contains("| `io.netty.write_buffer.low_water_mark` | integer | `32768` |"));
         assertTrue(reference.contains("| `io.netty.write_buffer.high_water_mark` | integer | `65536` |"));

@@ -178,6 +178,26 @@ class PersistenceExecutorTest {
     }
 
     @Test
+    void awaitIdleDrainsWithoutClosingTheExecutor() throws Exception {
+        PersistenceExecutor executor = new PersistenceExecutor(1, 8);
+        CountDownLatch release = new CountDownLatch(1);
+        CountDownLatch secondRun = new CountDownLatch(1);
+        try {
+            executor.execute(() -> await(release));
+            assertTrue(!executor.awaitIdle(20, TimeUnit.MILLISECONDS));
+
+            release.countDown();
+            assertTrue(executor.awaitIdle(2, TimeUnit.SECONDS));
+
+            executor.execute(secondRun::countDown);
+            assertTrue(secondRun.await(2, TimeUnit.SECONDS));
+        } finally {
+            release.countDown();
+            executor.shutDown(2, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
     void operationSnapshotIdentifiesFailuresAndTracksSuccessfulWork() {
         PersistenceExecutor executor = new PersistenceExecutor(1, 8);
         try {

@@ -105,6 +105,25 @@ public final class PersistenceExecutor {
         return this.executor.getActiveCount();
     }
 
+    public boolean awaitIdle(long timeout, TimeUnit unit) {
+        long timeoutNanos = Math.max(0L, unit.toNanos(timeout));
+        long startedAt = System.nanoTime();
+        long remainingNanos = timeoutNanos;
+        while (this.operationMonitor.activeCount() > 0L) {
+            if (remainingNanos <= 0L) {
+                return false;
+            }
+            try {
+                TimeUnit.NANOSECONDS.sleep(Math.min(remainingNanos, TimeUnit.MILLISECONDS.toNanos(10)));
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+            remainingNanos = timeoutNanos - Math.max(0L, System.nanoTime() - startedAt);
+        }
+        return true;
+    }
+
     public PersistenceOperationMonitor.Snapshot operationSnapshot() {
         return this.operationMonitor.snapshot();
     }

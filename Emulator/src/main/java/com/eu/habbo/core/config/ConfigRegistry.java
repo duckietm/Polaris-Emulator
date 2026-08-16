@@ -129,6 +129,8 @@ public final class ConfigRegistry {
                 "db.slow_query.max_sql_length",
                 "ws.port",
                 "session.reconnect.grace.seconds");
+        keys.add(definition("session.recovery.ttl.seconds", ConfigKey.ValueType.INTEGER, "120", true));
+        keys.add(definition("shutdown.drain.timeout.seconds", ConfigKey.ValueType.INTEGER, "15", true));
         keys.add(definition("runtime.threads", ConfigKey.ValueType.INTEGER, "8", true));
         keys.add(definition("db.persistence.queue.capacity", ConfigKey.ValueType.INTEGER, "2048", true));
         keys.add(definition("http.blocking.pool.size", ConfigKey.ValueType.INTEGER, "8", true));
@@ -192,6 +194,7 @@ public final class ConfigRegistry {
                 "stress.enabled",
                 "cms.api.enabled",
                 "e2e.enabled");
+        keys.add(definition("session.recovery.enabled", ConfigKey.ValueType.BOOLEAN, "false", true));
         keys.add(new ConfigKey(
                 "polaris.events.honor_priority",
                 ConfigKey.ValueType.BOOLEAN,

@@ -47,6 +47,7 @@ import com.eu.habbo.messages.outgoing.users.UserPermissionsComposer;
 import com.eu.habbo.plugin.events.users.UserLoginEvent;
 import com.eu.habbo.resilience.RuntimeResilienceController;
 import com.eu.habbo.resilience.RuntimeResilienceRuntime;
+import com.eu.habbo.session.SessionRecoveryRuntime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
@@ -99,6 +100,12 @@ public class SecureLoginEvent extends MessageHandler {
 
         String sso = SecureLoginInputGuard.normalizeSsoTicket(this.packet.readString());
         this.packet.readInt(); // client timestamp; retained for wire compatibility
+        String recoveryToken = "";
+        try {
+            recoveryToken = this.packet.readString();
+        } catch (IndexOutOfBoundsException ignored) {
+            // Older clients end the packet after the timestamp.
+        }
 
         if (!SecureLoginInputGuard.isValidSsoTicket(sso)) {
             Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
@@ -185,7 +192,15 @@ public class SecureLoginEvent extends MessageHandler {
                 // farebbe fallire i retry / l'hard-refresh con "non-existing SSO token".
             } else {
                 // Normal login — load from database
-                habbo = Emulator.getGameEnvironment().getHabboManager().loadHabbo(sso);
+                HabboManager habboManager = Emulator.getGameEnvironment().getHabboManager();
+                habbo = habboManager.loadHabbo(sso);
+                if (habbo == null && !recoveryToken.isEmpty()) {
+                    java.util.OptionalInt recoveredUser = SessionRecoveryRuntime.consume(recoveryToken);
+                    if (recoveredUser.isPresent()) {
+                        habbo = habboManager.loadHabboById(recoveredUser.getAsInt());
+                        LOGGER.info("Recovered authenticated session for user id={}", recoveredUser.getAsInt());
+                    }
+                }
             }
 
             if (habbo != null) {
@@ -245,7 +260,9 @@ public class SecureLoginEvent extends MessageHandler {
 
                 Room resumedRoom = isSessionResume ? habbo.getHabboInfo().getCurrentRoom() : null;
                 int resumedRoomId = resumedRoom != null ? resumedRoom.getId() : 0;
-                messages.add(new SecureLoginOKComposer(isSessionResume, resumedRoomId).compose());
+                String nextRecoveryToken =
+                        SessionRecoveryRuntime.issue(habbo.getHabboInfo().getId());
+                messages.add(new SecureLoginOKComposer(isSessionResume, resumedRoomId, nextRecoveryToken).compose());
 
                 int roomIdToEnter = 0;
 

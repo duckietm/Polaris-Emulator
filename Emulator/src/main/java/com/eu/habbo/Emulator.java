@@ -442,6 +442,10 @@ public final class Emulator {
 
     private static void registerStartupConfigDefaults() {
         ConfigurationManager configuration = Emulator.config;
+        configuration.register(
+                "session.recovery.enabled", "0", "Enable one-time session recovery after a controlled restart.");
+        configuration.register("session.recovery.ttl.seconds", "120", "Maximum controlled-restart recovery window.");
+        configuration.register("shutdown.drain.timeout.seconds", "15", "Maximum wait for accepted persistence work.");
         configuration.register("camera.url", "http://localhost/camera/");
         Emulator.config.register("imager.location.output.camera", "/public/camera/");
         Emulator.config.register("imager.location.output.thumbnail", "/public/camera/thumbnails/");

@@ -37,13 +37,17 @@ class AsyncDisconnectPersistenceContractTest {
     @Test
     void loginWaitsAgainAfterItDisposesADuplicateSession() throws Exception {
         String source = source("HabboManager.java");
-        int load = source.indexOf("public Habbo loadHabbo(");
+        int publicLoad = source.indexOf("public Habbo loadHabbo(");
+        int ticketQuery = source.indexOf("SELECT * FROM users WHERE auth_ticket", publicLoad);
+        int load = source.indexOf("private Habbo loadHabbo(int userId", ticketQuery);
         int firstWait = source.indexOf("awaitDisconnectPersistence(userId)", load);
         int cloneCheck = source.indexOf("this.cloneCheck(userId)", firstWait);
         int forceDispose = source.indexOf("forceDisposeClient(", cloneCheck);
         int secondWait = source.indexOf("awaitDisconnectPersistence(userId)", forceDispose);
-        int reload = source.indexOf("SELECT * FROM users WHERE auth_ticket", secondWait);
+        int reload = source.indexOf("binder.bind(statement)", secondWait);
 
+        assertTrue(ticketQuery > publicLoad);
+        assertTrue(load > ticketQuery);
         assertTrue(firstWait > load);
         assertTrue(cloneCheck > firstWait);
         assertTrue(forceDispose > cloneCheck);

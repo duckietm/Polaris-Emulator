@@ -75,6 +75,10 @@ public final class PersistenceOperationMonitor {
                 failures);
     }
 
+    long activeCount() {
+        return this.activeCount.get();
+    }
+
     private long complete(Operation operation) {
         long durationNanos = Math.max(0L, this.nanoTime.getAsLong() - operation.startedAtNanos());
         this.activeCount.decrementAndGet();

@@ -77,11 +77,6 @@ public class GameServer extends Server {
                 ch.pipeline().addLast("packetDispatchMarker", new PacketDispatchMarker());
                 ch.pipeline()
                         .addLast(
-                                "packetExecutionAdmission",
-                                ExecutionAdmissionHandler.forGamePackets(
-                                        "packetDispatchLatency", GamePacketExecutionGroup.admissionGate()));
-                ch.pipeline()
-                        .addLast(
                                 GamePacketExecutionGroup.get(),
                                 "packetDispatchLatency",
                                 new PacketDispatchLatencyHandler());
@@ -109,9 +104,7 @@ public class GameServer extends Server {
         int wsPort = configuration().getInt("ws.port", 2096);
 
         WebSocketChannelInitializer wsInitializer = new WebSocketChannelInitializer(
-                configuredUnwritableTimeoutSeconds(),
-                configuration().getInt("http.blocking.pool.size", 8),
-                configuration().getInt("http.blocking.queue.capacity", 128));
+                configuredUnwritableTimeoutSeconds(), configuration().getInt("http.blocking.pool.size", 8));
 
         this.webSocketBootstrap = new ServerBootstrap();
         this.webSocketBootstrap.group(this.getBossGroup(), this.getWorkerGroup());

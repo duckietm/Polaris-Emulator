@@ -20,6 +20,15 @@ class SessionRecoveryWiringContractTest {
     }
 
     @Test
+    void runtimeSchemaContractIncludesRecoveryTicketColumns() throws Exception {
+        String contract = Files.readString(Path.of("src/main/resources/db/runtime-schema-contract.json"));
+
+        assertTrue(
+                contract.contains(
+                        "\"session_recovery_tickets\": [\"consumed_at\", \"issued_at\", \"recoverable_until\", \"token_hash\", \"user_id\"]"));
+    }
+
+    @Test
     void checkpointIsTransactionalAndNeverClearsConsumedState() throws Exception {
         String source = Files.readString(Path.of("src/main/java/com/eu/habbo/session/JdbcRecoveryTicketStore.java"));
 

@@ -132,6 +132,9 @@ public final class ConfigRegistry {
         keys.add(definition("session.recovery.ttl.seconds", ConfigKey.ValueType.INTEGER, "120", true));
         keys.add(definition("shutdown.drain.timeout.seconds", ConfigKey.ValueType.INTEGER, "15", true));
         keys.add(definition("runtime.threads", ConfigKey.ValueType.INTEGER, "8", true));
+        keys.add(definition("runtime.operational.profile", ConfigKey.ValueType.STRING, "custom", true));
+        keys.add(definition("persistence.executor.threads", ConfigKey.ValueType.INTEGER, "0", true));
+        keys.add(definition("persistence.executor.queue.capacity", ConfigKey.ValueType.INTEGER, "0", true));
         keys.add(definition("http.blocking.pool.size", ConfigKey.ValueType.INTEGER, "8", true));
         keys.add(definition("http.blocking.queue.capacity", ConfigKey.ValueType.INTEGER, "128", true));
         keys.add(definition("execution.backpressure.pause.timeout_ms", ConfigKey.ValueType.INTEGER, "2000", true));
@@ -283,6 +286,12 @@ public final class ConfigRegistry {
         }
         if (name.startsWith("stress.")) {
             return "Opt-in transient room stress-lab setting.";
+        }
+        if (name.startsWith("persistence.executor.")) {
+            return "Dedicated persistence executor override; zero uses the selected operational profile.";
+        }
+        if (name.equals("runtime.operational.profile")) {
+            return "Operational sizing preset: custom, small, medium, or large.";
         }
         if (name.startsWith("game.")) {
             return "Game listener setting.";

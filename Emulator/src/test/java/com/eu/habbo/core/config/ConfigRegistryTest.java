@@ -65,6 +65,9 @@ class ConfigRegistryTest {
         assertTrue(reference.contains("| `io.netty.write_buffer.low_water_mark` | integer | `32768` |"));
         assertTrue(reference.contains("| `io.netty.write_buffer.high_water_mark` | integer | `65536` |"));
         assertTrue(reference.contains("| `io.netty.unwritable.timeout.seconds` | integer | `10` |"));
+        assertTrue(reference.contains("| `runtime.operational.profile` | string | `custom` |"));
+        assertTrue(reference.contains("| `persistence.executor.threads` | integer | `0` |"));
+        assertTrue(reference.contains("| `persistence.executor.queue.capacity` | integer | `0` |"));
     }
 
     private static Set<String> keys(Path path) throws Exception {

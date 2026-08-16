@@ -5,6 +5,7 @@ import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.core.CryptoConfig;
 import com.eu.habbo.core.DatabaseLogger;
 import com.eu.habbo.core.Logging;
+import com.eu.habbo.core.OperationalProfile;
 import com.eu.habbo.core.TextsManager;
 import com.eu.habbo.database.Database;
 import com.eu.habbo.database.PersistenceExecutor;
@@ -115,9 +116,23 @@ final class PolarisBootstrap {
         configuration.loaded = true;
         configuration.loadFromDatabase();
         configuration.register("runtime.threads", "8");
+        configuration.register("runtime.operational.profile", "custom");
+        configuration.register("persistence.executor.threads", "0");
+        configuration.register("persistence.executor.queue.capacity", "0");
 
         int runtimeThreads = resolveRuntimeThreads(configuration);
-        PersistenceExecutor persistenceExecutor = PersistenceExecutor.forRuntimeThreads(runtimeThreads);
+        OperationalProfile.Settings operationalSettings = OperationalProfile.resolve(
+                configuration.getValue("runtime.operational.profile", "custom"),
+                runtimeThreads,
+                configuration.getInt("persistence.executor.threads", 0),
+                configuration.getInt("persistence.executor.queue.capacity", 0));
+        PersistenceExecutor persistenceExecutor = new PersistenceExecutor(
+                operationalSettings.persistenceThreads(), operationalSettings.persistenceQueueCapacity());
+        LOGGER.info(
+                "Operational profile {}: persistence threads={}, queue capacity={}",
+                operationalSettings.profile().name().toLowerCase(java.util.Locale.ROOT),
+                operationalSettings.persistenceThreads(),
+                operationalSettings.persistenceQueueCapacity());
         runtime.installPersistenceExecutor(persistenceExecutor);
         runtime.installThreading(new ThreadPooling(runtimeThreads, persistenceExecutor));
         Emulator.synchronizeLegacyFacade(runtime);

@@ -395,9 +395,24 @@ These are registered **only** when Polaris stress controls are enabled
 
 | Key | Data | Purpose |
 | --- | ---- | ------- |
-| `stressstart` | `room_id`*, `bots`, `items`, `rollers`, `wired_stacks`, `wired_events_per_second`, `item_id`, `chat_per_second`, `duration_seconds`, `seed`, `movement` | Start a synthetic load scenario in a room. |
+| `stressstart` | `room_id`*, optional `profile`, `bots`, `items`, `rollers`, `wired_stacks`, `wired_events_per_second`, `item_id`, `chat_per_second`, `duration_seconds`, `seed`, `movement` | Start a bounded synthetic load scenario in a room. |
 | `stressstatus` | `room_id`* | Query a running scenario. |
 | `stressstop` | `room_id`* | Stop a scenario. |
+
+The optional profile presets are intentionally bounded and never run automatically:
+
+| Profile | Bots | Items | Rollers | Wired stacks | Wired/s | Chat/s | Duration |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `small` | 25 | 500 | 25 | 25 | 5 | 20 | 60 s |
+| `medium` | 100 | 2,500 | 100 | 100 | 20 | 100 | 120 s |
+| `large` | 300 | 10,000 | 500 | 500 | 50 | 300 | 180 s |
+
+Set `runtime.operational.profile` to `small`, `medium`, or `large` to select
+conservative persistence sizing. The default `custom` value preserves the
+existing adaptive behavior. Explicit positive values in
+`persistence.executor.threads` and `persistence.executor.queue.capacity`
+always take precedence. `stress.enabled` remains off by default, and a load
+scenario still requires a manual allowlisted RCON request.
 
 They are documented for completeness; a CMS API key should never be granted a
 scope that includes them.

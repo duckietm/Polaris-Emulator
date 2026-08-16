@@ -52,6 +52,15 @@ class WebSocketHttpOffloadTest {
             EventExecutor blockingExecutor =
                     awaitPresent(channel, "nitroSecureAssetHandler").executor();
 
+            assertSame(
+                    socketExecutor,
+                    awaitPresent(channel, "blockingHttpAdmissionAssets").executor());
+            assertSame(
+                    socketExecutor,
+                    awaitPresent(channel, "blockingHttpAdmissionCms").executor());
+            assertSame(
+                    socketExecutor,
+                    awaitPresent(channel, "packetExecutionAdmission").executor());
             assertNotSame(socketExecutor, blockingExecutor);
             assertSame(
                     blockingExecutor, awaitPresent(channel, "badgeHttpHandler").executor());
@@ -101,8 +110,14 @@ class WebSocketHttpOffloadTest {
             // Handlers bound to the blocking HTTP executor are unlinked on that
             // executor, so wait for the removals to settle.
             awaitRemoved(channel, "nitroSecureAssetHandler");
+            awaitRemoved(channel, "blockingHttpAdmissionAssets");
+            awaitRemoved(channel, "blockingHttpAdmissionCms");
+            awaitRemoved(channel, "blockingHttpAdmissionBadge");
+            awaitRemoved(channel, "blockingHttpAdmissionBadgeLeaderboard");
+            awaitRemoved(channel, "blockingHttpAdmissionStats");
             awaitRemoved(channel, "nitroSecureApiHandler");
             awaitRemoved(channel, "authHttpHandler");
+            awaitRemoved(channel, "cmsApiHandler");
             awaitRemoved(channel, "badgeHttpHandler");
             awaitRemoved(channel, "badgeLeaderboardHttpHandler");
             awaitRemoved(channel, "emuStatsHttpHandler");

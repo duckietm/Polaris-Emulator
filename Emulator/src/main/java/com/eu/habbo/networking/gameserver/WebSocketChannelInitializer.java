@@ -1,6 +1,7 @@
 package com.eu.habbo.networking.gameserver;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.messages.PacketManager;
 import com.eu.habbo.networking.gameserver.auth.AuthHttpHandler;
 import com.eu.habbo.networking.gameserver.auth.NitroSecureApiHandler;
@@ -91,20 +92,40 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
         ch.pipeline().addLast("httpCodec", new HttpServerCodec());
         ch.pipeline().addLast("httpAggregator", new HttpObjectAggregator(MAX_FRAME_SIZE));
         ch.pipeline().addLast("wsHttpHandler", new WebSocketHttpHandler());
-        EventExecutorGroup blockingHttp = BlockingHttpExecutionGroup.get(this.blockingHttpThreads);
+        ConfigurationManager configuration = Emulator.getConfig();
+        ExecutionBackpressureSettings backpressureSettings = configuration == null
+                ? ExecutionBackpressureSettings.defaults()
+                : ExecutionBackpressureSettings.from(configuration);
+        EventExecutorGroup blockingHttp =
+                BlockingHttpExecutionGroup.get(this.blockingHttpThreads, backpressureSettings);
+        ch.pipeline()
+                .addLast(
+                        "blockingHttpAdmissionAssets",
+                        BlockingHttpExecutionGroup.admissionHandler("nitroSecureAssetHandler"));
         ch.pipeline().addLast(blockingHttp, "nitroSecureAssetHandler", new NitroSecureAssetHandler());
         ch.pipeline().addLast("nitroSecureApiHandler", new NitroSecureApiHandler());
         ch.pipeline().addLast("authHttpHandler", new AuthHttpHandler());
+        ch.pipeline().addLast("blockingHttpAdmissionCms", BlockingHttpExecutionGroup.admissionHandler("cmsApiHandler"));
         ch.pipeline().addLast(blockingHttp, "cmsApiHandler", new CmsApiHandler());
+        ch.pipeline()
+                .addLast("blockingHttpAdmissionBadge", BlockingHttpExecutionGroup.admissionHandler("badgeHttpHandler"));
         ch.pipeline().addLast(blockingHttp, "badgeHttpHandler", new BadgeHttpHandler());
+        ch.pipeline()
+                .addLast(
+                        "blockingHttpAdmissionBadgeLeaderboard",
+                        BlockingHttpExecutionGroup.admissionHandler("badgeLeaderboardHttpHandler"));
         ch.pipeline().addLast(blockingHttp, "badgeLeaderboardHttpHandler", new BadgeLeaderboardHttpHandler());
+        ch.pipeline()
+                .addLast(
+                        "blockingHttpAdmissionStats",
+                        BlockingHttpExecutionGroup.admissionHandler("emuStatsHttpHandler"));
         ch.pipeline().addLast(blockingHttp, "emuStatsHttpHandler", new EmuStatsHttpHandler());
         ch.pipeline().addLast("wsProtocolHandler", new WebSocketServerProtocolHandler(this.wsConfig));
         ch.pipeline().addLast("wsHttpCleanup", new WebSocketHttpCleanupHandler());
         ch.pipeline().addLast("wsFrameAggregator", new WebSocketFrameAggregator(MAX_FRAME_SIZE));
         ch.pipeline().addLast("wsCodec", new WebSocketCodec());
 
-        if (Emulator.getConfig().getBoolean("crypto.ws.enabled", false)) {
+        if (configuration != null && configuration.getBoolean("crypto.ws.enabled", false)) {
             ch.pipeline().addLast(WsHandshakeHandler.HANDLER_NAME, new WsHandshakeHandler());
         }
 
@@ -119,6 +140,9 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
         ch.pipeline().addLast("idleEventHandler", new IdleTimeoutHandler(30, 60));
         ch.pipeline().addLast(new GameMessageRateLimit());
         ch.pipeline().addLast("packetDispatchMarker", new PacketDispatchMarker());
+        ch.pipeline()
+                .addLast(
+                        "packetExecutionAdmission", GamePacketExecutionGroup.admissionHandler("packetDispatchLatency"));
         ch.pipeline()
                 .addLast(GamePacketExecutionGroup.get(), "packetDispatchLatency", new PacketDispatchLatencyHandler());
         ch.pipeline().addLast(GamePacketExecutionGroup.get(), "gameMessageHandler", new GameMessageHandler());

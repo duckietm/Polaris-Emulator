@@ -14,7 +14,6 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
-import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -59,10 +58,8 @@ public class HabboInfo implements Runnable {
     private RideablePet riding;
     private Class<? extends Game> currentGame;
     private Int2IntOpenHashMap currencies;
-    // Serializes credits + currencies read-modify-write and the saveCurrencies
-    // snapshot so the credit-roller thread and purchase/trade handler threads
-    // can't lose updates or rehash the Trove map mid-iteration. Never held
-    // across run()'s DB I/O.
+    // Serializes in-memory wallet reads and writes. Durable wallet changes are
+    // committed through EconomyLedger and then published to this snapshot.
     private final Object currencyLock = new Object();
     private final Object ledgerMutationLock = new Object();
     private GamePlayer gamePlayer;
@@ -139,32 +136,6 @@ public class HabboInfo implements Runnable {
                     this.id);
         } catch (SqlQueries.DataAccessException e) {
             LOGGER.error("Caught SQL exception", e);
-        }
-    }
-
-    private void saveCurrencies() {
-        // Snapshot under the lock so a concurrent adjustOrPutValue/put can't
-        // rehash the Trove map while we iterate; do the DB batch off-lock.
-        List<int[]> entries;
-        synchronized (this.currencyLock) {
-            entries = new ArrayList<>(this.currencies.size());
-            for (Int2IntMap.Entry entry : this.currencies.int2IntEntrySet()) {
-                entries.add(new int[] {entry.getIntKey(), entry.getIntValue()});
-            }
-        }
-
-        try {
-            SqlQueries.batchUpdate(
-                    "INSERT INTO users_currency (user_id, type, amount) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE amount = ?",
-                    entries,
-                    (ps, e) -> {
-                        ps.setInt(1, this.id);
-                        ps.setInt(2, e[0]);
-                        ps.setInt(3, e[1]);
-                        ps.setInt(4, e[1]);
-                    });
-        } catch (SqlQueries.DataAccessException ex) {
-            LOGGER.error("Caught SQL exception", ex);
         }
     }
 
@@ -796,23 +767,13 @@ public class HabboInfo implements Runnable {
 
     @Override
     public void run() {
-        this.saveCurrencies();
-
-        // Read credits under the lock so the persisted value is consistent with
-        // concurrent addCredits/setCredits (matches the currencyLock invariant).
-        final int creditsForSave;
-        synchronized (this.currencyLock) {
-            creditsForSave = this.credits;
-        }
-
         try {
             SqlQueries.update(
-                    "UPDATE users SET motto = ?, online = ?, look = ?, gender = ?, credits = ?, last_login = ?, last_online = ?, home_room = ?, ip_current = ?, `rank` = ?, machine_id = ?, username = ?, background_id = ?, background_stand_id = ?, background_overlay_id = ?, background_card_id = ?, background_border_id = ? WHERE id = ?",
+                    "UPDATE users SET motto = ?, online = ?, look = ?, gender = ?, last_login = ?, last_online = ?, home_room = ?, ip_current = ?, `rank` = ?, machine_id = ?, username = ?, background_id = ?, background_stand_id = ?, background_overlay_id = ?, background_card_id = ?, background_border_id = ? WHERE id = ?",
                     this.motto,
                     this.online ? "1" : "0",
                     this.look,
                     this.gender.name(),
-                    creditsForSave,
                     Emulator.getIntUnixTimestamp(),
                     this.lastOnline,
                     this.homeRoom,

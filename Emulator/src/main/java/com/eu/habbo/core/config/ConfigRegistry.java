@@ -130,6 +130,7 @@ public final class ConfigRegistry {
                 "ws.port",
                 "session.reconnect.grace.seconds");
         keys.add(definition("runtime.threads", ConfigKey.ValueType.INTEGER, "8", true));
+        keys.add(definition("db.persistence.queue.capacity", ConfigKey.ValueType.INTEGER, "2048", true));
         keys.add(definition("http.blocking.pool.size", ConfigKey.ValueType.INTEGER, "8", true));
         keys.add(definition("stress.max_bots", ConfigKey.ValueType.INTEGER, "5000", true));
         keys.add(definition("stress.max_items", ConfigKey.ValueType.INTEGER, "100000", true));

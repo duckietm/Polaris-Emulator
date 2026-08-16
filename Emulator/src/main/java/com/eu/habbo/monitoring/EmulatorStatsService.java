@@ -1,6 +1,7 @@
 package com.eu.habbo.monitoring;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.database.PersistenceExecutor;
 import com.eu.habbo.database.PersistenceOperationMonitor;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -245,6 +246,7 @@ public final class EmulatorStatsService {
 
         ThreadPooling threading = Emulator.getThreading();
         HikariPoolMetrics hikariPoolMetrics = collectHikariPoolMetrics();
+        PersistenceMetrics persistenceMetrics = collectPersistenceMetrics(threading);
         SchedulerMetrics schedulerMetrics = collectSchedulerMetrics(threading);
         PersistenceOperationMetrics persistenceOperations =
                 persistenceOperationMetrics(threading == null ? null : threading.getPersistenceOperationSnapshot());
@@ -286,6 +288,7 @@ public final class EmulatorStatsService {
                 wiredRooms,
                 wiredTopRooms,
                 hikariPoolMetrics,
+                persistenceMetrics,
                 schedulerMetrics,
                 persistenceOperations,
                 networkMetrics,
@@ -308,6 +311,25 @@ public final class EmulatorStatsService {
                 poolMxBean.getTotalConnections(),
                 poolMxBean.getThreadsAwaitingConnection(),
                 dataSource.getMaximumPoolSize());
+    }
+
+    private static PersistenceMetrics collectPersistenceMetrics(ThreadPooling threading) {
+        return persistenceMetrics(threading == null ? null : threading.getPersistenceMetrics());
+    }
+
+    static PersistenceMetrics persistenceMetrics(PersistenceExecutor.Metrics metrics) {
+        if (metrics == null) {
+            return new PersistenceMetrics(0, 0, 0, 0, 0L, 0D, false);
+        }
+
+        return new PersistenceMetrics(
+                metrics.activeCount(),
+                metrics.queueDepth(),
+                metrics.queueCapacity(),
+                metrics.highWaterMark(),
+                metrics.saturationCount(),
+                metrics.totalSubmissionWaitNanos() / 1_000_000D,
+                metrics.accepting());
     }
 
     private static SchedulerMetrics collectSchedulerMetrics(ThreadPooling threading) {
@@ -614,6 +636,7 @@ public final class EmulatorStatsService {
         public final List<WiredRoomRow> wired;
         public final List<WiredTopRoomRow> wiredTopRooms;
         public final HikariPoolMetrics databasePool;
+        public final PersistenceMetrics persistence;
         public final SchedulerMetrics scheduler;
         public final PersistenceOperationMetrics persistenceOperations;
         public final NetworkMetrics network;
@@ -639,6 +662,7 @@ public final class EmulatorStatsService {
                     wired,
                     wiredTopRooms,
                     databasePool,
+                    persistenceMetrics(null),
                     scheduler,
                     PersistenceOperationMetrics.empty(),
                     network,
@@ -670,6 +694,7 @@ public final class EmulatorStatsService {
                     wired,
                     wiredTopRooms,
                     databasePool,
+                    persistenceMetrics(null),
                     scheduler,
                     PersistenceOperationMetrics.empty(),
                     network,
@@ -690,6 +715,65 @@ public final class EmulatorStatsService {
                 NetworkMetrics network,
                 GarbageCollectorMetrics garbageCollector,
                 HealthSnapshot health) {
+            this(
+                    overview,
+                    memoryHistory,
+                    users,
+                    rooms,
+                    wired,
+                    wiredTopRooms,
+                    databasePool,
+                    persistenceMetrics(null),
+                    scheduler,
+                    persistenceOperations,
+                    network,
+                    garbageCollector,
+                    health);
+        }
+
+        public Snapshot(
+                Overview overview,
+                List<MemoryPoint> memoryHistory,
+                List<OnlineUserRow> users,
+                List<ActiveRoomRow> rooms,
+                List<WiredRoomRow> wired,
+                List<WiredTopRoomRow> wiredTopRooms,
+                HikariPoolMetrics databasePool,
+                PersistenceMetrics persistence,
+                SchedulerMetrics scheduler,
+                NetworkMetrics network,
+                GarbageCollectorMetrics garbageCollector,
+                HealthSnapshot health) {
+            this(
+                    overview,
+                    memoryHistory,
+                    users,
+                    rooms,
+                    wired,
+                    wiredTopRooms,
+                    databasePool,
+                    persistence,
+                    scheduler,
+                    PersistenceOperationMetrics.empty(),
+                    network,
+                    garbageCollector,
+                    health);
+        }
+
+        public Snapshot(
+                Overview overview,
+                List<MemoryPoint> memoryHistory,
+                List<OnlineUserRow> users,
+                List<ActiveRoomRow> rooms,
+                List<WiredRoomRow> wired,
+                List<WiredTopRoomRow> wiredTopRooms,
+                HikariPoolMetrics databasePool,
+                PersistenceMetrics persistence,
+                SchedulerMetrics scheduler,
+                PersistenceOperationMetrics persistenceOperations,
+                NetworkMetrics network,
+                GarbageCollectorMetrics garbageCollector,
+                HealthSnapshot health) {
             this.overview = overview;
             this.memoryHistory = memoryHistory;
             this.users = users;
@@ -697,6 +781,7 @@ public final class EmulatorStatsService {
             this.wired = wired;
             this.wiredTopRooms = wiredTopRooms;
             this.databasePool = databasePool;
+            this.persistence = persistence;
             this.scheduler = scheduler;
             this.persistenceOperations = persistenceOperations;
             this.network = network;
@@ -894,6 +979,33 @@ public final class EmulatorStatsService {
             this.delayedEventsPending = delayedEventsPending;
             this.activityPerSecond = activityPerSecond;
             this.heavy = heavy;
+        }
+    }
+
+    public static final class PersistenceMetrics {
+        public final int activeTasks;
+        public final int queueDepth;
+        public final int queueCapacity;
+        public final int highWaterMark;
+        public final long saturationCount;
+        public final double totalSubmissionWaitMs;
+        public final boolean accepting;
+
+        public PersistenceMetrics(
+                int activeTasks,
+                int queueDepth,
+                int queueCapacity,
+                int highWaterMark,
+                long saturationCount,
+                double totalSubmissionWaitMs,
+                boolean accepting) {
+            this.activeTasks = activeTasks;
+            this.queueDepth = queueDepth;
+            this.queueCapacity = queueCapacity;
+            this.highWaterMark = highWaterMark;
+            this.saturationCount = saturationCount;
+            this.totalSubmissionWaitMs = totalSubmissionWaitMs;
+            this.accepting = accepting;
         }
     }
 

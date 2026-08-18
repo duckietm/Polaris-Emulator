@@ -180,20 +180,6 @@ class CatalogValidatorTest {
 
     private static CatalogOfferSnapshot soundOffer(int id, int pageId, int songId, String extradata) {
         return new CatalogOfferSnapshot(
-                id,
-                "100",
-                pageId,
-                "SONG LostMyTapesAtGoa",
-                0,
-                150,
-                5,
-                1,
-                0,
-                id,
-                id,
-                songId,
-                extradata,
-                true,
-                false);
+                id, "100", pageId, "SONG LostMyTapesAtGoa", 0, 150, 5, 1, 0, id, id, songId, extradata, true, false);
     }
 }

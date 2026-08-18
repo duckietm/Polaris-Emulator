@@ -8,8 +8,8 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 class CatalogSoundOfferReferencesMigrationContractTest {
-    private static final Path MIGRATION = Path.of(
-            "src/main/resources/db/migration/V20260817180000__repair_catalog_sound_offer_references.sql");
+    private static final Path MIGRATION =
+            Path.of("src/main/resources/db/migration/V20260817180000__repair_catalog_sound_offer_references.sql");
 
     @Test
     void repairsLiveAndVersionedOffersWithoutReplacingValidReferences() throws IOException {

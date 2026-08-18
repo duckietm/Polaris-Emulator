@@ -186,7 +186,9 @@ public final class CatalogValidator {
             }
             validateItemIds(offer, issues);
             if (offer.catalogName().startsWith("SONG ")
-                    && (offer.songId() <= 0 || offer.extradata() == null || offer.extradata().isBlank())) {
+                    && (offer.songId() <= 0
+                            || offer.extradata() == null
+                            || offer.extradata().isBlank())) {
                 add(
                         issues,
                         "OFFER_SOUND_REFERENCE_MISSING",

@@ -70,7 +70,7 @@ U|com/eu/habbo/habbohotel/GameEnvironment.java|CALL|getThreading|5
 U|com/eu/habbo/habbohotel/achievements/AchievementManager.java|CALL|getDatabase|5
 U|com/eu/habbo/habbohotel/achievements/AchievementManager.java|CALL|getGameEnvironment|5
 U|com/eu/habbo/habbohotel/achievements/AchievementManager.java|CALL|getPluginManager|4
-U|com/eu/habbo/habbohotel/achievements/AchievementManager.java|CALL|getThreading|2
+U|com/eu/habbo/habbohotel/achievements/AchievementManager.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/achievements/TalentTrackLevel.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/habbohotel/bots/Bot.java|CALL|getDatabase|2
 U|com/eu/habbo/habbohotel/bots/Bot.java|CALL|getIntUnixTimestamp|10
@@ -969,7 +969,8 @@ U|com/eu/habbo/habbohotel/users/HabboInfo.java|CALL|getGameEnvironment|3
 U|com/eu/habbo/habbohotel/users/HabboInfo.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/habbohotel/users/HabboItem.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/users/HabboItem.java|CALL|getGameEnvironment|3
-U|com/eu/habbo/habbohotel/users/HabboManager.java|CALL|getDatabase|2
+U|com/eu/habbo/habbohotel/users/HabboManager.java|CALL|getConfig|1
+U|com/eu/habbo/habbohotel/users/HabboManager.java|CALL|getDatabase|3
 U|com/eu/habbo/habbohotel/users/HabboManager.java|CALL|getGameEnvironment|4
 U|com/eu/habbo/habbohotel/users/HabboManager.java|CALL|getGameServer|2
 U|com/eu/habbo/habbohotel/users/HabboManager.java|CALL|getPluginManager|2
@@ -1088,6 +1089,7 @@ U|com/eu/habbo/messages/incoming/catalog/CatalogBuyItemEvent.java|CALL|getGameEn
 U|com/eu/habbo/messages/incoming/catalog/CatalogBuyItemEvent.java|CALL|getIntUnixTimestamp|3
 U|com/eu/habbo/messages/incoming/catalog/CatalogBuyItemEvent.java|CALL|getTexts|1
 U|com/eu/habbo/messages/incoming/catalog/CatalogBuyItemEvent.java|CALL|getThreading|1
+U|com/eu/habbo/messages/incoming/catalog/CatalogProductMetadataEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/catalog/CatalogRequestClubDiscountEvent.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/messages/incoming/catalog/CatalogSearchedItemEvent.java|CALL|getGameEnvironment|3
 U|com/eu/habbo/messages/incoming/catalog/CatalogSelectClubGiftEvent.java|CALL|getGameEnvironment|2
@@ -1108,12 +1110,9 @@ U|com/eu/habbo/messages/incoming/catalog/marketplace/SellItemEvent.java|CALL|get
 U|com/eu/habbo/messages/incoming/catalog/recycler/OpenRecycleBoxEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/catalog/recycler/OpenRecycleBoxEvent.java|CALL|getTexts|1
 U|com/eu/habbo/messages/incoming/catalog/recycler/OpenRecycleBoxEvent.java|CALL|getThreading|1
-U|com/eu/habbo/messages/incoming/catalog/recycler/RecycleEvent.java|CALL|getConfig|1
 U|com/eu/habbo/messages/incoming/catalog/recycler/RecycleEvent.java|CALL|getGameEnvironment|4
 U|com/eu/habbo/messages/incoming/catalog/recycler/RecycleEvent.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/messages/incoming/catalog/recycler/RecycleEvent.java|CALL|getThreading|2
-U|com/eu/habbo/messages/incoming/catalog/CatalogProductMetadataEvent.java|CALL|getGameEnvironment|1
-U|com/eu/habbo/messages/outgoing/catalog/CatalogRuntimeConfigurationComposer.java|CALL|getConfig|1
 U|com/eu/habbo/messages/incoming/crafting/CraftingAddRecipeEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/crafting/CraftingCraftItemEvent.java|CALL|getGameEnvironment|4
 U|com/eu/habbo/messages/incoming/crafting/CraftingCraftItemEvent.java|CALL|getThreading|1
@@ -1250,7 +1249,7 @@ U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getConfig|
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getCrypto|1
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getDatabase|1
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getDate|1
-U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getGameEnvironment|5
+U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getGameEnvironment|6
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getGameServer|15
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getIntUnixTimestamp|6
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getPluginManager|1
@@ -1495,7 +1494,7 @@ U|com/eu/habbo/messages/incoming/rooms/pets/PetUseItemEvent.java|CALL|getThreadi
 U|com/eu/habbo/messages/incoming/rooms/pets/ScratchPetEvent.java|CALL|getThreading|2
 U|com/eu/habbo/messages/incoming/rooms/pets/ToggleMonsterplantBreedableEvent.java|CALL|getThreading|1
 U|com/eu/habbo/messages/incoming/rooms/promotions/BuyRoomPromotionEvent.java|CALL|getGameEnvironment|2
-U|com/eu/habbo/messages/incoming/rooms/promotions/RequestPromotionRoomsEvent.java|CALL|getGameEnvironment|3
+U|com/eu/habbo/messages/incoming/rooms/promotions/RequestPromotionRoomsEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/rooms/promotions/UpdateRoomPromotionEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/rooms/users/IgnoreRoomUserEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/rooms/users/RoomUserActionEvent.java|CALL|getPluginManager|2
@@ -1586,6 +1585,7 @@ U|com/eu/habbo/messages/outgoing/achievements/AchievementListComposer.java|CALL|
 U|com/eu/habbo/messages/outgoing/achievements/talenttrack/TalentTrackComposer.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/outgoing/catalog/CatalogPageComposer.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/outgoing/catalog/CatalogPagesListComposer.java|CALL|getGameEnvironment|2
+U|com/eu/habbo/messages/outgoing/catalog/CatalogRuntimeConfigurationComposer.java|CALL|getConfig|1
 U|com/eu/habbo/messages/outgoing/catalog/ClubDataComposer.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/outgoing/catalog/ClubDataComposer.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/messages/outgoing/catalog/ClubGiftsComposer.java|CALL|getGameEnvironment|1
@@ -1723,7 +1723,7 @@ U|com/eu/habbo/monitoring/EmulatorStatsService.java|CALL|getDatabase|4
 U|com/eu/habbo/monitoring/EmulatorStatsService.java|CALL|getGameEnvironment|6
 U|com/eu/habbo/monitoring/EmulatorStatsService.java|CALL|getGameServer|4
 U|com/eu/habbo/monitoring/EmulatorStatsService.java|CALL|getOnlineTime|1
-U|com/eu/habbo/monitoring/EmulatorStatsService.java|CALL|getThreading|2
+U|com/eu/habbo/monitoring/EmulatorStatsService.java|CALL|getThreading|1
 U|com/eu/habbo/monitoring/EmulatorStatsService.java|FIELD|isReady|1
 U|com/eu/habbo/monitoring/EmulatorStatsService.java|FIELD|isShuttingDown|2
 U|com/eu/habbo/networking/Server.java|CALL|getConfig|1
@@ -1752,7 +1752,7 @@ U|com/eu/habbo/networking/gameserver/auth/RememberJwtService.java|CALL|getDataba
 U|com/eu/habbo/networking/gameserver/auth/RememberJwtService.java|CALL|getIntUnixTimestamp|2
 U|com/eu/habbo/networking/gameserver/auth/SessionEndpoints.java|CALL|getConfig|9
 U|com/eu/habbo/networking/gameserver/auth/SessionEndpoints.java|CALL|getDatabase|7
-U|com/eu/habbo/networking/gameserver/auth/SessionEndpoints.java|CALL|getGameServer|4
+U|com/eu/habbo/networking/gameserver/auth/SessionEndpoints.java|CALL|getGameServer|5
 U|com/eu/habbo/networking/gameserver/auth/SessionEndpoints.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/networking/gameserver/auth/SmtpMailService.java|CALL|getConfig|9
 U|com/eu/habbo/networking/gameserver/auth/StaticContentEndpoints.java|CALL|getConfig|1

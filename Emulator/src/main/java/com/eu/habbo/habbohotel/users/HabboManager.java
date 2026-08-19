@@ -101,12 +101,17 @@ public class HabboManager {
     }
 
     public Habbo loadHabbo(String sso) {
-        Habbo habbo;
         int userId = 0;
 
+        // The SSO lookup deliberately ignores auth_ticket_expires_at: tickets are
+        // single-use (consumed right after a successful login below), so replay is
+        // bounded by consumption, not by a TTL. Third-party CMSes (e.g. AtomCMS)
+        // only write auth_ticket, and a stale expiry left over from a built-in
+        // issuer used to block their logins. The expiry column remains in use by
+        // the emulator's own HTTP session endpoints.
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "SELECT id FROM users WHERE auth_ticket = ? AND (auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW()) LIMIT 1")) {
+                        "SELECT id FROM users WHERE auth_ticket = ? LIMIT 1")) {
             statement.setString(1, sso);
             try (ResultSet s = statement.executeQuery()) {
                 if (s.next()) {
@@ -118,11 +123,41 @@ public class HabboManager {
             LOGGER.error("Caught SQL exception", e);
         }
 
-        return loadHabbo(
+        Habbo habbo = loadHabbo(
                 userId,
-                "SELECT * FROM users WHERE auth_ticket = ? AND "
-                        + "(auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW()) LIMIT 1",
+                "SELECT * FROM users WHERE auth_ticket = ? LIMIT 1",
                 statement -> statement.setString(1, sso));
+
+        if (habbo != null) {
+            this.consumeSsoTicket(habbo.getHabboInfo().getId());
+        }
+
+        return habbo;
+    }
+
+    /**
+     * Consumes (clears) a user's SSO ticket after a successful login so it
+     * cannot be replayed. Mid-session reconnects are unaffected: GameClient
+     * disposal parks the habbo and SessionResumeManager restores the same
+     * ticket for the reconnect grace window ("ticket cleared to '' after
+     * login" is exactly the state its restore-guard expects), and newer
+     * clients additionally carry a session-recovery token. Hotel owners can
+     * keep tickets alive for debugging with emulator setting debug_sso = 1
+     * (default 0).
+     */
+    public void consumeSsoTicket(int userId) {
+        if (Emulator.getConfig().getBoolean("debug_sso", false)) {
+            return;
+        }
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE users SET auth_ticket = '', auth_ticket_expires_at = NULL WHERE id = ? LIMIT 1")) {
+            statement.setInt(1, userId);
+            statement.execute();
+        } catch (SQLException e) {
+            LOGGER.error("Failed to consume SSO ticket for user " + userId, e);
+        }
     }
 
     public Habbo loadHabboById(int userId) {

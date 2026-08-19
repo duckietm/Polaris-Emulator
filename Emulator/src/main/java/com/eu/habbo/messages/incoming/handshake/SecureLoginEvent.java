@@ -136,13 +136,11 @@ public class SecureLoginEvent extends MessageHandler {
                 Emulator.getGameServer().getGameClientManager().disposeClient(existingClient);
             }
 
-            // First, look up the user ID to check for ghost sessions. This lookup
-            // deliberately does NOT enforce auth_ticket_expires_at: a parked (ghost)
-            // session only lives for the reconnect grace window, which is the real
-            // time bound here. A short-lived built-in SSO ticket can expire while a
-            // session is still open, so enforcing expiry here would refuse a normal
-            // mid-session reconnect. A genuinely fresh login still falls through to
-            // loadHabbo() below, which does enforce the ticket expiry.
+            // First, look up the user ID to check for ghost sessions. Neither this
+            // lookup nor loadHabbo() enforces auth_ticket_expires_at: tickets are
+            // single-use (consumed right after login), so replay is bounded by
+            // consumption, and a parked (ghost) session's real time bound is the
+            // reconnect grace window.
             int lookupUserId = 0;
             try (java.sql.Connection conn =
                             Emulator.getDatabase().getDataSource().getConnection();
@@ -186,10 +184,12 @@ public class SecureLoginEvent extends MessageHandler {
                     return;
                 }
 
-                // NB: NON svuotiamo il ticket SSO qui (vedi HabboManager.loadHabbo):
-                // dietro Cloudflare il client ritenta la connessione con lo stesso
-                // ticket, quindi deve restare valido fino alla scadenza TTL. Consumarlo
-                // farebbe fallire i retry / l'hard-refresh con "non-existing SSO token".
+                // The parking flow restored this ticket to the DB for the grace
+                // window; the resume consumed it, so clear it again (single-use).
+                // The next disposal parks the habbo and restores it once more, so
+                // mid-session reconnect chains keep working. debug_sso = 1 skips
+                // the clearing (handled inside consumeSsoTicket).
+                Emulator.getGameEnvironment().getHabboManager().consumeSsoTicket(habbo.getHabboInfo().getId());
             } else {
                 // Normal login — load from database
                 HabboManager habboManager = Emulator.getGameEnvironment().getHabboManager();

@@ -110,8 +110,8 @@ public class HabboManager {
         // issuer used to block their logins. The expiry column remains in use by
         // the emulator's own HTTP session endpoints.
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "SELECT id FROM users WHERE auth_ticket = ? LIMIT 1")) {
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT id FROM users WHERE auth_ticket = ? LIMIT 1")) {
             statement.setString(1, sso);
             try (ResultSet s = statement.executeQuery()) {
                 if (s.next()) {
@@ -124,9 +124,7 @@ public class HabboManager {
         }
 
         Habbo habbo = loadHabbo(
-                userId,
-                "SELECT * FROM users WHERE auth_ticket = ? LIMIT 1",
-                statement -> statement.setString(1, sso));
+                userId, "SELECT * FROM users WHERE auth_ticket = ? LIMIT 1", statement -> statement.setString(1, sso));
 
         if (habbo != null) {
             this.consumeSsoTicket(habbo.getHabboInfo().getId());

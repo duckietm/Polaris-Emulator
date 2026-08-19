@@ -189,7 +189,9 @@ public class SecureLoginEvent extends MessageHandler {
                 // The next disposal parks the habbo and restores it once more, so
                 // mid-session reconnect chains keep working. debug_sso = 1 skips
                 // the clearing (handled inside consumeSsoTicket).
-                Emulator.getGameEnvironment().getHabboManager().consumeSsoTicket(habbo.getHabboInfo().getId());
+                Emulator.getGameEnvironment()
+                        .getHabboManager()
+                        .consumeSsoTicket(habbo.getHabboInfo().getId());
             } else {
                 // Normal login — load from database
                 HabboManager habboManager = Emulator.getGameEnvironment().getHabboManager();

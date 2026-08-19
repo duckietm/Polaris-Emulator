@@ -55,6 +55,20 @@ class CatalogValidatorTest {
     }
 
     @Test
+    void rejectsANewSoundOfferWithoutATrackReference() {
+        List<CatalogPageSnapshot> pages =
+                List.of(page(1, -1, 0, true, true, "root", ""), page(2, 1, 0, true, true, "default_3x3", ""));
+        CatalogVersionSnapshot baseline = snapshot(pages, List.of(soundOffer(10, 2, 23, "lost_my_tapes_at_goa")));
+        CatalogVersionSnapshot draft = snapshot(pages, List.of(soundOffer(10, 2, 0, "")));
+
+        CatalogValidationReport report =
+                validator(Set.of(100), Set.of(5), Map.of()).validateChanges(baseline, draft);
+
+        assertFalse(report.valid());
+        assertCodes(report, "OFFER_SOUND_REFERENCE_MISSING");
+    }
+
+    @Test
     void reportsStructuralReferenceAndCommercialErrorsTogether() {
         CatalogVersionSnapshot snapshot = snapshot(
                 List.of(
@@ -162,5 +176,10 @@ class CatalogValidatorTest {
                 "",
                 true,
                 false);
+    }
+
+    private static CatalogOfferSnapshot soundOffer(int id, int pageId, int songId, String extradata) {
+        return new CatalogOfferSnapshot(
+                id, "100", pageId, "SONG LostMyTapesAtGoa", 0, 150, 5, 1, 0, id, id, songId, extradata, true, false);
     }
 }

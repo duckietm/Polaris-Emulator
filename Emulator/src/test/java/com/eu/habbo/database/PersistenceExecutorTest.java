@@ -14,6 +14,16 @@ import org.junit.jupiter.api.Test;
 class PersistenceExecutorTest {
 
     @Test
+    void exposesTheConfiguredQueueCapacityForPressureTelemetry() {
+        PersistenceExecutor executor = new PersistenceExecutor(1, 7);
+        try {
+            assertEquals(7, executor.getQueueCapacity());
+        } finally {
+            executor.shutDown(2, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
     void databaseWorkRunsOnDedicatedNamedWorkers() throws Exception {
         PersistenceExecutor executor = new PersistenceExecutor(2, 8);
         CountDownLatch completed = new CountDownLatch(1);
@@ -167,11 +177,102 @@ class PersistenceExecutorTest {
         assertEquals(0L, completed.getCount());
     }
 
+    @Test
+    void awaitIdleDrainsWithoutClosingTheExecutor() throws Exception {
+        PersistenceExecutor executor = new PersistenceExecutor(1, 8);
+        CountDownLatch release = new CountDownLatch(1);
+        CountDownLatch secondRun = new CountDownLatch(1);
+        try {
+            executor.execute(() -> await(release));
+            assertTrue(!executor.awaitIdle(20, TimeUnit.MILLISECONDS));
+
+            release.countDown();
+            assertTrue(executor.awaitIdle(2, TimeUnit.SECONDS));
+
+            executor.execute(secondRun::countDown);
+            assertTrue(secondRun.await(2, TimeUnit.SECONDS));
+        } finally {
+            release.countDown();
+            executor.shutDown(2, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void operationSnapshotIdentifiesFailuresAndTracksSuccessfulWork() {
+        PersistenceExecutor executor = new PersistenceExecutor(1, 8);
+        try {
+            executor.execute(new FailingPersistenceTask());
+            executor.execute("test.barrier", () -> {});
+            executor.shutDown(2, TimeUnit.SECONDS);
+
+            PersistenceOperationMonitor.Snapshot snapshot = executor.operationSnapshot();
+            assertEquals(2L, snapshot.submittedCount());
+            assertEquals(1L, snapshot.succeededCount());
+            assertEquals(1L, snapshot.failedCount());
+            assertEquals(0L, snapshot.activeCount());
+            assertEquals(1, snapshot.recentFailures().size());
+            assertEquals(
+                    "FailingPersistenceTask", snapshot.recentFailures().get(0).operationType());
+            assertEquals(
+                    "IllegalStateException", snapshot.recentFailures().get(0).errorType());
+            assertTrue(snapshot.recentFailures().get(0).operationId() > 0L);
+        } finally {
+            executor.shutDown(2, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void rejectedNullTaskDoesNotCreatePhantomActiveOperation() {
+        PersistenceExecutor executor = new PersistenceExecutor(1, 8);
+        try {
+            assertThrows(NullPointerException.class, () -> executor.execute("invalid", null));
+
+            PersistenceOperationMonitor.Snapshot snapshot = executor.operationSnapshot();
+            assertEquals(0L, snapshot.submittedCount());
+            assertEquals(0L, snapshot.activeCount());
+        } finally {
+            executor.shutDown(2, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void capacityMetricsRemainAvailableAlongsideOperationTelemetry() throws Exception {
+        PersistenceExecutor executor = new PersistenceExecutor(1, 1);
+        CountDownLatch workerStarted = new CountDownLatch(1);
+        CountDownLatch releaseWorker = new CountDownLatch(1);
+        try {
+            executor.execute("test.blocking", () -> {
+                workerStarted.countDown();
+                await(releaseWorker);
+            });
+            assertTrue(workerStarted.await(2, TimeUnit.SECONDS));
+            executor.execute("test.queued", () -> {});
+
+            PersistenceExecutor.Metrics metrics = executor.metrics();
+            PersistenceOperationMonitor.Snapshot operations = executor.operationSnapshot();
+
+            assertEquals(1, metrics.activeCount());
+            assertEquals(1, metrics.queueDepth());
+            assertEquals(1, metrics.queueCapacity());
+            assertEquals(2L, operations.submittedCount());
+        } finally {
+            releaseWorker.countDown();
+            executor.shutDown(2, TimeUnit.SECONDS);
+        }
+    }
+
     private static void await(CountDownLatch latch) {
         try {
             latch.await();
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
+        }
+    }
+
+    private static final class FailingPersistenceTask implements Runnable {
+        @Override
+        public void run() {
+            throw new IllegalStateException("sensitive failure detail");
         }
     }
 }

@@ -20,7 +20,10 @@ import org.slf4j.LoggerFactory;
 public final class PersistenceExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(PersistenceExecutor.class);
     private static final int DEFAULT_QUEUE_CAPACITY = 2_048;
+    private static final int RECENT_FAILURE_CAPACITY = 64;
 
+    private final PersistenceOperationMonitor operationMonitor =
+            new PersistenceOperationMonitor(RECENT_FAILURE_CAPACITY);
     private final int queueCapacity;
     private final AtomicInteger highWaterMark = new AtomicInteger();
     private final AtomicLong saturationCount = new AtomicLong();
@@ -69,21 +72,60 @@ public final class PersistenceExecutor {
     }
 
     public void execute(Runnable task) {
-        Runnable guarded = guard(Objects.requireNonNull(task, "task"));
-        if (!this.accepting.get()) {
-            throw new RejectedExecutionException("Persistence executor is not accepting work");
-        }
+        Runnable requiredTask = Objects.requireNonNull(task, "task");
+        this.execute(operationType(requiredTask), requiredTask);
+    }
 
-        this.executor.execute(guarded);
-        this.recordQueueDepth();
+    public void execute(String operationType, Runnable task) {
+        Runnable requiredTask = Objects.requireNonNull(task, "task");
+        PersistenceOperationMonitor.Operation operation = this.operationMonitor.started(operationType);
+        Runnable guarded = this.guard(operation, requiredTask);
+        try {
+            if (!this.accepting.get()) {
+                throw new RejectedExecutionException("Persistence executor is not accepting work");
+            }
+
+            this.executor.execute(guarded);
+            this.recordQueueDepth();
+        } catch (RejectedExecutionException exception) {
+            this.operationMonitor.rejected(operation, exception);
+            throw exception;
+        }
     }
 
     public int getQueueDepth() {
         return this.executor.getQueue().size();
     }
 
+    public int getQueueCapacity() {
+        return this.executor.getQueue().size() + this.executor.getQueue().remainingCapacity();
+    }
+
     public int getActiveCount() {
         return this.executor.getActiveCount();
+    }
+
+    public boolean awaitIdle(long timeout, TimeUnit unit) {
+        long timeoutNanos = Math.max(0L, unit.toNanos(timeout));
+        long startedAt = System.nanoTime();
+        long remainingNanos = timeoutNanos;
+        while (this.operationMonitor.activeCount() > 0L) {
+            if (remainingNanos <= 0L) {
+                return false;
+            }
+            try {
+                TimeUnit.NANOSECONDS.sleep(Math.min(remainingNanos, TimeUnit.MILLISECONDS.toNanos(10)));
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+            remainingNanos = timeoutNanos - Math.max(0L, System.nanoTime() - startedAt);
+        }
+        return true;
+    }
+
+    public PersistenceOperationMonitor.Snapshot operationSnapshot() {
+        return this.operationMonitor.snapshot();
     }
 
     public Metrics metrics() {
@@ -170,14 +212,33 @@ public final class PersistenceExecutor {
         this.highWaterMark.accumulateAndGet(this.executor.getQueue().size(), Math::max);
     }
 
-    private static Runnable guard(Runnable task) {
+    private Runnable guard(PersistenceOperationMonitor.Operation operation, Runnable task) {
         return () -> {
             try {
                 task.run();
+                this.operationMonitor.succeeded(operation);
             } catch (Exception exception) {
-                LOGGER.error("Persistence task failed", exception);
+                this.operationMonitor.failed(operation, exception);
+                LOGGER.error(
+                        "Persistence task failed: operationId={}, operationType={}",
+                        operation.operationId(),
+                        operation.operationType(),
+                        exception);
+            } catch (Error error) {
+                this.operationMonitor.failed(operation, error);
+                LOGGER.error(
+                        "Persistence task failed: operationId={}, operationType={}",
+                        operation.operationId(),
+                        operation.operationType(),
+                        error);
+                throw error;
             }
         };
+    }
+
+    private static String operationType(Runnable task) {
+        String simpleName = task.getClass().getSimpleName();
+        return simpleName.isBlank() || simpleName.contains("$$Lambda") ? "anonymous" : simpleName;
     }
 
     public record Metrics(

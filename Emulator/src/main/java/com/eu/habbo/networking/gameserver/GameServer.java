@@ -77,6 +77,10 @@ public class GameServer extends Server {
                 ch.pipeline().addLast("packetDispatchMarker", new PacketDispatchMarker());
                 ch.pipeline()
                         .addLast(
+                                "packetExecutionAdmission",
+                                GamePacketExecutionGroup.admissionHandler("packetDispatchLatency"));
+                ch.pipeline()
+                        .addLast(
                                 GamePacketExecutionGroup.get(),
                                 "packetDispatchLatency",
                                 new PacketDispatchLatencyHandler());

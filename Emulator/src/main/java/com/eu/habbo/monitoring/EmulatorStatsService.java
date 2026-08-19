@@ -2,13 +2,18 @@ package com.eu.habbo.monitoring;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.database.PersistenceExecutor;
+import com.eu.habbo.database.PersistenceOperationMonitor;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics;
 import com.eu.habbo.habbohotel.wired.tick.WiredTickService;
+import com.eu.habbo.networking.gameserver.ExecutionBackpressureStatus;
 import com.eu.habbo.networking.gameserver.GameServer;
+import com.eu.habbo.resilience.DependencyCircuitBreakers;
+import com.eu.habbo.resilience.RuntimeResilienceRuntime;
+import com.eu.habbo.resilience.RuntimeResilienceService;
 import com.eu.habbo.threading.ThreadPooling;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.HikariPoolMXBean;
@@ -243,12 +248,17 @@ public final class EmulatorStatsService {
             wiredTopRooms = new ArrayList<>(wiredTopRooms.subList(0, 5));
         }
 
-        HikariPoolMetrics hikariPoolMetrics = collectHikariPoolMetrics();
         ThreadPooling threading = Emulator.getThreading();
+        HikariPoolMetrics hikariPoolMetrics = collectHikariPoolMetrics();
         PersistenceMetrics persistenceMetrics = collectPersistenceMetrics(threading);
         SchedulerMetrics schedulerMetrics = collectSchedulerMetrics(threading);
+        PersistenceOperationMetrics persistenceOperations =
+                persistenceOperationMetrics(threading == null ? null : threading.getPersistenceOperationSnapshot());
         NetworkMetrics networkMetrics = collectNetworkMetrics(now);
         GarbageCollectorMetrics garbageCollectorMetrics = collectGarbageCollectorMetrics(now);
+        RuntimeResilienceService.Status resilience = RuntimeResilienceRuntime.status();
+        DependencyCircuitBreakers.Snapshot turnstileCircuit = RuntimeResilienceRuntime.circuitSnapshot("turnstile");
+        DependencyCircuitBreakers.Snapshot smtpCircuit = RuntimeResilienceRuntime.circuitSnapshot("smtp");
         HealthSnapshot health =
                 collectHealth(now, hikariPoolMetrics, schedulerMetrics, memoryUsagePercent, cpuLoadPercent);
 
@@ -287,9 +297,13 @@ public final class EmulatorStatsService {
                 hikariPoolMetrics,
                 persistenceMetrics,
                 schedulerMetrics,
+                persistenceOperations,
                 networkMetrics,
                 garbageCollectorMetrics,
-                health);
+                health,
+                resilience,
+                turnstileCircuit,
+                smtpCircuit);
     }
 
     private static HikariPoolMetrics collectHikariPoolMetrics() {
@@ -343,6 +357,36 @@ public final class EmulatorStatsService {
                 executor.getPoolSize(),
                 executor.getCompletedTaskCount(),
                 !executor.isShutdown());
+    }
+
+    static PersistenceOperationMetrics persistenceOperationMetrics(PersistenceOperationMonitor.Snapshot snapshot) {
+        if (snapshot == null) {
+            return PersistenceOperationMetrics.empty();
+        }
+
+        List<PersistenceFailureRow> failures = snapshot.recentFailures().stream()
+                .map(failure -> new PersistenceFailureRow(
+                        failure.operationId(),
+                        failure.operationType(),
+                        failure.outcome(),
+                        failure.startedAtEpochMs(),
+                        nanosToMillis(failure.durationNanos()),
+                        failure.errorType()))
+                .toList();
+
+        return new PersistenceOperationMetrics(
+                snapshot.submittedCount(),
+                snapshot.succeededCount(),
+                snapshot.failedCount(),
+                snapshot.rejectedCount(),
+                snapshot.activeCount(),
+                nanosToMillis(snapshot.totalDurationNanos()),
+                nanosToMillis(snapshot.maxDurationNanos()),
+                failures);
+    }
+
+    private static double nanosToMillis(long nanos) {
+        return Math.max(0L, nanos) / 1_000_000D;
     }
 
     private static HealthSnapshot collectHealth(
@@ -476,6 +520,8 @@ public final class EmulatorStatsService {
         previousOutgoingBytes = outgoingBytes;
         previousTelemetryAt = now;
         PacketDispatchLatencyMetrics.Snapshot dispatch = PacketDispatchLatencyMetrics.snapshot();
+        ExecutionBackpressureStatus.Snapshot packetBackpressure = ExecutionBackpressureStatus.packet();
+        ExecutionBackpressureStatus.Snapshot httpBackpressure = ExecutionBackpressureStatus.http();
 
         return new NetworkMetrics(
                 Math.max(0D, incomingPacketsPerSecond),
@@ -487,7 +533,9 @@ public final class EmulatorStatsService {
                 dispatch.samples(),
                 dispatch.averageMs(),
                 dispatch.p95Ms(),
-                dispatch.maxMs());
+                dispatch.maxMs(),
+                packetBackpressure,
+                httpBackpressure);
     }
 
     private static GarbageCollectorMetrics collectGarbageCollectorMetrics(long now) {
@@ -604,9 +652,13 @@ public final class EmulatorStatsService {
         public final HikariPoolMetrics databasePool;
         public final PersistenceMetrics persistence;
         public final SchedulerMetrics scheduler;
+        public final PersistenceOperationMetrics persistenceOperations;
         public final NetworkMetrics network;
         public final GarbageCollectorMetrics garbageCollector;
         public final HealthSnapshot health;
+        public final RuntimeResilienceService.Status resilience;
+        public final DependencyCircuitBreakers.Snapshot turnstileCircuit;
+        public final DependencyCircuitBreakers.Snapshot smtpCircuit;
 
         public Snapshot(
                 Overview overview,
@@ -627,7 +679,9 @@ public final class EmulatorStatsService {
                     wired,
                     wiredTopRooms,
                     databasePool,
+                    persistenceMetrics(null),
                     scheduler,
+                    PersistenceOperationMetrics.empty(),
                     network,
                     garbageCollector,
                     new HealthSnapshot(
@@ -659,9 +713,45 @@ public final class EmulatorStatsService {
                     databasePool,
                     persistenceMetrics(null),
                     scheduler,
+                    PersistenceOperationMetrics.empty(),
                     network,
                     garbageCollector,
-                    health);
+                    health,
+                    RuntimeResilienceRuntime.status(),
+                    RuntimeResilienceRuntime.circuitSnapshot("turnstile"),
+                    RuntimeResilienceRuntime.circuitSnapshot("smtp"));
+        }
+
+        public Snapshot(
+                Overview overview,
+                List<MemoryPoint> memoryHistory,
+                List<OnlineUserRow> users,
+                List<ActiveRoomRow> rooms,
+                List<WiredRoomRow> wired,
+                List<WiredTopRoomRow> wiredTopRooms,
+                HikariPoolMetrics databasePool,
+                SchedulerMetrics scheduler,
+                PersistenceOperationMetrics persistenceOperations,
+                NetworkMetrics network,
+                GarbageCollectorMetrics garbageCollector,
+                HealthSnapshot health) {
+            this(
+                    overview,
+                    memoryHistory,
+                    users,
+                    rooms,
+                    wired,
+                    wiredTopRooms,
+                    databasePool,
+                    persistenceMetrics(null),
+                    scheduler,
+                    persistenceOperations,
+                    network,
+                    garbageCollector,
+                    health,
+                    RuntimeResilienceRuntime.status(),
+                    RuntimeResilienceRuntime.circuitSnapshot("turnstile"),
+                    RuntimeResilienceRuntime.circuitSnapshot("smtp"));
         }
 
         public Snapshot(
@@ -677,6 +767,141 @@ public final class EmulatorStatsService {
                 NetworkMetrics network,
                 GarbageCollectorMetrics garbageCollector,
                 HealthSnapshot health) {
+            this(
+                    overview,
+                    memoryHistory,
+                    users,
+                    rooms,
+                    wired,
+                    wiredTopRooms,
+                    databasePool,
+                    persistence,
+                    scheduler,
+                    PersistenceOperationMetrics.empty(),
+                    network,
+                    garbageCollector,
+                    health,
+                    RuntimeResilienceRuntime.status(),
+                    RuntimeResilienceRuntime.circuitSnapshot("turnstile"),
+                    RuntimeResilienceRuntime.circuitSnapshot("smtp"));
+        }
+
+        public Snapshot(
+                Overview overview,
+                List<MemoryPoint> memoryHistory,
+                List<OnlineUserRow> users,
+                List<ActiveRoomRow> rooms,
+                List<WiredRoomRow> wired,
+                List<WiredTopRoomRow> wiredTopRooms,
+                HikariPoolMetrics databasePool,
+                SchedulerMetrics scheduler,
+                NetworkMetrics network,
+                GarbageCollectorMetrics garbageCollector,
+                HealthSnapshot health,
+                RuntimeResilienceService.Status resilience) {
+            this(
+                    overview,
+                    memoryHistory,
+                    users,
+                    rooms,
+                    wired,
+                    wiredTopRooms,
+                    databasePool,
+                    persistenceMetrics(null),
+                    scheduler,
+                    PersistenceOperationMetrics.empty(),
+                    network,
+                    garbageCollector,
+                    health,
+                    resilience,
+                    RuntimeResilienceRuntime.circuitSnapshot("turnstile"),
+                    RuntimeResilienceRuntime.circuitSnapshot("smtp"));
+        }
+
+        public Snapshot(
+                Overview overview,
+                List<MemoryPoint> memoryHistory,
+                List<OnlineUserRow> users,
+                List<ActiveRoomRow> rooms,
+                List<WiredRoomRow> wired,
+                List<WiredTopRoomRow> wiredTopRooms,
+                HikariPoolMetrics databasePool,
+                SchedulerMetrics scheduler,
+                NetworkMetrics network,
+                GarbageCollectorMetrics garbageCollector,
+                HealthSnapshot health,
+                RuntimeResilienceService.Status resilience,
+                DependencyCircuitBreakers.Snapshot turnstileCircuit,
+                DependencyCircuitBreakers.Snapshot smtpCircuit) {
+            this(
+                    overview,
+                    memoryHistory,
+                    users,
+                    rooms,
+                    wired,
+                    wiredTopRooms,
+                    databasePool,
+                    persistenceMetrics(null),
+                    scheduler,
+                    PersistenceOperationMetrics.empty(),
+                    network,
+                    garbageCollector,
+                    health,
+                    resilience,
+                    turnstileCircuit,
+                    smtpCircuit);
+        }
+
+        public Snapshot(
+                Overview overview,
+                List<MemoryPoint> memoryHistory,
+                List<OnlineUserRow> users,
+                List<ActiveRoomRow> rooms,
+                List<WiredRoomRow> wired,
+                List<WiredTopRoomRow> wiredTopRooms,
+                HikariPoolMetrics databasePool,
+                PersistenceMetrics persistence,
+                SchedulerMetrics scheduler,
+                PersistenceOperationMetrics persistenceOperations,
+                NetworkMetrics network,
+                GarbageCollectorMetrics garbageCollector,
+                HealthSnapshot health) {
+            this(
+                    overview,
+                    memoryHistory,
+                    users,
+                    rooms,
+                    wired,
+                    wiredTopRooms,
+                    databasePool,
+                    persistence,
+                    scheduler,
+                    persistenceOperations,
+                    network,
+                    garbageCollector,
+                    health,
+                    RuntimeResilienceRuntime.status(),
+                    RuntimeResilienceRuntime.circuitSnapshot("turnstile"),
+                    RuntimeResilienceRuntime.circuitSnapshot("smtp"));
+        }
+
+        public Snapshot(
+                Overview overview,
+                List<MemoryPoint> memoryHistory,
+                List<OnlineUserRow> users,
+                List<ActiveRoomRow> rooms,
+                List<WiredRoomRow> wired,
+                List<WiredTopRoomRow> wiredTopRooms,
+                HikariPoolMetrics databasePool,
+                PersistenceMetrics persistence,
+                SchedulerMetrics scheduler,
+                PersistenceOperationMetrics persistenceOperations,
+                NetworkMetrics network,
+                GarbageCollectorMetrics garbageCollector,
+                HealthSnapshot health,
+                RuntimeResilienceService.Status resilience,
+                DependencyCircuitBreakers.Snapshot turnstileCircuit,
+                DependencyCircuitBreakers.Snapshot smtpCircuit) {
             this.overview = overview;
             this.memoryHistory = memoryHistory;
             this.users = users;
@@ -686,9 +911,13 @@ public final class EmulatorStatsService {
             this.databasePool = databasePool;
             this.persistence = persistence;
             this.scheduler = scheduler;
+            this.persistenceOperations = persistenceOperations;
             this.network = network;
             this.garbageCollector = garbageCollector;
             this.health = health;
+            this.resilience = resilience;
+            this.turnstileCircuit = turnstileCircuit;
+            this.smtpCircuit = smtpCircuit;
         }
     }
 
@@ -949,6 +1178,64 @@ public final class EmulatorStatsService {
         }
     }
 
+    public static final class PersistenceOperationMetrics {
+        public final long submitted;
+        public final long succeeded;
+        public final long failed;
+        public final long rejected;
+        public final long active;
+        public final double totalDurationMs;
+        public final double maxDurationMs;
+        public final List<PersistenceFailureRow> recentFailures;
+
+        public PersistenceOperationMetrics(
+                long submitted,
+                long succeeded,
+                long failed,
+                long rejected,
+                long active,
+                double totalDurationMs,
+                double maxDurationMs,
+                List<PersistenceFailureRow> recentFailures) {
+            this.submitted = submitted;
+            this.succeeded = succeeded;
+            this.failed = failed;
+            this.rejected = rejected;
+            this.active = active;
+            this.totalDurationMs = totalDurationMs;
+            this.maxDurationMs = maxDurationMs;
+            this.recentFailures = List.copyOf(recentFailures);
+        }
+
+        private static PersistenceOperationMetrics empty() {
+            return new PersistenceOperationMetrics(0L, 0L, 0L, 0L, 0L, 0D, 0D, List.of());
+        }
+    }
+
+    public static final class PersistenceFailureRow {
+        public final long operationId;
+        public final String operationType;
+        public final String outcome;
+        public final long startedAtEpochMs;
+        public final double durationMs;
+        public final String errorType;
+
+        public PersistenceFailureRow(
+                long operationId,
+                String operationType,
+                String outcome,
+                long startedAtEpochMs,
+                double durationMs,
+                String errorType) {
+            this.operationId = operationId;
+            this.operationType = operationType;
+            this.outcome = outcome;
+            this.startedAtEpochMs = startedAtEpochMs;
+            this.durationMs = durationMs;
+            this.errorType = errorType;
+        }
+    }
+
     public static final class NetworkMetrics {
         public final double incomingPacketsPerSecond;
         public final double outgoingPacketsPerSecond;
@@ -960,6 +1247,8 @@ public final class EmulatorStatsService {
         public final double dispatchAverageMs;
         public final double dispatchP95Ms;
         public final double dispatchMaxMs;
+        public final ExecutionBackpressureStatus.Snapshot packetBackpressure;
+        public final ExecutionBackpressureStatus.Snapshot httpBackpressure;
 
         public NetworkMetrics(
                 double incomingPacketsPerSecond,
@@ -978,7 +1267,9 @@ public final class EmulatorStatsService {
                     0L,
                     0D,
                     0D,
-                    0D);
+                    0D,
+                    ExecutionBackpressureStatus.Snapshot.inactive(),
+                    ExecutionBackpressureStatus.Snapshot.inactive());
         }
 
         public NetworkMetrics(
@@ -992,6 +1283,34 @@ public final class EmulatorStatsService {
                 double dispatchAverageMs,
                 double dispatchP95Ms,
                 double dispatchMaxMs) {
+            this(
+                    incomingPacketsPerSecond,
+                    outgoingPacketsPerSecond,
+                    incomingKilobytesPerSecond,
+                    outgoingKilobytesPerSecond,
+                    totalIncomingPackets,
+                    totalOutgoingPackets,
+                    dispatchSamples,
+                    dispatchAverageMs,
+                    dispatchP95Ms,
+                    dispatchMaxMs,
+                    ExecutionBackpressureStatus.Snapshot.inactive(),
+                    ExecutionBackpressureStatus.Snapshot.inactive());
+        }
+
+        public NetworkMetrics(
+                double incomingPacketsPerSecond,
+                double outgoingPacketsPerSecond,
+                double incomingKilobytesPerSecond,
+                double outgoingKilobytesPerSecond,
+                long totalIncomingPackets,
+                long totalOutgoingPackets,
+                long dispatchSamples,
+                double dispatchAverageMs,
+                double dispatchP95Ms,
+                double dispatchMaxMs,
+                ExecutionBackpressureStatus.Snapshot packetBackpressure,
+                ExecutionBackpressureStatus.Snapshot httpBackpressure) {
             this.incomingPacketsPerSecond = incomingPacketsPerSecond;
             this.outgoingPacketsPerSecond = outgoingPacketsPerSecond;
             this.incomingKilobytesPerSecond = incomingKilobytesPerSecond;
@@ -1002,6 +1321,8 @@ public final class EmulatorStatsService {
             this.dispatchAverageMs = dispatchAverageMs;
             this.dispatchP95Ms = dispatchP95Ms;
             this.dispatchMaxMs = dispatchMaxMs;
+            this.packetBackpressure = packetBackpressure;
+            this.httpBackpressure = httpBackpressure;
         }
     }
 

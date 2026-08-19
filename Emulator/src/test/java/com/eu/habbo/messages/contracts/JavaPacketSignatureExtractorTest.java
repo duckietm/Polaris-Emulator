@@ -1,49 +1,45 @@
 package com.eu.habbo.messages.contracts;
 
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+import org.junit.jupiter.api.Test;
 
 class JavaPacketSignatureExtractorTest {
     private final JavaPacketSignatureExtractor extractor = new JavaPacketSignatureExtractor();
 
     @Test
     void rejectsIncomingFieldsDelegatedToAnExternalConstructor() throws IOException {
-        ExtractionResult result = extractor.extract(
-                fixture("DelegatedIncomingFixture.java"), JavaPacketSide.INCOMING, "handle");
+        ExtractionResult result =
+                extractor.extract(fixture("DelegatedIncomingFixture.java"), JavaPacketSide.INCOMING, "handle");
 
         assertTrue(result.unsupportedReason().orElseThrow().contains("external constructor"));
     }
 
     @Test
     void rejectsIncomingFieldsDelegatedToAnExternalReaderMethod() throws IOException {
-        ExtractionResult result = extractor.extract(
-                fixture("DelegatedIncomingMethodFixture.java"), JavaPacketSide.INCOMING, "handle");
+        ExtractionResult result =
+                extractor.extract(fixture("DelegatedIncomingMethodFixture.java"), JavaPacketSide.INCOMING, "handle");
 
         assertTrue(result.unsupportedReason().orElseThrow().contains("external reader read"));
     }
 
     @Test
     void rejectsOutgoingFieldsDelegatedToAnExternalSerializer() throws IOException {
-        ExtractionResult result = extractor.extract(
-                fixture("DelegatedOutgoingFixture.java"), JavaPacketSide.OUTGOING, "composeInternal");
+        ExtractionResult result =
+                extractor.extract(fixture("DelegatedOutgoingFixture.java"), JavaPacketSide.OUTGOING, "composeInternal");
 
         assertTrue(result.unsupportedReason().orElseThrow().contains("external serializer"));
     }
 
     @Test
     void extractsIncomingReadsAndExpandsLocalHelpersInCallOrder() throws Exception {
-        ExtractionResult result = extractor.extract(
-                fixture("IncomingFixture.java"),
-                JavaPacketSide.INCOMING,
-                "handle");
+        ExtractionResult result = extractor.extract(fixture("IncomingFixture.java"), JavaPacketSide.INCOMING, "handle");
 
         assertFalse(result.unsupportedReason().isPresent());
         assertEquals(List.of("int", "string", "short", "boolean"), scalarTypes(result.fields()));
@@ -51,10 +47,8 @@ class JavaPacketSignatureExtractorTest {
 
     @Test
     void extractsOutgoingWritesAndExpandsLocalHelpersInCallOrder() throws Exception {
-        ExtractionResult result = extractor.extract(
-                fixture("OutgoingFixture.java"),
-                JavaPacketSide.OUTGOING,
-                "composeInternal");
+        ExtractionResult result =
+                extractor.extract(fixture("OutgoingFixture.java"), JavaPacketSide.OUTGOING, "composeInternal");
 
         assertFalse(result.unsupportedReason().isPresent());
         assertEquals(List.of("int", "string", "short", "boolean"), scalarTypes(result.fields()));
@@ -63,9 +57,7 @@ class JavaPacketSignatureExtractorTest {
     @Test
     void collapsesEquivalentTryAndCatchWritesIntoOneWireField() throws Exception {
         ExtractionResult result = extractor.extract(
-                fixture("EquivalentTryCatchOutgoingFixture.java"),
-                JavaPacketSide.OUTGOING,
-                "composeInternal");
+                fixture("EquivalentTryCatchOutgoingFixture.java"), JavaPacketSide.OUTGOING, "composeInternal");
 
         assertFalse(result.unsupportedReason().isPresent());
         assertEquals(List.of("int", "int", "string"), scalarTypes(result.fields()));
@@ -75,42 +67,45 @@ class JavaPacketSignatureExtractorTest {
     void extractsAllRendererDeclaredFieldsFromCompatibleRequests() throws Exception {
         assertEquals(
                 List.of("int", "int", "int"),
-                scalarTypes(extractor.extract(
-                        realSource("incoming/guilds/forums/GuildForumThreadsEvent.java"),
-                        JavaPacketSide.INCOMING,
-                        "handle").fields()));
+                scalarTypes(extractor
+                        .extract(
+                                realSource("incoming/guilds/forums/GuildForumThreadsEvent.java"),
+                                JavaPacketSide.INCOMING,
+                                "handle")
+                        .fields()));
         assertEquals(
                 List.of("int", "boolean"),
-                scalarTypes(extractor.extract(
-                        realSource("incoming/rooms/pets/PetRideEvent.java"),
-                        JavaPacketSide.INCOMING,
-                        "handle").fields()));
+                scalarTypes(extractor
+                        .extract(realSource("incoming/rooms/pets/PetRideEvent.java"), JavaPacketSide.INCOMING, "handle")
+                        .fields()));
         assertEquals(
                 List.of("string", "int"),
-                scalarTypes(extractor.extract(
-                        realSource("incoming/catalog/CheckPetNameEvent.java"),
-                        JavaPacketSide.INCOMING,
-                        "handle").fields()));
+                scalarTypes(extractor
+                        .extract(
+                                realSource("incoming/catalog/CheckPetNameEvent.java"),
+                                JavaPacketSide.INCOMING,
+                                "handle")
+                        .fields()));
         assertEquals(
                 List.of("int", "string", "int"),
-                scalarTypes(extractor.extract(
-                        realSource("incoming/modtool/ModToolKickEvent.java"),
-                        JavaPacketSide.INCOMING,
-                        "handle").fields()));
+                scalarTypes(extractor
+                        .extract(
+                                realSource("incoming/modtool/ModToolKickEvent.java"), JavaPacketSide.INCOMING, "handle")
+                        .fields()));
         assertEquals(
                 List.of("int", "boolean"),
-                scalarTypes(extractor.extract(
-                        realSource("incoming/users/RequestUserProfileEvent.java"),
-                        JavaPacketSide.INCOMING,
-                        "handle").fields()));
+                scalarTypes(extractor
+                        .extract(
+                                realSource("incoming/users/RequestUserProfileEvent.java"),
+                                JavaPacketSide.INCOMING,
+                                "handle")
+                        .fields()));
     }
 
     @Test
     void extractsIssueDeletedIdentifierAsAString() throws Exception {
         ExtractionResult result = extractor.extract(
-                realSource("outgoing/modtool/IssueDeletedComposer.java"),
-                JavaPacketSide.OUTGOING,
-                "composeInternal");
+                realSource("outgoing/modtool/IssueDeletedComposer.java"), JavaPacketSide.OUTGOING, "composeInternal");
 
         assertFalse(result.unsupportedReason().isPresent());
         assertEquals(List.of("string"), scalarTypes(result.fields()));
@@ -119,7 +114,7 @@ class JavaPacketSignatureExtractorTest {
     @Test
     void extractsAllFieldsFromRemainingRendererRequests() throws Exception {
         assertIncomingSignature("incoming/camera/CameraPurchaseEvent.java", "string");
-        assertIncomingSignature("incoming/handshake/SecureLoginEvent.java", "string", "int");
+        assertIncomingSignature("incoming/handshake/SecureLoginEvent.java", "string", "int", "string");
         assertIncomingSignature("incoming/users/RequestUserWardrobeEvent.java", "int");
         assertIncomingSignature("incoming/helper/MySanctionStatusEvent.java", "boolean");
         assertIncomingSignature("incoming/navigator/RequestPopularRoomsEvent.java", "string", "int");
@@ -134,12 +129,8 @@ class JavaPacketSignatureExtractorTest {
 
     @Test
     void verifierReportsFirstOrderMismatchWithContext() {
-        List<WireSchema> expected = List.of(
-                new ScalarSchema("int", "id"),
-                new ScalarSchema("string", "name"));
-        List<WireSchema> observed = List.of(
-                new ScalarSchema("string", "name"),
-                new ScalarSchema("int", "id"));
+        List<WireSchema> expected = List.of(new ScalarSchema("int", "id"), new ScalarSchema("string", "name"));
+        List<WireSchema> observed = List.of(new ScalarSchema("string", "name"), new ScalarSchema("int", "id"));
 
         IllegalArgumentException error = assertThrows(
                 IllegalArgumentException.class,

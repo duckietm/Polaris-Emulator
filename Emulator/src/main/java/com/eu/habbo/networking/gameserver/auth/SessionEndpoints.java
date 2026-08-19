@@ -145,13 +145,31 @@ final class SessionEndpoints {
                         "SELECT id, username FROM users WHERE auth_ticket = ? AND (auth_ticket_expires_at IS NULL OR auth_ticket_expires_at >= NOW()) LIMIT 1")) {
             lookup.setString(1, ssoTicket);
             try (ResultSet rs = lookup.executeQuery()) {
-                if (!rs.next()) {
+                int userId = 0;
+                String username = null;
+
+                if (rs.next()) {
+                    userId = rs.getInt("id");
+                    username = rs.getString("username");
+                } else {
+                    // The game login consumes the SSO ticket (single-use) and the
+                    // client requests this token in parallel with the WebSocket
+                    // login, so the row may already be cleared. A live
+                    // authenticated game session still holding the same ticket is
+                    // the same proof of possession, so accept it.
+                    com.eu.habbo.habbohotel.gameclients.GameClient online =
+                            Emulator.getGameServer().getGameClientManager().findClientBySsoTicket(ssoTicket);
+                    if (online != null && online.getHabbo() != null) {
+                        userId = online.getHabbo().getHabboInfo().getId();
+                        username = online.getHabbo().getHabboInfo().getUsername();
+                    }
+                }
+
+                if (userId <= 0 || username == null) {
                     AuthRateLimiter.recordFailure(ip);
                     sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("SSO ticket not recognised."));
                     return;
                 }
-                int userId = rs.getInt("id");
-                String username = rs.getString("username");
 
                 AuthRateLimiter.recordSuccess(ip);
 

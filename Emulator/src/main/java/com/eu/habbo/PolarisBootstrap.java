@@ -5,6 +5,7 @@ import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.core.CryptoConfig;
 import com.eu.habbo.core.DatabaseLogger;
 import com.eu.habbo.core.Logging;
+import com.eu.habbo.core.OperationalProfile;
 import com.eu.habbo.core.TextsManager;
 import com.eu.habbo.database.Database;
 import com.eu.habbo.database.PersistenceExecutor;
@@ -20,6 +21,8 @@ import com.eu.habbo.networking.gameserver.GameServer;
 import com.eu.habbo.networking.rconserver.RCONServer;
 import com.eu.habbo.plugin.PluginManager;
 import com.eu.habbo.plugin.events.emulator.EmulatorConfigUpdatedEvent;
+import com.eu.habbo.resilience.RuntimeResilienceRuntime;
+import com.eu.habbo.session.SessionRecoveryRuntime;
 import com.eu.habbo.stress.StressLimits;
 import com.eu.habbo.stress.StressRunManager;
 import com.eu.habbo.stress.StressRunRegistry;
@@ -38,7 +41,6 @@ import org.slf4j.LoggerFactory;
 final class PolarisBootstrap {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PolarisBootstrap.class);
-    private static final int DEFAULT_PERSISTENCE_QUEUE_CAPACITY = 2_048;
     private static final int MAX_PERSISTENCE_QUEUE_CAPACITY = 65_536;
 
     private final PolarisRuntime runtime;
@@ -115,16 +117,28 @@ final class PolarisBootstrap {
         configuration.loaded = true;
         configuration.loadFromDatabase();
         configuration.register("runtime.threads", "8");
-        configuration.register("db.persistence.queue.capacity", "2048");
+        configuration.register("db.persistence.queue.capacity", "0");
 
         int runtimeThreads = resolveRuntimeThreads(configuration);
-        int persistenceQueueCapacity = resolvePersistenceQueueCapacity(configuration);
-        PersistenceExecutor persistenceExecutor =
-                PersistenceExecutor.forRuntimeThreads(runtimeThreads, persistenceQueueCapacity);
+        OperationalProfile.Settings operationalSettings = OperationalProfile.resolve(
+                configuration.getValue("runtime.operational.profile", "custom"),
+                runtimeThreads,
+                configuration.getInt("persistence.executor.threads", 0),
+                resolvePersistenceQueueCapacityOverride(configuration));
+        PersistenceExecutor persistenceExecutor = new PersistenceExecutor(
+                operationalSettings.persistenceThreads(), operationalSettings.persistenceQueueCapacity());
+        LOGGER.info(
+                "Operational profile {}: persistence threads={}, queue capacity={}",
+                operationalSettings.profile().name().toLowerCase(java.util.Locale.ROOT),
+                operationalSettings.persistenceThreads(),
+                operationalSettings.persistenceQueueCapacity());
         runtime.installPersistenceExecutor(persistenceExecutor);
         runtime.installThreading(new ThreadPooling(runtimeThreads, persistenceExecutor));
         Emulator.synchronizeLegacyFacade(runtime);
         registerConfigurationDefaults.run();
+        RuntimeResilienceRuntime.install(
+                configuration, runtime.database(), runtime.persistenceExecutor(), runtime.threading());
+        SessionRecoveryRuntime.install(configuration, runtime.database());
         return true;
     }
 
@@ -133,14 +147,11 @@ final class PolarisBootstrap {
         return configured > 0 ? configured : 8;
     }
 
-    static int resolvePersistenceQueueCapacity(ConfigurationManager configuration) {
-        int configured = configuration.getInt("db.persistence.queue.capacity", DEFAULT_PERSISTENCE_QUEUE_CAPACITY);
-        if (configured < 1 || configured > MAX_PERSISTENCE_QUEUE_CAPACITY) {
-            LOGGER.warn(
-                    "Ignoring invalid db.persistence.queue.capacity {}; using {}",
-                    configured,
-                    DEFAULT_PERSISTENCE_QUEUE_CAPACITY);
-            return DEFAULT_PERSISTENCE_QUEUE_CAPACITY;
+    static int resolvePersistenceQueueCapacityOverride(ConfigurationManager configuration) {
+        int configured = configuration.getInt("db.persistence.queue.capacity", 0);
+        if (configured < 0 || configured > MAX_PERSISTENCE_QUEUE_CAPACITY) {
+            LOGGER.warn("Ignoring invalid db.persistence.queue.capacity {}; using profile default", configured);
+            return 0;
         }
 
         return configured;

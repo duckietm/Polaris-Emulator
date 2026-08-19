@@ -1,5 +1,8 @@
 package com.eu.habbo.messages.rcon;
 
+import com.eu.habbo.resilience.RuntimeResilienceController;
+import com.eu.habbo.resilience.RuntimeResilienceRuntime;
+import com.eu.habbo.stress.LoadValidationProfile;
 import com.eu.habbo.stress.StressRunRegistry;
 import com.eu.habbo.stress.StressScenario;
 import com.google.gson.Gson;
@@ -17,19 +20,29 @@ public class StressStart extends RCONMessage<StressStart.JSONStressStart> {
 
     @Override
     public void handle(Gson gson, JSONStressStart json) {
+        RuntimeResilienceController.Admission admission =
+                RuntimeResilienceRuntime.admit(RuntimeResilienceController.WorkClass.BACKGROUND);
+        if (admission.effectiveAction() != RuntimeResilienceController.Action.ALLOW) {
+            this.status = STATUS_ERROR;
+            this.message = "runtime under pressure; retry later";
+            return;
+        }
         try {
-            StressScenario scenario = new StressScenario(
-                    json.room_id,
-                    json.bots,
-                    json.items,
-                    json.rollers,
-                    json.wired_stacks,
-                    json.wired_events_per_second,
-                    json.item_id,
-                    json.chat_per_second,
-                    json.duration_seconds,
-                    json.seed,
-                    json.movement);
+            StressScenario scenario = json.profile == null || json.profile.isBlank()
+                    ? new StressScenario(
+                            json.room_id,
+                            json.bots,
+                            json.items,
+                            json.rollers,
+                            json.wired_stacks,
+                            json.wired_events_per_second,
+                            json.item_id,
+                            json.chat_per_second,
+                            json.duration_seconds,
+                            json.seed,
+                            json.movement)
+                    : LoadValidationProfile.parse(json.profile)
+                            .scenario(json.room_id, json.item_id, json.seed, json.movement);
             this.message = gson.toJson(StressRunRegistry.get().start(scenario));
         } catch (IllegalArgumentException | IllegalStateException exception) {
             this.status = STATUS_ERROR;
@@ -42,6 +55,8 @@ public class StressStart extends RCONMessage<StressStart.JSONStressStart> {
     }
 
     public static class JSONStressStart {
+        public String profile;
+
         @Positive(message = "invalid room")
         public int room_id;
 

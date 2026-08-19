@@ -185,6 +185,18 @@ public final class CatalogValidator {
                         "Offer page " + offer.pageId() + " does not exist");
             }
             validateItemIds(offer, issues);
+            if (offer.catalogName().startsWith("SONG ")
+                    && (offer.songId() <= 0
+                            || offer.extradata() == null
+                            || offer.extradata().isBlank())) {
+                add(
+                        issues,
+                        "OFFER_SOUND_REFERENCE_MISSING",
+                        CatalogEntityType.OFFER,
+                        offer.offerId(),
+                        "songId",
+                        "Sound offers require both a song ID and soundtrack code");
+            }
             if (offer.costCredits() < 0 || offer.costPoints() < 0 || offer.amount() <= 0) {
                 add(
                         issues,

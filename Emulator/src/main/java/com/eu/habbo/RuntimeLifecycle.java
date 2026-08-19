@@ -3,7 +3,9 @@ package com.eu.habbo;
 import com.eu.habbo.database.Database;
 import com.eu.habbo.plugin.events.emulator.EmulatorStartShutdownEvent;
 import com.eu.habbo.plugin.events.emulator.EmulatorStoppedEvent;
+import com.eu.habbo.session.SessionRecoveryRuntime;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +20,7 @@ final class RuntimeLifecycle {
     private final PolarisRuntime services;
     private final Runnable sessionCleanup;
     private final AtomicBoolean shutdownStarted = new AtomicBoolean();
+    private final ShutdownPhaseController phases = new ShutdownPhaseController();
 
     RuntimeLifecycle(PolarisRuntime services, Runnable sessionCleanup) {
         this.services = Objects.requireNonNull(services);
@@ -29,17 +32,18 @@ final class RuntimeLifecycle {
             return;
         }
 
+        announceShutdown();
         quiesceRuntime();
+        drainRuntime();
+        checkpointSessions();
         stopNetworkPhase();
         stopHotelPhase();
         stopPluginPhase();
         stopFoundationPhase();
     }
 
-    private void quiesceRuntime() {
-        if (services.threading() != null) {
-            run("reject new scheduled work", () -> services.threading().setCanAdd(false));
-        }
+    private void announceShutdown() {
+        phases.advanceTo(ShutdownPhase.ANNOUNCE);
         if (services.pluginManager() != null) {
             run(
                     "publish pre-shutdown event",
@@ -47,10 +51,46 @@ final class RuntimeLifecycle {
         }
     }
 
-    private void stopNetworkPhase() {
+    private void quiesceRuntime() {
+        phases.advanceTo(ShutdownPhase.QUIESCE);
+        if (services.threading() != null) {
+            run("reject new scheduled work", () -> services.threading().setCanAdd(false));
+        }
         if (services.rconServer() != null) {
             run("stop RCON server", () -> services.rconServer().stop());
         }
+    }
+
+    private void drainRuntime() {
+        phases.advanceTo(ShutdownPhase.DRAIN);
+        if (services.persistenceExecutor() == null) {
+            return;
+        }
+        int seconds = services.configuration() == null
+                ? 15
+                : Math.max(1, Math.min(120, services.configuration().getInt("shutdown.drain.timeout.seconds", 15)));
+        run("wait for persistence work", () -> {
+            if (!services.persistenceExecutor().awaitIdle(seconds, TimeUnit.SECONDS)) {
+                LOGGER.warn("Persistence work did not become idle within {} seconds", seconds);
+            }
+        });
+    }
+
+    private void checkpointSessions() {
+        phases.advanceTo(ShutdownPhase.CHECKPOINT);
+        if (services.gameEnvironment() == null || services.gameEnvironment().getHabboManager() == null) {
+            return;
+        }
+        run(
+                "checkpoint active sessions",
+                () -> SessionRecoveryRuntime.checkpoint(services.gameEnvironment()
+                        .getHabboManager()
+                        .getOnlineHabbos()
+                        .keySet()));
+    }
+
+    private void stopNetworkPhase() {
+        phases.advanceTo(ShutdownPhase.STOP);
         if (services.gameServer() != null) {
             run("stop game server", () -> services.gameServer().stop());
         }

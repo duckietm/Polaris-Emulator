@@ -1,16 +1,27 @@
 package com.eu.habbo.messages.incoming.rooms.users;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class RoomUserSignGuardContractTest {
 
+    @Test
+    void supportsEverySignExposedByTheAvatarMenu() {
+        assertTrue(RoomUserSignEvent.isValidSignId(0));
+        assertTrue(RoomUserSignEvent.isValidSignId(10));
+        assertTrue(RoomUserSignEvent.isValidSignId(11));
+        assertTrue(RoomUserSignEvent.isValidSignId(17));
+        assertFalse(RoomUserSignEvent.isValidSignId(-1));
+        assertFalse(RoomUserSignEvent.isValidSignId(18));
+    }
+
     private static String source() throws Exception {
-        return Files.readString(Path.of("src/main/java/com/eu/habbo/messages/incoming/rooms/users/RoomUserSignEvent.java"));
+        return Files.readString(
+                Path.of("src/main/java/com/eu/habbo/messages/incoming/rooms/users/RoomUserSignEvent.java"));
     }
 
     @Test
@@ -18,7 +29,7 @@ class RoomUserSignGuardContractTest {
         String source = source();
 
         int signRead = source.indexOf("int signId = this.packet.readInt()");
-        int guard = source.indexOf("signId < MIN_SIGN_ID || signId > MAX_SIGN_ID", signRead);
+        int guard = source.indexOf("if (!isValidSignId(signId))", signRead);
         int status = source.indexOf("setStatus(RoomUnitStatus.SIGN", signRead);
         int wired = source.indexOf("WiredManager.triggerUserPerformsAction", signRead);
 
@@ -32,7 +43,7 @@ class RoomUserSignGuardContractTest {
     void voteCountersOnlyReceiveValidatedSigns() throws Exception {
         String source = source();
 
-        int guard = source.indexOf("signId < MIN_SIGN_ID || signId > MAX_SIGN_ID");
+        int guard = source.indexOf("if (!isValidSignId(signId))");
         int vote = source.indexOf(".vote(room, userId, signId)");
 
         assertTrue(guard > -1, "Sign id range guard must exist");

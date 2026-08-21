@@ -23,6 +23,8 @@ import com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio.CatalogStudioH
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio.CatalogStudioLockComposer;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio.CatalogStudioOperationComposer;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio.CatalogStudioPreviewComposer;
+import com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio.CatalogStudioPublishComposer;
+import com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio.CatalogStudioPublishConflict;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio.CatalogStudioPublishedVersion;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio.CatalogStudioSessionComposer;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.studio.CatalogStudioValidationComposer;
@@ -192,6 +194,38 @@ class CatalogStudioPacketContractTest {
         assertEquals(44, payload.readInt());
         assertEquals("OFFER", readString(payload));
         assertEquals(77, payload.readInt());
+        assertFalse(payload.isReadable());
+    }
+
+    @Test
+    void publishPayloadIncludesAutomaticLiveImportsAndFieldConflicts() {
+        ByteBuf payload = new CatalogStudioPublishComposer(
+                        "op-publish",
+                        false,
+                        "LIVE_SYNC_CONFLICT",
+                        "External catalog changes conflict with the draft",
+                        8,
+                        List.of(new CatalogStudioChangedEntity("OFFER", 77)),
+                        2,
+                        List.of(new CatalogStudioPublishConflict("NORMAL", "OFFER", 77, "costCredits")))
+                .compose()
+                .get();
+
+        assertHeader(payload, Outgoing.CatalogStudioPublishComposer);
+        assertEquals("op-publish", readString(payload));
+        assertFalse(payload.readBoolean());
+        assertEquals("LIVE_SYNC_CONFLICT", readString(payload));
+        assertEquals("External catalog changes conflict with the draft", readString(payload));
+        assertEquals(8, payload.readInt());
+        assertEquals(1, payload.readInt());
+        assertEquals("OFFER", readString(payload));
+        assertEquals(77, payload.readInt());
+        assertEquals(2, payload.readInt());
+        assertEquals(1, payload.readInt());
+        assertEquals("NORMAL", readString(payload));
+        assertEquals("OFFER", readString(payload));
+        assertEquals(77, payload.readInt());
+        assertEquals("costCredits", readString(payload));
         assertFalse(payload.isReadable());
     }
 

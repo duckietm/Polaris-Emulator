@@ -10,6 +10,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -35,6 +36,7 @@ class CatalogPublicationServiceTest {
     private final FakeVersionRepository versions = new FakeVersionRepository();
     private final FakeProjection projection = new FakeProjection();
     private final FakeLocks locks = new FakeLocks();
+    private final FakeReconciler reconciler = new FakeReconciler();
     private final CatalogPublicationHooks hooks = (published, nextDraftId) -> events.add("afterCommit:" + nextDraftId);
     private DataSource dataSource;
 
@@ -55,7 +57,8 @@ class CatalogPublicationServiceTest {
                 .when(connection)
                 .rollback();
         versions.snapshot = snapshot();
-        versions.activeSnapshot = snapshot();
+        versions.activeSnapshot = snapshotWithCredits("100", 2);
+        reconciler.result = null;
     }
 
     @Test
@@ -67,14 +70,14 @@ class CatalogPublicationServiceTest {
 
         assertFalse(result.published());
         assertFalse(result.validation().valid());
-        assertEquals(List.of("lockRuntime", "loadSnapshot:2", "loadSnapshot:1", "rollback"), events);
+        assertEquals(List.of("lockRuntime", "loadSnapshot:2", "loadSnapshot:1", "reconcile", "rollback"), events);
         assertEquals(0, projection.calls);
         verify(connection, never()).commit();
     }
 
     @Test
     void inheritedValidationIssuesDoNotBlockPublication() {
-        versions.activeSnapshot = snapshot("404");
+        versions.activeSnapshot = snapshotWithCredits("404", 2);
         versions.snapshot = snapshot("404");
         CatalogPublicationService service = service(referenceData(Set.of(100), Map.of(10, 1)));
 
@@ -92,7 +95,8 @@ class CatalogPublicationServiceTest {
 
         assertThrows(CatalogPublicationException.class, () -> service.publish(request()));
 
-        assertEquals(List.of("lockRuntime", "loadSnapshot:2", "loadSnapshot:1", "project", "rollback"), events);
+        assertEquals(
+                List.of("lockRuntime", "loadSnapshot:2", "loadSnapshot:1", "reconcile", "project", "rollback"), events);
         verify(connection, never()).commit();
         assertFalse(events.stream().anyMatch(event -> event.startsWith("afterCommit")));
     }
@@ -112,6 +116,7 @@ class CatalogPublicationServiceTest {
                         "lockRuntime",
                         "loadSnapshot:2",
                         "loadSnapshot:1",
+                        "reconcile",
                         "project",
                         "archive:1",
                         "publish:2",
@@ -123,9 +128,55 @@ class CatalogPublicationServiceTest {
                 events);
     }
 
+    @Test
+    void publicationProjectsTheAutomaticallyReconciledLiveChanges() {
+        CatalogVersionSnapshot reconciled = snapshotWithCredits(25);
+        reconciler.result = new CatalogLiveReconciliationResult(reconciled, 1, List.of());
+        CatalogPublicationService service = service(referenceData(Set.of(100), Map.of(10, 1)));
+
+        CatalogPublicationResult result = service.publish(request());
+
+        assertTrue(result.published());
+        assertEquals(1, result.importedChanges());
+        assertEquals(25, projection.snapshot.offer(10).orElseThrow().costCredits());
+    }
+
+    @Test
+    void publicationDoesNotCreateARedundantVersionWhenLiveAndDraftAreUnchanged() throws Exception {
+        versions.activeSnapshot = snapshot();
+        CatalogPublicationService service = service(referenceData(Set.of(100), Map.of(10, 1)));
+
+        CatalogPublicationResult result = service.publish(request());
+
+        assertFalse(result.published());
+        assertTrue(result.noChanges());
+        assertEquals(ACTIVE_ID, result.activeVersionId());
+        assertEquals(DRAFT_ID, result.draftVersionId());
+        assertEquals(List.of("lockRuntime", "loadSnapshot:2", "loadSnapshot:1", "reconcile", "commit"), events);
+        assertEquals(0, projection.calls);
+        assertFalse(events.stream().anyMatch(event -> event.startsWith("afterCommit")));
+    }
+
+    @Test
+    void liveConflictRollsBackWithoutProjectingOrSwitchingVersions() throws Exception {
+        CatalogMergeConflict conflict =
+                new CatalogMergeConflict(CatalogEntityType.OFFER, CatalogPageType.NORMAL, 10, "costCredits");
+        reconciler.result = new CatalogLiveReconciliationResult(versions.snapshot, 0, List.of(conflict));
+        CatalogPublicationService service = service(referenceData(Set.of(100), Map.of(10, 1)));
+
+        CatalogPublicationResult result = service.publish(request());
+
+        assertFalse(result.published());
+        assertFalse(result.noChanges());
+        assertEquals(List.of(conflict), result.conflicts());
+        assertEquals(List.of("lockRuntime", "loadSnapshot:2", "loadSnapshot:1", "reconcile", "rollback"), events);
+        assertEquals(0, projection.calls);
+        verify(connection, never()).commit();
+    }
+
     private CatalogPublicationService service(CatalogValidationReferenceData referenceData) {
         return new CatalogPublicationService(
-                dataSource, versions, connection -> referenceData, projection, locks, hooks);
+                dataSource, versions, connection -> referenceData, reconciler, projection, locks, hooks);
     }
 
     private static CatalogPublicationRequest request() {
@@ -158,6 +209,33 @@ class CatalogPublicationServiceTest {
                 null,
                 null);
         return new CatalogVersionSnapshot(version, List.of(root), List.of(offer));
+    }
+
+    private static CatalogVersionSnapshot snapshotWithCredits(int credits) {
+        return snapshotWithCredits("100", credits);
+    }
+
+    private static CatalogVersionSnapshot snapshotWithCredits(String itemIds, int credits) {
+        CatalogVersionSnapshot original = snapshot(itemIds);
+        CatalogOfferSnapshot offer = original.offer(10).orElseThrow();
+        CatalogOfferSnapshot changed = new CatalogOfferSnapshot(
+                offer.catalogType(),
+                offer.offerId(),
+                offer.itemIds(),
+                offer.pageId(),
+                offer.catalogName(),
+                credits,
+                offer.costPoints(),
+                offer.pointsType(),
+                offer.amount(),
+                offer.limitedStack(),
+                offer.orderNumber(),
+                offer.offerIdClient(),
+                offer.songId(),
+                offer.extradata(),
+                offer.haveOffer(),
+                offer.clubOnly());
+        return new CatalogVersionSnapshot(original.version(), original.pages(), List.of(changed));
     }
 
     private final class FakeVersionRepository implements CatalogVersionRepository {
@@ -216,12 +294,25 @@ class CatalogPublicationServiceTest {
     private final class FakeProjection implements CatalogLiveProjection {
         private int calls;
         private SQLException failure;
+        private CatalogVersionSnapshot snapshot;
 
         @Override
         public void replace(Connection ignored, CatalogVersionSnapshot snapshot) throws SQLException {
             calls++;
+            this.snapshot = snapshot;
             events.add("project");
             if (failure != null) throw failure;
+        }
+    }
+
+    private final class FakeReconciler implements CatalogLiveReconciler {
+        private CatalogLiveReconciliationResult result;
+
+        @Override
+        public CatalogLiveReconciliationResult reconcile(
+                Connection ignored, CatalogVersionSnapshot active, CatalogVersionSnapshot draft, int actorId) {
+            events.add("reconcile");
+            return result == null ? new CatalogLiveReconciliationResult(draft, 0, List.of()) : result;
         }
     }
 

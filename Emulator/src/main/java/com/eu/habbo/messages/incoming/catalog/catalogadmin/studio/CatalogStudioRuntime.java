@@ -6,16 +6,19 @@ import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftChangeSetService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftLifecycleService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftPreviewService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftValidationService;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogLiveReconciliationService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogLockService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogOperationalOfferRepository;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogPreviewPresentation;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogPublicationHooks;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogPublicationService;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogSnapshotThreeWayMerge;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogStudioDocumentService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogUndoService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogVersionRepository;
 import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogChangeJournal;
 import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogLiveProjection;
+import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogLiveSnapshotRepository;
 import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogLockRepository;
 import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogOperationRepository;
 import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogSnapshotWriter;
@@ -69,6 +72,12 @@ public final class CatalogStudioRuntime {
         JdbcCatalogOperationRepository operationRepository = new JdbcCatalogOperationRepository();
         CatalogStudioDocumentService documents = new CatalogStudioDocumentService();
         CatalogOperationalOfferRepository operationalOffers = new CatalogOperationalOfferRepository(dataSource);
+        CatalogLiveReconciliationService liveReconciliation = new CatalogLiveReconciliationService(
+                new JdbcCatalogLiveSnapshotRepository(),
+                new CatalogSnapshotThreeWayMerge(gson),
+                versions,
+                snapshotWriter,
+                journal);
         return new Services(
                 queries,
                 new CatalogLockService(lockRepository),
@@ -83,6 +92,7 @@ public final class CatalogStudioRuntime {
                         dataSource,
                         versions,
                         validationData,
+                        liveReconciliation,
                         new JdbcCatalogLiveProjection(),
                         lockRepository,
                         publicationHooks),

@@ -22,6 +22,60 @@ class CatalogStudioPublicationIT {
     private static final int ACTOR_ID = 7;
 
     @Test
+    void publicationAutomaticallyVersionsExternalLiveCatalogChanges() throws Exception {
+        requireDocker();
+        try (HikariDataSource dataSource = TestDatabase.freshDatabase("catalog_studio_live_reconciliation")) {
+            MigrationRunner.migrate(dataSource);
+            Gson gson = new Gson();
+            JdbcCatalogVersionRepository versions = new JdbcCatalogVersionRepository();
+            JdbcCatalogLockRepository locks = new JdbcCatalogLockRepository(dataSource);
+            JdbcCatalogChangeJournal journal = new JdbcCatalogChangeJournal();
+            JdbcCatalogSnapshotWriter writer = new JdbcCatalogSnapshotWriter(gson);
+            CatalogRuntimeState initial = runtimeState(dataSource, versions);
+            CatalogVersionSnapshot draft = snapshot(dataSource, versions, initial.draftVersionId());
+            CatalogOfferSnapshot offer = draft.offers().stream()
+                    .filter(candidate -> candidate.catalogType() == CatalogPageType.NORMAL)
+                    .findFirst()
+                    .orElseThrow();
+            int externalPrice = offer.costCredits() + 31;
+            updateOperationalPrice(dataSource, offer.offerId(), externalPrice);
+
+            CatalogLiveReconciliationService reconciliation = new CatalogLiveReconciliationService(
+                    new JdbcCatalogLiveSnapshotRepository(),
+                    new CatalogSnapshotThreeWayMerge(gson),
+                    versions,
+                    writer,
+                    journal);
+            CatalogPublicationService publication = new CatalogPublicationService(
+                    dataSource,
+                    versions,
+                    new JdbcCatalogValidationDataRepository(),
+                    reconciliation,
+                    new JdbcCatalogLiveProjection(),
+                    locks,
+                    (published, nextDraftId) -> {});
+
+            CatalogPublicationResult result = publication.publish(new CatalogPublicationRequest(
+                    initial.draftVersionId(), draft.version().revision(), ACTOR_ID, "Draft after live sync"));
+
+            assertTrue(result.published());
+            assertEquals(1, result.importedChanges());
+            assertEquals(
+                    externalPrice,
+                    snapshot(dataSource, versions, result.activeVersionId())
+                            .offer(CatalogPageType.NORMAL, offer.offerId())
+                            .orElseThrow()
+                            .costCredits());
+            assertEquals(
+                    externalPrice,
+                    snapshot(dataSource, versions, result.draftVersionId())
+                            .offer(CatalogPageType.NORMAL, offer.offerId())
+                            .orElseThrow()
+                            .costCredits());
+        }
+    }
+
+    @Test
     void publicationReloadsOperationalOffersAndArchivedVersionsCanBeRestored() throws Exception {
         requireDocker();
         try (HikariDataSource dataSource = TestDatabase.freshDatabase("catalog_studio_publication")) {
@@ -150,6 +204,16 @@ class CatalogStudioPublicationIT {
                 if (!resultSet.next()) throw new AssertionError("Operational catalog offer is missing: " + offerId);
                 return resultSet.getInt("cost_credits");
             }
+        }
+    }
+
+    private static void updateOperationalPrice(HikariDataSource dataSource, int offerId, int credits) throws Exception {
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement("UPDATE catalog_items SET cost_credits = ? WHERE id = ?")) {
+            statement.setInt(1, credits);
+            statement.setInt(2, offerId);
+            assertEquals(1, statement.executeUpdate());
         }
     }
 

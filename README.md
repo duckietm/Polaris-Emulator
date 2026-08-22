@@ -1,9 +1,15 @@
 # Polaris
 
 **Polaris** is a complete, self-contained hotel package: a modern Java game
-server (formerly known as *Arcturus Morningstar Extended*), the Nitro browser
+server (formerly known as *Arcturus Morningstar Extended*), the Octane browser
 client, a ready-to-import database and all the assets needed to bring a hotel
 online.
+
+Polaris originated as a fork of [Arcturus Community](https://git.krews.org/morningstar/Arcturus-Community).
+
+Since then, Polaris has evolved beyond its origins. The emulator has been expanded, improved and maintained through numerous fixes and new features.
+
+While Polaris remains grateful to the Arcturus project and its contributors, it is no longer intended to be a simple fork. It is an independently developed platform with its own identity, technical direction and long-term vision.
 
 > ### 📢 Disclaimer
 > This repository is provided as an educational resource for learning purposes

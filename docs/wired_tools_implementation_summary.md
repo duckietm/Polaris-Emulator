@@ -27,11 +27,11 @@ The current `:wired` implementation now provides:
 
 ---
 
-## 3. Nitro-V3 work
+## 3. Octane-UI work
 
 Main file:
 
-- `Nitro-V3/src/components/wired-tools/WiredCreatorToolsView.tsx`
+- `Octane-UI/src/components/wired-tools/WiredCreatorToolsView.tsx`
 
 ### 3.1 UI window
 
@@ -110,7 +110,7 @@ The auxiliary monitor windows now use proper Nitro card windows, so they are:
 
 ---
 
-## 4. Nitro_Render_V3 work
+## 4. Octane-Renderer work
 
 Renderer-side work was focused on making Nitro receive enough metadata for the new UI.
 

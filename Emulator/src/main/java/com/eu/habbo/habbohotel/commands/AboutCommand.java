@@ -11,7 +11,7 @@ public class AboutCommand extends Command {
     }
 
     public static final String NITRO_INFO_SENTINEL = "[NITRO_INFO_V1]";
-    public static final String REPORT_ISSUES_URL = "https://github.com/duckietm/Nitro-V3/issues";
+    public static final String REPORT_ISSUES_URL = "https://github.com/duckietm/Octane-UI/issues";
 
     @Override
     public boolean handle(GameClient gameClient, String[] params) {

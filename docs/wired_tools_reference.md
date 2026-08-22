@@ -5,8 +5,8 @@
 This document describes the current `:wired` tooling that was added across:
 
 - `Arcturus-Morningstar-Extended` (server-side data, diagnostics, config)
-- `Nitro_Render_V3` (packet parsing and room/session metadata)
-- `Nitro-V3` (UI, monitor, inspection, previews, inline editing)
+- `Octane-Renderer` (packet parsing and room/session metadata)
+- `Octane-UI` (UI, monitor, inspection, previews, inline editing)
 
 It focuses on:
 
@@ -21,7 +21,7 @@ It focuses on:
 
 ### 2.1 Data flow
 
-`Emulator` -> `Nitro_Render_V3` -> `Nitro-V3`
+`Emulator` -> `Octane-Renderer` -> `Octane-UI`
 
 - The emulator computes room diagnostics and exposes extra room, furni, user, and monitor metadata.
 - The renderer parses those packets and stores the values in room/session data objects.
@@ -34,9 +34,9 @@ It focuses on:
   - `Emulator/src/main/java/com/eu/habbo/habbohotel/wired/core/WiredRoomDiagnostics.java`
   - `Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredMonitorDataComposer.java`
 - Renderer parsing:
-  - `Nitro_Render_V3/packages/communication/src/messages/parser/roomevents/WiredMonitorDataParser.ts`
+  - `Octane-Renderer/packages/communication/src/messages/parser/roomevents/WiredMonitorDataParser.ts`
 - Nitro UI:
-  - `Nitro-V3/src/components/wired-tools/WiredCreatorToolsView.tsx`
+  - `Octane-UI/src/components/wired-tools/WiredCreatorToolsView.tsx`
 
 ---
 

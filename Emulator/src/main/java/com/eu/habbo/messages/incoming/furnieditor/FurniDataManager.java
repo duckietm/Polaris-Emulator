@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
  * Manages reading and writing of FurnitureData entries.
  *
  * Accepts both legacy single-file layouts (FurnitureData.json) and the split
- * directory layout introduced by the split-aware loader on the Nitro V3 side:
+ * directory layout introduced by the split-aware loader on the Octane UI side:
  *
  *   <base>/
  *     manifest.jsonc          OPTIONAL  { "tiers": ["core", "custom", "seasonal"] }

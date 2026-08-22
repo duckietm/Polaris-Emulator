@@ -6,7 +6,7 @@
 
 **Architecture:** Reuse packet 10046 (no renderer changes, no new packet). Emulator: new `FurnidataWriter.create(...)` (JSON5-preserving append) + handler routes "classname missing → create complete entry from `items_base`" + config key. Client: unlock name/desc when the entry is missing and relabel Save to "Create entry".
 
-**Tech Stack:** Java 21 (Arcturus emulator), Gson/JSON5, React/TS (Nitro-V3 client).
+**Tech Stack:** Java 21 (Arcturus emulator), Gson/JSON5, React/TS (Octane-UI client).
 
 **Spec:** `docs/superpowers/specs/2026-06-13-furnidata-create-if-missing-design.md`
 

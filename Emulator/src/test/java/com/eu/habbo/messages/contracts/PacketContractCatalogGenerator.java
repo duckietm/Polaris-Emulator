@@ -133,7 +133,7 @@ final class PacketContractCatalogGenerator {
                         packet.header(),
                         packet.symbol(),
                         packet.path(),
-                        "Header is registered only by the Nitro Renderer packet registry")));
+                        "Header is registered only by the Octane Renderer packet registry")));
 
         JsonObject manifest = new JsonObject();
         manifest.addProperty("schemaVersion", 2);

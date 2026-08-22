@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-13
 **Status:** Approved design → implementation
-**Repos:** Arcturus-Morningstar-Extended (emulator, primary), Nitro-V3 (client, minor)
+**Repos:** Arcturus-Morningstar-Extended (emulator, primary), Octane-UI (client, minor)
 
 ## Problem
 

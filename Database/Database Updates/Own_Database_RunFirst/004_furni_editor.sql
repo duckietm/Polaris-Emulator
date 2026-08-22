@@ -1,5 +1,5 @@
 INSERT IGNORE INTO `emulator_settings` (`key`, `value`) VALUES
-  ('furni.editor.renderer.config.path', '/var/www/Nitro-V3/dist/configuration/renderer-config.json'),
+  ('furni.editor.renderer.config.path', '/var/www/Octane-UI/dist/configuration/renderer-config.json'),
   ('furni.editor.asset.base.path', '/var/www/gamedata/furniture/');
   
 ALTER TABLE permissions

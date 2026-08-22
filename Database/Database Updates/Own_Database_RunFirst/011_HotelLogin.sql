@@ -38,9 +38,9 @@ INSERT INTO `emulator_settings` (`key`, `value`) VALUES
 ON DUPLICATE KEY UPDATE `value` = VALUES(`value`);
 
 INSERT INTO emulator_settings (`key`, `value`, `comment`) VALUES
-  ('new_user_credits',  '0' , 'This is the default setting for habbo credits when creating an account for the NitroV3 Login'),
-  ('new_user_duckets',  '0' , 'This is the default setting for habbo duckets when creating an account for the NitroV3 Login'),
-  ('new_user_diamonds', '0' , 'This is the default setting for habbo diamonds when creating an account for the NitroV3 Login')
+  ('new_user_credits',  '0' , 'This is the default setting for habbo credits when creating an account for the OctaneUI Login'),
+  ('new_user_duckets',  '0' , 'This is the default setting for habbo duckets when creating an account for the OctaneUI Login'),
+  ('new_user_diamonds', '0' , 'This is the default setting for habbo diamonds when creating an account for the OctaneUI Login')
 ON DUPLICATE KEY UPDATE `value` = VALUES(`value`);
 
 -- Grant to rank 7 only (adjust rank_7 if your rank id differs)

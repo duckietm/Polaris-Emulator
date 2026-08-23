@@ -30,6 +30,8 @@ import org.junit.jupiter.api.Test;
 /** Verifies the packaged migration chain against a real MariaDB. */
 class MigrationRunnerIT {
 
+    private static final String ITEMS_BASE_INTERACTION_REPAIR_VERSION = "20260822164532";
+
     /** Local builds may skip without Docker; CI must fail if its DB tests cannot run. */
     private static void requireDocker() {
         try {
@@ -186,6 +188,156 @@ class MigrationRunnerIT {
             assertEquals(
                     "keep-me",
                     stringValue(ds, "SELECT value FROM emulator_settings WHERE `key` = 'fixture.operator.setting'"));
+        }
+    }
+
+    @Test
+    void adoptedHotelRepairsHistoricalItemsBaseMappingsOnlyOnce() throws Exception {
+        requireDocker();
+
+        try (HikariDataSource ds = TestDatabase.freshDatabase("mig_items_base_interactions")) {
+            installArcturusFixture(ds);
+            try (Connection connection = ds.getConnection();
+                    Statement statement = connection.createStatement()) {
+                statement.execute("""
+                        INSERT INTO items_base
+                            (public_name, item_name, interaction_type, customparams)
+                        VALUES
+                            ('Legacy internal-name mapping', 'wf_cnd_time_more_than', 'default', ''),
+                            ('wf_cnd_time_less_than', 'legacy_public_name_only', 'default', ''),
+                            ('Legacy stale non-default mapping', 'wf_act_give_reward', 'stale_interaction', ''),
+                            ('Legacy glowball', 'wf_glowball', 'default', ''),
+                            ('Legacy badge ownership', 'wf_cnd_wearing_badge', 'default', ''),
+                            ('Legacy missing badge ownership', 'wf_cnd_not_wearing_b', 'default', ''),
+                            ('Legacy log effect', 'wf_act_log', 'default', ''),
+                            ('Legacy time utilities', 'wf_xtra_var_time_util', 'default', ''),
+                            ('Legacy invisible stack tile', 'tile_stackmagic_test', 'default', 'visible')
+                        """);
+            }
+
+            MigrationRunner.migrate(ds);
+
+            assertEquals("wf_cnd_time_more_than", stringValue(ds, """
+                    SELECT interaction_type FROM items_base
+                    WHERE item_name = 'wf_cnd_time_more_than'
+                    """));
+            assertEquals("wf_cnd_time_less_than", stringValue(ds, """
+                    SELECT interaction_type FROM items_base
+                    WHERE public_name = 'wf_cnd_time_less_than'
+                    """));
+            assertEquals("wf_act_give_reward", stringValue(ds, """
+                    SELECT interaction_type FROM items_base
+                    WHERE item_name = 'wf_act_give_reward'
+                    """));
+            assertEquals("glowball", stringValue(ds, """
+                    SELECT interaction_type FROM items_base
+                    WHERE item_name = 'wf_glowball'
+                    """));
+            assertEquals("wf_cnd_habbo_owns_badge", stringValue(ds, """
+                    SELECT interaction_type FROM items_base
+                    WHERE item_name = 'wf_cnd_wearing_badge'
+                    """));
+            assertEquals("wf_cnd_not_habbo_owns_badge", stringValue(ds, """
+                    SELECT interaction_type FROM items_base
+                    WHERE item_name = 'wf_cnd_not_wearing_b'
+                    """));
+            assertEquals("wf_act_log", stringValue(ds, """
+                    SELECT interaction_type FROM items_base
+                    WHERE item_name = 'wf_act_log'
+                    """));
+            assertEquals("wf_xtra_var_time_util", stringValue(ds, """
+                    SELECT interaction_type FROM items_base
+                    WHERE item_name = 'wf_xtra_var_time_util'
+                    """));
+            assertEquals("is_invisible", stringValue(ds, """
+                    SELECT customparams FROM items_base
+                    WHERE item_name = 'tile_stackmagic_test'
+                    """));
+            assertEquals(1, intValue(ds, """
+                    SELECT COUNT(*) FROM flyway_schema_history
+                    WHERE version = '%s' AND success = 1
+                    """.formatted(ITEMS_BASE_INTERACTION_REPAIR_VERSION)));
+
+            try (Connection connection = ds.getConnection();
+                    Statement statement = connection.createStatement()) {
+                statement.execute("""
+                        UPDATE items_base SET interaction_type = 'operator_override'
+                        WHERE item_name = 'wf_cnd_time_more_than'
+                        """);
+                statement.execute("""
+                        UPDATE items_base SET customparams = 'operator_override'
+                        WHERE item_name = 'tile_stackmagic_test'
+                        """);
+            }
+
+            assertEquals(0, MigrationRunner.migrate(ds).migrationsExecuted);
+            assertEquals("operator_override", stringValue(ds, """
+                    SELECT interaction_type FROM items_base
+                    WHERE item_name = 'wf_cnd_time_more_than'
+                    """));
+            assertEquals("operator_override", stringValue(ds, """
+                    SELECT customparams FROM items_base
+                    WHERE item_name = 'tile_stackmagic_test'
+                    """));
+            assertEquals(1, intValue(ds, """
+                    SELECT COUNT(*) FROM flyway_schema_history
+                    WHERE version = '%s' AND success = 1
+                    """.formatted(ITEMS_BASE_INTERACTION_REPAIR_VERSION)));
+        }
+    }
+
+    @Test
+    void adoptedHotelRepairsItemsBaseWhenItsCollationDiffersFromTheDatabaseDefault() throws Exception {
+        requireDocker();
+
+        try (HikariDataSource ds = TestDatabase.freshDatabase("mig_items_base_collation")) {
+            installArcturusFixture(ds);
+            try (Connection connection = ds.getConnection();
+                    Statement statement = connection.createStatement()) {
+                // Hand-converted hotels leave items_base on a collation the database
+                // default does not share, which makes a bare column-to-column
+                // comparison inside a repair migration an illegal mix of collations.
+                statement.execute("ALTER TABLE items_base CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+                statement.execute("""
+                        INSERT INTO items_base
+                            (public_name, item_name, interaction_type, customparams)
+                        VALUES
+                            ('Legacy internal-name mapping', 'wf_cnd_time_more_than', 'default', ''),
+                            ('wf_cnd_time_less_than', 'legacy_public_name_only', 'default', ''),
+                            ('Legacy stale non-default mapping', 'wf_act_give_reward', 'stale_interaction', ''),
+                            ('Legacy invisible stack tile', 'tile_stackmagic_test', 'default', 'visible')
+                        """);
+            }
+
+            MigrationRunner.migrate(ds);
+
+            assertEquals(
+                    "utf8mb4_unicode_ci",
+                    stringValue(ds, """
+                            SELECT TABLE_COLLATION FROM information_schema.TABLES
+                            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'items_base'
+                            """),
+                    "the migration must not silently rewrite the hotel's own table collation");
+            assertEquals("wf_cnd_time_more_than", stringValue(ds, """
+                    SELECT interaction_type FROM items_base
+                    WHERE item_name = 'wf_cnd_time_more_than'
+                    """));
+            assertEquals("wf_cnd_time_less_than", stringValue(ds, """
+                    SELECT interaction_type FROM items_base
+                    WHERE item_name = 'legacy_public_name_only'
+                    """));
+            assertEquals("wf_act_give_reward", stringValue(ds, """
+                    SELECT interaction_type FROM items_base
+                    WHERE item_name = 'wf_act_give_reward'
+                    """));
+            assertEquals("is_invisible", stringValue(ds, """
+                    SELECT customparams FROM items_base
+                    WHERE item_name = 'tile_stackmagic_test'
+                    """));
+            assertEquals(1, intValue(ds, """
+                    SELECT COUNT(*) FROM flyway_schema_history
+                    WHERE version = '%s' AND success = 1
+                    """.formatted(ITEMS_BASE_INTERACTION_REPAIR_VERSION)));
         }
     }
 

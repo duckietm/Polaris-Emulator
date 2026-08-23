@@ -103,6 +103,24 @@ SET @ddl := IF(@engine = 'MyISAM',
 PREPARE s FROM @ddl; EXECUTE s; DEALLOCATE PREPARE s;
 ```
 
+### Collations
+
+Adopted hotels run every historical charset: latin1 from old Arcturus dumps,
+utf8mb4_general_ci, and utf8mb4_unicode_ci after a hand conversion. Comparing a
+migration-owned column (a temporary lookup table, a derived table) with a hotel
+column therefore raises `Illegal mix of collations` on some hotels and not
+others. Pin the collation explicitly on the comparison instead of trusting the
+database default:
+
+```sql
+ON mapping.`item_identifier`
+    = CONVERT(item.`item_name` USING utf8mb4) COLLATE utf8mb4_general_ci
+```
+
+An explicit collation outranks both columns' implicit ones, so the comparison
+resolves the same way everywhere. Comparisons against string *literals* are
+already safe and need no `COLLATE`.
+
 ### Data
 
 - **Operator-owned setting:** `INSERT ... ON DUPLICATE KEY UPDATE` of owned

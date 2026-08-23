@@ -20064,22 +20064,6 @@
       "reason": "Catalog Studio document protocol is verified by dedicated round-trip packet tests"
     },
     {
-      "name": "CATALOG_STUDIO_PREVIEW",
-      "direction": "server_to_client",
-      "header": 10077,
-      "java": {
-        "symbol": "CatalogStudioPreviewComposer",
-        "className": "CatalogStudioPreviewComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioPreviewComposer.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_PREVIEW",
-        "className": "CatalogStudioPreviewMessageParser",
-        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioPreviewMessageParser.ts"
-      },
-      "reason": "Preview pages and offers are transported as typed JSON snapshot fields"
-    },
-    {
       "name": "CATALOG_STUDIO_DOCUMENT_RESULT",
       "direction": "server_to_client",
       "header": 10078,
@@ -23776,54 +23760,6 @@
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal"
     },
     {
-      "name": "CATALOG_STUDIO_ACQUIRE_LOCK",
-      "direction": "server_to_client",
-      "header": 10068,
-      "java": {
-        "symbol": "CatalogStudioAcquireLockComposer",
-        "className": "CatalogStudioAcquireLockComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioAcquireLockComposer.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_ACQUIRE_LOCK",
-        "className": "CatalogStudioLockMessageParser",
-        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioLockMessageParser.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, boolean, string, string, int, string, int, int, string, string, string]"
-    },
-    {
-      "name": "CATALOG_STUDIO_RENEW_LOCK",
-      "direction": "server_to_client",
-      "header": 10069,
-      "java": {
-        "symbol": "CatalogStudioRenewLockComposer",
-        "className": "CatalogStudioRenewLockComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioRenewLockComposer.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_RENEW_LOCK",
-        "className": "CatalogStudioLockMessageParser",
-        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioLockMessageParser.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, boolean, string, string, int, string, int, int, string, string, string]"
-    },
-    {
-      "name": "CATALOG_STUDIO_RELEASE_LOCK",
-      "direction": "server_to_client",
-      "header": 10070,
-      "java": {
-        "symbol": "CatalogStudioReleaseLockComposer",
-        "className": "CatalogStudioReleaseLockComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioReleaseLockComposer.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_RELEASE_LOCK",
-        "className": "CatalogStudioOperationMessageParser",
-        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioOperationMessageParser.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, boolean, string, string, int, int, string, int]"
-    },
-    {
       "name": "CATALOG_STUDIO_LOAD_HISTORY",
       "direction": "server_to_client",
       "header": 10071,
@@ -23870,54 +23806,6 @@
         "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioValidationMessageParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal"
-    },
-    {
-      "name": "CATALOG_STUDIO_PUBLISH",
-      "direction": "server_to_client",
-      "header": 10074,
-      "java": {
-        "symbol": "CatalogStudioPublishComposer",
-        "className": "CatalogStudioPublishComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioPublishComposer.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_PUBLISH",
-        "className": "CatalogStudioOperationMessageParser",
-        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioOperationMessageParser.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, boolean, string, string, int, int, string, int]"
-    },
-    {
-      "name": "CATALOG_STUDIO_DISCARD",
-      "direction": "server_to_client",
-      "header": 10075,
-      "java": {
-        "symbol": "CatalogStudioDiscardComposer",
-        "className": "CatalogStudioDiscardComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioDiscardComposer.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_DISCARD",
-        "className": "CatalogStudioOperationMessageParser",
-        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioOperationMessageParser.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, boolean, string, string, int, int, string, int]"
-    },
-    {
-      "name": "CATALOG_STUDIO_RESTORE",
-      "direction": "server_to_client",
-      "header": 10076,
-      "java": {
-        "symbol": "CatalogStudioRestoreComposer",
-        "className": "CatalogStudioRestoreComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioRestoreComposer.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_RESTORE",
-        "className": "CatalogStudioOperationMessageParser",
-        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioOperationMessageParser.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, boolean, string, string, int, int, string, int]"
     },
     {
       "name": "CATALOG_PRODUCT_METADATA_REQUEST",

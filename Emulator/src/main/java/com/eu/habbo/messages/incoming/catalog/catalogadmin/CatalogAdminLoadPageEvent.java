@@ -18,16 +18,15 @@ public class CatalogAdminLoadPageEvent extends MessageHandler {
 
         int pageId = this.packet.readInt();
         CatalogPageType pageType = CatalogPageType.fromString(this.packet.readString());
-        long draftVersionId = this.packet.readInt();
-        long expectedRevision = this.packet.readInt();
+        this.packet.readInt(); // legacy version field
+        this.packet.readInt(); // legacy revision field
         var page = CatalogStudioRuntime.services()
-                .mutations()
-                .loadDraft(draftVersionId, expectedRevision)
+                .liveMutations()
+                .loadLive()
                 .page(pageType, pageId)
                 .orElse(null);
         if (page == null) {
-            this.client.sendResponse(
-                    new CatalogAdminResultComposer(false, "Page not found in shared draft: " + pageId));
+            this.client.sendResponse(new CatalogAdminResultComposer(false, "Live catalog page not found: " + pageId));
             return;
         }
 

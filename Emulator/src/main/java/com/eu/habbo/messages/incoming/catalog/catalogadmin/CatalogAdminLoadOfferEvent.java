@@ -18,16 +18,15 @@ public class CatalogAdminLoadOfferEvent extends MessageHandler {
 
         int offerId = this.packet.readInt();
         CatalogPageType pageType = CatalogPageType.fromString(this.packet.readString());
-        long draftVersionId = this.packet.readInt();
-        long expectedRevision = this.packet.readInt();
+        this.packet.readInt(); // legacy version field
+        this.packet.readInt(); // legacy revision field
         var offer = CatalogStudioRuntime.services()
-                .mutations()
-                .loadDraft(draftVersionId, expectedRevision)
+                .liveMutations()
+                .loadLive()
                 .offer(pageType, offerId)
                 .orElse(null);
         if (offer == null) {
-            this.client.sendResponse(
-                    new CatalogAdminResultComposer(false, "Offer not found in shared draft: " + offerId));
+            this.client.sendResponse(new CatalogAdminResultComposer(false, "Live catalog offer not found: " + offerId));
             return;
         }
         int limitedSells = pageType == CatalogPageType.NORMAL

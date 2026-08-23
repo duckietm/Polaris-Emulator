@@ -2,9 +2,7 @@ package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogChangeOperation;
-import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftMutationRequest;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogEntityType;
-import com.eu.habbo.habbohotel.catalog.versioning.CatalogLockKey;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogPageMovePlanner;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogVersionSnapshot;
 import com.eu.habbo.habbohotel.permissions.Permission;
@@ -33,12 +31,11 @@ public class CatalogAdminMovePageEvent extends MessageHandler {
         CatalogPageType pageType = CatalogPageType.fromString(this.packet.readString());
 
         CatalogStudioMutationEnvelope envelope = CatalogStudioRequestParser.parseMutationEnvelope(this.packet);
-        var mutations = CatalogStudioRuntime.services().mutations();
-        CatalogVersionSnapshot draft = mutations.loadDraft(envelope.draftVersionId(), envelope.expectedRevision());
-        var page = draft.page(pageType, pageId).orElse(null);
+        var liveMutations = CatalogStudioRuntime.services().liveMutations();
+        CatalogVersionSnapshot live = liveMutations.loadLive();
+        var page = live.page(pageType, pageId).orElse(null);
         if (page == null) {
-            this.client.sendResponse(
-                    new CatalogAdminResultComposer(false, "Page not found in shared draft: " + pageId));
+            this.client.sendResponse(new CatalogAdminResultComposer(false, "Live catalog page not found: " + pageId));
             return;
         }
 
@@ -48,43 +45,40 @@ public class CatalogAdminMovePageEvent extends MessageHandler {
         }
 
         if (newParentId != ROOT_PARENT_ID) {
-            if (draft.page(pageType, newParentId).isEmpty()) {
+            if (live.page(pageType, newParentId).isEmpty()) {
                 this.client.sendResponse(
                         new CatalogAdminResultComposer(false, "Parent page not found: " + newParentId));
                 return;
             }
 
-            if (this.wouldCreateCycle(pageType, pageId, newParentId, draft)) {
+            if (this.wouldCreateCycle(pageType, pageId, newParentId, live)) {
                 this.client.sendResponse(
                         new CatalogAdminResultComposer(false, "Refusing to move: that would create a cycle"));
                 return;
             }
         }
 
-        var editedPages = CatalogPageMovePlanner.plan(draft.pages(), pageType, pageId, newParentId, newIndex);
+        var editedPages = CatalogPageMovePlanner.plan(live.pages(), pageType, pageId, newParentId, newIndex);
         if (editedPages.isEmpty()) {
             this.client.sendResponse(new CatalogAdminResultComposer(true, "Page is already in the requested position"));
             return;
         }
 
-        var lockKey = new CatalogLockKey(CatalogEntityType.PAGE, pageType, pageId);
         var gson = new Gson();
         var requests = editedPages.stream()
-                .map(edited -> new CatalogDraftMutationRequest(
-                        envelope.draftVersionId(),
-                        envelope.expectedRevision(),
+                .map(edited -> CatalogAdminLiveRequest.atRevision(
+                        envelope,
+                        live.version().revision(),
                         this.client.getHabbo().getHabboInfo().getId(),
-                        lockKey,
-                        envelope.lockToken(),
-                        envelope.summary(),
                         CatalogEntityType.PAGE,
+                        pageType,
                         edited.pageId(),
                         edited.pageId() == pageId ? CatalogChangeOperation.MOVE : CatalogChangeOperation.UPDATE,
                         gson.toJson(edited)))
                 .toList();
-        var result = mutations.applyBatch(requests);
+        var result = liveMutations.applyBatch(requests);
         this.client.sendResponse(
-                new CatalogAdminResultComposer(true, "Page moved in shared draft at revision " + result.revision()));
+                new CatalogAdminResultComposer(true, "Page moved live at revision " + result.revision()));
     }
 
     private boolean wouldCreateCycle(CatalogPageType pageType, int pageId, int parentId, CatalogVersionSnapshot draft) {

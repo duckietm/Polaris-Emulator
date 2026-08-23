@@ -5,8 +5,6 @@ import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogChangeOperation;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftPageData;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogEntityType;
-import com.eu.habbo.habbohotel.catalog.versioning.CatalogLockKey;
-import com.eu.habbo.habbohotel.catalog.versioning.CatalogSmartSaveRequest;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioMutationEnvelope;
@@ -131,36 +129,29 @@ public class CatalogAdminCreatePageEvent extends MessageHandler {
         String operationId = CatalogAdminSmartSaveResponder.operationId(envelope, "createPage");
         int targetParentId = parentId;
         String validatedIncludes = includes;
-        var smartSaves = CatalogStudioRuntime.services().smartSaves();
+        var liveMutations = CatalogStudioRuntime.services().liveMutations();
         try {
-            var result = smartSaves.apply(
-                    new CatalogSmartSaveRequest(
-                            operationId,
-                            envelope.draftVersionId(),
-                            envelope.expectedRevision(),
+            var batch = liveMutations.applyBatch(
+                    java.util.List.of(CatalogAdminLiveRequest.of(
+                            envelope,
                             this.client.getHabbo().getHabboInfo().getId(),
-                            this.client.getHabbo().getHabboInfo().getUsername(),
-                            new CatalogLockKey(
-                                    CatalogEntityType.PAGE,
-                                    pageType,
-                                    targetParentId == ROOT_PARENT_ID ? CATALOG_ROOT_LOCK_ID : targetParentId),
-                            envelope.lockToken(),
-                            envelope.summary(),
                             CatalogEntityType.PAGE,
+                            pageType,
                             0,
                             CatalogChangeOperation.CREATE,
-                            gson.toJson(pageData)),
-                    draft -> CatalogAdminPageDraftChecks.validateParentAndIncludes(
-                            draft, pageType, 0, targetParentId, validatedIncludes));
+                            gson.toJson(pageData))),
+                    live -> CatalogAdminPageChecks.validateParentAndIncludes(
+                            live, pageType, 0, targetParentId, validatedIncludes));
+            var result = CatalogAdminLiveRequest.smartSaveResult(
+                    operationId, batch, batch.changes().getFirst());
             this.client.sendResponse(CatalogAdminSmartSaveResponder.success(
                     "createPage",
-                    "Page created in shared draft: " + result.entityId() + " at revision " + result.revision(),
+                    "Page created live: " + result.entityId() + " at revision " + result.revision(),
                     result,
                     this.client.getHabbo().getHabboInfo().getUsername(),
                     gson));
         } catch (IllegalArgumentException
                 | com.eu.habbo.habbohotel.catalog.versioning.CatalogConcurrentModificationException
-                | com.eu.habbo.habbohotel.catalog.versioning.CatalogLockConflictException
                 | com.eu.habbo.habbohotel.catalog.versioning.CatalogUndoConflictException exception) {
             this.client.sendResponse(CatalogAdminSmartSaveResponder.failure(
                     operationId,

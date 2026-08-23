@@ -19968,54 +19968,6 @@
       "reason": "Java analyzer: Data-dependent packet operations in ForStmt inside handle; TypeScript analyzer: Outgoing message array _data is mutated with push"
     },
     {
-      "name": "CATALOG_STUDIO_ACQUIRE_LOCK",
-      "direction": "client_to_server",
-      "header": 10068,
-      "java": {
-        "symbol": "CatalogStudioAcquireLockEvent",
-        "className": "CatalogStudioAcquireLockEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioAcquireLockEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_ACQUIRE_LOCK",
-        "className": "CatalogStudioAcquireLockComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioAcquireLockComposer.ts"
-      },
-      "reason": "Java analyzer: Packet fields delegated to external reader parseAcquire inside handle"
-    },
-    {
-      "name": "CATALOG_STUDIO_RENEW_LOCK",
-      "direction": "client_to_server",
-      "header": 10069,
-      "java": {
-        "symbol": "CatalogStudioRenewLockEvent",
-        "className": "CatalogStudioRenewLockEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioRenewLockEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_RENEW_LOCK",
-        "className": "CatalogStudioRenewLockComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioRenewLockComposer.ts"
-      },
-      "reason": "Java analyzer: Packet fields delegated to external reader parseTokenLock inside handle"
-    },
-    {
-      "name": "CATALOG_STUDIO_RELEASE_LOCK",
-      "direction": "client_to_server",
-      "header": 10070,
-      "java": {
-        "symbol": "CatalogStudioReleaseLockEvent",
-        "className": "CatalogStudioReleaseLockEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioReleaseLockEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_RELEASE_LOCK",
-        "className": "CatalogStudioReleaseLockComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioReleaseLockComposer.ts"
-      },
-      "reason": "Java analyzer: Packet fields delegated to external reader parseTokenLock inside handle"
-    },
-    {
       "name": "CATALOG_STUDIO_LOAD_HISTORY",
       "direction": "client_to_server",
       "header": 10071,
@@ -20062,70 +20014,6 @@
         "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioValidateComposer.ts"
       },
       "reason": "Java analyzer: Packet fields delegated to external reader parseRevision inside handle"
-    },
-    {
-      "name": "CATALOG_STUDIO_PUBLISH",
-      "direction": "client_to_server",
-      "header": 10074,
-      "java": {
-        "symbol": "CatalogStudioPublishEvent",
-        "className": "CatalogStudioPublishEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioPublishEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_PUBLISH",
-        "className": "CatalogStudioPublishComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioPublishComposer.ts"
-      },
-      "reason": "Java analyzer: Packet fields delegated to external reader parseRevision inside handle"
-    },
-    {
-      "name": "CATALOG_STUDIO_DISCARD",
-      "direction": "client_to_server",
-      "header": 10075,
-      "java": {
-        "symbol": "CatalogStudioDiscardEvent",
-        "className": "CatalogStudioDiscardEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioDiscardEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_DISCARD",
-        "className": "CatalogStudioDiscardComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioDiscardComposer.ts"
-      },
-      "reason": "Java analyzer: Packet fields delegated to external reader parseRevision inside handle"
-    },
-    {
-      "name": "CATALOG_STUDIO_RESTORE",
-      "direction": "client_to_server",
-      "header": 10076,
-      "java": {
-        "symbol": "CatalogStudioRestoreEvent",
-        "className": "CatalogStudioRestoreEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioRestoreEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_RESTORE",
-        "className": "CatalogStudioRestoreComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioRestoreComposer.ts"
-      },
-      "reason": "Java analyzer: Packet fields delegated to external reader parseRestore inside handle"
-    },
-    {
-      "name": "CATALOG_STUDIO_PREVIEW",
-      "direction": "client_to_server",
-      "header": 10077,
-      "java": {
-        "symbol": "CatalogStudioPreviewEvent",
-        "className": "CatalogStudioPreviewEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioPreviewEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_PREVIEW",
-        "className": "CatalogStudioPreviewComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioPreviewComposer.ts"
-      },
-      "reason": "Dynamic currency map is serialized as a count followed by type and balance pairs"
     },
     {
       "name": "CATALOG_STUDIO_EXPORT",

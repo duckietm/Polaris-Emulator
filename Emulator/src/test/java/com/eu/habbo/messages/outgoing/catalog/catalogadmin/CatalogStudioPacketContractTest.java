@@ -333,6 +333,7 @@ class CatalogStudioPacketContractTest {
         assertEquals(document, CatalogStudioDocumentWireCodec.decode(encoding, chunks));
         assertEquals("fingerprint", readString(payload));
         assertEquals(3, payload.readInt());
+        assertEquals(0, payload.readInt());
         assertFalse(payload.isReadable());
     }
 

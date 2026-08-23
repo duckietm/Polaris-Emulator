@@ -11,43 +11,19 @@ class CatalogStudioRegistryContractTest {
     void allStudioHeadersAreActiveInBothDirections() throws Exception {
         JavaPacketRegistry registry = JavaPacketRegistry.discover(Path.of("src/main/java"));
 
-        for (int header = 10067; header <= 10076; header++) {
-            assertEquals(
-                    header,
-                    registry.require(JavaPacketRegistry.Direction.CLIENT_TO_SERVER, header)
-                            .header());
-            assertEquals(
-                    header,
-                    registry.require(JavaPacketRegistry.Direction.SERVER_TO_CLIENT, header)
-                            .header());
-        }
-        for (int header = 10077; header <= 10080; header++) {
+        int[] clientHeaders = {10067, 10071, 10072, 10073, 10078, 10079, 10080, 10081, 10082};
+        for (int header : clientHeaders) {
             assertEquals(
                     header,
                     registry.require(JavaPacketRegistry.Direction.CLIENT_TO_SERVER, header)
                             .header());
         }
-        for (int header = 10077; header <= 10078; header++) {
+        int[] serverHeaders = {10067, 10071, 10072, 10073, 10078, 10081, 10082};
+        for (int header : serverHeaders) {
             assertEquals(
                     header,
                     registry.require(JavaPacketRegistry.Direction.SERVER_TO_CLIENT, header)
                             .header());
         }
-        assertEquals(
-                10081,
-                registry.require(JavaPacketRegistry.Direction.CLIENT_TO_SERVER, 10081)
-                        .header());
-        assertEquals(
-                10081,
-                registry.require(JavaPacketRegistry.Direction.SERVER_TO_CLIENT, 10081)
-                        .header());
-        assertEquals(
-                10082,
-                registry.require(JavaPacketRegistry.Direction.CLIENT_TO_SERVER, 10082)
-                        .header());
-        assertEquals(
-                10082,
-                registry.require(JavaPacketRegistry.Direction.SERVER_TO_CLIENT, 10082)
-                        .header());
     }
 }

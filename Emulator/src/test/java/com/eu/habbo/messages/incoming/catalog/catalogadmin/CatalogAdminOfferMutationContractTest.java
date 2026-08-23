@@ -25,17 +25,17 @@ class CatalogAdminOfferMutationContractTest {
 
         assertTrue(create.contains("CatalogAdminOfferPayload.validate("));
         assertTrue(save.contains("CatalogAdminOfferPayload.validate("));
-        assertTrue(create.contains("services().smartSaves()"));
-        assertTrue(save.contains("services().smartSaves()"));
-        assertTrue(create.contains("draft.page(pageType, payload.pageId).isEmpty()"));
-        assertTrue(save.contains("draft.page(pageType, payload.pageId).isEmpty()"));
+        assertTrue(create.contains("services().liveMutations()"));
+        assertTrue(save.contains("services().liveMutations()"));
+        assertTrue(create.contains("live.page(pageType, payload.pageId).isEmpty()"));
+        assertTrue(save.contains("live.page(pageType, payload.pageId).isEmpty()"));
         assertFalse(create.contains("loadDraft("));
         assertFalse(save.contains("loadDraft("));
 
         int createValidation = create.indexOf("CatalogAdminOfferPayload.validate(");
-        int createInsert = create.indexOf("smartSaves.apply(");
+        int createInsert = create.indexOf("liveMutations.applyBatch(");
         int saveValidation = save.indexOf("CatalogAdminOfferPayload.validate(");
-        int saveUpdate = save.indexOf("smartSaves.apply(");
+        int saveUpdate = save.indexOf("liveMutations.applyBatch(");
 
         assertTrue(createValidation < createInsert, "create offer should validate before insert SQL is prepared");
         assertTrue(saveValidation < saveUpdate, "save offer should validate before update SQL is prepared");
@@ -45,7 +45,7 @@ class CatalogAdminOfferMutationContractTest {
     void saveOfferReportsMissingRowsInsteadOfAlwaysSucceeding() throws IOException {
         String save = Files.readString(SAVE_SOURCE);
 
-        assertTrue(save.contains("draft.offer(pageType, offerId).orElse(null)"));
+        assertTrue(save.contains("live.offer(pageType, offerId).orElse(null)"));
         assertTrue(save.contains("Offer not found: "));
     }
 
@@ -55,18 +55,18 @@ class CatalogAdminOfferMutationContractTest {
 
         assertTrue(delete.contains("offerId <= 0"));
         assertTrue(delete.contains("Invalid offer id"));
-        assertTrue(delete.contains("draft.offer(pageType, offerId).isEmpty()"));
-        assertTrue(delete.contains("Offer not found in shared draft: "));
+        assertTrue(delete.contains("live.offer(pageType, offerId).isEmpty()"));
+        assertTrue(delete.contains("Live catalog offer not found: "));
     }
 
     @Test
-    void moveOfferRejectsInvalidIdsClampsOrderAndReportsMissingRows() throws IOException {
+    void moveOfferRejectsInvalidIdsClampsOrderAndUsesLiveMutationService() throws IOException {
         String move = Files.readString(MOVE_SOURCE);
 
         assertTrue(move.contains("offerId <= 0"));
         assertTrue(move.contains("Invalid offer id"));
         assertTrue(move.contains("if (orderNumber < 0) orderNumber = 0;"));
-        assertTrue(move.contains("draft.offer(pageType, offerId).orElse(null)"));
-        assertTrue(move.contains("Offer not found in shared draft: "));
+        assertTrue(move.contains(".liveMutations()"));
+        assertTrue(move.contains(".updateOffer("));
     }
 }

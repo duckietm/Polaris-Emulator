@@ -16,10 +16,20 @@
 -- These are emulator-owned reference rows. Reconcile every stale value once,
 -- as the source updates did, then rely on Flyway history so operator overrides
 -- made after this migration are never rewritten on later starts.
+--
+-- Adopted hotels carry every historical charset on `items_base`: latin1 from the
+-- old Arcturus dumps, utf8mb4_general_ci, or utf8mb4_unicode_ci after a manual
+-- conversion. The lookup table below is created with a fixed charset, so a bare
+-- column-to-column comparison against `items_base` raises "Illegal mix of
+-- collations" whenever the two happen to be different utf8mb4 collations. Every
+-- comparison therefore converts the `items_base` side to utf8mb4 and pins the
+-- collation explicitly: an explicit collation outranks the columns' implicit one,
+-- so the comparison resolves the same way on every hotel. The identifiers are
+-- ASCII furnidata classnames, so the conversion never changes what matches.
 
 CREATE TEMPORARY TABLE `polaris_items_base_interaction_repair_20260822` (
-    `item_identifier` VARCHAR(70) NOT NULL,
-    `interaction_type` VARCHAR(500) NOT NULL,
+    `item_identifier` VARCHAR(70) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+    `interaction_type` VARCHAR(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
     PRIMARY KEY (`item_identifier`)
 ) ENGINE=MEMORY;
 
@@ -195,18 +205,23 @@ VALUES
 
 UPDATE `items_base` AS item
 INNER JOIN `polaris_items_base_interaction_repair_20260822` AS mapping
-    ON mapping.`item_identifier` = item.`item_name`
+    ON mapping.`item_identifier`
+        = CONVERT(item.`item_name` USING utf8mb4) COLLATE utf8mb4_general_ci
 SET item.`interaction_type` = mapping.`interaction_type`
-WHERE item.`interaction_type` <> mapping.`interaction_type`;
+WHERE CONVERT(item.`interaction_type` USING utf8mb4) COLLATE utf8mb4_general_ci
+    <> mapping.`interaction_type`;
 
 UPDATE `items_base` AS item
 INNER JOIN `polaris_items_base_interaction_repair_20260822` AS mapping
-    ON mapping.`item_identifier` = item.`public_name`
+    ON mapping.`item_identifier`
+        = CONVERT(item.`public_name` USING utf8mb4) COLLATE utf8mb4_general_ci
 LEFT JOIN `polaris_items_base_interaction_repair_20260822` AS item_name_mapping
-    ON item_name_mapping.`item_identifier` = item.`item_name`
+    ON item_name_mapping.`item_identifier`
+        = CONVERT(item.`item_name` USING utf8mb4) COLLATE utf8mb4_general_ci
 SET item.`interaction_type` = mapping.`interaction_type`
 WHERE item_name_mapping.`item_identifier` IS NULL
-  AND item.`interaction_type` <> mapping.`interaction_type`;
+  AND CONVERT(item.`interaction_type` USING utf8mb4) COLLATE utf8mb4_general_ci
+      <> mapping.`interaction_type`;
 
 -- The companion historical update also marked invisible stack/walk helpers.
 -- Match both naming columns so old and newer furnidata variants converge.

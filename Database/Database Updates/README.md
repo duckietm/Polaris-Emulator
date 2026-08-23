@@ -13,8 +13,10 @@ The remaining subdirectories are retained as historical source material:
 - `Own_Database_RunFirst/` contains old aggregates, duplicate scripts and manual
   experiments whose required effects were reconciled into the timestamped chain.
 - `Items_Base/` contains old bulk reference-data maintenance scripts. The Polaris
-  base database already contains their stable mappings; later wired mappings and the
-  pet-breeding correction are versioned migrations.
+  base database contains most of their stable mappings, while
+  `V20260822164532__repair_items_base_interactions.sql` reconciles them once for
+  adopted hotels. Later wired mappings and the pet-breeding correction are also
+  versioned migrations.
 - `Set Rooms wallitems/` is an optional repair script, not a Polaris schema
   migration.
 

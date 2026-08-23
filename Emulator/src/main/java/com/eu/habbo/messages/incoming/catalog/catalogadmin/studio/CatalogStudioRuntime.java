@@ -1,11 +1,13 @@
 package com.eu.habbo.messages.incoming.catalog.catalogadmin.studio;
 
+import com.eu.habbo.habbohotel.catalog.CatalogAdminCacheSync;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogAdminDraftMutationService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogAdminSmartSaveService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftChangeSetService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftLifecycleService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftPreviewService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftValidationService;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogLiveMutationService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogLiveReconciliationService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogLockService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogOperationalOfferRepository;
@@ -17,6 +19,7 @@ import com.eu.habbo.habbohotel.catalog.versioning.CatalogStudioDocumentService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogUndoService;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogVersionRepository;
 import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogChangeJournal;
+import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogLiveEntityWriter;
 import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogLiveProjection;
 import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogLiveSnapshotRepository;
 import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogLockRepository;
@@ -81,6 +84,21 @@ public final class CatalogStudioRuntime {
         return new Services(
                 queries,
                 new CatalogLockService(lockRepository),
+                new CatalogLiveMutationService(
+                        dataSource,
+                        versions,
+                        journal,
+                        snapshotWriter,
+                        new JdbcCatalogLiveEntityWriter(gson),
+                        change -> {
+                            if (change.entityType()
+                                    == com.eu.habbo.habbohotel.catalog.versioning.CatalogEntityType.PAGE) {
+                                CatalogAdminCacheSync.refreshPageFlagsFromDb(change.entityId(), change.catalogType());
+                            } else {
+                                CatalogAdminCacheSync.reloadCatalogItem(change.entityId(), change.catalogType());
+                            }
+                        },
+                        gson),
                 new CatalogAdminDraftMutationService(
                         dataSource, versions, journal, snapshotWriter, lockRepository, gson),
                 new CatalogAdminSmartSaveService(
@@ -109,6 +127,7 @@ public final class CatalogStudioRuntime {
     public record Services(
             JdbcCatalogStudioQueryRepository queries,
             CatalogLockService locks,
+            CatalogLiveMutationService liveMutations,
             CatalogAdminDraftMutationService mutations,
             CatalogAdminSmartSaveService smartSaves,
             CatalogOperationalOfferRepository operationalOffers,

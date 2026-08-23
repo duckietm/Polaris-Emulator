@@ -24,8 +24,6 @@ public interface CatalogVersionRepository {
         return loadSnapshot(connection, versionId).offer(catalogType, offerId);
     }
 
-    long cloneAsDraft(Connection connection, long sourceVersionId, int actorId, String label) throws SQLException;
-
     long nextPageId(Connection connection) throws SQLException;
 
     default long nextPageId(Connection connection, CatalogPageType catalogType) throws SQLException {
@@ -45,10 +43,4 @@ public interface CatalogVersionRepository {
     }
 
     long incrementRevision(Connection connection, long versionId, long expectedRevision) throws SQLException;
-
-    void archiveVersion(Connection connection, long versionId) throws SQLException;
-
-    void markPublished(Connection connection, long versionId, int actorId) throws SQLException;
-
-    void updateRuntimePointers(Connection connection, long activeVersionId, long draftVersionId) throws SQLException;
 }

@@ -2,9 +2,8 @@ package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogChangeOperation;
-import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftMutationRequest;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogEntityType;
-import com.eu.habbo.habbohotel.catalog.versioning.CatalogLockKey;
+import com.eu.habbo.habbohotel.catalog.versioning.CatalogLiveMutationRequest;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogSnapshotPatch;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -43,21 +42,21 @@ public class CatalogAdminReorderOffersEvent extends MessageHandler {
 
         CatalogPageType pageType = CatalogPageType.fromString(this.packet.readString());
         CatalogStudioMutationEnvelope envelope = CatalogStudioRequestParser.parseMutationEnvelope(this.packet);
-        var mutations = CatalogStudioRuntime.services().mutations();
-        var draft = mutations.loadDraft(envelope.draftVersionId(), envelope.expectedRevision());
+        var liveMutations = CatalogStudioRuntime.services().liveMutations();
+        var live = liveMutations.loadLive();
         Set<Integer> ids = new HashSet<>();
         Integer pageId = null;
-        List<CatalogDraftMutationRequest> requests = new ArrayList<>(orders.size());
+        List<CatalogLiveMutationRequest> requests = new ArrayList<>(orders.size());
         Gson gson = new Gson();
         for (OfferOrder order : orders) {
             if (order.offerId() <= 0 || order.orderNumber() < 0 || !ids.add(order.offerId())) {
                 this.client.sendResponse(new CatalogAdminResultComposer(false, "Invalid offer reorder entry"));
                 return;
             }
-            var offer = draft.offer(pageType, order.offerId()).orElse(null);
+            var offer = live.offer(pageType, order.offerId()).orElse(null);
             if (offer == null) {
                 this.client.sendResponse(
-                        new CatalogAdminResultComposer(false, "Offer not found in shared draft: " + order.offerId()));
+                        new CatalogAdminResultComposer(false, "Live catalog offer not found: " + order.offerId()));
                 return;
             }
             if (pageId == null) pageId = offer.pageId();
@@ -66,21 +65,19 @@ public class CatalogAdminReorderOffersEvent extends MessageHandler {
                         new CatalogAdminResultComposer(false, "Every reordered offer must belong to the same page"));
                 return;
             }
-            requests.add(new CatalogDraftMutationRequest(
-                    envelope.draftVersionId(),
-                    envelope.expectedRevision(),
+            requests.add(CatalogAdminLiveRequest.atRevision(
+                    envelope,
+                    live.version().revision(),
                     this.client.getHabbo().getHabboInfo().getId(),
-                    new CatalogLockKey(CatalogEntityType.PAGE, pageType, pageId),
-                    envelope.lockToken(),
-                    envelope.summary(),
                     CatalogEntityType.OFFER,
+                    pageType,
                     offer.offerId(),
                     CatalogChangeOperation.MOVE,
                     gson.toJson(CatalogSnapshotPatch.setOfferOrder(offer, order.orderNumber()))));
         }
-        var result = mutations.applyBatch(requests);
-        this.client.sendResponse(new CatalogAdminResultComposer(
-                true, "Offers reordered in shared draft at revision " + result.revision()));
+        var result = liveMutations.applyBatch(requests);
+        this.client.sendResponse(
+                new CatalogAdminResultComposer(true, "Offers reordered live at revision " + result.revision()));
     }
 
     private record OfferOrder(int offerId, int orderNumber) {}

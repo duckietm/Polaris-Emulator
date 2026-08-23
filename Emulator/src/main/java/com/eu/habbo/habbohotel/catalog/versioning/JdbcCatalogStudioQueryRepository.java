@@ -4,44 +4,26 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import javax.sql.DataSource;
 
+/** Read model for the direct-live Catalog Manager. */
 public final class JdbcCatalogStudioQueryRepository {
     static final String LOAD_SESSION_SQL =
-            "SELECT runtime.active_version_id, runtime.draft_version_id, runtime.updated_at AS active_updated_at, "
-                    + "draft.revision, draft.created_at AS draft_created_at "
-                    + "FROM catalog_runtime_state runtime "
-                    + "JOIN catalog_versions draft ON draft.id = runtime.draft_version_id "
-                    + "WHERE runtime.singleton_id = 1";
-    static final String LOAD_PENDING_COUNT_SQL =
-            "SELECT COUNT(*) AS pending_count FROM catalog_change_groups WHERE version_id = ?";
-    static final String LOAD_ACTORS_SQL =
-            "SELECT DISTINCT locks.owner_id, users.username FROM catalog_edit_locks locks "
-                    + "LEFT JOIN users ON users.id = locks.owner_id "
-                    + "WHERE locks.version_id = ? AND locks.expires_at > CURRENT_TIMESTAMP(3) "
-                    + "ORDER BY users.username, locks.owner_id";
-    static final String LOAD_PUBLISHED_VERSIONS_SQL = "SELECT id, label, published_at FROM catalog_versions "
-            + "WHERE status IN ('PUBLISHED', 'ARCHIVED') AND published_at IS NOT NULL "
-            + "ORDER BY published_at DESC, id DESC LIMIT 50";
-    static final String LOAD_HISTORY_META_SQL =
-            "SELECT revision, (SELECT COUNT(*) FROM catalog_change_groups WHERE version_id = ?) AS total_count "
-                    + "FROM catalog_versions WHERE id = ?";
+            "SELECT revision, updated_at FROM catalog_manager_state " + "WHERE singleton_id = 1";
+    static final String LOAD_HISTORY_META_SQL = "SELECT state.revision, "
+            + "(SELECT COUNT(*) FROM catalog_manager_history) AS total_count "
+            + "FROM catalog_manager_state state WHERE state.singleton_id = 1";
     static final String LOAD_HISTORY_GROUPS_SQL =
-            "SELECT groups.id, groups.revision, groups.actor_id, users.username AS actor_name, "
-                    + "groups.summary, groups.source, groups.created_at "
-                    + "FROM catalog_change_groups groups LEFT JOIN users ON users.id = groups.actor_id "
-                    + "WHERE groups.version_id = ? ORDER BY groups.revision DESC, groups.id DESC LIMIT ? OFFSET ?";
-    static final String LOAD_HISTORY_ENTRIES_BATCH_PREFIX =
-            "SELECT group_id, entity_type, entity_id, operation FROM catalog_change_entries WHERE group_id IN (";
+            "SELECT history.id, history.revision, history.actor_id, users.username AS actor_name, "
+                    + "history.summary, history.source, history.created_at "
+                    + "FROM catalog_manager_history history LEFT JOIN users ON users.id = history.actor_id "
+                    + "ORDER BY history.revision DESC, history.id DESC LIMIT ? OFFSET ?";
     static final String LOAD_USERNAME_SQL = "SELECT username FROM users WHERE id = ?";
-    static final String LOAD_DRAFT_STATUS_SQL = "SELECT status FROM catalog_versions WHERE id = ?";
 
+    private static final long LIVE_CATALOG_ID = 1;
     private final DataSource dataSource;
 
     public JdbcCatalogStudioQueryRepository(DataSource dataSource) {
@@ -52,78 +34,49 @@ public final class JdbcCatalogStudioQueryRepository {
         try (Connection connection = dataSource.getConnection();
                 PreparedStatement statement = connection.prepareStatement(LOAD_SESSION_SQL);
                 ResultSet resultSet = statement.executeQuery()) {
-            if (!resultSet.next()) throw new SQLException("Catalog Studio runtime state is not initialized");
-            long draftVersionId = resultSet.getLong("draft_version_id");
+            if (!resultSet.next()) throw new SQLException("Catalog Manager state is not initialized");
+            var updatedAt = resultSet.getTimestamp("updated_at").toInstant();
             return new CatalogStudioSessionState(
-                    resultSet.getLong("active_version_id"),
-                    draftVersionId,
+                    LIVE_CATALOG_ID,
+                    LIVE_CATALOG_ID,
                     resultSet.getLong("revision"),
-                    resultSet.getTimestamp("active_updated_at").toInstant(),
-                    resultSet.getTimestamp("draft_created_at").toInstant(),
-                    loadPendingCount(connection, draftVersionId),
-                    loadActors(connection, draftVersionId),
+                    updatedAt,
+                    updatedAt,
+                    0,
+                    List.of(),
                     false,
                     0,
-                    loadPublishedVersions(connection));
+                    List.of());
         } catch (SQLException exception) {
-            throw new CatalogVersioningException("Catalog Studio session load failed", exception);
+            throw new CatalogVersioningException("Catalog Manager session load failed", exception);
         }
     }
 
-    public CatalogHistoryPage loadHistory(long draftVersionId, int offset, int limit) {
-        if (draftVersionId <= 0) throw new IllegalArgumentException("Draft version ID must be positive");
+    public CatalogHistoryPage loadHistory(long catalogId, int offset, int limit) {
+        requireLiveCatalog(catalogId);
         int safeOffset = Math.max(0, offset);
         int safeLimit = Math.max(1, Math.min(limit, 100));
-        try (Connection connection = dataSource.getConnection()) {
-            long revision;
-            int totalCount;
-            try (PreparedStatement statement = connection.prepareStatement(LOAD_HISTORY_META_SQL)) {
-                statement.setLong(1, draftVersionId);
-                statement.setLong(2, draftVersionId);
-                try (ResultSet resultSet = statement.executeQuery()) {
-                    if (!resultSet.next()) throw new SQLException("Catalog draft not found: " + draftVersionId);
-                    revision = resultSet.getLong("revision");
-                    totalCount = resultSet.getInt("total_count");
-                }
-            }
-            return new CatalogHistoryPage(
-                    draftVersionId,
-                    revision,
-                    totalCount,
-                    loadHistoryGroups(connection, draftVersionId, safeOffset, safeLimit));
-        } catch (SQLException exception) {
-            throw new CatalogVersioningException("Catalog Studio history load failed", exception);
-        }
-    }
-
-    public CatalogVersionSnapshot loadDraftSnapshot(long draftVersionId) {
-        if (draftVersionId <= 0) throw new IllegalArgumentException("Draft version ID must be positive");
-        try (Connection connection = dataSource.getConnection()) {
-            CatalogVersionSnapshot snapshot =
-                    new JdbcCatalogVersionRepository().loadSnapshot(connection, draftVersionId);
-            if (snapshot.version().status() != CatalogVersionStatus.DRAFT) {
-                throw new IllegalArgumentException("Catalog version is not a draft: " + draftVersionId);
-            }
-            return snapshot;
-        } catch (SQLException exception) {
-            throw new CatalogVersioningException("Catalog Studio draft snapshot load failed", exception);
-        }
-    }
-
-    public List<CatalogPageSnapshot> loadDraftPages(long draftVersionId) {
-        if (draftVersionId <= 0) throw new IllegalArgumentException("Draft version ID must be positive");
         try (Connection connection = dataSource.getConnection();
-                PreparedStatement statement = connection.prepareStatement(LOAD_DRAFT_STATUS_SQL)) {
-            statement.setLong(1, draftVersionId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (!resultSet.next()) throw new SQLException("Catalog draft not found: " + draftVersionId);
-                if (CatalogVersionStatus.valueOf(resultSet.getString("status")) != CatalogVersionStatus.DRAFT) {
-                    throw new IllegalArgumentException("Catalog version is not a draft: " + draftVersionId);
-                }
-            }
-            return List.copyOf(JdbcCatalogVersionRepository.loadPages(connection, draftVersionId));
+                PreparedStatement statement = connection.prepareStatement(LOAD_HISTORY_META_SQL);
+                ResultSet resultSet = statement.executeQuery()) {
+            if (!resultSet.next()) throw new SQLException("Catalog Manager state is not initialized");
+            return new CatalogHistoryPage(
+                    LIVE_CATALOG_ID,
+                    resultSet.getLong("revision"),
+                    resultSet.getInt("total_count"),
+                    loadHistoryGroups(connection, safeOffset, safeLimit));
         } catch (SQLException exception) {
-            throw new CatalogVersioningException("Catalog Studio draft page index load failed", exception);
+            throw new CatalogVersioningException("Catalog Manager history load failed", exception);
+        }
+    }
+
+    public CatalogVersionSnapshot loadLiveSnapshot(long catalogId) {
+        requireLiveCatalog(catalogId);
+        try (Connection connection = dataSource.getConnection()) {
+            JdbcCatalogVersionRepository versions = new JdbcCatalogVersionRepository();
+            return new JdbcCatalogLiveSnapshotRepository().load(connection, versions.loadVersion(connection, 1));
+        } catch (SQLException exception) {
+            throw new CatalogVersioningException("Live catalog snapshot load failed", exception);
         }
     }
 
@@ -136,74 +89,32 @@ public final class JdbcCatalogStudioQueryRepository {
                 return resultSet.next() ? resultSet.getString("username") : "#" + userId;
             }
         } catch (SQLException exception) {
-            throw new CatalogVersioningException("Catalog Studio username load failed", exception);
+            throw new CatalogVersioningException("Catalog Manager username load failed", exception);
         }
     }
 
     public CatalogChangeGroup loadChangeGroup(long groupId) {
-        if (groupId <= 0) throw new IllegalArgumentException("Change group ID must be positive");
+        if (groupId <= 0) throw new IllegalArgumentException("History ID must be positive");
         try (Connection connection = dataSource.getConnection()) {
             return new JdbcCatalogChangeJournal().load(connection, groupId);
         } catch (SQLException exception) {
-            throw new CatalogVersioningException("Catalog Studio change group load failed", exception);
+            throw new CatalogVersioningException("Catalog Manager history row load failed", exception);
         }
     }
 
-    private static int loadPendingCount(Connection connection, long draftVersionId) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(LOAD_PENDING_COUNT_SQL)) {
-            statement.setLong(1, draftVersionId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (!resultSet.next()) return 0;
-                return resultSet.getInt("pending_count");
-            }
-        }
-    }
-
-    private static List<CatalogStudioActorState> loadActors(Connection connection, long draftVersionId)
+    private static List<CatalogHistoryGroupState> loadHistoryGroups(Connection connection, int offset, int limit)
             throws SQLException {
-        List<CatalogStudioActorState> actors = new ArrayList<>();
-        try (PreparedStatement statement = connection.prepareStatement(LOAD_ACTORS_SQL)) {
-            statement.setLong(1, draftVersionId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    int ownerId = resultSet.getInt("owner_id");
-                    String username = resultSet.getString("username");
-                    actors.add(new CatalogStudioActorState(ownerId, username == null ? "#" + ownerId : username));
-                }
-            }
-        }
-        return List.copyOf(actors);
-    }
-
-    private static List<CatalogPublishedVersionState> loadPublishedVersions(Connection connection) throws SQLException {
-        List<CatalogPublishedVersionState> versions = new ArrayList<>();
-        try (PreparedStatement statement = connection.prepareStatement(LOAD_PUBLISHED_VERSIONS_SQL);
-                ResultSet resultSet = statement.executeQuery()) {
-            while (resultSet.next()) {
-                Timestamp publishedAt = resultSet.getTimestamp("published_at");
-                if (publishedAt == null) continue;
-                String label = resultSet.getString("label");
-                versions.add(new CatalogPublishedVersionState(
-                        resultSet.getLong("id"), label == null ? "" : label, publishedAt.toInstant()));
-            }
-        }
-        return List.copyOf(versions);
-    }
-
-    private static List<CatalogHistoryGroupState> loadHistoryGroups(
-            Connection connection, long draftVersionId, int offset, int limit) throws SQLException {
-        List<HistoryGroupRow> rows = new ArrayList<>();
+        List<HistoryRow> rows = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(LOAD_HISTORY_GROUPS_SQL)) {
-            statement.setLong(1, draftVersionId);
-            statement.setInt(2, limit);
-            statement.setInt(3, offset);
+            statement.setInt(1, limit);
+            statement.setInt(2, offset);
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    long groupId = resultSet.getLong("id");
+                    long id = resultSet.getLong("id");
                     int actorId = resultSet.getInt("actor_id");
                     String actorName = resultSet.getString("actor_name");
-                    rows.add(new HistoryGroupRow(
-                            groupId,
+                    rows.add(new HistoryRow(
+                            id,
                             resultSet.getLong("revision"),
                             actorId,
                             actorName == null ? "#" + actorId : actorName,
@@ -213,46 +124,33 @@ public final class JdbcCatalogStudioQueryRepository {
                 }
             }
         }
-        if (rows.isEmpty()) return List.of();
-        Map<Long, List<CatalogHistoryEntryState>> entries = loadHistoryEntries(connection, rows);
-        List<CatalogHistoryGroupState> groups = rows.stream()
-                .map(row -> new CatalogHistoryGroupState(
-                        row.id(),
-                        row.revision(),
-                        row.actorId(),
-                        row.actorName(),
-                        row.summary(),
-                        row.source(),
-                        row.createdAt(),
-                        List.copyOf(entries.getOrDefault(row.id(), List.of()))))
-                .toList();
+        JdbcCatalogChangeJournal journal = new JdbcCatalogChangeJournal();
+        List<CatalogHistoryGroupState> groups = new ArrayList<>();
+        for (HistoryRow row : rows) {
+            CatalogChangeGroup group = journal.load(connection, row.id());
+            groups.add(new CatalogHistoryGroupState(
+                    row.id(),
+                    row.revision(),
+                    row.actorId(),
+                    row.actorName(),
+                    row.summary(),
+                    row.source(),
+                    row.createdAt(),
+                    group.entries().stream()
+                            .map(entry -> new CatalogHistoryEntryState(
+                                    entry.entityType(), entry.entityId(), entry.operation()))
+                            .toList()));
+        }
         return List.copyOf(groups);
     }
 
-    private static Map<Long, List<CatalogHistoryEntryState>> loadHistoryEntries(
-            Connection connection, List<HistoryGroupRow> groups) throws SQLException {
-        String placeholders = String.join(",", java.util.Collections.nCopies(groups.size(), "?"));
-        String sql = LOAD_HISTORY_ENTRIES_BATCH_PREFIX + placeholders + ") ORDER BY group_id, id";
-        Map<Long, List<CatalogHistoryEntryState>> entries = new HashMap<>();
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            for (int index = 0; index < groups.size(); index++) {
-                statement.setLong(index + 1, groups.get(index).id());
-            }
-            try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    long groupId = resultSet.getLong("group_id");
-                    entries.computeIfAbsent(groupId, ignored -> new ArrayList<>())
-                            .add(new CatalogHistoryEntryState(
-                                    CatalogEntityType.valueOf(resultSet.getString("entity_type")),
-                                    resultSet.getInt("entity_id"),
-                                    CatalogChangeOperation.valueOf(resultSet.getString("operation"))));
-                }
-            }
+    private static void requireLiveCatalog(long catalogId) {
+        if (catalogId != LIVE_CATALOG_ID) {
+            throw new IllegalArgumentException("Catalog Manager live catalog ID must be 1");
         }
-        return entries;
     }
 
-    private record HistoryGroupRow(
+    private record HistoryRow(
             long id,
             long revision,
             int actorId,

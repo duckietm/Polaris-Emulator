@@ -9,14 +9,13 @@ public final class CatalogStudioValidateEvent extends CatalogStudioEvent {
     public void handle() {
         if (!authorize()) return;
         CatalogStudioRevisionRequest request = CatalogStudioRequestParser.parseRevision(this.packet);
-        CatalogDraftValidationResult result =
-                studio().validation().validate(request.draftVersionId(), request.expectedRevision());
+        CatalogDraftValidationResult result = studio().liveMutations().validateLive();
         boolean valid = result.report().valid();
         this.client.sendResponse(new CatalogStudioValidationComposer(
                 request.operationId(),
                 valid,
                 valid ? "VALID" : "VALIDATION_FAILED",
-                valid ? "Catalog draft is valid" : result.report().issues().size() + " validation issues found",
+                valid ? "Live catalog is valid" : result.report().issues().size() + " live catalog issues found",
                 result.revision(),
                 true,
                 result.report().issues().stream()

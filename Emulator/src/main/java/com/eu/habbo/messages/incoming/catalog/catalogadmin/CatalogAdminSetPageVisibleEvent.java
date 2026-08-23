@@ -23,7 +23,13 @@ public class CatalogAdminSetPageVisibleEvent extends MessageHandler {
         var result = CatalogStudioRuntime.services()
                 .liveMutations()
                 .setPageVisible(
-                        this.client.getHabbo().getHabboInfo().getId(), envelope.summary(), pageType, pageId, visible);
+                        envelope.expectedRevision(),
+                        envelope.operationId(),
+                        this.client.getHabbo().getHabboInfo().getId(),
+                        envelope.summary(),
+                        pageType,
+                        pageId,
+                        visible);
         this.client.sendResponse(
                 new CatalogAdminResultComposer(true, "Page visibility updated live at revision " + result.revision()));
     }

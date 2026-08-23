@@ -26,8 +26,10 @@ class CatalogLiveMutationServiceTest {
     private final CatalogVersionRepository versions = mock(CatalogVersionRepository.class);
     private final CatalogChangeJournal journal = mock(CatalogChangeJournal.class);
     private final CatalogSnapshotWriter snapshots = mock(CatalogSnapshotWriter.class);
+    private final CatalogLiveSnapshotRepository liveSnapshots = mock(CatalogLiveSnapshotRepository.class);
     private final CatalogLiveEntityWriter live = mock(CatalogLiveEntityWriter.class);
     private final CatalogLiveMutationHook hook = mock(CatalogLiveMutationHook.class);
+    private final CatalogOperationRepository operations = mock(CatalogOperationRepository.class);
     private final Gson gson = new Gson();
     private CatalogLiveMutationService service;
 
@@ -48,6 +50,20 @@ class CatalogLiveMutationServiceTest {
                         Instant.EPOCH,
                         1,
                         Instant.EPOCH));
+        when(versions.loadSnapshot(connection, ACTIVE_VERSION_ID))
+                .thenReturn(new CatalogVersionSnapshot(
+                        new CatalogVersion(
+                                ACTIVE_VERSION_ID,
+                                CatalogVersionStatus.PUBLISHED,
+                                null,
+                                4,
+                                "Live",
+                                1,
+                                Instant.EPOCH,
+                                1,
+                                Instant.EPOCH),
+                        List.of(page(true)),
+                        List.of()));
         when(versions.incrementRevision(connection, ACTIVE_VERSION_ID, 4)).thenReturn(5L);
         when(journal.append(
                         eq(connection), eq(ACTIVE_VERSION_ID), eq(5L), eq(7), any(), eq(CatalogChangeSource.UI), any()))
@@ -66,7 +82,56 @@ class CatalogLiveMutationServiceTest {
     }
 
     @Test
-    void writesLiveAndAuditSnapshotInOneTransactionThenRefreshesCache() throws Exception {
+    void opensThePhysicalLiveCatalogInsteadOfTheVersionedRecoveryCopy() throws Exception {
+        CatalogVersionSnapshot physicalLive = new CatalogVersionSnapshot(
+                versions.loadVersion(connection, ACTIVE_VERSION_ID), List.of(page(false)), List.of());
+        when(liveSnapshots.load(eq(connection), any(CatalogVersion.class))).thenReturn(physicalLive);
+        CatalogLiveMutationService physicalService = new CatalogLiveMutationService(
+                serviceDataSource(), versions, journal, snapshots, liveSnapshots, live, hook, null, gson);
+
+        CatalogVersionSnapshot opened = physicalService.loadLive();
+
+        assertEquals(physicalLive, opened);
+        verify(liveSnapshots).load(eq(connection), any(CatalogVersion.class));
+        verify(versions, org.mockito.Mockito.never()).loadSnapshot(connection, ACTIVE_VERSION_ID);
+    }
+
+    @Test
+    void recordsTheClientOperationIdInTheSameLiveTransaction() throws Exception {
+        CatalogVersionSnapshot physicalLive = new CatalogVersionSnapshot(
+                versions.loadVersion(connection, ACTIVE_VERSION_ID), List.of(page(true)), List.of());
+        when(liveSnapshots.load(eq(connection), any(CatalogVersion.class))).thenReturn(physicalLive);
+        when(operations.findForUpdate(connection, "save-page-1", 7)).thenReturn(Optional.empty());
+        CatalogLiveMutationService physicalService = new CatalogLiveMutationService(
+                serviceDataSource(), versions, journal, snapshots, liveSnapshots, live, hook, null, operations, gson);
+
+        physicalService.apply(new CatalogLiveMutationRequest(
+                4,
+                7,
+                "Save page",
+                CatalogEntityType.PAGE,
+                CatalogPageType.NORMAL,
+                17,
+                CatalogChangeOperation.UPDATE,
+                gson.toJson(page(false)),
+                "save-page-1"));
+
+        ArgumentCaptor<CatalogOperationRecord> record = ArgumentCaptor.forClass(CatalogOperationRecord.class);
+        verify(operations).insert(eq(connection), record.capture());
+        assertEquals("save-page-1", record.getValue().operationId());
+        org.junit.jupiter.api.Assertions.assertFalse(
+                record.getValue().requestFingerprint().isBlank());
+        verify(connection).commit();
+    }
+
+    private DataSource serviceDataSource() throws Exception {
+        DataSource dataSource = mock(DataSource.class);
+        when(dataSource.getConnection()).thenReturn(connection);
+        return dataSource;
+    }
+
+    @Test
+    void writesLiveAndHistoryInOneTransactionThenRefreshesCache() throws Exception {
         CatalogPageSnapshot before = page(true);
         CatalogPageSnapshot after = page(false);
         when(versions.loadPage(connection, ACTIVE_VERSION_ID, CatalogPageType.NORMAL, 17))
@@ -83,9 +148,8 @@ class CatalogLiveMutationServiceTest {
                 gson.toJson(after)));
 
         assertEquals(5, result.revision());
-        InOrder transaction = inOrder(live, snapshots, versions, journal, connection, hook);
+        InOrder transaction = inOrder(live, versions, journal, connection, hook);
         transaction.verify(live).apply(eq(connection), any(CatalogChangeEntry.class));
-        transaction.verify(snapshots).apply(eq(connection), eq(ACTIVE_VERSION_ID), any(CatalogChangeEntry.class));
         transaction.verify(versions).incrementRevision(connection, ACTIVE_VERSION_ID, 4);
         transaction
                 .verify(journal)
@@ -95,12 +159,12 @@ class CatalogLiveMutationServiceTest {
     }
 
     @Test
-    void rollsBackBothRepresentationsWhenTheAuditSnapshotFails() throws Exception {
+    void rollsBackWhenTheLiveWriteFails() throws Exception {
         when(versions.loadPage(connection, ACTIVE_VERSION_ID, CatalogPageType.NORMAL, 17))
                 .thenReturn(Optional.of(page(true)));
-        org.mockito.Mockito.doThrow(new java.sql.SQLException("snapshot failed"))
-                .when(snapshots)
-                .apply(eq(connection), eq(ACTIVE_VERSION_ID), any(CatalogChangeEntry.class));
+        org.mockito.Mockito.doThrow(new java.sql.SQLException("live write failed"))
+                .when(live)
+                .apply(eq(connection), any(CatalogChangeEntry.class));
 
         org.junit.jupiter.api.Assertions.assertThrows(
                 CatalogVersioningException.class,
@@ -130,6 +194,119 @@ class CatalogLiveMutationServiceTest {
         CatalogPageSnapshot committed = gson.fromJson(change.getValue().afterJson(), CatalogPageSnapshot.class);
         assertEquals("Page 17", committed.caption());
         org.junit.jupiter.api.Assertions.assertFalse(committed.visible());
+    }
+
+    @Test
+    void createsAnOfferAndUpdatesAnotherEntityInOneLiveRevision() throws Exception {
+        when(versions.nextOfferId(connection, CatalogPageType.NORMAL)).thenReturn(42L);
+        CatalogDraftOfferData offer =
+                new CatalogDraftOfferData("12", 17, "chair", 3, 0, 0, 1, 0, 1, -1, 0, "", true, false);
+
+        CatalogLiveMutationBatchResult result = service.applyBatch(List.of(
+                new CatalogLiveMutationRequest(
+                        -1,
+                        7,
+                        "Import catalog changes",
+                        CatalogEntityType.OFFER,
+                        CatalogPageType.NORMAL,
+                        0,
+                        CatalogChangeOperation.CREATE,
+                        gson.toJson(offer)),
+                new CatalogLiveMutationRequest(
+                        -1,
+                        7,
+                        "Import catalog changes",
+                        CatalogEntityType.PAGE,
+                        CatalogPageType.NORMAL,
+                        17,
+                        CatalogChangeOperation.UPDATE,
+                        gson.toJson(page(false)))));
+
+        assertEquals(5, result.revision());
+        assertEquals(42, result.changes().getFirst().entityId());
+        verify(connection, org.mockito.Mockito.times(1)).commit();
+        verify(journal)
+                .append(
+                        eq(connection),
+                        eq(ACTIVE_VERSION_ID),
+                        eq(5L),
+                        eq(7),
+                        eq("Import catalog changes"),
+                        eq(CatalogChangeSource.UI),
+                        org.mockito.ArgumentMatchers.argThat(changes -> changes.size() == 2));
+    }
+
+    @Test
+    void validatesAgainstTheLockedLiveSnapshotBeforeWriting() throws Exception {
+        CatalogLiveMutationRequest request = new CatalogLiveMutationRequest(
+                -1,
+                7,
+                "Delete page",
+                CatalogEntityType.PAGE,
+                CatalogPageType.NORMAL,
+                17,
+                CatalogChangeOperation.DELETE,
+                null);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> service.apply(request, liveSnapshot -> {
+                    if (liveSnapshot.offers().stream()
+                            .anyMatch(offer -> offer.catalogType() == CatalogPageType.NORMAL && offer.pageId() == 17)) {
+                        throw new IllegalArgumentException("Page still contains offers");
+                    }
+                    throw new IllegalArgumentException("Page still contains child pages");
+                }));
+
+        verify(live, org.mockito.Mockito.never()).apply(any(), any());
+        verify(connection).rollback();
+    }
+
+    @Test
+    void loadsTheActiveRecoverySnapshotForEditorReads() throws Exception {
+        CatalogVersionSnapshot snapshot = service.loadLive();
+
+        assertEquals(ACTIVE_VERSION_ID, snapshot.version().id());
+        assertEquals(
+                "Page 17",
+                snapshot.page(CatalogPageType.NORMAL, 17).orElseThrow().caption());
+        verify(connection).commit();
+    }
+
+    @Test
+    void offerPatchUsesTheLockedLiveOfferAndChangesOnlyRequestedFields() throws Exception {
+        CatalogOfferSnapshot offer = new CatalogOfferSnapshot(
+                CatalogPageType.NORMAL, 42, "12", 17, "chair", 3, 0, 0, 1, 0, 2, -1, 0, "", true, false);
+        when(versions.loadSnapshot(connection, ACTIVE_VERSION_ID))
+                .thenReturn(new CatalogVersionSnapshot(
+                        new CatalogVersion(
+                                ACTIVE_VERSION_ID,
+                                CatalogVersionStatus.PUBLISHED,
+                                null,
+                                4,
+                                "Live",
+                                1,
+                                Instant.EPOCH,
+                                1,
+                                Instant.EPOCH),
+                        List.of(page(true)),
+                        List.of(offer)));
+        when(versions.loadOffer(connection, ACTIVE_VERSION_ID, CatalogPageType.NORMAL, 42))
+                .thenReturn(Optional.of(offer));
+
+        service.updateOffer(
+                7,
+                "Reorder offer",
+                CatalogPageType.NORMAL,
+                42,
+                current -> CatalogSnapshotPatch.setOfferOrder(current, 9),
+                CatalogChangeOperation.MOVE);
+
+        ArgumentCaptor<CatalogChangeEntry> change = ArgumentCaptor.forClass(CatalogChangeEntry.class);
+        verify(live).apply(eq(connection), change.capture());
+        CatalogOfferSnapshot committed = gson.fromJson(change.getValue().afterJson(), CatalogOfferSnapshot.class);
+        assertEquals("chair", committed.catalogName());
+        assertEquals(9, committed.orderNumber());
     }
 
     private static CatalogPageSnapshot page(boolean visible) {

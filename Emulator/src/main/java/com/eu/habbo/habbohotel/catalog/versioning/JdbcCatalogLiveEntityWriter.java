@@ -30,6 +30,18 @@ public final class JdbcCatalogLiveEntityWriter implements CatalogLiveEntityWrite
             + "enabled=VALUES(enabled),page_headline=VALUES(page_headline),page_teaser=VALUES(page_teaser),"
             + "page_special=VALUES(page_special),page_text1=VALUES(page_text1),page_text2=VALUES(page_text2),"
             + "page_text_details=VALUES(page_text_details),page_text_teaser=VALUES(page_text_teaser)";
+    static final String UPSERT_NORMAL_OFFER_SQL = "INSERT INTO catalog_items "
+            + "(id,item_ids,page_id,catalog_name,cost_credits,cost_points,points_type,amount,limited_stack,"
+            + "order_number,offer_id,song_id,extradata,have_offer,club_only) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
+            + "ON DUPLICATE KEY UPDATE item_ids=VALUES(item_ids),page_id=VALUES(page_id),"
+            + "catalog_name=VALUES(catalog_name),cost_credits=VALUES(cost_credits),cost_points=VALUES(cost_points),"
+            + "points_type=VALUES(points_type),amount=VALUES(amount),limited_stack=VALUES(limited_stack),"
+            + "order_number=VALUES(order_number),offer_id=VALUES(offer_id),song_id=VALUES(song_id),"
+            + "extradata=VALUES(extradata),have_offer=VALUES(have_offer),club_only=VALUES(club_only)";
+    static final String UPSERT_BUILDER_OFFER_SQL = "INSERT INTO catalog_items_bc "
+            + "(id,item_ids,page_id,catalog_name,order_number,extradata) VALUES (?,?,?,?,?,?) "
+            + "ON DUPLICATE KEY UPDATE item_ids=VALUES(item_ids),page_id=VALUES(page_id),"
+            + "catalog_name=VALUES(catalog_name),order_number=VALUES(order_number),extradata=VALUES(extradata)";
 
     private final Gson gson;
 
@@ -41,11 +53,17 @@ public final class JdbcCatalogLiveEntityWriter implements CatalogLiveEntityWrite
     public void apply(Connection connection, CatalogChangeEntry change) throws SQLException {
         Objects.requireNonNull(connection, "connection");
         Objects.requireNonNull(change, "change");
-        if (change.entityType() != CatalogEntityType.PAGE) {
-            throw new UnsupportedOperationException("Live offer mutations are not connected yet");
-        }
         if (change.afterJson() == null) {
-            deletePage(connection, change);
+            delete(connection, change);
+            return;
+        }
+        if (change.entityType() == CatalogEntityType.OFFER) {
+            CatalogOfferSnapshot offer = gson.fromJson(change.afterJson(), CatalogOfferSnapshot.class);
+            if (offer.offerId() != change.entityId() || offer.catalogType() != change.catalogType()) {
+                throw new IllegalArgumentException("Offer JSON identity does not match the live change");
+            }
+            if (offer.catalogType() == CatalogPageType.BUILDER) upsertBuilderOffer(connection, offer);
+            else upsertNormalOffer(connection, offer);
             return;
         }
         CatalogPageSnapshot page = gson.fromJson(change.afterJson(), CatalogPageSnapshot.class);
@@ -56,11 +74,17 @@ public final class JdbcCatalogLiveEntityWriter implements CatalogLiveEntityWrite
         else upsertNormalPage(connection, page);
     }
 
-    private static void deletePage(Connection connection, CatalogChangeEntry change) throws SQLException {
-        String table = change.catalogType() == CatalogPageType.BUILDER ? "catalog_pages_bc" : "catalog_pages";
+    private static void delete(Connection connection, CatalogChangeEntry change) throws SQLException {
+        String table =
+                switch (change.entityType()) {
+                    case PAGE -> change.catalogType() == CatalogPageType.BUILDER ? "catalog_pages_bc" : "catalog_pages";
+                    case OFFER ->
+                        change.catalogType() == CatalogPageType.BUILDER ? "catalog_items_bc" : "catalog_items";
+                };
         try (PreparedStatement statement = connection.prepareStatement("DELETE FROM " + table + " WHERE id = ?")) {
             statement.setInt(1, change.entityId());
-            if (statement.executeUpdate() != 1) throw new SQLException("Live catalog page disappeared before deletion");
+            if (statement.executeUpdate() != 1)
+                throw new SQLException("Live catalog entity disappeared before deletion");
         }
     }
 
@@ -112,6 +136,39 @@ public final class JdbcCatalogLiveEntityWriter implements CatalogLiveEntityWrite
             statement.setString(15, page.pageTextDetails());
             statement.setString(16, page.pageTextTeaser());
             if (statement.executeUpdate() == 0) throw new SQLException("Live builder page upsert changed no row");
+        }
+    }
+
+    private static void upsertNormalOffer(Connection connection, CatalogOfferSnapshot offer) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(UPSERT_NORMAL_OFFER_SQL)) {
+            statement.setInt(1, offer.offerId());
+            statement.setString(2, offer.itemIds());
+            statement.setInt(3, offer.pageId());
+            statement.setString(4, offer.catalogName());
+            statement.setInt(5, offer.costCredits());
+            statement.setInt(6, offer.costPoints());
+            statement.setInt(7, offer.pointsType());
+            statement.setInt(8, offer.amount());
+            statement.setInt(9, offer.limitedStack());
+            statement.setInt(10, offer.orderNumber());
+            statement.setInt(11, offer.offerIdClient());
+            statement.setInt(12, offer.songId());
+            statement.setString(13, offer.extradata());
+            statement.setBoolean(14, offer.haveOffer());
+            statement.setBoolean(15, offer.clubOnly());
+            if (statement.executeUpdate() == 0) throw new SQLException("Live catalog offer upsert changed no row");
+        }
+    }
+
+    private static void upsertBuilderOffer(Connection connection, CatalogOfferSnapshot offer) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(UPSERT_BUILDER_OFFER_SQL)) {
+            statement.setInt(1, offer.offerId());
+            statement.setString(2, offer.itemIds());
+            statement.setInt(3, offer.pageId());
+            statement.setString(4, offer.catalogName());
+            statement.setInt(5, offer.orderNumber());
+            statement.setString(6, offer.extradata());
+            if (statement.executeUpdate() == 0) throw new SQLException("Live builder offer upsert changed no row");
         }
     }
 }

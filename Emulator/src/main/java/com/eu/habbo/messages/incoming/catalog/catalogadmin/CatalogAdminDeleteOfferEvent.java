@@ -2,9 +2,7 @@ package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogChangeOperation;
-import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftMutationRequest;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogEntityType;
-import com.eu.habbo.habbohotel.catalog.versioning.CatalogLockKey;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioMutationEnvelope;
@@ -30,13 +28,6 @@ public class CatalogAdminDeleteOfferEvent extends MessageHandler {
         }
 
         CatalogStudioMutationEnvelope envelope = CatalogStudioRequestParser.parseMutationEnvelope(this.packet);
-        var mutations = CatalogStudioRuntime.services().mutations();
-        var draft = mutations.loadDraft(envelope.draftVersionId(), envelope.expectedRevision());
-        if (draft.offer(pageType, offerId).isEmpty()) {
-            this.client.sendResponse(
-                    new CatalogAdminResultComposer(false, "Offer not found in shared draft: " + offerId));
-            return;
-        }
         int limitedSells = CatalogStudioRuntime.services()
                 .operationalOffers()
                 .findLimitedSells(offerId)
@@ -46,18 +37,23 @@ public class CatalogAdminDeleteOfferEvent extends MessageHandler {
                     new CatalogAdminResultComposer(false, "Limited offers with completed sales cannot be deleted"));
             return;
         }
-        var result = mutations.apply(new CatalogDraftMutationRequest(
-                envelope.draftVersionId(),
-                envelope.expectedRevision(),
-                this.client.getHabbo().getHabboInfo().getId(),
-                new CatalogLockKey(CatalogEntityType.OFFER, pageType, offerId),
-                envelope.lockToken(),
-                envelope.summary(),
-                CatalogEntityType.OFFER,
-                offerId,
-                CatalogChangeOperation.DELETE,
-                null));
-        this.client.sendResponse(new CatalogAdminResultComposer(
-                true, "Offer deleted from shared draft at revision " + result.revision()));
+        var result = CatalogStudioRuntime.services()
+                .liveMutations()
+                .apply(
+                        CatalogAdminLiveRequest.of(
+                                envelope,
+                                this.client.getHabbo().getHabboInfo().getId(),
+                                CatalogEntityType.OFFER,
+                                pageType,
+                                offerId,
+                                CatalogChangeOperation.DELETE,
+                                null),
+                        live -> {
+                            if (live.offer(pageType, offerId).isEmpty()) {
+                                throw new IllegalArgumentException("Live catalog offer not found: " + offerId);
+                            }
+                        });
+        this.client.sendResponse(
+                new CatalogAdminResultComposer(true, "Offer deleted live at revision " + result.revision()));
     }
 }

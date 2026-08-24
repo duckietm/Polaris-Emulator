@@ -134,8 +134,13 @@ public class SoundboardManager {
             return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.INVALID_NAME);
         }
 
+        String classname = command.classname() == null ? "" : command.classname().trim().toLowerCase();
         String url = command.url() == null ? "" : command.url().trim();
-        if (!SoundboardUrlPolicy.isAllowed(url)) {
+
+        // A pad resolves through the asset manifest (classname) or through an
+        // explicit URL for clips hosted outside the asset tree. One or the
+        // other, otherwise the client has nothing to play.
+        if (!SoundboardClassnamePolicy.isAddressable(classname, url)) {
             return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.INVALID_URL);
         }
 
@@ -153,7 +158,8 @@ public class SoundboardManager {
 
         SoundboardCatalogResult result = this.repository.upsert(
                 staffUserId,
-                new SoundboardCatalogCommand(command.id(), name, url, command.minRank(), command.enabled()));
+                new SoundboardCatalogCommand(
+                        command.id(), name, classname, url, command.minRank(), command.enabled()));
         if (result.successful()) {
             this.reload();
         }

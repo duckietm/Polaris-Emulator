@@ -35,19 +35,19 @@ class SoundboardCatalogPolicyTest {
 
         assertEquals(
                 INVALID_NAME,
-                manager.upsert(42, new SoundboardCatalogCommand(0, " ", "/bell.mp3", 1, true))
+                manager.upsert(42, new SoundboardCatalogCommand(0, " ", "bell", "/bell.mp3", 1, true))
                         .code());
         assertEquals(
                 INVALID_NAME,
-                manager.upsert(42, new SoundboardCatalogCommand(0, "x".repeat(65), "/bell.mp3", 1, true))
+                manager.upsert(42, new SoundboardCatalogCommand(0, "x".repeat(65), "bell", "/bell.mp3", 1, true))
                         .code());
         assertEquals(
                 INVALID_URL,
-                manager.upsert(42, new SoundboardCatalogCommand(0, "Bell", "javascript:alert(1)", 1, true))
+                manager.upsert(42, new SoundboardCatalogCommand(0, "Bell", "", "javascript:alert(1)", 1, true))
                         .code());
         assertEquals(
                 INVALID_RANK,
-                manager.upsert(42, new SoundboardCatalogCommand(0, "Bell", "/bell.mp3", 6, true))
+                manager.upsert(42, new SoundboardCatalogCommand(0, "Bell", "bell", "/bell.mp3", 6, true))
                         .code());
 
         verify(repository, never()).upsert(org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.any());
@@ -56,8 +56,8 @@ class SoundboardCatalogPolicyTest {
     @Test
     void reorderMustContainEveryCatalogIdExactlyOnce() {
         SoundboardCatalogRepository repository = mock(SoundboardCatalogRepository.class);
-        SoundboardSound first = new SoundboardSound(1, "First", "/first.mp3", true, 10, 1);
-        SoundboardSound second = new SoundboardSound(2, "Second", "/second.mp3", true, 20, 1);
+        SoundboardSound first = new SoundboardSound(1, "First", "first", "/first.mp3", true, 10, 1);
+        SoundboardSound second = new SoundboardSound(2, "Second", "second", "/second.mp3", true, 20, 1);
         SoundboardManager manager =
                 new SoundboardManager(List.of(first, second), rankId -> 0, rankId -> true, repository);
 

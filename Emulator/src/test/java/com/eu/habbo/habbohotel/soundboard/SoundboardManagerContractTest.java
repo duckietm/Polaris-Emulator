@@ -15,8 +15,8 @@ import org.junit.jupiter.api.Test;
 class SoundboardManagerContractTest {
 
     private final SoundboardSound publicSound =
-            new SoundboardSound(7, "Campanella", "/sounds/soundboard/campanella.mp3", 1);
-    private final SoundboardSound staffSound = new SoundboardSound(8, "Staff", "/sounds/soundboard/staff.mp3", 5);
+            new SoundboardSound(7, "Campanella", "campanella", "/sounds/soundboard/campanella.mp3", 1);
+    private final SoundboardSound staffSound = new SoundboardSound(8, "Staff", "staff", "/sounds/soundboard/staff.mp3", 5);
     private final SoundboardManager manager =
             new SoundboardManager(List.of(this.publicSound, this.staffSound), rankId -> rankId == 5 ? 10 : -1);
 
@@ -53,7 +53,7 @@ class SoundboardManagerContractTest {
 
     @Test
     void keepsOrderedSoundsAndUsesTheFirstDuplicateIdForLookup() {
-        SoundboardSound duplicate = new SoundboardSound(this.publicSound.id, "Duplicate", "/sounds/duplicate.mp3", 1);
+        SoundboardSound duplicate = new SoundboardSound(this.publicSound.id, "Duplicate", "duplicate", "/sounds/duplicate.mp3", 1);
         SoundboardManager duplicateManager =
                 new SoundboardManager(List.of(this.publicSound, duplicate, this.staffSound), rankId -> 0);
 
@@ -65,7 +65,7 @@ class SoundboardManagerContractTest {
 
     @Test
     void disabledSoundsRemainInCatalogButCannotBePlayed() {
-        SoundboardSound disabled = new SoundboardSound(9, "Disabled", "/sounds/disabled.mp3", false, 5, 1);
+        SoundboardSound disabled = new SoundboardSound(9, "Disabled", "disabled", "/sounds/disabled.mp3", false, 5, 1);
         SoundboardManager catalogManager =
                 new SoundboardManager(List.of(this.publicSound, disabled), rankId -> 0, rankId -> true, null);
 
@@ -84,7 +84,7 @@ class SoundboardManagerContractTest {
                 .thenReturn(SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.PERSISTENCE_FAILURE));
 
         SoundboardCatalogResult result =
-                catalogManager.upsert(42, new SoundboardCatalogCommand(7, "Changed", "/changed.mp3", 1, true));
+                catalogManager.upsert(42, new SoundboardCatalogCommand(7, "Changed", "changed", "/changed.mp3", 1, true));
 
         assertEquals(SoundboardCatalogResult.Code.PERSISTENCE_FAILURE, result.code());
         assertSame(this.publicSound, catalogManager.getSound(this.publicSound.id));

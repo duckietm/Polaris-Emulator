@@ -8,19 +8,27 @@ import com.eu.habbo.messages.outgoing.Outgoing;
 public class SoundboardPlayComposer extends MessageComposer {
     private final int soundId;
     private final String url;
+    private final String classname;
     private final String soundName;
     private final int actorUserId;
     private final int actorRoomIndex;
     private final String username;
 
     public SoundboardPlayComposer(int soundId, String url, String username) {
-        this(soundId, url, "", 0, 0, username);
+        this(soundId, url, "", "", 0, 0, username);
     }
 
     public SoundboardPlayComposer(
-            int soundId, String url, String soundName, int actorUserId, int actorRoomIndex, String username) {
+            int soundId,
+            String url,
+            String classname,
+            String soundName,
+            int actorUserId,
+            int actorRoomIndex,
+            String username) {
         this.soundId = soundId;
         this.url = url != null ? url : "";
+        this.classname = classname != null ? classname : "";
         this.soundName = soundName != null ? soundName : "";
         this.actorUserId = actorUserId;
         this.actorRoomIndex = actorRoomIndex;
@@ -36,6 +44,8 @@ public class SoundboardPlayComposer extends MessageComposer {
         this.response.appendInt(this.actorUserId);
         this.response.appendInt(this.actorRoomIndex);
         this.response.appendString(this.username);
+        // Trailing field, same contract as the settings packet.
+        this.response.appendString(this.classname);
         return this.response;
     }
 }

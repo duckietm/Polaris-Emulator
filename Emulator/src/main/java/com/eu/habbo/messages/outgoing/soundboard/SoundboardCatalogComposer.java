@@ -25,6 +25,13 @@ public class SoundboardCatalogComposer extends MessageComposer {
             this.response.appendInt(sound.sortOrder);
             this.response.appendInt(sound.minRank);
         }
+
+        // Trailing block, same reasoning as the settings packet: management
+        // needs the classname to show which asset a pad points at, and to edit
+        // it without typing a URL.
+        for (SoundboardSound sound : this.sounds) {
+            this.response.appendString(sound.classname);
+        }
         return this.response;
     }
 }

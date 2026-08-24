@@ -51,6 +51,7 @@ public class SoundboardPlayEvent extends MessageHandler {
         room.sendComposer(new SoundboardPlayComposer(
                         sound.id,
                         sound.url,
+                        sound.classname,
                         sound.name,
                         habbo.getHabboInfo().getId(),
                         habbo.getRoomUnit().getId(),

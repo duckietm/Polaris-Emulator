@@ -33,6 +33,8 @@ public class WiredExtraVariableLevelUpSystem extends InteractionWiredExtra {
 
     private static final int DEFAULT_STEP_SIZE = 100;
     private static final int DEFAULT_MAX_LEVEL = 10;
+
+    public static final int MAX_LEVEL = 10_000;
     private static final int DEFAULT_FIRST_LEVEL_XP = 100;
     private static final int DEFAULT_INCREASE_FACTOR = 100;
     private static final int MAX_MANUAL_TEXT_LENGTH = 4096;
@@ -214,7 +216,7 @@ public class WiredExtraVariableLevelUpSystem extends InteractionWiredExtra {
     }
 
     private static int normalizeMaxLevel(int value) {
-        return Math.max(1, (value > 0) ? value : DEFAULT_MAX_LEVEL);
+        return Math.min(MAX_LEVEL, Math.max(1, (value > 0) ? value : DEFAULT_MAX_LEVEL));
     }
 
     private static String normalizeInterpolationText(String value) {

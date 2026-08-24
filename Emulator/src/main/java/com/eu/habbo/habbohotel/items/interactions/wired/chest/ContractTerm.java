@@ -5,16 +5,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * One PAY/RECEIVE term on a wired contract extra.
- * <p>
- * Wire encoding (v2, 5 ints/term): {@code [dir, kind, a, b, amount]} where
- * {@code kind=0} currency ({@code a=currencyType}, {@code b=0}),
- * {@code kind=1} furni ({@code a=wall?1:0}, {@code b=baseItemId}).
- * Legacy v1 (3 ints/term): {@code [dir, currencyType, amount]}.
- * Wall poster ids ride in the contract {@code stringParam} as {@code index=poster} pairs.
- * </p>
- */
 public class ContractTerm {
     public static final int DIR_PAY = 0;
     public static final int DIR_RECEIVE = 1;
@@ -78,7 +68,7 @@ public class ContractTerm {
         }
 
         int stride = detectStride(params, count);
-        List<String> posters = parsePosters(stringParam);
+        List<String> posters = parsePosters(stringParam, count);
 
         List<ContractTerm> terms = new ArrayList<>();
         for (int i = 0; i < count; i++) {
@@ -166,8 +156,8 @@ public class ContractTerm {
         return STRIDE_V1;
     }
 
-    private static List<String> parsePosters(String stringParam) {
-        List<String> posters = new ArrayList<>();
+    private static List<String> parsePosters(String stringParam, int count) {
+        List<String> posters = new ArrayList<>(Collections.nCopies(count, ""));
         if (stringParam == null || stringParam.isEmpty()) {
             return posters;
         }
@@ -181,11 +171,10 @@ public class ContractTerm {
             }
             try {
                 int index = Integer.parseInt(part.substring(0, eq).trim());
-                String poster = part.substring(eq + 1);
-                while (posters.size() <= index) {
-                    posters.add("");
+                if (index < 0 || index >= count) {
+                    continue;
                 }
-                posters.set(index, poster);
+                posters.set(index, part.substring(eq + 1));
             } catch (NumberFormatException ignored) {
                 WiredCompatibilityDiagnostics.record(
                         WiredCompatibilityDiagnostics.FailurePoint.CONTRACT_POSTER_INDEX, ignored);

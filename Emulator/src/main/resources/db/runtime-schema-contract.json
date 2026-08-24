@@ -126,7 +126,7 @@
     "session_recovery_tickets": ["consumed_at", "issued_at", "recoverable_until", "token_hash", "user_id"],
     "snowwar_arenas": ["created_at", "created_by", "id", "is_active", "is_official", "model_name", "name", "updated_at"],
     "snowwar_scores": ["matches", "score", "user_id", "week_start"],
-    "soundboard_sounds": ["enabled", "id", "min_rank", "name", "sort_order", "url"],
+    "soundboard_sounds": ["classname", "enabled", "id", "min_rank", "name", "sort_order", "url"],
     "soundtracks": ["author", "code", "id", "length", "name", "track"],
     "special_enables": ["effect_id", "min_rank"],
     "support_cfh_categories": ["id", "name_external", "name_internal"],

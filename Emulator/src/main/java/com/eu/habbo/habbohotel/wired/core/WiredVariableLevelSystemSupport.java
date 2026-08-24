@@ -49,10 +49,6 @@ public final class WiredVariableLevelSystemSupport {
         return null;
     }
 
-    /**
-     * Find the co-located derived-variable box (the level-up box OR any {@link WiredDerivedVariableBox},
-     * e.g. a quest box) for a base variable definition. At most one box per definition; first wins.
-     */
     public static InteractionWiredExtra getDerivedBox(Room room, InteractionWiredExtra definition) {
         if (room == null || definition == null || room.getRoomSpecialTypes() == null) {
             return null;
@@ -494,7 +490,7 @@ public final class WiredVariableLevelSystemSupport {
             Integer level = parseInteger(line.substring(0, separatorIndex));
             Integer xp = parseInteger(line.substring(separatorIndex + 1));
 
-            if (level == null || xp == null || level <= 0 || xp < 0) {
+            if (level == null || xp == null || level <= 0 || xp < 0 || level > WiredExtraVariableLevelUpSystem.MAX_LEVEL) {
                 continue;
             }
 

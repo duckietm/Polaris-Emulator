@@ -21,6 +21,7 @@ public final class WiredTextInputCaptureSupport {
     private static final int MATCH_EXACT = 1;
     private static final int MATCH_ALL_WORDS = 2;
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("#([^#]+)#");
+    private static final int MAX_TEMPLATE_PLACEHOLDERS = 8;
 
     private WiredTextInputCaptureSupport() {
     }
@@ -319,14 +320,29 @@ public final class WiredTextInputCaptureSupport {
         StringBuilder regex = new StringBuilder();
         List<String> placeholderNames = new ArrayList<>();
         int cursor = 0;
+        boolean unsafe = false;
 
         while (matcher.find()) {
+            if (matcher.start() == cursor && !placeholderNames.isEmpty()) {
+                unsafe = true;
+                break;
+            }
+
             regex.append(Pattern.quote(template.substring(cursor, matcher.start())));
             regex.append(hasPlaceholderAfter(template, matcher.end()) ? "(.+?)" : "(.+)");
 
             String placeholderName = matcher.group(1) != null ? matcher.group(1).trim().toLowerCase() : "";
             placeholderNames.add(placeholderName);
             cursor = matcher.end();
+
+            if (placeholderNames.size() > MAX_TEMPLATE_PLACEHOLDERS) {
+                unsafe = true;
+                break;
+            }
+        }
+
+        if (unsafe) {
+            return new TemplatePattern(Pattern.compile(Pattern.quote(template), Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE), new ArrayList<>());
         }
 
         regex.append(Pattern.quote(template.substring(cursor)));

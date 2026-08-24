@@ -71,7 +71,7 @@ class CatalogPagesListOfferIndexTest {
         GameEnvironment environment = mock(GameEnvironment.class);
         CatalogManager catalogManager = mock(CatalogManager.class);
         CatalogPage page = mock(CatalogPage.class);
-        int[] offers = new int[1005];
+        int[] offers = new int[4005];
         for (int index = 0; index < offers.length; index++) offers[index] = index + 1;
 
         when(environment.getCatalogManager()).thenReturn(catalogManager);
@@ -98,8 +98,8 @@ class CatalogPagesListOfferIndexTest {
             assertEquals(1, packet.readInt());
 
             skipNodeHeader(packet);
-            assertEquals(1000, packet.readInt());
-            for (int offerId = 1; offerId <= 1000; offerId++) assertEquals(offerId, packet.readInt());
+            assertEquals(4000, packet.readInt());
+            for (int offerId = 1; offerId <= 4000; offerId++) assertEquals(offerId, packet.readInt());
             assertEquals(0, packet.readInt());
 
             assertFalse(packet.readBoolean());

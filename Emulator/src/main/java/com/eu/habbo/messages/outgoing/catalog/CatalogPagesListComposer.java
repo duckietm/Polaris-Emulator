@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 public class CatalogPagesListComposer extends MessageComposer {
     private static final Logger LOGGER = LoggerFactory.getLogger(CatalogPagesListComposer.class);
 
-    private static final int MAX_OFFERS = 1000;
+    private static final int MAX_OFFERS = 4000;
     private static final int MAX_CHILDREN = 500;
     private static final int MAX_DEPTH = 20;
 

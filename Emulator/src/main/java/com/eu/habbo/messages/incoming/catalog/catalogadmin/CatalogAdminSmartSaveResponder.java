@@ -1,7 +1,6 @@
 package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogConcurrentModificationException;
-import com.eu.habbo.habbohotel.catalog.versioning.CatalogLockConflictException;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogSmartSaveResult;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogUndoConflictException;
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioMutationEnvelope;
@@ -38,7 +37,6 @@ final class CatalogAdminSmartSaveResponder {
                 switch (exception) {
                     case CatalogConcurrentModificationException ignored -> "CONFLICT";
                     case CatalogUndoConflictException ignored -> "CONFLICT";
-                    case CatalogLockConflictException ignored -> "LOCK_LOST";
                     default -> "VALIDATION_FAILED";
                 };
         String fieldErrors =

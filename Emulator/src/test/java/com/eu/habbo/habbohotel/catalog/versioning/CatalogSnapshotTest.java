@@ -78,14 +78,6 @@ class CatalogSnapshotTest {
     }
 
     @Test
-    void catalogLocksAreScopedByCatalogType() {
-        CatalogLockKey normal = new CatalogLockKey(CatalogEntityType.PAGE, CatalogPageType.NORMAL, 17);
-        CatalogLockKey builder = new CatalogLockKey(CatalogEntityType.PAGE, CatalogPageType.BUILDER, 17);
-
-        assertFalse(normal.equals(builder));
-    }
-
-    @Test
     void preservesLegacyNegativePageOrder() {
         CatalogPageSnapshot page = page(CatalogPageType.NORMAL, 96, -1);
 

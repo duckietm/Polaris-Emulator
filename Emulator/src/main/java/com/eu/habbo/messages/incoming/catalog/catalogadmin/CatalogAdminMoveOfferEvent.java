@@ -2,9 +2,6 @@ package com.eu.habbo.messages.incoming.catalog.catalogadmin;
 
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogChangeOperation;
-import com.eu.habbo.habbohotel.catalog.versioning.CatalogDraftMutationRequest;
-import com.eu.habbo.habbohotel.catalog.versioning.CatalogEntityType;
-import com.eu.habbo.habbohotel.catalog.versioning.CatalogLockKey;
 import com.eu.habbo.habbohotel.catalog.versioning.CatalogSnapshotPatch;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -12,7 +9,6 @@ import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioM
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioRequestParser;
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioRuntime;
 import com.eu.habbo.messages.outgoing.catalog.catalogadmin.CatalogAdminResultComposer;
-import com.google.gson.Gson;
 
 public class CatalogAdminMoveOfferEvent extends MessageHandler {
 
@@ -35,26 +31,19 @@ public class CatalogAdminMoveOfferEvent extends MessageHandler {
         if (orderNumber < 0) orderNumber = 0;
 
         CatalogStudioMutationEnvelope envelope = CatalogStudioRequestParser.parseMutationEnvelope(this.packet);
-        var mutations = CatalogStudioRuntime.services().mutations();
-        var draft = mutations.loadDraft(envelope.draftVersionId(), envelope.expectedRevision());
-        var offer = draft.offer(pageType, offerId).orElse(null);
-        if (offer == null) {
-            this.client.sendResponse(
-                    new CatalogAdminResultComposer(false, "Offer not found in shared draft: " + offerId));
-            return;
-        }
-        var result = mutations.apply(new CatalogDraftMutationRequest(
-                envelope.draftVersionId(),
-                envelope.expectedRevision(),
-                this.client.getHabbo().getHabboInfo().getId(),
-                new CatalogLockKey(CatalogEntityType.OFFER, pageType, offerId),
-                envelope.lockToken(),
-                envelope.summary(),
-                CatalogEntityType.OFFER,
-                offerId,
-                CatalogChangeOperation.MOVE,
-                new Gson().toJson(CatalogSnapshotPatch.setOfferOrder(offer, orderNumber))));
-        this.client.sendResponse(new CatalogAdminResultComposer(
-                true, "Offer reordered in shared draft at revision " + result.revision()));
+        int targetOrderNumber = orderNumber;
+        var result = CatalogStudioRuntime.services()
+                .liveMutations()
+                .updateOffer(
+                        envelope.expectedRevision(),
+                        envelope.operationId(),
+                        this.client.getHabbo().getHabboInfo().getId(),
+                        envelope.summary(),
+                        pageType,
+                        offerId,
+                        offer -> CatalogSnapshotPatch.setOfferOrder(offer, targetOrderNumber),
+                        CatalogChangeOperation.MOVE);
+        this.client.sendResponse(
+                new CatalogAdminResultComposer(true, "Offer reordered live at revision " + result.revision()));
     }
 }

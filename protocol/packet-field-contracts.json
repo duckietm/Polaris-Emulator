@@ -19968,54 +19968,6 @@
       "reason": "Java analyzer: Data-dependent packet operations in ForStmt inside handle; TypeScript analyzer: Outgoing message array _data is mutated with push"
     },
     {
-      "name": "CATALOG_STUDIO_ACQUIRE_LOCK",
-      "direction": "client_to_server",
-      "header": 10068,
-      "java": {
-        "symbol": "CatalogStudioAcquireLockEvent",
-        "className": "CatalogStudioAcquireLockEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioAcquireLockEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_ACQUIRE_LOCK",
-        "className": "CatalogStudioAcquireLockComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioAcquireLockComposer.ts"
-      },
-      "reason": "Java analyzer: Packet fields delegated to external reader parseAcquire inside handle"
-    },
-    {
-      "name": "CATALOG_STUDIO_RENEW_LOCK",
-      "direction": "client_to_server",
-      "header": 10069,
-      "java": {
-        "symbol": "CatalogStudioRenewLockEvent",
-        "className": "CatalogStudioRenewLockEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioRenewLockEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_RENEW_LOCK",
-        "className": "CatalogStudioRenewLockComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioRenewLockComposer.ts"
-      },
-      "reason": "Java analyzer: Packet fields delegated to external reader parseTokenLock inside handle"
-    },
-    {
-      "name": "CATALOG_STUDIO_RELEASE_LOCK",
-      "direction": "client_to_server",
-      "header": 10070,
-      "java": {
-        "symbol": "CatalogStudioReleaseLockEvent",
-        "className": "CatalogStudioReleaseLockEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioReleaseLockEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_RELEASE_LOCK",
-        "className": "CatalogStudioReleaseLockComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioReleaseLockComposer.ts"
-      },
-      "reason": "Java analyzer: Packet fields delegated to external reader parseTokenLock inside handle"
-    },
-    {
       "name": "CATALOG_STUDIO_LOAD_HISTORY",
       "direction": "client_to_server",
       "header": 10071,
@@ -20064,70 +20016,6 @@
       "reason": "Java analyzer: Packet fields delegated to external reader parseRevision inside handle"
     },
     {
-      "name": "CATALOG_STUDIO_PUBLISH",
-      "direction": "client_to_server",
-      "header": 10074,
-      "java": {
-        "symbol": "CatalogStudioPublishEvent",
-        "className": "CatalogStudioPublishEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioPublishEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_PUBLISH",
-        "className": "CatalogStudioPublishComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioPublishComposer.ts"
-      },
-      "reason": "Java analyzer: Packet fields delegated to external reader parseRevision inside handle"
-    },
-    {
-      "name": "CATALOG_STUDIO_DISCARD",
-      "direction": "client_to_server",
-      "header": 10075,
-      "java": {
-        "symbol": "CatalogStudioDiscardEvent",
-        "className": "CatalogStudioDiscardEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioDiscardEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_DISCARD",
-        "className": "CatalogStudioDiscardComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioDiscardComposer.ts"
-      },
-      "reason": "Java analyzer: Packet fields delegated to external reader parseRevision inside handle"
-    },
-    {
-      "name": "CATALOG_STUDIO_RESTORE",
-      "direction": "client_to_server",
-      "header": 10076,
-      "java": {
-        "symbol": "CatalogStudioRestoreEvent",
-        "className": "CatalogStudioRestoreEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioRestoreEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_RESTORE",
-        "className": "CatalogStudioRestoreComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioRestoreComposer.ts"
-      },
-      "reason": "Java analyzer: Packet fields delegated to external reader parseRestore inside handle"
-    },
-    {
-      "name": "CATALOG_STUDIO_PREVIEW",
-      "direction": "client_to_server",
-      "header": 10077,
-      "java": {
-        "symbol": "CatalogStudioPreviewEvent",
-        "className": "CatalogStudioPreviewEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/catalogadmin/studio/CatalogStudioPreviewEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_PREVIEW",
-        "className": "CatalogStudioPreviewComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioPreviewComposer.ts"
-      },
-      "reason": "Dynamic currency map is serialized as a count followed by type and balance pairs"
-    },
-    {
       "name": "CATALOG_STUDIO_EXPORT",
       "direction": "client_to_server",
       "header": 10078,
@@ -20174,22 +20062,6 @@
         "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioDocumentApplyComposer.ts"
       },
       "reason": "Catalog Studio document protocol is verified by dedicated round-trip packet tests"
-    },
-    {
-      "name": "CATALOG_STUDIO_PREVIEW",
-      "direction": "server_to_client",
-      "header": 10077,
-      "java": {
-        "symbol": "CatalogStudioPreviewComposer",
-        "className": "CatalogStudioPreviewComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioPreviewComposer.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_PREVIEW",
-        "className": "CatalogStudioPreviewMessageParser",
-        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioPreviewMessageParser.ts"
-      },
-      "reason": "Preview pages and offers are transported as typed JSON snapshot fields"
     },
     {
       "name": "CATALOG_STUDIO_DOCUMENT_RESULT",
@@ -23888,54 +23760,6 @@
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal"
     },
     {
-      "name": "CATALOG_STUDIO_ACQUIRE_LOCK",
-      "direction": "server_to_client",
-      "header": 10068,
-      "java": {
-        "symbol": "CatalogStudioAcquireLockComposer",
-        "className": "CatalogStudioAcquireLockComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioAcquireLockComposer.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_ACQUIRE_LOCK",
-        "className": "CatalogStudioLockMessageParser",
-        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioLockMessageParser.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, boolean, string, string, int, string, int, int, string, string, string]"
-    },
-    {
-      "name": "CATALOG_STUDIO_RENEW_LOCK",
-      "direction": "server_to_client",
-      "header": 10069,
-      "java": {
-        "symbol": "CatalogStudioRenewLockComposer",
-        "className": "CatalogStudioRenewLockComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioRenewLockComposer.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_RENEW_LOCK",
-        "className": "CatalogStudioLockMessageParser",
-        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioLockMessageParser.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, boolean, string, string, int, string, int, int, string, string, string]"
-    },
-    {
-      "name": "CATALOG_STUDIO_RELEASE_LOCK",
-      "direction": "server_to_client",
-      "header": 10070,
-      "java": {
-        "symbol": "CatalogStudioReleaseLockComposer",
-        "className": "CatalogStudioReleaseLockComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioReleaseLockComposer.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_RELEASE_LOCK",
-        "className": "CatalogStudioOperationMessageParser",
-        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioOperationMessageParser.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, boolean, string, string, int, int, string, int]"
-    },
-    {
       "name": "CATALOG_STUDIO_LOAD_HISTORY",
       "direction": "server_to_client",
       "header": 10071,
@@ -23982,54 +23806,6 @@
         "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioValidationMessageParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal"
-    },
-    {
-      "name": "CATALOG_STUDIO_PUBLISH",
-      "direction": "server_to_client",
-      "header": 10074,
-      "java": {
-        "symbol": "CatalogStudioPublishComposer",
-        "className": "CatalogStudioPublishComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioPublishComposer.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_PUBLISH",
-        "className": "CatalogStudioOperationMessageParser",
-        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioOperationMessageParser.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, boolean, string, string, int, int, string, int]"
-    },
-    {
-      "name": "CATALOG_STUDIO_DISCARD",
-      "direction": "server_to_client",
-      "header": 10075,
-      "java": {
-        "symbol": "CatalogStudioDiscardComposer",
-        "className": "CatalogStudioDiscardComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioDiscardComposer.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_DISCARD",
-        "className": "CatalogStudioOperationMessageParser",
-        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioOperationMessageParser.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, boolean, string, string, int, int, string, int]"
-    },
-    {
-      "name": "CATALOG_STUDIO_RESTORE",
-      "direction": "server_to_client",
-      "header": 10076,
-      "java": {
-        "symbol": "CatalogStudioRestoreComposer",
-        "className": "CatalogStudioRestoreComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioRestoreComposer.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_RESTORE",
-        "className": "CatalogStudioOperationMessageParser",
-        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioOperationMessageParser.ts"
-      },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, boolean, string, string, int, int, string, int]"
     },
     {
       "name": "CATALOG_PRODUCT_METADATA_REQUEST",

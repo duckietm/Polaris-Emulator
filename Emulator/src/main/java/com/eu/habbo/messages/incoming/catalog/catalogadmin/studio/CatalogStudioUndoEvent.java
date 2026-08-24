@@ -10,8 +10,8 @@ public final class CatalogStudioUndoEvent extends CatalogStudioEvent {
         if (!authorize()) return;
         CatalogStudioUndoRequest request = CatalogStudioRequestParser.parseUndo(this.packet);
         CatalogChangeGroup group = studio().queries().loadChangeGroup(request.groupId());
-        long revision = studio().undo()
-                .undo(request.draftVersionId(), request.expectedRevision(), request.groupId(), actorId());
+        long revision = studio().liveUndo()
+                .undo(request.groupId(), actorId(), request.expectedRevision(), request.operationId());
         this.client.sendResponse(new CatalogStudioUndoComposer(
                 request.operationId(),
                 true,

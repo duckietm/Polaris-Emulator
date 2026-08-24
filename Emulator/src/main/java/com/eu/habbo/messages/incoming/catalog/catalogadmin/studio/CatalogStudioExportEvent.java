@@ -11,12 +11,12 @@ public final class CatalogStudioExportEvent extends CatalogStudioEvent {
         long draftVersionId = this.packet.readInt();
         long expectedRevision = this.packet.readInt();
         String format = this.packet.readString();
-        CatalogVersionSnapshot draft = studio().queries().loadDraftSnapshot(draftVersionId);
-        if (draft.version().revision() != expectedRevision) {
+        CatalogVersionSnapshot live = studio().queries().loadLiveSnapshot(draftVersionId);
+        if (live.version().revision() != expectedRevision) {
             throw new IllegalArgumentException("Catalog export revision is stale");
         }
-        String document = studio().documents().export(draft, format);
+        String document = studio().documents().export(live, format);
         this.client.sendResponse(new CatalogStudioDocumentResultComposer(
-                operationId, true, "EXPORTED", "Draft exported", expectedRevision, format, document, "", 0));
+                operationId, true, "EXPORTED", "Live catalog exported", expectedRevision, format, document, "", 0));
     }
 }

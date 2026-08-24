@@ -4,8 +4,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WiredHighscoreDataEntry {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WiredHighscoreDataEntry.class);
+
     private final int itemId;
     private final List<Integer> userIds;
     private final int score;
@@ -39,6 +43,7 @@ public class WiredHighscoreDataEntry {
             return ids;
         }
 
+        int skipped = 0;
         for (String token : raw.split(",")) {
             String trimmed = token.trim();
             if (trimmed.isEmpty()) {
@@ -46,9 +51,17 @@ public class WiredHighscoreDataEntry {
             }
             try {
                 ids.add(Integer.valueOf(trimmed));
-            } catch (NumberFormatException ignored) {
-                // skip the malformed id rather than poisoning the whole load
+            } catch (NumberFormatException malformed) {
+                // Skip the malformed id rather than poisoning the whole load, but
+                // count it so the row is not discarded in complete silence.
+                skipped++;
             }
+        }
+
+        if (skipped > 0) {
+            // Bounded and redacted on purpose: one line per row, counts only, so a
+            // corrupted column cannot flood the log or echo its contents back.
+            LOGGER.debug("Skipped {} malformed highscore user id(s) while loading a wired highscore row", skipped);
         }
 
         return ids;

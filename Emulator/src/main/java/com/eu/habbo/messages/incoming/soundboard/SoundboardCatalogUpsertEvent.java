@@ -33,8 +33,7 @@ public class SoundboardCatalogUpsertEvent extends MessageHandler {
         // simply does not send it, and keeps addressing pads by URL.
         String classname = this.packet.bytesAvailable() > 0 ? this.packet.readString() : "";
 
-        SoundboardCatalogCommand command =
-                new SoundboardCatalogCommand(id, name, classname, url, minRank, enabled);
+        SoundboardCatalogCommand command = new SoundboardCatalogCommand(id, name, classname, url, minRank, enabled);
         SoundboardManager manager = Emulator.getGameEnvironment().getSoundboardManager();
         SoundboardCatalogResult result = manager.upsert(habbo.getHabboInfo().getId(), command);
         this.sendResult(result);

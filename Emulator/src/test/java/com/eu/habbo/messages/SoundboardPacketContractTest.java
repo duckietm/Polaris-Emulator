@@ -26,7 +26,8 @@ class SoundboardPacketContractTest {
 
     @Test
     void settingsCarryPersonalizedCooldownBeforeTheFilteredSounds() {
-        SoundboardSound bell = new SoundboardSound(7, "Campanella", "campanella", "/sounds/soundboard/campanella.mp3", 1);
+        SoundboardSound bell =
+                new SoundboardSound(7, "Campanella", "campanella", "/sounds/soundboard/campanella.mp3", 1);
         ByteBuf packet = new SoundboardSettingsComposer(true, 60, List.of(bell))
                 .compose()
                 .get();

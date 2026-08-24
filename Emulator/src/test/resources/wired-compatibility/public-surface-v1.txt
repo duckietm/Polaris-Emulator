@@ -3784,6 +3784,7 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraV
 
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLevelUpSystem extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLevelUpSystem#CODE:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLevelUpSystem#MAX_LEVEL:int
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLevelUpSystem#MODE_EXPONENTIAL:int
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLevelUpSystem#MODE_LINEAR:int
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLevelUpSystem#MODE_MANUAL:int
@@ -5397,6 +5398,7 @@ METHOD public com.eu.habbo.habbohotel.wired.core.WiredEngine#clearRoomBan(int):v
 METHOD public com.eu.habbo.habbohotel.wired.core.WiredEngine#clearRoomDiagnostics(int):void throws -
 METHOD public com.eu.habbo.habbohotel.wired.core.WiredEngine#clearRoomDiagnosticsLogs(int):void throws -
 METHOD public com.eu.habbo.habbohotel.wired.core.WiredEngine#clearRoomExecutionCaches(int):void throws -
+METHOD public com.eu.habbo.habbohotel.wired.core.WiredEngine#clearRoomIndexCaches(int):void throws -
 METHOD public com.eu.habbo.habbohotel.wired.core.WiredEngine#clearRoomRateLimiters(int):void throws -
 METHOD public com.eu.habbo.habbohotel.wired.core.WiredEngine#clearRoomRecursionDepth(int):void throws -
 METHOD public com.eu.habbo.habbohotel.wired.core.WiredEngine#clearRoomSourceStackCache(int):void throws -

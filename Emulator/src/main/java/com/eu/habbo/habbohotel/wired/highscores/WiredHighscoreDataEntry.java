@@ -43,6 +43,7 @@ public class WiredHighscoreDataEntry {
             return ids;
         }
 
+        int skipped = 0;
         for (String token : raw.split(",")) {
             String trimmed = token.trim();
             if (trimmed.isEmpty()) {
@@ -51,10 +52,16 @@ public class WiredHighscoreDataEntry {
             try {
                 ids.add(Integer.valueOf(trimmed));
             } catch (NumberFormatException malformed) {
-                // Skip the malformed id rather than poisoning the whole load,
-                // but emit a bounded diagnostic (length only, value redacted).
-                LOGGER.warn("Skipping malformed highscore user id (length {})", trimmed.length());
+                // Skip the malformed id rather than poisoning the whole load, but
+                // count it so the row is not discarded in complete silence.
+                skipped++;
             }
+        }
+
+        if (skipped > 0) {
+            // Bounded and redacted on purpose: one line per row, counts only, so a
+            // corrupted column cannot flood the log or echo its contents back.
+            LOGGER.debug("Skipped {} malformed highscore user id(s) while loading a wired highscore row", skipped);
         }
 
         return ids;

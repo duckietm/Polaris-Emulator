@@ -13,7 +13,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashSet;
@@ -45,7 +44,8 @@ public class WiredConditionCounterTimeMatches extends InteractionWiredCondition 
         this.items = new LinkedHashSet<>();
     }
 
-    public WiredConditionCounterTimeMatches(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredConditionCounterTimeMatches(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.items = new LinkedHashSet<>();
     }
@@ -101,14 +101,14 @@ public class WiredConditionCounterTimeMatches extends InteractionWiredCondition 
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-                this.comparison,
-                this.minutes,
-                this.halfSecondSteps,
-                this.furniSource,
-                this.quantifier,
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList())
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.comparison,
+                        this.minutes,
+                        this.halfSecondSteps,
+                        this.furniSource,
+                        this.quantifier,
+                        this.items.stream().map(HabboItem::getId).collect(Collectors.toList())));
     }
 
     @Override
@@ -313,7 +313,13 @@ public class WiredConditionCounterTimeMatches extends InteractionWiredCondition 
         int quantifier;
         List<Integer> itemIds;
 
-        public JsonData(int comparison, int minutes, int halfSecondSteps, int furniSource, int quantifier, List<Integer> itemIds) {
+        public JsonData(
+                int comparison,
+                int minutes,
+                int halfSecondSteps,
+                int furniSource,
+                int quantifier,
+                List<Integer> itemIds) {
             this.comparison = comparison;
             this.minutes = minutes;
             this.halfSecondSteps = halfSecondSteps;

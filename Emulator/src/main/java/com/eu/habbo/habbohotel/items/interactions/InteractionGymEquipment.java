@@ -5,9 +5,12 @@ import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.items.ICycleable;
 import com.eu.habbo.habbohotel.items.Item;
-import com.eu.habbo.habbohotel.rooms.*;
+import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomTile;
+import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.RoomUnitType;
+import com.eu.habbo.habbohotel.rooms.RoomUserRotation;
 import com.eu.habbo.habbohotel.users.Habbo;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -19,13 +22,17 @@ public class InteractionGymEquipment extends InteractionEffectTile implements IC
         super(set, baseItem);
     }
 
-    public InteractionGymEquipment(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionGymEquipment(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
     @Override
     public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
-        return this.roomUnitId == -1 && super.canWalkOn(roomUnit, room, objects) && (roomUnit.getRoomUnitType().equals(RoomUnitType.USER) || roomUnit.getRoomUnitType().equals(RoomUnitType.BOT));
+        return this.roomUnitId == -1
+                && super.canWalkOn(roomUnit, room, objects)
+                && (roomUnit.getRoomUnitType().equals(RoomUnitType.USER)
+                        || roomUnit.getRoomUnitType().equals(RoomUnitType.BOT));
     }
 
     @Override
@@ -65,11 +72,13 @@ public class InteractionGymEquipment extends InteractionEffectTile implements IC
     }
 
     public String achievementName() {
-        return Emulator.getConfig().getValue("hotel.furni.gym.achievement." + this.getBaseItem().getName(), "");
+        return Emulator.getConfig()
+                .getValue("hotel.furni.gym.achievement." + this.getBaseItem().getName(), "");
     }
 
     public boolean forceRotation() {
-        return Emulator.getConfig().getBoolean("hotel.furni.gym.forcerot." + this.getBaseItem().getName(), true);
+        return Emulator.getConfig()
+                .getBoolean("hotel.furni.gym.forcerot." + this.getBaseItem().getName(), true);
     }
 
     @Override
@@ -83,7 +92,11 @@ public class InteractionGymEquipment extends InteractionEffectTile implements IC
                     String achievement = this.achievementName();
 
                     if (!achievement.isEmpty()) {
-                        AchievementManager.progressAchievement(habbo.getHabboInfo().getId(), Emulator.getGameEnvironment().getAchievementManager().getAchievement(achievement));
+                        AchievementManager.progressAchievement(
+                                habbo.getHabboInfo().getId(),
+                                Emulator.getGameEnvironment()
+                                        .getAchievementManager()
+                                        .getAchievement(achievement));
                     }
 
                     this.startTime = timestamp;

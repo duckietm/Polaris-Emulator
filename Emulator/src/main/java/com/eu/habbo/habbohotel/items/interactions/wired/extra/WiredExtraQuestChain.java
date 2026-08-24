@@ -1,7 +1,6 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.extra;
 
 import com.eu.habbo.habbohotel.items.Item;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -64,7 +63,8 @@ public class WiredExtraQuestChain extends WiredExtraQuestBase {
             case SUB_CURRENT_STEP -> (total > 0) ? Math.min(step, total) : step;
             case SUB_TOTAL_STEPS -> total;
             case SUB_IS_COMPLETE -> (total > 0 && step >= total) ? 1 : 0;
-            case SUB_PERCENT -> (total <= 0) ? 100 : Math.max(0, Math.min(100, (int) Math.floor((step * 100D) / total)));
+            case SUB_PERCENT ->
+                (total <= 0) ? 100 : Math.max(0, Math.min(100, (int) Math.floor((step * 100D) / total)));
             default -> null;
         };
     }

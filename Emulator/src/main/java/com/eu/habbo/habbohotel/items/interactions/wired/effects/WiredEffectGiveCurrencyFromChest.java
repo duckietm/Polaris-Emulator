@@ -16,7 +16,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -39,7 +38,8 @@ public class WiredEffectGiveCurrencyFromChest extends InteractionWiredEffect {
         super(set, baseItem);
     }
 
-    public WiredEffectGiveCurrencyFromChest(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectGiveCurrencyFromChest(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -120,7 +120,8 @@ public class WiredEffectGiveCurrencyFromChest extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(this.amount, this.userSource, this.getDelay(), this.chestIds));
+        return WiredManager.getGson()
+                .toJson(new JsonData(this.amount, this.userSource, this.getDelay(), this.chestIds));
     }
 
     @Override

@@ -10,7 +10,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.util.HotelDateTimeUtil;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalTime;
@@ -36,7 +35,8 @@ public class WiredConditionMatchTime extends InteractionWiredCondition {
         super(set, baseItem);
     }
 
-    public WiredConditionMatchTime(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredConditionMatchTime(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -103,17 +103,17 @@ public class WiredConditionMatchTime extends InteractionWiredCondition {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-                this.hourMode,
-                this.hourFrom,
-                this.hourTo,
-                this.minuteMode,
-                this.minuteFrom,
-                this.minuteTo,
-                this.secondMode,
-                this.secondFrom,
-                this.secondTo
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.hourMode,
+                        this.hourFrom,
+                        this.hourTo,
+                        this.minuteMode,
+                        this.minuteFrom,
+                        this.minuteTo,
+                        this.secondMode,
+                        this.secondFrom,
+                        this.secondTo));
     }
 
     @Override
@@ -229,7 +229,16 @@ public class WiredConditionMatchTime extends InteractionWiredCondition {
         int secondFrom;
         int secondTo;
 
-        public JsonData(int hourMode, int hourFrom, int hourTo, int minuteMode, int minuteFrom, int minuteTo, int secondMode, int secondFrom, int secondTo) {
+        public JsonData(
+                int hourMode,
+                int hourFrom,
+                int hourTo,
+                int minuteMode,
+                int minuteFrom,
+                int minuteTo,
+                int secondMode,
+                int secondFrom,
+                int secondTo) {
             this.hourMode = hourMode;
             this.hourFrom = hourFrom;
             this.hourTo = hourTo;

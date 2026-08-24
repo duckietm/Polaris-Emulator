@@ -9,7 +9,6 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.threading.runnables.BackgroundAnimation;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -18,7 +17,8 @@ public class InteractionBackgroundToner extends HabboItem {
         super(set, baseItem);
     }
 
-    public InteractionBackgroundToner(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionBackgroundToner(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -59,19 +59,22 @@ public class InteractionBackgroundToner extends HabboItem {
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
         super.onClick(client, room, objects);
 
-        if(client != null)
-        {
+        if (client != null) {
             if (!client.getHabbo().getRoomUnit().getRoom().hasRights(client.getHabbo())) {
                 ScripterManager.scripterDetected(
                         client,
-                        Emulator.getTexts().getValue("scripter.warning.item.bgtoner.permission").replace("%username%", client.getHabbo().getHabboInfo().getUsername())
+                        Emulator.getTexts()
+                                .getValue("scripter.warning.item.bgtoner.permission")
+                                .replace(
+                                        "%username%",
+                                        client.getHabbo().getHabboInfo().getUsername())
                                 .replace("%room%", room.getName())
-                                .replace("%owner%", room.getOwnerName())
-                );
+                                .replace("%owner%", room.getOwnerName()));
                 return;
             }
-            
-            if (client.getHabbo().getRoomUnit().cmdSit && client.getHabbo().getRoomUnit().getEffectId() == 1337) {
+
+            if (client.getHabbo().getRoomUnit().cmdSit
+                    && client.getHabbo().getRoomUnit().getEffectId() == 1337) {
                 new BackgroundAnimation(this, room).run();
                 return;
             }
@@ -90,9 +93,7 @@ public class InteractionBackgroundToner extends HabboItem {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
 
     @Override
     public void onWalkOn(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {

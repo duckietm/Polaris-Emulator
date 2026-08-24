@@ -16,7 +16,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -41,7 +40,8 @@ public class WiredEffectFurniToFurni extends InteractionWiredEffect {
         super(set, baseItem);
     }
 
-    public WiredEffectFurniToFurni(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectFurniToFurni(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -78,12 +78,14 @@ public class WiredEffectFurniToFurni extends InteractionWiredEffect {
                 continue;
             }
 
-            FurnitureMovementError error = WiredMoveCarryHelper.moveFurni(room, this, moveItem, targetTile, moveItem.getRotation(), null, false, ctx);
+            FurnitureMovementError error = WiredMoveCarryHelper.moveFurni(
+                    room, this, moveItem, targetTile, moveItem.getRotation(), null, false, ctx);
             if (error == FurnitureMovementError.NONE) {
                 continue;
             }
 
-            WiredMoveCarryHelper.moveFurni(room, this, moveItem, targetTile, moveItem.getRotation(), targetItem.getZ(), null, false, ctx);
+            WiredMoveCarryHelper.moveFurni(
+                    room, this, moveItem, targetTile, moveItem.getRotation(), targetItem.getZ(), null, false, ctx);
         }
     }
 
@@ -95,13 +97,13 @@ public class WiredEffectFurniToFurni extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-                this.getDelay(),
-                this.moveItems.stream().map(HabboItem::getId).collect(Collectors.toList()),
-                this.targetItems.stream().map(HabboItem::getId).collect(Collectors.toList()),
-                this.moveSource,
-                this.targetSource
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.getDelay(),
+                        this.moveItems.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                        this.targetItems.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                        this.moveSource,
+                        this.targetSource));
     }
 
     @Override
@@ -184,8 +186,10 @@ public class WiredEffectFurniToFurni extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        this.moveSource = (settings.getIntParams().length > 0) ? settings.getIntParams()[0] : WiredSourceUtil.SOURCE_TRIGGER;
-        this.targetSource = this.normalizeTargetSource((settings.getIntParams().length > 1) ? settings.getIntParams()[1] : WiredSourceUtil.SOURCE_TRIGGER);
+        this.moveSource =
+                (settings.getIntParams().length > 0) ? settings.getIntParams()[0] : WiredSourceUtil.SOURCE_TRIGGER;
+        this.targetSource = this.normalizeTargetSource(
+                (settings.getIntParams().length > 1) ? settings.getIntParams()[1] : WiredSourceUtil.SOURCE_TRIGGER);
 
         Room room = this.getRoom();
         if (room == null) {
@@ -249,7 +253,8 @@ public class WiredEffectFurniToFurni extends InteractionWiredEffect {
     }
 
     private List<HabboItem> resolveTargetItems(WiredContext ctx) {
-        int source = (this.targetSource == SOURCE_SECONDARY_SELECTED) ? WiredSourceUtil.SOURCE_SELECTED : this.targetSource;
+        int source =
+                (this.targetSource == SOURCE_SECONDARY_SELECTED) ? WiredSourceUtil.SOURCE_SELECTED : this.targetSource;
         return this.resolveItems(ctx, source, this.targetItems);
     }
 
@@ -348,7 +353,8 @@ public class WiredEffectFurniToFurni extends InteractionWiredEffect {
         int moveSource;
         int targetSource;
 
-        public JsonData(int delay, List<Integer> itemIds, List<Integer> targetItemIds, int moveSource, int targetSource) {
+        public JsonData(
+                int delay, List<Integer> itemIds, List<Integer> targetItemIds, int moveSource, int targetSource) {
             this.delay = delay;
             this.itemIds = itemIds;
             this.targetItemIds = targetItemIds;

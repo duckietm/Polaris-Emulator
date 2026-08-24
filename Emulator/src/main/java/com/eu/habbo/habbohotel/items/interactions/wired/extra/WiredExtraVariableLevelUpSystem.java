@@ -33,7 +33,9 @@ public class WiredExtraVariableLevelUpSystem extends InteractionWiredExtra {
 
     private static final int DEFAULT_STEP_SIZE = 100;
     private static final int DEFAULT_MAX_LEVEL = 10;
-
+    // Hard ceiling on the level count. Consumers rebuild the full threshold
+    // table on every variable read (WiredVariableLevelSystemSupport), so an
+    // unbounded maxLevel or manual anchor level is a room-thread DoS.
     public static final int MAX_LEVEL = 10_000;
     private static final int DEFAULT_FIRST_LEVEL_XP = 100;
     private static final int DEFAULT_INCREASE_FACTOR = 100;

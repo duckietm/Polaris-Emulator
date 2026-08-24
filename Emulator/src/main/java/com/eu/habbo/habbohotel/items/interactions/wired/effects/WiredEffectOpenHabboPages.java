@@ -14,7 +14,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.users.InClientLinkComposer;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -36,7 +35,8 @@ public class WiredEffectOpenHabboPages extends InteractionWiredEffect {
         super(set, baseItem);
     }
 
-    public WiredEffectOpenHabboPages(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectOpenHabboPages(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 

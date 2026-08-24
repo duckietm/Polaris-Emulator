@@ -7,8 +7,7 @@ public final class WiredUserConditionInputGuard {
     public static final int MAX_EFFECT_ID = 10_000;
     public static final int MAX_HAND_ITEM_ID = 10_000;
 
-    private WiredUserConditionInputGuard() {
-    }
+    private WiredUserConditionInputGuard() {}
 
     public static String normalizeBadgeCode(String value) {
         if (value == null) {

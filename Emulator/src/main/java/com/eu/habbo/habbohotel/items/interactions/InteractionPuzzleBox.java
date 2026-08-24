@@ -2,11 +2,14 @@ package com.eu.habbo.habbohotel.items.interactions;
 
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
-import com.eu.habbo.habbohotel.rooms.*;
+import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomTile;
+import com.eu.habbo.habbohotel.rooms.RoomTileState;
+import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.RoomUserRotation;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.items.FloorItemOnRollerComposer;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -39,22 +42,24 @@ public class InteractionPuzzleBox extends HabboItem {
         }
 
         if (rotation == null) {
-            RoomTile nearestTile = client.getHabbo().getRoomUnit().getClosestAdjacentTile(this.getX(), this.getY(), false);
+            RoomTile nearestTile =
+                    client.getHabbo().getRoomUnit().getClosestAdjacentTile(this.getX(), this.getY(), false);
 
             if (nearestTile != null) client.getHabbo().getRoomUnit().setGoalLocation(nearestTile);
             return;
         }
 
-        super.onClick(client, room, new Object[]{"TOGGLE_OVERRIDE"});
+        super.onClick(client, room, new Object[] {"TOGGLE_OVERRIDE"});
 
-        RoomTile tile = room.getLayout().getTileInFront(room.getLayout().getTile(this.getX(), this.getY()), rotation.getValue());
+        RoomTile tile = room.getLayout()
+                .getTileInFront(room.getLayout().getTile(this.getX(), this.getY()), rotation.getValue());
 
         if (tile == null || tile.getState() == RoomTileState.INVALID || room.hasHabbosAt(tile.x, tile.y)) {
             return;
         }
 
-        if (!boxLocation.equals(room.getLayout().getTileInFront(client.getHabbo().getRoomUnit().getCurrentLocation(), rotation.getValue())))
-            return;
+        if (!boxLocation.equals(room.getLayout()
+                .getTileInFront(client.getHabbo().getRoomUnit().getCurrentLocation(), rotation.getValue()))) return;
 
         HabboItem item = room.getTopItemAt(tile.x, tile.y);
 
@@ -92,7 +97,5 @@ public class InteractionPuzzleBox extends HabboItem {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
 }

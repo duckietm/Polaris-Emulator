@@ -7,7 +7,6 @@ import com.eu.habbo.habbohotel.games.Game;
 import com.eu.habbo.habbohotel.games.GamePlayer;
 import com.eu.habbo.habbohotel.games.GameTeam;
 import com.eu.habbo.habbohotel.games.GameTeamColors;
-import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
@@ -17,28 +16,19 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomTileState;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
-import com.eu.habbo.habbohotel.rooms.RoomRightLevels;
-import com.eu.habbo.habbohotel.rooms.RoomUserRotation;
-import com.eu.habbo.habbohotel.rooms.RoomUnitStatus;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
-import com.eu.habbo.habbohotel.users.DanceType;
-import com.eu.habbo.habbohotel.users.HabboGender;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.HabboGender;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import com.eu.habbo.habbohotel.wired.core.WiredManager;
-import com.eu.habbo.habbohotel.wired.core.WiredFreezeUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
+import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredUserMovementHelper;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableLevelSystemSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableTextConnectorSupport;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-import com.eu.habbo.util.HotelDateTimeUtil;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.ZonedDateTime;
-import java.time.temporal.WeekFields;
 import java.util.Locale;
 
 public class WiredExtraVariableEcho extends InteractionWiredExtra {
@@ -84,7 +74,8 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
         int normalizedTargetType = normalizeTargetType(config.sourceTargetType);
         String normalizedToken = normalizeVariableToken(config.sourceVariableToken, config.sourceVariableItemId);
         int normalizedItemId = getCustomVariableItemId(normalizedToken);
-        SourceState sourceState = this.resolveSourceState(room, normalizedTargetType, normalizedToken, normalizedItemId);
+        SourceState sourceState =
+                this.resolveSourceState(room, normalizedTargetType, normalizedToken, normalizedItemId);
 
         if (normalizedToken.isEmpty()) {
             throw new WiredSaveException("wiredfurni.params.variables.validation.missing_variable");
@@ -121,7 +112,13 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(this.variableName, this.sourceTargetType, this.sourceVariableToken, this.sourceVariableItemId, this.sourceVariableName));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.variableName,
+                        this.sourceTargetType,
+                        this.sourceVariableToken,
+                        this.sourceVariableItemId,
+                        this.sourceVariableName));
     }
 
     @Override
@@ -131,7 +128,13 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(WiredManager.getGson().toJson(new EditorPayload(this.variableName, this.sourceTargetType, this.sourceVariableToken, this.sourceVariableItemId, this.getResolvedSourceName(room))));
+        message.appendString(WiredManager.getGson()
+                .toJson(new EditorPayload(
+                        this.variableName,
+                        this.sourceTargetType,
+                        this.sourceVariableToken,
+                        this.sourceVariableItemId,
+                        this.getResolvedSourceName(room))));
         message.appendInt(0);
         message.appendInt(0);
         message.appendInt(CODE);
@@ -170,8 +173,7 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {}
 
     @Override
     public boolean hasConfiguration() {
@@ -211,19 +213,20 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
     }
 
     public WiredVariableDefinitionInfo createDefinitionInfo(Room room) {
-        SourceState sourceState = this.resolveSourceState(room, this.sourceTargetType, this.sourceVariableToken, this.sourceVariableItemId);
-        int availability = (sourceState != null) ? sourceState.getAvailability() : defaultAvailability(this.sourceTargetType);
+        SourceState sourceState = this.resolveSourceState(
+                room, this.sourceTargetType, this.sourceVariableToken, this.sourceVariableItemId);
+        int availability =
+                (sourceState != null) ? sourceState.getAvailability() : defaultAvailability(this.sourceTargetType);
         boolean hasValue = (sourceState == null) || sourceState.hasValue();
         boolean readOnly = sourceState == null || sourceState.isReadOnly();
 
         return new WiredVariableDefinitionInfo(
-            this.getId(),
-            this.variableName,
-            hasValue,
-            availability,
-            WiredVariableTextConnectorSupport.isTextConnected(room, this),
-            readOnly
-        );
+                this.getId(),
+                this.variableName,
+                hasValue,
+                availability,
+                WiredVariableTextConnectorSupport.isTextConnected(room, this),
+                readOnly);
     }
 
     public boolean hasVariable(Room room, int entityId) {
@@ -276,16 +279,25 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
             return false;
         }
 
-        SourceState sourceState = this.resolveSourceState(room, this.sourceTargetType, this.sourceVariableToken, this.sourceVariableItemId);
+        SourceState sourceState = this.resolveSourceState(
+                room, this.sourceTargetType, this.sourceVariableToken, this.sourceVariableItemId);
         if (sourceState == null || sourceState.isReadOnly()) {
             return false;
         }
 
         if (isCustomVariableToken(this.sourceVariableToken)) {
             return switch (this.sourceTargetType) {
-                case TARGET_FURNI -> room.getFurniVariableManager().assignVariable(room.getHabboItem(entityId), this.sourceVariableItemId, value, overrideExisting);
-                case TARGET_ROOM -> room.getRoomVariableManager().updateVariableValue(this.sourceVariableItemId, (value != null) ? value : 0);
-                default -> room.getUserVariableManager().assignVariable(room.getHabbo(entityId), this.sourceVariableItemId, value, overrideExisting);
+                case TARGET_FURNI ->
+                    room.getFurniVariableManager()
+                            .assignVariable(
+                                    room.getHabboItem(entityId), this.sourceVariableItemId, value, overrideExisting);
+                case TARGET_ROOM ->
+                    room.getRoomVariableManager()
+                            .updateVariableValue(this.sourceVariableItemId, (value != null) ? value : 0);
+                default ->
+                    room.getUserVariableManager()
+                            .assignVariable(
+                                    room.getHabbo(entityId), this.sourceVariableItemId, value, overrideExisting);
             };
         }
 
@@ -297,16 +309,21 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
             return false;
         }
 
-        SourceState sourceState = this.resolveSourceState(room, this.sourceTargetType, this.sourceVariableToken, this.sourceVariableItemId);
+        SourceState sourceState = this.resolveSourceState(
+                room, this.sourceTargetType, this.sourceVariableToken, this.sourceVariableItemId);
         if (sourceState == null || sourceState.isReadOnly() || !sourceState.hasValue()) {
             return false;
         }
 
         if (isCustomVariableToken(this.sourceVariableToken)) {
             return switch (this.sourceTargetType) {
-                case TARGET_FURNI -> room.getFurniVariableManager().updateVariableValue(entityId, this.sourceVariableItemId, value);
-                case TARGET_ROOM -> room.getRoomVariableManager().updateVariableValue(this.sourceVariableItemId, (value != null) ? value : 0);
-                default -> room.getUserVariableManager().updateVariableValue(entityId, this.sourceVariableItemId, value);
+                case TARGET_FURNI ->
+                    room.getFurniVariableManager().updateVariableValue(entityId, this.sourceVariableItemId, value);
+                case TARGET_ROOM ->
+                    room.getRoomVariableManager()
+                            .updateVariableValue(this.sourceVariableItemId, (value != null) ? value : 0);
+                default ->
+                    room.getUserVariableManager().updateVariableValue(entityId, this.sourceVariableItemId, value);
             };
         }
 
@@ -318,7 +335,8 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
             return false;
         }
 
-        SourceState sourceState = this.resolveSourceState(room, this.sourceTargetType, this.sourceVariableToken, this.sourceVariableItemId);
+        SourceState sourceState = this.resolveSourceState(
+                room, this.sourceTargetType, this.sourceVariableToken, this.sourceVariableItemId);
         if (sourceState == null || sourceState.isReadOnly()) {
             return false;
         }
@@ -337,13 +355,15 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
 
         if (isCustomVariableToken(this.sourceVariableToken)) {
             return switch (this.sourceTargetType) {
-                case TARGET_FURNI -> room.getFurniVariableManager().hasVariable(entityId, this.sourceVariableItemId)
-                    ? room.getFurniVariableManager().getCurrentValue(entityId, this.sourceVariableItemId)
-                    : null;
+                case TARGET_FURNI ->
+                    room.getFurniVariableManager().hasVariable(entityId, this.sourceVariableItemId)
+                            ? room.getFurniVariableManager().getCurrentValue(entityId, this.sourceVariableItemId)
+                            : null;
                 case TARGET_ROOM -> room.getRoomVariableManager().getCurrentValue(this.sourceVariableItemId);
-                default -> room.getUserVariableManager().hasVariable(entityId, this.sourceVariableItemId)
-                    ? room.getUserVariableManager().getCurrentValue(entityId, this.sourceVariableItemId)
-                    : null;
+                default ->
+                    room.getUserVariableManager().hasVariable(entityId, this.sourceVariableItemId)
+                            ? room.getUserVariableManager().getCurrentValue(entityId, this.sourceVariableItemId)
+                            : null;
             };
         }
 
@@ -388,17 +408,22 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
         }
 
         if (isCustomVariableToken(token)) {
-            WiredVariableDefinitionInfo definitionInfo = switch (targetType) {
-                case TARGET_FURNI -> room.getFurniVariableManager().getDefinitionInfo(variableItemId);
-                case TARGET_ROOM -> room.getRoomVariableManager().getDefinitionInfo(variableItemId);
-                default -> room.getUserVariableManager().getDefinitionInfo(variableItemId);
-            };
+            WiredVariableDefinitionInfo definitionInfo =
+                    switch (targetType) {
+                        case TARGET_FURNI -> room.getFurniVariableManager().getDefinitionInfo(variableItemId);
+                        case TARGET_ROOM -> room.getRoomVariableManager().getDefinitionInfo(variableItemId);
+                        default -> room.getUserVariableManager().getDefinitionInfo(variableItemId);
+                    };
 
             if (definitionInfo == null) {
                 return null;
             }
 
-            return new SourceState(definitionInfo.getName(), definitionInfo.hasValue(), definitionInfo.getAvailability(), definitionInfo.isReadOnly());
+            return new SourceState(
+                    definitionInfo.getName(),
+                    definitionInfo.hasValue(),
+                    definitionInfo.getAvailability(),
+                    definitionInfo.isReadOnly());
         }
 
         String key = getInternalVariableKey(token);
@@ -407,24 +432,27 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
         }
 
         return switch (targetType) {
-            case TARGET_FURNI -> canUseFurniInternalReference(key)
-                ? new SourceState(key, true, DEFAULT_FURNI_AVAILABILITY, !canUseFurniInternalDestination(key))
-                : null;
-            case TARGET_ROOM -> canUseRoomInternalReference(key)
-                ? new SourceState(key, true, DEFAULT_ROOM_AVAILABILITY, true)
-                : null;
-            default -> canUseUserInternalReference(key)
-                ? new SourceState(key, true, DEFAULT_USER_AVAILABILITY, !canUseUserInternalDestination(key))
-                : null;
+            case TARGET_FURNI ->
+                canUseFurniInternalReference(key)
+                        ? new SourceState(key, true, DEFAULT_FURNI_AVAILABILITY, !canUseFurniInternalDestination(key))
+                        : null;
+            case TARGET_ROOM ->
+                canUseRoomInternalReference(key) ? new SourceState(key, true, DEFAULT_ROOM_AVAILABILITY, true) : null;
+            default ->
+                canUseUserInternalReference(key)
+                        ? new SourceState(key, true, DEFAULT_USER_AVAILABILITY, !canUseUserInternalDestination(key))
+                        : null;
         };
     }
 
     private String getResolvedSourceName(Room room) {
-        SourceState sourceState = this.resolveSourceState(room, this.sourceTargetType, this.sourceVariableToken, this.sourceVariableItemId);
+        SourceState sourceState = this.resolveSourceState(
+                room, this.sourceTargetType, this.sourceVariableToken, this.sourceVariableItemId);
         return (sourceState != null) ? sourceState.getName() : this.sourceVariableName;
     }
 
-    private static boolean createsCycle(Room room, int currentItemId, int targetType, String token, int variableItemId) {
+    private static boolean createsCycle(
+            Room room, int currentItemId, int targetType, String token, int variableItemId) {
         if (room == null || currentItemId <= 0 || !isCustomVariableToken(token) || variableItemId <= 0) {
             return false;
         }
@@ -433,9 +461,15 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
             return true;
         }
 
-        WiredVariableLevelSystemSupport.DerivedDefinition derivedDefinition = WiredVariableLevelSystemSupport.resolveDerivedDefinition(room, targetType, variableItemId);
+        WiredVariableLevelSystemSupport.DerivedDefinition derivedDefinition =
+                WiredVariableLevelSystemSupport.resolveDerivedDefinition(room, targetType, variableItemId);
         if (derivedDefinition != null) {
-            return createsCycle(room, currentItemId, targetType, createCustomVariableToken(derivedDefinition.getBaseDefinitionItemId()), derivedDefinition.getBaseDefinitionItemId());
+            return createsCycle(
+                    room,
+                    currentItemId,
+                    targetType,
+                    createCustomVariableToken(derivedDefinition.getBaseDefinitionItemId()),
+                    derivedDefinition.getBaseDefinitionItemId());
         }
 
         if (room.getRoomSpecialTypes() == null) {
@@ -448,7 +482,12 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
         }
 
         WiredExtraVariableEcho echo = (WiredExtraVariableEcho) extra;
-        return createsCycle(room, currentItemId, echo.getSourceTargetType(), echo.getSourceVariableToken(), echo.getSourceVariableItemId());
+        return createsCycle(
+                room,
+                currentItemId,
+                echo.getSourceTargetType(),
+                echo.getSourceVariableToken(),
+                echo.getSourceVariableItemId());
     }
 
     private static String deriveVariableName(String requestedName, String sourceName) {
@@ -458,11 +497,11 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
         }
 
         String fallbackValue = normalizeSourceName(sourceName)
-            .replaceAll("^[~@]+", "")
-            .replaceAll("[^A-Za-z0-9_]+", "_")
-            .replaceAll("_+", "_")
-            .replaceAll("^_+", "")
-            .replaceAll("_+$", "");
+                .replaceAll("^[~@]+", "")
+                .replaceAll("[^A-Za-z0-9_]+", "_")
+                .replaceAll("_+", "_")
+                .replaceAll("^_+", "")
+                .replaceAll("_+$", "");
 
         if (fallbackValue.length() > WiredVariableNameValidator.MAX_NAME_LENGTH) {
             fallbackValue = fallbackValue.substring(0, WiredVariableNameValidator.MAX_NAME_LENGTH);
@@ -480,7 +519,9 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
             return true;
         }
 
-        return isCustomVariableToken(token) && sourceState.getName() != null && sourceState.getName().contains(".");
+        return isCustomVariableToken(token)
+                && sourceState.getName() != null
+                && sourceState.getName().contains(".");
     }
 
     private static ConfigData parseConfigData(String value) {
@@ -525,7 +566,9 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
     }
 
     private static String getInternalVariableKey(String token) {
-        return isInternalVariableToken(token) ? WiredInternalVariableSupport.normalizeKey(token.substring(INTERNAL_TOKEN_PREFIX.length())) : "";
+        return isInternalVariableToken(token)
+                ? WiredInternalVariableSupport.normalizeKey(token.substring(INTERNAL_TOKEN_PREFIX.length()))
+                : "";
     }
 
     private static int getCustomVariableItemId(String token) {
@@ -552,7 +595,9 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
         }
 
         if (isInternalVariableToken(normalizedToken)) {
-            return INTERNAL_TOKEN_PREFIX + WiredInternalVariableSupport.normalizeKey(normalizedToken.substring(INTERNAL_TOKEN_PREFIX.length()));
+            return INTERNAL_TOKEN_PREFIX
+                    + WiredInternalVariableSupport.normalizeKey(
+                            normalizedToken.substring(INTERNAL_TOKEN_PREFIX.length()));
         }
 
         if (fallbackItemId > 0) {
@@ -615,7 +660,10 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
     }
 
     private Integer getUserTeamScore(Room room, Habbo habbo) {
-        if (room == null || habbo == null || habbo.getHabboInfo() == null || habbo.getHabboInfo().getGamePlayer() == null) return null;
+        if (room == null
+                || habbo == null
+                || habbo.getHabboInfo() == null
+                || habbo.getHabboInfo().getGamePlayer() == null) return null;
 
         Game game = this.resolveTeamGame(room, habbo);
         GamePlayer gamePlayer = habbo.getHabboInfo().getGamePlayer();
@@ -651,7 +699,9 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
     private Game resolveTeamGame(Room room, Habbo habbo) {
         if (room == null) return null;
 
-        if (habbo != null && habbo.getHabboInfo() != null && habbo.getHabboInfo().getCurrentGame() != null) {
+        if (habbo != null
+                && habbo.getHabboInfo() != null
+                && habbo.getHabboInfo().getCurrentGame() != null) {
             Game game = room.getGame(habbo.getHabboInfo().getCurrentGame());
             if (game != null) return game;
         }
@@ -673,14 +723,14 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
 
         double targetZ = WiredUserMovementHelper.resolveUserTargetZ(room, targetTile);
         return WiredUserMovementHelper.moveUser(
-            room,
-            roomUnit,
-            targetTile,
-            targetZ,
-            roomUnit.getBodyRotation(),
-            roomUnit.getHeadRotation(),
-            WiredUserMovementHelper.DEFAULT_ANIMATION_DURATION,
-            false);
+                room,
+                roomUnit,
+                targetTile,
+                targetZ,
+                roomUnit.getBodyRotation(),
+                roomUnit.getHeadRotation(),
+                WiredUserMovementHelper.DEFAULT_ANIMATION_DURATION,
+                false);
     }
 
     private boolean moveFurniTo(Room room, HabboItem item, int x, int y, int rotation, double z) {
@@ -748,7 +798,12 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
         int sourceVariableItemId;
         String sourceVariableName;
 
-        JsonData(String variableName, int sourceTargetType, String sourceVariableToken, int sourceVariableItemId, String sourceVariableName) {
+        JsonData(
+                String variableName,
+                int sourceTargetType,
+                String sourceVariableToken,
+                int sourceVariableItemId,
+                String sourceVariableName) {
             this.variableName = variableName;
             this.sourceTargetType = sourceTargetType;
             this.sourceVariableToken = sourceVariableToken;
@@ -767,7 +822,12 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
     static class EditorPayload extends ConfigData {
         String sourceVariableName;
 
-        EditorPayload(String variableName, int sourceTargetType, String sourceVariableToken, int sourceVariableItemId, String sourceVariableName) {
+        EditorPayload(
+                String variableName,
+                int sourceTargetType,
+                String sourceVariableToken,
+                int sourceVariableItemId,
+                String sourceVariableName) {
             this.variableName = variableName;
             this.sourceTargetType = sourceTargetType;
             this.sourceVariableToken = sourceVariableToken;

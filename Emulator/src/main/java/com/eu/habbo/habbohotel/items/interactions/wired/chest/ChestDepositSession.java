@@ -7,8 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class ChestDepositSession {
     private static final Map<Integer, Integer> ACTIVE = new ConcurrentHashMap<>();
 
-    private ChestDepositSession() {
-    }
+    private ChestDepositSession() {}
 
     public static void start(int userId, int chestItemId) {
         if (userId <= 0 || chestItemId <= 0) return;

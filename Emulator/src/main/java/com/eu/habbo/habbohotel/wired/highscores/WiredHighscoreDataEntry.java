@@ -2,9 +2,8 @@ package com.eu.habbo.habbohotel.wired.highscores;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class WiredHighscoreDataEntry {
     private final int itemId;
@@ -23,10 +22,36 @@ public class WiredHighscoreDataEntry {
 
     public WiredHighscoreDataEntry(ResultSet set) throws SQLException {
         this.itemId = set.getInt("item_id");
-        this.userIds = Arrays.stream(set.getString("user_ids").split(",")).map(Integer::valueOf).collect(Collectors.toList());
+        this.userIds = parseUserIds(set.getString("user_ids"));
         this.score = set.getInt("score");
         this.isWin = set.getInt("is_win") == 1;
         this.timestamp = set.getInt("timestamp");
+    }
+
+    /**
+     * Parses the comma-separated user_ids column defensively: a NULL/empty
+     * column or a non-numeric token must not throw (NPE / NumberFormatException)
+     * out of the load loop, which would abort loading EVERY highscore row.
+     */
+    private static List<Integer> parseUserIds(String raw) {
+        List<Integer> ids = new ArrayList<>();
+        if (raw == null || raw.isEmpty()) {
+            return ids;
+        }
+
+        for (String token : raw.split(",")) {
+            String trimmed = token.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            try {
+                ids.add(Integer.valueOf(trimmed));
+            } catch (NumberFormatException ignored) {
+                // skip the malformed id rather than poisoning the whole load
+            }
+        }
+
+        return ids;
     }
 
     public int getItemId() {

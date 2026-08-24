@@ -12,16 +12,15 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.items.rentablespaces.RentableSpaceInfoComposer;
 import com.eu.habbo.threading.runnables.ClearRentedSpace;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.awt.*;
+import java.awt.Rectangle;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class InteractionRentableSpace extends HabboItem {
     private static final Logger LOGGER = LoggerFactory.getLogger(InteractionRentableSpace.class);
@@ -43,12 +42,16 @@ public class InteractionRentableSpace extends HabboItem {
 
             if (this.renterId > 0) {
                 if (this.isRented()) {
-                    Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(this.renterId);
+                    Habbo habbo =
+                            Emulator.getGameEnvironment().getHabboManager().getHabbo(this.renterId);
 
                     if (habbo != null) {
                         this.renterName = habbo.getHabboInfo().getUsername();
                     } else {
-                        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT username FROM users WHERE id = ? LIMIT 1")) {
+                        try (Connection connection =
+                                        Emulator.getDatabase().getDataSource().getConnection();
+                                PreparedStatement statement = connection.prepareStatement(
+                                        "SELECT username FROM users WHERE id = ? LIMIT 1")) {
                             statement.setInt(1, this.renterId);
                             try (ResultSet row = statement.executeQuery()) {
                                 if (row.next()) {
@@ -61,7 +64,12 @@ public class InteractionRentableSpace extends HabboItem {
                     }
                 } else {
                     if (this.getRoomId() > 0) {
-                        Emulator.getThreading().run(new ClearRentedSpace(this, Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId())));
+                        Emulator.getThreading()
+                                .run(new ClearRentedSpace(
+                                        this,
+                                        Emulator.getGameEnvironment()
+                                                .getRoomManager()
+                                                .getRoom(this.getRoomId())));
                         this.renterId = 0;
                     }
                 }
@@ -69,7 +77,8 @@ public class InteractionRentableSpace extends HabboItem {
         }
     }
 
-    public InteractionRentableSpace(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionRentableSpace(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
 
         this.renterName = "";
@@ -77,16 +86,13 @@ public class InteractionRentableSpace extends HabboItem {
 
     @Override
     public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
-        if (this.getExtradata().isEmpty())
-            return false;
+        if (this.getExtradata().isEmpty()) return false;
 
         Habbo habbo = room.getHabbo(roomUnit);
 
-        if (habbo == null)
-            return true;
+        if (habbo == null) return true;
 
-        if (habbo.getHabboInfo().getId() == room.getId())
-            return true;
+        if (habbo.getHabboInfo().getId() == room.getId()) return true;
 
         if (this.endTimestamp > Emulator.getIntUnixTimestamp()) {
             return this.renterId > 0 && this.renterId == habbo.getHabboInfo().getId();
@@ -106,14 +112,11 @@ public class InteractionRentableSpace extends HabboItem {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
 
     @Override
     public void serializeExtradata(ServerMessage serverMessage) {
-        if (this.getExtradata().isEmpty())
-            this.setExtradata("0:0");
+        if (this.getExtradata().isEmpty()) this.setExtradata("0:0");
 
         serverMessage.appendInt(1 + (this.isLimited() ? 256 : 0));
 
@@ -129,19 +132,15 @@ public class InteractionRentableSpace extends HabboItem {
     }
 
     public void rent(Habbo habbo) {
-        if (this.isRented())
-            return;
+        if (this.isRented()) return;
 
-        if (habbo.getHabboStats().isRentingSpace())
-            return;
+        if (habbo.getHabboStats().isRentingSpace()) return;
 
         int cost = this.rentCost();
         boolean hasInfiniteCredits = habbo.hasPermission(Permission.ACC_INFINITE_CREDITS);
-        if (!hasInfiniteCredits && habbo.getHabboInfo().getCredits() < cost)
-            return;
+        if (!hasInfiniteCredits && habbo.getHabboInfo().getCredits() < cost) return;
 
-        if (habbo.getHabboStats().getClubExpireTimestamp() < Emulator.getIntUnixTimestamp())
-            return;
+        if (habbo.getHabboStats().getClubExpireTimestamp() < Emulator.getIntUnixTimestamp()) return;
 
         if (!hasInfiniteCredits) {
             habbo.giveCredits(-cost);
@@ -162,10 +161,14 @@ public class InteractionRentableSpace extends HabboItem {
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
 
-        if (room == null)
-            return;
+        if (room == null) return;
 
-        Rectangle rect = RoomLayout.getRectangle(this.getX(), this.getY(), this.getBaseItem().getWidth(), this.getBaseItem().getLength(), this.getRotation());
+        Rectangle rect = RoomLayout.getRectangle(
+                this.getX(),
+                this.getY(),
+                this.getBaseItem().getWidth(),
+                this.getBaseItem().getLength(),
+                this.getRotation());
 
         Set<HabboItem> items = new HashSet<>();
         for (int i = rect.x; i < rect.x + rect.getWidth(); i++) {
@@ -188,7 +191,9 @@ public class InteractionRentableSpace extends HabboItem {
         } else {
             int zero = 0;
 
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE users_settings SET rent_space_id = ?, rent_space_endtime = ? WHERE user_id = ? LIMIT 1")) {
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                    PreparedStatement statement = connection.prepareStatement(
+                            "UPDATE users_settings SET rent_space_id = ?, rent_space_endtime = ? WHERE user_id = ? LIMIT 1")) {
                 statement.setInt(1, zero);
                 statement.setInt(2, zero);
             } catch (SQLException e) {
@@ -196,7 +201,7 @@ public class InteractionRentableSpace extends HabboItem {
             }
         }
 
-        //room.ejectUserFurni(this.renterId);
+        // room.ejectUserFurni(this.renterId);
 
         this.setRenterId(0);
         this.setRenterName("");
@@ -238,7 +243,8 @@ public class InteractionRentableSpace extends HabboItem {
     }
 
     public int rentCost() {
-        String[] data = this.getBaseItem().getName().replace("hblooza_spacerent", "").split("x");
+        String[] data =
+                this.getBaseItem().getName().replace("hblooza_spacerent", "").split("x");
 
         if (data.length == 2) {
             int x = Integer.parseInt(data[0]);

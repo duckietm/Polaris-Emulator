@@ -5,7 +5,6 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -14,7 +13,8 @@ public class InteractionStackWalkHelper extends HabboItem {
         super(set, baseItem);
     }
 
-    public InteractionStackWalkHelper(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionStackWalkHelper(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -29,9 +29,7 @@ public class InteractionStackWalkHelper extends HabboItem {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
 
     @Override
     public void serializeExtradata(ServerMessage serverMessage) {

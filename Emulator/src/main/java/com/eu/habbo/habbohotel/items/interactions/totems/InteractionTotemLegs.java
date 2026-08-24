@@ -7,7 +7,6 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -24,26 +23,26 @@ public class InteractionTotemLegs extends InteractionDefault {
         int extraData;
         try {
             extraData = Integer.parseInt(this.getExtradata());
-        } catch(NumberFormatException ex) {
+        } catch (NumberFormatException ex) {
             extraData = 0;
         }
-        return TotemType.fromInt((int)Math.ceil((extraData + 1) / 4.0f));
+        return TotemType.fromInt((int) Math.ceil((extraData + 1) / 4.0f));
     }
 
     public TotemColor getTotemColor() {
         int extraData;
         try {
             extraData = Integer.parseInt(this.getExtradata());
-        } catch(NumberFormatException ex) {
+        } catch (NumberFormatException ex) {
             extraData = 0;
         }
         return TotemColor.fromInt(extraData - (4 * (getTotemType().type - 1)));
     }
 
     private void updateHead(Room room, RoomTile tile) {
-        for(HabboItem item : room.getItemsAt(tile)) {
-            if(item instanceof InteractionTotemHead && item.getZ() > this.getZ())
-                ((InteractionTotemHead)item).updateTotemState(room);
+        for (HabboItem item : room.getItemsAt(tile)) {
+            if (item instanceof InteractionTotemHead && item.getZ() > this.getZ())
+                ((InteractionTotemHead) item).updateTotemState(room);
         }
     }
 
@@ -51,8 +50,9 @@ public class InteractionTotemLegs extends InteractionDefault {
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
         super.onClick(client, room, objects);
 
-        if (room == null || !((client != null && room.hasRights(client.getHabbo())) || (objects.length >= 2 && objects[1] instanceof WiredEffectType)))
-            return;
+        if (room == null
+                || !((client != null && room.hasRights(client.getHabbo()))
+                        || (objects.length >= 2 && objects[1] instanceof WiredEffectType))) return;
 
         updateHead(room, room.getLayout().getTile(this.getX(), this.getY()));
     }

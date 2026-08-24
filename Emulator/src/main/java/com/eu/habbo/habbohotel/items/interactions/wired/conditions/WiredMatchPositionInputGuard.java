@@ -5,7 +5,6 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredMatchFurniSetting;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -13,22 +12,25 @@ import java.util.List;
 public final class WiredMatchPositionInputGuard {
     public static final int MAX_STATE_LENGTH = 512;
 
-    private WiredMatchPositionInputGuard() {
-    }
+    private WiredMatchPositionInputGuard() {}
 
     public static int normalizeFurniSource(int value, boolean hasSelectedSettings) {
-        int source = switch (value) {
-            case WiredSourceUtil.SOURCE_SELECTED, WiredSourceUtil.SOURCE_SELECTOR,
-                    WiredSourceUtil.SOURCE_SIGNAL, WiredSourceUtil.SOURCE_TRIGGER -> value;
-            default -> WiredSourceUtil.SOURCE_TRIGGER;
-        };
+        int source =
+                switch (value) {
+                    case WiredSourceUtil.SOURCE_SELECTED,
+                            WiredSourceUtil.SOURCE_SELECTOR,
+                            WiredSourceUtil.SOURCE_SIGNAL,
+                            WiredSourceUtil.SOURCE_TRIGGER -> value;
+                    default -> WiredSourceUtil.SOURCE_TRIGGER;
+                };
 
         return (hasSelectedSettings && source == WiredSourceUtil.SOURCE_TRIGGER)
                 ? WiredSourceUtil.SOURCE_SELECTED
                 : source;
     }
 
-    public static List<WiredMatchFurniSetting> sanitizeSettings(Collection<WiredMatchFurniSetting> settings, Room room) {
+    public static List<WiredMatchFurniSetting> sanitizeSettings(
+            Collection<WiredMatchFurniSetting> settings, Room room) {
         List<WiredMatchFurniSetting> result = new ArrayList<>();
         if (settings == null || room == null) {
             return result;
@@ -56,7 +58,8 @@ public final class WiredMatchPositionInputGuard {
         return sanitizeParts(setting.item_id, setting.state, setting.rotation, setting.x, setting.y, setting.z, room);
     }
 
-    public static WiredMatchFurniSetting sanitizeParts(int itemId, String state, int rotation, int x, int y, double z, Room room) {
+    public static WiredMatchFurniSetting sanitizeParts(
+            int itemId, String state, int rotation, int x, int y, double z, Room room) {
         if (itemId < 1 || room == null) {
             return null;
         }

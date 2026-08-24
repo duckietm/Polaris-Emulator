@@ -10,14 +10,14 @@ import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
-
-import java.awt.*;
+import java.awt.Rectangle;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Set;
 
 public class InteractionSnowboardSlope extends InteractionMultiHeight {
-    public InteractionSnowboardSlope(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionSnowboardSlope(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -44,7 +44,8 @@ public class InteractionSnowboardSlope extends InteractionMultiHeight {
         super.onPlace(room);
         Set<HabboItem> items = room.getRoomSpecialTypes().getItemsOfType(InteractionSnowboardSlope.class);
 
-        Achievement snowboardBuild = Emulator.getGameEnvironment().getAchievementManager().getAchievement("snowBoardBuild");
+        Achievement snowboardBuild =
+                Emulator.getGameEnvironment().getAchievementManager().getAchievement("snowBoardBuild");
 
         if (snowboardBuild == null) return;
         int progress;
@@ -52,7 +53,6 @@ public class InteractionSnowboardSlope extends InteractionMultiHeight {
 
         if (habbo != null) {
             progress = habbo.getHabboStats().getAchievementProgress(snowboardBuild);
-
 
         } else {
             progress = AchievementManager.getAchievementProgressForHabbo(room.getOwnerId(), snowboardBuild);
@@ -76,10 +76,18 @@ public class InteractionSnowboardSlope extends InteractionMultiHeight {
 
     @Override
     public void onMove(Room room, RoomTile oldLocation, RoomTile newLocation) {
-        Rectangle newRect = RoomLayout.getRectangle(newLocation.x, newLocation.y, this.getBaseItem().getWidth(), this.getBaseItem().getLength(), this.getRotation());
+        Rectangle newRect = RoomLayout.getRectangle(
+                newLocation.x,
+                newLocation.y,
+                this.getBaseItem().getWidth(),
+                this.getBaseItem().getLength(),
+                this.getRotation());
 
         for (Habbo habbo : room.getHabbosOnItem(this)) {
-            if (habbo.getRoomUnit().getEffectId() == 97 && !newRect.contains(habbo.getRoomUnit().getCurrentLocation().x, habbo.getRoomUnit().getCurrentLocation().y)) {
+            if (habbo.getRoomUnit().getEffectId() == 97
+                    && !newRect.contains(
+                            habbo.getRoomUnit().getCurrentLocation().x,
+                            habbo.getRoomUnit().getCurrentLocation().y)) {
                 room.giveEffect(habbo, 0, -1);
             }
         }

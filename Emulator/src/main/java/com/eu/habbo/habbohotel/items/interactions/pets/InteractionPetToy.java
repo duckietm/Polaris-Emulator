@@ -7,10 +7,14 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionDefault;
 import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.pets.PetTasks;
 import com.eu.habbo.habbohotel.pets.PetVocalsType;
-import com.eu.habbo.habbohotel.rooms.*;
+import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomTile;
+import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.RoomUnitStatus;
+import com.eu.habbo.habbohotel.rooms.RoomUnitType;
+import com.eu.habbo.habbohotel.rooms.RoomUserRotation;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.threading.runnables.PetClearPosture;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -68,21 +72,27 @@ public class InteractionPetToy extends InteractionDefault {
             pet.getRoomUnit().setGoalLocation(room.getLayout().getTile(this.getX(), this.getY()));
             pet.getRoomUnit().setRotation(RoomUserRotation.values()[this.getRotation()]);
             pet.getRoomUnit().clearStatus();
-            pet.getRoomUnit().setStatus(RoomUnitStatus.PLAY, pet.getRoomUnit().getCurrentLocation().getStackHeight() + "");
+            pet.getRoomUnit()
+                    .setStatus(
+                            RoomUnitStatus.PLAY,
+                            pet.getRoomUnit().getCurrentLocation().getStackHeight() + "");
             pet.packetUpdate = true;
-            
+
             // Say playful vocal
             pet.say(pet.getPetData().randomVocal(PetVocalsType.PLAYFUL));
-            
+
             HabboItem item = this;
-            Emulator.getThreading().run(() -> {
-                pet.addHappiness(25);
-                item.setExtradata("0");
-                room.updateItem(item);
-                pet.getRoomUnit().clearStatus();
-                new PetClearPosture(pet, RoomUnitStatus.PLAY, null, true).run();
-                pet.packetUpdate = true;
-            }, 2500 + (Emulator.getRandom().nextInt(20) * 500));
+            Emulator.getThreading()
+                    .run(
+                            () -> {
+                                pet.addHappiness(25);
+                                item.setExtradata("0");
+                                room.updateItem(item);
+                                pet.getRoomUnit().clearStatus();
+                                new PetClearPosture(pet, RoomUnitStatus.PLAY, null, true).run();
+                                pet.packetUpdate = true;
+                            },
+                            2500 + (Emulator.getRandom().nextInt(20) * 500));
             this.setExtradata("1");
             room.updateItemState(this);
         }
@@ -105,7 +115,9 @@ public class InteractionPetToy extends InteractionDefault {
     @Override
     public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
         Pet pet = room.getPet(roomUnit);
-        return roomUnit.getRoomUnitType() == RoomUnitType.PET && pet != null && pet.getPetData().haveToyItem(this.getBaseItem());
+        return roomUnit.getRoomUnitType() == RoomUnitType.PET
+                && pet != null
+                && pet.getPetData().haveToyItem(this.getBaseItem());
     }
 
     @Override

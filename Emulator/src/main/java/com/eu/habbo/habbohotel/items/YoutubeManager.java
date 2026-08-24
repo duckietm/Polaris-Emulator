@@ -5,23 +5,25 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.net.ssl.HttpsURLConnection;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URL;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.HttpsURLConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class YoutubeManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(YoutubeManager.class);
@@ -98,7 +100,8 @@ public class YoutubeManager {
             }
 
             int dbEntryCount = 0;
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM youtube_playlists")) {
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                    PreparedStatement statement = connection.prepareStatement("SELECT * FROM youtube_playlists")) {
                 try (ResultSet set = statement.executeQuery()) {
                     while (set.next()) {
                         final int itemId = set.getInt("item_id");
@@ -113,9 +116,15 @@ public class YoutubeManager {
                                 playlist = this.getPlaylistDataById(playlistId);
                                 if (playlist != null) {
                                     this.addPlaylistToItem(itemId, playlist);
-                                    LOGGER.info("YouTube Manager -> Successfully loaded playlist {} for base item #{}", playlistId, itemId);
+                                    LOGGER.info(
+                                            "YouTube Manager -> Successfully loaded playlist {} for base item #{}",
+                                            playlistId,
+                                            itemId);
                                 } else {
-                                    LOGGER.error("YouTube Manager -> Failed to load playlist {} for base item #{} (returned null - check API key and playlist ID)", playlistId, itemId);
+                                    LOGGER.error(
+                                            "YouTube Manager -> Failed to load playlist {} for base item #{} (returned null - check API key and playlist ID)",
+                                            playlistId,
+                                            itemId);
                                 }
                             } catch (IOException e) {
                                 LOGGER.error("Failed to load YouTube playlist {} ERROR: {}", playlistId, e);
@@ -147,20 +156,24 @@ public class YoutubeManager {
         if (this.playlistCache.containsKey(playlistId)) return this.playlistCache.get(playlistId);
 
         String apiKey = getApiKey();
-        if(apiKey.isEmpty()) {
-            LOGGER.error("YouTube API key is not configured! Set 'youtube.apikey' in emulator_settings to enable YouTube TV.");
+        if (apiKey.isEmpty()) {
+            LOGGER.error(
+                    "YouTube API key is not configured! Set 'youtube.apikey' in emulator_settings to enable YouTube TV.");
             return null;
         }
 
         YoutubePlaylist playlist;
-        URL playlistInfo = URI.create("https://youtube.googleapis.com/youtube/v3/playlists?part=snippet&id=" + playlistId + "&maxResults=1&key=" + apiKey).toURL();
+        URL playlistInfo = URI.create("https://youtube.googleapis.com/youtube/v3/playlists?part=snippet&id="
+                        + playlistId + "&maxResults=1&key=" + apiKey)
+                .toURL();
         HttpsURLConnection playlistCon = (HttpsURLConnection) playlistInfo.openConnection();
         if (playlistCon.getResponseCode() != 200) {
             InputStream errorInputStream = playlistCon.getErrorStream();
             InputStreamReader playlistISR = new InputStreamReader(errorInputStream);
             BufferedReader playlistBR = new BufferedReader(playlistISR);
             JsonObject errorObj = JsonParser.parseReader(playlistBR).getAsJsonObject();
-            String message = errorObj.get("error").getAsJsonObject().get("message").getAsString();
+            String message =
+                    errorObj.get("error").getAsJsonObject().get("message").getAsString();
             LOGGER.error("Failed to load YouTube playlist {} ERROR: {}", playlistId, message);
             return null;
         }
@@ -175,21 +188,28 @@ public class YoutubeManager {
             LOGGER.error("Playlist {} not found!", playlistId);
             return null;
         }
-        JsonObject playlistItem = playlists.get(0).getAsJsonObject().get("snippet").getAsJsonObject();
+        JsonObject playlistItem =
+                playlists.get(0).getAsJsonObject().get("snippet").getAsJsonObject();
 
         String name = playlistItem.get("title").getAsString();
         String description = playlistItem.get("description").getAsString();
 
-        ArrayList < YoutubeVideo > videos = new ArrayList < > ();
+        ArrayList<YoutubeVideo> videos = new ArrayList<>();
         String nextPageToken = "";
         do {
-            ArrayList < String > videoIds = new ArrayList < > ();
+            ArrayList<String> videoIds = new ArrayList<>();
             URL playlistItems;
 
             if (nextPageToken.isEmpty()) {
-                playlistItems = URI.create("https://youtube.googleapis.com/youtube/v3/playlistItems?part=snippet%2Cstatus&playlistId=" + playlistId + "&maxResults=50&key=" + apiKey).toURL();
+                playlistItems = URI.create(
+                                "https://youtube.googleapis.com/youtube/v3/playlistItems?part=snippet%2Cstatus&playlistId="
+                                        + playlistId + "&maxResults=50&key=" + apiKey)
+                        .toURL();
             } else {
-                playlistItems = URI.create("https://youtube.googleapis.com/youtube/v3/playlistItems?part=snippet%2Cstatus&playlistId=" + playlistId + "&pageToken=" + nextPageToken + "&maxResults=50&key=" + apiKey).toURL();
+                playlistItems = URI.create(
+                                "https://youtube.googleapis.com/youtube/v3/playlistItems?part=snippet%2Cstatus&playlistId="
+                                        + playlistId + "&pageToken=" + nextPageToken + "&maxResults=50&key=" + apiKey)
+                        .toURL();
             }
 
             HttpsURLConnection con = (HttpsURLConnection) playlistItems.openConnection();
@@ -200,12 +220,16 @@ public class YoutubeManager {
             JsonObject object = JsonParser.parseReader(br).getAsJsonObject();
 
             JsonArray rawV = object.get("items").getAsJsonArray();
-            for (JsonElement rawVideo: rawV) {
+            for (JsonElement rawVideo : rawV) {
                 JsonObject videoData = rawVideo.getAsJsonObject().get("snippet").getAsJsonObject();
-                JsonObject videoStatus = rawVideo.getAsJsonObject().get("status").getAsJsonObject();
-                if (!videoStatus.get("privacyStatus").getAsString().equals("public"))
-                    continue; // removed videos
-                videoIds.add(videoData.get("resourceId").getAsJsonObject().get("videoId").getAsString());
+                JsonObject videoStatus =
+                        rawVideo.getAsJsonObject().get("status").getAsJsonObject();
+                if (!videoStatus.get("privacyStatus").getAsString().equals("public")) continue; // removed videos
+                videoIds.add(videoData
+                        .get("resourceId")
+                        .getAsJsonObject()
+                        .get("videoId")
+                        .getAsString());
             }
 
             if (!videoIds.isEmpty()) {
@@ -213,18 +237,24 @@ public class YoutubeManager {
 
                 String commaSeparatedVideos = String.join(",", videoIds);
 
-                VideoItems = URI.create("https://youtube.googleapis.com/youtube/v3/videos?part=contentDetails&id=" + commaSeparatedVideos + "&maxResults=50&key=" + apiKey).toURL();
+                VideoItems = URI.create("https://youtube.googleapis.com/youtube/v3/videos?part=contentDetails&id="
+                                + commaSeparatedVideos + "&maxResults=50&key=" + apiKey)
+                        .toURL();
                 HttpsURLConnection con1 = (HttpsURLConnection) VideoItems.openConnection();
                 InputStream is1 = con1.getInputStream();
                 InputStreamReader isr1 = new InputStreamReader(is1);
                 BufferedReader br1 = new BufferedReader(isr1);
                 JsonObject object1 = JsonParser.parseReader(br1).getAsJsonObject();
                 JsonArray Vds = object1.get("items").getAsJsonArray();
-                for (JsonElement rawVideo: Vds) {
-                    JsonObject contentDetails = rawVideo.getAsJsonObject().get("contentDetails").getAsJsonObject();
-                    int duration = (int) Duration.parse(contentDetails.get("duration").getAsString()).getSeconds();
+                for (JsonElement rawVideo : Vds) {
+                    JsonObject contentDetails =
+                            rawVideo.getAsJsonObject().get("contentDetails").getAsJsonObject();
+                    int duration =
+                            (int) Duration.parse(contentDetails.get("duration").getAsString())
+                                    .getSeconds();
                     if (duration < 1) continue;
-                    videos.add(new YoutubeVideo(rawVideo.getAsJsonObject().get("id").getAsString(), duration));
+                    videos.add(new YoutubeVideo(
+                            rawVideo.getAsJsonObject().get("id").getAsString(), duration));
                 }
             }
             if (object.has("nextPageToken")) {
@@ -243,7 +273,6 @@ public class YoutubeManager {
         this.playlistCache.put(playlistId, playlist);
 
         return playlist;
-
     }
 
     public ArrayList<YoutubePlaylist> getPlaylistsForItemId(int itemId) {

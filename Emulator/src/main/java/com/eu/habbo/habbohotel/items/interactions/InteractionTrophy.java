@@ -1,7 +1,6 @@
 package com.eu.habbo.habbohotel.items.interactions;
 
 import com.eu.habbo.habbohotel.items.Item;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 

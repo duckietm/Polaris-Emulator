@@ -11,7 +11,6 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.messages.outgoing.rooms.items.ItemStateComposer;
 import com.eu.habbo.threading.runnables.RebugKickBallAction;
 import com.eu.habbo.util.pathfinding.Direction8;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -25,7 +24,8 @@ public class InteractionRebugFootball extends InteractionDefault {
         this.setExtradata("0");
     }
 
-    public InteractionRebugFootball(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionRebugFootball(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.setExtradata("0");
     }
@@ -59,7 +59,10 @@ public class InteractionRebugFootball extends InteractionDefault {
     public void onWalkOff(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
         super.onWalkOff(roomUnit, room, objects);
 
-        if (objects != null && objects.length >= 2 && objects[1] instanceof RoomTile && objects[0] instanceof RoomTile) {
+        if (objects != null
+                && objects.length >= 2
+                && objects[1] instanceof RoomTile
+                && objects[0] instanceof RoomTile) {
             RoomTile fromTile = (RoomTile) objects[0];
             RoomTile nextTile = (RoomTile) objects[1];
 

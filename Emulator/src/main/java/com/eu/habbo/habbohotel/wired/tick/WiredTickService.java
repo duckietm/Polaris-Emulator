@@ -2,14 +2,17 @@ package com.eu.habbo.habbohotel.wired.tick;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.rooms.Room;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Centralized tick service for all wired timing operations.
@@ -27,7 +30,8 @@ public final class WiredTickService {
     public static final int MIN_TICK_INTERVAL_MS = 10;
     public static final int MAX_TICK_INTERVAL_MS = 500;
 
-    public static final int DEFAULT_WORKER_COUNT = Math.max(2, Math.min(8, Runtime.getRuntime().availableProcessors()));
+    public static final int DEFAULT_WORKER_COUNT =
+            Math.max(2, Math.min(8, Runtime.getRuntime().availableProcessors()));
     public static final int MIN_WORKER_COUNT = 1;
     public static final int MAX_WORKER_COUNT = 32;
 
@@ -82,8 +86,7 @@ public final class WiredTickService {
                     configuredInterval,
                     MIN_TICK_INTERVAL_MS,
                     MAX_TICK_INTERVAL_MS,
-                    this.tickIntervalMs
-            );
+                    this.tickIntervalMs);
         }
 
         this.debugEnabled = Emulator.getConfig().getBoolean("wired.tick.debug", false);
@@ -100,8 +103,7 @@ public final class WiredTickService {
                     configuredWorkers,
                     MIN_WORKER_COUNT,
                     MAX_WORKER_COUNT,
-                    this.workerCount
-            );
+                    this.workerCount);
         }
     }
 
@@ -141,8 +143,7 @@ public final class WiredTickService {
                 tickIntervalMs,
                 workerCount,
                 debugEnabled,
-                threadPriority
-        );
+                threadPriority);
 
         this.coordinator = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "WiredTickCoordinator");
@@ -182,8 +183,7 @@ public final class WiredTickService {
                 },
                 tickIntervalMs,
                 tickIntervalMs,
-                TimeUnit.MILLISECONDS
-        );
+                TimeUnit.MILLISECONDS);
 
         LOGGER.info("WiredTickService started successfully");
     }
@@ -253,7 +253,8 @@ public final class WiredTickService {
 
         int roomId = room.getId();
         int shardIndex = getShardIndex(roomId);
-        Set<WiredTickable> tickables = shardRoomTickables[shardIndex].computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet());
+        Set<WiredTickable> tickables =
+                shardRoomTickables[shardIndex].computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet());
 
         if (tickables.add(tickable)) {
             tickable.onRegistered(room, System.currentTimeMillis());
@@ -322,8 +323,7 @@ public final class WiredTickService {
                             "Error unregistering tickable {} from room {}",
                             tickable != null ? tickable.getId() : -1,
                             room.getId(),
-                            t
-                    );
+                            t);
                 }
             }
             LOGGER.debug("Unregistered {} tickables from room {}", tickables.size(), room.getId());
@@ -350,8 +350,7 @@ public final class WiredTickService {
                             "Error resetting timer for tickable {} in room {}",
                             tickable != null ? tickable.getId() : -1,
                             room.getId(),
-                            e
-                    );
+                            e);
                 }
             }
         }
@@ -484,8 +483,7 @@ public final class WiredTickService {
                                 currentTick,
                                 tickable.getId(),
                                 tickable.getClass().getName(),
-                                tickableDuration
-                        );
+                                tickableDuration);
                     }
                 } catch (Throwable t) {
                     long tickableDuration = System.currentTimeMillis() - tickableStart;
@@ -494,8 +492,7 @@ public final class WiredTickService {
                             tickable.getId(),
                             roomId,
                             tickableDuration,
-                            t
-                    );
+                            t);
                 }
             }
 
@@ -507,8 +504,7 @@ public final class WiredTickService {
                         roomId,
                         currentTick,
                         tickables.size(),
-                        roomDuration
-                );
+                        roomDuration);
             }
         }
 
@@ -520,8 +516,7 @@ public final class WiredTickService {
                     currentTick,
                     processedRooms,
                     processedTickables,
-                    shardDuration
-            );
+                    shardDuration);
         }
 
         if (debugEnabled && processedTickables > 0) {
@@ -531,8 +526,7 @@ public final class WiredTickService {
                     currentTick,
                     processedRooms,
                     processedTickables,
-                    shardDuration
-            );
+                    shardDuration);
         }
     }
 

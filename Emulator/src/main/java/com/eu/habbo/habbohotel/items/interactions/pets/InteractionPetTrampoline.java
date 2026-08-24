@@ -6,9 +6,12 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionDefault;
 import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.pets.PetTasks;
-import com.eu.habbo.habbohotel.rooms.*;
+import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomTile;
+import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.RoomUnitStatus;
+import com.eu.habbo.habbohotel.rooms.RoomUnitType;
 import com.eu.habbo.threading.runnables.PetClearPosture;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -18,7 +21,8 @@ public class InteractionPetTrampoline extends InteractionDefault {
         this.setExtradata("0");
     }
 
-    public InteractionPetTrampoline(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionPetTrampoline(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.setExtradata("0");
     }
@@ -55,7 +59,10 @@ public class InteractionPetTrampoline extends InteractionDefault {
 
         Pet pet = room.getPet(roomUnit);
 
-        if (pet != null && pet.getPetData().haveToyItem(this.getBaseItem()) && this.getOccupyingTiles(room.getLayout()).contains(pet.getRoomUnit().getGoal())) {
+        if (pet != null
+                && pet.getPetData().haveToyItem(this.getBaseItem())
+                && this.getOccupyingTiles(room.getLayout())
+                        .contains(pet.getRoomUnit().getGoal())) {
             if (pet.getEnergy() <= 35) {
                 return;
             }
@@ -64,14 +71,17 @@ public class InteractionPetTrampoline extends InteractionDefault {
             pet.setTask(PetTasks.JUMP);
             pet.getRoomUnit().setStatus(RoomUnitStatus.JUMP, "");
             pet.packetUpdate = true;
-            
-            Emulator.getThreading().run(() -> {
-                new PetClearPosture(pet, RoomUnitStatus.JUMP, null, false);
-                pet.getRoomUnit().setGoalLocation(room.getRandomWalkableTile());
-                this.setExtradata("0");
-                room.updateItemState(this);
-            }, 4000);
-            
+
+            Emulator.getThreading()
+                    .run(
+                            () -> {
+                                new PetClearPosture(pet, RoomUnitStatus.JUMP, null, false);
+                                pet.getRoomUnit().setGoalLocation(room.getRandomWalkableTile());
+                                this.setExtradata("0");
+                                room.updateItemState(this);
+                            },
+                            4000);
+
             pet.addHappiness(25);
 
             this.setExtradata("1");
@@ -96,7 +106,9 @@ public class InteractionPetTrampoline extends InteractionDefault {
     @Override
     public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
         Pet pet = room.getPet(roomUnit);
-        return roomUnit.getRoomUnitType() == RoomUnitType.PET && pet != null && pet.getPetData().haveToyItem(this.getBaseItem());
+        return roomUnit.getRoomUnitType() == RoomUnitType.PET
+                && pet != null
+                && pet.getPetData().haveToyItem(this.getBaseItem());
     }
 
     @Override

@@ -9,7 +9,6 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.threading.runnables.hopper.HopperActionOne;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -43,9 +42,7 @@ public class InteractionHopper extends HabboItem {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
 
     @Override
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
@@ -86,17 +83,13 @@ public class InteractionHopper extends HabboItem {
     }
 
     protected boolean canUseTeleport(GameClient client, RoomTile front, Room room) {
-        if (client.getHabbo().getRoomUnit().getX() != front.x)
-            return false;
+        if (client.getHabbo().getRoomUnit().getX() != front.x) return false;
 
-        if (client.getHabbo().getRoomUnit().getY() != front.y)
-            return false;
+        if (client.getHabbo().getRoomUnit().getY() != front.y) return false;
 
-        if (client.getHabbo().getRoomUnit().isTeleporting)
-            return false;
+        if (client.getHabbo().getRoomUnit().isTeleporting) return false;
 
-        if (!room.getHabbosAt(this.getX(), this.getY()).isEmpty())
-            return false;
+        if (!room.getHabbosAt(this.getX(), this.getY()).isEmpty()) return false;
 
         return this.getExtradata().equals("0");
     }

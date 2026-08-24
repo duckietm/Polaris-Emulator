@@ -5,7 +5,6 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -14,7 +13,8 @@ public class InteractionHabboClubTeleportTile extends InteractionTeleportTile {
         super(set, baseItem);
     }
 
-    public InteractionHabboClubTeleportTile(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionHabboClubTeleportTile(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -31,6 +31,7 @@ public class InteractionHabboClubTeleportTile extends InteractionTeleportTile {
 
     @Override
     public boolean canUseTeleport(GameClient client, Room room) {
-        return super.canUseTeleport(client, room) && client.getHabbo().getHabboStats().hasActiveClub();
+        return super.canUseTeleport(client, room)
+                && client.getHabbo().getHabboStats().hasActiveClub();
     }
 }

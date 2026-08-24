@@ -6,8 +6,12 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionDefault;
 import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.pets.PetTasks;
 import com.eu.habbo.habbohotel.pets.PetVocalsType;
-import com.eu.habbo.habbohotel.rooms.*;
-
+import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomTile;
+import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.RoomUnitStatus;
+import com.eu.habbo.habbohotel.rooms.RoomUnitType;
+import com.eu.habbo.habbohotel.rooms.RoomUserRotation;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -63,7 +67,10 @@ public class InteractionPetTree extends InteractionDefault {
         Pet pet = room.getPet(roomUnit);
 
         // Only dragons (type 12) can use the tree
-        if (pet != null && pet.getPetData().getType() == 12 && this.getOccupyingTiles(room.getLayout()).contains(pet.getRoomUnit().getGoal())) {
+        if (pet != null
+                && pet.getPetData().getType() == 12
+                && this.getOccupyingTiles(room.getLayout())
+                        .contains(pet.getRoomUnit().getGoal())) {
             if (pet.getEnergy() <= 35) {
                 return;
             }
@@ -88,10 +95,10 @@ public class InteractionPetTree extends InteractionDefault {
             pet.getRoomUnit().clearStatus();
             pet.getRoomUnit().setStatus(task, "");
             pet.packetUpdate = true;
-            
+
             // Say playful vocal
             pet.say(pet.getPetData().randomVocal(PetVocalsType.PLAYFUL));
-            
+
             this.setExtradata("1");
             room.updateItemState(this);
         }

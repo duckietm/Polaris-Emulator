@@ -8,7 +8,6 @@ import com.eu.habbo.habbohotel.items.interactions.games.tag.InteractionTagField;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -20,7 +19,8 @@ public class InteractionRollerskateField extends InteractionTagField {
         super(set, baseItem, RollerskateGame.class);
     }
 
-    public InteractionRollerskateField(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionRollerskateField(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells, RollerskateGame.class);
     }
 
@@ -29,8 +29,7 @@ public class InteractionRollerskateField extends InteractionTagField {
         super.onWalkOn(roomUnit, room, objects);
 
         Habbo habbo = room.getHabbo(roomUnit);
-        if (habbo != null)
-            this.stepTimes.put(habbo, Emulator.getIntUnixTimestamp());
+        if (habbo != null) this.stepTimes.put(habbo, Emulator.getIntUnixTimestamp());
     }
 
     @Override
@@ -39,7 +38,10 @@ public class InteractionRollerskateField extends InteractionTagField {
 
         Habbo habbo = room.getHabbo(roomUnit);
         if (habbo != null && this.stepTimes.containsKey(habbo)) {
-            AchievementManager.progressAchievement(habbo, Emulator.getGameEnvironment().getAchievementManager().getAchievement("RbTagC"), (Emulator.getIntUnixTimestamp() - this.stepTimes.get(habbo)) / 60);
+            AchievementManager.progressAchievement(
+                    habbo,
+                    Emulator.getGameEnvironment().getAchievementManager().getAchievement("RbTagC"),
+                    (Emulator.getIntUnixTimestamp() - this.stepTimes.get(habbo)) / 60);
             this.stepTimes.remove(habbo);
         }
     }
@@ -51,7 +53,9 @@ public class InteractionRollerskateField extends InteractionTagField {
         Habbo itemOwner = Emulator.getGameEnvironment().getHabboManager().getHabbo(this.getUserId());
 
         if (itemOwner != null) {
-            AchievementManager.progressAchievement(itemOwner, Emulator.getGameEnvironment().getAchievementManager().getAchievement("RbTagA"));
+            AchievementManager.progressAchievement(
+                    itemOwner,
+                    Emulator.getGameEnvironment().getAchievementManager().getAchievement("RbTagA"));
         }
     }
 }

@@ -13,6 +13,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -29,8 +30,7 @@ public class WiredEffectCancelTransaction extends InteractionWiredEffect {
         super(set, baseItem);
     }
 
-    public WiredEffectCancelTransaction(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectCancelTransaction(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -40,8 +40,7 @@ public class WiredEffectCancelTransaction extends InteractionWiredEffect {
         if (room == null || room.getLayout() == null) return;
 
         RoomTile tile = room.getLayout().getTile(this.getX(), this.getY());
-        WiredEvent.Builder builder =
-                WiredEvent.builder(WiredEvent.Type.TRANSACTION_FAIL, room).sourceItem(this);
+        WiredEvent.Builder builder = WiredEvent.builder(WiredEvent.Type.TRANSACTION_FAIL, room).sourceItem(this);
         if (tile != null) builder.tile(tile);
         ctx.actor().ifPresent(builder::actor);
 

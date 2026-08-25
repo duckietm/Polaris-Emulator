@@ -15,6 +15,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -58,8 +59,7 @@ public class WiredEffectFreeze extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson()
-                .toJson(new JsonData(this.effectId, this.cancelOnTeleport, this.getDelay(), this.userSource));
+        return WiredManager.getGson().toJson(new JsonData(this.effectId, this.cancelOnTeleport, this.getDelay(), this.userSource));
     }
 
     @Override

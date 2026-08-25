@@ -1,10 +1,12 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.conditions;
 
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -19,8 +21,7 @@ public class WiredConditionNotUserPerformsAction extends WiredConditionUserPerfo
         super(set, baseItem);
     }
 
-    public WiredConditionNotUserPerformsAction(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredConditionNotUserPerformsAction(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 

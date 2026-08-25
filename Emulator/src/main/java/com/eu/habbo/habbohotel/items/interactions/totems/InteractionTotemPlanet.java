@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionDefault;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Set;
@@ -22,7 +23,7 @@ public class InteractionTotemPlanet extends InteractionDefault {
         int extraData;
         try {
             extraData = Integer.parseInt(this.getExtradata());
-        } catch (NumberFormatException ex) {
+        } catch(NumberFormatException ex) {
             extraData = 0;
         }
         return TotemPlanetType.fromInt(extraData);
@@ -30,7 +31,7 @@ public class InteractionTotemPlanet extends InteractionDefault {
 
     @Override
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
-        if (client.getHabbo().getHabboInfo().getId() != this.getUserId()) {
+        if(client.getHabbo().getHabboInfo().getId() != this.getUserId()) {
             super.onClick(client, room, objects);
             return;
         }
@@ -40,50 +41,43 @@ public class InteractionTotemPlanet extends InteractionDefault {
 
         Set<HabboItem> items = room.getItemsAt(room.getLayout().getTile(this.getX(), this.getY()));
 
-        for (HabboItem item : items) {
-            if (item instanceof InteractionTotemLegs && item.getZ() < this.getZ()) legs = (InteractionTotemLegs) item;
+        for(HabboItem item : items) {
+            if(item instanceof InteractionTotemLegs && item.getZ() < this.getZ())
+                legs = (InteractionTotemLegs)item;
         }
 
-        if (legs == null) {
+        if(legs == null) {
             super.onClick(client, room, objects);
             return;
         }
 
-        for (HabboItem item : items) {
-            if (item instanceof InteractionTotemHead && item.getZ() > legs.getZ()) head = (InteractionTotemHead) item;
+        for(HabboItem item : items) {
+            if(item instanceof InteractionTotemHead && item.getZ() > legs.getZ())
+                head = (InteractionTotemHead)item;
         }
 
-        if (head == null) {
+        if(head == null) {
             super.onClick(client, room, objects);
             return;
         }
 
         int effectId = 0;
 
-        if (getPlanetType() == TotemPlanetType.SUN
-                && head.getTotemType() == TotemType.BIRD
-                && legs.getTotemType() == TotemType.BIRD
-                && legs.getTotemColor() == TotemColor.RED) {
+        if(getPlanetType() == TotemPlanetType.SUN && head.getTotemType() == TotemType.BIRD && legs.getTotemType() == TotemType.BIRD && legs.getTotemColor() == TotemColor.RED) {
             effectId = 25;
-        } else if (getPlanetType() == TotemPlanetType.EARTH
-                && head.getTotemType() == TotemType.TROLL
-                && legs.getTotemType() == TotemType.TROLL
-                && legs.getTotemColor() == TotemColor.YELLOW) {
+        }
+        else if(getPlanetType() == TotemPlanetType.EARTH && head.getTotemType() == TotemType.TROLL && legs.getTotemType() == TotemType.TROLL && legs.getTotemColor() == TotemColor.YELLOW) {
             effectId = 23;
-        } else if (getPlanetType() == TotemPlanetType.EARTH
-                && head.getTotemType() == TotemType.SNAKE
-                && legs.getTotemType() == TotemType.BIRD
-                && legs.getTotemColor() == TotemColor.YELLOW) {
+        }
+        else if(getPlanetType() == TotemPlanetType.EARTH && head.getTotemType() == TotemType.SNAKE && legs.getTotemType() == TotemType.BIRD && legs.getTotemColor() == TotemColor.YELLOW) {
             effectId = 26;
-        } else if (getPlanetType() == TotemPlanetType.MOON
-                && head.getTotemType() == TotemType.SNAKE
-                && legs.getTotemType() == TotemType.SNAKE
-                && legs.getTotemColor() == TotemColor.BLUE) {
+        }
+        else if(getPlanetType() == TotemPlanetType.MOON && head.getTotemType() == TotemType.SNAKE && legs.getTotemType() == TotemType.SNAKE && legs.getTotemColor() == TotemColor.BLUE) {
             effectId = 24;
         }
 
-        if (effectId > 0) {
-            if (client.getHabbo().getInventory().getEffectsComponent().ownsEffect(effectId)) {
+        if(effectId > 0) {
+            if(client.getHabbo().getInventory().getEffectsComponent().ownsEffect(effectId)) {
                 client.getHabbo().getInventory().getEffectsComponent().enableEffect(effectId);
                 return;
             }

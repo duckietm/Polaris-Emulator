@@ -13,22 +13,22 @@ import com.eu.habbo.habbohotel.wired.core.WiredEvent;
  * This class provides convenient builder methods for creating events that can be
  * passed to the {@link com.eu.habbo.habbohotel.wired.core.WiredEngine}.
  * </p>
- *
+ * 
  * <h3>Usage:</h3>
  * <pre>{@code
  * // When user walks on furniture
  * WiredEvent event = WiredEvents.userWalksOn(room, user, steppedItem);
  * engine.handleEvent(event);
- *
+ * 
  * // When user says something
  * WiredEvent event = WiredEvents.userSays(room, user, message);
  * engine.handleEvent(event);
  * }</pre>
- *
+ * 
  * @see WiredEvent
  */
 public final class WiredEvents {
-
+    
     private WiredEvents() {
         // Static utility class
     }
@@ -198,13 +198,7 @@ public final class WiredEvents {
                 .build();
     }
 
-    public static WiredEvent userVariableChanged(
-            Room room,
-            RoomUnit user,
-            int definitionItemId,
-            boolean created,
-            boolean deleted,
-            WiredEvent.VariableChangeKind changeKind) {
+    public static WiredEvent userVariableChanged(Room room, RoomUnit user, int definitionItemId, boolean created, boolean deleted, WiredEvent.VariableChangeKind changeKind) {
         return WiredEvent.builder(WiredEvent.Type.VARIABLE_CHANGED, room)
                 .actor(user)
                 .tile((user != null) ? user.getCurrentLocation() : null)
@@ -216,13 +210,7 @@ public final class WiredEvents {
                 .build();
     }
 
-    public static WiredEvent furniVariableChanged(
-            Room room,
-            HabboItem item,
-            int definitionItemId,
-            boolean created,
-            boolean deleted,
-            WiredEvent.VariableChangeKind changeKind) {
+    public static WiredEvent furniVariableChanged(Room room, HabboItem item, int definitionItemId, boolean created, boolean deleted, WiredEvent.VariableChangeKind changeKind) {
         RoomTile tile = (item != null) ? room.getLayout().getTile(item.getX(), item.getY()) : null;
 
         return WiredEvent.builder(WiredEvent.Type.VARIABLE_CHANGED, room)
@@ -236,8 +224,7 @@ public final class WiredEvents {
                 .build();
     }
 
-    public static WiredEvent roomVariableChanged(
-            Room room, int definitionItemId, WiredEvent.VariableChangeKind changeKind) {
+    public static WiredEvent roomVariableChanged(Room room, int definitionItemId, WiredEvent.VariableChangeKind changeKind) {
         return WiredEvent.builder(WiredEvent.Type.VARIABLE_CHANGED, room)
                 .variableTargetType(3)
                 .variableDefinitionItemId(definitionItemId)
@@ -311,7 +298,8 @@ public final class WiredEvents {
      * @return the event
      */
     public static WiredEvent gameStarts(Room room) {
-        return WiredEvent.builder(WiredEvent.Type.GAME_STARTS, room).build();
+        return WiredEvent.builder(WiredEvent.Type.GAME_STARTS, room)
+                .build();
     }
 
     /**
@@ -320,7 +308,8 @@ public final class WiredEvents {
      * @return the event
      */
     public static WiredEvent gameEnds(Room room) {
-        return WiredEvent.builder(WiredEvent.Type.GAME_ENDS, room).build();
+        return WiredEvent.builder(WiredEvent.Type.GAME_ENDS, room)
+                .build();
     }
 
     /**
@@ -330,7 +319,9 @@ public final class WiredEvents {
      * @return the event
      */
     public static WiredEvent teamWins(Room room, RoomUnit user) {
-        return WiredEvent.builder(WiredEvent.Type.TEAM_WINS, room).actor(user).build();
+        return WiredEvent.builder(WiredEvent.Type.TEAM_WINS, room)
+                .actor(user)
+                .build();
     }
 
     /**
@@ -340,7 +331,9 @@ public final class WiredEvents {
      * @return the event
      */
     public static WiredEvent teamLoses(Room room, RoomUnit user) {
-        return WiredEvent.builder(WiredEvent.Type.TEAM_LOSES, room).actor(user).build();
+        return WiredEvent.builder(WiredEvent.Type.TEAM_LOSES, room)
+                .actor(user)
+                .build();
     }
 
     /**
@@ -497,7 +490,7 @@ public final class WiredEvents {
     /**
      * Create an event from legacy trigger type and parameters.
      * This is for backwards compatibility during migration.
-     *
+     * 
      * @param triggerType the legacy trigger type
      * @param room the room
      * @param roomUnit the triggering unit (may be null)
@@ -506,9 +499,10 @@ public final class WiredEvents {
      */
     public static WiredEvent fromLegacy(WiredTriggerType triggerType, Room room, RoomUnit roomUnit, Object[] stuff) {
         WiredEvent.Type eventType = WiredEvent.Type.fromLegacyType(triggerType);
-
-        WiredEvent.Builder builder = WiredEvent.builder(eventType, room).actor(roomUnit);
-
+        
+        WiredEvent.Builder builder = WiredEvent.builder(eventType, room)
+                .actor(roomUnit);
+        
         // Try to extract common data from stuff array
         if (stuff != null) {
             for (Object obj : stuff) {
@@ -521,12 +515,12 @@ public final class WiredEvents {
                 }
             }
         }
-
+        
         // Add current tile from room unit if available
         if (roomUnit != null && roomUnit.getCurrentLocation() != null) {
             builder.tile(roomUnit.getCurrentLocation());
         }
-
+        
         return builder.build();
     }
 }

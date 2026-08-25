@@ -5,8 +5,7 @@ import java.util.Comparator;
 import java.util.List;
 
 public class WiredHighscoreRow implements Comparable<WiredHighscoreRow> {
-    public static final Comparator<WiredHighscoreRow> COMPARATOR =
-            Comparator.comparing(WiredHighscoreRow::getValue).reversed();
+    public static final Comparator<WiredHighscoreRow> COMPARATOR = Comparator.comparing(WiredHighscoreRow::getValue).reversed();
 
     private final List<String> users;
     private final int value;

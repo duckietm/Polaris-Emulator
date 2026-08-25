@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.items.ICycleable;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -17,8 +18,7 @@ public class InteractionMonsterCrackable extends InteractionCrackable implements
         super(set, baseItem);
     }
 
-    public InteractionMonsterCrackable(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionMonsterCrackable(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 

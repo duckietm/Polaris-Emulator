@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.wired.core;
 
 import com.eu.habbo.Emulator;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 

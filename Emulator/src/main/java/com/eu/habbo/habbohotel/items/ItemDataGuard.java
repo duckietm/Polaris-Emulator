@@ -3,7 +3,8 @@ package com.eu.habbo.habbohotel.items;
 final class ItemDataGuard {
     static final int MAX_EXTRA_DATA_LENGTH = 1000;
 
-    private ItemDataGuard() {}
+    private ItemDataGuard() {
+    }
 
     static String safeString(String value) {
         return value == null ? "" : value;

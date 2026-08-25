@@ -5,10 +5,11 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class InteractionMusicDisc extends HabboItem {
     private static final Logger LOGGER = LoggerFactory.getLogger(InteractionMusicDisc.class);
@@ -62,7 +63,9 @@ public class InteractionMusicDisc extends HabboItem {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+
+    }
 
     public int getSongId() {
         return this.songId;

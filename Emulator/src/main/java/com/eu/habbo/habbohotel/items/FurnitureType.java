@@ -34,5 +34,6 @@ public enum FurnitureType {
             default:
                 return FLOOR;
         }
+
     }
 }

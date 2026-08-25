@@ -12,8 +12,9 @@ public enum TotemPlanetType {
     }
 
     public static TotemPlanetType fromInt(int type) {
-        for (TotemPlanetType planetType : TotemPlanetType.values()) {
-            if (planetType.type == type) return planetType;
+        for(TotemPlanetType planetType : TotemPlanetType.values()) {
+            if(planetType.type == type)
+                return planetType;
         }
 
         return MOON;

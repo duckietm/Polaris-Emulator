@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ISerialize;
 import com.eu.habbo.messages.ServerMessage;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -20,9 +21,7 @@ public class NewUserGift implements ISerialize {
         this.id = set.getInt("id");
         this.type = Type.valueOf(set.getString("type").toUpperCase());
         this.imageUrl = set.getString("image");
-        this.items.put(
-                this.type == Type.ROOM ? "" : set.getString("value"),
-                this.type == Type.ROOM ? set.getString("value") : "");
+        this.items.put(this.type == Type.ROOM ? "" : set.getString("value"), this.type == Type.ROOM ? set.getString("value") : "");
     }
 
     public NewUserGift(int id, Type type, String imageUrl, Map<String, String> items) {
@@ -37,8 +36,8 @@ public class NewUserGift implements ISerialize {
         message.appendString(this.imageUrl);
         message.appendInt(this.items.size());
         for (Map.Entry<String, String> entry : this.items.entrySet()) {
-            message.appendString(entry.getKey()); // Item Name
-            message.appendString(entry.getValue()); // Extra Info
+            message.appendString(entry.getKey()); //Item Name
+            message.appendString(entry.getValue()); //Extra Info
         }
     }
 
@@ -48,9 +47,7 @@ public class NewUserGift implements ISerialize {
                 Item item = Emulator.getGameEnvironment().getItemManager().getItem(set.getKey());
 
                 if (item != null) {
-                    HabboItem createdItem = Emulator.getGameEnvironment()
-                            .getItemManager()
-                            .createItem(habbo.getHabboInfo().getId(), item, 0, 0, "");
+                    HabboItem createdItem = Emulator.getGameEnvironment().getItemManager().createItem(habbo.getHabboInfo().getId(), item, 0, 0, "");
 
                     if (createdItem != null) {
                         habbo.addFurniture(createdItem);
@@ -58,7 +55,7 @@ public class NewUserGift implements ISerialize {
                 }
             }
         } else if (this.type == Type.ROOM) {
-            // TODO Give room
+            //TODO Give room
         }
     }
 

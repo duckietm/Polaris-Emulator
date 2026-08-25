@@ -7,19 +7,19 @@ package com.eu.habbo.habbohotel.wired.core;
  * resource consumption in wired stacks. When thrown, the current
  * stack execution is aborted and an error is logged.
  * </p>
- *
+ * 
  * <h3>Common Causes:</h3>
  * <ul>
  *   <li>Infinite loops via "Trigger Stacks" effect</li>
  *   <li>Excessively complex wired setups</li>
  *   <li>Malicious room configurations</li>
  * </ul>
- *
+ * 
  * @see WiredState#step()
  * @see WiredEngine
  */
 public final class WiredLimitException extends RuntimeException {
-
+    
     private static final long serialVersionUID = 1L;
 
     /**

@@ -3,10 +3,11 @@ package com.eu.habbo.habbohotel.items.interactions;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class InteractionSwitchRemoteControl extends InteractionDefault {
     private static final Logger LOGGER = LoggerFactory.getLogger(InteractionSwitchRemoteControl.class);
@@ -15,10 +16,10 @@ public class InteractionSwitchRemoteControl extends InteractionDefault {
         super(set, baseItem);
     }
 
-    public InteractionSwitchRemoteControl(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionSwitchRemoteControl(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
+
 
     @Override
     public boolean isUsable() {
@@ -30,7 +31,8 @@ public class InteractionSwitchRemoteControl extends InteractionDefault {
         if (room != null) {
             super.onClick(client, room, objects);
 
-            if (this.getExtradata().isEmpty()) this.setExtradata("0");
+            if (this.getExtradata().isEmpty())
+                this.setExtradata("0");
 
             if (this.getBaseItem().getStateCount() > 0) {
                 int currentState = 0;
@@ -38,11 +40,7 @@ public class InteractionSwitchRemoteControl extends InteractionDefault {
                 try {
                     currentState = Integer.parseInt(this.getExtradata());
                 } catch (NumberFormatException e) {
-                    LOGGER.error(
-                            "Incorrect extradata ({}) for item ID ({}) of type ({})",
-                            this.getExtradata(),
-                            this.getId(),
-                            this.getBaseItem().getName());
+                    LOGGER.error("Incorrect extradata ({}) for item ID ({}) of type ({})", this.getExtradata(), this.getId(), this.getBaseItem().getName());
                 }
 
                 this.setExtradata("" + (currentState + 1) % this.getBaseItem().getStateCount());

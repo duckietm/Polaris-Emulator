@@ -3,7 +3,8 @@ package com.eu.habbo.habbohotel.items.interactions.wired.selector;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 
 final class WiredSelectorPayloadGuard {
-    private WiredSelectorPayloadGuard() {}
+    private WiredSelectorPayloadGuard() {
+    }
 
     static <T> T fromJson(String wiredData, Class<T> type) {
         if (wiredData == null || !wiredData.startsWith("{")) {

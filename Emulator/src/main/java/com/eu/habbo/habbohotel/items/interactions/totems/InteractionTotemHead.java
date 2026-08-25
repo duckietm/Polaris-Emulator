@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -24,23 +25,23 @@ public class InteractionTotemHead extends InteractionDefault {
         int extraData;
         try {
             extraData = Integer.parseInt(this.getExtradata());
-        } catch (NumberFormatException ex) {
+        } catch(NumberFormatException ex) {
             extraData = 0;
         }
-        if (extraData < 3) {
+        if(extraData < 3) {
             return TotemType.fromInt(extraData + 1);
         }
-        return TotemType.fromInt((int) Math.ceil((extraData - 2) / 4.0f));
+        return TotemType.fromInt((int)Math.ceil((extraData - 2) / 4.0f));
     }
 
     public TotemColor getTotemColor() {
         int extraData;
         try {
             extraData = Integer.parseInt(this.getExtradata());
-        } catch (NumberFormatException ex) {
+        }catch(NumberFormatException ex) {
             extraData = 0;
         }
-        if (extraData < 3) {
+        if(extraData < 3) {
             return TotemColor.NONE;
         }
         return TotemColor.fromInt(extraData - 3 - (4 * (getTotemType().type - 1)));
@@ -49,11 +50,13 @@ public class InteractionTotemHead extends InteractionDefault {
     private void update(Room room, RoomTile tile) {
         InteractionTotemLegs legs = null;
 
-        for (HabboItem item : room.getItemsAt(tile)) {
-            if (item instanceof InteractionTotemLegs && item.getZ() < this.getZ()) legs = (InteractionTotemLegs) item;
+        for(HabboItem item : room.getItemsAt(tile)) {
+            if(item instanceof InteractionTotemLegs && item.getZ() < this.getZ())
+                legs = (InteractionTotemLegs)item;
         }
 
-        if (legs == null) return;
+        if(legs == null)
+            return;
 
         this.setExtradata(((4 * this.getTotemType().type) + legs.getTotemColor().color) - 1 + "");
     }
@@ -71,11 +74,11 @@ public class InteractionTotemHead extends InteractionDefault {
 
     @Override
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
-        if (!((client != null && room != null && room.hasRights(client.getHabbo()))
-                || (objects.length >= 2 && objects[1] instanceof WiredEffectType))) return;
+        if (!((client != null && room != null && room.hasRights(client.getHabbo())) || (objects.length >= 2 && objects[1] instanceof WiredEffectType)))
+            return;
 
         TotemType newType = TotemType.fromInt(getTotemType().type + 1);
-        if (newType == TotemType.NONE) {
+        if(newType == TotemType.NONE) {
             newType = TotemType.TROLL;
         }
 

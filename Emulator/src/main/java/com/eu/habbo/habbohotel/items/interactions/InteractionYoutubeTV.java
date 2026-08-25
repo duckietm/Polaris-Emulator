@@ -9,6 +9,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.items.youtube.YoutubeVideoComposer;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.concurrent.ScheduledFuture;
@@ -40,11 +41,14 @@ public class InteractionYoutubeTV extends HabboItem {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+
+    }
 
     @Override
     public void serializeExtradata(ServerMessage serverMessage) {
-        if (this.getExtradata().length() == 0) this.setExtradata("");
+        if (this.getExtradata().length() == 0)
+            this.setExtradata("");
 
         serverMessage.appendInt(1 + (this.isLimited() ? 256 : 0));
         serverMessage.appendInt(1);

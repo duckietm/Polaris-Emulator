@@ -11,6 +11,7 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashSet;
@@ -86,12 +87,12 @@ public class WiredExtraOrEval extends InteractionWiredExtra {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson()
-                .toJson(new JsonData(
-                        this.evaluationMode,
-                        this.furniSource,
-                        this.compareValue,
-                        this.items.stream().map(HabboItem::getId).collect(Collectors.toList())));
+        return WiredManager.getGson().toJson(new JsonData(
+                this.evaluationMode,
+                this.furniSource,
+                this.compareValue,
+                this.items.stream().map(HabboItem::getId).collect(Collectors.toList())
+        ));
     }
 
     @Override
@@ -180,7 +181,9 @@ public class WiredExtraOrEval extends InteractionWiredExtra {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+
+    }
 
     @Override
     public boolean hasConfiguration() {
@@ -215,8 +218,7 @@ public class WiredExtraOrEval extends InteractionWiredExtra {
         }
     }
 
-    public static boolean matchesMode(
-            int evaluationMode, int matchedRequirements, int totalRequirements, int compareValue) {
+    public static boolean matchesMode(int evaluationMode, int matchedRequirements, int totalRequirements, int compareValue) {
         if (totalRequirements <= 0) {
             return true;
         }

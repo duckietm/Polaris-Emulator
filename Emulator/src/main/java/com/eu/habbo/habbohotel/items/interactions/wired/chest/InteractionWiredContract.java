@@ -7,10 +7,12 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -22,7 +24,7 @@ import java.util.List;
  * furni id (first selected furni) for depositing PAY or sourcing RECEIVE.
  */
 public abstract class InteractionWiredContract extends InteractionWiredExtra {
-    private int[] termParams = new int[] {0};
+    private int[] termParams = new int[] { 0 };
     private String termPosters = "";
     private int chestItemId = 0;
 
@@ -30,8 +32,7 @@ public abstract class InteractionWiredContract extends InteractionWiredExtra {
         super(set, baseItem);
     }
 
-    protected InteractionWiredContract(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    protected InteractionWiredContract(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -127,7 +128,7 @@ public abstract class InteractionWiredContract extends InteractionWiredExtra {
         if (wiredData.startsWith("{")) {
             JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
             if (data != null) {
-                this.termParams = (data.terms != null && data.terms.length > 0) ? data.terms : new int[] {0};
+                this.termParams = (data.terms != null && data.terms.length > 0) ? data.terms : new int[] { 0 };
                 this.termPosters = data.posters == null ? "" : data.posters;
                 this.chestItemId = data.chestItemId;
             }
@@ -136,7 +137,7 @@ public abstract class InteractionWiredContract extends InteractionWiredExtra {
 
     @Override
     public void onPickUp() {
-        this.termParams = new int[] {0};
+        this.termParams = new int[] { 0 };
         this.termPosters = "";
         this.chestItemId = 0;
     }
@@ -146,7 +147,8 @@ public abstract class InteractionWiredContract extends InteractionWiredExtra {
         String posters;
         int chestItemId;
 
-        JsonData() {}
+        JsonData() {
+        }
 
         JsonData(int[] terms, String posters, int chestItemId) {
             this.terms = terms;

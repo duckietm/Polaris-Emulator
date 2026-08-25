@@ -12,13 +12,14 @@ import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
-import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import com.eu.habbo.threading.runnables.RoomUnitGiveHanditem;
 import com.eu.habbo.threading.runnables.RoomUnitWalkToLocation;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -37,8 +38,7 @@ public class WiredEffectBotGiveHandItem extends InteractionWiredEffect {
         super(set, baseItem);
     }
 
-    public WiredEffectBotGiveHandItem(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectBotGiveHandItem(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -76,24 +76,21 @@ public class WiredEffectBotGiveHandItem extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        if (settings.getIntParams().length < 2) throw new WiredSaveException("Missing item id");
+        if(settings.getIntParams().length < 2) throw new WiredSaveException("Missing item id");
 
         int itemId = this.normalizeHandItem(settings.getIntParams()[0]);
         this.userSource = this.normalizeUserSource(settings.getIntParams()[1]);
-        this.botSource = (settings.getIntParams().length > 2)
-                ? this.normalizeBotSource(settings.getIntParams()[2])
-                : BOT_SOURCE_NAME;
+        this.botSource = (settings.getIntParams().length > 2) ? this.normalizeBotSource(settings.getIntParams()[2]) : BOT_SOURCE_NAME;
 
         String botName = settings.getStringParam();
 
         int delay = settings.getDelay();
 
-        if (delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
+        if(delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
             throw new WiredSaveException("Delay too long");
 
         this.itemId = itemId;
-        this.botName = botName.substring(
-                0, Math.min(botName.length(), Emulator.getConfig().getInt("hotel.wired.message.max_length", 100)));
+        this.botName = botName.substring(0, Math.min(botName.length(), Emulator.getConfig().getInt("hotel.wired.message.max_length", 100)));
         this.setDelay(delay);
 
         return true;
@@ -120,18 +117,14 @@ public class WiredEffectBotGiveHandItem extends InteractionWiredEffect {
             tasks.add(new RoomUnitGiveHanditem(roomUnit, room, this.itemId));
             tasks.add(new RoomUnitGiveHanditem(bot.getRoomUnit(), room, 0));
             tasks.add(() -> {
-                if (roomUnit.getRoom() != null
-                        && roomUnit.getRoom().getId() == room.getId()
-                        && roomUnit.getCurrentLocation()
-                                        .distance(bot.getRoomUnit().getCurrentLocation())
-                                < 2) {
+                if(roomUnit.getRoom() != null && roomUnit.getRoom().getId() == room.getId() && roomUnit.getCurrentLocation().distance(bot.getRoomUnit().getCurrentLocation()) < 2) {
                     WiredManager.triggerBotReachedHabbo(room, bot.getRoomUnit(), roomUnit);
                 }
             });
 
             RoomTile tile = bot.getRoomUnit().getClosestAdjacentTile(roomUnit.getX(), roomUnit.getY(), true);
 
-            if (tile != null) {
+            if(tile != null) {
                 bot.getRoomUnit().setGoalLocation(tile);
             }
 
@@ -148,8 +141,7 @@ public class WiredEffectBotGiveHandItem extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson()
-                .toJson(new JsonData(this.botName, this.itemId, this.getDelay(), this.userSource, this.botSource));
+        return WiredManager.getGson().toJson(new JsonData(this.botName, this.itemId, this.getDelay(), this.userSource, this.botSource));
     }
 
     @Override
@@ -157,17 +149,16 @@ public class WiredEffectBotGiveHandItem extends InteractionWiredEffect {
         String wiredData = set.getString("wired_data");
 
         JsonData jsonData = WiredEffectPayloadGuard.fromJson(wiredData, JsonData.class);
-        if (jsonData != null) {
+        if(jsonData != null) {
             this.setDelay(WiredEffectPayloadGuard.delay(jsonData.delay));
             this.itemId = this.normalizeHandItem(jsonData.item_id);
             this.botName = WiredEffectPayloadGuard.text(jsonData.bot_name);
             this.userSource = this.normalizeUserSource(jsonData.userSource);
-            this.botSource = ((jsonData.botSource == WiredSourceUtil.SOURCE_TRIGGER)
-                            && this.botName != null
-                            && !this.botName.isEmpty())
+            this.botSource = ((jsonData.botSource == WiredSourceUtil.SOURCE_TRIGGER) && this.botName != null && !this.botName.isEmpty())
                     ? BOT_SOURCE_NAME
                     : this.normalizeBotSource(jsonData.botSource);
-        } else {
+        }
+        else {
             String[] data = wiredData != null ? wiredData.split(((char) 9) + "") : new String[0];
 
             if (data.length == 3) {
@@ -193,8 +184,7 @@ public class WiredEffectBotGiveHandItem extends InteractionWiredEffect {
 
     @Override
     public boolean requiresTriggeringUser() {
-        return (this.userSource == WiredSourceUtil.SOURCE_TRIGGER)
-                || (this.botSource == WiredSourceUtil.SOURCE_TRIGGER);
+        return (this.userSource == WiredSourceUtil.SOURCE_TRIGGER) || (this.botSource == WiredSourceUtil.SOURCE_TRIGGER);
     }
 
     static class JsonData {

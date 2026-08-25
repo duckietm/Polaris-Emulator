@@ -1,13 +1,14 @@
 package com.eu.habbo.habbohotel.items;
 
 import com.eu.habbo.Emulator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class CrackableReward {
     private static final Logger LOGGER = LoggerFactory.getLogger(CrackableReward.class);
@@ -31,6 +32,7 @@ public class CrackableReward {
         this.subscriptionDuration = set.getInt("subscription_duration");
         this.subscriptionType = RedeemableSubscriptionType.fromString(set.getString("subscription_type"));
 
+
         String[] prizes = set.getString("prizes").split(";");
         this.prizes = new HashMap<>();
 
@@ -46,10 +48,7 @@ public class CrackableReward {
                     itemId = Integer.parseInt(prize.split(":")[0]);
                     chance = Integer.parseInt(prize.split(":")[1]);
                 } else if (prize.contains(":")) {
-                    LOGGER.error(
-                            "Invalid configuration of crackable prizes (item id: {}). '{}' format should be itemId:chance.",
-                            this.itemId,
-                            prize);
+                    LOGGER.error("Invalid configuration of crackable prizes (item id: {}). '{}' format should be itemId:chance.", this.itemId, prize);
                 } else {
                     itemId = Integer.parseInt(prize.replace(":", ""));
                 }

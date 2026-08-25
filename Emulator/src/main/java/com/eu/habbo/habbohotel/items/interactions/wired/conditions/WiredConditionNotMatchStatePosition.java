@@ -3,8 +3,9 @@ package com.eu.habbo.habbohotel.items.interactions.wired.conditions;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
-import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
+import com.eu.habbo.habbohotel.wired.WiredConditionType;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -15,8 +16,7 @@ public class WiredConditionNotMatchStatePosition extends WiredConditionMatchStat
         super(set, baseItem);
     }
 
-    public WiredConditionNotMatchStatePosition(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredConditionNotMatchStatePosition(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 

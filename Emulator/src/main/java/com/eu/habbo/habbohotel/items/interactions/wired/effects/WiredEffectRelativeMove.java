@@ -16,6 +16,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -42,8 +43,7 @@ public class WiredEffectRelativeMove extends InteractionWiredEffect {
         super(set, baseItem);
     }
 
-    public WiredEffectRelativeMove(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectRelativeMove(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -57,8 +57,9 @@ public class WiredEffectRelativeMove extends InteractionWiredEffect {
         List<HabboItem> effectiveItems = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items);
 
         if (this.furniSource == WiredSourceUtil.SOURCE_SELECTED) {
-            this.items.removeIf(item ->
-                    item == null || item.getRoomId() != this.getRoomId() || room.getHabboItem(item.getId()) == null);
+            this.items.removeIf(item -> item == null
+                    || item.getRoomId() != this.getRoomId()
+                    || room.getHabboItem(item.getId()) == null);
         }
 
         int deltaX = this.getHorizontalOffset();
@@ -93,15 +94,15 @@ public class WiredEffectRelativeMove extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson()
-                .toJson(new JsonData(
-                        this.getDelay(),
-                        this.items.stream().map(HabboItem::getId).collect(Collectors.toList()),
-                        this.horizontalDirection,
-                        this.horizontalDistance,
-                        this.verticalDirection,
-                        this.verticalDistance,
-                        this.furniSource));
+        return WiredManager.getGson().toJson(new JsonData(
+                this.getDelay(),
+                this.items.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                this.horizontalDirection,
+                this.horizontalDistance,
+                this.verticalDirection,
+                this.verticalDistance,
+                this.furniSource
+        ));
     }
 
     @Override
@@ -158,8 +159,9 @@ public class WiredEffectRelativeMove extends InteractionWiredEffect {
     @Override
     public void serializeWiredData(ServerMessage message, Room room) {
         List<HabboItem> itemsSnapshot = new ArrayList<>(this.items);
-        itemsSnapshot.removeIf(item ->
-                item == null || item.getRoomId() != this.getRoomId() || room.getHabboItem(item.getId()) == null);
+        itemsSnapshot.removeIf(item -> item == null
+                || item.getRoomId() != this.getRoomId()
+                || room.getHabboItem(item.getId()) == null);
 
         this.items.clear();
         this.items.addAll(itemsSnapshot);
@@ -269,14 +271,7 @@ public class WiredEffectRelativeMove extends InteractionWiredEffect {
         int verticalDistance;
         int furniSource;
 
-        public JsonData(
-                int delay,
-                List<Integer> itemIds,
-                int horizontalDirection,
-                int horizontalDistance,
-                int verticalDirection,
-                int verticalDistance,
-                int furniSource) {
+        public JsonData(int delay, List<Integer> itemIds, int horizontalDirection, int horizontalDistance, int verticalDirection, int verticalDistance, int furniSource) {
             this.delay = delay;
             this.itemIds = itemIds;
             this.horizontalDirection = horizontalDirection;

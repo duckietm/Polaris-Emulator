@@ -11,6 +11,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUnitStatus;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -47,7 +48,9 @@ public class InteractionNest extends HabboItem {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+
+    }
 
     @Override
     public void onWalkOn(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
@@ -55,13 +58,17 @@ public class InteractionNest extends HabboItem {
 
         Pet pet = room.getPet(roomUnit);
 
-        if (pet == null) return;
+        if (pet == null)
+            return;
 
-        if (pet instanceof RideablePet && ((RideablePet) pet).getRider() != null) return;
+        if (pet instanceof RideablePet && ((RideablePet) pet).getRider() != null)
+            return;
 
-        if (!pet.getPetData().haveNest(this)) return;
+        if (!pet.getPetData().haveNest(this))
+            return;
 
-        if (pet.getEnergy() > 85) return;
+        if (pet.getEnergy() > 85)
+            return;
 
         pet.setTask(PetTasks.NEST);
         pet.getRoomUnit().setGoalLocation(room.getLayout().getTile(this.getX(), this.getY()));

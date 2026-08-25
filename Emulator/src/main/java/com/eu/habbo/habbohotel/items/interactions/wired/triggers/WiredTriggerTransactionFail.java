@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.wired.WiredTriggerType;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -25,8 +26,7 @@ public class WiredTriggerTransactionFail extends InteractionWiredTrigger {
         super(set, baseItem);
     }
 
-    public WiredTriggerTransactionFail(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredTriggerTransactionFail(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -72,10 +72,12 @@ public class WiredTriggerTransactionFail extends InteractionWiredTrigger {
     }
 
     @Override
-    public void loadWiredData(ResultSet set, Room room) throws SQLException {}
+    public void loadWiredData(ResultSet set, Room room) throws SQLException {
+    }
 
     @Override
-    public void onPickUp() {}
+    public void onPickUp() {
+    }
 
     @Override
     public boolean isTriggeredByRoomUnit() {

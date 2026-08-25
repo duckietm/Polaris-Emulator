@@ -9,7 +9,8 @@ public final class WiredFreezeUtil {
     private static final String CACHE_EFFECT_ID = "wired.freeze.effect_id";
     private static final String CACHE_CANCEL_ON_TELEPORT = "wired.freeze.cancel_on_teleport";
 
-    private WiredFreezeUtil() {}
+    private WiredFreezeUtil() {
+    }
 
     public static boolean isFrozen(RoomUnit roomUnit) {
         return roomUnit != null && Boolean.TRUE.equals(roomUnit.getCacheable().get(CACHE_ACTIVE));

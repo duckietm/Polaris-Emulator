@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredTriggerType;
+
 import java.util.Optional;
 
 /**
@@ -13,7 +14,7 @@ import java.util.Optional;
  * This replaces the scattered {@code Object[] stuff} parameter pattern with a strongly-typed,
  * immutable event object. Triggers produce/receive this event.
  * </p>
- *
+ * 
  * <h3>Usage Example:</h3>
  * <pre>{@code
  * WiredEvent event = WiredEvent.builder(WiredEvent.Type.USER_WALKS_ON, room)
@@ -22,7 +23,7 @@ import java.util.Optional;
  *     .tile(roomUnit.getCurrentLocation())
  *     .build();
  * }</pre>
- *
+ * 
  * @see WiredContext
  * @see WiredEngine
  */
@@ -35,10 +36,10 @@ public final class WiredEvent {
     public enum Type {
         /** User says something in chat */
         USER_SAYS(WiredTriggerType.SAY_SOMETHING),
-
+        
         /** User walks onto furniture */
         USER_WALKS_ON(WiredTriggerType.WALKS_ON_FURNI),
-
+        
         /** User walks off furniture */
         USER_WALKS_OFF(WiredTriggerType.WALKS_OFF_FURNI),
 
@@ -53,13 +54,13 @@ public final class WiredEvent {
 
         /** User performs an avatar action */
         USER_PERFORMS_ACTION(WiredTriggerType.USER_PERFORMS_ACTION),
-
+        
         /** Furniture state is toggled/changed */
         FURNI_STATE_CHANGED(WiredTriggerType.STATE_CHANGED),
-
+        
         /** Timer fires at a given time */
         TIMER_TICK(WiredTriggerType.AT_GIVEN_TIME),
-
+        
         /** Timer fires periodically/repeatedly */
         TIMER_REPEAT(WiredTriggerType.PERIODICALLY),
 
@@ -68,55 +69,55 @@ public final class WiredEvent {
 
         /** A user, furni or global variable changed */
         VARIABLE_CHANGED(WiredTriggerType.VARIABLE_CHANGED),
-
+        
         /** Long timer repeat */
         TIMER_REPEAT_LONG(WiredTriggerType.PERIODICALLY_LONG),
 
         /** Short timer repeat */
         TIMER_REPEAT_SHORT(WiredTriggerType.PERIODICALLY_SHORT),
-
+        
         /** User enters the room */
         USER_ENTERS_ROOM(WiredTriggerType.ENTER_ROOM),
 
         /** User leaves the room */
         USER_LEAVES_ROOM(WiredTriggerType.LEAVE_ROOM),
-
+        
         /** Game starts */
         GAME_STARTS(WiredTriggerType.GAME_STARTS),
-
+        
         /** Game ends */
         GAME_ENDS(WiredTriggerType.GAME_ENDS),
-
+        
         /** Bot collision */
         BOT_COLLISION(WiredTriggerType.COLLISION),
-
+        
         /** Bot reached furniture (STF = stack tile furni) */
         BOT_REACHED_FURNI(WiredTriggerType.BOT_REACHED_STF),
-
+        
         /** Bot reached habbo (AVTR = avatar) */
         BOT_REACHED_HABBO(WiredTriggerType.BOT_REACHED_AVTR),
-
+        
         /** Score threshold achieved */
         SCORE_ACHIEVED(WiredTriggerType.SCORE_ACHIEVED),
-
+        
         /** User starts idling */
         USER_IDLES(WiredTriggerType.IDLES),
-
+        
         /** User stops idling */
         USER_UNIDLES(WiredTriggerType.UNIDLES),
-
+        
         /** User starts dancing */
         USER_STARTS_DANCING(WiredTriggerType.STARTS_DANCING),
-
+        
         /** User stops dancing */
         USER_STOPS_DANCING(WiredTriggerType.STOPS_DANCING),
-
+        
         /** Team wins a game */
         TEAM_WINS(WiredTriggerType.CUSTOM),
-
+        
         /** Team loses a game */
         TEAM_LOSES(WiredTriggerType.CUSTOM),
-
+        
         /** Signal received from a Send Signal effect */
         SIGNAL_RECEIVED(WiredTriggerType.RECEIVE_SIGNAL),
 
@@ -175,22 +176,22 @@ public final class WiredEvent {
 
     private final Type type;
     private final Room room;
-    private final RoomUnit actor; // nullable - the user/bot that caused the event
+    private final RoomUnit actor;       // nullable - the user/bot that caused the event
     private final RoomUnit originActor; // nullable - original user that started the chain, preserved across signals
     private final HabboItem sourceItem; // nullable - the furniture involved
-    private final RoomTile tile; // nullable - the tile where event occurred
-    private final String text; // nullable - text for say triggers
-    private final RoomUnit targetUnit; // nullable - target user (e.g., for bot reached habbo)
-    private final int score; // score value for score achieved events
-    private final int scoreAdded; // amount added for score achieved events
+    private final RoomTile tile;        // nullable - the tile where event occurred
+    private final String text;          // nullable - text for say triggers
+    private final RoomUnit targetUnit;  // nullable - target user (e.g., for bot reached habbo)
+    private final int score;            // score value for score achieved events
+    private final int scoreAdded;       // amount added for score achieved events
     private final boolean triggeredByEffect; // true if triggered by a wired effect (to prevent loops)
-    private final int callStackDepth; // recursion depth for trigger stacks effect
-    private final int signalChannel; // channel for signal routing (0-based)
-    private final int actionId; // user action id for USER_PERFORMS_ACTION
-    private final int actionParameter; // sign/dance parameter when relevant
-    private final int chatType; // RoomChatType metadata for USER_SAYS
-    private final int chatStyle; // bubble style for USER_SAYS
-    private final int signalUserCount; // forwarded users in SIGNAL_RECEIVED
+    private final int callStackDepth;   // recursion depth for trigger stacks effect
+    private final int signalChannel;    // channel for signal routing (0-based)
+    private final int actionId;         // user action id for USER_PERFORMS_ACTION
+    private final int actionParameter;  // sign/dance parameter when relevant
+    private final int chatType;         // RoomChatType metadata for USER_SAYS
+    private final int chatStyle;        // bubble style for USER_SAYS
+    private final int signalUserCount;  // forwarded users in SIGNAL_RECEIVED
     private final int signalFurniCount; // forwarded furni in SIGNAL_RECEIVED
     private final int variableTargetType;
     private final int variableDefinitionItemId;
@@ -417,12 +418,13 @@ public final class WiredEvent {
 
     @Override
     public String toString() {
-        return "WiredEvent{" + "type="
-                + type + ", room="
-                + (room != null ? room.getId() : "null") + ", actor="
-                + (actor != null ? actor.getId() : "null") + ", sourceItem="
-                + (sourceItem != null ? sourceItem.getId() : "null") + ", createdAtMs="
-                + createdAtMs + '}';
+        return "WiredEvent{" +
+                "type=" + type +
+                ", room=" + (room != null ? room.getId() : "null") +
+                ", actor=" + (actor != null ? actor.getId() : "null") +
+                ", sourceItem=" + (sourceItem != null ? sourceItem.getId() : "null") +
+                ", createdAtMs=" + createdAtMs +
+                '}';
     }
 
     /**

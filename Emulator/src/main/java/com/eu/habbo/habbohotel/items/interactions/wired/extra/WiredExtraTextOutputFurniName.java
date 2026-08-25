@@ -11,6 +11,7 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashSet;
@@ -42,8 +43,7 @@ public class WiredExtraTextOutputFurniName extends InteractionWiredExtra {
         this.items = new LinkedHashSet<>();
     }
 
-    public WiredExtraTextOutputFurniName(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredExtraTextOutputFurniName(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.items = new LinkedHashSet<>();
     }
@@ -90,13 +90,13 @@ public class WiredExtraTextOutputFurniName extends InteractionWiredExtra {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson()
-                .toJson(new JsonData(
-                        this.placeholderName,
-                        this.placeholderType,
-                        this.delimiter,
-                        this.furniSource,
-                        this.items.stream().map(HabboItem::getId).collect(Collectors.toList())));
+        return WiredManager.getGson().toJson(new JsonData(
+                this.placeholderName,
+                this.placeholderType,
+                this.delimiter,
+                this.furniSource,
+                this.items.stream().map(HabboItem::getId).collect(Collectors.toList())
+        ));
     }
 
     @Override
@@ -170,7 +170,9 @@ public class WiredExtraTextOutputFurniName extends InteractionWiredExtra {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+
+    }
 
     @Override
     public boolean hasConfiguration() {
@@ -217,16 +219,16 @@ public class WiredExtraTextOutputFurniName extends InteractionWiredExtra {
 
     private static String[] splitStringData(String value) {
         if (value == null) {
-            return new String[] {DEFAULT_PLACEHOLDER_NAME, DEFAULT_DELIMITER};
+            return new String[] { DEFAULT_PLACEHOLDER_NAME, DEFAULT_DELIMITER };
         }
 
         String[] parts = value.split("\t", -1);
 
         if (parts.length <= 1) {
-            return new String[] {value, DEFAULT_DELIMITER};
+            return new String[] { value, DEFAULT_DELIMITER };
         }
 
-        return new String[] {parts[0], parts[1]};
+        return new String[] { parts[0], parts[1] };
     }
 
     private static int normalizePlaceholderType(int value) {
@@ -283,8 +285,7 @@ public class WiredExtraTextOutputFurniName extends InteractionWiredExtra {
         int furniSource;
         List<Integer> itemIds;
 
-        JsonData(
-                String placeholderName, int placeholderType, String delimiter, int furniSource, List<Integer> itemIds) {
+        JsonData(String placeholderName, int placeholderType, String delimiter, int furniSource, List<Integer> itemIds) {
             this.placeholderName = placeholderName;
             this.placeholderType = placeholderType;
             this.delimiter = delimiter;

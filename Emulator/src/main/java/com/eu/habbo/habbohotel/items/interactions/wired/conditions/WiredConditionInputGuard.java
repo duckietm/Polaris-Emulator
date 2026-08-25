@@ -7,7 +7,8 @@ public final class WiredConditionInputGuard {
     public static final int MAX_USER_COUNT_LIMIT = 1000;
     public static final int MAX_TIMER_CYCLES = 24 * 60 * 60 * 2;
 
-    private WiredConditionInputGuard() {}
+    private WiredConditionInputGuard() {
+    }
 
     public static GameTeamColors normalizeTeamColor(GameTeamColors value, GameTeamColors fallback) {
         return (value != null) ? value : fallback;
@@ -40,10 +41,10 @@ public final class WiredConditionInputGuard {
         int upper = clampUserCount(upperLimit);
 
         if (lower > upper) {
-            return new int[] {upper, lower};
+            return new int[]{upper, lower};
         }
 
-        return new int[] {lower, upper};
+        return new int[]{lower, upper};
     }
 
     private static int clampUserCount(int value) {

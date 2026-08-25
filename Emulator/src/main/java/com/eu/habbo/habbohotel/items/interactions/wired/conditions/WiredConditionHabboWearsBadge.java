@@ -8,10 +8,11 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboBadge;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
-import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -31,8 +32,7 @@ public class WiredConditionHabboWearsBadge extends InteractionWiredCondition {
         super(set, baseItem);
     }
 
-    public WiredConditionHabboWearsBadge(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredConditionHabboWearsBadge(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -98,7 +98,11 @@ public class WiredConditionHabboWearsBadge extends InteractionWiredCondition {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(this.badge, this.userSource, this.quantifier));
+        return WiredManager.getGson().toJson(new JsonData(
+                this.badge,
+                this.userSource,
+                this.quantifier
+        ));
     }
 
     @Override
@@ -165,9 +169,7 @@ public class WiredConditionHabboWearsBadge extends InteractionWiredCondition {
     public boolean saveData(WiredSettings settings) {
         this.badge = WiredUserConditionInputGuard.normalizeBadgeCode(settings.getStringParam());
         int[] params = settings.getIntParams();
-        this.userSource = (params.length > 0)
-                ? WiredUserConditionInputGuard.normalizeUserSource(params[0])
-                : WiredSourceUtil.SOURCE_TRIGGER;
+        this.userSource = (params.length > 0) ? WiredUserConditionInputGuard.normalizeUserSource(params[0]) : WiredSourceUtil.SOURCE_TRIGGER;
         this.quantifier = (params.length > 1) ? this.normalizeQuantifier(params[1], QUANTIFIER_ANY) : QUANTIFIER_ANY;
 
         return true;
@@ -191,9 +193,7 @@ public class WiredConditionHabboWearsBadge extends InteractionWiredCondition {
         }
 
         String normalized = value.trim();
-        return normalized.length() <= MAX_BADGE_CODE_LENGTH
-                ? normalized
-                : normalized.substring(0, MAX_BADGE_CODE_LENGTH);
+        return normalized.length() <= MAX_BADGE_CODE_LENGTH ? normalized : normalized.substring(0, MAX_BADGE_CODE_LENGTH);
     }
 
     protected int normalizeUserSource(int value) {

@@ -9,7 +9,8 @@ import com.eu.habbo.messages.outgoing.rooms.items.ChestOpenComposer;
  * Shared open flow for wired chests (official Nod → Syhytarer → shell + chunks).
  */
 public final class ChestOpenHelper {
-    private ChestOpenHelper() {}
+    private ChestOpenHelper() {
+    }
 
     public static void open(GameClient client, InteractionWiredChest chest, Room room) {
         if (client == null || chest == null || room == null) return;

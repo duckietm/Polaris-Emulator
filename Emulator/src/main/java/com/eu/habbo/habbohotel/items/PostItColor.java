@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.items;
 import com.eu.habbo.Emulator;
 
 public enum PostItColor {
+
     BLUE("9CCEFF"),
     GREEN("9CFF9C"),
     PINK("FF9CFF"),
@@ -18,9 +19,11 @@ public enum PostItColor {
         this.hexColor = hexColor;
     }
 
+
     public static boolean isCustomColor(String color) {
         for (PostItColor postItColor : PostItColor.values()) {
-            if (postItColor.hexColor.equalsIgnoreCase(color)) return false;
+            if (postItColor.hexColor.equalsIgnoreCase(color))
+                return false;
         }
 
         return true;

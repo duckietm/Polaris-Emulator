@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions;
 
 import com.eu.habbo.habbohotel.items.Item;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -9,8 +10,7 @@ public class InteractionRemoteSwitchControl extends InteractionDefault {
         super(set, baseItem);
     }
 
-    public InteractionRemoteSwitchControl(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionRemoteSwitchControl(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 

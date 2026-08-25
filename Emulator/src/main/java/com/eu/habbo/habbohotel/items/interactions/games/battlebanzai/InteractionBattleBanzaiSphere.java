@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -14,8 +15,7 @@ public class InteractionBattleBanzaiSphere extends HabboItem {
         this.setExtradata("0");
     }
 
-    public InteractionBattleBanzaiSphere(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionBattleBanzaiSphere(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.setExtradata("0");
     }
@@ -39,5 +39,6 @@ public class InteractionBattleBanzaiSphere extends HabboItem {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+    }
 }

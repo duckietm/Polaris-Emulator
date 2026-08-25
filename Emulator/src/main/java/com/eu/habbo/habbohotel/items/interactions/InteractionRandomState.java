@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.RandomStateParams;
 import com.eu.habbo.habbohotel.rooms.Room;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -33,12 +34,9 @@ public class InteractionRandomState extends InteractionDefault {
 
         int randomState = Emulator.getRandom().nextInt(params.getStates()) + 1;
 
-        Emulator.getThreading()
-                .run(
-                        () -> {
-                            this.setExtradata(randomState + "");
-                            room.updateItemState(this);
-                        },
-                        params.getDelay());
+        Emulator.getThreading().run(() -> {
+            this.setExtradata(randomState + "");
+            room.updateItemState(this);
+        }, params.getDelay());
     }
 }

@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.messages.ServerMessage;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -20,7 +21,7 @@ public class InteractionVoteCounter extends HabboItem {
 
     public InteractionVoteCounter(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
-        if (!this.getExtradata().contains(",")) {
+        if(!this.getExtradata().contains(",")) {
             this.setExtradata("1,0"); // frozen,votes
         }
 
@@ -33,7 +34,7 @@ public class InteractionVoteCounter extends HabboItem {
     public InteractionVoteCounter(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
 
-        if (!extradata.contains(",")) {
+        if(!extradata.contains(",")) {
             extradata = "1,0";
         }
 
@@ -67,12 +68,12 @@ public class InteractionVoteCounter extends HabboItem {
 
     @Override
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
-        if (!((client != null && room != null && room.hasRights(client.getHabbo()))
-                || (objects.length >= 2 && objects[1] instanceof WiredEffectType))) return;
+        if (!((client != null && room != null && room.hasRights(client.getHabbo())) || (objects.length >= 2 && objects[1] instanceof WiredEffectType)))
+            return;
 
         this.frozen = !this.frozen;
 
-        if (!frozen) {
+        if(!frozen) {
             this.votes = 0;
             this.votedUsers.clear();
         }
@@ -83,12 +84,16 @@ public class InteractionVoteCounter extends HabboItem {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+
+    }
 
     public void vote(Room room, int UserId, int vote) {
-        if (frozen) return;
+        if(frozen)
+            return;
 
-        if (votedUsers.contains(UserId)) return;
+        if(votedUsers.contains(UserId))
+            return;
 
         votedUsers.add(UserId);
 

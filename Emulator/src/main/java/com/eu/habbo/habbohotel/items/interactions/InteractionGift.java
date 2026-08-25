@@ -7,13 +7,14 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class InteractionGift extends HabboItem {
     private static final Logger LOGGER = LoggerFactory.getLogger(InteractionGift.class);
@@ -59,7 +60,7 @@ public class InteractionGift extends HabboItem {
 
     @Override
     public void serializeExtradata(ServerMessage serverMessage) {
-        // serverMessage.appendInt(this.colorId * 1000 + this.ribbonId);
+        //serverMessage.appendInt(this.colorId * 1000 + this.ribbonId);
         serverMessage.appendInt(1);
         serverMessage.appendInt(6);
         serverMessage.appendString("EXTRA_PARAM");
@@ -71,7 +72,7 @@ public class InteractionGift extends HabboItem {
         serverMessage.appendString("PURCHASER_FIGURE");
         serverMessage.appendString(this.showSender ? this.look : "");
         serverMessage.appendString("PRODUCT_CODE");
-        serverMessage.appendString(""); // this.gift.getItemId()
+        serverMessage.appendString(""); //this.gift.getItemId()
         serverMessage.appendString("state");
         serverMessage.appendString(this.explode ? "1" : "0");
 
@@ -79,7 +80,9 @@ public class InteractionGift extends HabboItem {
     }
 
     @Override
-    public void onClick(GameClient client, Room room, Object[] objects) throws Exception {}
+    public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
+
+    }
 
     @Override
     public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
@@ -92,12 +95,15 @@ public class InteractionGift extends HabboItem {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+
+    }
 
     private void loadData() throws NumberFormatException {
         String[] data = null;
 
-        if (this.getExtradata().contains("\t")) data = this.getExtradata().split("\t");
+        if (this.getExtradata().contains("\t"))
+            data = this.getExtradata().split("\t");
 
         if (data != null && data.length >= 5) {
             int count = Integer.parseInt(data[0]);
@@ -137,7 +143,8 @@ public class InteractionGift extends HabboItem {
     public Set<HabboItem> loadItems() {
         Set<HabboItem> items = new HashSet<>();
         for (int anItemId : this.itemId) {
-            if (anItemId == 0) continue;
+            if (anItemId == 0)
+                continue;
 
             items.add(Emulator.getGameEnvironment().getItemManager().loadHabboItem(anItemId));
         }

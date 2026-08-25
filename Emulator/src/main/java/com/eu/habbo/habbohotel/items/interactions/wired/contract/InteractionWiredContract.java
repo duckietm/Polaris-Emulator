@@ -9,6 +9,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -39,8 +40,7 @@ public abstract class InteractionWiredContract extends InteractionWiredExtra {
         super(set, baseItem);
     }
 
-    protected InteractionWiredContract(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    protected InteractionWiredContract(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -53,7 +53,8 @@ public abstract class InteractionWiredContract extends InteractionWiredExtra {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+    }
 
     @Override
     public boolean hasConfiguration() {
@@ -153,7 +154,8 @@ public abstract class InteractionWiredContract extends InteractionWiredExtra {
         public int currencyType;
         public int amount;
 
-        public Term() {}
+        public Term() {
+        }
 
         public Term(int direction, int currencyType, int amount) {
             this.direction = direction;
@@ -166,7 +168,8 @@ public abstract class InteractionWiredContract extends InteractionWiredExtra {
         List<Term> terms;
         List<Integer> chestIds;
 
-        JsonData() {}
+        JsonData() {
+        }
 
         JsonData(List<Term> terms, List<Integer> chestIds) {
             this.terms = terms;

@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.util.HotelDateTimeUtil;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -36,8 +37,7 @@ public class WiredConditionMatchDate extends InteractionWiredCondition {
         super(set, baseItem);
     }
 
-    public WiredConditionMatchDate(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredConditionMatchDate(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -79,9 +79,7 @@ public class WiredConditionMatchDate extends InteractionWiredCondition {
         this.dayTo = (params.length > 3) ? this.normalizeDay(params[3]) : this.dayFrom;
         this.monthMask = (params.length > 4) ? this.normalizeMonthMask(params[4]) : ALL_MONTHS_MASK;
         this.yearMode = (params.length > 5) ? this.normalizeMode(params[5]) : MODE_SKIP;
-        this.yearFrom = (params.length > 6)
-                ? this.normalizeYear(params[6])
-                : HotelDateTimeUtil.localDateNow().getYear();
+        this.yearFrom = (params.length > 6) ? this.normalizeYear(params[6]) : HotelDateTimeUtil.localDateNow().getYear();
         this.yearTo = (params.length > 7) ? this.normalizeYear(params[7]) : this.yearFrom;
 
         return true;
@@ -105,16 +103,16 @@ public class WiredConditionMatchDate extends InteractionWiredCondition {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson()
-                .toJson(new JsonData(
-                        this.weekdayMask,
-                        this.dayMode,
-                        this.dayFrom,
-                        this.dayTo,
-                        this.monthMask,
-                        this.yearMode,
-                        this.yearFrom,
-                        this.yearTo));
+        return WiredManager.getGson().toJson(new JsonData(
+                this.weekdayMask,
+                this.dayMode,
+                this.dayFrom,
+                this.dayTo,
+                this.monthMask,
+                this.yearMode,
+                this.yearFrom,
+                this.yearTo
+        ));
     }
 
     @Override
@@ -248,15 +246,7 @@ public class WiredConditionMatchDate extends InteractionWiredCondition {
         int yearFrom;
         int yearTo;
 
-        public JsonData(
-                int weekdayMask,
-                int dayMode,
-                int dayFrom,
-                int dayTo,
-                int monthMask,
-                int yearMode,
-                int yearFrom,
-                int yearTo) {
+        public JsonData(int weekdayMask, int dayMode, int dayFrom, int dayTo, int monthMask, int yearMode, int yearFrom, int yearTo) {
             this.weekdayMask = weekdayMask;
             this.dayMode = dayMode;
             this.dayFrom = dayFrom;

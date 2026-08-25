@@ -9,6 +9,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.regex.Pattern;
@@ -33,8 +34,7 @@ public class WiredExtraTextOutputUsername extends InteractionWiredExtra {
         super(set, baseItem);
     }
 
-    public WiredExtraTextOutputUsername(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredExtraTextOutputUsername(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -58,8 +58,7 @@ public class WiredExtraTextOutputUsername extends InteractionWiredExtra {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson()
-                .toJson(new JsonData(this.placeholderName, this.placeholderType, this.delimiter, this.userSource));
+        return WiredManager.getGson().toJson(new JsonData(this.placeholderName, this.placeholderType, this.delimiter, this.userSource));
     }
 
     @Override
@@ -115,7 +114,9 @@ public class WiredExtraTextOutputUsername extends InteractionWiredExtra {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+
+    }
 
     @Override
     public boolean hasConfiguration() {
@@ -144,16 +145,16 @@ public class WiredExtraTextOutputUsername extends InteractionWiredExtra {
 
     private static String[] splitStringData(String value) {
         if (value == null) {
-            return new String[] {DEFAULT_PLACEHOLDER_NAME, DEFAULT_DELIMITER};
+            return new String[] { DEFAULT_PLACEHOLDER_NAME, DEFAULT_DELIMITER };
         }
 
         String[] parts = value.split("\t", -1);
 
         if (parts.length <= 1) {
-            return new String[] {value, DEFAULT_DELIMITER};
+            return new String[] { value, DEFAULT_DELIMITER };
         }
 
-        return new String[] {parts[0], parts[1]};
+        return new String[] { parts[0], parts[1] };
     }
 
     private static int normalizePlaceholderType(int value) {

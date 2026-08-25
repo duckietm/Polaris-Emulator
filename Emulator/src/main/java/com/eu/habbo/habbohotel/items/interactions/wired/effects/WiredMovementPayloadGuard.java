@@ -6,7 +6,8 @@ import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 final class WiredMovementPayloadGuard {
     static final int MAX_LOAD_DELAY = 3600;
 
-    private WiredMovementPayloadGuard() {}
+    private WiredMovementPayloadGuard() {
+    }
 
     static int delay(int value) {
         if (value < 0) {

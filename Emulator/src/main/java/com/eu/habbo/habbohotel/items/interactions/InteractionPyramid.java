@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -19,7 +20,8 @@ public class InteractionPyramid extends InteractionGate {
     }
 
     public void change(Room room) {
-        if (!(this.getExtradata().equals("0") || this.getExtradata().equals("1"))) this.setExtradata("0");
+        if (!(this.getExtradata().equals("0") || this.getExtradata().equals("1")))
+            this.setExtradata("0");
 
         if (room != null) {
             if (room.getHabbosAt(this.getX(), this.getY()).isEmpty()) {
@@ -29,9 +31,7 @@ public class InteractionPyramid extends InteractionGate {
                 this.setExtradata(state + "");
                 room.updateItemState(this);
 
-                this.nextChange = Emulator.getIntUnixTimestamp()
-                        + 1
-                        + (Emulator.getRandom().nextInt(Emulator.getConfig().getInt("pyramids.max.delay")));
+                this.nextChange = Emulator.getIntUnixTimestamp() + 1 + (Emulator.getRandom().nextInt(Emulator.getConfig().getInt("pyramids.max.delay")));
             }
         }
     }
@@ -41,7 +41,8 @@ public class InteractionPyramid extends InteractionGate {
     }
 
     @Override
-    public void onClick(GameClient client, Room room, Object[] objects) throws Exception {}
+    public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
+    }
 
     @Override
     public boolean isUsable() {

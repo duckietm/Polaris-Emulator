@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.messages.ServerMessage;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -38,29 +39,26 @@ public class InteractionGate extends HabboItem {
 
     @Override
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
-        boolean executedByWired = (objects.length >= 2
-                && objects[1] instanceof WiredEffectType
-                && objects[1] == WiredEffectType.TOGGLE_STATE);
+        boolean executedByWired = (objects.length >= 2 && objects[1] instanceof WiredEffectType && objects[1] == WiredEffectType.TOGGLE_STATE);
 
-        if (client != null && !room.hasRights(client.getHabbo()) && !executedByWired) return;
+        if (client != null && !room.hasRights(client.getHabbo()) && !executedByWired)
+            return;
 
         // If a Habbo is standing on a tile occupied by the gate, the gate shouldn't open/close
-        for (RoomTile tile : room.getLayout()
-                .getTilesAt(
-                        room.getLayout().getTile(this.getX(), this.getY()),
-                        this.getBaseItem().getWidth(),
-                        this.getBaseItem().getLength(),
-                        this.getRotation())) if (room.hasHabbosAt(tile.x, tile.y)) return;
+        for (RoomTile tile : room.getLayout().getTilesAt(room.getLayout().getTile(this.getX(), this.getY()), this.getBaseItem().getWidth(), this.getBaseItem().getLength(), this.getRotation()))
+            if (room.hasHabbosAt(tile.x, tile.y))
+                return;
 
         // Gate closed = 0, open = 1
-        if (this.getExtradata().length() == 0) this.setExtradata("0");
+        if (this.getExtradata().length() == 0)
+            this.setExtradata("0");
 
         this.setExtradata((Integer.parseInt(this.getExtradata()) + 1) % 2 + "");
         room.updateTile(room.getLayout().getTile(this.getX(), this.getY()));
         this.needsUpdate(true);
         room.updateItemState(this);
 
-        super.onClick(client, room, new Object[] {"TOGGLE_OVERRIDE"});
+        super.onClick(client, room, new Object[]{"TOGGLE_OVERRIDE"});
     }
 
     public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {

@@ -14,6 +14,7 @@ import com.eu.habbo.habbohotel.users.subscriptions.SubscriptionHabboClub;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.threading.runnables.CrackableExplode;
 import com.eu.habbo.util.pathfinding.Rotation;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -32,23 +33,14 @@ public class InteractionCrackable extends HabboItem {
 
     @Override
     public void serializeExtradata(ServerMessage serverMessage) {
-        if (this.getExtradata().length() == 0) this.setExtradata("0");
+        if (this.getExtradata().length() == 0)
+            this.setExtradata("0");
 
         serverMessage.appendInt(7 + (this.isLimited() ? 256 : 0));
 
-        serverMessage.appendString(Emulator.getGameEnvironment()
-                        .getItemManager()
-                        .calculateCrackState(
-                                Integer.parseInt(this.getExtradata()),
-                                Emulator.getGameEnvironment()
-                                        .getItemManager()
-                                        .getCrackableCount(this.getBaseItem().getId()),
-                                this.getBaseItem())
-                + "");
+        serverMessage.appendString(Emulator.getGameEnvironment().getItemManager().calculateCrackState(Integer.parseInt(this.getExtradata()), Emulator.getGameEnvironment().getItemManager().getCrackableCount(this.getBaseItem().getId()), this.getBaseItem()) + "");
         serverMessage.appendInt(Integer.valueOf(this.getExtradata()));
-        serverMessage.appendInt(Emulator.getGameEnvironment()
-                .getItemManager()
-                .getCrackableCount(this.getBaseItem().getId()));
+        serverMessage.appendInt(Emulator.getGameEnvironment().getItemManager().getCrackableCount(this.getBaseItem().getId()));
 
         super.serializeExtradata(serverMessage);
     }
@@ -71,40 +63,27 @@ public class InteractionCrackable extends HabboItem {
 
         super.onClick(client, room, objects);
         synchronized (this.lock) {
-            if (this.getRoomId() == 0) return;
+            if (this.getRoomId() == 0)
+                return;
 
-            if (this.cracked) return;
+            if (this.cracked)
+                return;
 
-            if (this.userRequiredToBeAdjacent()
-                    && client.getHabbo()
-                                    .getRoomUnit()
-                                    .getCurrentLocation()
-                                    .distance(room.getLayout().getTile(this.getX(), this.getY()))
-                            > 1.5) {
-                client.getHabbo()
-                        .getRoomUnit()
-                        .setGoalLocation(room.getLayout()
-                                .getTileInFront(
-                                        room.getLayout().getTile(this.getX(), this.getY()),
-                                        Rotation.Calculate(
-                                                client.getHabbo().getRoomUnit().getX(),
-                                                client.getHabbo().getRoomUnit().getY(),
-                                                this.getX(),
-                                                this.getY())));
+            if (this.userRequiredToBeAdjacent() && client.getHabbo().getRoomUnit().getCurrentLocation().distance(room.getLayout().getTile(this.getX(), this.getY())) > 1.5) {
+                client.getHabbo().getRoomUnit().setGoalLocation(room.getLayout().getTileInFront(room.getLayout().getTile(this.getX(), this.getY()), Rotation.Calculate(client.getHabbo().getRoomUnit().getX(), client.getHabbo().getRoomUnit().getY(), this.getX(), this.getY())));
                 return;
             }
 
-            if (this.getExtradata().length() == 0) this.setExtradata("0");
+            if (this.getExtradata().length() == 0)
+                this.setExtradata("0");
 
             if (this.getBaseItem().getEffectF() > 0)
-                if (client.getHabbo().getHabboInfo().getGender().equals(HabboGender.F)
-                        && this.getBaseItem().getEffectF()
-                                == client.getHabbo().getRoomUnit().getEffectId()) return;
+                if (client.getHabbo().getHabboInfo().getGender().equals(HabboGender.F) && this.getBaseItem().getEffectF() == client.getHabbo().getRoomUnit().getEffectId())
+                    return;
 
             if (this.getBaseItem().getEffectM() > 0)
-                if (client.getHabbo().getHabboInfo().getGender().equals(HabboGender.M)
-                        && this.getBaseItem().getEffectM()
-                                == client.getHabbo().getRoomUnit().getEffectId()) return;
+                if (client.getHabbo().getHabboInfo().getGender().equals(HabboGender.M) && this.getBaseItem().getEffectM() == client.getHabbo().getRoomUnit().getEffectId())
+                    return;
 
             this.onTick(client.getHabbo(), room);
         }
@@ -114,17 +93,15 @@ public class InteractionCrackable extends HabboItem {
         if (this.cracked) return;
 
         if (this.allowAnyone() || this.getUserId() == habbo.getHabboInfo().getId()) {
-            CrackableReward rewardData = Emulator.getGameEnvironment()
-                    .getItemManager()
-                    .getCrackableData(this.getBaseItem().getId());
+            CrackableReward rewardData = Emulator.getGameEnvironment().getItemManager().getCrackableData(this.getBaseItem().getId());
 
             if (rewardData != null) {
                 if (rewardData.requiredEffect > 0 && habbo.getRoomUnit().getEffectId() != rewardData.requiredEffect)
                     return;
 
-                if (this.ticks < 1) {
-                    // If there are no ticks (for example because the room has been reloaded), check the current
-                    // extradata of the item and update the ticks.
+                if(this.ticks < 1)
+                {
+                    // If there are no ticks (for example because the room has been reloaded), check the current extradata of the item and update the ticks.
                     this.ticks = Integer.parseInt(this.getExtradata());
                 }
                 this.ticks++;
@@ -133,44 +110,24 @@ public class InteractionCrackable extends HabboItem {
                 room.updateItem(this);
 
                 if (!rewardData.achievementTick.isEmpty()) {
-                    AchievementManager.progressAchievement(
-                            habbo,
-                            Emulator.getGameEnvironment()
-                                    .getAchievementManager()
-                                    .getAchievement(rewardData.achievementTick));
+                    AchievementManager.progressAchievement(habbo, Emulator.getGameEnvironment().getAchievementManager().getAchievement(rewardData.achievementTick));
                 }
-                if (!this.cracked
-                        && this.ticks
-                                == Emulator.getGameEnvironment()
-                                        .getItemManager()
-                                        .getCrackableCount(this.getBaseItem().getId())) {
+                if (!this.cracked && this.ticks == Emulator.getGameEnvironment().getItemManager().getCrackableCount(this.getBaseItem().getId())) {
                     this.cracked = true;
-                    Emulator.getThreading()
-                            .run(
-                                    new CrackableExplode(
-                                            room, this, habbo, !this.placeInRoom(), this.getX(), this.getY()),
-                                    1500);
+                    Emulator.getThreading().run(new CrackableExplode(room, this, habbo, !this.placeInRoom(), this.getX(), this.getY()), 1500);
 
                     if (!rewardData.achievementCracked.isEmpty()) {
-                        AchievementManager.progressAchievement(
-                                habbo,
-                                Emulator.getGameEnvironment()
-                                        .getAchievementManager()
-                                        .getAchievement(rewardData.achievementCracked));
+                        AchievementManager.progressAchievement(habbo, Emulator.getGameEnvironment().getAchievementManager().getAchievement(rewardData.achievementCracked));
                     }
 
                     if (rewardData.subscriptionType != null && rewardData.subscriptionDuration > 0) {
                         // subscriptions are given immediately upon cracking
                         switch (rewardData.subscriptionType) {
                             case HABBO_CLUB:
-                                habbo.getHabboStats()
-                                        .createSubscription(
-                                                SubscriptionHabboClub.HABBO_CLUB,
-                                                rewardData.subscriptionDuration * 86400);
+                                habbo.getHabboStats().createSubscription(SubscriptionHabboClub.HABBO_CLUB, rewardData.subscriptionDuration * 86400);
                                 break;
                             case BUILDERS_CLUB:
-                                habbo.getHabboStats()
-                                        .createSubscription("BUILDERS_CLUB", rewardData.subscriptionDuration * 86400);
+                                habbo.getHabboStats().createSubscription("BUILDERS_CLUB", rewardData.subscriptionDuration * 86400);
                                 break;
                         }
                     }
@@ -180,13 +137,19 @@ public class InteractionCrackable extends HabboItem {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+
+    }
 
     @Override
-    public void onWalkOn(RoomUnit client, Room room, Object[] objects) throws Exception {}
+    public void onWalkOn(RoomUnit client, Room room, Object[] objects) throws Exception {
+
+    }
 
     @Override
-    public void onWalkOff(RoomUnit client, Room room, Object[] objects) throws Exception {}
+    public void onWalkOff(RoomUnit client, Room room, Object[] objects) throws Exception {
+
+    }
 
     public boolean allowAnyone() {
         return false;

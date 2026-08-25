@@ -13,6 +13,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.ResultSet;
@@ -36,8 +37,7 @@ public class WiredEffectFurniAltitude extends InteractionWiredEffect {
         super(set, baseItem);
     }
 
-    public WiredEffectFurniAltitude(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectFurniAltitude(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -64,12 +64,7 @@ public class WiredEffectFurniAltitude extends InteractionWiredEffect {
 
         Set<HabboItem> result = new LinkedHashSet<>(matchingItems);
 
-        result = this.applySelectorModifiers(
-                result,
-                this.getSelectableFloorItems(room, ctx),
-                ctx.targets().items(),
-                this.filterExisting,
-                this.invert);
+        result = this.applySelectorModifiers(result, this.getSelectableFloorItems(room, ctx), ctx.targets().items(), this.filterExisting, this.invert);
 
         ctx.targets().setItems(result);
     }
@@ -78,8 +73,7 @@ public class WiredEffectFurniAltitude extends InteractionWiredEffect {
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
         int[] params = settings.getIntParams();
         if (params == null || params.length < 3) {
-            throw new WiredSaveException(
-                    "wf_slc_furni_altitude requires 3 int params: comparison, filterExisting, invert");
+            throw new WiredSaveException("wf_slc_furni_altitude requires 3 int params: comparison, filterExisting, invert");
         }
 
         this.comparison = this.normalizeComparison(params[0]);
@@ -108,13 +102,13 @@ public class WiredEffectFurniAltitude extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson()
-                .toJson(new JsonData(
-                        this.comparison,
-                        this.formatAltitude(this.altitude),
-                        this.filterExisting,
-                        this.invert,
-                        this.getDelay()));
+        return WiredManager.getGson().toJson(new JsonData(
+                this.comparison,
+                this.formatAltitude(this.altitude),
+                this.filterExisting,
+                this.invert,
+                this.getDelay()
+        ));
     }
 
     @Override
@@ -198,9 +192,7 @@ public class WiredEffectFurniAltitude extends InteractionWiredEffect {
 
     private double normalizeAltitude(double value) {
         double clampedValue = Math.max(0.0D, Math.min(Room.MAXIMUM_FURNI_HEIGHT, value));
-        return BigDecimal.valueOf(clampedValue)
-                .setScale(2, RoundingMode.HALF_UP)
-                .doubleValue();
+        return BigDecimal.valueOf(clampedValue).setScale(2, RoundingMode.HALF_UP).doubleValue();
     }
 
     private double parseAltitudeOrDefault(String value) {

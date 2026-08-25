@@ -14,6 +14,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.tick.WiredTickable;
 import com.eu.habbo.messages.ServerMessage;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -31,13 +32,13 @@ public class WiredTriggerAtTimeLong extends InteractionWiredTrigger implements W
     private static final int STEP_MS = 500;
     private static final int MIN_DELAY = STEP_MS;
     private static final int LEGACY_FALLBACK_DELAY = 20 * STEP_MS;
-
+    
     /** The time in milliseconds until the trigger fires */
     private int executeTime;
-
+    
     /** Accumulated time since last reset (in milliseconds) */
     private long accumulatedTime = 0;
-
+    
     /** Whether the timer has fired and is waiting for reset */
     private boolean hasFired = false;
 
@@ -82,9 +83,8 @@ public class WiredTriggerAtTimeLong extends InteractionWiredTrigger implements W
             storedExecuteTime = null;
         }
 
-        this.executeTime =
-                WiredTimerInputGuard.normalizeStoredMillis(storedExecuteTime, MIN_DELAY, LEGACY_FALLBACK_DELAY);
-
+        this.executeTime = WiredTimerInputGuard.normalizeStoredMillis(storedExecuteTime, MIN_DELAY, LEGACY_FALLBACK_DELAY);
+        
         // Initialize for tick system
         this.accumulatedTime = 0;
         this.hasFired = false;
@@ -135,7 +135,7 @@ public class WiredTriggerAtTimeLong extends InteractionWiredTrigger implements W
     public boolean saveData(WiredSettings settings) {
         if (settings.getIntParams().length < 1) return false;
         this.executeTime = WiredTimerInputGuard.fromClientUnits(settings.getIntParams()[0], STEP_MS, MIN_DELAY);
-
+        
         this.resetTimer();
 
         return true;
@@ -149,10 +149,10 @@ public class WiredTriggerAtTimeLong extends InteractionWiredTrigger implements W
         if (this.hasFired) {
             return;
         }
-
+        
         // Add fixed tick interval
         this.accumulatedTime += tickIntervalMs;
-
+        
         // Check if enough time has passed
         if (this.accumulatedTime >= this.executeTime) {
             if (this.getRoomId() != 0 && room.isLoaded()) {

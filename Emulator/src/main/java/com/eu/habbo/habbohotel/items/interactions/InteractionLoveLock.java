@@ -12,6 +12,7 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.items.lovelock.LoveLockFurniFinishedComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.lovelock.LoveLockFurniStartComposer;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Calendar;
@@ -67,17 +68,20 @@ public class InteractionLoveLock extends HabboItem {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+
+    }
 
     @Override
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
-        if (this.getExtradata().contains("\t")) return;
+        if (this.getExtradata().contains("\t"))
+            return;
 
-        if (client == null) return;
+        if (client == null)
+            return;
 
-        if (!RoomLayout.tilesAdjecent(
-                client.getHabbo().getRoomUnit().getCurrentLocation(),
-                room.getLayout().getTile(this.getX(), this.getY()))) return;
+        if (!RoomLayout.tilesAdjecent(client.getHabbo().getRoomUnit().getCurrentLocation(), room.getLayout().getTile(this.getX(), this.getY())))
+            return;
 
         int habboId = client.getHabbo().getHabboInfo().getId();
 
@@ -87,7 +91,8 @@ public class InteractionLoveLock extends HabboItem {
             return;
         }
 
-        if (this.userOneId == habboId) return;
+        if (this.userOneId == habboId)
+            return;
 
         if (this.userTwoId == 0) {
             Habbo first = room.getHabbo(this.userOneId);
@@ -111,7 +116,8 @@ public class InteractionLoveLock extends HabboItem {
         this.resetSession();
 
         Room room = habbo.getHabboInfo().getCurrentRoom();
-        if (room == null || partnerId <= 0) return;
+        if (room == null || partnerId <= 0)
+            return;
 
         Habbo partner = room.getHabbo(partnerId);
         if (partner != null && partner.getClient() != null) {
@@ -128,8 +134,7 @@ public class InteractionLoveLock extends HabboItem {
 
     public boolean lock(Habbo userOne, Habbo userTwo, Room room) {
         RoomTile tile = room.getLayout().getTile(this.getX(), this.getY());
-        if (RoomLayout.tilesAdjecent(userOne.getRoomUnit().getCurrentLocation(), tile)
-                && RoomLayout.tilesAdjecent(userTwo.getRoomUnit().getCurrentLocation(), tile)) {
+        if (RoomLayout.tilesAdjecent(userOne.getRoomUnit().getCurrentLocation(), tile) && RoomLayout.tilesAdjecent(userTwo.getRoomUnit().getCurrentLocation(), tile)) {
             String data = "1";
             data += "\t";
             data += userOne.getHabboInfo().getUsername();
@@ -140,9 +145,7 @@ public class InteractionLoveLock extends HabboItem {
             data += "\t";
             data += userTwo.getHabboInfo().getLook();
             data += "\t";
-            data += Calendar.getInstance().get(Calendar.DAY_OF_MONTH) + "-"
-                    + (Calendar.getInstance().get(Calendar.MONTH) + 1) + "-"
-                    + Calendar.getInstance().get(Calendar.YEAR);
+            data += Calendar.getInstance().get(Calendar.DAY_OF_MONTH) + "-" + (Calendar.getInstance().get(Calendar.MONTH) + 1) + "-" + Calendar.getInstance().get(Calendar.YEAR);
 
             this.setExtradata(data);
             this.needsUpdate(true);

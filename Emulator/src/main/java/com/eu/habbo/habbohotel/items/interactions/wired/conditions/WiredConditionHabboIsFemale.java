@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboGender;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -18,8 +19,7 @@ public class WiredConditionHabboIsFemale extends WiredConditionHabboWearsBadge {
         super(set, baseItem);
     }
 
-    public WiredConditionHabboIsFemale(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredConditionHabboIsFemale(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 

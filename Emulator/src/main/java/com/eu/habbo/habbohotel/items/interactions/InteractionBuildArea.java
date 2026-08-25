@@ -15,12 +15,13 @@ import com.eu.habbo.messages.outgoing.rooms.items.RoomFloorItemsComposer;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -69,8 +70,7 @@ public class InteractionBuildArea extends InteractionCustomValues {
     public void onPickUp(Room room) {
         super.onPickUp(room);
 
-        ArrayList<String> builderNames =
-                new ArrayList<>(Arrays.asList(this.values.get("builders").split(";")));
+        ArrayList<String> builderNames = new ArrayList<>(Arrays.asList(this.values.get("builders").split(";")));
         Set<Integer> canBuild = new HashSet<>();
 
         for (String builderName : builderNames) {
@@ -104,8 +104,7 @@ public class InteractionBuildArea extends InteractionCustomValues {
     public void onMove(Room room, RoomTile oldLocation, RoomTile newLocation) {
         super.onMove(room, oldLocation, newLocation);
 
-        ArrayList<String> builderNames =
-                new ArrayList<>(Arrays.asList(this.values.get("builders").split(";")));
+        ArrayList<String> builderNames = new ArrayList<>(Arrays.asList(this.values.get("builders").split(";")));
         Set<Integer> canBuild = new HashSet<>();
 
         for (String builderName : builderNames) {
@@ -126,22 +125,21 @@ public class InteractionBuildArea extends InteractionCustomValues {
 
         int minX = Math.max(0, newLocation.x - Integer.parseInt(this.values.get("tilesBack")));
         int minY = Math.max(0, newLocation.y - Integer.parseInt(this.values.get("tilesRight")));
-        int maxX = Math.min(
-                room.getLayout().getMapSizeX(), newLocation.x + Integer.parseInt(this.values.get("tilesFront")));
-        int maxY = Math.min(
-                room.getLayout().getMapSizeY(), newLocation.y + Integer.parseInt(this.values.get("tilesLeft")));
+        int maxX = Math.min(room.getLayout().getMapSizeX(), newLocation.x + Integer.parseInt(this.values.get("tilesFront")));
+        int maxY = Math.min(room.getLayout().getMapSizeY(), newLocation.y + Integer.parseInt(this.values.get("tilesLeft")));
 
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {
                 RoomTile tile = room.getLayout().getTile((short) x, (short) y);
-                if (tile != null && tile.state != RoomTileState.INVALID) newTiles.add(tile);
+                if (tile != null && tile.state != RoomTileState.INVALID)
+                    newTiles.add(tile);
             }
         }
 
         if (!canBuild.isEmpty()) {
             for (RoomTile tile : oldTiles) {
                 Set<HabboItem> tileItems = room.getItemsAt(tile);
-                if (newTiles.contains(tile)) continue;
+                if(newTiles.contains(tile)) continue;
                 for (HabboItem tileItem : tileItems) {
                     if (canBuild.contains(tileItem.getUserId()) && tileItem != this) {
                         room.pickUpItem(tileItem, null);
@@ -160,22 +158,22 @@ public class InteractionBuildArea extends InteractionCustomValues {
         }
 
         return this.tiles.contains(location);
+
     }
 
     private void regenAffectedTiles(Room room) {
         int minX = Math.max(0, this.getX() - Integer.parseInt(this.values.get("tilesBack")));
         int minY = Math.max(0, this.getY() - Integer.parseInt(this.values.get("tilesRight")));
-        int maxX =
-                Math.min(room.getLayout().getMapSizeX(), this.getX() + Integer.parseInt(this.values.get("tilesFront")));
-        int maxY =
-                Math.min(room.getLayout().getMapSizeY(), this.getY() + Integer.parseInt(this.values.get("tilesLeft")));
+        int maxX = Math.min(room.getLayout().getMapSizeX(), this.getX() + Integer.parseInt(this.values.get("tilesFront")));
+        int maxY = Math.min(room.getLayout().getMapSizeY(), this.getY() + Integer.parseInt(this.values.get("tilesLeft")));
 
         this.tiles.clear();
 
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {
                 RoomTile tile = room.getLayout().getTile((short) x, (short) y);
-                if (tile != null && tile.state != RoomTileState.INVALID) this.tiles.add(tile);
+                if (tile != null && tile.state != RoomTileState.INVALID)
+                    this.tiles.add(tile);
             }
         }
     }
@@ -183,8 +181,7 @@ public class InteractionBuildArea extends InteractionCustomValues {
     @Override
     public void onCustomValuesSaved(Room room, GameClient client, Map<String, String> oldValues) {
         regenAffectedTiles(room);
-        ArrayList<String> builderNames =
-                new ArrayList<>(Arrays.asList(this.values.get("builders").split(";")));
+        ArrayList<String> builderNames = new ArrayList<>(Arrays.asList(this.values.get("builders").split(";")));
         Set<Integer> canBuild = new HashSet<>();
 
         for (String builderName : builderNames) {
@@ -204,8 +201,7 @@ public class InteractionBuildArea extends InteractionCustomValues {
 
         int minX = Math.max(0, this.getX() - Integer.parseInt(oldValues.get("tilesBack")));
         int minY = Math.max(0, this.getY() - Integer.parseInt(oldValues.get("tilesRight")));
-        int maxX =
-                Math.min(room.getLayout().getMapSizeX(), this.getX() + Integer.parseInt(oldValues.get("tilesFront")));
+        int maxX = Math.min(room.getLayout().getMapSizeX(), this.getX() + Integer.parseInt(oldValues.get("tilesFront")));
         int maxY = Math.min(room.getLayout().getMapSizeY(), this.getY() + Integer.parseInt(oldValues.get("tilesLeft")));
 
         for (int x = minX; x <= maxX; x++) {
@@ -229,13 +225,13 @@ public class InteractionBuildArea extends InteractionCustomValues {
         // show the effect
         Item effectItem = Emulator.getGameEnvironment().getItemManager().getItem("mutearea_sign2");
 
-        if (effectItem != null) {
+        if(effectItem != null) {
             Int2ObjectMap<String> ownerNames = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
             ownerNames.put(-1, "System");
             Set<HabboItem> items = new HashSet<>();
 
             int id = 0;
-            for (RoomTile tile : this.tiles) {
+            for(RoomTile tile : this.tiles) {
                 id--;
                 HabboItem item = new InteractionDefault(id, -1, effectItem, "1", 0, 0);
                 item.setX(tile.x);
@@ -245,18 +241,15 @@ public class InteractionBuildArea extends InteractionCustomValues {
             }
 
             client.sendResponse(new RoomFloorItemsComposer(ownerNames, items));
-            Emulator.getThreading()
-                    .run(
-                            () -> {
-                                for (HabboItem item : items) {
-                                    client.sendResponse(new RemoveFloorItemComposer(item, true));
-                                }
-                            },
-                            3000);
+            Emulator.getThreading().run(() -> {
+                for(HabboItem item : items) {
+                    client.sendResponse(new RemoveFloorItemComposer(item, true));
+                }
+            }, 3000);
         }
     }
 
-    public boolean isBuilder(String Username) {
+    public boolean isBuilder(String Username){
         return Arrays.asList(this.values.get("builders").split(";")).contains(Username);
     }
 }

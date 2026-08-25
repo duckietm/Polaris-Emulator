@@ -11,6 +11,7 @@ import com.eu.habbo.habbohotel.wired.WiredUserActionType;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -28,8 +29,7 @@ public class WiredTriggerHabboPerformsAction extends InteractionWiredTrigger {
         super(set, baseItem);
     }
 
-    public WiredTriggerHabboPerformsAction(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredTriggerHabboPerformsAction(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -62,13 +62,13 @@ public class WiredTriggerHabboPerformsAction extends InteractionWiredTrigger {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson()
-                .toJson(new JsonData(
-                        this.selectedAction,
-                        this.signFilterEnabled,
-                        this.signId,
-                        this.danceFilterEnabled,
-                        this.danceId));
+        return WiredManager.getGson().toJson(new JsonData(
+                this.selectedAction,
+                this.signFilterEnabled,
+                this.signId,
+                this.danceFilterEnabled,
+                this.danceId
+        ));
     }
 
     @Override
@@ -206,8 +206,7 @@ public class WiredTriggerHabboPerformsAction extends InteractionWiredTrigger {
         boolean danceFilterEnabled;
         int danceId;
 
-        public JsonData(
-                int selectedAction, boolean signFilterEnabled, int signId, boolean danceFilterEnabled, int danceId) {
+        public JsonData(int selectedAction, boolean signFilterEnabled, int signId, boolean danceFilterEnabled, int danceId) {
             this.selectedAction = selectedAction;
             this.signFilterEnabled = signFilterEnabled;
             this.signId = signId;

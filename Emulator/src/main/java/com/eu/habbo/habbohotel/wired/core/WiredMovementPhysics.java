@@ -3,24 +3,20 @@ package com.eu.habbo.habbohotel.wired.core;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.rooms.RoomUnitType;
 import com.eu.habbo.habbohotel.users.HabboItem;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 public final class WiredMovementPhysics {
-    public static final WiredMovementPhysics NONE =
-            new WiredMovementPhysics(false, Collections.emptySet(), Collections.emptySet(), Collections.emptySet());
+    public static final WiredMovementPhysics NONE = new WiredMovementPhysics(false, Collections.emptySet(), Collections.emptySet(), Collections.emptySet());
 
     private final boolean keepAltitude;
     private final Set<Integer> passThroughFurniIds;
     private final Set<Integer> passThroughUserIds;
     private final Set<Integer> blockingFurniIds;
 
-    public WiredMovementPhysics(
-            boolean keepAltitude,
-            Set<Integer> passThroughFurniIds,
-            Set<Integer> passThroughUserIds,
-            Set<Integer> blockingFurniIds) {
+    public WiredMovementPhysics(boolean keepAltitude, Set<Integer> passThroughFurniIds, Set<Integer> passThroughUserIds, Set<Integer> blockingFurniIds) {
         this.keepAltitude = keepAltitude;
         this.passThroughFurniIds = Collections.unmodifiableSet(new HashSet<>(passThroughFurniIds));
         this.passThroughUserIds = Collections.unmodifiableSet(new HashSet<>(passThroughUserIds));

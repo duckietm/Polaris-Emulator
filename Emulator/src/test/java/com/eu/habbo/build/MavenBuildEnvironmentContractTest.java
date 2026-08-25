@@ -53,7 +53,7 @@ class MavenBuildEnvironmentContractTest {
 
         assertTrue(Files.isRegularFile(Path.of("mvnw")));
         assertTrue(Files.isRegularFile(Path.of("mvnw.cmd")));
-        assertTrue(properties.getProperty("distributionUrl").contains("apache-maven/3.9.11/"));
+        assertTrue(properties.getProperty("distributionUrl").contains("apache-maven/3.9.16/"));
         assertTrue(properties.getProperty("distributionSha256Sum").matches("[a-f0-9]{64}"));
     }
 

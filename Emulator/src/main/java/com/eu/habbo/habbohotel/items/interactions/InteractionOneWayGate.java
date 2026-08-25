@@ -11,6 +11,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.items.ItemIntStateComposer;
 import com.eu.habbo.threading.runnables.RoomUnitWalkToLocation;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -41,7 +42,9 @@ public class InteractionOneWayGate extends HabboItem {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+
+    }
 
     @Override
     public void serializeExtradata(ServerMessage serverMessage) {
@@ -61,15 +64,17 @@ public class InteractionOneWayGate extends HabboItem {
         super.onClick(client, room, objects);
 
         if (client != null) {
-            RoomTile tileInfront = room.getLayout()
-                    .getTileInFront(room.getLayout().getTile(this.getX(), this.getY()), this.getRotation());
-            if (tileInfront == null) return;
+            RoomTile tileInfront = room.getLayout().getTileInFront(room.getLayout().getTile(this.getX(), this.getY()), this.getRotation());
+            if (tileInfront == null)
+                return;
 
             RoomTile currentLocation = room.getLayout().getTile(this.getX(), this.getY());
-            if (currentLocation == null) return;
+            if (currentLocation == null)
+                return;
 
             RoomUnit unit = client.getHabbo().getRoomUnit();
-            if (unit == null) return;
+            if (unit == null)
+                return;
 
             if (tileInfront.x == unit.getX() && tileInfront.y == unit.getY()) {
                 if (!currentLocation.hasUnits()) {
@@ -79,20 +84,15 @@ public class InteractionOneWayGate extends HabboItem {
                     onSuccess.add(() -> {
                         unit.setCanLeaveRoomByDoor(false);
                         walkable = this.getBaseItem().allowWalk();
-                        RoomTile tile = room.getLayout()
-                                .getTileInFront(
-                                        room.getLayout().getTile(this.getX(), this.getY()), this.getRotation() + 4);
+                        RoomTile tile = room.getLayout().getTileInFront(room.getLayout().getTile(this.getX(), this.getY()), this.getRotation() + 4);
                         unit.setGoalLocation(tile);
                         Emulator.getThreading().run(new RoomUnitWalkToLocation(unit, tile, room, onFail, onFail));
 
-                        Emulator.getThreading()
-                                .run(
-                                        () -> {
-                                            if (room.isLoaded()) {
-                                                WiredManager.triggerUserWalksOn(room, unit, this);
-                                            }
-                                        },
-                                        500);
+                        Emulator.getThreading().run(() -> {
+                            if (room.isLoaded()) {
+                                WiredManager.triggerUserWalksOn(room, unit, this);
+                            }
+                        }, 500);
                     });
 
                     onFail.add(() -> {
@@ -107,8 +107,7 @@ public class InteractionOneWayGate extends HabboItem {
                     room.updateTile(currentLocation);
                     unit.addOverrideTile(currentLocation);
                     unit.setGoalLocation(currentLocation);
-                    Emulator.getThreading()
-                            .run(new RoomUnitWalkToLocation(unit, currentLocation, room, onSuccess, onFail));
+                    Emulator.getThreading().run(new RoomUnitWalkToLocation(unit, currentLocation, room, onSuccess, onFail));
                     room.sendComposer(new ItemIntStateComposer(this.getId(), 1).compose());
 
                     /*

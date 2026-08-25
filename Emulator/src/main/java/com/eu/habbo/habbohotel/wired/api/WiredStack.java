@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.wired.api;
 
 import com.eu.habbo.habbohotel.users.HabboItem;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -15,51 +16,50 @@ import java.util.List;
  *   <li>Optional extras (modifiers like random selection)</li>
  * </ul>
  * </p>
- *
+ * 
  * <h3>Execution Flow:</h3>
  * <ol>
  *   <li>Trigger receives an event and calls {@link IWiredTrigger#matches}</li>
  *   <li>If matched, all conditions are evaluated via {@link IWiredCondition#evaluate}</li>
  *   <li>If conditions pass, effects execute via {@link IWiredEffect#execute}</li>
  * </ol>
- *
+ * 
  * @see IWiredTrigger
  * @see IWiredCondition
  * @see IWiredEffect
  */
 public final class WiredStack {
-
+    
     private final HabboItem triggerItem;
     private final IWiredTrigger trigger;
     private final List<IWiredCondition> conditions;
     private final List<IWiredEffect> effects;
-
+    
     // Extra modifiers
     private final int conditionEvaluationMode; // WiredExtraOrEval mode
     private final int conditionEvaluationValue; // WiredExtraOrEval numeric threshold
-    private final boolean useRandom; // WiredExtraRandom present
-    private final boolean useUnseen; // WiredExtraUnseen present
-    private final boolean executeInOrder; // WiredExtraExecuteInOrder present
+    private final boolean useRandom;        // WiredExtraRandom present
+    private final boolean useUnseen;        // WiredExtraUnseen present
+    private final boolean executeInOrder;   // WiredExtraExecuteInOrder present
 
     /**
      * Create a new wired stack.
-     *
+     * 
      * @param triggerItem the wired trigger furniture item
      * @param trigger the trigger implementation
      * @param conditions list of conditions (may be empty)
      * @param effects list of effects (should have at least one)
      */
-    public WiredStack(
-            HabboItem triggerItem,
-            IWiredTrigger trigger,
-            List<IWiredCondition> conditions,
-            List<IWiredEffect> effects) {
+    public WiredStack(HabboItem triggerItem,
+                      IWiredTrigger trigger,
+                      List<IWiredCondition> conditions,
+                      List<IWiredEffect> effects) {
         this(triggerItem, trigger, conditions, effects, 0, 1, false, false, false);
     }
 
     /**
      * Create a new wired stack with modifiers.
-     *
+     * 
      * @param triggerItem the wired trigger furniture item
      * @param trigger the trigger implementation
      * @param conditions list of conditions
@@ -70,16 +70,15 @@ public final class WiredStack {
      * @param useUnseen if true, execute effects in "unseen" order (round-robin)
      * @param executeInOrder if true, execute all regular effects in stable stack order
      */
-    public WiredStack(
-            HabboItem triggerItem,
-            IWiredTrigger trigger,
-            List<IWiredCondition> conditions,
-            List<IWiredEffect> effects,
-            int conditionEvaluationMode,
-            int conditionEvaluationValue,
-            boolean useRandom,
-            boolean useUnseen,
-            boolean executeInOrder) {
+    public WiredStack(HabboItem triggerItem,
+                      IWiredTrigger trigger,
+                      List<IWiredCondition> conditions,
+                      List<IWiredEffect> effects,
+                      int conditionEvaluationMode,
+                      int conditionEvaluationValue,
+                      boolean useRandom,
+                      boolean useUnseen,
+                      boolean executeInOrder) {
         this.triggerItem = triggerItem;
         this.trigger = trigger;
         this.conditions = conditions != null ? Collections.unmodifiableList(conditions) : Collections.emptyList();
@@ -200,15 +199,16 @@ public final class WiredStack {
 
     @Override
     public String toString() {
-        return "WiredStack{" + "triggerItem="
-                + (triggerItem != null ? triggerItem.getId() : "null") + ", trigger="
-                + (trigger != null ? trigger.listensTo() : "null") + ", conditions="
-                + conditions.size() + ", effects="
-                + effects.size() + ", conditionEvaluationMode="
-                + conditionEvaluationMode + ", conditionEvaluationValue="
-                + conditionEvaluationValue + ", random="
-                + useRandom + ", unseen="
-                + useUnseen + ", executeInOrder="
-                + executeInOrder + '}';
+        return "WiredStack{" +
+                "triggerItem=" + (triggerItem != null ? triggerItem.getId() : "null") +
+                ", trigger=" + (trigger != null ? trigger.listensTo() : "null") +
+                ", conditions=" + conditions.size() +
+                ", effects=" + effects.size() +
+                ", conditionEvaluationMode=" + conditionEvaluationMode +
+                ", conditionEvaluationValue=" + conditionEvaluationValue +
+                ", random=" + useRandom +
+                ", unseen=" + useUnseen +
+                ", executeInOrder=" + executeInOrder +
+                '}';
     }
 }

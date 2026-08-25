@@ -11,6 +11,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.api.IWiredEffect;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -26,7 +27,7 @@ public class WiredExtraUnseen extends InteractionWiredExtra {
      * When limit is reached, oldest entries are removed automatically.
      */
     private static final int MAX_SEEN_LIST_SIZE = 1000;
-
+    
     /**
      * Thread-safe set of seen effect IDs. Uses LinkedHashSet for insertion order
      * to support LRU-style eviction when max size is reached.
@@ -84,7 +85,9 @@ public class WiredExtraUnseen extends InteractionWiredExtra {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+
+    }
 
     @Override
     public void onMove(Room room, RoomTile oldLocation, RoomTile newLocation) {
@@ -167,7 +170,7 @@ public class WiredExtraUnseen extends InteractionWiredExtra {
             return selectedEffects;
         }
     }
-
+    
     /**
      * Gets the current size of the seen list.
      * @return the number of tracked effect IDs
@@ -177,7 +180,7 @@ public class WiredExtraUnseen extends InteractionWiredExtra {
             return this.seenList.size();
         }
     }
-
+    
     /**
      * Clears the seen list.
      */
@@ -192,5 +195,6 @@ public class WiredExtraUnseen extends InteractionWiredExtra {
         return true;
     }
 
-    static class JsonData {}
+    static class JsonData {
+    }
 }

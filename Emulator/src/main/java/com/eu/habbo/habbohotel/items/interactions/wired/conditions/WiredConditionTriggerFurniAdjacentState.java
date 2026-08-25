@@ -12,6 +12,7 @@ import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -46,8 +47,7 @@ public class WiredConditionTriggerFurniAdjacentState extends InteractionWiredCon
         super(set, baseItem);
     }
 
-    public WiredConditionTriggerFurniAdjacentState(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredConditionTriggerFurniAdjacentState(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -98,8 +98,7 @@ public class WiredConditionTriggerFurniAdjacentState extends InteractionWiredCon
                     continue;
                 }
 
-                if (!allowedBaseItems.isEmpty()
-                        && !allowedBaseItems.contains(item.getBaseItem().getId())) {
+                if (!allowedBaseItems.isEmpty() && !allowedBaseItems.contains(item.getBaseItem().getId())) {
                     continue;
                 }
 
@@ -152,8 +151,7 @@ public class WiredConditionTriggerFurniAdjacentState extends InteractionWiredCon
 
         int[] furniIds = settings.getFurniIds();
         if (furniIds != null) {
-            int maxFurni = Emulator.getConfig()
-                    .getInt("hotel.wired.furni.selection.count", WiredManager.MAXIMUM_FURNI_SELECTION);
+            int maxFurni = Emulator.getConfig().getInt("hotel.wired.furni.selection.count", WiredManager.MAXIMUM_FURNI_SELECTION);
             if (furniIds.length > maxFurni) {
                 return false;
             }

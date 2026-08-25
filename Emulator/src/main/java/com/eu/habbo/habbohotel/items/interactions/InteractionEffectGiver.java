@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomLayout;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -25,11 +26,8 @@ public class InteractionEffectGiver extends InteractionDefault {
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
         super.onClick(client, room, objects);
 
-        if (RoomLayout.tilesAdjecent(
-                        client.getHabbo().getRoomUnit().getCurrentLocation(),
-                        room.getLayout().getTile(this.getX(), this.getY()))
-                || (client.getHabbo().getRoomUnit().getCurrentLocation().x == this.getX()
-                        && client.getHabbo().getRoomUnit().getCurrentLocation().y == this.getY())) {
+        if (RoomLayout.tilesAdjecent(client.getHabbo().getRoomUnit().getCurrentLocation(), room.getLayout().getTile(this.getX(), this.getY())) ||
+                (client.getHabbo().getRoomUnit().getCurrentLocation().x == this.getX() && client.getHabbo().getRoomUnit().getCurrentLocation().y == this.getY())) {
             this.handle(room, client.getHabbo().getRoomUnit());
         }
     }
@@ -46,13 +44,10 @@ public class InteractionEffectGiver extends InteractionDefault {
             this.setExtradata("1");
             room.updateItem(this);
 
-            Emulator.getThreading()
-                    .run(
-                            () -> {
-                                InteractionEffectGiver.this.setExtradata("0");
-                                room.updateItem(instance);
-                            },
-                            500);
+            Emulator.getThreading().run(() -> {
+                InteractionEffectGiver.this.setExtradata("0");
+                room.updateItem(instance);
+            }, 500);
         }
     }
 }

@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -110,7 +111,8 @@ public class WiredExtraRoomVariable extends InteractionWiredExtra {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {}
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {
+    }
 
     @Override
     public boolean hasConfiguration() {

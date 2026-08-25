@@ -13,6 +13,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.ResultSet;
@@ -45,8 +46,7 @@ public class WiredConditionUserInRange extends InteractionWiredCondition {
         super(set, baseItem);
     }
 
-    public WiredConditionUserInRange(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredConditionUserInRange(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -92,9 +92,12 @@ public class WiredConditionUserInRange extends InteractionWiredCondition {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson()
-                .toJson(new JsonData(
-                        this.comparison, this.formatRadius(this.radius), this.userSource, this.quantifier));
+        return WiredManager.getGson().toJson(new JsonData(
+                this.comparison,
+                this.formatRadius(this.radius),
+                this.userSource,
+                this.quantifier
+        ));
     }
 
     @Override
@@ -201,9 +204,7 @@ public class WiredConditionUserInRange extends InteractionWiredCondition {
 
     double normalizeRadius(double value) {
         double clampedValue = Math.max(0.0D, value);
-        return BigDecimal.valueOf(clampedValue)
-                .setScale(2, RoundingMode.HALF_UP)
-                .doubleValue();
+        return BigDecimal.valueOf(clampedValue).setScale(2, RoundingMode.HALF_UP).doubleValue();
     }
 
     double parseRadiusOrDefault(String value) {

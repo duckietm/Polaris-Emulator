@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -20,8 +21,7 @@ public class InteractionTileEffectProvider extends InteractionCustomValues {
         super(set, baseItem, defaultValues);
     }
 
-    public InteractionTileEffectProvider(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionTileEffectProvider(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells, defaultValues);
     }
 
@@ -49,13 +49,10 @@ public class InteractionTileEffectProvider extends InteractionCustomValues {
         room.updateItem(this);
 
         final InteractionTileEffectProvider proxy = this;
-        Emulator.getThreading()
-                .run(
-                        () -> {
-                            proxy.values.put("state", "0");
-                            room.updateItem(proxy);
-                        },
-                        500);
+        Emulator.getThreading().run(() -> {
+            proxy.values.put("state", "0");
+            room.updateItem(proxy);
+        }, 500);
 
         room.giveEffect(roomUnit, effectId, -1);
     }

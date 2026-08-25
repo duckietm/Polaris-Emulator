@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import com.eu.habbo.messages.outgoing.wired.WiredExtraDataComposer;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -15,8 +16,7 @@ public abstract class InteractionWiredExtra extends InteractionWired {
         super(set, baseItem);
     }
 
-    protected InteractionWiredExtra(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    protected InteractionWiredExtra(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 

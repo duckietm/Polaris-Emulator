@@ -12,6 +12,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUnitStatus;
 import com.eu.habbo.habbohotel.rooms.RoomUserRotation;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
 import com.eu.habbo.threading.runnables.PetEatAction;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -28,7 +29,8 @@ public class InteractionPetFood extends InteractionDefault {
     public void onWalkOn(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
         super.onWalkOn(roomUnit, room, objects);
 
-        if (this.getExtradata().length() == 0) this.setExtradata("0");
+        if (this.getExtradata().length() == 0)
+            this.setExtradata("0");
 
         // Check if there's food left (state < stateCount means food remaining)
         int currentState = 0;
@@ -37,7 +39,7 @@ public class InteractionPetFood extends InteractionDefault {
         } catch (NumberFormatException e) {
             currentState = 0;
         }
-
+        
         // If food is empty (state >= max states), don't allow eating
         if (currentState >= this.getBaseItem().getStateCount()) {
             return;
@@ -47,7 +49,8 @@ public class InteractionPetFood extends InteractionDefault {
 
         if (pet != null) {
             // Don't let ridden pets eat
-            if (pet instanceof RideablePet && ((RideablePet) pet).getRider() != null) return;
+            if (pet instanceof RideablePet && ((RideablePet) pet).getRider() != null)
+                return;
 
             if (pet.getPetData().haveFoodItem(this)) {
                 if (pet.levelHunger >= 35) {
@@ -63,6 +66,7 @@ public class InteractionPetFood extends InteractionDefault {
             }
         }
     }
+
 
     @Override
     public boolean allowWiredResetState() {

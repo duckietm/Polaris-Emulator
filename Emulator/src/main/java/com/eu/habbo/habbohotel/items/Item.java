@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ISerialize;
 import com.eu.habbo.messages.ServerMessage;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -44,9 +45,7 @@ public class Item implements ISerialize {
     }
 
     public static boolean isPet(Item item) {
-        return item != null
-                && item.getName() != null
-                && item.getName().toLowerCase().startsWith("a0 pet");
+        return item != null && item.getName() != null && item.getName().toLowerCase().startsWith("a0 pet");
     }
 
     public static boolean isBot(Item item) {
@@ -62,8 +61,7 @@ public class Item implements ISerialize {
             }
 
             try {
-                int index = Integer.parseInt(item.getExtradata())
-                        % (item.getBaseItem().getMultiHeights().length);
+                int index = Integer.parseInt(item.getExtradata()) % (item.getBaseItem().getMultiHeights().length);
                 return item.getBaseItem().getMultiHeights()[(item.getExtradata().isEmpty() ? 0 : index)];
             } catch (NumberFormatException e) {
 
@@ -104,15 +102,13 @@ public class Item implements ISerialize {
             interactionTypeName = "default";
         }
 
-        this.interactionType =
-                Emulator.getGameEnvironment().getItemManager().getItemInteraction(interactionTypeName.toLowerCase());
+        this.interactionType = Emulator.getGameEnvironment().getItemManager().getItemInteraction(interactionTypeName.toLowerCase());
 
         if ((this.interactionType != null)
                 && "default".equalsIgnoreCase(this.interactionType.getName())
                 && (this.fullName != null)
                 && this.fullName.toLowerCase().startsWith("wf_")) {
-            ItemInteraction fallbackInteraction =
-                    Emulator.getGameEnvironment().getItemManager().getItemInteraction(this.fullName.toLowerCase());
+            ItemInteraction fallbackInteraction = Emulator.getGameEnvironment().getItemManager().getItemInteraction(this.fullName.toLowerCase());
 
             if ((fallbackInteraction != null) && !"default".equalsIgnoreCase(fallbackInteraction.getName())) {
                 this.interactionType = fallbackInteraction;
@@ -135,8 +131,7 @@ public class Item implements ISerialize {
             this.vendingItems = new IntArrayList();
         }
 
-        // if(this.interactionType.getType() == InteractionMultiHeight.class ||
-        // this.interactionType.getType().isAssignableFrom(InteractionMultiHeight.class))
+        //if(this.interactionType.getType() == InteractionMultiHeight.class || this.interactionType.getType().isAssignableFrom(InteractionMultiHeight.class))
         {
             this.multiHeights = ItemDataGuard.parseHeights(set.getString("multiheight"));
         }
@@ -145,8 +140,8 @@ public class Item implements ISerialize {
 
         try {
             this.rotations = set.getInt("rotations");
-        } catch (SQLException ignored) {
         }
+        catch (SQLException ignored) { }
     }
 
     public int getId() {
@@ -267,9 +262,7 @@ public class Item implements ISerialize {
         return customParams;
     }
 
-    public String getClothingOnWalk() {
-        return clothingOnWalk;
-    }
+    public String getClothingOnWalk() { return clothingOnWalk; }
 
     public int getRotations() {
         return rotations;
@@ -285,9 +278,7 @@ public class Item implements ISerialize {
             message.appendInt(this.spriteId);
 
             String itemName = ItemDataGuard.safeString(this.getName());
-            if (itemName.contains("wallpaper_single")
-                    || itemName.contains("floor_single")
-                    || itemName.contains("landscape_single")) {
+            if (itemName.contains("wallpaper_single") || itemName.contains("floor_single") || itemName.contains("landscape_single")) {
                 String[] nameParts = itemName.split("_");
                 message.appendString(nameParts.length > 2 ? nameParts[2] : "");
             } else if (type == FurnitureType.ROBOT) {

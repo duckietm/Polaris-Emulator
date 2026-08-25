@@ -995,9 +995,13 @@ public final class WiredEngine {
      * index invalidation let a rate-limit-banned owner reset the ban on demand
      * by dragging any furniture one tile. Use {@link #clearRoomExecutionCaches}
      * for a genuine full reset.
+     *
+     * <p>Package-private on purpose: it is an internal helper for
+     * {@link WiredManager#invalidateRoom}, and keeping it off the public
+     * surface preserves the frozen plugin ABI (WiredPublicSurfaceCompatibilityTest).
      * @param roomId the room ID
      */
-    public void clearRoomIndexCaches(int roomId) {
+    void clearRoomIndexCaches(int roomId) {
         clearRoomRecursionDepth(roomId);
         clearRoomSourceStackCache(roomId);
         clearRoomDiagnostics(roomId);

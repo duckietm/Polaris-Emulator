@@ -9,6 +9,9 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.messages.ClientMessage;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.items.ItemStateComposer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -17,8 +20,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Base abstract class for all wired furniture items (triggers, effects, conditions, extras).
@@ -44,24 +45,24 @@ import org.slf4j.LoggerFactory;
  *   <li>JSON-based data persistence via {@link #getWiredData()}</li>
  * </ul>
  * </p>
- *
+ * 
  * @see com.eu.habbo.habbohotel.wired.core.WiredManager
  * @see com.eu.habbo.habbohotel.rooms.RoomSpecialTypes
  */
 public abstract class InteractionWired extends InteractionDefault {
     private static final Logger LOGGER = LoggerFactory.getLogger(InteractionWired.class);
-
+    
     /**
      * Maximum number of entries in the user execution cache to prevent memory leaks.
      */
     private static final int MAX_USER_CACHE_SIZE = 500;
-
+    
     /**
      * Cache entries older than this (in milliseconds) will be cleaned up.
      * Default: 5 minutes
      */
     private static final long CACHE_EXPIRY_MS = 5 * 60 * 1000;
-
+    
     private volatile long cooldown;
     // Ensures one box is processed by a single thread at a time, so the
     // cooldown check-and-set in WiredHandler can't double-fire when a packet
@@ -81,7 +82,7 @@ public abstract class InteractionWired extends InteractionDefault {
 
     /**
      * Executes this wired item's logic.
-     *
+     * 
      * @param roomUnit the room unit that triggered this (may be null for non-user triggers)
      * @param room the room where this is happening
      * @param stuff additional context data passed from the trigger
@@ -104,10 +105,7 @@ public abstract class InteractionWired extends InteractionDefault {
             final int currentId = this.getId();
 
             Emulator.getThreading().run(() -> {
-                try (Connection connection =
-                                Emulator.getDatabase().getDataSource().getConnection();
-                        PreparedStatement statement =
-                                connection.prepareStatement("UPDATE items SET wired_data = ? WHERE id = ?")) {
+                try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE items SET wired_data = ? WHERE id = ?")) {
                     if (currentRoomId != 0) {
                         statement.setString(1, wiredData);
                     } else {
@@ -131,11 +129,11 @@ public abstract class InteractionWired extends InteractionDefault {
     public abstract void onPickUp();
 
     public void activateBox(Room room) {
-        this.activateBox(room, (RoomUnit) null, 0L);
+        this.activateBox(room, (RoomUnit)null, 0L);
     }
 
     public void activateBox(Room room, RoomUnit roomUnit, long millis) {
-        if (!room.isHideWired()) {
+        if(!room.isHideWired()) {
             this.setExtradata(this.getExtradata().equals("1") ? "0" : "1");
             room.sendComposer(new ItemStateComposer(this).compose());
         }
@@ -147,6 +145,7 @@ public abstract class InteractionWired extends InteractionDefault {
     protected long requiredCooldown() {
         return 50L;
     }
+
 
     public boolean canExecute(long newMillis) {
         return newMillis - this.cooldown >= this.requiredCooldown();
@@ -179,8 +178,8 @@ public abstract class InteractionWired extends InteractionDefault {
         if (roomUnitId == -1) {
             return true;
         } else {
-            if (this.userExecutionCache.containsKey((long) roomUnitId)) {
-                long lastTimestamp = this.userExecutionCache.get((long) roomUnitId);
+            if (this.userExecutionCache.containsKey((long)roomUnitId)) {
+                long lastTimestamp = this.userExecutionCache.get((long)roomUnitId);
                 return timestamp - lastTimestamp >= Math.max(100L, this.requiredCooldown());
             }
 
@@ -196,13 +195,12 @@ public abstract class InteractionWired extends InteractionDefault {
         // Enforce max size limit to prevent memory leaks
         if (this.userExecutionCache.size() >= MAX_USER_CACHE_SIZE) {
             cleanExpiredCacheEntries(timestamp);
-
+            
             // If still too large after cleanup, remove oldest entries
             if (this.userExecutionCache.size() >= MAX_USER_CACHE_SIZE) {
                 // Remove approximately 10% of entries
                 int toRemove = MAX_USER_CACHE_SIZE / 10;
-                Iterator<Map.Entry<Long, Long>> iterator =
-                        this.userExecutionCache.entrySet().iterator();
+                Iterator<Map.Entry<Long, Long>> iterator = this.userExecutionCache.entrySet().iterator();
                 while (iterator.hasNext() && toRemove > 0) {
                     iterator.next();
                     iterator.remove();
@@ -212,15 +210,17 @@ public abstract class InteractionWired extends InteractionDefault {
         }
         this.userExecutionCache.put((long) roomUnitId, timestamp);
     }
-
+    
     /**
      * Removes cache entries older than CACHE_EXPIRY_MS.
      * @param currentTimestamp the current timestamp to compare against
      */
     public void cleanExpiredCacheEntries(long currentTimestamp) {
-        this.userExecutionCache.entrySet().removeIf(entry -> currentTimestamp - entry.getValue() > CACHE_EXPIRY_MS);
+        this.userExecutionCache.entrySet().removeIf(
+            entry -> currentTimestamp - entry.getValue() > CACHE_EXPIRY_MS
+        );
     }
-
+    
     /**
      * Gets the current size of the user execution cache.
      * @return the number of cached entries
@@ -229,14 +229,16 @@ public abstract class InteractionWired extends InteractionDefault {
         return this.userExecutionCache.size();
     }
 
-    public static WiredSettings readSettings(ClientMessage packet, boolean isEffect) {
+    public static WiredSettings readSettings(ClientMessage packet, boolean isEffect)
+    {
         int[] intParams = WiredInputGuard.readIntParams(packet);
         String stringParam = WiredInputGuard.readStringParam(packet);
         int[] itemIds = WiredInputGuard.readFurniIds(packet);
 
         WiredSettings settings = new WiredSettings(intParams, stringParam, itemIds, -1);
 
-        if (isEffect) {
+        if(isEffect)
+        {
             settings.setDelay(WiredInputGuard.normalizeDelay(packet.readInt()));
         }
 

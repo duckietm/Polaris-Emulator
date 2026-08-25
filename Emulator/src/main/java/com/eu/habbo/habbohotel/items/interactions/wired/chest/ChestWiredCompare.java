@@ -12,7 +12,8 @@ public final class ChestWiredCompare {
     public static final int NOT_EQUAL = 4;
     public static final int GREATER_EQUAL = 5;
 
-    private ChestWiredCompare() {}
+    private ChestWiredCompare() {
+    }
 
     public static boolean compare(int actual, int expected, int operator) {
         switch (operator) {

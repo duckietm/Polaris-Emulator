@@ -14,6 +14,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -55,21 +56,20 @@ public class WiredEffectBotClothes extends InteractionWiredEffect {
         String dataString = settings.getStringParam();
         int delay = settings.getDelay();
 
-        if (delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
+        if(delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
             throw new WiredSaveException("Delay too long");
 
         String splitBy = "\t";
-        if (!dataString.contains(splitBy)) throw new WiredSaveException("Malformed data string");
+        if(!dataString.contains(splitBy))
+            throw new WiredSaveException("Malformed data string");
 
         String[] data = dataString.split(Pattern.quote(splitBy));
 
-        if (data.length != 2) throw new WiredSaveException("Malformed data string. Invalid data length");
+        if (data.length != 2)
+            throw new WiredSaveException("Malformed data string. Invalid data length");
 
-        this.botSource = (settings.getIntParams().length > 0)
-                ? WiredBotSourceUtil.normalizeBotSource(settings.getIntParams()[0])
-                : WiredBotSourceUtil.SOURCE_BOT_NAME;
-        this.botName = data[0].substring(
-                0, Math.min(data[0].length(), Emulator.getConfig().getInt("hotel.wired.message.max_length", 100)));
+        this.botSource = (settings.getIntParams().length > 0) ? WiredBotSourceUtil.normalizeBotSource(settings.getIntParams()[0]) : WiredBotSourceUtil.SOURCE_BOT_NAME;
+        this.botName = data[0].substring(0, Math.min(data[0].length(), Emulator.getConfig().getInt("hotel.wired.message.max_length", 100)));
         this.botLook = data[1];
         this.setDelay(delay);
 
@@ -107,14 +107,15 @@ public class WiredEffectBotClothes extends InteractionWiredEffect {
         String wiredData = set.getString("wired_data");
 
         JsonData jsonData = WiredEffectPayloadGuard.fromJson(wiredData, JsonData.class);
-        if (jsonData != null) {
+        if(jsonData != null) {
             this.setDelay(WiredEffectPayloadGuard.delay(jsonData.delay));
             this.botName = WiredEffectPayloadGuard.text(jsonData.bot_name);
             this.botLook = jsonData.look != null ? jsonData.look : "";
             this.botSource = (jsonData.botSource != null)
                     ? WiredBotSourceUtil.normalizeBotSource(jsonData.botSource)
                     : WiredBotSourceUtil.SOURCE_BOT_NAME;
-        } else {
+        }
+        else {
             String[] data = wiredData != null ? wiredData.split(((char) 9) + "") : new String[0];
 
             if (data.length >= 3) {

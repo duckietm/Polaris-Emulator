@@ -6,11 +6,12 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
+import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredFreezeUtil;
-import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -78,7 +79,11 @@ public class WiredConditionFrozen extends InteractionWiredCondition {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(this.effectId, this.userSource, this.quantifier));
+        return WiredManager.getGson().toJson(new JsonData(
+                this.effectId,
+                this.userSource,
+                this.quantifier
+        ));
     }
 
     @Override
@@ -148,12 +153,10 @@ public class WiredConditionFrozen extends InteractionWiredCondition {
 
     @Override
     public boolean saveData(WiredSettings settings) {
-        if (settings.getIntParams().length < 1) return false;
+        if(settings.getIntParams().length < 1) return false;
         int[] params = settings.getIntParams();
         this.effectId = WiredUserConditionInputGuard.normalizeEffectId(params[0]);
-        this.userSource = (params.length > 1)
-                ? WiredUserConditionInputGuard.normalizeUserSource(params[1])
-                : WiredSourceUtil.SOURCE_TRIGGER;
+        this.userSource = (params.length > 1) ? WiredUserConditionInputGuard.normalizeUserSource(params[1]) : WiredSourceUtil.SOURCE_TRIGGER;
         this.quantifier = (params.length > 2) ? this.normalizeQuantifier(params[2], QUANTIFIER_ANY) : QUANTIFIER_ANY;
 
         return true;

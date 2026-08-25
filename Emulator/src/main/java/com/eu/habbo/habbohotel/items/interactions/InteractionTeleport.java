@@ -11,12 +11,13 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.threading.runnables.RoomUnitWalkToLocation;
 import com.eu.habbo.threading.runnables.teleport.TeleportActionOne;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class InteractionTeleport extends HabboItem {
     private static final Logger LOGGER = LoggerFactory.getLogger(InteractionTeleport.class);
@@ -58,38 +59,41 @@ public class InteractionTeleport extends HabboItem {
 
     private void tryTeleport(GameClient client, Room room) {
         /*
-           if user is on item, startTeleport
-        else if user is on infront, set state 1 and walk on item
-        else move to infront and interact
-        */
+            if user is on item, startTeleport
+	        else if user is on infront, set state 1 and walk on item
+	        else move to infront and interact
+         */
 
         Habbo habbo = client.getHabbo();
 
-        if (habbo == null) return;
+        if (habbo == null)
+            return;
 
         RoomUnit unit = habbo.getRoomUnit();
 
-        if (unit == null) return;
+        if (unit == null)
+            return;
 
         RoomTile currentLocation = room.getLayout().getTile(this.getX(), this.getY());
 
-        if (currentLocation == null) return;
+        if (currentLocation == null)
+            return;
 
         RoomTile infrontTile = room.getLayout().getTileInFront(currentLocation, this.getRotation());
 
-        if (!canUseTeleport(client, room)) return;
+        if (!canUseTeleport(client, room))
+            return;
 
         if (this.roomUnitID == unit.getId() && unit.getCurrentLocation().equals(currentLocation)) {
             startTeleport(room, habbo);
             walkable = true;
 
             try {
-                super.onClick(client, room, new Object[] {"TOGGLE_OVERRIDE"});
+                super.onClick(client, room, new Object[]{"TOGGLE_OVERRIDE"});
             } catch (Exception e) {
                 LOGGER.error("Caught exception", e);
             }
-        } else if (unit.getCurrentLocation().equals(currentLocation)
-                || unit.getCurrentLocation().equals(infrontTile)) {
+        } else if (unit.getCurrentLocation().equals(currentLocation) || unit.getCurrentLocation().equals(infrontTile)) {
             // set state 1 and walk on item
             this.roomUnitID = unit.getId();
             this.setExtradata("1");
@@ -145,7 +149,8 @@ public class InteractionTeleport extends HabboItem {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+    }
 
     @Override
     public void run() {
@@ -193,11 +198,13 @@ public class InteractionTeleport extends HabboItem {
 
         Habbo habbo = client.getHabbo();
 
-        if (habbo == null) return false;
+        if (habbo == null)
+            return false;
 
         RoomUnit unit = habbo.getRoomUnit();
 
-        if (unit == null) return false;
+        if (unit == null)
+            return false;
 
         return habbo.getHabboInfo().getRiding() == null;
     }

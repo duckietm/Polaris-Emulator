@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -24,8 +25,7 @@ public class InteractionVikingCotie extends InteractionDefault {
         }
 
         if (client != null && client.getHabbo().getHabboInfo().getId() == this.getUserId()) {
-            if (client.getHabbo().getRoomUnit().getEffectId() == 172
-                    || client.getHabbo().getRoomUnit().getEffectId() == 173) {
+            if (client.getHabbo().getRoomUnit().getEffectId() == 172 || client.getHabbo().getRoomUnit().getEffectId() == 173) {
                 int state = Integer.parseInt(this.getExtradata());
 
                 if (state < 5) {
@@ -34,11 +34,7 @@ public class InteractionVikingCotie extends InteractionDefault {
                     room.updateItem(this);
 
                     if (state == 5) {
-                        AchievementManager.progressAchievement(
-                                client.getHabbo(),
-                                Emulator.getGameEnvironment()
-                                        .getAchievementManager()
-                                        .getAchievement("ViciousViking"));
+                        AchievementManager.progressAchievement(client.getHabbo(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("ViciousViking"));
                     }
                 }
             }

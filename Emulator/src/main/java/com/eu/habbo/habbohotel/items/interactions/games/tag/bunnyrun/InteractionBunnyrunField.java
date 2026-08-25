@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.games.tag.InteractionTagField;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -15,8 +16,7 @@ public class InteractionBunnyrunField extends InteractionTagField {
         super(set, baseItem, BunnyrunGame.class);
     }
 
-    public InteractionBunnyrunField(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionBunnyrunField(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells, BunnyrunGame.class);
     }
 
@@ -27,9 +27,7 @@ public class InteractionBunnyrunField extends InteractionTagField {
         Habbo itemOwner = Emulator.getGameEnvironment().getHabboManager().getHabbo(this.getUserId());
 
         if (itemOwner != null) {
-            AchievementManager.progressAchievement(
-                    itemOwner,
-                    Emulator.getGameEnvironment().getAchievementManager().getAchievement("RbBunnyTag"));
+            AchievementManager.progressAchievement(itemOwner, Emulator.getGameEnvironment().getAchievementManager().getAchievement("RbBunnyTag"));
         }
     }
 }

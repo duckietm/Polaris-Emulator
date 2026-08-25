@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredFreezeUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -17,8 +18,7 @@ public class WiredConditionNotFrozen extends WiredConditionHabboHasEffect {
         super(set, baseItem);
     }
 
-    public WiredConditionNotFrozen(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredConditionNotFrozen(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 

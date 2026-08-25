@@ -7,7 +7,8 @@ public final class WiredNumericInputGuard {
     public static final int DEFAULT_MAX_RESPECT_AMOUNT = 100;
     public static final int MAX_ABSOLUTE_AMOUNT = 100000;
 
-    private WiredNumericInputGuard() {}
+    private WiredNumericInputGuard() {
+    }
 
     public static int parsePositiveAmount(String value, int maxAmount) {
         try {

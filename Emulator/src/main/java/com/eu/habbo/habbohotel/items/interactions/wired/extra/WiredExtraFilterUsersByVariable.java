@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.extra;
 
 import com.eu.habbo.habbohotel.items.Item;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -11,8 +12,7 @@ public class WiredExtraFilterUsersByVariable extends WiredExtraVariableFilterBas
         super(set, baseItem);
     }
 
-    public WiredExtraFilterUsersByVariable(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredExtraFilterUsersByVariable(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 

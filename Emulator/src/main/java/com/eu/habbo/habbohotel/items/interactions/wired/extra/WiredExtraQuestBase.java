@@ -9,6 +9,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.core.WiredDerivedVariableBox;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -63,7 +64,8 @@ public abstract class WiredExtraQuestBase extends InteractionWiredExtra implemen
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {}
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {
+    }
 
     @Override
     public boolean hasConfiguration() {
@@ -117,7 +119,8 @@ public abstract class WiredExtraQuestBase extends InteractionWiredExtra implemen
     static class JsonData {
         int targetValue;
 
-        JsonData() {}
+        JsonData() {
+        }
 
         JsonData(int targetValue) {
             this.targetValue = targetValue;

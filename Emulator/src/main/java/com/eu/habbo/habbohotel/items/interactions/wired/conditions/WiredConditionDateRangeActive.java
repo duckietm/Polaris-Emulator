@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -23,8 +24,7 @@ public class WiredConditionDateRangeActive extends InteractionWiredCondition {
         super(set, baseItem);
     }
 
-    public WiredConditionDateRangeActive(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredConditionDateRangeActive(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -52,7 +52,7 @@ public class WiredConditionDateRangeActive extends InteractionWiredCondition {
 
     @Override
     public boolean saveData(WiredSettings settings) {
-        if (settings.getIntParams().length < 2) return false;
+        if(settings.getIntParams().length < 2) return false;
         this.applyRange(settings.getIntParams()[0], settings.getIntParams()[1]);
         return true;
     }
@@ -71,7 +71,10 @@ public class WiredConditionDateRangeActive extends InteractionWiredCondition {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(this.startDate, this.endDate));
+        return WiredManager.getGson().toJson(new JsonData(
+                this.startDate,
+                this.endDate
+        ));
     }
 
     @Override

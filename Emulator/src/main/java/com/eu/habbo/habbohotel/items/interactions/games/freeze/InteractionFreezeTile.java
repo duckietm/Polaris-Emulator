@@ -8,11 +8,12 @@ import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
+import org.apache.commons.math3.util.Pair;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
-import org.apache.commons.math3.util.Pair;
 
 public class InteractionFreezeTile extends HabboItem {
     public InteractionFreezeTile(ResultSet set, Item baseItem) throws SQLException {
@@ -37,18 +38,21 @@ public class InteractionFreezeTile extends HabboItem {
 
     @Override
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
-        if (client == null) return;
+        if (client == null)
+            return;
 
-        if (client.getHabbo().getRoomUnit().getCurrentLocation().x == this.getX()
-                && client.getHabbo().getRoomUnit().getCurrentLocation().y == this.getY()) {
+        if (client.getHabbo().getRoomUnit().getCurrentLocation().x == this.getX() && client.getHabbo().getRoomUnit().getCurrentLocation().y == this.getY()) {
             FreezeGame game = (FreezeGame) room.getGame(FreezeGame.class);
 
-            if (game != null) game.throwBall(client.getHabbo(), this);
+            if (game != null)
+                game.throwBall(client.getHabbo(), this);
         }
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+
+    }
 
     @Override
     public void serializeExtradata(ServerMessage serverMessage) {
@@ -67,6 +71,7 @@ public class InteractionFreezeTile extends HabboItem {
     public boolean allowWiredResetState() {
         return false;
     }
+
 
     @Override
     public boolean canStackAt(Room room, List<Pair<RoomTile, Set<HabboItem>>> itemsAtLocation) {

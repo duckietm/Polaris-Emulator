@@ -9,6 +9,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.generic.alerts.CustomNotificationComposer;
 import com.eu.habbo.threading.runnables.CloseGate;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -18,8 +19,7 @@ public class InteractionHabboClubGate extends InteractionDefault implements Cond
         this.setExtradata("0");
     }
 
-    public InteractionHabboClubGate(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionHabboClubGate(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.setExtradata("0");
     }
@@ -66,10 +66,11 @@ public class InteractionHabboClubGate extends InteractionDefault implements Cond
 
     @Override
     public void onRejected(RoomUnit roomUnit, Room room, Object[] objects) {
-        if (roomUnit == null || room == null) return;
+        if (roomUnit == null || room == null)
+            return;
 
-        room.getHabbo(roomUnit)
-                .getClient()
-                .sendResponse(new CustomNotificationComposer(CustomNotificationComposer.GATE_NO_HC));
+        room.getHabbo(roomUnit).getClient().sendResponse(
+                new CustomNotificationComposer(CustomNotificationComposer.GATE_NO_HC)
+        );
     }
 }

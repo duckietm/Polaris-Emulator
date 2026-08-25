@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.users.clothingvalidation.ClothingValidationManage
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserDataComposer;
 import com.eu.habbo.messages.outgoing.users.UserDataComposer;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -67,20 +68,18 @@ public class InteractionMannequin extends HabboItem {
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
         String[] data = this.getExtradata().split(":");
 
-        if (data.length < 2) return;
+        if(data.length < 2)
+            return;
 
         String gender = data[0];
         String figure = data[1];
 
-        if (gender.isEmpty()
-                || figure.isEmpty()
-                || (!gender.equalsIgnoreCase("m") && !gender.equalsIgnoreCase("f"))
-                || !client.getHabbo().getHabboInfo().getGender().name().equalsIgnoreCase(gender)) return;
+        if (gender.isEmpty() || figure.isEmpty() || (!gender.equalsIgnoreCase("m") && !gender.equalsIgnoreCase("f")) || !client.getHabbo().getHabboInfo().getGender().name().equalsIgnoreCase(gender))
+            return;
 
         String newFigure = "";
 
-        for (String playerFigurePart :
-                client.getHabbo().getHabboInfo().getLook().split("\\.")) {
+        for (String playerFigurePart : client.getHabbo().getHabboInfo().getLook().split("\\.")) {
             if (!playerFigurePart.startsWith("ch") && !playerFigurePart.startsWith("lg"))
                 newFigure += playerFigurePart + ".";
         }
@@ -88,37 +87,34 @@ public class InteractionMannequin extends HabboItem {
         String newFigureParts = figure;
 
         for (String newFigurePart : newFigureParts.split("\\.")) {
-            if (newFigurePart.startsWith("hd")) newFigureParts = newFigureParts.replace(newFigurePart, "");
+            if (newFigurePart.startsWith("hd"))
+                newFigureParts = newFigureParts.replace(newFigurePart, "");
         }
 
         if (newFigureParts.equals("")) return;
 
         String newLook = newFigure + newFigureParts;
 
-        if (newLook.length() > 512) return;
+        if (newLook.length() > 512)
+            return;
 
-        client.getHabbo()
-                .getHabboInfo()
-                .setLook(
-                        ClothingValidationManager.VALIDATE_ON_MANNEQUIN
-                                ? ClothingValidationManager.validateLook(
-                                        client.getHabbo(),
-                                        newLook,
-                                        client.getHabbo()
-                                                .getHabboInfo()
-                                                .getGender()
-                                                .name())
-                                : newLook);
+        client.getHabbo().getHabboInfo().setLook(ClothingValidationManager.VALIDATE_ON_MANNEQUIN ? ClothingValidationManager.validateLook(client.getHabbo(), newLook, client.getHabbo().getHabboInfo().getGender().name()) : newLook);
         room.sendComposer(new RoomUserDataComposer(client.getHabbo()).compose());
         client.sendResponse(new UserDataComposer(client.getHabbo()));
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+
+    }
 
     @Override
-    public void onWalkOn(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
+    public void onWalkOn(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+
+    }
 
     @Override
-    public void onWalkOff(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
+    public void onWalkOff(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+
+    }
 }

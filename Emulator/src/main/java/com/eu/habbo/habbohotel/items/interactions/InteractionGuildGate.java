@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.threading.runnables.CloseGate;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -31,13 +32,12 @@ public class InteractionGuildGate extends InteractionGuildFurni implements Condi
 
     @Override
     public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
-        if (roomUnit == null) return false;
+        if (roomUnit == null)
+            return false;
 
         Habbo habbo = room.getHabbo(roomUnit);
 
-        return habbo != null
-                && (habbo.getHabboStats().hasGuild(super.getGuildId())
-                        || habbo.hasPermission(Permission.ACC_GUILDGATE));
+        return habbo != null && (habbo.getHabboStats().hasGuild(super.getGuildId()) || habbo.hasPermission(Permission.ACC_GUILDGATE));
     }
 
     @Override
@@ -64,5 +64,7 @@ public class InteractionGuildGate extends InteractionGuildFurni implements Condi
     }
 
     @Override
-    public void onRejected(RoomUnit roomUnit, Room room, Object[] objects) {}
+    public void onRejected(RoomUnit roomUnit, Room room, Object[] objects) {
+
+    }
 }

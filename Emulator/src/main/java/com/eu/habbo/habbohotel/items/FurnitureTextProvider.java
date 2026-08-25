@@ -1,14 +1,14 @@
 package com.eu.habbo.habbohotel.items;
 
 import com.eu.habbo.Emulator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * In-memory index of furnidata display names, keyed by the lowercased base
@@ -48,10 +48,7 @@ public class FurnitureTextProvider {
                 return;
             }
             reindex(new FurnidataReader(this.source, DEFAULT_MAX_BYTES).read());
-            LOGGER.info(
-                    "Furniture Text Provider -> Indexed! ({} names, source: {})",
-                    this.index.size(),
-                    this.sourceDescription);
+            LOGGER.info("Furniture Text Provider -> Indexed! ({} names, source: {})", this.index.size(), this.sourceDescription);
 
             if (Boolean.parseBoolean(Emulator.getConfig().getValue("items.furnidata.watch.enabled", "true"))) {
                 if (this.watcher != null) this.watcher.stop();
@@ -74,8 +71,7 @@ public class FurnitureTextProvider {
 
     /** Returns the byte cap used when reading furnidata files. */
     public long getMaxBytes() {
-        return Long.parseLong(com.eu.habbo.Emulator.getConfig()
-                .getValue("items.furnidata.max.bytes", String.valueOf(DEFAULT_MAX_BYTES)));
+        return Long.parseLong(com.eu.habbo.Emulator.getConfig().getValue("items.furnidata.max.bytes", String.valueOf(DEFAULT_MAX_BYTES)));
     }
 
     /**
@@ -120,9 +116,7 @@ public class FurnitureTextProvider {
         for (Map.Entry<String, FurniText> en : next.entrySet()) {
             FurniText cur = en.getValue();
             FurniText old = prev.get(en.getKey());
-            if (old == null
-                    || !old.name().equals(cur.name())
-                    || !old.description().equals(cur.description())) {
+            if (old == null || !old.name().equals(cur.name()) || !old.description().equals(cur.description())) {
                 delta.add(new FurnidataEntry(cur.id(), en.getKey(), cur.type(), cur.name(), cur.description()));
             }
         }
@@ -159,10 +153,7 @@ public class FurnitureTextProvider {
         StringBuilder sb = new StringBuilder(Math.min(value.length(), MAX_LEN));
         for (int i = 0; i < value.length() && sb.length() < MAX_LEN; i++) {
             char c = value.charAt(i);
-            if (c == '%') {
-                sb.append('％');
-                continue;
-            } // fullwidth percent — not a placeholder token
+            if (c == '%') { sb.append('％'); continue; } // fullwidth percent — not a placeholder token
             if (c == '\n' || c == '\r' || Character.isISOControl(c)) continue;
             sb.append(c);
         }
@@ -182,9 +173,7 @@ public class FurnitureTextProvider {
         Map<String, FurniText> idx = this.index; // local ref (volatile)
         for (Map.Entry<String, FurniText> e : idx.entrySet()) {
             FurniText t = e.getValue();
-            if (t != null
-                    && t.name() != null
-                    && t.name().toLowerCase(Locale.ROOT).contains(q)) {
+            if (t != null && t.name() != null && t.name().toLowerCase(Locale.ROOT).contains(q)) {
                 out.add(e.getKey()); // key is the lowercased base classname
                 if (out.size() >= 200) break; // bound IN-clause size
             }

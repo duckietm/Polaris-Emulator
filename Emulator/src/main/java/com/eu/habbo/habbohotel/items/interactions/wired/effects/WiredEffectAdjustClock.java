@@ -15,6 +15,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -55,8 +56,9 @@ public class WiredEffectAdjustClock extends InteractionWiredEffect {
         List<HabboItem> effectiveItems = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items);
 
         if (this.furniSource == WiredSourceUtil.SOURCE_SELECTED) {
-            this.items.removeIf(item ->
-                    item == null || item.getRoomId() != this.getRoomId() || room.getHabboItem(item.getId()) == null);
+            this.items.removeIf(item -> item == null
+                    || item.getRoomId() != this.getRoomId()
+                    || room.getHabboItem(item.getId()) == null);
         }
 
         for (HabboItem item : effectiveItems) {
@@ -76,14 +78,14 @@ public class WiredEffectAdjustClock extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson()
-                .toJson(new JsonData(
-                        this.getDelay(),
-                        this.items.stream().map(HabboItem::getId).collect(Collectors.toList()),
-                        this.operator,
-                        this.furniSource,
-                        this.minutes,
-                        this.halfSecondSteps));
+        return WiredManager.getGson().toJson(new JsonData(
+                this.getDelay(),
+                this.items.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                this.operator,
+                this.furniSource,
+                this.minutes,
+                this.halfSecondSteps
+        ));
     }
 
     @Override
@@ -138,8 +140,9 @@ public class WiredEffectAdjustClock extends InteractionWiredEffect {
     @Override
     public void serializeWiredData(ServerMessage message, Room room) {
         List<HabboItem> itemsSnapshot = new ArrayList<>(this.items);
-        itemsSnapshot.removeIf(item ->
-                item == null || item.getRoomId() != this.getRoomId() || room.getHabboItem(item.getId()) == null);
+        itemsSnapshot.removeIf(item -> item == null
+                || item.getRoomId() != this.getRoomId()
+                || room.getHabboItem(item.getId()) == null);
 
         this.items.clear();
         this.items.addAll(itemsSnapshot);
@@ -238,8 +241,7 @@ public class WiredEffectAdjustClock extends InteractionWiredEffect {
         int minutes;
         int halfSecondSteps;
 
-        public JsonData(
-                int delay, List<Integer> itemIds, int operator, int furniSource, int minutes, int halfSecondSteps) {
+        public JsonData(int delay, List<Integer> itemIds, int operator, int furniSource, int minutes, int halfSecondSteps) {
             this.delay = delay;
             this.itemIds = itemIds;
             this.operator = operator;

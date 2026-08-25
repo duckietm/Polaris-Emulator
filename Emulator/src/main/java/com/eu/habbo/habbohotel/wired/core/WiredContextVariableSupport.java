@@ -5,13 +5,15 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextV
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
 import com.eu.habbo.messages.outgoing.wired.WiredUserVariablesDataComposer;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 
 public final class WiredContextVariableSupport {
-    private WiredContextVariableSupport() {}
+    private WiredContextVariableSupport() {
+    }
 
     public static List<WiredExtraContextVariable> getDefinitions(Room room) {
         List<WiredExtraContextVariable> definitions = new ArrayList<>();
@@ -31,7 +33,8 @@ public final class WiredContextVariableSupport {
             }
         }
 
-        definitions.sort(Comparator.comparing(WiredExtraContextVariable::getVariableName, String.CASE_INSENSITIVE_ORDER)
+        definitions.sort(Comparator
+                .comparing(WiredExtraContextVariable::getVariableName, String.CASE_INSENSITIVE_ORDER)
                 .thenComparingInt(WiredExtraContextVariable::getId));
 
         return definitions;
@@ -41,9 +44,7 @@ public final class WiredContextVariableSupport {
         List<WiredVariableDefinitionInfo> definitions = new ArrayList<>();
 
         for (WiredExtraContextVariable definition : getDefinitions(room)) {
-            if (definition == null
-                    || definition.getVariableName() == null
-                    || definition.getVariableName().isEmpty()) {
+            if (definition == null || definition.getVariableName() == null || definition.getVariableName().isEmpty()) {
                 continue;
             }
 
@@ -70,9 +71,7 @@ public final class WiredContextVariableSupport {
 
     public static WiredVariableDefinitionInfo getDefinitionInfo(Room room, int definitionItemId) {
         WiredExtraContextVariable definition = getDefinition(room, definitionItemId);
-        if (definition == null
-                || definition.getVariableName() == null
-                || definition.getVariableName().trim().isEmpty()) {
+        if (definition == null || definition.getVariableName() == null || definition.getVariableName().trim().isEmpty()) {
             return null;
         }
 
@@ -89,8 +88,7 @@ public final class WiredContextVariableSupport {
         return getDefinitionInfo(room, definitionItemId) != null;
     }
 
-    public static boolean assignVariable(
-            WiredContext ctx, Room room, int definitionItemId, Integer value, boolean overrideExisting) {
+    public static boolean assignVariable(WiredContext ctx, Room room, int definitionItemId, Integer value, boolean overrideExisting) {
         WiredExtraContextVariable definition = getDefinition(room, definitionItemId);
         if (ctx == null || definition == null) {
             return false;
@@ -100,8 +98,7 @@ public final class WiredContextVariableSupport {
             ctx.forkContextVariables();
         }
 
-        return ctx.contextVariables()
-                .assignValue(definitionItemId, definition.hasValue() ? value : null, overrideExisting);
+        return ctx.contextVariables().assignValue(definitionItemId, definition.hasValue() ? value : null, overrideExisting);
     }
 
     public static boolean updateVariableValue(WiredContext ctx, Room room, int definitionItemId, Integer value) {
@@ -114,9 +111,7 @@ public final class WiredContextVariableSupport {
     }
 
     public static boolean removeVariable(WiredContext ctx, Room room, int definitionItemId) {
-        return ctx != null
-                && getDefinition(room, definitionItemId) != null
-                && ctx.contextVariables().removeValue(definitionItemId);
+        return ctx != null && getDefinition(room, definitionItemId) != null && ctx.contextVariables().removeValue(definitionItemId);
     }
 
     public static boolean hasVariable(WiredContext ctx, int definitionItemId) {
@@ -145,7 +140,8 @@ public final class WiredContextVariableSupport {
                 room.getFurniVariableManager().createSnapshot(),
                 room.getRoomVariableManager().createSnapshot());
 
-        room.getHabbos().forEach(habbo -> {
+        room.getHabbos().forEach(habbo ->
+        {
             if (habbo == null || habbo.getClient() == null) {
                 return;
             }

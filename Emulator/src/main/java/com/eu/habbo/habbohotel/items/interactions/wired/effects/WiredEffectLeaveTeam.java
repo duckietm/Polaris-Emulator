@@ -12,11 +12,12 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
-import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -71,11 +72,12 @@ public class WiredEffectLeaveTeam extends InteractionWiredEffect {
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
         String wiredData = set.getString("wired_data");
 
-        if (wiredData.startsWith("{")) {
+        if(wiredData.startsWith("{")) {
             JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
             this.setDelay(data.delay);
             this.userSource = data.userSource;
-        } else {
+        }
+        else {
             this.setDelay(Integer.parseInt(wiredData));
             this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
         }
@@ -129,7 +131,7 @@ public class WiredEffectLeaveTeam extends InteractionWiredEffect {
 
         int delay = settings.getDelay();
 
-        if (delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
+        if(delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
             throw new WiredSaveException("Delay too long");
 
         this.setDelay(delay);

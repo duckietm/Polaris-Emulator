@@ -5,6 +5,8 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.messages.ServerMessage;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestOpenHelper;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -18,15 +20,13 @@ import java.sql.SQLException;
 public class InteractionWiredChestCurrency extends InteractionWiredChest {
     /** Client WiredActionLayoutCode value for the chest dialog. */
     public static final int CODE = 100;
-
     public static final int CURRENCY_CREDITS = -1;
 
     public InteractionWiredChestCurrency(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
     }
 
-    public InteractionWiredChestCurrency(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionWiredChestCurrency(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 

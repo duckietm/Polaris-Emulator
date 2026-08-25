@@ -4,6 +4,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -14,8 +15,7 @@ public class WiredEffectNegativeSendSignal extends WiredEffectSendSignal {
         super(set, baseItem);
     }
 
-    public WiredEffectNegativeSendSignal(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectNegativeSendSignal(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 

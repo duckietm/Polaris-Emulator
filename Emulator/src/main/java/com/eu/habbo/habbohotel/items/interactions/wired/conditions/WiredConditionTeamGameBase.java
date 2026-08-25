@@ -13,6 +13,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -30,15 +31,18 @@ abstract class WiredConditionTeamGameBase extends InteractionWiredCondition {
     protected static final int TEAM_TRIGGERER = 0;
     protected static final int MAX_SCORE = 1_000_000;
 
-    private static final GameTeamColors[] SUPPORTED_TEAM_COLORS =
-            new GameTeamColors[] {GameTeamColors.RED, GameTeamColors.GREEN, GameTeamColors.BLUE, GameTeamColors.YELLOW};
+    private static final GameTeamColors[] SUPPORTED_TEAM_COLORS = new GameTeamColors[] {
+            GameTeamColors.RED,
+            GameTeamColors.GREEN,
+            GameTeamColors.BLUE,
+            GameTeamColors.YELLOW
+    };
 
     protected WiredConditionTeamGameBase(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
     }
 
-    protected WiredConditionTeamGameBase(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    protected WiredConditionTeamGameBase(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -136,9 +140,7 @@ abstract class WiredConditionTeamGameBase extends InteractionWiredCondition {
         }
 
         Habbo habbo = room.getHabbo(roomUnit);
-        if (habbo == null
-                || habbo.getHabboInfo() == null
-                || habbo.getHabboInfo().getCurrentGame() == null) {
+        if (habbo == null || habbo.getHabboInfo() == null || habbo.getHabboInfo().getCurrentGame() == null) {
             return null;
         }
 

@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.items.interactions.games.tag.InteractionTagField;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -28,7 +29,8 @@ public class InteractionIceTagField extends InteractionTagField {
         super.onWalkOn(roomUnit, room, objects);
 
         Habbo habbo = room.getHabbo(roomUnit);
-        if (habbo != null) this.stepTimes.put(habbo, Emulator.getIntUnixTimestamp());
+        if (habbo != null)
+            this.stepTimes.put(habbo, Emulator.getIntUnixTimestamp());
     }
 
     @Override
@@ -37,10 +39,7 @@ public class InteractionIceTagField extends InteractionTagField {
 
         Habbo habbo = room.getHabbo(roomUnit);
         if (habbo != null && this.stepTimes.containsKey(habbo)) {
-            AchievementManager.progressAchievement(
-                    habbo,
-                    Emulator.getGameEnvironment().getAchievementManager().getAchievement("TagC"),
-                    (Emulator.getIntUnixTimestamp() - this.stepTimes.get(habbo)) / 60);
+            AchievementManager.progressAchievement(habbo, Emulator.getGameEnvironment().getAchievementManager().getAchievement("TagC"), (Emulator.getIntUnixTimestamp() - this.stepTimes.get(habbo)) / 60);
             this.stepTimes.remove(habbo);
         }
     }
@@ -52,9 +51,7 @@ public class InteractionIceTagField extends InteractionTagField {
         Habbo itemOwner = Emulator.getGameEnvironment().getHabboManager().getHabbo(this.getUserId());
 
         if (itemOwner != null) {
-            AchievementManager.progressAchievement(
-                    itemOwner,
-                    Emulator.getGameEnvironment().getAchievementManager().getAchievement("TagA"));
+            AchievementManager.progressAchievement(itemOwner, Emulator.getGameEnvironment().getAchievementManager().getAchievement("TagA"));
         }
     }
 }

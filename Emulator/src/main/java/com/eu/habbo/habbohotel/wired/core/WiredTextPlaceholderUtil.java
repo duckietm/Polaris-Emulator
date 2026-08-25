@@ -12,23 +12,32 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraTextOutputFurniName;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraTextOutputUsername;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraTextOutputVariable;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRoomVariable;
 import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.rooms.RoomUnitType;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.util.HotelDateTimeUtil;
+
+import java.time.ZonedDateTime;
+import java.time.temporal.WeekFields;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 
 public final class WiredTextPlaceholderUtil {
     private static final char PRESERVED_SPACE = '\u00A0';
     private static final int MAX_PLACEHOLDER_EXPANSION_LENGTH = 16384;
     private static final int MAX_PLACEHOLDER_REPLACEMENTS = 512;
 
-    private WiredTextPlaceholderUtil() {}
+    private WiredTextPlaceholderUtil() {
+    }
 
     public static String applyUsernamePlaceholders(WiredContext ctx, String text) {
         if (ctx == null || text == null || text.isEmpty()) {
@@ -42,8 +51,7 @@ public final class WiredTextPlaceholderUtil {
             return text;
         }
 
-        Collection<InteractionWiredExtra> extras =
-                room.getRoomSpecialTypes().getExtras(triggerItem.getX(), triggerItem.getY());
+        Collection<InteractionWiredExtra> extras = room.getRoomSpecialTypes().getExtras(triggerItem.getX(), triggerItem.getY());
         if (extras == null || extras.isEmpty()) {
             return text;
         }
@@ -58,8 +66,7 @@ public final class WiredTextPlaceholderUtil {
                 String placeholderToken = usernameExtra.getPlaceholderToken();
 
                 if (!placeholderToken.isEmpty() && resolvedText.contains(placeholderToken)) {
-                    resolvedText = replaceWithBudget(
-                            resolvedText, placeholderToken, buildUsernameReplacement(ctx, usernameExtra));
+                    resolvedText = replaceWithBudget(resolvedText, placeholderToken, buildUsernameReplacement(ctx, usernameExtra));
                     replacementCount++;
                 }
 
@@ -75,8 +82,7 @@ public final class WiredTextPlaceholderUtil {
                 String placeholderToken = furniExtra.getPlaceholderToken();
 
                 if (!placeholderToken.isEmpty() && resolvedText.contains(placeholderToken)) {
-                    resolvedText = replaceWithBudget(
-                            resolvedText, placeholderToken, buildFurniNameReplacement(ctx, furniExtra));
+                    resolvedText = replaceWithBudget(resolvedText, placeholderToken, buildFurniNameReplacement(ctx, furniExtra));
                     replacementCount++;
                 }
 
@@ -92,8 +98,7 @@ public final class WiredTextPlaceholderUtil {
                 String placeholderToken = variableExtra.getPlaceholderToken();
 
                 if (!placeholderToken.isEmpty() && resolvedText.contains(placeholderToken)) {
-                    resolvedText = replaceWithBudget(
-                            resolvedText, placeholderToken, buildVariableReplacement(ctx, variableExtra));
+                    resolvedText = replaceWithBudget(resolvedText, placeholderToken, buildVariableReplacement(ctx, variableExtra));
                     replacementCount++;
                 }
 
@@ -200,8 +205,7 @@ public final class WiredTextPlaceholderUtil {
             return false;
         }
 
-        Collection<InteractionWiredExtra> extras =
-                room.getRoomSpecialTypes().getExtras(stackItem.getX(), stackItem.getY());
+        Collection<InteractionWiredExtra> extras = room.getRoomSpecialTypes().getExtras(stackItem.getX(), stackItem.getY());
         if (extras == null || extras.isEmpty()) {
             return false;
         }
@@ -214,8 +218,7 @@ public final class WiredTextPlaceholderUtil {
                 }
             }
 
-            if (extra instanceof WiredExtraTextOutputVariable
-                    && ((WiredExtraTextOutputVariable) extra).requiresActor()) {
+            if (extra instanceof WiredExtraTextOutputVariable && ((WiredExtraTextOutputVariable) extra).requiresActor()) {
                 return true;
             }
         }
@@ -300,13 +303,12 @@ public final class WiredTextPlaceholderUtil {
     }
 
     private static String buildVariableReplacement(WiredContext ctx, WiredExtraTextOutputVariable extra) {
-        List<String> values =
-                switch (extra.getTargetType()) {
-                    case WiredExtraTextOutputVariable.TARGET_FURNI -> collectFurniVariableValues(ctx, extra);
-                    case WiredExtraTextOutputVariable.TARGET_CONTEXT -> collectContextVariableValues(ctx, extra);
-                    case WiredExtraTextOutputVariable.TARGET_ROOM -> collectRoomVariableValues(ctx, extra);
-                    default -> collectUserVariableValues(ctx, extra);
-                };
+        List<String> values = switch (extra.getTargetType()) {
+            case WiredExtraTextOutputVariable.TARGET_FURNI -> collectFurniVariableValues(ctx, extra);
+            case WiredExtraTextOutputVariable.TARGET_CONTEXT -> collectContextVariableValues(ctx, extra);
+            case WiredExtraTextOutputVariable.TARGET_ROOM -> collectRoomVariableValues(ctx, extra);
+            default -> collectUserVariableValues(ctx, extra);
+        };
 
         if (values.isEmpty()) {
             return "";
@@ -401,20 +403,16 @@ public final class WiredTextPlaceholderUtil {
         }
 
         if (WiredExtraTextOutputVariable.isInternalVariableToken(extra.getVariableToken())) {
-            Integer value = readUserInternalValue(
-                    room, roomUnit, WiredExtraTextOutputVariable.getInternalVariableKey(extra.getVariableToken()));
+            Integer value = readUserInternalValue(room, roomUnit, WiredExtraTextOutputVariable.getInternalVariableKey(extra.getVariableToken()));
             return value != null ? String.valueOf(value) : null;
         }
 
         Habbo habbo = room.getHabbo(roomUnit);
-        if (habbo == null
-                || !room.getUserVariableManager()
-                        .hasVariable(habbo.getHabboInfo().getId(), extra.getVariableItemId())) {
+        if (habbo == null || !room.getUserVariableManager().hasVariable(habbo.getHabboInfo().getId(), extra.getVariableItemId())) {
             return null;
         }
 
-        Integer value = room.getUserVariableManager()
-                .getCurrentValue(habbo.getHabboInfo().getId(), extra.getVariableItemId());
+        Integer value = room.getUserVariableManager().getCurrentValue(habbo.getHabboInfo().getId(), extra.getVariableItemId());
         if (extra.getDisplayType(room) == WiredExtraTextOutputVariable.DISPLAY_TEXTUAL) {
             return WiredVariableTextConnectorSupport.toText(room, extra.getVariableItemId(), value);
         }
@@ -428,8 +426,7 @@ public final class WiredTextPlaceholderUtil {
         }
 
         if (WiredExtraTextOutputVariable.isInternalVariableToken(extra.getVariableToken())) {
-            Integer value = readFurniInternalValue(
-                    room, item, WiredExtraTextOutputVariable.getInternalVariableKey(extra.getVariableToken()));
+            Integer value = readFurniInternalValue(room, item, WiredExtraTextOutputVariable.getInternalVariableKey(extra.getVariableToken()));
             return value != null ? String.valueOf(value) : null;
         }
 
@@ -451,8 +448,7 @@ public final class WiredTextPlaceholderUtil {
         }
 
         if (WiredExtraTextOutputVariable.isInternalVariableToken(extra.getVariableToken())) {
-            Integer value = readRoomInternalValue(
-                    room, WiredExtraTextOutputVariable.getInternalVariableKey(extra.getVariableToken()));
+            Integer value = readRoomInternalValue(room, WiredExtraTextOutputVariable.getInternalVariableKey(extra.getVariableToken()));
             return value != null ? String.valueOf(value) : null;
         }
 
@@ -470,8 +466,7 @@ public final class WiredTextPlaceholderUtil {
         }
 
         if (WiredExtraTextOutputVariable.isInternalVariableToken(extra.getVariableToken())) {
-            Integer value = WiredInternalVariableSupport.readContextValue(
-                    ctx, WiredExtraTextOutputVariable.getInternalVariableKey(extra.getVariableToken()));
+            Integer value = WiredInternalVariableSupport.readContextValue(ctx, WiredExtraTextOutputVariable.getInternalVariableKey(extra.getVariableToken()));
             return value != null ? String.valueOf(value) : null;
         }
 
@@ -494,9 +489,7 @@ public final class WiredTextPlaceholderUtil {
 
         if (roomUnit.getRoomUnitType() == RoomUnitType.USER) {
             Habbo habbo = room.getHabbo(roomUnit);
-            return (habbo != null && habbo.getHabboInfo() != null)
-                    ? habbo.getHabboInfo().getUsername()
-                    : "";
+            return (habbo != null && habbo.getHabboInfo() != null) ? habbo.getHabboInfo().getUsername() : "";
         }
 
         if (roomUnit.getRoomUnitType() == RoomUnitType.BOT) {
@@ -569,9 +562,7 @@ public final class WiredTextPlaceholderUtil {
             return null;
         }
 
-        if (habbo != null
-                && habbo.getHabboInfo() != null
-                && habbo.getHabboInfo().getCurrentGame() != null) {
+        if (habbo != null && habbo.getHabboInfo() != null && habbo.getHabboInfo().getCurrentGame() != null) {
             Game game = room.getGame(habbo.getHabboInfo().getCurrentGame());
             if (game != null) {
                 return game;

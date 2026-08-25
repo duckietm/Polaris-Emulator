@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.contract;
 
 import com.eu.habbo.habbohotel.items.Item;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -16,8 +17,7 @@ public class InteractionWiredContractTrade extends InteractionWiredContract {
         super(set, baseItem);
     }
 
-    public InteractionWiredContractTrade(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionWiredContractTrade(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 

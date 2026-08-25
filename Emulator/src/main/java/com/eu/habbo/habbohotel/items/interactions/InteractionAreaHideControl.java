@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.messages.ServerMessage;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -20,31 +21,24 @@ public class InteractionAreaHideControl extends InteractionCustomValues {
         {
             this.put("state", "0");
         }
-
         {
             this.put("rootX", "0");
         }
-
         {
             this.put("rootY", "0");
         }
-
         {
             this.put("width", "0");
         }
-
         {
             this.put("length", "0");
         }
-
         {
             this.put("invisibility", "0");
         }
-
         {
             this.put("wallItems", "0");
         }
-
         {
             this.put("invert", "0");
         }
@@ -55,8 +49,7 @@ public class InteractionAreaHideControl extends InteractionCustomValues {
         this.normalizeValues();
     }
 
-    public InteractionAreaHideControl(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionAreaHideControl(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells, defaultValues);
         this.normalizeValues();
     }
@@ -98,7 +91,9 @@ public class InteractionAreaHideControl extends InteractionCustomValues {
             return;
         }
 
-        boolean wiredToggle = objects != null && objects.length >= 2 && objects[1] instanceof WiredEffectType;
+        boolean wiredToggle = objects != null
+            && objects.length >= 2
+            && objects[1] instanceof WiredEffectType;
 
         if (!wiredToggle) {
             if (client == null || !this.canToggle(client.getHabbo(), room)) {
@@ -134,20 +129,23 @@ public class InteractionAreaHideControl extends InteractionCustomValues {
         HabboItem rentedItem = room.getHabboItem(habbo.getHabboStats().rentedItemId);
 
         return room.getLayout() != null
-                && rentedItem != null
-                && RoomLayout.squareInSquare(
-                        RoomLayout.getRectangle(
-                                rentedItem.getX(),
-                                rentedItem.getY(),
-                                rentedItem.getBaseItem().getWidth(),
-                                rentedItem.getBaseItem().getLength(),
-                                rentedItem.getRotation()),
-                        RoomLayout.getRectangle(
-                                this.getX(),
-                                this.getY(),
-                                this.getBaseItem().getWidth(),
-                                this.getBaseItem().getLength(),
-                                this.getRotation()));
+            && rentedItem != null
+            && RoomLayout.squareInSquare(
+                RoomLayout.getRectangle(
+                    rentedItem.getX(),
+                    rentedItem.getY(),
+                    rentedItem.getBaseItem().getWidth(),
+                    rentedItem.getBaseItem().getLength(),
+                    rentedItem.getRotation()
+                ),
+                RoomLayout.getRectangle(
+                    this.getX(),
+                    this.getY(),
+                    this.getBaseItem().getWidth(),
+                    this.getBaseItem().getLength(),
+                    this.getRotation()
+                )
+            );
     }
 
     private void normalizeValues() {

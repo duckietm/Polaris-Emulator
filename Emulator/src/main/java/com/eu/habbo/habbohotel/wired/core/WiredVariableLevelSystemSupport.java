@@ -21,6 +21,10 @@ public final class WiredVariableLevelSystemSupport {
     public static final int TARGET_FURNI = 1;
     public static final int TARGET_ROOM = 3;
 
+    // Ceiling on level/anchor counts, mirrored from WiredExtraVariableLevelUpSystem
+    // (kept private in both to stay off the frozen wired plugin ABI). Bounds the
+    // per-read threshold-table loops so a huge maxLevel/anchor can't hang the room.
+    private static final int MAX_LEVEL = 10_000;
     private static final int SYNTHETIC_USER_OFFSET = 700_000_000;
     private static final int SYNTHETIC_FURNI_OFFSET = 800_000_000;
     private static final int SYNTHETIC_ROOM_OFFSET = 900_000_000;
@@ -520,11 +524,7 @@ public final class WiredVariableLevelSystemSupport {
             // Bound the anchor level: the interpolation loop below runs
             // [currentLevel+1, nextLevel), so an unbounded manual anchor level
             // (e.g. "999999999=1") pegs the room thread on every read.
-            if (level == null
-                    || xp == null
-                    || level <= 0
-                    || xp < 0
-                    || level > WiredExtraVariableLevelUpSystem.MAX_LEVEL) {
+            if (level == null || xp == null || level <= 0 || xp < 0 || level > MAX_LEVEL) {
                 continue;
             }
 

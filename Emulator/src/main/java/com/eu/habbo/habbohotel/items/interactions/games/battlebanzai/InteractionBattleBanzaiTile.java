@@ -9,11 +9,12 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
+import org.apache.commons.math3.util.Pair;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
-import org.apache.commons.math3.util.Pair;
 
 public class InteractionBattleBanzaiTile extends HabboItem {
     public InteractionBattleBanzaiTile(ResultSet set, Item baseItem) throws SQLException {
@@ -21,8 +22,7 @@ public class InteractionBattleBanzaiTile extends HabboItem {
         this.setExtradata("0");
     }
 
-    public InteractionBattleBanzaiTile(
-            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionBattleBanzaiTile(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.setExtradata("0");
     }
@@ -46,38 +46,47 @@ public class InteractionBattleBanzaiTile extends HabboItem {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
+
+    }
 
     @Override
     public void onWalkOn(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
         super.onWalkOn(roomUnit, room, objects);
 
-        if (this.getExtradata().isEmpty()) this.setExtradata("0");
+        if (this.getExtradata().isEmpty())
+            this.setExtradata("0");
 
         int state = Integer.parseInt(this.getExtradata());
 
-        if (state % 3 == 2) return;
+        if (state % 3 == 2)
+            return;
 
         Habbo habbo = room.getHabbo(roomUnit);
 
-        if (habbo == null) return;
+        if (habbo == null)
+            return;
 
-        if (this.isLocked()) return;
+        if (this.isLocked())
+            return;
 
-        if (habbo.getHabboInfo().getCurrentGame() != null
-                && habbo.getHabboInfo().getCurrentGame().equals(BattleBanzaiGame.class)) {
+        if (habbo.getHabboInfo().getCurrentGame() != null && habbo.getHabboInfo().getCurrentGame().equals(BattleBanzaiGame.class)) {
             BattleBanzaiGame game = ((BattleBanzaiGame) room.getGame(BattleBanzaiGame.class));
 
-            if (game == null) return;
+            if (game == null)
+                return;
 
-            if (!game.state.equals(GameState.RUNNING)) return;
+            if (!game.state.equals(GameState.RUNNING))
+                return;
 
             game.markTile(habbo, this, state);
         }
+
     }
 
     public boolean isLocked() {
-        if (this.getExtradata().isEmpty()) return false;
+        if (this.getExtradata().isEmpty())
+            return false;
 
         return Integer.parseInt(this.getExtradata()) % 3 == 2;
     }

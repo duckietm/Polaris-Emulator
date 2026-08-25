@@ -4,7 +4,6 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredTriggerType;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -17,7 +16,8 @@ public class WiredTriggerHabboClicksTile extends WiredTriggerHabboClicksFurni {
         super(set, baseItem);
     }
 
-    public WiredTriggerHabboClicksTile(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredTriggerHabboClicksTile(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 

@@ -12,11 +12,10 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
-import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
+import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -29,7 +28,8 @@ public class WiredEffectGiveScoreToTeam extends InteractionWiredEffect {
     private int operation = OPERATION_ADD;
     private GameTeamColors teamColor = GameTeamColors.RED;
 
-    public WiredEffectGiveScoreToTeam(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectGiveScoreToTeam(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -59,21 +59,21 @@ public class WiredEffectGiveScoreToTeam extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(this.points, this.operation, this.teamColor, this.getDelay()));
+        return WiredManager.getGson()
+                .toJson(new JsonData(this.points, this.operation, this.teamColor, this.getDelay()));
     }
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
         String wiredData = set.getString("wired_data");
 
-        if(wiredData.startsWith("{")) {
+        if (wiredData.startsWith("{")) {
             JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
             this.points = data.score;
             this.operation = this.normalizeOperation(data.operation);
             this.teamColor = data.team;
             this.setDelay(data.delay);
-        }
-        else {
+        } else {
             String[] data = set.getString("wired_data").split(";");
 
             if (data.length == 4) {
@@ -120,23 +120,21 @@ public class WiredEffectGiveScoreToTeam extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        if(settings.getIntParams().length < 3) throw  new WiredSaveException("Invalid data");
+        if (settings.getIntParams().length < 3) throw new WiredSaveException("Invalid data");
 
         int points = settings.getIntParams()[0];
 
-        if(points < 1 || points > 100)
-            throw new WiredSaveException("Points is invalid");
+        if (points < 1 || points > 100) throw new WiredSaveException("Points is invalid");
 
         int operation = this.normalizeOperation(settings.getIntParams()[1]);
 
         int team = settings.getIntParams()[2];
 
-        if(team < 1 || team > 4)
-            throw new WiredSaveException("Team is invalid");
+        if (team < 1 || team > 4) throw new WiredSaveException("Team is invalid");
 
         int delay = settings.getDelay();
 
-        if(delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
+        if (delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
             throw new WiredSaveException("Delay too long");
 
         this.points = points;

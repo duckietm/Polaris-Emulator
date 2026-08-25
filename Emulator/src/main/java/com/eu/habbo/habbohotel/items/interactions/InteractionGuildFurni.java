@@ -6,7 +6,6 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashSet;
@@ -32,7 +31,8 @@ public class InteractionGuildFurni extends InteractionDefault {
 
     @Override
     public int getMaximumRotations() {
-        if(ROTATION_8_ITEMS.stream().anyMatch(x -> x.equalsIgnoreCase(this.getBaseItem().getName()))) {
+        if (ROTATION_8_ITEMS.stream()
+                .anyMatch(x -> x.equalsIgnoreCase(this.getBaseItem().getName()))) {
             return 8;
         }
         return this.getBaseItem().getRotations();
@@ -48,8 +48,10 @@ public class InteractionGuildFurni extends InteractionDefault {
             serverMessage.appendString(this.getExtradata());
             serverMessage.appendString(guild.getId() + "");
             serverMessage.appendString(guild.getBadge());
-            serverMessage.appendString(Emulator.getGameEnvironment().getGuildManager().getSymbolColor(guild.getColorOne()).valueA);
-            serverMessage.appendString(Emulator.getGameEnvironment().getGuildManager().getBackgroundColor(guild.getColorTwo()).valueA);
+            serverMessage.appendString(
+                    Emulator.getGameEnvironment().getGuildManager().getSymbolColor(guild.getColorOne()).valueA);
+            serverMessage.appendString(
+                    Emulator.getGameEnvironment().getGuildManager().getBackgroundColor(guild.getColorTwo()).valueA);
         } else {
             serverMessage.appendInt((this.isLimited() ? 256 : 0));
             serverMessage.appendString(this.getExtradata());

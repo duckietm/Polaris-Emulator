@@ -1,30 +1,20 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.conditions;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.bots.Bot;
-import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
-import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.rooms.Room;
-import com.eu.habbo.habbohotel.rooms.RoomRightLevels;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
-import com.eu.habbo.habbohotel.rooms.RoomUnitStatus;
-import com.eu.habbo.habbohotel.users.DanceType;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
-import com.eu.habbo.habbohotel.wired.core.WiredFreezeUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -32,6 +22,8 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WiredConditionHasVariable extends InteractionWiredCondition {
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredConditionHasVariable.class);
@@ -59,7 +51,8 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
         super(set, baseItem);
     }
 
-    public WiredConditionHasVariable(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredConditionHasVariable(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -165,8 +158,8 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
         if (targets.isEmpty()) return false;
 
         boolean match = (this.quantifier == QUANTIFIER_ANY)
-            ? this.matchesAnyUser(room, targets)
-            : this.matchesAllUsers(room, targets);
+                ? this.matchesAnyUser(room, targets)
+                : this.matchesAllUsers(room, targets);
 
         return negative ? !match : match;
     }
@@ -178,8 +171,8 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
         if (targets.isEmpty()) return false;
 
         boolean match = (this.quantifier == QUANTIFIER_ANY)
-            ? this.matchesAnyFurni(room, targets)
-            : this.matchesAllFurni(room, targets);
+                ? this.matchesAnyFurni(room, targets)
+                : this.matchesAllFurni(room, targets);
 
         return negative ? !match : match;
     }
@@ -199,15 +192,15 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
             if (item != null) itemIds.add(item.getId());
         }
 
-        return WiredManager.getGson().toJson(new JsonData(
-            itemIds,
-            this.targetType,
-            this.variableToken,
-            this.variableItemId,
-            this.userSource,
-            this.furniSource,
-            this.quantifier
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        itemIds,
+                        this.targetType,
+                        this.variableToken,
+                        this.variableItemId,
+                        this.userSource,
+                        this.furniSource,
+                        this.quantifier));
     }
 
     @Override
@@ -227,7 +220,10 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
                 this.userSource = normalizeUserSource(data.userSource);
                 this.furniSource = normalizeFurniSource(data.furniSource);
                 this.quantifier = normalizeQuantifier(data.quantifier);
-                this.setVariableToken(normalizeVariableToken((data.variableToken != null) ? data.variableToken : ((data.variableItemId > 0) ? String.valueOf(data.variableItemId) : "")));
+                this.setVariableToken(normalizeVariableToken(
+                        (data.variableToken != null)
+                                ? data.variableToken
+                                : ((data.variableItemId > 0) ? String.valueOf(data.variableItemId) : "")));
 
                 if (room != null && data.itemIds != null) {
                     for (Integer itemId : data.itemIds) {
@@ -306,7 +302,9 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
         if (isCustomVariableToken(this.variableToken)) {
             Habbo habbo = room.getHabbo(roomUnit);
 
-            return habbo != null && room.getUserVariableManager().hasVariable(habbo.getHabboInfo().getId(), this.variableItemId);
+            return habbo != null
+                    && room.getUserVariableManager()
+                            .hasVariable(habbo.getHabboInfo().getId(), this.variableItemId);
         }
 
         if (isInternalVariableToken(this.variableToken)) {
@@ -342,7 +340,8 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
         }
 
         if (isInternalVariableToken(this.variableToken)) {
-            return WiredInternalVariableSupport.readContextValue(ctx, getInternalVariableKey(this.variableToken)) != null;
+            return WiredInternalVariableSupport.readContextValue(ctx, getInternalVariableKey(this.variableToken))
+                    != null;
         }
 
         return false;
@@ -373,7 +372,8 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
     }
 
     protected boolean hasRoomInternalVariable(String key) {
-        return WiredInternalVariableSupport.hasRoomValue(Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId()), key);
+        return WiredInternalVariableSupport.hasRoomValue(
+                Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId()), key);
     }
 
     protected void refresh() {
@@ -403,7 +403,9 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
 
         String roomEntryMethod = habbo.getHabboInfo().getRoomEntryMethod();
 
-        return roomEntryMethod != null && !roomEntryMethod.trim().isEmpty() && !"unknown".equalsIgnoreCase(roomEntryMethod);
+        return roomEntryMethod != null
+                && !roomEntryMethod.trim().isEmpty()
+                && !"unknown".equalsIgnoreCase(roomEntryMethod);
     }
 
     protected TeamEffectData getTeamEffectData(int effectValue) {
@@ -433,7 +435,8 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
 
     protected static int normalizeFurniSource(int value) {
         return switch (value) {
-            case WiredSourceUtil.SOURCE_SELECTED, WiredSourceUtil.SOURCE_SELECTOR, WiredSourceUtil.SOURCE_SIGNAL -> value;
+            case WiredSourceUtil.SOURCE_SELECTED, WiredSourceUtil.SOURCE_SELECTOR, WiredSourceUtil.SOURCE_SIGNAL ->
+                value;
             default -> WiredSourceUtil.SOURCE_TRIGGER;
         };
     }
@@ -457,7 +460,9 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
     }
 
     protected static String getInternalVariableKey(String token) {
-        return isInternalVariableToken(token) ? WiredInternalVariableSupport.normalizeKey(token.substring(INTERNAL_TOKEN_PREFIX.length())) : "";
+        return isInternalVariableToken(token)
+                ? WiredInternalVariableSupport.normalizeKey(token.substring(INTERNAL_TOKEN_PREFIX.length()))
+                : "";
     }
 
     protected static String normalizeVariableToken(String token) {
@@ -466,7 +471,9 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
         String normalized = token.trim();
         if (normalized.isEmpty()) return "";
         if (isCustomVariableToken(normalized)) return normalized;
-        if (isInternalVariableToken(normalized)) return INTERNAL_TOKEN_PREFIX + WiredInternalVariableSupport.normalizeKey(normalized.substring(INTERNAL_TOKEN_PREFIX.length()));
+        if (isInternalVariableToken(normalized))
+            return INTERNAL_TOKEN_PREFIX
+                    + WiredInternalVariableSupport.normalizeKey(normalized.substring(INTERNAL_TOKEN_PREFIX.length()));
 
         try {
             int parsed = Integer.parseInt(normalized);
@@ -485,7 +492,14 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
         int furniSource;
         int quantifier;
 
-        public JsonData(List<Integer> itemIds, int targetType, String variableToken, int variableItemId, int userSource, int furniSource, int quantifier) {
+        public JsonData(
+                List<Integer> itemIds,
+                int targetType,
+                String variableToken,
+                int variableItemId,
+                int userSource,
+                int furniSource,
+                int quantifier) {
             this.itemIds = itemIds;
             this.targetType = targetType;
             this.variableToken = variableToken;

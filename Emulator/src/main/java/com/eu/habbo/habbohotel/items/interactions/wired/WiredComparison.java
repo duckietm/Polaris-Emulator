@@ -21,8 +21,7 @@ public final class WiredComparison {
     public static final int NOT_EQUAL = 4;
     public static final int GREATER_EQUAL = 5;
 
-    private WiredComparison() {
-    }
+    private WiredComparison() {}
 
     public static int normalize(int value) {
         return (value >= LESS && value <= GREATER_EQUAL) ? value : GREATER_EQUAL;

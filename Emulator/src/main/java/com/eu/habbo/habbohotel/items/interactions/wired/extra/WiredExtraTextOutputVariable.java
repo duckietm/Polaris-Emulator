@@ -15,7 +15,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -62,7 +61,8 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
         this.items = new LinkedHashSet<>();
     }
 
-    public WiredExtraTextOutputVariable(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredExtraTextOutputVariable(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.items = new LinkedHashSet<>();
     }
@@ -92,7 +92,8 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
             throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
         }
 
-        int nextFurniSource = normalizeFurniSource((intParams.length > 4) ? intParams[4] : WiredSourceUtil.SOURCE_TRIGGER);
+        int nextFurniSource =
+                normalizeFurniSource((intParams.length > 4) ? intParams[4] : WiredSourceUtil.SOURCE_TRIGGER);
         this.items.clear();
 
         if (nextTargetType == TARGET_FURNI && nextFurniSource == WiredSourceUtil.SOURCE_SELECTED) {
@@ -127,18 +128,18 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-                this.targetType,
-                this.variableToken,
-                this.variableItemId,
-                this.displayType,
-                this.placeholderType,
-                this.userSource,
-                this.furniSource,
-                this.placeholderName,
-                this.delimiter,
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList())
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.targetType,
+                        this.variableToken,
+                        this.variableItemId,
+                        this.displayType,
+                        this.placeholderType,
+                        this.userSource,
+                        this.furniSource,
+                        this.placeholderName,
+                        this.delimiter,
+                        this.items.stream().map(HabboItem::getId).collect(Collectors.toList())));
     }
 
     @Override
@@ -187,7 +188,10 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
 
             if (data != null) {
                 this.targetType = normalizeTargetType(data.targetType);
-                this.setVariableToken(normalizeVariableToken((data.variableToken != null) ? data.variableToken : ((data.variableItemId > 0) ? String.valueOf(data.variableItemId) : "")));
+                this.setVariableToken(normalizeVariableToken(
+                        (data.variableToken != null)
+                                ? data.variableToken
+                                : ((data.variableItemId > 0) ? String.valueOf(data.variableItemId) : "")));
                 this.displayType = normalizeDisplayType(data.displayType);
                 this.placeholderType = normalizePlaceholderType(data.placeholderType);
                 this.userSource = normalizeUserSource(data.userSource);
@@ -236,8 +240,7 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {}
 
     @Override
     public boolean hasConfiguration() {
@@ -292,7 +295,8 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
 
     public boolean requiresActor() {
         return this.targetType == TARGET_USER
-                && (this.userSource == WiredSourceUtil.SOURCE_TRIGGER || this.userSource == WiredSourceUtil.SOURCE_CLICKED_USER);
+                && (this.userSource == WiredSourceUtil.SOURCE_TRIGGER
+                        || this.userSource == WiredSourceUtil.SOURCE_CLICKED_USER);
     }
 
     public void refresh(Room room) {
@@ -318,7 +322,9 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
     }
 
     public static String getInternalVariableKey(String token) {
-        return isInternalVariableToken(token) ? WiredInternalVariableSupport.normalizeKey(token.substring(INTERNAL_TOKEN_PREFIX.length())) : "";
+        return isInternalVariableToken(token)
+                ? WiredInternalVariableSupport.normalizeKey(token.substring(INTERNAL_TOKEN_PREFIX.length()))
+                : "";
     }
 
     public static int getCustomItemId(String token) {
@@ -335,19 +341,19 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
 
     private static String[] splitStringData(String value) {
         if (value == null) {
-            return new String[]{ DEFAULT_VARIABLE_TOKEN, DEFAULT_PLACEHOLDER_NAME, DEFAULT_DELIMITER };
+            return new String[] {DEFAULT_VARIABLE_TOKEN, DEFAULT_PLACEHOLDER_NAME, DEFAULT_DELIMITER};
         }
 
         String[] parts = value.split("\t", -1);
         if (parts.length == 1) {
-            return new String[]{ value, DEFAULT_PLACEHOLDER_NAME, DEFAULT_DELIMITER };
+            return new String[] {value, DEFAULT_PLACEHOLDER_NAME, DEFAULT_DELIMITER};
         }
 
         if (parts.length == 2) {
-            return new String[]{ parts[0], parts[1], DEFAULT_DELIMITER };
+            return new String[] {parts[0], parts[1], DEFAULT_DELIMITER};
         }
 
-        return new String[]{ parts[0], parts[1], parts[2] };
+        return new String[] {parts[0], parts[1], parts[2]};
     }
 
     private static int normalizeTargetType(int value) {
@@ -371,7 +377,8 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
 
     private static int normalizeFurniSource(int value) {
         return switch (value) {
-            case WiredSourceUtil.SOURCE_SELECTED, WiredSourceUtil.SOURCE_SELECTOR, WiredSourceUtil.SOURCE_SIGNAL -> value;
+            case WiredSourceUtil.SOURCE_SELECTED, WiredSourceUtil.SOURCE_SELECTOR, WiredSourceUtil.SOURCE_SIGNAL ->
+                value;
             default -> WiredSourceUtil.SOURCE_TRIGGER;
         };
     }
@@ -417,7 +424,8 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
         }
 
         if (isInternalVariableToken(normalized)) {
-            return INTERNAL_TOKEN_PREFIX + WiredInternalVariableSupport.normalizeKey(normalized.substring(INTERNAL_TOKEN_PREFIX.length()));
+            return INTERNAL_TOKEN_PREFIX
+                    + WiredInternalVariableSupport.normalizeKey(normalized.substring(INTERNAL_TOKEN_PREFIX.length()));
         }
 
         try {
@@ -445,11 +453,13 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
 
         return switch (targetType) {
             case TARGET_USER -> {
-                WiredVariableDefinitionInfo definition = room.getUserVariableManager().getDefinitionInfo(itemId);
+                WiredVariableDefinitionInfo definition =
+                        room.getUserVariableManager().getDefinitionInfo(itemId);
                 yield definition != null && definition.hasValue() && definition.isTextConnected();
             }
             case TARGET_FURNI -> {
-                WiredVariableDefinitionInfo definition = room.getFurniVariableManager().getDefinitionInfo(itemId);
+                WiredVariableDefinitionInfo definition =
+                        room.getFurniVariableManager().getDefinitionInfo(itemId);
                 yield definition != null && definition.hasValue() && definition.isTextConnected();
             }
             case TARGET_CONTEXT -> {
@@ -457,7 +467,8 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
                 yield definition != null && definition.hasValue() && definition.isTextConnected();
             }
             case TARGET_ROOM -> {
-                WiredVariableDefinitionInfo definition = room.getRoomVariableManager().getDefinitionInfo(itemId);
+                WiredVariableDefinitionInfo definition =
+                        room.getRoomVariableManager().getDefinitionInfo(itemId);
                 yield definition != null && definition.hasValue() && definition.isTextConnected();
             }
             default -> false;
@@ -470,34 +481,41 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
         }
 
         return switch (targetType) {
-            case TARGET_USER -> isInternalVariableToken(variableToken)
-                    ? canUseUserInternalReference(getInternalVariableKey(variableToken))
-                    : isUserCustomValue(room, getCustomItemId(variableToken));
-            case TARGET_FURNI -> isInternalVariableToken(variableToken)
-                    ? canUseFurniInternalReference(getInternalVariableKey(variableToken))
-                    : isFurniCustomValue(room, getCustomItemId(variableToken));
-            case TARGET_CONTEXT -> isInternalVariableToken(variableToken)
-                    ? WiredInternalVariableSupport.canUseContextReference(getInternalVariableKey(variableToken))
-                    : isContextCustomValue(room, getCustomItemId(variableToken));
-            case TARGET_ROOM -> isInternalVariableToken(variableToken)
-                    ? canUseRoomInternalReference(getInternalVariableKey(variableToken))
-                    : isRoomCustomValue(room, getCustomItemId(variableToken));
+            case TARGET_USER ->
+                isInternalVariableToken(variableToken)
+                        ? canUseUserInternalReference(getInternalVariableKey(variableToken))
+                        : isUserCustomValue(room, getCustomItemId(variableToken));
+            case TARGET_FURNI ->
+                isInternalVariableToken(variableToken)
+                        ? canUseFurniInternalReference(getInternalVariableKey(variableToken))
+                        : isFurniCustomValue(room, getCustomItemId(variableToken));
+            case TARGET_CONTEXT ->
+                isInternalVariableToken(variableToken)
+                        ? WiredInternalVariableSupport.canUseContextReference(getInternalVariableKey(variableToken))
+                        : isContextCustomValue(room, getCustomItemId(variableToken));
+            case TARGET_ROOM ->
+                isInternalVariableToken(variableToken)
+                        ? canUseRoomInternalReference(getInternalVariableKey(variableToken))
+                        : isRoomCustomValue(room, getCustomItemId(variableToken));
             default -> false;
         };
     }
 
     private static boolean isUserCustomValue(Room room, int itemId) {
-        WiredVariableDefinitionInfo definition = (room != null) ? room.getUserVariableManager().getDefinitionInfo(itemId) : null;
+        WiredVariableDefinitionInfo definition =
+                (room != null) ? room.getUserVariableManager().getDefinitionInfo(itemId) : null;
         return definition != null && definition.hasValue();
     }
 
     private static boolean isFurniCustomValue(Room room, int itemId) {
-        WiredVariableDefinitionInfo definition = (room != null) ? room.getFurniVariableManager().getDefinitionInfo(itemId) : null;
+        WiredVariableDefinitionInfo definition =
+                (room != null) ? room.getFurniVariableManager().getDefinitionInfo(itemId) : null;
         return definition != null && definition.hasValue();
     }
 
     private static boolean isRoomCustomValue(Room room, int itemId) {
-        WiredVariableDefinitionInfo definition = (room != null) ? room.getRoomVariableManager().getDefinitionInfo(itemId) : null;
+        WiredVariableDefinitionInfo definition =
+                (room != null) ? room.getRoomVariableManager().getDefinitionInfo(itemId) : null;
         return definition != null && definition.hasValue();
     }
 
@@ -530,7 +548,17 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
         String delimiter;
         List<Integer> itemIds;
 
-        JsonData(int targetType, String variableToken, int variableItemId, int displayType, int placeholderType, int userSource, int furniSource, String placeholderName, String delimiter, List<Integer> itemIds) {
+        JsonData(
+                int targetType,
+                String variableToken,
+                int variableItemId,
+                int displayType,
+                int placeholderType,
+                int userSource,
+                int furniSource,
+                String placeholderName,
+                String delimiter,
+                List<Integer> itemIds) {
             this.targetType = targetType;
             this.variableToken = variableToken;
             this.variableItemId = variableItemId;

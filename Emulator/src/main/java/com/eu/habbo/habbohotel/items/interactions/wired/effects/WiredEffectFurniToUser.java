@@ -12,7 +12,6 @@ import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper;
 import com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -48,9 +47,7 @@ public class WiredEffectFurniToUser extends WiredEffectUserFurniBase {
             return;
         }
 
-        items.sort(Comparator
-                .comparingDouble(HabboItem::getZ)
-                .thenComparingInt(HabboItem::getId));
+        items.sort(Comparator.comparingDouble(HabboItem::getZ).thenComparingInt(HabboItem::getId));
 
         Map<Integer, Double> followerZOverrides = new HashMap<>();
 
@@ -68,7 +65,8 @@ public class WiredEffectFurniToUser extends WiredEffectUserFurniBase {
                     continue;
                 }
 
-                WiredMoveCarryHelper.registerUserFollower(room, this, item, roomUnit, followerZOverrides.get(item.getId()), ctx);
+                WiredMoveCarryHelper.registerUserFollower(
+                        room, this, item, roomUnit, followerZOverrides.get(item.getId()), ctx);
             }
 
             if (!hasActiveMoveStatus) {
@@ -84,7 +82,9 @@ public class WiredEffectFurniToUser extends WiredEffectUserFurniBase {
         Integer animationDurationOverride = WiredMoveCarryHelper.hasNoAnimationExtra(room, this)
                 ? null
                 : this.resolveFollowAnimationDuration(room, habbo, this);
-        int anchorType = hasActiveMoveStatus ? WiredMovementsComposer.FURNI_ANCHOR_USER : WiredMovementsComposer.FURNI_ANCHOR_NONE;
+        int anchorType = hasActiveMoveStatus
+                ? WiredMovementsComposer.FURNI_ANCHOR_USER
+                : WiredMovementsComposer.FURNI_ANCHOR_NONE;
         int anchorId = hasActiveMoveStatus ? roomUnit.getId() : 0;
 
         if (hasActiveMoveStatus) {
@@ -97,12 +97,38 @@ public class WiredEffectFurniToUser extends WiredEffectUserFurniBase {
                 }
 
                 Double targetZ = WiredMoveCarryHelper.resolveFollowerStackZ(room, item, targetTile, item.getRotation());
-                FurnitureMovementError error = WiredMoveCarryHelper.moveFurni(room, this, item, targetTile, item.getRotation(), targetZ, null, false, ctx, animationDuration, animationElapsed, WiredMovementsComposer.FURNI_ANCHOR_USER, roomUnit.getId());
+                FurnitureMovementError error = WiredMoveCarryHelper.moveFurni(
+                        room,
+                        this,
+                        item,
+                        targetTile,
+                        item.getRotation(),
+                        targetZ,
+                        null,
+                        false,
+                        ctx,
+                        animationDuration,
+                        animationElapsed,
+                        WiredMovementsComposer.FURNI_ANCHOR_USER,
+                        roomUnit.getId());
                 if (error != FurnitureMovementError.NONE) {
                     Double fallbackZ = followerZOverrides.get(item.getId());
 
                     if (fallbackZ != null) {
-                        error = WiredMoveCarryHelper.moveFurni(room, this, item, targetTile, item.getRotation(), fallbackZ, null, false, ctx, animationDuration, animationElapsed, WiredMovementsComposer.FURNI_ANCHOR_USER, roomUnit.getId());
+                        error = WiredMoveCarryHelper.moveFurni(
+                                room,
+                                this,
+                                item,
+                                targetTile,
+                                item.getRotation(),
+                                fallbackZ,
+                                null,
+                                false,
+                                ctx,
+                                animationDuration,
+                                animationElapsed,
+                                WiredMovementsComposer.FURNI_ANCHOR_USER,
+                                roomUnit.getId());
                     }
                 }
 
@@ -117,12 +143,26 @@ public class WiredEffectFurniToUser extends WiredEffectUserFurniBase {
                 continue;
             }
 
-            if (hasActiveMoveStatus && WiredMoveCarryHelper.isUserFollowerProcessed(roomUnit, item, moveStatusTimestamp)) {
+            if (hasActiveMoveStatus
+                    && WiredMoveCarryHelper.isUserFollowerProcessed(roomUnit, item, moveStatusTimestamp)) {
                 continue;
             }
 
             Double targetZ = WiredMoveCarryHelper.resolveFollowerStackZ(room, item, targetTile, item.getRotation());
-            FurnitureMovementError error = WiredMoveCarryHelper.moveFurni(room, this, item, targetTile, item.getRotation(), targetZ, null, false, ctx, animationDurationOverride, null, anchorType, anchorId);
+            FurnitureMovementError error = WiredMoveCarryHelper.moveFurni(
+                    room,
+                    this,
+                    item,
+                    targetTile,
+                    item.getRotation(),
+                    targetZ,
+                    null,
+                    false,
+                    ctx,
+                    animationDurationOverride,
+                    null,
+                    anchorType,
+                    anchorId);
             if (error == FurnitureMovementError.NONE) {
                 continue;
             }
@@ -130,7 +170,20 @@ public class WiredEffectFurniToUser extends WiredEffectUserFurniBase {
             Double fallbackZ = followerZOverrides.get(item.getId());
 
             if (fallbackZ != null) {
-                WiredMoveCarryHelper.moveFurni(room, this, item, targetTile, item.getRotation(), fallbackZ, null, false, ctx, animationDurationOverride, null, anchorType, anchorId);
+                WiredMoveCarryHelper.moveFurni(
+                        room,
+                        this,
+                        item,
+                        targetTile,
+                        item.getRotation(),
+                        fallbackZ,
+                        null,
+                        false,
+                        ctx,
+                        animationDurationOverride,
+                        null,
+                        anchorType,
+                        anchorId);
             }
         }
     }
@@ -145,5 +198,4 @@ public class WiredEffectFurniToUser extends WiredEffectUserFurniBase {
     public WiredEffectType getType() {
         return type;
     }
-
 }

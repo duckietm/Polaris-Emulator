@@ -1,9 +1,8 @@
 package com.eu.habbo.habbohotel.items;
 
+import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Arrays;
 
 public class RandomStateParams {
     private static final Logger LOGGER = LoggerFactory.getLogger(RandomStateParams.class);

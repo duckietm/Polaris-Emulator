@@ -3,11 +3,10 @@ package com.eu.habbo.habbohotel.items.interactions;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class InteractionColorPlate extends InteractionDefault {
     private static final Logger LOGGER = LoggerFactory.getLogger(InteractionColorPlate.class);

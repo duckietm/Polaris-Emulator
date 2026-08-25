@@ -13,7 +13,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableTextConnectorSupport;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.regex.Pattern;
@@ -37,7 +36,8 @@ public class WiredExtraTextInputVariable extends InteractionWiredExtra {
         super(set, baseItem);
     }
 
-    public WiredExtraTextInputVariable(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredExtraTextInputVariable(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -62,7 +62,8 @@ public class WiredExtraTextInputVariable extends InteractionWiredExtra {
             throw new WiredSaveException("wiredfurni.params.variables.validation.missing_variable");
         }
 
-        WiredVariableDefinitionInfo definitionInfo = WiredContextVariableSupport.getDefinitionInfo(room, nextVariableItemId);
+        WiredVariableDefinitionInfo definitionInfo =
+                WiredContextVariableSupport.getDefinitionInfo(room, nextVariableItemId);
         if (definitionInfo == null || !definitionInfo.hasValue()) {
             throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
         }
@@ -81,7 +82,8 @@ public class WiredExtraTextInputVariable extends InteractionWiredExtra {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(this.variableToken, this.variableItemId, this.capturerName, this.displayType));
+        return WiredManager.getGson()
+                .toJson(new JsonData(this.variableToken, this.variableItemId, this.capturerName, this.displayType));
     }
 
     @Override
@@ -113,9 +115,10 @@ public class WiredExtraTextInputVariable extends InteractionWiredExtra {
             JsonData data = WiredExtraPayloadGuard.fromJson(wiredData, JsonData.class);
 
             if (data != null) {
-                this.variableToken = normalizeVariableToken((data.variableToken != null)
-                        ? data.variableToken
-                        : ((data.variableItemId > 0) ? String.valueOf(data.variableItemId) : ""));
+                this.variableToken = normalizeVariableToken(
+                        (data.variableToken != null)
+                                ? data.variableToken
+                                : ((data.variableItemId > 0) ? String.valueOf(data.variableItemId) : ""));
                 this.variableItemId = getCustomItemId(this.variableToken);
                 this.capturerName = normalizeCapturerName(data.capturerName);
                 this.displayType = normalizeDisplayType(data.displayType);
@@ -139,8 +142,7 @@ public class WiredExtraTextInputVariable extends InteractionWiredExtra {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) {}
 
     @Override
     public boolean hasConfiguration() {
@@ -189,21 +191,22 @@ public class WiredExtraTextInputVariable extends InteractionWiredExtra {
     }
 
     private static boolean canUseTextualDisplay(Room room, int definitionItemId) {
-        WiredVariableDefinitionInfo definitionInfo = WiredContextVariableSupport.getDefinitionInfo(room, definitionItemId);
+        WiredVariableDefinitionInfo definitionInfo =
+                WiredContextVariableSupport.getDefinitionInfo(room, definitionItemId);
         return definitionInfo != null && definitionInfo.hasValue() && definitionInfo.isTextConnected();
     }
 
     private static String[] splitStringData(String value) {
         if (value == null) {
-            return new String[]{ "", DEFAULT_CAPTURER_NAME };
+            return new String[] {"", DEFAULT_CAPTURER_NAME};
         }
 
         String[] parts = value.split("\t", -1);
         if (parts.length == 1) {
-            return new String[]{ parts[0], DEFAULT_CAPTURER_NAME };
+            return new String[] {parts[0], DEFAULT_CAPTURER_NAME};
         }
 
-        return new String[]{ parts[0], parts[1] };
+        return new String[] {parts[0], parts[1]};
     }
 
     private static int normalizeDisplayType(int value) {

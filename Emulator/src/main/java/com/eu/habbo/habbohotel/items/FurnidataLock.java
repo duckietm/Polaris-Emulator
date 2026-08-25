@@ -9,5 +9,6 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public final class FurnidataLock {
     public static final ReentrantLock LOCK = new ReentrantLock();
+
     private FurnidataLock() {}
 }

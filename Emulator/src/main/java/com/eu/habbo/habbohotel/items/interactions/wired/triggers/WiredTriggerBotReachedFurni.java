@@ -9,15 +9,12 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.WiredTriggerType;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
+import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredTriggerSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -26,13 +23,15 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WiredTriggerBotReachedFurni extends InteractionWiredTrigger {
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredTriggerBotReachedFurni.class);
     private static final int BOT_SOURCE_NAME = 100;
     private static final int BOT_SOURCE_SELECTOR = 200;
 
-    public final static WiredTriggerType type = WiredTriggerType.BOT_REACHED_STF;
+    public static final WiredTriggerType type = WiredTriggerType.BOT_REACHED_STF;
 
     private final Set<HabboItem> items;
     private String botName = "";
@@ -44,7 +43,8 @@ public class WiredTriggerBotReachedFurni extends InteractionWiredTrigger {
         this.items = new LinkedHashSet<>();
     }
 
-    public WiredTriggerBotReachedFurni(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredTriggerBotReachedFurni(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.items = new LinkedHashSet<>();
     }
@@ -62,8 +62,11 @@ public class WiredTriggerBotReachedFurni extends InteractionWiredTrigger {
             items.addAll(this.items);
         } else {
             for (HabboItem item : this.items) {
-                if (Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId()).getHabboItem(item.getId()) == null)
-                    items.add(item);
+                if (Emulator.getGameEnvironment()
+                                .getRoomManager()
+                                .getRoom(this.getRoomId())
+                                .getHabboItem(item.getId())
+                        == null) items.add(item);
             }
         }
 
@@ -113,7 +116,9 @@ public class WiredTriggerBotReachedFurni extends InteractionWiredTrigger {
         int[] params = settings.getIntParams();
         this.furniSource = (params.length > 0)
                 ? this.normalizeFurniSource(params[0])
-                : ((settings.getFurniIds().length > 0) ? WiredSourceUtil.SOURCE_SELECTED : WiredSourceUtil.SOURCE_TRIGGER);
+                : ((settings.getFurniIds().length > 0)
+                        ? WiredSourceUtil.SOURCE_SELECTED
+                        : WiredSourceUtil.SOURCE_TRIGGER);
         this.botSource = (params.length > 1) ? this.normalizeBotSource(params[1]) : BOT_SOURCE_NAME;
 
         this.items.clear();
@@ -151,9 +156,7 @@ public class WiredTriggerBotReachedFurni extends InteractionWiredTrigger {
         }
 
         return WiredTriggerSourceUtil.containsItemOrTile(
-                room,
-                WiredTriggerSourceUtil.resolveItems(this, event, this.furniSource, this.items),
-                sourceItem);
+                room, WiredTriggerSourceUtil.resolveItems(this, event, this.furniSource, this.items), sourceItem);
     }
 
     @Deprecated
@@ -164,12 +167,12 @@ public class WiredTriggerBotReachedFurni extends InteractionWiredTrigger {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-            this.botName,
-            this.furniSource,
-            this.botSource,
-            this.items.stream().map(HabboItem::getId).collect(Collectors.toList())
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.botName,
+                        this.furniSource,
+                        this.botSource,
+                        this.items.stream().map(HabboItem::getId).collect(Collectors.toList())));
     }
 
     @Override
@@ -182,7 +185,7 @@ public class WiredTriggerBotReachedFurni extends InteractionWiredTrigger {
             this.botName = data.botName;
             this.furniSource = this.normalizeFurniSource(data.furniSource);
             this.botSource = this.normalizeBotSource(data.botSource);
-            for (Integer id: data.itemIds) {
+            for (Integer id : data.itemIds) {
                 HabboItem item = room.getHabboItem(id);
                 if (item != null) {
                     this.items.add(item);
@@ -206,8 +209,7 @@ public class WiredTriggerBotReachedFurni extends InteractionWiredTrigger {
                     try {
                         HabboItem item = room.getHabboItem(Integer.parseInt(id));
 
-                        if (item != null)
-                            this.items.add(item);
+                        if (item != null) this.items.add(item);
                     } catch (Exception e) {
                         LOGGER.error("Caught exception", e);
                     }
@@ -244,8 +246,7 @@ public class WiredTriggerBotReachedFurni extends InteractionWiredTrigger {
     private boolean matchesBotSource(WiredEvent event, RoomUnit roomUnit, Room room) {
         if (this.botSource == BOT_SOURCE_SELECTOR) {
             return WiredTriggerSourceUtil.containsUser(
-                    WiredTriggerSourceUtil.resolveUsers(this, event, WiredSourceUtil.SOURCE_SELECTOR, null),
-                    roomUnit);
+                    WiredTriggerSourceUtil.resolveUsers(this, event, WiredSourceUtil.SOURCE_SELECTOR, null), roomUnit);
         }
 
         return true;

@@ -12,7 +12,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -40,7 +39,8 @@ public class WiredConditionUserPerformsAction extends InteractionWiredCondition 
         super(set, baseItem);
     }
 
-    public WiredConditionUserPerformsAction(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredConditionUserPerformsAction(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -66,15 +66,15 @@ public class WiredConditionUserPerformsAction extends InteractionWiredCondition 
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-                this.selectedAction,
-                this.signFilterEnabled,
-                this.signId,
-                this.danceFilterEnabled,
-                this.danceId,
-                this.userSource,
-                this.quantifier
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.selectedAction,
+                        this.signFilterEnabled,
+                        this.signId,
+                        this.danceFilterEnabled,
+                        this.danceId,
+                        this.userSource,
+                        this.quantifier));
     }
 
     @Override
@@ -229,7 +229,8 @@ public class WiredConditionUserPerformsAction extends InteractionWiredCondition 
             return false;
         }
 
-        return this.matchesConfiguredAction(ctx.event().getActionId(), ctx.event().getActionParameter());
+        return this.matchesConfiguredAction(
+                ctx.event().getActionId(), ctx.event().getActionParameter());
     }
 
     protected boolean matchesCurrentState(RoomUnit roomUnit) {
@@ -259,7 +260,8 @@ public class WiredConditionUserPerformsAction extends InteractionWiredCondition 
         }
 
         long timestamp = (Long) timestampValue;
-        if (!WiredUserActionInputGuard.isRecentTimestamp(timestamp, System.currentTimeMillis(), TRANSIENT_ACTION_WINDOW_MS)) {
+        if (!WiredUserActionInputGuard.isRecentTimestamp(
+                timestamp, System.currentTimeMillis(), TRANSIENT_ACTION_WINDOW_MS)) {
             return false;
         }
 
@@ -332,7 +334,14 @@ public class WiredConditionUserPerformsAction extends InteractionWiredCondition 
         int userSource;
         int quantifier;
 
-        public JsonData(int selectedAction, boolean signFilterEnabled, int signId, boolean danceFilterEnabled, int danceId, int userSource, int quantifier) {
+        public JsonData(
+                int selectedAction,
+                boolean signFilterEnabled,
+                int signId,
+                boolean danceFilterEnabled,
+                int danceId,
+                int userSource,
+                int quantifier) {
             this.selectedAction = selectedAction;
             this.signFilterEnabled = signFilterEnabled;
             this.signId = signId;

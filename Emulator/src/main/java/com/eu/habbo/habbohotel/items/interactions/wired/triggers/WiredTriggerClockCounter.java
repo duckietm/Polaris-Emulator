@@ -16,7 +16,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredTriggerSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredTriggerSaveException;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashSet;
@@ -41,7 +40,8 @@ public class WiredTriggerClockCounter extends InteractionWiredTrigger {
         this.items = new LinkedHashSet<>();
     }
 
-    public WiredTriggerClockCounter(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredTriggerClockCounter(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.items = new LinkedHashSet<>();
     }
@@ -111,7 +111,9 @@ public class WiredTriggerClockCounter extends InteractionWiredTrigger {
         this.halfSecondSteps = (params.length > 1) ? this.normalizeHalfSecondSteps(params[1]) : 0;
         this.furniSource = (params.length > 2)
                 ? this.normalizeFurniSource(params[2])
-                : ((settings.getFurniIds().length > 0) ? WiredSourceUtil.SOURCE_SELECTED : WiredSourceUtil.SOURCE_TRIGGER);
+                : ((settings.getFurniIds().length > 0)
+                        ? WiredSourceUtil.SOURCE_SELECTED
+                        : WiredSourceUtil.SOURCE_TRIGGER);
 
         this.items.clear();
 
@@ -144,12 +146,12 @@ public class WiredTriggerClockCounter extends InteractionWiredTrigger {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-                this.minutes,
-                this.halfSecondSteps,
-                this.furniSource,
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList())
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.minutes,
+                        this.halfSecondSteps,
+                        this.furniSource,
+                        this.items.stream().map(HabboItem::getId).collect(Collectors.toList())));
     }
 
     @Override

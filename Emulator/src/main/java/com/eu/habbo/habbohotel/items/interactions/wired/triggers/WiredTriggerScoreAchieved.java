@@ -8,11 +8,10 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.WiredTriggerType;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
+import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -26,7 +25,8 @@ public class WiredTriggerScoreAchieved extends InteractionWiredTrigger {
         super(set, baseItem);
     }
 
-    public WiredTriggerScoreAchieved(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredTriggerScoreAchieved(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -63,10 +63,7 @@ public class WiredTriggerScoreAchieved extends InteractionWiredTrigger {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-            this.score,
-            this.teamType
-        ));
+        return WiredManager.getGson().toJson(new JsonData(this.score, this.teamType));
     }
 
     @Override
@@ -126,7 +123,7 @@ public class WiredTriggerScoreAchieved extends InteractionWiredTrigger {
 
     @Override
     public boolean saveData(WiredSettings settings) {
-        if(settings.getIntParams().length < 1) return false;
+        if (settings.getIntParams().length < 1) return false;
         this.score = clampScore(settings.getIntParams()[0]);
         this.teamType = (settings.getIntParams().length > 1)
                 ? normalizeTeamType(settings.getIntParams()[1])

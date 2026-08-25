@@ -6,7 +6,6 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
@@ -18,7 +17,8 @@ public class InteractionPressurePlate extends InteractionDefault {
         this.setExtradata("0");
     }
 
-    public InteractionPressurePlate(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionPressurePlate(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.setExtradata("0");
     }
@@ -34,14 +34,10 @@ public class InteractionPressurePlate extends InteractionDefault {
     }
 
     @Override
-    public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
-
-    }
+    public void onClick(GameClient client, Room room, Object[] objects) throws Exception {}
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
 
     @Override
     public void onWalkOn(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
@@ -78,7 +74,12 @@ public class InteractionPressurePlate extends InteractionDefault {
 
         if (tileAtItem == null) return;
 
-        Set<RoomTile> tiles = room.getLayout().getTilesAt(tileAtItem, this.getBaseItem().getWidth(), this.getBaseItem().getLength(), this.getRotation());
+        Set<RoomTile> tiles = room.getLayout()
+                .getTilesAt(
+                        tileAtItem,
+                        this.getBaseItem().getWidth(),
+                        this.getBaseItem().getLength(),
+                        this.getRotation());
 
         if (tiles == null) return;
 
@@ -92,7 +93,6 @@ public class InteractionPressurePlate extends InteractionDefault {
             if (!tileHasHabboOrBot.isEmpty()) {
                 occupied = true;
             }
-
         }
 
         this.setExtradata(occupied ? "1" : "0");
@@ -107,5 +107,4 @@ public class InteractionPressurePlate extends InteractionDefault {
     public boolean requiresAllTilesOccupied() {
         return false;
     }
-
 }

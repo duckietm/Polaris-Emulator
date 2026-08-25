@@ -2,10 +2,10 @@ package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
-import com.eu.habbo.habbohotel.games.battlebanzai.BattleBanzaiGame;
-import com.eu.habbo.habbohotel.games.freeze.FreezeGame;
 import com.eu.habbo.habbohotel.games.Game;
 import com.eu.habbo.habbohotel.games.GameTeamColors;
+import com.eu.habbo.habbohotel.games.battlebanzai.BattleBanzaiGame;
+import com.eu.habbo.habbohotel.games.freeze.FreezeGame;
 import com.eu.habbo.habbohotel.games.wired.WiredGame;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
@@ -15,12 +15,11 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
-import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
+import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -61,12 +60,12 @@ public class WiredEffectJoinTeam extends InteractionWiredEffect {
             if (habbo.getHabboInfo().getGamePlayer() != null
                     && habbo.getHabboInfo().getCurrentGame() != null
                     && (habbo.getHabboInfo().getCurrentGame() != targetGameType
-                    || habbo.getHabboInfo().getGamePlayer().getTeamColor() != this.teamColor)
+                            || habbo.getHabboInfo().getGamePlayer().getTeamColor() != this.teamColor)
                     && currentGame != null) {
                 currentGame.removeHabbo(habbo);
             }
 
-            if(habbo.getHabboInfo().getGamePlayer() == null) {
+            if (habbo.getHabboInfo().getGamePlayer() == null) {
                 Game game = room.getGameOrCreate(targetGameType);
                 if (game == null) {
                     continue;
@@ -84,21 +83,21 @@ public class WiredEffectJoinTeam extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(this.teamColor, this.teamType, this.getDelay(), this.userSource));
+        return WiredManager.getGson()
+                .toJson(new JsonData(this.teamColor, this.teamType, this.getDelay(), this.userSource));
     }
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
         String wiredData = set.getString("wired_data");
 
-        if(wiredData.startsWith("{")) {
+        if (wiredData.startsWith("{")) {
             JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
             this.setDelay(data.delay);
             this.teamColor = data.team;
             this.teamType = this.normalizeTeamType(data.teamType);
             this.userSource = data.userSource;
-        }
-        else {
+        } else {
             String[] data = set.getString("wired_data").split("\t");
 
             if (data.length >= 1) {
@@ -162,7 +161,7 @@ public class WiredEffectJoinTeam extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        if(settings.getIntParams().length < 2) throw new WiredSaveException("invalid data");
+        if (settings.getIntParams().length < 2) throw new WiredSaveException("invalid data");
 
         if (settings.getIntParams().length > 2) {
             this.teamType = this.normalizeTeamType(settings.getIntParams()[0]);
@@ -174,12 +173,11 @@ public class WiredEffectJoinTeam extends InteractionWiredEffect {
 
         int team = (settings.getIntParams().length > 2) ? settings.getIntParams()[1] : settings.getIntParams()[0];
 
-        if(team < 1 || team > 4)
-            throw new WiredSaveException("Team is invalid");
+        if (team < 1 || team > 4) throw new WiredSaveException("Team is invalid");
 
         int delay = settings.getDelay();
 
-        if(delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
+        if (delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
             throw new WiredSaveException("Delay too long");
 
         this.teamColor = GameTeamColors.fromType(team);

@@ -13,12 +13,10 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-
 
 public class WiredEffectFurniArea extends InteractionWiredEffect {
 
@@ -45,12 +43,13 @@ public class WiredEffectFurniArea extends InteractionWiredEffect {
         if (room == null || areaWidth <= 0 || areaHeight <= 0) return;
 
         List<HabboItem> furniInArea = getFurniInArea(room, this.includeWiredTargets(ctx));
-        ctx.targets().setItems(this.applySelectorModifiers(
-                furniInArea,
-                this.getSelectableFloorItems(room, ctx),
-                ctx.targets().items(),
-                this.filterExisting,
-                this.invert));
+        ctx.targets()
+                .setItems(this.applySelectorModifiers(
+                        furniInArea,
+                        this.getSelectableFloorItems(room, ctx),
+                        ctx.targets().items(),
+                        this.filterExisting,
+                        this.invert));
     }
 
     private List<HabboItem> getFurniInArea(Room room, boolean includeWiredItems) {
@@ -62,7 +61,9 @@ public class WiredEffectFurniArea extends InteractionWiredEffect {
         for (int x = rootX; x <= maxX; x++) {
             for (int y = rootY; y <= maxY; y++) {
                 for (HabboItem item : room.getItemsAt(x, y)) {
-                    if (item != null && (includeWiredItems || !(item instanceof InteractionWired)) && !result.contains(item)) {
+                    if (item != null
+                            && (includeWiredItems || !(item instanceof InteractionWired))
+                            && !result.contains(item)) {
                         result.add(item);
                     }
                 }
@@ -107,7 +108,8 @@ public class WiredEffectFurniArea extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(rootX, rootY, areaWidth, areaHeight, filterExisting, invert, getDelay()));
+        return WiredManager.getGson()
+                .toJson(new JsonData(rootX, rootY, areaWidth, areaHeight, filterExisting, invert, getDelay()));
     }
 
     @Override

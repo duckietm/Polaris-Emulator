@@ -8,7 +8,6 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.wired.WiredTriggerType;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -26,7 +25,8 @@ public class WiredTriggerRepeaterShort extends WiredTriggerRepeater {
         this.repeatTime = DEFAULT_DELAY;
     }
 
-    public WiredTriggerRepeaterShort(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredTriggerRepeaterShort(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.repeatTime = DEFAULT_DELAY;
     }
@@ -90,7 +90,8 @@ public class WiredTriggerRepeaterShort extends WiredTriggerRepeater {
     public boolean saveData(WiredSettings settings) {
         if (settings.getIntParams().length < 1) return false;
 
-        this.repeatTime = WiredTimerInputGuard.fromClientUnits(settings.getIntParams()[0], STEP_MS, MIN_DELAY, MAX_DELAY);
+        this.repeatTime =
+                WiredTimerInputGuard.fromClientUnits(settings.getIntParams()[0], STEP_MS, MIN_DELAY, MAX_DELAY);
 
         return true;
     }
@@ -101,7 +102,8 @@ public class WiredTriggerRepeaterShort extends WiredTriggerRepeater {
 
         if (elapsedMs % this.repeatTime == 0) {
             long currentTime = System.currentTimeMillis();
-            if (this.getRoomId() != 0 && room.isLoaded()
+            if (this.getRoomId() != 0
+                    && room.isLoaded()
                     && WiredManager.isTriggerExecutionAllowed(room, this, currentTime)) {
                 WiredManager.triggerTimerRepeatShort(room, this);
             }

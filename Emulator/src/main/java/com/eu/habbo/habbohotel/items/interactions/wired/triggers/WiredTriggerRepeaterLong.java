@@ -14,7 +14,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.tick.WiredTickable;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -33,7 +32,7 @@ public class WiredTriggerRepeaterLong extends InteractionWiredTrigger implements
     private static final int MIN_DELAY = STEP_MS;
     private static final int LEGACY_FALLBACK_DELAY = 20 * STEP_MS;
     private static final WiredTriggerType type = WiredTriggerType.PERIODICALLY_LONG;
-    
+
     /** The interval in milliseconds between triggers */
     private int repeatTime = DEFAULT_DELAY;
 
@@ -41,7 +40,8 @@ public class WiredTriggerRepeaterLong extends InteractionWiredTrigger implements
         super(set, baseItem);
     }
 
-    public WiredTriggerRepeaterLong(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredTriggerRepeaterLong(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -78,7 +78,8 @@ public class WiredTriggerRepeaterLong extends InteractionWiredTrigger implements
             storedRepeatTime = null;
         }
 
-        this.repeatTime = WiredTimerInputGuard.normalizeStoredMillis(storedRepeatTime, MIN_DELAY, LEGACY_FALLBACK_DELAY);
+        this.repeatTime =
+                WiredTimerInputGuard.normalizeStoredMillis(storedRepeatTime, MIN_DELAY, LEGACY_FALLBACK_DELAY);
     }
 
     @Override
@@ -135,11 +136,12 @@ public class WiredTriggerRepeaterLong extends InteractionWiredTrigger implements
         // Use global tick counter - all repeaters with same interval fire together
         // This ensures perfect synchronization regardless of when they were registered
         long elapsedMs = tickCount * tickIntervalMs;
-        
+
         // Fire when elapsed time is a multiple of repeat time
         if (elapsedMs % this.repeatTime == 0) {
             long currentTime = System.currentTimeMillis();
-            if (this.getRoomId() != 0 && room.isLoaded()
+            if (this.getRoomId() != 0
+                    && room.isLoaded()
                     && WiredManager.isTriggerExecutionAllowed(room, this, currentTime)) {
                 WiredManager.triggerTimerRepeatLong(room, this);
             }

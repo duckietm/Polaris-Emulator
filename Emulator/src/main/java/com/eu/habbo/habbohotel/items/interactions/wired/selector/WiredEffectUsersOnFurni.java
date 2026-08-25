@@ -14,7 +14,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
@@ -35,7 +34,8 @@ public class WiredEffectUsersOnFurni extends InteractionWiredEffect {
         super(set, baseItem);
     }
 
-    public WiredEffectUsersOnFurni(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectUsersOnFurni(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -61,7 +61,8 @@ public class WiredEffectUsersOnFurni extends InteractionWiredEffect {
             result.addAll(this.resolveUnitsOnItem(room, sourceItem));
         }
 
-        result = this.applySelectorModifiers(result, room.getRoomUnits(), ctx.targets().users(), this.filterExisting, this.invert);
+        result = this.applySelectorModifiers(
+                result, room.getRoomUnits(), ctx.targets().users(), this.filterExisting, this.invert);
 
         ctx.targets().setUsers(result);
     }
@@ -124,13 +125,13 @@ public class WiredEffectUsersOnFurni extends InteractionWiredEffect {
     public String getWiredData() {
         this.refresh(Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId()));
 
-        return WiredManager.getGson().toJson(new JsonData(
-                this.furniSource,
-                this.filterExisting,
-                this.invert,
-                this.items.stream().map(HabboItem::getId).collect(Collectors.toList()),
-                this.getDelay()
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.furniSource,
+                        this.filterExisting,
+                        this.invert,
+                        this.items.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                        this.getDelay()));
     }
 
     @Override
@@ -216,7 +217,12 @@ public class WiredEffectUsersOnFurni extends InteractionWiredEffect {
             return result;
         }
 
-        Set<RoomTile> occupiedTiles = room.getLayout().getTilesAt(baseTile, sourceItem.getBaseItem().getWidth(), sourceItem.getBaseItem().getLength(), sourceItem.getRotation());
+        Set<RoomTile> occupiedTiles = room.getLayout()
+                .getTilesAt(
+                        baseTile,
+                        sourceItem.getBaseItem().getWidth(),
+                        sourceItem.getBaseItem().getLength(),
+                        sourceItem.getRotation());
         if (occupiedTiles == null) {
             return result;
         }

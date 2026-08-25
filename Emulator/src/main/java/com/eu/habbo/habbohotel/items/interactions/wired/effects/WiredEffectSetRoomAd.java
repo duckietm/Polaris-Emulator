@@ -12,7 +12,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -113,7 +112,8 @@ public class WiredEffectSetRoomAd extends InteractionWiredEffect {
             return "";
         }
 
-        String cleaned = value.replace("\t", "").replace("\r", "").replace("\n", " ").trim();
+        String cleaned =
+                value.replace("\t", "").replace("\r", "").replace("\n", " ").trim();
         if (cleaned.length() > maxLength) {
             cleaned = cleaned.substring(0, maxLength);
         }
@@ -125,12 +125,14 @@ public class WiredEffectSetRoomAd extends InteractionWiredEffect {
     }
 
     private static int maxDescriptionLength() {
-        return Emulator.getConfig().getInt("hotel.wired.set_room_ad.description_max_length", DEFAULT_MAX_DESCRIPTION_LENGTH);
+        return Emulator.getConfig()
+                .getInt("hotel.wired.set_room_ad.description_max_length", DEFAULT_MAX_DESCRIPTION_LENGTH);
     }
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(this.getDelay(), this.caption, this.description, this.category));
+        return WiredManager.getGson()
+                .toJson(new JsonData(this.getDelay(), this.caption, this.description, this.category));
     }
 
     @Override

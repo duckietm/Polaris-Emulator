@@ -6,7 +6,6 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -23,7 +22,8 @@ public class WiredConditionNotHasTag extends WiredConditionHasTag {
         super(set, baseItem);
     }
 
-    public WiredConditionNotHasTag(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredConditionNotHasTag(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 

@@ -1,7 +1,6 @@
 package com.eu.habbo.habbohotel.items.interactions.totems;
 
 public enum TotemType {
-
     NONE(0),
     TROLL(1),
     SNAKE(2),
@@ -14,9 +13,8 @@ public enum TotemType {
     }
 
     public static TotemType fromInt(int type) {
-        for(TotemType totemType : TotemType.values()) {
-            if(totemType.type == type)
-                return totemType;
+        for (TotemType totemType : TotemType.values()) {
+            if (totemType.type == type) return totemType;
         }
 
         return NONE;

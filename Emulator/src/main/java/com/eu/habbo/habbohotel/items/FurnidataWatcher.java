@@ -3,9 +3,6 @@ package com.eu.habbo.habbohotel.items;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.furniture.FurnitureDataReloadComposer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.DirectoryStream;
@@ -16,6 +13,8 @@ import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Watches the furnidata source on a single daemon thread. On change (debounced),
@@ -46,7 +45,8 @@ public class FurnidataWatcher {
         this.watchDir = this.sourceIsDir ? source : source.getParent();
         this.maxBytes = maxBytes;
         this.debounceMs = Long.parseLong(Emulator.getConfig().getValue("items.furnidata.watch.debounce.ms", "750"));
-        this.minIntervalMs = Long.parseLong(Emulator.getConfig().getValue("items.furnidata.watch.min.interval.ms", "5000"));
+        this.minIntervalMs =
+                Long.parseLong(Emulator.getConfig().getValue("items.furnidata.watch.min.interval.ms", "5000"));
         this.deltaCap = Integer.parseInt(Emulator.getConfig().getValue("items.furnidata.delta.cap", "500"));
     }
 
@@ -62,7 +62,10 @@ public class FurnidataWatcher {
         this.running = false;
         WatchService local = this.ws;
         if (local != null) {
-            try { local.close(); } catch (IOException ignored) { }
+            try {
+                local.close();
+            } catch (IOException ignored) {
+            }
         }
     }
 
@@ -101,14 +104,20 @@ public class FurnidataWatcher {
 
     /** Register the base dir, plus one level of subdirectories for the split-tier layout. */
     private void registerDirs(WatchService service) throws IOException {
-        this.watchDir.register(service, StandardWatchEventKinds.ENTRY_MODIFY,
-            StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE);
+        this.watchDir.register(
+                service,
+                StandardWatchEventKinds.ENTRY_MODIFY,
+                StandardWatchEventKinds.ENTRY_CREATE,
+                StandardWatchEventKinds.ENTRY_DELETE);
         if (this.sourceIsDir) {
             try (DirectoryStream<Path> ds = Files.newDirectoryStream(this.watchDir)) {
                 for (Path child : ds) {
                     if (Files.isDirectory(child)) {
-                        child.register(service, StandardWatchEventKinds.ENTRY_MODIFY,
-                            StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE);
+                        child.register(
+                                service,
+                                StandardWatchEventKinds.ENTRY_MODIFY,
+                                StandardWatchEventKinds.ENTRY_CREATE,
+                                StandardWatchEventKinds.ENTRY_DELETE);
                     }
                 }
             }
@@ -142,16 +151,21 @@ public class FurnidataWatcher {
         this.lastBroadcast = System.currentTimeMillis();
 
         FurnitureDataReloadComposer composer = (delta.size() > this.deltaCap)
-            ? new FurnitureDataReloadComposer(FurnitureDataReloadComposer.MODE_RELOAD_HINT, List.of())
-            : new FurnitureDataReloadComposer(FurnitureDataReloadComposer.MODE_DELTA, delta);
+                ? new FurnitureDataReloadComposer(FurnitureDataReloadComposer.MODE_RELOAD_HINT, List.of())
+                : new FurnitureDataReloadComposer(FurnitureDataReloadComposer.MODE_DELTA, delta);
 
         broadcast(composer);
-        LOGGER.info("FurnidataWatcher: broadcast {} ({} entries)",
-            delta.size() > this.deltaCap ? "reload-hint" : "delta", delta.size());
+        LOGGER.info(
+                "FurnidataWatcher: broadcast {} ({} entries)",
+                delta.size() > this.deltaCap ? "reload-hint" : "delta",
+                delta.size());
     }
 
     private void broadcast(FurnitureDataReloadComposer composer) {
-        for (Habbo habbo : Emulator.getGameEnvironment().getHabboManager().getOnlineHabbos().values()) {
+        for (Habbo habbo : Emulator.getGameEnvironment()
+                .getHabboManager()
+                .getOnlineHabbos()
+                .values()) {
             if (habbo.getClient() != null) {
                 habbo.getClient().sendResponse(composer);
             }

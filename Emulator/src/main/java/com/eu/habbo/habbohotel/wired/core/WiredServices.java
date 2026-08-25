@@ -16,15 +16,15 @@ import com.eu.habbo.habbohotel.users.HabboItem;
  *   <li>Safety - can add rate limiting, validation, etc.</li>
  * </ul>
  * </p>
- * 
+ *
  * <h3>Usage in Effects:</h3>
  * <pre>{@code
  * public void execute(WiredContext ctx) {
- *     ctx.actor().ifPresent(user -> 
+ *     ctx.actor().ifPresent(user ->
  *         ctx.services().teleportUser(ctx.room(), user, targetTile));
  * }
  * }</pre>
- * 
+ *
  * @see DefaultWiredServices
  * @see WiredContext
  */

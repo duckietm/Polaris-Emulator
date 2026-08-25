@@ -7,8 +7,7 @@ public final class ChestFurniWireUtil {
     public static final int LEGACY_FORMAT = 0;
     private static final int UNIQUE_FLAG = 256;
 
-    private ChestFurniWireUtil() {
-    }
+    private ChestFurniWireUtil() {}
 
     public static void appendStoredItem(ServerMessage message, ChestFurniStoredItem item) {
         message.appendInt(item.inventoryId);

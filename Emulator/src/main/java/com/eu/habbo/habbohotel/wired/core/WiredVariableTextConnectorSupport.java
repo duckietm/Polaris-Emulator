@@ -3,7 +3,6 @@ package com.eu.habbo.habbohotel.wired.core;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableTextConnector;
 import com.eu.habbo.habbohotel.rooms.Room;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -13,8 +12,7 @@ import java.util.Map;
 public final class WiredVariableTextConnectorSupport {
     private static final String PRESERVED_SPACE = "\u00A0";
 
-    private WiredVariableTextConnectorSupport() {
-    }
+    private WiredVariableTextConnectorSupport() {}
 
     public static boolean isTextConnected(Room room, InteractionWiredExtra definition) {
         return getConnector(room, definition) != null;
@@ -48,7 +46,8 @@ public final class WiredVariableTextConnectorSupport {
             return Collections.emptyList();
         }
 
-        Collection<InteractionWiredExtra> extras = room.getRoomSpecialTypes().getExtras(definition.getX(), definition.getY());
+        Collection<InteractionWiredExtra> extras =
+                room.getRoomSpecialTypes().getExtras(definition.getX(), definition.getY());
         if (extras == null || extras.isEmpty()) {
             return Collections.emptyList();
         }

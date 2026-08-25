@@ -13,7 +13,7 @@ import javax.sql.DataSource;
 public class SoundboardCatalogRepository {
     public static final int MAX_CATALOG_SIZE = 500;
     private static final Gson GSON = new Gson();
-    private static final String SELECT_FIELDS = "id, name, url, enabled, sort_order, min_rank";
+    private static final String SELECT_FIELDS = "id, name, classname, url, enabled, sort_order, min_rank";
 
     private final DataSource dataSource;
 
@@ -125,20 +125,28 @@ public class SoundboardCatalogRepository {
     private SoundboardSound insert(Connection connection, SoundboardCatalogCommand command, int sortOrder)
             throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO soundboard_sounds (name, url, enabled, sort_order, min_rank) VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO soundboard_sounds (name, classname, url, enabled, sort_order, min_rank) "
+                        + "VALUES (?, ?, ?, ?, ?, ?)",
                 Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, command.name());
-            statement.setString(2, command.url());
-            statement.setBoolean(3, command.enabled());
-            statement.setInt(4, sortOrder);
-            statement.setInt(5, command.minRank());
+            setClassname(statement, 2, command.classname());
+            statement.setString(3, command.url());
+            statement.setBoolean(4, command.enabled());
+            statement.setInt(5, sortOrder);
+            statement.setInt(6, command.minRank());
             statement.executeUpdate();
             try (ResultSet keys = statement.getGeneratedKeys()) {
                 if (!keys.next()) {
                     throw new SQLException("Soundboard insert returned no generated ID");
                 }
                 return new SoundboardSound(
-                        keys.getInt(1), command.name(), command.url(), command.enabled(), sortOrder, command.minRank());
+                        keys.getInt(1),
+                        command.name(),
+                        command.classname(),
+                        command.url(),
+                        command.enabled(),
+                        sortOrder,
+                        command.minRank());
             }
         }
     }
@@ -146,18 +154,36 @@ public class SoundboardCatalogRepository {
     private SoundboardSound update(Connection connection, SoundboardSound before, SoundboardCatalogCommand command)
             throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "UPDATE soundboard_sounds SET name = ?, url = ?, enabled = ?, min_rank = ? WHERE id = ?")) {
+                "UPDATE soundboard_sounds SET name = ?, classname = ?, url = ?, enabled = ?, min_rank = ? "
+                        + "WHERE id = ?")) {
             statement.setString(1, command.name());
-            statement.setString(2, command.url());
-            statement.setBoolean(3, command.enabled());
-            statement.setInt(4, command.minRank());
-            statement.setInt(5, command.id());
+            setClassname(statement, 2, command.classname());
+            statement.setString(3, command.url());
+            statement.setBoolean(4, command.enabled());
+            statement.setInt(5, command.minRank());
+            statement.setInt(6, command.id());
             if (statement.executeUpdate() != 1) {
                 throw new SQLException("Soundboard update affected an unexpected number of rows");
             }
         }
         return new SoundboardSound(
-                before.id, command.name(), command.url(), command.enabled(), before.sortOrder, command.minRank());
+                before.id,
+                command.name(),
+                command.classname(),
+                command.url(),
+                command.enabled(),
+                before.sortOrder,
+                command.minRank());
+    }
+
+    // The unique index tolerates many url-only rows only because they store
+    // NULL rather than an empty string.
+    private static void setClassname(PreparedStatement statement, int index, String classname) throws SQLException {
+        if (classname == null || classname.isBlank()) {
+            statement.setNull(index, java.sql.Types.VARCHAR);
+        } else {
+            statement.setString(index, classname);
+        }
     }
 
     private static int nextSortOrder(List<SoundboardSound> catalog) {

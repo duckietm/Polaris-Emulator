@@ -1068,6 +1068,22 @@
       "fields": []
     },
     {
+      "name": "RECYCLER_PRIZES",
+      "direction": "client_to_server",
+      "header": 398,
+      "java": {
+        "symbol": "RequestRecylerLogicEvent",
+        "className": "RequestRecyclerLogicEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/recycler/RequestRecyclerLogicEvent.java"
+      },
+      "typescript": {
+        "symbol": "RECYCLER_PRIZES",
+        "className": "GetRecyclerPrizesMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/recycler/GetRecyclerPrizesMessageComposer.ts"
+      },
+      "fields": []
+    },
+    {
       "name": "GET_LIMITED_OFFER_APPEARING_NEXT",
       "direction": "client_to_server",
       "header": 410,
@@ -3874,7 +3890,7 @@
         {
           "kind": "scalar",
           "type": "string",
-          "name": "recoveryToken"
+          "name": ""
         }
       ]
     },
@@ -8567,27 +8583,32 @@
         {
           "kind": "scalar",
           "type": "int",
-          "name": "command"
+          "name": "id"
         },
         {
           "kind": "scalar",
           "type": "string",
-          "name": "command"
+          "name": "name"
         },
         {
           "kind": "scalar",
           "type": "string",
-          "name": "command"
+          "name": "url"
         },
         {
           "kind": "scalar",
           "type": "int",
-          "name": "command"
+          "name": "minRank"
         },
         {
           "kind": "scalar",
           "type": "boolean",
-          "name": "command"
+          "name": "enabled"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "classname"
         }
       ]
     },
@@ -9420,12 +9441,12 @@
         {
           "kind": "scalar",
           "type": "int",
-          "name": "draftVersionId"
+          "name": ""
         },
         {
           "kind": "scalar",
           "type": "int",
-          "name": "expectedRevision"
+          "name": ""
         }
       ]
     },
@@ -9457,12 +9478,12 @@
         {
           "kind": "scalar",
           "type": "int",
-          "name": "draftVersionId"
+          "name": ""
         },
         {
           "kind": "scalar",
           "type": "int",
-          "name": "expectedRevision"
+          "name": ""
         }
       ]
     },
@@ -9481,6 +9502,70 @@
         "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioOpenSessionComposer.ts"
       },
       "fields": []
+    },
+    {
+      "name": "CATALOG_PRODUCT_METADATA",
+      "direction": "client_to_server",
+      "header": 10081,
+      "java": {
+        "symbol": "CatalogProductMetadataEvent",
+        "className": "CatalogProductMetadataEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/CatalogProductMetadataEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_PRODUCT_METADATA",
+        "className": "CatalogProductMetadataComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/metadata/CatalogProductMetadataComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "version"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "requestId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "pageId"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "catalogMode"
+        }
+      ]
+    },
+    {
+      "name": "CATALOG_RUNTIME_CONFIGURATION",
+      "direction": "client_to_server",
+      "header": 10082,
+      "java": {
+        "symbol": "CatalogRuntimeConfigurationEvent",
+        "className": "CatalogRuntimeConfigurationEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/CatalogRuntimeConfigurationEvent.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_RUNTIME_CONFIGURATION",
+        "className": "CatalogRuntimeConfigurationComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/configuration/CatalogRuntimeConfigurationComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "version"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "requestId"
+        }
+      ]
     },
     {
       "name": "CHAT_REVIEW_SESSION_DETACHED",
@@ -10681,6 +10766,28 @@
         {
           "kind": "scalar",
           "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "FIRST_LOGIN_OF_DAY",
+      "direction": "server_to_client",
+      "header": 793,
+      "java": {
+        "symbol": "IsFirstLoginOfDayComposer",
+        "className": "UnknownComposer4",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/unknown/UnknownComposer4.java"
+      },
+      "typescript": {
+        "symbol": "FIRST_LOGIN_OF_DAY",
+        "className": "IsFirstLoginOfDayParser",
+        "path": "packages/communication/src/messages/parser/handshake/IsFirstLoginOfDayParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "boolean",
           "name": ""
         }
       ]
@@ -13430,7 +13537,7 @@
         {
           "kind": "scalar",
           "type": "string",
-          "name": "recoveryToken"
+          "name": ""
         }
       ]
     },
@@ -16276,53 +16383,6 @@
       ]
     },
     {
-      "name": "SOUNDBOARD_PLAY",
-      "direction": "server_to_client",
-      "header": 9406,
-      "java": {
-        "symbol": "SoundboardPlayComposer",
-        "className": "SoundboardPlayComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/soundboard/SoundboardPlayComposer.java"
-      },
-      "typescript": {
-        "symbol": "SOUNDBOARD_PLAY",
-        "className": "SoundboardPlayParser",
-        "path": "packages/communication/src/messages/parser/soundboard/SoundboardPlayParser.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": ""
-        }
-      ]
-    },
-    {
       "name": "UNIT_HABBICON",
       "direction": "server_to_client",
       "header": 9410,
@@ -16517,12 +16577,12 @@
         {
           "kind": "scalar",
           "type": "boolean",
-          "name": ""
+          "name": "_success"
         },
         {
           "kind": "scalar",
           "type": "string",
-          "name": ""
+          "name": "_message"
         },
         {
           "kind": "optional",
@@ -16698,31 +16758,47 @@
           "name": ""
         }
       ]
+    },
+    {
+      "name": "CATALOG_RUNTIME_CONFIGURATION",
+      "direction": "server_to_client",
+      "header": 10082,
+      "java": {
+        "symbol": "CatalogRuntimeConfigurationComposer",
+        "className": "CatalogRuntimeConfigurationComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/CatalogRuntimeConfigurationComposer.java"
+      },
+      "typescript": {
+        "symbol": "CATALOG_RUNTIME_CONFIGURATION",
+        "className": "CatalogRuntimeConfigurationMessageParser",
+        "path": "packages/communication/src/messages/parser/catalog/configuration/CatalogRuntimeConfigurationMessageParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
     }
   ],
   "unpaired": [
-    {
-      "direction": "server_to_client",
-      "side": "typescript",
-      "header": 9350,
-      "symbol": "BUILD_HEIGHT_AVAILABLE",
-      "path": "packages/communication/src/messages/parser/room/furniture/BuildHeightAvailableParser.ts",
-      "reason": "Header is registered only by the Nitro Renderer packet registry"
-    },
     {
       "direction": "client_to_server",
       "side": "java",
       "header": 295,
       "symbol": "PingEvent",
       "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/handshake/PingEvent.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "java",
-      "header": 398,
-      "symbol": "RequestRecylerLogicEvent",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/recycler/RequestRecyclerLogicEvent.java",
       "reason": "Header is registered only by the Polaris Emulator packet registry"
     },
     {
@@ -16792,14 +16868,6 @@
     {
       "direction": "server_to_client",
       "side": "java",
-      "header": 793,
-      "symbol": "IsFirstLoginOfDayComposer",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/unknown/UnknownComposer4.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "server_to_client",
-      "side": "java",
       "header": 1488,
       "symbol": "MachineIDComposer",
       "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/handshake/MachineIDComposer.java",
@@ -16859,14 +16927,6 @@
       "header": 2621,
       "symbol": "PetBreedingStartFailedComposer",
       "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/pets/breeding/PetBreedingStartFailedComposer.java",
-      "reason": "Header is registered only by the Polaris Emulator packet registry"
-    },
-    {
-      "direction": "server_to_client",
-      "side": "java",
-      "header": 3164,
-      "symbol": "RecyclerLogicComposer",
-      "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/RecyclerLogicComposer.java",
       "reason": "Header is registered only by the Polaris Emulator packet registry"
     },
     {
@@ -18188,6 +18248,14 @@
       "symbol": "FIREWORK_CHARGE_DATA",
       "path": "packages/communication/src/messages/parser/catalog/FireworkChargeDataParser.ts",
       "reason": "Header is registered only by the Nitro Renderer packet registry"
+    },
+    {
+      "direction": "server_to_client",
+      "side": "typescript",
+      "header": 9350,
+      "symbol": "BUILD_HEIGHT_AVAILABLE",
+      "path": "packages/communication/src/messages/parser/room/furniture/BuildHeightAvailableParser.ts",
+      "reason": "Header is registered only by the Nitro Renderer packet registry"
     }
   ],
   "exemptions": [
@@ -18557,7 +18625,7 @@
         "className": "RoomUnitChatWhisperComposer",
         "path": "packages/communication/src/messages/outgoing/room/unit/chat/RoomUnitChatWhisperComposer.ts"
       },
-      "reason": "Java analyzer: Packet fields delegated to external constructor RoomChatMessage inside handle; TypeScript analyzer: Outgoing value recipientName + ' ' + message has no statically resolvable wire type"
+      "reason": "Java analyzer: Packet fields delegated to external constructor RoomChatMessage inside handle; TypeScript analyzer: Outgoing value recipientName + \u0027 \u0027 + message has no statically resolvable wire type"
     },
     {
       "name": "RELEASE_ISSUES",
@@ -19485,7 +19553,7 @@
         "className": "ClientHelloMessageComposer",
         "path": "packages/communication/src/messages/outgoing/handshake/ClientHelloMessageComposer.ts"
       },
-      "reason": "TypeScript analyzer: Outgoing value `NITRO-${NitroVersion.RENDERER_VERSION.replaceAll('.', '-')}` has no statically resolvable wire type"
+      "reason": "TypeScript analyzer: Outgoing value `NITRO-${NitroVersion.RENDERER_VERSION.replaceAll(\u0027.\u0027, \u0027-\u0027)}` has no statically resolvable wire type"
     },
     {
       "name": "SNOWWAR_LOAD_STAGE_READY",
@@ -20029,7 +20097,7 @@
         "className": "CatalogStudioExportComposer",
         "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioExportComposer.ts"
       },
-      "reason": "Catalog Studio document protocol is verified by dedicated round-trip packet tests"
+      "reason": "TypeScript analyzer: Outgoing value format has no statically resolvable wire type"
     },
     {
       "name": "CATALOG_STUDIO_DOCUMENT_DRY_RUN",
@@ -20045,7 +20113,7 @@
         "className": "CatalogStudioDocumentDryRunComposer",
         "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioDocumentDryRunComposer.ts"
       },
-      "reason": "Catalog Studio document protocol is verified by dedicated round-trip packet tests"
+      "reason": "Java analyzer: Packet fields delegated to external reader parseDocument inside handle; TypeScript analyzer: Outgoing value format has no statically resolvable wire type"
     },
     {
       "name": "CATALOG_STUDIO_DOCUMENT_APPLY",
@@ -20061,23 +20129,7 @@
         "className": "CatalogStudioDocumentApplyComposer",
         "path": "packages/communication/src/messages/outgoing/catalog/studio/CatalogStudioDocumentApplyComposer.ts"
       },
-      "reason": "Catalog Studio document protocol is verified by dedicated round-trip packet tests"
-    },
-    {
-      "name": "CATALOG_STUDIO_DOCUMENT_RESULT",
-      "direction": "server_to_client",
-      "header": 10078,
-      "java": {
-        "symbol": "CatalogStudioDocumentResultComposer",
-        "className": "CatalogStudioDocumentResultComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioDocumentResultComposer.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_STUDIO_DOCUMENT_RESULT",
-        "className": "CatalogStudioDocumentResultMessageParser",
-        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioDocumentResultMessageParser.ts"
-      },
-      "reason": "Catalog Studio document protocol is verified by dedicated round-trip packet tests"
+      "reason": "Java analyzer: Packet fields delegated to external reader parseDocument inside handle; TypeScript analyzer: Outgoing value format has no statically resolvable wire type"
     },
     {
       "name": "JUKEBOX_SONG_DISKS",
@@ -22448,6 +22500,22 @@
       "reason": "Java analyzer: Packet fields delegated to external serializer serialize inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },
     {
+      "name": "RECYCLER_PRIZES",
+      "direction": "server_to_client",
+      "header": 3164,
+      "java": {
+        "symbol": "RecyclerLogicComposer",
+        "className": "RecyclerLogicComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/RecyclerLogicComposer.java"
+      },
+      "typescript": {
+        "symbol": "RECYCLER_PRIZES",
+        "className": "RecyclerPrizesMessageParser",
+        "path": "packages/communication/src/messages/parser/recycler/RecyclerPrizesMessageParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
       "name": "ROOM_ROLLING",
       "direction": "server_to_client",
       "header": 3207,
@@ -23584,6 +23652,22 @@
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },
     {
+      "name": "SOUNDBOARD_PLAY",
+      "direction": "server_to_client",
+      "header": 9406,
+      "java": {
+        "symbol": "SoundboardPlayComposer",
+        "className": "SoundboardPlayComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/soundboard/SoundboardPlayComposer.java"
+      },
+      "typescript": {
+        "symbol": "SOUNDBOARD_PLAY",
+        "className": "SoundboardPlayParser",
+        "path": "packages/communication/src/messages/parser/soundboard/SoundboardPlayParser.ts"
+      },
+      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [int, string, string, int, int, string, string] versus TypeScript [int, string, string, int, int, string, {\"type\":\"optional\",\"controller\":\"bytesAvailable\",\"fields\":[{\"type\":\"string\",}]}]"
+    },
+    {
       "name": "EARNINGS_CENTER",
       "direction": "server_to_client",
       "header": 9407,
@@ -23757,7 +23841,7 @@
         "className": "CatalogStudioSessionMessageParser",
         "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioSessionMessageParser.ts"
       },
-      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal"
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in IfStatement inside parse"
     },
     {
       "name": "CATALOG_STUDIO_LOAD_HISTORY",
@@ -23789,7 +23873,7 @@
         "className": "CatalogStudioOperationMessageParser",
         "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioOperationMessageParser.ts"
       },
-      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, boolean, string, string, int, int, string, int]"
+      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [] versus TypeScript [string, boolean, string, string, int, int, string, int, {\"type\":\"optional\",\"controller\":\"bytesAvailable\",\"fields\":[{\"type\":\"int\",},{\"type\":\"int\",},{\"type\":\"string\",},{\"type\":\"string\",},{\"type\":\"int\",},{\"type\":\"string\",}]}]"
     },
     {
       "name": "CATALOG_STUDIO_VALIDATE",
@@ -23808,23 +23892,23 @@
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal"
     },
     {
-      "name": "CATALOG_PRODUCT_METADATA_REQUEST",
-      "direction": "client_to_server",
-      "header": 10081,
+      "name": "CATALOG_STUDIO_DOCUMENT_RESULT",
+      "direction": "server_to_client",
+      "header": 10078,
       "java": {
-        "symbol": "CatalogProductMetadataEvent",
-        "className": "CatalogProductMetadataEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/CatalogProductMetadataEvent.java"
+        "symbol": "CatalogStudioDocumentResultComposer",
+        "className": "CatalogStudioDocumentResultComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/catalogadmin/studio/CatalogStudioDocumentResultComposer.java"
       },
       "typescript": {
-        "symbol": "CATALOG_PRODUCT_METADATA",
-        "className": "CatalogProductMetadataComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/metadata/CatalogProductMetadataComposer.ts"
+        "symbol": "CATALOG_STUDIO_DOCUMENT_RESULT",
+        "className": "CatalogStudioDocumentResultMessageParser",
+        "path": "packages/communication/src/messages/parser/catalog/studio/CatalogStudioDocumentResultMessageParser.ts"
       },
-      "reason": "The metadata request is optional and independently versioned so legacy catalog packets remain unchanged"
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in IfStatement inside parse"
     },
     {
-      "name": "CATALOG_PRODUCT_METADATA_RESPONSE",
+      "name": "CATALOG_PRODUCT_METADATA",
       "direction": "server_to_client",
       "header": 10081,
       "java": {
@@ -23837,39 +23921,7 @@
         "className": "CatalogProductMetadataMessageParser",
         "path": "packages/communication/src/messages/parser/catalog/metadata/CatalogProductMetadataMessageParser.ts"
       },
-      "reason": "The bounded response contains a dynamic list of product capability entries verified by dedicated packet tests"
-    },
-    {
-      "name": "CATALOG_RUNTIME_CONFIGURATION_REQUEST",
-      "direction": "client_to_server",
-      "header": 10082,
-      "java": {
-        "symbol": "CatalogRuntimeConfigurationEvent",
-        "className": "CatalogRuntimeConfigurationEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/CatalogRuntimeConfigurationEvent.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_RUNTIME_CONFIGURATION",
-        "className": "CatalogRuntimeConfigurationComposer",
-        "path": "packages/communication/src/messages/outgoing/catalog/configuration/CatalogRuntimeConfigurationComposer.ts"
-      },
-      "reason": "The optional versioned request keeps the standard recycler packets unchanged"
-    },
-    {
-      "name": "CATALOG_RUNTIME_CONFIGURATION_RESPONSE",
-      "direction": "server_to_client",
-      "header": 10082,
-      "java": {
-        "symbol": "CatalogRuntimeConfigurationComposer",
-        "className": "CatalogRuntimeConfigurationComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/CatalogRuntimeConfigurationComposer.java"
-      },
-      "typescript": {
-        "symbol": "CATALOG_RUNTIME_CONFIGURATION",
-        "className": "CatalogRuntimeConfigurationMessageParser",
-        "path": "packages/communication/src/messages/parser/catalog/configuration/CatalogRuntimeConfigurationMessageParser.ts"
-      },
-      "reason": "The bounded response carries emulator-authoritative catalog runtime settings without extending standard packets"
+      "reason": "Java analyzer: Data-dependent packet operations in ForStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     }
   ]
 }

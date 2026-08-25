@@ -34,6 +34,17 @@ public class SoundboardSettingsComposer extends MessageComposer {
             this.response.appendString(sound.name);
             this.response.appendString(sound.url);
         }
+
+        // Classnames go in a block AFTER the records, never as a trailing
+        // field inside the loop: a client that predates them can stop reading
+        // here, while one that reads a per-record optional field would steal
+        // bytes from the next record and cascade-corrupt the list.
+        // The client prefers the classname and resolves it against
+        // gamedata/SoundData.json; url stays as the override for clips hosted
+        // outside the asset tree.
+        for (SoundboardSound sound : this.sounds) {
+            this.response.appendString(sound.classname);
+        }
         return this.response;
     }
 }

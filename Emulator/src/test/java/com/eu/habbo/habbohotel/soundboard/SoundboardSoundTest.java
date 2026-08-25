@@ -9,7 +9,7 @@ class SoundboardSoundTest {
 
     @Test
     void minimumRankIsInclusive() {
-        SoundboardSound sound = new SoundboardSound(7, "Staff bell", "/sounds/staff.mp3", 5);
+        SoundboardSound sound = new SoundboardSound(7, "Staff bell", "staff", "/sounds/staff.mp3", 5);
 
         assertFalse(sound.isAvailableTo(4));
         assertTrue(sound.isAvailableTo(5));
@@ -18,7 +18,7 @@ class SoundboardSoundTest {
 
     @Test
     void minimumRankNeverDropsBelowOne() {
-        SoundboardSound sound = new SoundboardSound(7, "Public bell", "/sounds/public.mp3", -3);
+        SoundboardSound sound = new SoundboardSound(7, "Public bell", "public", "/sounds/public.mp3", -3);
 
         assertTrue(sound.isAvailableTo(1));
     }

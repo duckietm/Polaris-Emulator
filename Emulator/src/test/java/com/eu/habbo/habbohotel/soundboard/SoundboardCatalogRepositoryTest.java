@@ -38,7 +38,7 @@ class SoundboardCatalogRepositoryTest {
         when(rows.getInt("min_rank")).thenReturn(1);
 
         SoundboardCatalogResult result = new SoundboardCatalogRepository(dataSource)
-                .upsert(42, new SoundboardCatalogCommand(0, "Extra", "/extra.ogg", 1, true));
+                .upsert(42, new SoundboardCatalogCommand(0, "Extra", "extra", "/extra.ogg", 1, true));
 
         assertEquals(CATALOG_FULL, result.code());
         verify(connection).rollback();
@@ -67,7 +67,7 @@ class SoundboardCatalogRepositoryTest {
         when(audit.executeUpdate()).thenThrow(new SQLException("audit unavailable"));
 
         SoundboardCatalogResult result = new SoundboardCatalogRepository(dataSource)
-                .upsert(42, new SoundboardCatalogCommand(7, "New bell", "/new.mp3", 1, true));
+                .upsert(42, new SoundboardCatalogCommand(7, "New bell", "new", "/new.mp3", 1, true));
 
         assertEquals(PERSISTENCE_FAILURE, result.code());
         verify(connection).rollback();

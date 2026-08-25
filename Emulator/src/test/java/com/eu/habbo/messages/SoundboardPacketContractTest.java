@@ -26,7 +26,8 @@ class SoundboardPacketContractTest {
 
     @Test
     void settingsCarryPersonalizedCooldownBeforeTheFilteredSounds() {
-        SoundboardSound bell = new SoundboardSound(7, "Campanella", "/sounds/soundboard/campanella.mp3", 1);
+        SoundboardSound bell =
+                new SoundboardSound(7, "Campanella", "campanella", "/sounds/soundboard/campanella.mp3", 1);
         ByteBuf packet = new SoundboardSettingsComposer(true, 60, List.of(bell))
                 .compose()
                 .get();
@@ -38,13 +39,15 @@ class SoundboardPacketContractTest {
         assertEquals(7, packet.readInt());
         assertEquals("Campanella", readString(packet));
         assertEquals("/sounds/soundboard/campanella.mp3", readString(packet));
+        // classnames follow the records as their own block
+        assertEquals("campanella", readString(packet));
         assertFalse(packet.isReadable());
     }
 
     @Test
     void playCarriesAuthoritativeSoundAndActorMetadata() {
         ByteBuf packet = new SoundboardPlayComposer(
-                        7, "/sounds/soundboard/campanella.mp3", "Campanella", 42, 3, "Simoleo")
+                        7, "/sounds/soundboard/campanella.mp3", "campanella", "Campanella", 42, 3, "Simoleo")
                 .compose()
                 .get();
         packet.skipBytes(6);
@@ -55,6 +58,7 @@ class SoundboardPacketContractTest {
         assertEquals(42, packet.readInt());
         assertEquals(3, packet.readInt());
         assertEquals("Simoleo", readString(packet));
+        assertEquals("campanella", readString(packet));
         assertFalse(packet.isReadable());
     }
 
@@ -108,7 +112,7 @@ class SoundboardPacketContractTest {
 
     @Test
     void catalogCarriesEnabledAndDisabledManagementFields() {
-        SoundboardSound disabled = new SoundboardSound(7, "Campanella", "/sounds/bell.mp3", false, 20, 5);
+        SoundboardSound disabled = new SoundboardSound(7, "Campanella", "bell", "/sounds/bell.mp3", false, 20, 5);
         ByteBuf packet =
                 new SoundboardCatalogComposer(List.of(disabled)).compose().get();
         packet.skipBytes(6);
@@ -120,6 +124,7 @@ class SoundboardPacketContractTest {
         assertFalse(packet.readBoolean());
         assertEquals(20, packet.readInt());
         assertEquals(5, packet.readInt());
+        assertEquals("bell", readString(packet));
         assertFalse(packet.isReadable());
     }
 

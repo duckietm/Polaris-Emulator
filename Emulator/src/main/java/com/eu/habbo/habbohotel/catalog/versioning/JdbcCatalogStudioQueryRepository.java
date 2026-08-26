@@ -74,7 +74,7 @@ public final class JdbcCatalogStudioQueryRepository {
         requireLiveCatalog(catalogId);
         try (Connection connection = dataSource.getConnection()) {
             JdbcCatalogVersionRepository versions = new JdbcCatalogVersionRepository();
-            return new JdbcCatalogLiveSnapshotRepository().load(connection, versions.loadVersion(connection, 1));
+            return new JdbcCatalogLiveSnapshotRepository().loadForRead(connection, versions.loadVersion(connection, 1));
         } catch (SQLException exception) {
             throw new CatalogVersioningException("Live catalog snapshot load failed", exception);
         }

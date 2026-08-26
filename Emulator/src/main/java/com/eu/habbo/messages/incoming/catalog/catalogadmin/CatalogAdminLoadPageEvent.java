@@ -22,7 +22,7 @@ public class CatalogAdminLoadPageEvent extends MessageHandler {
         this.packet.readInt(); // legacy revision field
         var page = CatalogStudioRuntime.services()
                 .liveMutations()
-                .loadLive()
+                .loadLiveForRead()
                 .page(pageType, pageId)
                 .orElse(null);
         if (page == null) {

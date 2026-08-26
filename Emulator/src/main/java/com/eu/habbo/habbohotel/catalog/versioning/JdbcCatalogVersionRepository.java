@@ -21,10 +21,21 @@ public final class JdbcCatalogVersionRepository implements CatalogVersionReposit
             "UPDATE catalog_id_sequences SET next_id = ? WHERE entity_type = ? AND catalog_type = ?";
     static final String LOAD_VERSION_SQL =
             "SELECT revision, updated_at FROM catalog_manager_state WHERE singleton_id = 1";
+    static final String READ_RUNTIME_STATE_SQL = LOAD_VERSION_SQL;
 
     @Override
     public CatalogRuntimeState lockRuntimeState(Connection connection) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(LOCK_RUNTIME_STATE_SQL);
+                ResultSet resultSet = statement.executeQuery()) {
+            if (!resultSet.next()) throw new SQLException("Catalog Manager state is not initialized");
+            return new CatalogRuntimeState(
+                    1, 2, resultSet.getTimestamp("updated_at").toInstant());
+        }
+    }
+
+    @Override
+    public CatalogRuntimeState readRuntimeState(Connection connection) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(READ_RUNTIME_STATE_SQL);
                 ResultSet resultSet = statement.executeQuery()) {
             if (!resultSet.next()) throw new SQLException("Catalog Manager state is not initialized");
             return new CatalogRuntimeState(

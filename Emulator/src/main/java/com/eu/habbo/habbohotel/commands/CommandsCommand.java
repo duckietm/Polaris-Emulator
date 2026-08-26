@@ -32,10 +32,10 @@ public class CommandsCommand extends Command {
         return true;
     }
 
-    private static String text(String key) {
-        String value = Emulator.getTexts().getValueQuietly(key, "");
+    private static String text(String textKey) {
+        String value = Emulator.getTexts().getValueQuietly(textKey, "");
 
-        return value.equals(key) ? "" : value;
+        return value.equals(textKey) ? "" : value;
     }
 
     /**

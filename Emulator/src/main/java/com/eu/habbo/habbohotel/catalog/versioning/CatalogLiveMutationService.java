@@ -87,8 +87,8 @@ public final class CatalogLiveMutationService {
 
     public CatalogDraftValidationResult validateLive() {
         try (Connection connection = dataSource.getConnection()) {
-            CatalogRuntimeState state = versions.lockRuntimeState(connection);
-            CatalogVersionSnapshot active = loadPhysicalLive(connection, state);
+            CatalogRuntimeState state = versions.readRuntimeState(connection);
+            CatalogVersionSnapshot active = loadPhysicalLiveForRead(connection, state);
             if (validation == null) {
                 return new CatalogDraftValidationResult(
                         active.version().revision(), new CatalogValidationReport(List.of()));
@@ -96,6 +96,34 @@ public final class CatalogLiveMutationService {
             return new CatalogDraftValidationResult(active.version().revision(), validation.report(connection, active));
         } catch (SQLException exception) {
             throw new CatalogVersioningException("Live catalog validation failed", exception);
+        }
+    }
+
+    /**
+     * Reads everything a Manager session needs in a single non-locking pass.
+     *
+     * <p>{@link #loadLive()} followed by {@link #validateLive()} reads the entire catalog twice and locks every row of
+     * it both times. A session open only reads, so it does neither.
+     */
+    public CatalogLiveSession openLiveSession() {
+        try (Connection connection = dataSource.getConnection()) {
+            CatalogRuntimeState state = versions.readRuntimeState(connection);
+            CatalogVersionSnapshot active = loadPhysicalLiveForRead(connection, state);
+            CatalogValidationReport report =
+                    validation == null ? new CatalogValidationReport(List.of()) : validation.report(connection, active);
+            return new CatalogLiveSession(
+                    active, new CatalogDraftValidationResult(active.version().revision(), report));
+        } catch (SQLException exception) {
+            throw new CatalogVersioningException("Live catalog session open failed", exception);
+        }
+    }
+
+    /** Reads the live catalog without locking it, for callers that only inspect it. */
+    public CatalogVersionSnapshot loadLiveForRead() {
+        try (Connection connection = dataSource.getConnection()) {
+            return loadPhysicalLiveForRead(connection, versions.readRuntimeState(connection));
+        } catch (SQLException exception) {
+            throw new CatalogVersioningException("Live catalog load failed", exception);
         }
     }
 
@@ -437,6 +465,17 @@ public final class CatalogLiveMutationService {
     @FunctionalInterface
     private interface ChangeFactory {
         CatalogChangeEntry build(Connection connection, CatalogVersionSnapshot active) throws SQLException;
+    }
+
+    private CatalogVersionSnapshot loadPhysicalLiveForRead(Connection connection, CatalogRuntimeState state)
+            throws SQLException {
+        CatalogVersion version = versions.loadVersion(connection, state.activeVersionId());
+        if (version.status() != CatalogVersionStatus.PUBLISHED) {
+            throw new IllegalStateException("Live catalog state is not available");
+        }
+        return liveSnapshots == null
+                ? versions.loadSnapshot(connection, state.activeVersionId())
+                : liveSnapshots.loadForRead(connection, version);
     }
 
     private CatalogVersionSnapshot loadPhysicalLive(Connection connection, CatalogRuntimeState state)

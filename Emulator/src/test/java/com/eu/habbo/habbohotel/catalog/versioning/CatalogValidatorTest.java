@@ -100,6 +100,25 @@ class CatalogValidatorTest {
                 "OFFER_LIMITED_STACK_BELOW_SALES");
     }
 
+    @Test
+    void treatsAVisibleButDisabledAncestorAsAFolderAndNotAnError() {
+        CatalogVersionSnapshot snapshot = snapshot(
+                List.of(
+                        page(1, -1, 0, true, true, "root", ""),
+                        page(2, 1, 0, true, false, "default_3x3", ""),
+                        page(3, 2, 0, true, true, "default_3x3", ""),
+                        page(4, -1, 1, false, true, "root", ""),
+                        page(5, 4, 0, true, true, "default_3x3", "")),
+                List.of());
+
+        CatalogValidationReport report = validator(Set.of(), Set.of(), Map.of()).validate(snapshot);
+
+        assertCodes(report, "PAGE_ANCESTOR_NOT_AVAILABLE");
+        assertEquals(
+                List.of(5),
+                report.issues().stream().map(CatalogValidationIssue::entityId).toList());
+    }
+
     private static CatalogValidator validator(
             Set<Integer> itemIds, Set<Integer> currencyTypes, Map<Integer, Integer> liveLimitedSells) {
         return new CatalogValidator(itemIds, currencyTypes, liveLimitedSells, Set.of("root", "default_3x3"));

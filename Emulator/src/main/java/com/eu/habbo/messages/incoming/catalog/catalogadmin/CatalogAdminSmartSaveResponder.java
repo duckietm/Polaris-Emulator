@@ -9,8 +9,12 @@ import com.eu.habbo.messages.outgoing.catalog.catalogadmin.CatalogAdminSmartSave
 import com.google.gson.Gson;
 import java.util.Map;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class CatalogAdminSmartSaveResponder {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CatalogAdminSmartSaveResponder.class);
+
     private CatalogAdminSmartSaveResponder() {}
 
     static String operationId(CatalogStudioMutationEnvelope envelope, String action) {
@@ -37,13 +41,30 @@ final class CatalogAdminSmartSaveResponder {
                 switch (exception) {
                     case CatalogConcurrentModificationException ignored -> "CONFLICT";
                     case CatalogUndoConflictException ignored -> "CONFLICT";
-                    default -> "VALIDATION_FAILED";
+                    case IllegalArgumentException ignored -> "VALIDATION_FAILED";
+                    default -> "INTERNAL_ERROR";
                 };
-        String fieldErrors =
-                code.equals("VALIDATION_FAILED") ? gson.toJson(Map.of("_form", exception.getMessage())) : "{}";
+        // Anything other than a rejected edit is a defect, not operator error: it must reach the
+        // server log, and the operator must still get an answer instead of a save that never
+        // resolves. getMessage() is null on plenty of runtime exceptions, and both the payload and
+        // Map.of below would throw on it.
+        String message =
+                exception.getMessage() == null || exception.getMessage().isBlank()
+                        ? exception.getClass().getSimpleName()
+                        : exception.getMessage();
+        if (code.equals("INTERNAL_ERROR")) {
+            LOGGER.error(
+                    "Catalog admin {} failed unexpectedly for {} {} #{}",
+                    action,
+                    catalogType,
+                    entityType,
+                    entityId,
+                    exception);
+        }
+        String fieldErrors = code.equals("CONFLICT") ? "{}" : gson.toJson(Map.of("_form", message));
         return new CatalogAdminResultComposer(
                 false,
-                exception.getMessage(),
+                message,
                 CatalogAdminSmartSavePayload.failure(
                         operationId,
                         action,

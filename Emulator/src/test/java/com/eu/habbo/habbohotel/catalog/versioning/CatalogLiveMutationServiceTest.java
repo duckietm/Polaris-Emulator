@@ -309,6 +309,48 @@ class CatalogLiveMutationServiceTest {
         assertEquals(9, committed.orderNumber());
     }
 
+    @Test
+    void updatesAnOfferFromTheDraftPayloadTheEditorSends() throws Exception {
+        CatalogOfferSnapshot offer = new CatalogOfferSnapshot(
+                CatalogPageType.NORMAL, 42, "12", 17, "chair", 5, 50, 5, 1, 0, 99, -1, 0, "", true, false);
+        when(versions.loadSnapshot(connection, ACTIVE_VERSION_ID))
+                .thenReturn(new CatalogVersionSnapshot(
+                        new CatalogVersion(
+                                ACTIVE_VERSION_ID,
+                                CatalogVersionStatus.PUBLISHED,
+                                null,
+                                4,
+                                "Live",
+                                1,
+                                Instant.EPOCH,
+                                1,
+                                Instant.EPOCH),
+                        List.of(page(true)),
+                        List.of(offer)));
+
+        // What CatalogAdminSaveOfferEvent puts on the wire: the draft carries no
+        // catalogType and no offer id - the request supplies both.
+        CatalogDraftOfferData draft =
+                new CatalogDraftOfferData("12", 17, "chair", 5, 0, 0, 1, 0, 99, -1, 0, "", true, false);
+
+        service.applyBatch(List.of(new CatalogLiveMutationRequest(
+                -1,
+                7,
+                "Updated offer: chair",
+                CatalogEntityType.OFFER,
+                CatalogPageType.NORMAL,
+                42,
+                CatalogChangeOperation.UPDATE,
+                gson.toJson(draft))));
+
+        ArgumentCaptor<CatalogChangeEntry> change = ArgumentCaptor.forClass(CatalogChangeEntry.class);
+        verify(live).apply(eq(connection), change.capture());
+        CatalogOfferSnapshot committed = gson.fromJson(change.getValue().afterJson(), CatalogOfferSnapshot.class);
+        assertEquals(42, committed.offerId());
+        assertEquals(CatalogPageType.NORMAL, committed.catalogType());
+        assertEquals(0, committed.costPoints());
+    }
+
     private static CatalogPageSnapshot page(boolean visible) {
         return new CatalogPageSnapshot(
                 CatalogPageType.NORMAL,

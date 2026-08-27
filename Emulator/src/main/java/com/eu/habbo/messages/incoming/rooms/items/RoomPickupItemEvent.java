@@ -8,6 +8,11 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 
 public class RoomPickupItemEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        return 100;
+    }
+
+    @Override
     public void handle() throws Exception {
         this.packet.readInt(); //10 = floorItem and 20 = wallItem
         int itemId = this.packet.readInt();

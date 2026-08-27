@@ -15,6 +15,11 @@ import java.util.List;
 
 public class UpdateFurniturePositionEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        return 100;
+    }
+
+    @Override
     public void handle() throws Exception {
         Room room = currentRoom();
         if (room == null) return;

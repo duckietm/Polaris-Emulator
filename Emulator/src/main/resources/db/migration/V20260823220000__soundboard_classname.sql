@@ -12,8 +12,24 @@
 -- many url-only rows, and MySQL treats repeated NULLs as distinct while
 -- rejecting repeated empty strings.
 
-ALTER TABLE `soundboard_sounds`
-    ADD COLUMN `classname` VARCHAR(64) NULL DEFAULT NULL AFTER `name`;
+-- Idempotent by design: hotel owners sometimes run the same schema patch
+-- twice. A bare `ADD COLUMN` / `CREATE UNIQUE INDEX` errors the second time
+-- (Duplicate column / Duplicate key name), so both are guarded through
+-- information_schema. `IF NOT EXISTS` is not used because MySQL 8 rejects it
+-- on indexes (MariaDB-only); the information_schema + PREPARE pattern below
+-- works on both engines.
+
+SET @add_classname := (
+    SELECT COUNT(*) FROM `information_schema`.`COLUMNS`
+    WHERE `TABLE_SCHEMA` = DATABASE()
+      AND `TABLE_NAME` = 'soundboard_sounds'
+      AND `COLUMN_NAME` = 'classname');
+SET @sql := IF(@add_classname = 0,
+    'ALTER TABLE `soundboard_sounds` ADD COLUMN `classname` VARCHAR(64) NULL DEFAULT NULL AFTER `name`',
+    'DO 0');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- Backfill from the existing URLs: `/sounds/soundboard/campanella.mp3` -> `campanella`.
 UPDATE `soundboard_sounds`
@@ -38,5 +54,14 @@ SET `url` = ''
 WHERE `classname` IS NOT NULL
   AND `url` LIKE '/sounds/soundboard/%';
 
-CREATE UNIQUE INDEX `idx_soundboard_sounds_classname`
-    ON `soundboard_sounds` (`classname`);
+SET @add_index := (
+    SELECT COUNT(*) FROM `information_schema`.`STATISTICS`
+    WHERE `TABLE_SCHEMA` = DATABASE()
+      AND `TABLE_NAME` = 'soundboard_sounds'
+      AND `INDEX_NAME` = 'idx_soundboard_sounds_classname');
+SET @sql := IF(@add_index = 0,
+    'CREATE UNIQUE INDEX `idx_soundboard_sounds_classname` ON `soundboard_sounds` (`classname`)',
+    'DO 0');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;

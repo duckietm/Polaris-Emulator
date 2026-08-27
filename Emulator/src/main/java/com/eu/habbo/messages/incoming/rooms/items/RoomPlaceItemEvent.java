@@ -15,6 +15,11 @@ import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemComposer;
 
 public class RoomPlaceItemEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        return 100;
+    }
+
+    @Override
     public void handle() throws Exception {
         String[] values = this.packet.readString().split(" ");
 
@@ -120,7 +125,12 @@ public class RoomPlaceItemEvent extends MessageHandler {
             if (values.length < 4)
                 return;
 
-            FurnitureMovementError error = room.placeWallFurniAt(item, values[1] + " " + values[2] + " " + values[3], this.client.getHabbo());
+            String wallPosition = values[1] + " " + values[2] + " " + values[3];
+
+            if (!RoomItemInputGuard.isValidWallPosition(wallPosition))
+                return;
+
+            FurnitureMovementError error = room.placeWallFurniAt(item, wallPosition, this.client.getHabbo());
             if (!error.equals(FurnitureMovementError.NONE)) {
                 this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, error.errorCode));
                 return;

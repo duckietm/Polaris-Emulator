@@ -315,7 +315,13 @@ public abstract class CatalogPage implements Comparable<CatalogPage>, ISerialize
     @SuppressWarnings("NullableProblems")
     @Override
     public int compareTo(CatalogPage page) {
-        return this.getOrderNum() - page.getOrderNum();
+        // Pages sharing an order slot used to fall back to the iteration order of the child HashMap,
+        // which is not the order they were added in and shifts as pages come and go. The stock
+        // database ships eight pet pages at order 99 under one parent, so this was visible out of
+        // the box: the same catalog, a different sequence after a restart. The id keeps them steady.
+        int byOrder = Integer.compare(this.getOrderNum(), page.getOrderNum());
+
+        return byOrder != 0 ? byOrder : Integer.compare(this.getId(), page.getId());
     }
 
     @Override

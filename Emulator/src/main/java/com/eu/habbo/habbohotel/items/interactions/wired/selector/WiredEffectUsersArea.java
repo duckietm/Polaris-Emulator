@@ -11,12 +11,10 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-
 
 public class WiredEffectUsersArea extends InteractionWiredEffect {
 
@@ -55,14 +53,17 @@ public class WiredEffectUsersArea extends InteractionWiredEffect {
             }
         }
 
-        ctx.targets().setUsers(this.applySelectorModifiers(usersInArea, room.getRoomUnits(), ctx.targets().users(), filterExisting, invert));
+        ctx.targets()
+                .setUsers(this.applySelectorModifiers(
+                        usersInArea, room.getRoomUnits(), ctx.targets().users(), filterExisting, invert));
     }
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
         int[] params = settings.getIntParams();
         if (params == null || params.length < 4) {
-            throw new WiredSaveException("wf_slc_users_area requires at least 4 int params: rootX, rootY, width, height");
+            throw new WiredSaveException(
+                    "wf_slc_users_area requires at least 4 int params: rootX, rootY, width, height");
         }
 
         this.rootX = params[0];
@@ -93,7 +94,8 @@ public class WiredEffectUsersArea extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(rootX, rootY, areaWidth, areaHeight, filterExisting, invert, getDelay()));
+        return WiredManager.getGson()
+                .toJson(new JsonData(rootX, rootY, areaWidth, areaHeight, filterExisting, invert, getDelay()));
     }
 
     @Override

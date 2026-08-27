@@ -9,6 +9,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveReward;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectTriggerStacks;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraExecutionLimit;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredVariableReferenceSupport;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboClicksUser;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
@@ -879,8 +880,12 @@ public final class WiredManager {
         }
 
         if (engine != null) {
-            engine.clearRoomExecutionCaches(room.getId());
+            engine.clearRoomIndexCaches(room.getId());
         }
+
+        // Evict this room's shared-variable assignment cache (previously a dead
+        // hook, so entries leaked). The cache is also LRU-bounded as a backstop.
+        WiredVariableReferenceSupport.invalidateRoom(room.getId());
 
         if (debugEnabled) {
             LOGGER.info("[Wired] Cache invalidated for room {}", room.getId());
@@ -914,7 +919,7 @@ public final class WiredManager {
         room.advanceWiredCacheGeneration();
 
         if (engine != null) {
-            engine.clearRoomExecutionCaches(room.getId());
+            engine.clearRoomIndexCaches(room.getId());
         }
 
         if (stackIndex != null) {

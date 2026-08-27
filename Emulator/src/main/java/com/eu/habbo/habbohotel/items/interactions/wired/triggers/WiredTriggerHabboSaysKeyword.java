@@ -7,11 +7,10 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.WiredTriggerType;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
+import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -30,7 +29,8 @@ public class WiredTriggerHabboSaysKeyword extends InteractionWiredTrigger {
         super(set, baseItem);
     }
 
-    public WiredTriggerHabboSaysKeyword(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredTriggerHabboSaysKeyword(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -49,7 +49,8 @@ public class WiredTriggerHabboSaysKeyword extends InteractionWiredTrigger {
         }
 
         Habbo habbo = room.getHabbo(roomUnit);
-        return !this.ownerOnly || (habbo != null && room.getOwnerId() == habbo.getHabboInfo().getId());
+        return !this.ownerOnly
+                || (habbo != null && room.getOwnerId() == habbo.getHabboInfo().getId());
     }
 
     @Deprecated
@@ -60,12 +61,7 @@ public class WiredTriggerHabboSaysKeyword extends InteractionWiredTrigger {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-            this.hideMessage,
-            this.ownerOnly,
-            this.key,
-            this.matchMode
-        ));
+        return WiredManager.getGson().toJson(new JsonData(this.hideMessage, this.ownerOnly, this.key, this.matchMode));
     }
 
     @Override

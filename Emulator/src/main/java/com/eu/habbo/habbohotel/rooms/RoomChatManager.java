@@ -167,8 +167,13 @@ public class RoomChatManager {
      * Mutes a Habbo for a specified number of minutes.
      */
     public void muteHabbo(Habbo habbo, int minutes) {
+        // Compute the expiry in long arithmetic and clamp to Integer.MAX_VALUE:
+        // the map stores an int timestamp, so a large `minutes` (e.g. from a
+        // wired mute) would otherwise overflow `minutes * 60` to a negative /
+        // unpredictable value instead of a far-future expiry.
+        long unmuteAt = (long) Emulator.getIntUnixTimestamp() + ((long) Math.max(0, minutes) * 60L);
         synchronized (this.mutedHabbos) {
-            this.mutedHabbos.put(habbo.getHabboInfo().getId(), Emulator.getIntUnixTimestamp() + (minutes * 60));
+            this.mutedHabbos.put(habbo.getHabboInfo().getId(), (int) Math.min(unmuteAt, Integer.MAX_VALUE));
         }
     }
 

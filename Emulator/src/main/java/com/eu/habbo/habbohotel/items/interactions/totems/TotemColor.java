@@ -1,7 +1,6 @@
 package com.eu.habbo.habbohotel.items.interactions.totems;
 
 public enum TotemColor {
-
     NONE(0),
     RED(1),
     YELLOW(2),
@@ -14,9 +13,8 @@ public enum TotemColor {
     }
 
     public static TotemColor fromInt(int color) {
-        for(TotemColor totemColor : TotemColor.values()) {
-            if(totemColor.color == color)
-                return totemColor;
+        for (TotemColor totemColor : TotemColor.values()) {
+            if (totemColor.color == color) return totemColor;
         }
 
         return NONE;

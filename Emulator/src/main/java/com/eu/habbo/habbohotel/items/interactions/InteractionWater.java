@@ -3,16 +3,19 @@ package com.eu.habbo.habbohotel.items.interactions;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.pets.Pet;
-import com.eu.habbo.habbohotel.rooms.*;
+import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomLayout;
+import com.eu.habbo.habbohotel.rooms.RoomTile;
+import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.RoomUnitStatus;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import org.apache.commons.math3.util.Pair;
-
-import java.awt.*;
+import java.awt.Rectangle;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
+import org.apache.commons.math3.util.Pair;
 
 public class InteractionWater extends InteractionDefault {
 
@@ -44,7 +47,7 @@ public class InteractionWater extends InteractionDefault {
         this.isInRoom = false;
         this.updateWaters(room, null);
 
-        Object[] empty = new Object[]{};
+        Object[] empty = new Object[] {};
         for (Habbo habbo : room.getHabbosOnItem(this)) {
             try {
                 this.onWalkOff(habbo.getRoomUnit(), room, empty);
@@ -74,8 +77,7 @@ public class InteractionWater extends InteractionDefault {
 
         Pet pet = room.getPet(roomUnit);
 
-        if(pet == null)
-            return;
+        if (pet == null) return;
 
         if (!pet.getRoomUnit().hasStatus(RoomUnitStatus.SWIM) && pet.getPetData().canSwim) {
             pet.getRoomUnit().setStatus(RoomUnitStatus.SWIM, "");
@@ -88,8 +90,7 @@ public class InteractionWater extends InteractionDefault {
 
         Pet pet = room.getPet(roomUnit);
 
-        if(pet == null)
-            return;
+        if (pet == null) return;
 
         pet.getRoomUnit().removeStatus(RoomUnitStatus.SWIM);
     }
@@ -294,5 +295,4 @@ public class InteractionWater extends InteractionDefault {
 
         return false;
     }
-
 }

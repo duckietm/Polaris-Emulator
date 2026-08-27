@@ -10,7 +10,6 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.games.InteractionGameGate;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -19,19 +18,25 @@ public class InteractionBattleBanzaiGate extends InteractionGameGate {
         super(set, baseItem, teamColor);
     }
 
-    public InteractionBattleBanzaiGate(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells, GameTeamColors teamColor) {
+    public InteractionBattleBanzaiGate(
+            int id,
+            int userId,
+            Item item,
+            String extradata,
+            int limitedStack,
+            int limitedSells,
+            GameTeamColors teamColor) {
         super(id, userId, item, extradata, limitedStack, limitedSells, teamColor);
     }
 
     @Override
     public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
-        return room.getGame(BattleBanzaiGame.class) == null || ((BattleBanzaiGame) room.getGame(BattleBanzaiGame.class)).state.equals(GameState.IDLE);
+        return room.getGame(BattleBanzaiGame.class) == null
+                || ((BattleBanzaiGame) room.getGame(BattleBanzaiGame.class)).state.equals(GameState.IDLE);
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
 
     @Override
     public boolean isWalkable() {

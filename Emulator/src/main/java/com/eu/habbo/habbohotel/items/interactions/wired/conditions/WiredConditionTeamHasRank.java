@@ -11,7 +11,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -28,7 +27,8 @@ public class WiredConditionTeamHasRank extends WiredConditionTeamGameBase {
         super(set, baseItem);
     }
 
-    public WiredConditionTeamHasRank(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredConditionTeamHasRank(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -48,12 +48,8 @@ public class WiredConditionTeamHasRank extends WiredConditionTeamGameBase {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-                this.teamType,
-                this.placement,
-                this.userSource,
-                this.quantifier
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(this.teamType, this.placement, this.userSource, this.quantifier));
     }
 
     @Override
@@ -143,7 +139,8 @@ public class WiredConditionTeamHasRank extends WiredConditionTeamGameBase {
         return this.getTeamRank(context.game, team) == this.placement;
     }
 
-    private GameTeamColors resolveRequiredTeamColor(WiredContext ctx, Room room, com.eu.habbo.habbohotel.games.Game game) {
+    private GameTeamColors resolveRequiredTeamColor(
+            WiredContext ctx, Room room, com.eu.habbo.habbohotel.games.Game game) {
         if (this.teamType == TEAM_TRIGGERER) {
             RoomUnit actor = ctx.actor().orElse(null);
             UserGameContext triggererContext = this.resolveUserGameContext(room, actor);

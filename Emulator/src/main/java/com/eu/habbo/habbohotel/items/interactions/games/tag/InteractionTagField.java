@@ -8,7 +8,6 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -21,7 +20,14 @@ public abstract class InteractionTagField extends HabboItem {
         this.gameClazz = gameClazz;
     }
 
-    public InteractionTagField(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells, Class<? extends Game> gameClazz) {
+    public InteractionTagField(
+            int id,
+            int userId,
+            Item item,
+            String extradata,
+            int limitedStack,
+            int limitedSells,
+            Class<? extends Game> gameClazz) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
 
         this.gameClazz = gameClazz;
@@ -32,7 +38,8 @@ public abstract class InteractionTagField extends HabboItem {
         Habbo habbo = room.getHabbo(roomUnit);
 
         if (habbo != null) {
-            return habbo.getHabboInfo().getCurrentGame() == null || habbo.getHabboInfo().getCurrentGame() == this.gameClazz;
+            return habbo.getHabboInfo().getCurrentGame() == null
+                    || habbo.getHabboInfo().getCurrentGame() == this.gameClazz;
         }
 
         return false;
@@ -44,9 +51,7 @@ public abstract class InteractionTagField extends HabboItem {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
 
     @Override
     public void onWalkOn(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
@@ -57,7 +62,8 @@ public abstract class InteractionTagField extends HabboItem {
                 TagGame game = (TagGame) room.getGame(this.gameClazz);
 
                 if (game == null) {
-                    game = (TagGame) this.gameClazz.getDeclaredConstructor(Room.class).newInstance(room);
+                    game = (TagGame)
+                            this.gameClazz.getDeclaredConstructor(Room.class).newInstance(room);
                     room.addGame(game);
                 }
 
@@ -68,9 +74,7 @@ public abstract class InteractionTagField extends HabboItem {
     }
 
     @Override
-    public void onWalkOff(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-
-    }
+    public void onWalkOff(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
 
     @Override
     public void serializeExtradata(ServerMessage serverMessage) {

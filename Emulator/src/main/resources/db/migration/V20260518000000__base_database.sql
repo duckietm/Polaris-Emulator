@@ -15222,8 +15222,6 @@ INSERT INTO `emulator_settings` (`key`, `value`, `comment`) VALUES
 	('wired.tick.thread.priority', '6', ''),
 	('wired.tick.workers', '6', ''),
 	('ws.nitro.host', '0.0.0.0', ''),
-	('ws.ip.header.trusted', '0.0.0.0', 'If you use your own proxy server like Traefik then put the proxy IP here if not leave blanc'),
-	('ws.whitelist', '', 'Place here the API domainname'),
 	('ws.nitro.ip.header', 'X-Forwarded-For', ''),
 	('ws.nitro.port', '2096', '');
 /*!40000 ALTER TABLE `emulator_settings` ENABLE KEYS */;

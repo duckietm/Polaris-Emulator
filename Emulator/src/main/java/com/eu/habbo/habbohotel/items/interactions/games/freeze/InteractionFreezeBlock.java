@@ -12,7 +12,6 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Set;
@@ -30,8 +29,7 @@ public class InteractionFreezeBlock extends HabboItem {
 
     @Override
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
-        if (client == null)
-            return;
+        if (client == null) return;
 
         HabboItem item = null;
         Set<HabboItem> items = room.getItemsAt(room.getLayout().getTile(this.getX(), this.getY()));
@@ -47,8 +45,7 @@ public class InteractionFreezeBlock extends HabboItem {
         if (item != null) {
             FreezeGame game = (FreezeGame) room.getGame(FreezeGame.class);
 
-            if (game == null)
-                return;
+            if (game == null) return;
 
             game.throwBall(client.getHabbo(), (InteractionFreezeTile) item);
         }
@@ -76,30 +73,24 @@ public class InteractionFreezeBlock extends HabboItem {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
 
     @Override
     public void onWalkOn(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
         super.onWalkOn(roomUnit, room, objects);
 
-        if (this.getExtradata().isEmpty() || this.getExtradata().equalsIgnoreCase("0"))
-            return;
+        if (this.getExtradata().isEmpty() || this.getExtradata().equalsIgnoreCase("0")) return;
 
         FreezeGame game = (FreezeGame) room.getGame(FreezeGame.class);
-        if (game == null || !game.state.equals(GameState.RUNNING))
-            return;
+        if (game == null || !game.state.equals(GameState.RUNNING)) return;
 
         Habbo habbo = room.getHabbo(roomUnit);
 
-        if (habbo == null || habbo.getHabboInfo().getCurrentGame() != FreezeGame.class)
-            return;
+        if (habbo == null || habbo.getHabboInfo().getCurrentGame() != FreezeGame.class) return;
 
         FreezeGamePlayer player = (FreezeGamePlayer) habbo.getHabboInfo().getGamePlayer();
 
-        if (player == null)
-            return;
+        if (player == null) return;
 
         int powerUp;
         try {
@@ -109,8 +100,7 @@ public class InteractionFreezeBlock extends HabboItem {
         }
 
         if (powerUp >= 2 && powerUp <= 7) {
-            if (powerUp == 6 && !player.canPickupLife())
-                return;
+            if (powerUp == 6 && !player.canPickupLife()) return;
 
             this.setExtradata((powerUp + 10) * 1000 + "");
 
@@ -118,7 +108,9 @@ public class InteractionFreezeBlock extends HabboItem {
 
             game.givePowerUp(player, powerUp);
 
-            AchievementManager.progressAchievement(player.getHabbo(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("FreezePowerUp"));
+            AchievementManager.progressAchievement(
+                    player.getHabbo(),
+                    Emulator.getGameEnvironment().getAchievementManager().getAchievement("FreezePowerUp"));
         }
     }
 

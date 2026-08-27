@@ -9,7 +9,6 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.items.WallItemUpdateComposer;
 import com.eu.habbo.threading.runnables.RandomDiceNumber;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -46,26 +45,22 @@ public class InteractionColorWheel extends HabboItem {
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
         super.onClick(client, room, objects);
 
-        if (!room.hasRights(client.getHabbo()))
-            return;
+        if (!room.hasRights(client.getHabbo())) return;
 
         if (this.rollTaks == null && !this.getExtradata().equalsIgnoreCase("-1")) {
             this.setExtradata("-1");
             room.sendComposer(new WallItemUpdateComposer(this).compose());
             Emulator.getThreading().run(this);
-            Emulator.getThreading().run(new RandomDiceNumber(this, room, this.getBaseItem().getStateCount()), 3000);
+            Emulator.getThreading()
+                    .run(new RandomDiceNumber(this, room, this.getBaseItem().getStateCount()), 3000);
         }
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
 
     @Override
-    public void onWalkOn(RoomUnit client, Room room, Object[] objects) throws Exception {
-
-    }
+    public void onWalkOn(RoomUnit client, Room room, Object[] objects) throws Exception {}
 
     @Override
     public void onWalkOff(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {

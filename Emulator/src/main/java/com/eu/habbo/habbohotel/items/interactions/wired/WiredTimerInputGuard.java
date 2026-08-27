@@ -3,8 +3,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired;
 public final class WiredTimerInputGuard {
     public static final int MAX_TIMER_MS = 24 * 60 * 60 * 1000;
 
-    private WiredTimerInputGuard() {
-    }
+    private WiredTimerInputGuard() {}
 
     public static int fromClientUnits(int units, int stepMs, int minMs) {
         return fromClientUnits(units, stepMs, minMs, MAX_TIMER_MS);

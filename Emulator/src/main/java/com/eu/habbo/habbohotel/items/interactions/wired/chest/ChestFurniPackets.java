@@ -3,14 +3,11 @@ package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.messages.outgoing.rooms.items.ChestFurniChunkComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.ChestFurniDeltaComposer;
-
-import java.util.ArrayList;
 import java.util.List;
 
 /** Helpers for furni-chest v2 chunk/delta protocol (headers 9322/9323). */
 public final class ChestFurniPackets {
-    private ChestFurniPackets() {
-    }
+    private ChestFurniPackets() {}
 
     public static void sendFullChunks(GameClient client, int chestId, ChestStorage storage) {
         if (client == null || storage == null) return;
@@ -28,11 +25,10 @@ public final class ChestFurniPackets {
         }
     }
 
-    public static void sendDelta(GameClient client, int chestId, List<Integer> removedIds, List<ChestFurniStoredItem> added) {
+    public static void sendDelta(
+            GameClient client, int chestId, List<Integer> removedIds, List<ChestFurniStoredItem> added) {
         if (client == null) return;
         client.sendResponse(new ChestFurniDeltaComposer(
-                chestId,
-                removedIds == null ? List.of() : removedIds,
-                added == null ? List.of() : added));
+                chestId, removedIds == null ? List.of() : removedIds, added == null ? List.of() : added));
     }
 }

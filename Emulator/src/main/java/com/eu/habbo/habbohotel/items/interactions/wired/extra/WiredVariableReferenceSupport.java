@@ -2,10 +2,6 @@ package com.eu.habbo.habbohotel.items.interactions.wired.extra;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.rooms.Room;
-import com.eu.habbo.habbohotel.wired.core.WiredManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -17,7 +13,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class WiredVariableReferenceSupport {
     public static final int TARGET_USER = 0;
@@ -26,17 +23,35 @@ public final class WiredVariableReferenceSupport {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredVariableReferenceSupport.class);
 
-    private static final ConcurrentHashMap<String, CachedUserAssignment> USER_ASSIGNMENT_CACHE = new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<String, CachedRoomAssignment> ROOM_ASSIGNMENT_CACHE = new ConcurrentHashMap<>();
+    // Bounded read/write-through caches. Every write path also upserts the DB
+    // (assignSharedUserVariable / updateSharedRoomVariable), so evicting an
+    // entry only costs a re-read on the next lookup - never data loss. The
+    // bound is essential: getSharedUserAssignment caches even a MISS for every
+    // (sourceRoom, variable, userId) tuple, and createSnapshot probes it for
+    // every visitor against every reference furni, so an unbounded map grew one
+    // permanent entry per distinct visitor for the JVM lifetime (slow OOM).
+    private static final int MAX_CACHE_ENTRIES = 100_000;
 
-    private WiredVariableReferenceSupport() {
+    private static final Map<String, CachedUserAssignment> USER_ASSIGNMENT_CACHE = boundedCache();
+    private static final Map<String, CachedRoomAssignment> ROOM_ASSIGNMENT_CACHE = boundedCache();
+
+    private static <V> Map<String, V> boundedCache() {
+        return Collections.synchronizedMap(new LinkedHashMap<String, V>(1024, 0.75f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<String, V> eldest) {
+                return size() > MAX_CACHE_ENTRIES;
+            }
+        });
     }
+
+    private WiredVariableReferenceSupport() {}
 
     public static boolean isSharedAvailability(int availability) {
         return availability == SHARED_AVAILABILITY;
     }
 
-    public static SharedDefinitionOption findSharedDefinition(Room room, int sourceRoomId, int sourceVariableItemId, int sourceTargetType) {
+    public static SharedDefinitionOption findSharedDefinition(
+            Room room, int sourceRoomId, int sourceVariableItemId, int sourceTargetType) {
         if (room == null || sourceRoomId <= 0 || sourceVariableItemId <= 0) {
             return null;
         }
@@ -64,34 +79,32 @@ public final class WiredVariableReferenceSupport {
         Map<Integer, RoomOption> optionsByRoomId = new LinkedHashMap<>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                 "SELECT rooms.id AS room_id, rooms.name AS room_name, items.id AS item_id, items.wired_data, items_base.interaction_type " +
-                     "FROM rooms " +
-                     "INNER JOIN items ON rooms.id = items.room_id " +
-                     "INNER JOIN items_base ON items.item_id = items_base.id " +
-                     "WHERE rooms.owner_id = ? AND rooms.id <> ? AND items_base.interaction_type IN ('wf_var_user', 'wf_var_room') " +
-                     "ORDER BY rooms.name ASC, items.id ASC")) {
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT rooms.id AS room_id, rooms.name AS room_name, items.id AS item_id, items.wired_data, items_base.interaction_type "
+                                + "FROM rooms "
+                                + "INNER JOIN items ON rooms.id = items.room_id "
+                                + "INNER JOIN items_base ON items.item_id = items_base.id "
+                                + "WHERE rooms.owner_id = ? AND rooms.id <> ? AND items_base.interaction_type IN ('wf_var_user', 'wf_var_room') "
+                                + "ORDER BY rooms.name ASC, items.id ASC")) {
             statement.setInt(1, room.getOwnerId());
             statement.setInt(2, room.getId());
 
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
                     SharedDefinitionOption definition = parseSharedDefinition(
-                        set.getString("interaction_type"),
-                        set.getInt("item_id"),
-                        set.getString("wired_data"),
-                        set.getInt("room_id"),
-                        set.getString("room_name")
-                    );
+                            set.getString("interaction_type"),
+                            set.getInt("item_id"),
+                            set.getString("wired_data"),
+                            set.getInt("room_id"),
+                            set.getString("room_name"));
 
                     if (definition == null) {
                         continue;
                     }
 
                     RoomOption roomOption = optionsByRoomId.computeIfAbsent(
-                        definition.getRoomId(),
-                        key -> new RoomOption(definition.getRoomId(), definition.getRoomName(), new ArrayList<>())
-                    );
+                            definition.getRoomId(),
+                            key -> new RoomOption(definition.getRoomId(), definition.getRoomName(), new ArrayList<>()));
 
                     roomOption.getVariables().add(definition);
                 }
@@ -103,10 +116,13 @@ public final class WiredVariableReferenceSupport {
         List<RoomOption> result = new ArrayList<>(optionsByRoomId.values());
 
         for (RoomOption option : result) {
-            option.getVariables().sort(Comparator.comparing(SharedDefinitionOption::getName, String.CASE_INSENSITIVE_ORDER).thenComparingInt(SharedDefinitionOption::getItemId));
+            option.getVariables()
+                    .sort(Comparator.comparing(SharedDefinitionOption::getName, String.CASE_INSENSITIVE_ORDER)
+                            .thenComparingInt(SharedDefinitionOption::getItemId));
         }
 
-        result.sort(Comparator.comparing(RoomOption::getRoomName, String.CASE_INSENSITIVE_ORDER).thenComparingInt(RoomOption::getRoomId));
+        result.sort(Comparator.comparing(RoomOption::getRoomName, String.CASE_INSENSITIVE_ORDER)
+                .thenComparingInt(RoomOption::getRoomId));
         return result;
     }
 
@@ -123,7 +139,8 @@ public final class WiredVariableReferenceSupport {
         }
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT value, created_at, updated_at FROM room_user_wired_variables WHERE room_id = ? AND user_id = ? AND variable_item_id = ? LIMIT 1")) {
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT value, created_at, updated_at FROM room_user_wired_variables WHERE room_id = ? AND user_id = ? AND variable_item_id = ? LIMIT 1")) {
             statement.setInt(1, reference.getSourceRoomId());
             statement.setInt(2, userId);
             statement.setInt(3, reference.getSourceVariableItemId());
@@ -142,22 +159,29 @@ public final class WiredVariableReferenceSupport {
 
                 int createdAt = normalizeTimestamp(set.getInt("created_at"), 0);
                 SharedUserAssignment assignment = new SharedUserAssignment(
-                    value,
-                    createdAt,
-                    normalizeTimestamp(set.getInt("updated_at"), createdAt)
-                );
+                        value, createdAt, normalizeTimestamp(set.getInt("updated_at"), createdAt));
 
                 USER_ASSIGNMENT_CACHE.put(cacheKey, CachedUserAssignment.present(assignment));
                 return assignment;
             }
         } catch (SQLException e) {
-            LOGGER.error("Failed to load shared wired user variable {} for room {} user {}", reference.getSourceVariableItemId(), reference.getSourceRoomId(), userId, e);
+            LOGGER.error(
+                    "Failed to load shared wired user variable {} for room {} user {}",
+                    reference.getSourceVariableItemId(),
+                    reference.getSourceRoomId(),
+                    userId,
+                    e);
             return null;
         }
     }
 
-    public static boolean assignSharedUserVariable(WiredExtraVariableReference reference, int userId, Integer value, boolean overrideExisting) {
-        if (reference == null || !reference.isUserReference() || reference.isReadOnly() || userId <= 0 || !isSharedSourceStillAvailable(reference)) {
+    public static boolean assignSharedUserVariable(
+            WiredExtraVariableReference reference, int userId, Integer value, boolean overrideExisting) {
+        if (reference == null
+                || !reference.isUserReference()
+                || reference.isReadOnly()
+                || userId <= 0
+                || !isSharedSourceStillAvailable(reference)) {
             return false;
         }
 
@@ -171,20 +195,35 @@ public final class WiredVariableReferenceSupport {
         int now = Emulator.getIntUnixTimestamp();
         boolean overwritten = existingAssignment != null && overrideExisting;
         SharedUserAssignment nextAssignment = (existingAssignment == null || overwritten)
-            ? new SharedUserAssignment(normalizedValue, now, now)
-            : new SharedUserAssignment(normalizedValue, existingAssignment.getCreatedAt(), Objects.equals(existingAssignment.getValue(), normalizedValue) ? existingAssignment.getUpdatedAt() : now);
+                ? new SharedUserAssignment(normalizedValue, now, now)
+                : new SharedUserAssignment(
+                        normalizedValue,
+                        existingAssignment.getCreatedAt(),
+                        Objects.equals(existingAssignment.getValue(), normalizedValue)
+                                ? existingAssignment.getUpdatedAt()
+                                : now);
 
-        if (!overwritten && existingAssignment != null && Objects.equals(existingAssignment.getValue(), normalizedValue)) {
+        if (!overwritten
+                && existingAssignment != null
+                && Objects.equals(existingAssignment.getValue(), normalizedValue)) {
             return false;
         }
 
-        upsertSharedUserAssignment(reference.getSourceRoomId(), reference.getSourceVariableItemId(), userId, nextAssignment);
-        USER_ASSIGNMENT_CACHE.put(createUserCacheKey(reference.getSourceRoomId(), reference.getSourceVariableItemId(), userId), CachedUserAssignment.present(nextAssignment));
+        upsertSharedUserAssignment(
+                reference.getSourceRoomId(), reference.getSourceVariableItemId(), userId, nextAssignment);
+        USER_ASSIGNMENT_CACHE.put(
+                createUserCacheKey(reference.getSourceRoomId(), reference.getSourceVariableItemId(), userId),
+                CachedUserAssignment.present(nextAssignment));
         return true;
     }
 
     public static boolean updateSharedUserVariable(WiredExtraVariableReference reference, int userId, Integer value) {
-        if (reference == null || !reference.isUserReference() || reference.isReadOnly() || userId <= 0 || !reference.hasValue() || !isSharedSourceStillAvailable(reference)) {
+        if (reference == null
+                || !reference.isUserReference()
+                || reference.isReadOnly()
+                || userId <= 0
+                || !reference.hasValue()
+                || !isSharedSourceStillAvailable(reference)) {
             return false;
         }
 
@@ -193,14 +232,22 @@ public final class WiredVariableReferenceSupport {
             return false;
         }
 
-        SharedUserAssignment nextAssignment = new SharedUserAssignment(value, existingAssignment.getCreatedAt(), Emulator.getIntUnixTimestamp());
-        upsertSharedUserAssignment(reference.getSourceRoomId(), reference.getSourceVariableItemId(), userId, nextAssignment);
-        USER_ASSIGNMENT_CACHE.put(createUserCacheKey(reference.getSourceRoomId(), reference.getSourceVariableItemId(), userId), CachedUserAssignment.present(nextAssignment));
+        SharedUserAssignment nextAssignment =
+                new SharedUserAssignment(value, existingAssignment.getCreatedAt(), Emulator.getIntUnixTimestamp());
+        upsertSharedUserAssignment(
+                reference.getSourceRoomId(), reference.getSourceVariableItemId(), userId, nextAssignment);
+        USER_ASSIGNMENT_CACHE.put(
+                createUserCacheKey(reference.getSourceRoomId(), reference.getSourceVariableItemId(), userId),
+                CachedUserAssignment.present(nextAssignment));
         return true;
     }
 
     public static boolean removeSharedUserVariable(WiredExtraVariableReference reference, int userId) {
-        if (reference == null || !reference.isUserReference() || reference.isReadOnly() || userId <= 0 || !isSharedSourceStillAvailable(reference)) {
+        if (reference == null
+                || !reference.isUserReference()
+                || reference.isReadOnly()
+                || userId <= 0
+                || !isSharedSourceStillAvailable(reference)) {
             return false;
         }
 
@@ -210,21 +257,30 @@ public final class WiredVariableReferenceSupport {
         }
 
         deleteSharedUserAssignment(reference.getSourceRoomId(), reference.getSourceVariableItemId(), userId);
-        USER_ASSIGNMENT_CACHE.put(createUserCacheKey(reference.getSourceRoomId(), reference.getSourceVariableItemId(), userId), CachedUserAssignment.missing());
+        USER_ASSIGNMENT_CACHE.put(
+                createUserCacheKey(reference.getSourceRoomId(), reference.getSourceVariableItemId(), userId),
+                CachedUserAssignment.missing());
         return true;
     }
 
-    public static void cacheSharedUserAssignment(int sourceRoomId, int sourceVariableItemId, int userId, Integer value, int createdAt, int updatedAt) {
-        USER_ASSIGNMENT_CACHE.put(createUserCacheKey(sourceRoomId, sourceVariableItemId, userId), CachedUserAssignment.present(new SharedUserAssignment(value, createdAt, updatedAt)));
+    public static void cacheSharedUserAssignment(
+            int sourceRoomId, int sourceVariableItemId, int userId, Integer value, int createdAt, int updatedAt) {
+        USER_ASSIGNMENT_CACHE.put(
+                createUserCacheKey(sourceRoomId, sourceVariableItemId, userId),
+                CachedUserAssignment.present(new SharedUserAssignment(value, createdAt, updatedAt)));
     }
 
     public static void clearSharedUserAssignment(int sourceRoomId, int sourceVariableItemId, int userId) {
-        USER_ASSIGNMENT_CACHE.put(createUserCacheKey(sourceRoomId, sourceVariableItemId, userId), CachedUserAssignment.missing());
+        USER_ASSIGNMENT_CACHE.put(
+                createUserCacheKey(sourceRoomId, sourceVariableItemId, userId), CachedUserAssignment.missing());
     }
 
     public static void clearSharedUserDefinition(int sourceRoomId, int sourceVariableItemId) {
         String prefix = createDefinitionPrefix(sourceRoomId, sourceVariableItemId) + ":";
-        USER_ASSIGNMENT_CACHE.entrySet().removeIf(entry -> entry.getKey().startsWith(prefix));
+        // synchronizedMap requires holding the lock while iterating a view.
+        synchronized (USER_ASSIGNMENT_CACHE) {
+            USER_ASSIGNMENT_CACHE.entrySet().removeIf(entry -> entry.getKey().startsWith(prefix));
+        }
     }
 
     /**
@@ -235,8 +291,13 @@ public final class WiredVariableReferenceSupport {
      */
     public static void invalidateRoom(int roomId) {
         String prefix = roomId + ":";
-        USER_ASSIGNMENT_CACHE.entrySet().removeIf(entry -> entry.getKey().startsWith(prefix));
-        ROOM_ASSIGNMENT_CACHE.entrySet().removeIf(entry -> entry.getKey().startsWith(prefix));
+        // synchronizedMap requires holding the lock while iterating a view.
+        synchronized (USER_ASSIGNMENT_CACHE) {
+            USER_ASSIGNMENT_CACHE.entrySet().removeIf(entry -> entry.getKey().startsWith(prefix));
+        }
+        synchronized (ROOM_ASSIGNMENT_CACHE) {
+            ROOM_ASSIGNMENT_CACHE.entrySet().removeIf(entry -> entry.getKey().startsWith(prefix));
+        }
     }
 
     public static SharedRoomAssignment getSharedRoomAssignment(WiredExtraVariableReference reference) {
@@ -252,7 +313,8 @@ public final class WiredVariableReferenceSupport {
         }
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT value, updated_at FROM room_wired_variables WHERE room_id = ? AND variable_item_id = ? LIMIT 1")) {
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT value, updated_at FROM room_wired_variables WHERE room_id = ? AND variable_item_id = ? LIMIT 1")) {
             statement.setInt(1, reference.getSourceRoomId());
             statement.setInt(2, reference.getSourceVariableItemId());
 
@@ -262,18 +324,26 @@ public final class WiredVariableReferenceSupport {
                     return null;
                 }
 
-                SharedRoomAssignment assignment = new SharedRoomAssignment(set.getInt("value"), normalizeTimestamp(set.getInt("updated_at"), 0));
+                SharedRoomAssignment assignment =
+                        new SharedRoomAssignment(set.getInt("value"), normalizeTimestamp(set.getInt("updated_at"), 0));
                 ROOM_ASSIGNMENT_CACHE.put(cacheKey, CachedRoomAssignment.present(assignment));
                 return assignment;
             }
         } catch (SQLException e) {
-            LOGGER.error("Failed to load shared wired room variable {} for room {}", reference.getSourceVariableItemId(), reference.getSourceRoomId(), e);
+            LOGGER.error(
+                    "Failed to load shared wired room variable {} for room {}",
+                    reference.getSourceVariableItemId(),
+                    reference.getSourceRoomId(),
+                    e);
             return null;
         }
     }
 
     public static boolean updateSharedRoomVariable(WiredExtraVariableReference reference, int value) {
-        if (reference == null || !reference.isRoomReference() || reference.isReadOnly() || !isSharedSourceStillAvailable(reference)) {
+        if (reference == null
+                || !reference.isRoomReference()
+                || reference.isReadOnly()
+                || !isSharedSourceStillAvailable(reference)) {
             return false;
         }
 
@@ -284,12 +354,17 @@ public final class WiredVariableReferenceSupport {
 
         SharedRoomAssignment nextAssignment = new SharedRoomAssignment(value, Emulator.getIntUnixTimestamp());
         upsertSharedRoomAssignment(reference.getSourceRoomId(), reference.getSourceVariableItemId(), nextAssignment);
-        ROOM_ASSIGNMENT_CACHE.put(createRoomCacheKey(reference.getSourceRoomId(), reference.getSourceVariableItemId()), CachedRoomAssignment.present(nextAssignment));
+        ROOM_ASSIGNMENT_CACHE.put(
+                createRoomCacheKey(reference.getSourceRoomId(), reference.getSourceVariableItemId()),
+                CachedRoomAssignment.present(nextAssignment));
         return true;
     }
 
     public static boolean removeSharedRoomVariable(WiredExtraVariableReference reference) {
-        if (reference == null || !reference.isRoomReference() || reference.isReadOnly() || !isSharedSourceStillAvailable(reference)) {
+        if (reference == null
+                || !reference.isRoomReference()
+                || reference.isReadOnly()
+                || !isSharedSourceStillAvailable(reference)) {
             return false;
         }
 
@@ -299,19 +374,25 @@ public final class WiredVariableReferenceSupport {
         }
 
         deleteSharedRoomAssignment(reference.getSourceRoomId(), reference.getSourceVariableItemId());
-        ROOM_ASSIGNMENT_CACHE.put(createRoomCacheKey(reference.getSourceRoomId(), reference.getSourceVariableItemId()), CachedRoomAssignment.missing());
+        ROOM_ASSIGNMENT_CACHE.put(
+                createRoomCacheKey(reference.getSourceRoomId(), reference.getSourceVariableItemId()),
+                CachedRoomAssignment.missing());
         return true;
     }
 
     public static void cacheSharedRoomAssignment(int sourceRoomId, int sourceVariableItemId, int value, int updatedAt) {
-        ROOM_ASSIGNMENT_CACHE.put(createRoomCacheKey(sourceRoomId, sourceVariableItemId), CachedRoomAssignment.present(new SharedRoomAssignment(value, updatedAt)));
+        ROOM_ASSIGNMENT_CACHE.put(
+                createRoomCacheKey(sourceRoomId, sourceVariableItemId),
+                CachedRoomAssignment.present(new SharedRoomAssignment(value, updatedAt)));
     }
 
     public static void clearSharedRoomDefinition(int sourceRoomId, int sourceVariableItemId) {
-        ROOM_ASSIGNMENT_CACHE.put(createRoomCacheKey(sourceRoomId, sourceVariableItemId), CachedRoomAssignment.missing());
+        ROOM_ASSIGNMENT_CACHE.put(
+                createRoomCacheKey(sourceRoomId, sourceVariableItemId), CachedRoomAssignment.missing());
     }
 
-    private static SharedDefinitionOption parseSharedDefinition(String interactionType, int itemId, String wiredData, int roomId, String roomName) {
+    private static SharedDefinitionOption parseSharedDefinition(
+            String interactionType, int itemId, String wiredData, int roomId, String roomName) {
         if ("wf_var_user".equals(interactionType)) {
             UserDefinitionData data = parseUserDefinitionData(wiredData);
             if (data == null || !isSharedAvailability(data.availability) || data.variableName.isEmpty()) {
@@ -367,10 +448,10 @@ public final class WiredVariableReferenceSupport {
         }
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                 "SELECT items.wired_data, items_base.interaction_type " +
-                     "FROM items INNER JOIN items_base ON items.item_id = items_base.id " +
-                     "WHERE items.id = ? AND items.room_id = ? LIMIT 1")) {
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT items.wired_data, items_base.interaction_type "
+                                + "FROM items INNER JOIN items_base ON items.item_id = items_base.id "
+                                + "WHERE items.id = ? AND items.room_id = ? LIMIT 1")) {
             statement.setInt(1, reference.getSourceVariableItemId());
             statement.setInt(2, reference.getSourceRoomId());
 
@@ -380,25 +461,30 @@ public final class WiredVariableReferenceSupport {
                 }
 
                 SharedDefinitionOption definition = parseSharedDefinition(
-                    set.getString("interaction_type"),
-                    reference.getSourceVariableItemId(),
-                    set.getString("wired_data"),
-                    reference.getSourceRoomId(),
-                    ""
-                );
+                        set.getString("interaction_type"),
+                        reference.getSourceVariableItemId(),
+                        set.getString("wired_data"),
+                        reference.getSourceRoomId(),
+                        "");
 
                 return definition != null && definition.getTargetType() == reference.getSourceTargetType();
             }
         } catch (SQLException e) {
-            LOGGER.error("Failed to validate shared wired variable source {} in room {}", reference.getSourceVariableItemId(), reference.getSourceRoomId(), e);
+            LOGGER.error(
+                    "Failed to validate shared wired variable source {} in room {}",
+                    reference.getSourceVariableItemId(),
+                    reference.getSourceRoomId(),
+                    e);
             return false;
         }
     }
 
-    private static void upsertSharedUserAssignment(int sourceRoomId, int sourceVariableItemId, int userId, SharedUserAssignment assignment) {
+    private static void upsertSharedUserAssignment(
+            int sourceRoomId, int sourceVariableItemId, int userId, SharedUserAssignment assignment) {
         Emulator.getThreading().run(() -> {
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                 PreparedStatement statement = connection.prepareStatement("INSERT INTO room_user_wired_variables (room_id, user_id, variable_item_id, value, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = VALUES(updated_at)")) {
+                    PreparedStatement statement = connection.prepareStatement(
+                            "INSERT INTO room_user_wired_variables (room_id, user_id, variable_item_id, value, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = VALUES(updated_at)")) {
                 statement.setInt(1, sourceRoomId);
                 statement.setInt(2, userId);
                 statement.setInt(3, sourceVariableItemId);
@@ -413,7 +499,12 @@ public final class WiredVariableReferenceSupport {
                 statement.setInt(6, assignment.getUpdatedAt());
                 statement.executeUpdate();
             } catch (SQLException e) {
-                LOGGER.error("Failed to store shared wired user variable {} for room {} user {}", sourceVariableItemId, sourceRoomId, userId, e);
+                LOGGER.error(
+                        "Failed to store shared wired user variable {} for room {} user {}",
+                        sourceVariableItemId,
+                        sourceRoomId,
+                        userId,
+                        e);
             }
         });
     }
@@ -421,21 +512,29 @@ public final class WiredVariableReferenceSupport {
     private static void deleteSharedUserAssignment(int sourceRoomId, int sourceVariableItemId, int userId) {
         Emulator.getThreading().run(() -> {
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                 PreparedStatement statement = connection.prepareStatement("DELETE FROM room_user_wired_variables WHERE room_id = ? AND user_id = ? AND variable_item_id = ?")) {
+                    PreparedStatement statement = connection.prepareStatement(
+                            "DELETE FROM room_user_wired_variables WHERE room_id = ? AND user_id = ? AND variable_item_id = ?")) {
                 statement.setInt(1, sourceRoomId);
                 statement.setInt(2, userId);
                 statement.setInt(3, sourceVariableItemId);
                 statement.executeUpdate();
             } catch (SQLException e) {
-                LOGGER.error("Failed to delete shared wired user variable {} for room {} user {}", sourceVariableItemId, sourceRoomId, userId, e);
+                LOGGER.error(
+                        "Failed to delete shared wired user variable {} for room {} user {}",
+                        sourceVariableItemId,
+                        sourceRoomId,
+                        userId,
+                        e);
             }
         });
     }
 
-    private static void upsertSharedRoomAssignment(int sourceRoomId, int sourceVariableItemId, SharedRoomAssignment assignment) {
+    private static void upsertSharedRoomAssignment(
+            int sourceRoomId, int sourceVariableItemId, SharedRoomAssignment assignment) {
         Emulator.getThreading().run(() -> {
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                 PreparedStatement statement = connection.prepareStatement("INSERT INTO room_wired_variables (room_id, variable_item_id, value, created_at, updated_at) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = VALUES(updated_at)")) {
+                    PreparedStatement statement = connection.prepareStatement(
+                            "INSERT INTO room_wired_variables (room_id, variable_item_id, value, created_at, updated_at) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = VALUES(updated_at)")) {
                 statement.setInt(1, sourceRoomId);
                 statement.setInt(2, sourceVariableItemId);
                 statement.setInt(3, assignment.getValue());
@@ -443,7 +542,11 @@ public final class WiredVariableReferenceSupport {
                 statement.setInt(5, assignment.getUpdatedAt());
                 statement.executeUpdate();
             } catch (SQLException e) {
-                LOGGER.error("Failed to store shared wired room variable {} for room {}", sourceVariableItemId, sourceRoomId, e);
+                LOGGER.error(
+                        "Failed to store shared wired room variable {} for room {}",
+                        sourceVariableItemId,
+                        sourceRoomId,
+                        e);
             }
         });
     }
@@ -451,12 +554,17 @@ public final class WiredVariableReferenceSupport {
     private static void deleteSharedRoomAssignment(int sourceRoomId, int sourceVariableItemId) {
         Emulator.getThreading().run(() -> {
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                 PreparedStatement statement = connection.prepareStatement("DELETE FROM room_wired_variables WHERE room_id = ? AND variable_item_id = ?")) {
+                    PreparedStatement statement = connection.prepareStatement(
+                            "DELETE FROM room_wired_variables WHERE room_id = ? AND variable_item_id = ?")) {
                 statement.setInt(1, sourceRoomId);
                 statement.setInt(2, sourceVariableItemId);
                 statement.executeUpdate();
             } catch (SQLException e) {
-                LOGGER.error("Failed to delete shared wired room variable {} for room {}", sourceVariableItemId, sourceRoomId, e);
+                LOGGER.error(
+                        "Failed to delete shared wired room variable {} for room {}",
+                        sourceVariableItemId,
+                        sourceRoomId,
+                        e);
             }
         });
     }
@@ -517,7 +625,8 @@ public final class WiredVariableReferenceSupport {
         private final int targetType;
         private final boolean hasValue;
 
-        public SharedDefinitionOption(int roomId, String roomName, int itemId, String name, int targetType, boolean hasValue) {
+        public SharedDefinitionOption(
+                int roomId, String roomName, int itemId, String name, int targetType, boolean hasValue) {
             this.roomId = roomId;
             this.roomName = roomName;
             this.itemId = itemId;

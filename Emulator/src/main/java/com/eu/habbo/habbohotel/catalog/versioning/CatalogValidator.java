@@ -119,23 +119,28 @@ public final class CatalogValidator {
         }
     }
 
+    /**
+     * A page is reachable in the client when every ancestor is visible: the index only descends into
+     * visible children. A visible ancestor that is disabled is not a defect - that is how a folder
+     * node is expressed, shown in the tree but sent with id -1 so it expands instead of opening.
+     */
     private void validateAncestors(
             CatalogVersionSnapshot snapshot, CatalogPageSnapshot page, List<CatalogValidationIssue> issues) {
-        if (!page.visible() && !page.enabled()) return;
+        if (!page.visible()) return;
         Set<Integer> visited = new HashSet<>();
         int parentId = page.parentId();
         while (parentId > 0 && visited.add(parentId)) {
             CatalogPageSnapshot parent =
                     snapshot.page(page.catalogType(), parentId).orElse(null);
             if (parent == null) return;
-            if (!parent.visible() || !parent.enabled()) {
+            if (!parent.visible()) {
                 add(
                         issues,
                         "PAGE_ANCESTOR_NOT_AVAILABLE",
                         CatalogEntityType.PAGE,
                         page.pageId(),
                         "parentId",
-                        "Visible and enabled page has a hidden or disabled ancestor");
+                        "Visible page is unreachable: ancestor page " + parent.pageId() + " is hidden");
                 return;
             }
             parentId = parent.parentId();

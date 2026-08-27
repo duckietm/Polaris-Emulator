@@ -11,7 +11,6 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.api.IWiredEffect;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayDeque;
@@ -51,8 +50,10 @@ public class WiredExtraRandom extends InteractionWiredExtra {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
-        int resolvedPickAmount = (settings.getIntParams().length > 0) ? settings.getIntParams()[0] : DEFAULT_PICK_AMOUNT;
-        int resolvedSkipExecutions = (settings.getIntParams().length > 1) ? settings.getIntParams()[1] : DEFAULT_SKIP_EXECUTIONS;
+        int resolvedPickAmount =
+                (settings.getIntParams().length > 0) ? settings.getIntParams()[0] : DEFAULT_PICK_AMOUNT;
+        int resolvedSkipExecutions =
+                (settings.getIntParams().length > 1) ? settings.getIntParams()[1] : DEFAULT_SKIP_EXECUTIONS;
 
         this.pickAmount = normalizePickAmount(resolvedPickAmount);
         this.skipExecutions = normalizeSkipExecutions(resolvedSkipExecutions);
@@ -94,7 +95,8 @@ public class WiredExtraRandom extends InteractionWiredExtra {
         if (wiredData.startsWith("{")) {
             JsonData data = WiredExtraPayloadGuard.fromJson(wiredData, JsonData.class);
             this.pickAmount = normalizePickAmount((data != null) ? data.pickAmount : DEFAULT_PICK_AMOUNT);
-            this.skipExecutions = normalizeSkipExecutions((data != null) ? data.skipExecutions : DEFAULT_SKIP_EXECUTIONS);
+            this.skipExecutions =
+                    normalizeSkipExecutions((data != null) ? data.skipExecutions : DEFAULT_SKIP_EXECUTIONS);
             return;
         }
     }
@@ -107,9 +109,7 @@ public class WiredExtraRandom extends InteractionWiredExtra {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
 
     @Override
     public boolean hasConfiguration() {
@@ -117,7 +117,10 @@ public class WiredExtraRandom extends InteractionWiredExtra {
     }
 
     @Override
-    public void onMove(Room room, com.eu.habbo.habbohotel.rooms.RoomTile oldLocation, com.eu.habbo.habbohotel.rooms.RoomTile newLocation) {
+    public void onMove(
+            Room room,
+            com.eu.habbo.habbohotel.rooms.RoomTile oldLocation,
+            com.eu.habbo.habbohotel.rooms.RoomTile newLocation) {
         super.onMove(room, oldLocation, newLocation);
         this.clearRecentExecutions();
     }

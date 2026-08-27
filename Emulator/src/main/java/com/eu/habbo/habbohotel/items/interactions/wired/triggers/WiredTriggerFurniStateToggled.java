@@ -7,13 +7,12 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.WiredTriggerType;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
+import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredTriggerSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -36,7 +35,8 @@ public class WiredTriggerFurniStateToggled extends InteractionWiredTrigger {
         this.snapshots = new LinkedHashSet<>();
     }
 
-    public WiredTriggerFurniStateToggled(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredTriggerFurniStateToggled(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.snapshots = new LinkedHashSet<>();
     }
@@ -75,11 +75,8 @@ public class WiredTriggerFurniStateToggled extends InteractionWiredTrigger {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-            this.triggerMode,
-            this.furniSource,
-            new ArrayList<>(this.snapshots)
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(this.triggerMode, this.furniSource, new ArrayList<>(this.snapshots)));
     }
 
     @Override
@@ -92,7 +89,8 @@ public class WiredTriggerFurniStateToggled extends InteractionWiredTrigger {
         if (wiredData != null && wiredData.startsWith("{")) {
             JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
             this.triggerMode = (data != null) ? data.triggerMode : MODE_ALL_STATES;
-            this.furniSource = (data != null) ? this.normalizeFurniSource(data.furniSource) : WiredSourceUtil.SOURCE_TRIGGER;
+            this.furniSource =
+                    (data != null) ? this.normalizeFurniSource(data.furniSource) : WiredSourceUtil.SOURCE_TRIGGER;
 
             if (data != null && data.snapshots != null && !data.snapshots.isEmpty()) {
                 for (StateSnapshot snapshot : data.snapshots) {
@@ -134,7 +132,8 @@ public class WiredTriggerFurniStateToggled extends InteractionWiredTrigger {
                 }
             }
 
-            this.furniSource = this.snapshots.isEmpty() ? WiredSourceUtil.SOURCE_TRIGGER : WiredSourceUtil.SOURCE_SELECTED;
+            this.furniSource =
+                    this.snapshots.isEmpty() ? WiredSourceUtil.SOURCE_TRIGGER : WiredSourceUtil.SOURCE_SELECTED;
         }
     }
 
@@ -191,7 +190,9 @@ public class WiredTriggerFurniStateToggled extends InteractionWiredTrigger {
                 : MODE_ALL_STATES;
         this.furniSource = (settings.getIntParams().length > 1)
                 ? this.normalizeFurniSource(settings.getIntParams()[1])
-                : ((settings.getFurniIds().length > 0) ? WiredSourceUtil.SOURCE_SELECTED : WiredSourceUtil.SOURCE_TRIGGER);
+                : ((settings.getFurniIds().length > 0)
+                        ? WiredSourceUtil.SOURCE_SELECTED
+                        : WiredSourceUtil.SOURCE_TRIGGER);
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
         if (room == null) {
@@ -268,8 +269,7 @@ public class WiredTriggerFurniStateToggled extends InteractionWiredTrigger {
         List<StateSnapshot> snapshots;
         List<Integer> itemIds;
 
-        public JsonData() {
-        }
+        public JsonData() {}
 
         public JsonData(List<Integer> itemIds) {
             this.itemIds = itemIds;
@@ -286,8 +286,7 @@ public class WiredTriggerFurniStateToggled extends InteractionWiredTrigger {
         int itemId;
         String state;
 
-        public StateSnapshot() {
-        }
+        public StateSnapshot() {}
 
         public StateSnapshot(int itemId, String state) {
             this.itemId = itemId;

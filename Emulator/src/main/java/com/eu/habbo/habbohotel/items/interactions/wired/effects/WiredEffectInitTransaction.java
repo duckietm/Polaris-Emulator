@@ -18,7 +18,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -48,7 +47,8 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect {
         super(set, baseItem);
     }
 
-    public WiredEffectInitTransaction(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectInitTransaction(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -77,7 +77,7 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect {
         }
 
         // --- Aggregate (cumulative, so multiple terms of the same currency can't bypass the check) ---
-        Map<Integer, Long> payTotal = new HashMap<>();                  // currencyType -> total to debit
+        Map<Integer, Long> payTotal = new HashMap<>(); // currencyType -> total to debit
         Map<Integer, InteractionWiredChest> chestById = new HashMap<>();
         Map<Integer, Map<Integer, Long>> chestTakeTotal = new HashMap<>(); // chestId -> (currencyType -> total to take)
 

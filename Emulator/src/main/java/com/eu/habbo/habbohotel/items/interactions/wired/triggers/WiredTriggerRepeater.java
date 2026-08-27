@@ -14,7 +14,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.tick.WiredTickable;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -78,7 +77,8 @@ public class WiredTriggerRepeater extends InteractionWiredTrigger implements Wir
             storedRepeatTime = null;
         }
 
-        this.repeatTime = WiredTimerInputGuard.normalizeStoredMillis(storedRepeatTime, MIN_DELAY, LEGACY_FALLBACK_DELAY);
+        this.repeatTime =
+                WiredTimerInputGuard.normalizeStoredMillis(storedRepeatTime, MIN_DELAY, LEGACY_FALLBACK_DELAY);
     }
 
     @Override
@@ -135,11 +135,12 @@ public class WiredTriggerRepeater extends InteractionWiredTrigger implements Wir
         // Calculate elapsed time based on global tick count
         // All repeaters with the same interval fire on the exact same tick
         long elapsedMs = tickCount * tickIntervalMs;
-        
+
         // Fire when elapsed time is a multiple of repeatTime
         if (elapsedMs % this.repeatTime == 0) {
             long currentTime = System.currentTimeMillis();
-            if (this.getRoomId() != 0 && room.isLoaded()
+            if (this.getRoomId() != 0
+                    && room.isLoaded()
                     && WiredManager.isTriggerExecutionAllowed(room, this, currentTime)) {
                 WiredManager.triggerTimerRepeat(room, this);
             }

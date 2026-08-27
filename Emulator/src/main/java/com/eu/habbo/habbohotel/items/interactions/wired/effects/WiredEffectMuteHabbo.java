@@ -25,6 +25,12 @@ import java.sql.SQLException;
 public class WiredEffectMuteHabbo extends InteractionWiredEffect {
     private static final WiredEffectType type = WiredEffectType.MUTE_TRIGGER;
 
+    // Upper bound on the wired mute duration (minutes). The client sent this
+    // raw with only a floor of 1, so a room owner could set an arbitrary /
+    // effectively permanent mute, and a large value overflowed the int expiry
+    // math in RoomChatManager to an unpredictable timestamp.
+    private static final int MAX_MUTE_MINUTES = 24 * 60;
+
     private int length = 5;
     private String message = "";
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;
@@ -58,7 +64,7 @@ public class WiredEffectMuteHabbo extends InteractionWiredEffect {
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
         if (settings.getIntParams().length < 2) throw new WiredSaveException("invalid data");
 
-        this.length = settings.getIntParams()[0];
+        this.length = Math.max(1, Math.min(settings.getIntParams()[0], MAX_MUTE_MINUTES));
         this.userSource = settings.getIntParams()[1];
         this.message = settings.getStringParam();
 
@@ -77,7 +83,7 @@ public class WiredEffectMuteHabbo extends InteractionWiredEffect {
 
             if (room.hasRights(habbo)) continue;
 
-            room.muteHabbo(habbo, Math.max(1, this.length));
+            room.muteHabbo(habbo, Math.max(1, Math.min(this.length, MAX_MUTE_MINUTES)));
 
             String message = this.message
                     .replace("%user%", habbo.getHabboInfo().getUsername())

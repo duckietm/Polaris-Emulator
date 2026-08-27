@@ -10,7 +10,6 @@ import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -23,7 +22,8 @@ public class WiredConditionLessTimeElapsed extends InteractionWiredCondition {
         super(set, baseItem);
     }
 
-    public WiredConditionLessTimeElapsed(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredConditionLessTimeElapsed(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -40,9 +40,7 @@ public class WiredConditionLessTimeElapsed extends InteractionWiredCondition {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-                this.cycles
-        ));
+        return WiredManager.getGson().toJson(new JsonData(this.cycles));
     }
 
     @Override
@@ -90,7 +88,7 @@ public class WiredConditionLessTimeElapsed extends InteractionWiredCondition {
 
     @Override
     public boolean saveData(WiredSettings settings) {
-        if(settings.getIntParams().length < 1) return false;
+        if (settings.getIntParams().length < 1) return false;
         this.cycles = WiredConditionInputGuard.normalizeTimerCycles(settings.getIntParams()[0]);
         return true;
     }

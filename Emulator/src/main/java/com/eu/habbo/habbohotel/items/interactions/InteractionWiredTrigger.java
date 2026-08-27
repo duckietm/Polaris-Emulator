@@ -10,7 +10,6 @@ import com.eu.habbo.habbohotel.wired.WiredTriggerType;
 import com.eu.habbo.habbohotel.wired.api.IWiredTrigger;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.messages.outgoing.wired.WiredTriggerDataComposer;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -28,7 +27,8 @@ public abstract class InteractionWiredTrigger extends InteractionWired implement
         super(set, baseItem);
     }
 
-    protected InteractionWiredTrigger(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    protected InteractionWiredTrigger(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -71,31 +71,31 @@ public abstract class InteractionWiredTrigger extends InteractionWired implement
     public boolean isTriggeredByRoomUnit() {
         return false;
     }
-    
+
     // ========== IWiredTrigger Implementation ==========
-    
+
     /**
      * Returns the event type this trigger responds to.
      * Maps the WiredTriggerType to the new WiredEvent.Type.
-     * 
+     *
      * @return the event type this trigger responds to
      */
     @Override
     public WiredEvent.Type listensTo() {
         return WiredEvent.Type.fromLegacyType(this.getType());
     }
-    
+
     /**
      * Checks if this trigger matches the given event.
      * Subclasses must implement this to define their matching logic.
-     * 
+     *
      * @param triggerItem the wired trigger furniture item
      * @param event the event that occurred
      * @return true if this trigger should activate
      */
     @Override
     public abstract boolean matches(HabboItem triggerItem, WiredEvent event);
-    
+
     /**
      * Returns whether this trigger requires an actor (user) to activate.
      */
@@ -103,5 +103,4 @@ public abstract class InteractionWiredTrigger extends InteractionWired implement
     public boolean requiresActor() {
         return isTriggeredByRoomUnit();
     }
-
 }

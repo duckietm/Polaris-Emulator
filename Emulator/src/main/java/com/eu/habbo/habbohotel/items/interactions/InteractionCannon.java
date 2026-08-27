@@ -10,7 +10,6 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.threading.runnables.CannonKickAction;
 import com.eu.habbo.threading.runnables.CannonResetCooldownAction;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -52,19 +51,27 @@ public class InteractionCannon extends HabboItem {
             super.onClick(client, room, objects);
         }
 
-        if (room == null)
-            return;
+        if (room == null) return;
 
         RoomTile tile = room.getLayout().getTile(this.getX(), this.getY());
-        RoomTile fuseTile = this.getRotation() >= 4 ? tile : room.getLayout().getTileInFront(tile, ((this.getRotation() % 2) + 2) % 8);
+        RoomTile fuseTile = this.getRotation() >= 4
+                ? tile
+                : room.getLayout().getTileInFront(tile, ((this.getRotation() % 2) + 2) % 8);
         List<RoomTile> tiles = room.getLayout().getTilesAround(fuseTile);
-        tiles.remove(room.getLayout().getTileInFront(tile, (this.getRotation() + (this.getRotation() >= 4 ? -1 : 0)) % 8));
-        tiles.remove(room.getLayout().getTileInFront(tile, (this.getRotation() + (this.getRotation() >= 4 ? 5 : 4)) % 8));
+        tiles.remove(room.getLayout()
+                .getTileInFront(tile, (this.getRotation() + (this.getRotation() >= 4 ? -1 : 0)) % 8));
+        tiles.remove(room.getLayout()
+                .getTileInFront(tile, (this.getRotation() + (this.getRotation() >= 4 ? 5 : 4)) % 8));
 
-        if ((client == null || (tiles.contains(client.getHabbo().getRoomUnit().getCurrentLocation())) && client.getHabbo().getRoomUnit().canWalk()) && !this.cooldown) {
+        if ((client == null
+                        || (tiles.contains(client.getHabbo().getRoomUnit().getCurrentLocation()))
+                                && client.getHabbo().getRoomUnit().canWalk())
+                && !this.cooldown) {
             if (client != null) {
                 client.getHabbo().getRoomUnit().setCanWalk(false);
-                client.getHabbo().getRoomUnit().setGoalLocation(client.getHabbo().getRoomUnit().getCurrentLocation());
+                client.getHabbo()
+                        .getRoomUnit()
+                        .setGoalLocation(client.getHabbo().getRoomUnit().getCurrentLocation());
                 client.getHabbo().getRoomUnit().lookAtPoint(fuseTile);
                 client.getHabbo().getRoomUnit().statusUpdate(true);
             }
@@ -78,9 +85,7 @@ public class InteractionCannon extends HabboItem {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
 
     @Override
     public void onWalkOn(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
@@ -96,7 +101,6 @@ public class InteractionCannon extends HabboItem {
     public void onPickUp(Room room) {
         this.setExtradata("0");
     }
-
 
     @Override
     public boolean isUsable() {

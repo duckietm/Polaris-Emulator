@@ -6,7 +6,6 @@ import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -21,17 +20,22 @@ public class InteractionBlackHole extends InteractionGate {
 
     @Override
     public void onPlace(Room room) {
-        Achievement holeCountAchievement = Emulator.getGameEnvironment().getAchievementManager().getAchievement("RoomDecoHoleFurniCount");
+        Achievement holeCountAchievement =
+                Emulator.getGameEnvironment().getAchievementManager().getAchievement("RoomDecoHoleFurniCount");
 
         int holesCountProgress = 0;
         Habbo owner = room.getHabbo(this.getUserId());
 
         if (owner == null) {
-            holesCountProgress = AchievementManager.getAchievementProgressForHabbo(this.getUserId(), holeCountAchievement);
+            holesCountProgress =
+                    AchievementManager.getAchievementProgressForHabbo(this.getUserId(), holeCountAchievement);
         } else {
             holesCountProgress = owner.getHabboStats().getAchievementProgress(holeCountAchievement);
         }
-        int holeDifference = room.getRoomSpecialTypes().getItemsOfType(InteractionBlackHole.class).size() - holesCountProgress;
+        int holeDifference = room.getRoomSpecialTypes()
+                        .getItemsOfType(InteractionBlackHole.class)
+                        .size()
+                - holesCountProgress;
 
         if (holeDifference > 0) {
             if (owner != null) {

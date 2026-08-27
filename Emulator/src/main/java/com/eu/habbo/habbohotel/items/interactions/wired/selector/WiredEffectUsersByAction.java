@@ -13,7 +13,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.LinkedHashSet;
@@ -40,7 +39,8 @@ public class WiredEffectUsersByAction extends InteractionWiredEffect {
         super(set, baseItem);
     }
 
-    public WiredEffectUsersByAction(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectUsersByAction(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -59,7 +59,8 @@ public class WiredEffectUsersByAction extends InteractionWiredEffect {
             }
         }
 
-        result = this.applySelectorModifiers(result, room.getRoomUnits(), ctx.targets().users(), this.filterExisting, this.invert);
+        result = this.applySelectorModifiers(
+                result, room.getRoomUnits(), ctx.targets().users(), this.filterExisting, this.invert);
 
         ctx.targets().setUsers(result);
     }
@@ -99,16 +100,16 @@ public class WiredEffectUsersByAction extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-                this.selectedAction,
-                this.signFilterEnabled,
-                this.signId,
-                this.danceFilterEnabled,
-                this.danceId,
-                this.filterExisting,
-                this.invert,
-                this.getDelay()
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.selectedAction,
+                        this.signFilterEnabled,
+                        this.signId,
+                        this.danceFilterEnabled,
+                        this.danceId,
+                        this.filterExisting,
+                        this.invert,
+                        this.getDelay()));
     }
 
     @Override
@@ -228,7 +229,8 @@ public class WiredEffectUsersByAction extends InteractionWiredEffect {
             return false;
         }
 
-        return this.matchesConfiguredAction(ctx.event().getActionId(), ctx.event().getActionParameter());
+        return this.matchesConfiguredAction(
+                ctx.event().getActionId(), ctx.event().getActionParameter());
     }
 
     private boolean matchesCurrentState(RoomUnit roomUnit) {
@@ -324,7 +326,15 @@ public class WiredEffectUsersByAction extends InteractionWiredEffect {
         boolean invert;
         int delay;
 
-        JsonData(int selectedAction, boolean signFilterEnabled, int signId, boolean danceFilterEnabled, int danceId, boolean filterExisting, boolean invert, int delay) {
+        JsonData(
+                int selectedAction,
+                boolean signFilterEnabled,
+                int signId,
+                boolean danceFilterEnabled,
+                int danceId,
+                boolean filterExisting,
+                boolean invert,
+                int delay) {
             this.selectedAction = selectedAction;
             this.signFilterEnabled = signFilterEnabled;
             this.signId = signId;

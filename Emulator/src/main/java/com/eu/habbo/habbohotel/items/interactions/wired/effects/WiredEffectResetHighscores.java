@@ -13,7 +13,6 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -26,7 +25,8 @@ public class WiredEffectResetHighscores extends InteractionWiredEffect {
         super(set, baseItem);
     }
 
-    public WiredEffectResetHighscores(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectResetHighscores(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -68,7 +68,10 @@ public class WiredEffectResetHighscores extends InteractionWiredEffect {
     @Override
     public void execute(WiredContext ctx) {
         for (HabboItem it : ctx.room().getRoomSpecialTypes().getItemsOfType(InteractionWiredHighscore.class)) {
-            Emulator.getGameEnvironment().getItemManager().getHighscoreManager().setEntriesForItemId(it.getId(), new java.util.ArrayList<>());
+            Emulator.getGameEnvironment()
+                    .getItemManager()
+                    .getHighscoreManager()
+                    .setEntriesForItemId(it.getId(), new java.util.ArrayList<>());
             ((InteractionWiredHighscore) it).reloadData();
             ctx.room().updateItem(it);
         }
@@ -86,14 +89,10 @@ public class WiredEffectResetHighscores extends InteractionWiredEffect {
     }
 
     @Override
-    public void loadWiredData(ResultSet set, Room room) throws SQLException {
-
-    }
+    public void loadWiredData(ResultSet set, Room room) throws SQLException {}
 
     @Override
-    public void onPickUp() {
-
-    }
+    public void onPickUp() {}
 
     @Override
     public WiredEffectType getType() {

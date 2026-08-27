@@ -11,7 +11,6 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -34,7 +33,8 @@ public class WiredConditionNoBattleBanzaiRunning extends InteractionWiredConditi
         super(set, baseItem);
     }
 
-    public WiredConditionNoBattleBanzaiRunning(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredConditionNoBattleBanzaiRunning(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -61,12 +61,10 @@ public class WiredConditionNoBattleBanzaiRunning extends InteractionWiredConditi
     }
 
     @Override
-    public void loadWiredData(ResultSet set, Room room) throws SQLException {
-    }
+    public void loadWiredData(ResultSet set, Room room) throws SQLException {}
 
     @Override
-    public void onPickUp() {
-    }
+    public void onPickUp() {}
 
     @Override
     public WiredConditionType getType() {

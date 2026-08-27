@@ -988,6 +988,26 @@ public final class WiredEngine {
     }
 
     /**
+     * Clear the caches that go stale when a room's wired INDEX changes
+     * (furni added/removed/moved, wired saved). Deliberately does NOT clear the
+     * abuse-limit state (rate-limit windows and the rate-limit ban): those are
+     * about execution frequency, not which furni exist, and coupling them to
+     * index invalidation let a rate-limit-banned owner reset the ban on demand
+     * by dragging any furniture one tile. Use {@link #clearRoomExecutionCaches}
+     * for a genuine full reset.
+     *
+     * <p>Package-private on purpose: it is an internal helper for
+     * {@link WiredManager#invalidateRoom}, and keeping it off the public
+     * surface preserves the frozen plugin ABI (WiredPublicSurfaceCompatibilityTest).
+     * @param roomId the room ID
+     */
+    void clearRoomIndexCaches(int roomId) {
+        clearRoomRecursionDepth(roomId);
+        clearRoomSourceStackCache(roomId);
+        clearRoomDiagnostics(roomId);
+    }
+
+    /**
      * Clear all execution-related caches.
      */
     public void clearAllExecutionCaches() {

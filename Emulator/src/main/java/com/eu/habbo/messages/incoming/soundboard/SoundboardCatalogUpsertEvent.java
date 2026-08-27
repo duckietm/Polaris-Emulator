@@ -23,12 +23,17 @@ public class SoundboardCatalogUpsertEvent extends MessageHandler {
             return;
         }
 
-        SoundboardCatalogCommand command = new SoundboardCatalogCommand(
-                this.packet.readInt(),
-                this.packet.readString(),
-                this.packet.readString(),
-                this.packet.readInt(),
-                this.packet.readBoolean());
+        int id = this.packet.readInt();
+        String name = this.packet.readString();
+        String url = this.packet.readString();
+        int minRank = this.packet.readInt();
+        boolean enabled = this.packet.readBoolean();
+
+        // Trailing field: a client that predates the asset-backed soundboard
+        // simply does not send it, and keeps addressing pads by URL.
+        String classname = this.packet.bytesAvailable() > 0 ? this.packet.readString() : "";
+
+        SoundboardCatalogCommand command = new SoundboardCatalogCommand(id, name, classname, url, minRank, enabled);
         SoundboardManager manager = Emulator.getGameEnvironment().getSoundboardManager();
         SoundboardCatalogResult result = manager.upsert(habbo.getHabboInfo().getId(), command);
         this.sendResult(result);

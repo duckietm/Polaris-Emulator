@@ -10,11 +10,10 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WiredBlob extends InteractionDefault {
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredBlob.class);
@@ -24,6 +23,7 @@ public class WiredBlob extends InteractionDefault {
         USED("1");
 
         private String state;
+
         WiredBlobState(String state) {
             this.state = state;
         }
@@ -73,7 +73,8 @@ public class WiredBlob extends InteractionDefault {
                 BattleBanzaiGame battleBanzaiGame = (BattleBanzaiGame) room.getGame(BattleBanzaiGame.class);
 
                 if (battleBanzaiGame != null && battleBanzaiGame.getState() != GameState.IDLE) {
-                    battleBanzaiGame.refreshCounters(habbo.getHabboInfo().getGamePlayer().getTeamColor());
+                    battleBanzaiGame.refreshCounters(
+                            habbo.getHabboInfo().getGamePlayer().getTeamColor());
                 }
 
                 this.setExtradata(WiredBlobState.USED.getState());
@@ -84,8 +85,17 @@ public class WiredBlob extends InteractionDefault {
 
     @Override
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
-        if (!this.RESETS_WITH_GAME && objects != null && objects.length == 2 && objects[1].equals(WiredEffectType.TOGGLE_STATE) && room.getGames().stream().anyMatch(game -> game.getState().equals(GameState.RUNNING) || game.getState().equals(GameState.PAUSED))) {
-            this.setExtradata(this.getExtradata().equals(WiredBlobState.ACTIVE.getState()) ? WiredBlobState.USED.getState() : WiredBlobState.ACTIVE.getState());
+        if (!this.RESETS_WITH_GAME
+                && objects != null
+                && objects.length == 2
+                && objects[1].equals(WiredEffectType.TOGGLE_STATE)
+                && room.getGames().stream()
+                        .anyMatch(game -> game.getState().equals(GameState.RUNNING)
+                                || game.getState().equals(GameState.PAUSED))) {
+            this.setExtradata(
+                    this.getExtradata().equals(WiredBlobState.ACTIVE.getState())
+                            ? WiredBlobState.USED.getState()
+                            : WiredBlobState.ACTIVE.getState());
             room.updateItem(this);
         }
     }
@@ -113,7 +123,8 @@ public class WiredBlob extends InteractionDefault {
         try {
             this.POINTS_REWARD = Integer.parseInt(params[0]);
         } catch (NumberFormatException e) {
-            LOGGER.error("Wired blobs should have customparams with the first parameter being the amount of points (number)");
+            LOGGER.error(
+                    "Wired blobs should have customparams with the first parameter being the amount of points (number)");
             return;
         }
 

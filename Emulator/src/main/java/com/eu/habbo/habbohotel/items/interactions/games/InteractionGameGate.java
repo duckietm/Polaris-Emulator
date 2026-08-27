@@ -6,7 +6,6 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -16,7 +15,14 @@ public abstract class InteractionGameGate extends InteractionGameTeamItem {
         this.setExtradata("0");
     }
 
-    public InteractionGameGate(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells, GameTeamColors teamColor) {
+    public InteractionGameGate(
+            int id,
+            int userId,
+            Item item,
+            String extradata,
+            int limitedStack,
+            int limitedSells,
+            GameTeamColors teamColor) {
         super(id, userId, item, extradata, limitedStack, limitedSells, teamColor);
         this.setExtradata("0");
     }

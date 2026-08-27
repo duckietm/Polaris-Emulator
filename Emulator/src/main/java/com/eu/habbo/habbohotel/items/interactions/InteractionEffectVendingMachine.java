@@ -1,8 +1,8 @@
 package com.eu.habbo.habbohotel.items.interactions;
 
 import com.eu.habbo.habbohotel.items.Item;
-import com.eu.habbo.habbohotel.rooms.*;
-
+import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -12,7 +12,8 @@ public class InteractionEffectVendingMachine extends InteractionVendingMachine {
         this.setExtradata("0");
     }
 
-    public InteractionEffectVendingMachine(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionEffectVendingMachine(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.setExtradata("0");
     }

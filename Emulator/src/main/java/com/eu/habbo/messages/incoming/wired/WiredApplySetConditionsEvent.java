@@ -10,11 +10,10 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import com.eu.habbo.messages.outgoing.rooms.items.FloorItemOnRollerComposer;
-
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.math.BigDecimal;
 
 public class WiredApplySetConditionsEvent extends MessageHandler {
 
@@ -30,9 +29,7 @@ public class WiredApplySetConditionsEvent extends MessageHandler {
         // Executing Habbo has to be in a Room
         if (!this.client.getHabbo().getRoomUnit().isInRoom()) {
             this.client.sendResponse(new BubbleAlertComposer(
-                    BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key,
-                    FurnitureMovementError.NO_RIGHTS.errorCode
-            ));
+                    BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.NO_RIGHTS.errorCode));
             return;
         }
 
@@ -48,9 +45,8 @@ public class WiredApplySetConditionsEvent extends MessageHandler {
                 wireds.addAll(room.getRoomSpecialTypes().getEffects());
 
                 // Find the item with the given ID in the room
-                Optional<HabboItem> item = wireds.stream()
-                        .filter(wired -> wired.getId() == itemId)
-                        .findFirst();
+                Optional<HabboItem> item =
+                        wireds.stream().filter(wired -> wired.getId() == itemId).findFirst();
 
                 // If the item exists
                 if (item.isPresent()) {
@@ -65,9 +61,17 @@ public class WiredApplySetConditionsEvent extends MessageHandler {
                         wired.getMatchFurniSettings().forEach(setting -> {
                             HabboItem matchItem = room.getHabboItem(setting.item_id);
 
+                            // The referenced furni may have been removed from the
+                            // room since the match settings were saved; skip it
+                            // instead of NPEing out of the packet handler.
+                            if (matchItem == null) {
+                                return;
+                            }
+
                             // Match state
                             if (wired.shouldMatchState() && matchItem.allowWiredResetState()) {
-                                if (!setting.state.equals(" ") && !matchItem.getExtradata().equals(setting.state)) {
+                                if (!setting.state.equals(" ")
+                                        && !matchItem.getExtradata().equals(setting.state)) {
                                     matchItem.setExtradata(setting.state);
                                     room.updateItemState(matchItem);
                                 }
@@ -77,28 +81,52 @@ public class WiredApplySetConditionsEvent extends MessageHandler {
                             double oldZ = matchItem.getZ();
 
                             // Match Position & Rotation
-                            if(wired.shouldMatchRotation() && !wired.shouldMatchPosition()) {
-                                if(matchItem.getRotation() != setting.rotation && room.furnitureFitsAt(oldLocation, matchItem, setting.rotation, false) == FurnitureMovementError.NONE) {
+                            if (wired.shouldMatchRotation() && !wired.shouldMatchPosition()) {
+                                if (matchItem.getRotation() != setting.rotation
+                                        && room.furnitureFitsAt(oldLocation, matchItem, setting.rotation, false)
+                                                == FurnitureMovementError.NONE) {
                                     room.moveFurniTo(matchItem, oldLocation, setting.rotation, null, true);
                                 }
-                            }
-                            else if(wired.shouldMatchAltitude() && !wired.shouldMatchPosition()) {
-                                int newRotation = wired.shouldMatchRotation() ? setting.rotation : matchItem.getRotation();
+                            } else if (wired.shouldMatchAltitude() && !wired.shouldMatchPosition()) {
+                                int newRotation =
+                                        wired.shouldMatchRotation() ? setting.rotation : matchItem.getRotation();
                                 if (BigDecimal.valueOf(matchItem.getZ()).compareTo(BigDecimal.valueOf(setting.z)) != 0
                                         || newRotation != matchItem.getRotation()) {
                                     room.moveFurniTo(matchItem, oldLocation, newRotation, setting.z, null, true, false);
                                 }
-                            }
-                            else if(wired.shouldMatchPosition()) {
-                                boolean slideAnimation = !wired.shouldMatchRotation() || matchItem.getRotation() == setting.rotation;
+                            } else if (wired.shouldMatchPosition()) {
+                                boolean slideAnimation =
+                                        !wired.shouldMatchRotation() || matchItem.getRotation() == setting.rotation;
                                 RoomTile newLocation = room.getLayout().getTile((short) setting.x, (short) setting.y);
-                                int newRotation = wired.shouldMatchRotation() ? setting.rotation : matchItem.getRotation();
+                                int newRotation =
+                                        wired.shouldMatchRotation() ? setting.rotation : matchItem.getRotation();
                                 double newZ = wired.shouldMatchAltitude() ? setting.z : matchItem.getZ();
 
-                                if(newLocation != null && newLocation.state != RoomTileState.INVALID && (newLocation != oldLocation || newRotation != matchItem.getRotation()) && room.furnitureFitsAt(newLocation, matchItem, newRotation, true) == FurnitureMovementError.NONE) {
-                                    if(room.moveFurniTo(matchItem, newLocation, newRotation, newZ, null, !slideAnimation, true) == FurnitureMovementError.NONE) {
-                                        if(slideAnimation) {
-                                            room.sendComposer(new FloorItemOnRollerComposer(matchItem, null, oldLocation, oldZ, newLocation, matchItem.getZ(), 0, room).compose());
+                                if (newLocation != null
+                                        && newLocation.state != RoomTileState.INVALID
+                                        && (newLocation != oldLocation || newRotation != matchItem.getRotation())
+                                        && room.furnitureFitsAt(newLocation, matchItem, newRotation, true)
+                                                == FurnitureMovementError.NONE) {
+                                    if (room.moveFurniTo(
+                                                    matchItem,
+                                                    newLocation,
+                                                    newRotation,
+                                                    newZ,
+                                                    null,
+                                                    !slideAnimation,
+                                                    true)
+                                            == FurnitureMovementError.NONE) {
+                                        if (slideAnimation) {
+                                            room.sendComposer(new FloorItemOnRollerComposer(
+                                                            matchItem,
+                                                            null,
+                                                            oldLocation,
+                                                            oldZ,
+                                                            newLocation,
+                                                            matchItem.getZ(),
+                                                            0,
+                                                            room)
+                                                    .compose());
                                         }
                                     }
                                 }

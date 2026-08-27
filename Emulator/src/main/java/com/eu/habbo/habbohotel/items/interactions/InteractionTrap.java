@@ -7,7 +7,6 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.rooms.RoomUnitType;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboGender;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -27,9 +26,11 @@ public class InteractionTrap extends InteractionDefault {
             int effect = habbo.getClient().getHabbo().getRoomUnit().getEffectId();
             roomUnit.stopWalking();
             super.onWalkOn(roomUnit, room, objects);
-            int delay = Emulator.getConfig().getInt("hotel.item.trap." + this.getBaseItem().getName());
+            int delay = Emulator.getConfig()
+                    .getInt("hotel.item.trap." + this.getBaseItem().getName());
             if (delay == 0) {
-                Emulator.getConfig().register("hotel.item.trap." + this.getBaseItem().getName(), "3000");
+                Emulator.getConfig()
+                        .register("hotel.item.trap." + this.getBaseItem().getName(), "3000");
                 delay = 3000;
             }
 
@@ -38,23 +39,31 @@ public class InteractionTrap extends InteractionDefault {
                     if (roomUnit.getRoomUnitType().equals(RoomUnitType.USER)) {
 
                         if (habbo != null) {
-                            if (habbo.getHabboInfo().getGender().equals(HabboGender.M) && this.getBaseItem().getEffectM() > 0 && habbo.getRoomUnit().getEffectId() != this.getBaseItem().getEffectM()) {
+                            if (habbo.getHabboInfo().getGender().equals(HabboGender.M)
+                                    && this.getBaseItem().getEffectM() > 0
+                                    && habbo.getRoomUnit().getEffectId()
+                                            != this.getBaseItem().getEffectM()) {
                                 room.giveEffect(habbo, this.getBaseItem().getEffectM(), -1);
                                 return;
                             }
 
-                            if (habbo.getHabboInfo().getGender().equals(HabboGender.F) && this.getBaseItem().getEffectF() > 0 && habbo.getRoomUnit().getEffectId() != this.getBaseItem().getEffectF()) {
+                            if (habbo.getHabboInfo().getGender().equals(HabboGender.F)
+                                    && this.getBaseItem().getEffectF() > 0
+                                    && habbo.getRoomUnit().getEffectId()
+                                            != this.getBaseItem().getEffectF()) {
                                 room.giveEffect(habbo, this.getBaseItem().getEffectF(), -1);
                                 return;
                             }
 
-
                             roomUnit.setCanWalk(false);
-                            Emulator.getThreading().run(() -> {
-                                room.giveEffect(roomUnit, 0, -1);
-                                roomUnit.setCanWalk(true);
-                                room.giveEffect(roomUnit, effect, -1);
-                            }, delay);
+                            Emulator.getThreading()
+                                    .run(
+                                            () -> {
+                                                room.giveEffect(roomUnit, 0, -1);
+                                                roomUnit.setCanWalk(true);
+                                                room.giveEffect(roomUnit, effect, -1);
+                                            },
+                                            delay);
                         }
                     }
                 }
@@ -63,6 +72,5 @@ public class InteractionTrap extends InteractionDefault {
     }
 
     @Override
-    public void onWalkOff(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-    }
+    public void onWalkOff(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
 }

@@ -3,7 +3,6 @@ package com.eu.habbo.habbohotel.items.interactions.wired.extra;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-
 import java.util.regex.Pattern;
 
 final class WiredVariableNameValidator {
@@ -12,19 +11,14 @@ final class WiredVariableNameValidator {
 
     private static final Pattern VALID_NAME_PATTERN = Pattern.compile("^[A-Za-z0-9_]+$");
 
-    private WiredVariableNameValidator() {
-    }
+    private WiredVariableNameValidator() {}
 
     static String normalizeForSave(String value) {
         if (value == null) {
             return "";
         }
 
-        return value
-            .replace("\t", "")
-            .replace("\r", "")
-            .replace("\n", "")
-            .replaceAll("\\s+", "_");
+        return value.replace("\t", "").replace("\r", "").replace("\n", "").replaceAll("\\s+", "_");
     }
 
     static String normalizeLegacy(String value) {

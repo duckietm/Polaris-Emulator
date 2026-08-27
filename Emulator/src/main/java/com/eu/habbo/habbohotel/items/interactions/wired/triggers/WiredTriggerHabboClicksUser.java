@@ -10,7 +10,6 @@ import com.eu.habbo.habbohotel.wired.WiredTriggerType;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -26,7 +25,8 @@ public class WiredTriggerHabboClicksUser extends InteractionWiredTrigger {
         super(set, baseItem);
     }
 
-    public WiredTriggerHabboClicksUser(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredTriggerHabboClicksUser(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -54,7 +54,8 @@ public class WiredTriggerHabboClicksUser extends InteractionWiredTrigger {
         this.doNotRotate = false;
 
         if (wiredData != null && wiredData.startsWith("{")) {
-            JsonData data = com.eu.habbo.habbohotel.wired.core.WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            JsonData data =
+                    com.eu.habbo.habbohotel.wired.core.WiredManager.getGson().fromJson(wiredData, JsonData.class);
             if (data != null) {
                 this.blockMenuOpen = data.blockMenuOpen;
                 this.doNotRotate = data.doNotRotate;

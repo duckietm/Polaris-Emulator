@@ -14,11 +14,10 @@ import com.eu.habbo.messages.outgoing.rooms.items.RoomFloorItemsComposer;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -61,7 +60,8 @@ public class InteractionMuteArea extends InteractionCustomValues {
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
         super.onClick(client, room, objects);
 
-        if((objects.length >= 2 && objects[1] instanceof WiredEffectType) || (client != null && room.hasRights(client.getHabbo()))) {
+        if ((objects.length >= 2 && objects[1] instanceof WiredEffectType)
+                || (client != null && room.hasRights(client.getHabbo()))) {
             this.values.put("state", this.values.get("state").equals("0") ? "1" : "0");
             room.sendComposer(new ItemExtraDataComposer(this).compose());
         }
@@ -88,10 +88,9 @@ public class InteractionMuteArea extends InteractionCustomValues {
     public boolean inSquare(RoomTile location) {
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
 
-        if(!this.values.get("state").equals("1"))
-            return false;
+        if (!this.values.get("state").equals("1")) return false;
 
-        if(room != null && this.tiles.size() == 0) {
+        if (room != null && this.tiles.size() == 0) {
             regenAffectedTiles(room);
         }
 
@@ -111,16 +110,17 @@ public class InteractionMuteArea extends InteractionCustomValues {
     private void regenAffectedTiles(Room room) {
         int minX = Math.max(0, this.getX() - Integer.parseInt(this.values.get("tilesBack")));
         int minY = Math.max(0, this.getY() - Integer.parseInt(this.values.get("tilesRight")));
-        int maxX = Math.min(room.getLayout().getMapSizeX(), this.getX() + Integer.parseInt(this.values.get("tilesFront")));
-        int maxY = Math.min(room.getLayout().getMapSizeY(), this.getY() + Integer.parseInt(this.values.get("tilesLeft")));
+        int maxX =
+                Math.min(room.getLayout().getMapSizeX(), this.getX() + Integer.parseInt(this.values.get("tilesFront")));
+        int maxY =
+                Math.min(room.getLayout().getMapSizeY(), this.getY() + Integer.parseInt(this.values.get("tilesLeft")));
 
         this.tiles.clear();
 
-        for(int x = minX; x <= maxX; x++) {
-            for(int y = minY; y <= maxY; y++) {
-                RoomTile tile = room.getLayout().getTile((short)x, (short)y);
-                if(tile != null && tile.state != RoomTileState.INVALID)
-                    this.tiles.add(tile);
+        for (int x = minX; x <= maxX; x++) {
+            for (int y = minY; y <= maxY; y++) {
+                RoomTile tile = room.getLayout().getTile((short) x, (short) y);
+                if (tile != null && tile.state != RoomTileState.INVALID) this.tiles.add(tile);
             }
         }
     }
@@ -134,13 +134,13 @@ public class InteractionMuteArea extends InteractionCustomValues {
         // show the effect
         Item effectItem = Emulator.getGameEnvironment().getItemManager().getItem("mutearea_sign2");
 
-        if(effectItem != null) {
+        if (effectItem != null) {
             Int2ObjectMap<String> ownerNames = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>(0));
             ownerNames.put(-1, "System");
             Set<HabboItem> items = new HashSet<>();
 
             int id = 0;
-            for(RoomTile tile : this.tiles) {
+            for (RoomTile tile : this.tiles) {
                 id--;
                 HabboItem item = new InteractionDefault(id, -1, effectItem, "1", 0, 0);
                 item.setX(tile.x);
@@ -150,11 +150,14 @@ public class InteractionMuteArea extends InteractionCustomValues {
             }
 
             client.sendResponse(new RoomFloorItemsComposer(ownerNames, items));
-            Emulator.getThreading().run(() -> {
-                for(HabboItem item : items) {
-                    client.sendResponse(new RemoveFloorItemComposer(item, true));
-                }
-            }, 3000);
+            Emulator.getThreading()
+                    .run(
+                            () -> {
+                                for (HabboItem item : items) {
+                                    client.sendResponse(new RemoveFloorItemComposer(item, true));
+                                }
+                            },
+                            3000);
         }
     }
 }

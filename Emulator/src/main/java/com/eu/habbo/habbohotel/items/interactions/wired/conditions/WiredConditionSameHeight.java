@@ -1,7 +1,6 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.conditions;
 
 import com.eu.habbo.Emulator;
-import java.util.HashSet;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
@@ -13,10 +12,10 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -40,7 +39,8 @@ public class WiredConditionSameHeight extends InteractionWiredCondition {
         this.items = new HashSet<>();
     }
 
-    public WiredConditionSameHeight(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredConditionSameHeight(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.items = new HashSet<>();
     }
@@ -84,11 +84,11 @@ public class WiredConditionSameHeight extends InteractionWiredCondition {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-                this.furniSource,
-                this.quantifier,
-                this.items.stream().map(HabboItem::getId).toList()
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.furniSource,
+                        this.quantifier,
+                        this.items.stream().map(HabboItem::getId).toList()));
     }
 
     @Override
@@ -223,7 +223,10 @@ public class WiredConditionSameHeight extends InteractionWiredCondition {
 
     int normalizeFurniSource(int value) {
         return switch (value) {
-            case WiredSourceUtil.SOURCE_SELECTED, WiredSourceUtil.SOURCE_SELECTOR, WiredSourceUtil.SOURCE_SIGNAL, WiredSourceUtil.SOURCE_TRIGGER -> value;
+            case WiredSourceUtil.SOURCE_SELECTED,
+                    WiredSourceUtil.SOURCE_SELECTOR,
+                    WiredSourceUtil.SOURCE_SIGNAL,
+                    WiredSourceUtil.SOURCE_TRIGGER -> value;
             default -> WiredSourceUtil.SOURCE_TRIGGER;
         };
     }

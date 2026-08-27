@@ -5,7 +5,6 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -23,7 +22,8 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
         super(set, baseItem);
     }
 
-    protected InteractionWiredChest(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    protected InteractionWiredChest(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -49,7 +49,8 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
      * next persist writes it out permanently.
      */
     private static void resolveLegacySpriteIds(ChestStorage contents) {
-        if (Emulator.getGameEnvironment() == null || Emulator.getGameEnvironment().getItemManager() == null) return;
+        if (Emulator.getGameEnvironment() == null
+                || Emulator.getGameEnvironment().getItemManager() == null) return;
 
         for (ChestFurniStoredItem stored : contents.furniItems()) {
             if (stored.spriteId > 0) continue;
@@ -65,9 +66,7 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
 
     @Override
     public boolean hasConfiguration() {

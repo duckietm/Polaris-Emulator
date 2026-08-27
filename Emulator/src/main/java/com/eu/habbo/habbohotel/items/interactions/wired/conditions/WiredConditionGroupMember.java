@@ -11,7 +11,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -32,7 +31,8 @@ public class WiredConditionGroupMember extends InteractionWiredCondition {
         super(set, baseItem);
     }
 
-    public WiredConditionGroupMember(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredConditionGroupMember(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -40,8 +40,7 @@ public class WiredConditionGroupMember extends InteractionWiredCondition {
     public boolean evaluate(WiredContext ctx) {
         Room room = ctx.room();
         int targetGroupId = this.resolveTargetGroupId(room);
-        if (targetGroupId == 0)
-            return false;
+        if (targetGroupId == 0) return false;
 
         List<RoomUnit> targets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
         if (targets.isEmpty()) return false;
@@ -75,12 +74,8 @@ public class WiredConditionGroupMember extends InteractionWiredCondition {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-                this.userSource,
-                this.groupType,
-                this.selectedGroupId,
-                this.quantifier
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(this.userSource, this.groupType, this.selectedGroupId, this.quantifier));
     }
 
     @Override

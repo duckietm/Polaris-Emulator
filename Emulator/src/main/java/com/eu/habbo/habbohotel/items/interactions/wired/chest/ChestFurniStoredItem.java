@@ -22,19 +22,20 @@ public class ChestFurniStoredItem {
      * resolved on load (see {@link InteractionWiredChest#loadWiredData}).
      */
     public int spriteId;
+
     public String legacyPosterId = "";
     public boolean groupable = true;
     public int specialType;
     /** Nitro object-data format key ({@link com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniWireUtil#LEGACY_FORMAT}). */
     public int stuffDataFormat;
+
     public String extradata = "";
     public int limitedSells;
     public int limitedStack;
     /** Floor-item state (official {@code extra} int after stuffData). */
     public int extra;
 
-    public ChestFurniStoredItem() {
-    }
+    public ChestFurniStoredItem() {}
 
     public static ChestFurniStoredItem fromHabboItem(HabboItem item, int inventoryId) {
         ChestFurniStoredItem stored = new ChestFurniStoredItem();

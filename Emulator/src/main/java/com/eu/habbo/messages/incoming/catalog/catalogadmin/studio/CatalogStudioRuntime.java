@@ -20,6 +20,8 @@ import com.eu.habbo.habbohotel.catalog.versioning.JdbcCatalogVersionRepository;
 import com.eu.habbo.habbohotel.items.ItemManager;
 import com.google.gson.Gson;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.sql.DataSource;
 
@@ -53,6 +55,13 @@ public final class CatalogStudioRuntime {
         Gson gson = new Gson();
         JdbcCatalogOperationRepository operations = new JdbcCatalogOperationRepository();
         CatalogStudioDocumentService documents = new CatalogStudioDocumentService();
+        // Reading the catalog is proportional to its size. Operator reads run here so a large catalog cannot stall
+        // the thread that serves the operator's other packets.
+        ExecutorService reads = Executors.newSingleThreadExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "CatalogManagerReads");
+            thread.setDaemon(true);
+            return thread;
+        });
         CatalogOperationalOfferRepository operationalOffers = new CatalogOperationalOfferRepository(dataSource);
         JdbcCatalogLiveEntityWriter liveWriter = new JdbcCatalogLiveEntityWriter(gson);
         JdbcCatalogLiveSnapshotRepository liveSnapshots = new JdbcCatalogLiveSnapshotRepository();
@@ -65,6 +74,7 @@ public final class CatalogStudioRuntime {
             }
         };
         return new Services(
+                reads,
                 queries,
                 new CatalogLiveMutationService(
                         dataSource,
@@ -92,6 +102,7 @@ public final class CatalogStudioRuntime {
     }
 
     public record Services(
+            java.util.concurrent.Executor reads,
             JdbcCatalogStudioQueryRepository queries,
             CatalogLiveMutationService liveMutations,
             CatalogLiveChangeSetService liveChangeSets,

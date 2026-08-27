@@ -3,6 +3,7 @@ package com.eu.habbo.database.migration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -16,7 +17,17 @@ class CatalogMigrationImmutabilityContractTest {
 
     @Test
     void keepsAppliedBaselineImmutableAndMovesRuntimeRenamesForward() throws Exception {
-        byte[] baseline = Files.readAllBytes(BASELINE);
+        // Guard the migration's CONTENT, not the checkout's line-ending mode.
+        // The baseline is stored LF (see Gameserver/.gitattributes "eol=lf"), but a
+        // Windows checkout with core.autocrlf can materialize it as CRLF, which would
+        // otherwise change the raw-byte hash without any real content change. Normalize
+        // CRLF/CR to LF before hashing so the immutability check is platform-independent
+        // while still detecting any added, removed, or modified SQL. Read via ISO-8859-1
+        // for a lossless byte<->char round-trip regardless of the file's actual encoding.
+        String baselineText = new String(Files.readAllBytes(BASELINE), StandardCharsets.ISO_8859_1)
+                .replace("\r\n", "\n")
+                .replace("\r", "\n");
+        byte[] baseline = baselineText.getBytes(StandardCharsets.ISO_8859_1);
         String hash = HexFormat.of()
                 .withUpperCase()
                 .formatHex(MessageDigest.getInstance("SHA-256").digest(baseline));

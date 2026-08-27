@@ -7,7 +7,6 @@ import com.eu.habbo.habbohotel.items.interactions.interfaces.ConditionalGate;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.threading.runnables.CloseGate;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -24,7 +23,7 @@ public class InteractionEffectGate extends InteractionDefault implements Conditi
             117, // Executioner Hood
             118, // Evil Clown Paint
             135 // Marionette
-    ));
+            ));
 
     public InteractionEffectGate(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -43,8 +42,7 @@ public class InteractionEffectGate extends InteractionDefault implements Conditi
 
     @Override
     public boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects) {
-        if (roomUnit == null || room == null)
-            return false;
+        if (roomUnit == null || room == null) return false;
 
         String customparams = this.getBaseItem().getCustomParams().trim();
 
@@ -79,7 +77,5 @@ public class InteractionEffectGate extends InteractionDefault implements Conditi
     }
 
     @Override
-    public void onRejected(RoomUnit roomUnit, Room room, Object[] objects) {
-
-    }
+    public void onRejected(RoomUnit roomUnit, Room room, Object[] objects) {}
 }

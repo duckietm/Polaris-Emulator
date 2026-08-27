@@ -9,14 +9,13 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
-import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
+import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -37,7 +36,8 @@ public class WiredEffectTriggerStacks extends InteractionWiredEffect {
         this.items = new LinkedHashSet<>();
     }
 
-    public WiredEffectTriggerStacks(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredEffectTriggerStacks(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.items = new LinkedHashSet<>();
     }
@@ -48,8 +48,12 @@ public class WiredEffectTriggerStacks extends InteractionWiredEffect {
         Set<HabboItem> items = new HashSet<>();
 
         for (HabboItem item : itemsSnapshot) {
-            if (item.getRoomId() != this.getRoomId() || Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId()).getHabboItem(item.getId()) == null)
-                items.add(item);
+            if (item.getRoomId() != this.getRoomId()
+                    || Emulator.getGameEnvironment()
+                                    .getRoomManager()
+                                    .getRoom(this.getRoomId())
+                                    .getHabboItem(item.getId())
+                            == null) items.add(item);
         }
 
         for (HabboItem item : items) {
@@ -94,7 +98,7 @@ public class WiredEffectTriggerStacks extends InteractionWiredEffect {
 
         int itemsCount = settings.getFurniIds().length;
 
-        if(itemsCount > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) {
+        if (itemsCount > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) {
             throw new WiredSaveException("Too many furni selected");
         }
 
@@ -107,10 +111,12 @@ public class WiredEffectTriggerStacks extends InteractionWiredEffect {
         if (this.furniSource == WiredSourceUtil.SOURCE_SELECTED) {
             for (int i = 0; i < itemsCount; i++) {
                 int itemId = settings.getFurniIds()[i];
-                HabboItem it = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId()).getHabboItem(itemId);
+                HabboItem it = Emulator.getGameEnvironment()
+                        .getRoomManager()
+                        .getRoom(this.getRoomId())
+                        .getHabboItem(itemId);
 
-                if(it == null)
-                    throw new WiredSaveException(String.format("Item %s not found", itemId));
+                if (it == null) throw new WiredSaveException(String.format("Item %s not found", itemId));
 
                 newItems.add(it);
             }
@@ -118,7 +124,7 @@ public class WiredEffectTriggerStacks extends InteractionWiredEffect {
 
         int delay = settings.getDelay();
 
-        if(delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
+        if (delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
             throw new WiredSaveException("Delay too long");
 
         this.items.clear();
@@ -134,15 +140,15 @@ public class WiredEffectTriggerStacks extends InteractionWiredEffect {
      * Maximum recursion depth to prevent infinite loops when trigger stacks call each other.
      */
     protected static final int MAX_STACK_DEPTH = 10;
-    
+
     @Override
     public void execute(WiredContext ctx) {
         Room room = ctx.room();
         RoomUnit roomUnit = ctx.actor().orElse(null);
-        
+
         // Get the current call stack depth from the event
         int currentDepth = ctx.event().getCallStackDepth();
-        
+
         // Prevent excessive recursion depth
         if (currentDepth >= MAX_STACK_DEPTH) {
             return;
@@ -159,15 +165,14 @@ public class WiredEffectTriggerStacks extends InteractionWiredEffect {
         return false;
     }
 
-
     @Override
     public String getWiredData() {
         List<HabboItem> itemsSnapshot = new ArrayList<>(this.items);
-        return WiredManager.getGson().toJson(new JsonData(
-                this.getDelay(),
-                itemsSnapshot.stream().map(HabboItem::getId).collect(Collectors.toList()),
-                this.furniSource
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.getDelay(),
+                        itemsSnapshot.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                        this.furniSource));
     }
 
     @Override
@@ -180,7 +185,7 @@ public class WiredEffectTriggerStacks extends InteractionWiredEffect {
             this.setDelay(WiredMovementPayloadGuard.delay(jsonData.delay));
             this.furniSource = WiredMovementPayloadGuard.furniSource(jsonData.furniSource);
             if (jsonData.itemIds != null) {
-                for (Integer id: jsonData.itemIds) {
+                for (Integer id : jsonData.itemIds) {
                     if (id == null) continue;
                     HabboItem item = room.getHabboItem(id);
                     if (item != null) {
@@ -203,8 +208,7 @@ public class WiredEffectTriggerStacks extends InteractionWiredEffect {
                         int itemId = WiredMovementPayloadGuard.parseInt(s, 0);
                         HabboItem item = itemId > 0 ? room.getHabboItem(itemId) : null;
 
-                        if (item != null)
-                            this.items.add(item);
+                        if (item != null) this.items.add(item);
                     }
                 }
             }

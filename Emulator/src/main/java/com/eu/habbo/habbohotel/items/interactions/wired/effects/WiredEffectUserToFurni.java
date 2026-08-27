@@ -14,13 +14,12 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
-import com.eu.habbo.habbohotel.wired.core.WiredMovementPhysics;
 import com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper;
+import com.eu.habbo.habbohotel.wired.core.WiredMovementPhysics;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredUserMovementHelper;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -76,13 +75,13 @@ public class WiredEffectUserToFurni extends WiredEffectUserFurniBase {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(
-            this.getDelay(),
-            this.items.stream().map(HabboItem::getId).collect(Collectors.toList()),
-            this.furniSource,
-            this.userSource,
-            this.walkMode
-        ));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.getDelay(),
+                        this.items.stream().map(HabboItem::getId).collect(Collectors.toList()),
+                        this.furniSource,
+                        this.userSource,
+                        this.walkMode));
     }
 
     @Override
@@ -144,9 +143,8 @@ public class WiredEffectUserToFurni extends WiredEffectUserFurniBase {
     @Override
     public void serializeWiredData(ServerMessage message, Room room) {
         List<HabboItem> itemsSnapshot = new ArrayList<>(this.items);
-        itemsSnapshot.removeIf(item -> item == null
-            || item.getRoomId() != this.getRoomId()
-            || room.getHabboItem(item.getId()) == null);
+        itemsSnapshot.removeIf(item ->
+                item == null || item.getRoomId() != this.getRoomId() || room.getHabboItem(item.getId()) == null);
         this.items.clear();
         this.items.addAll(itemsSnapshot);
 
@@ -186,9 +184,12 @@ public class WiredEffectUserToFurni extends WiredEffectUserFurniBase {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        this.furniSource = (settings.getIntParams().length > 0) ? settings.getIntParams()[0] : WiredSourceUtil.SOURCE_TRIGGER;
-        this.userSource = (settings.getIntParams().length > 1) ? settings.getIntParams()[1] : WiredSourceUtil.SOURCE_TRIGGER;
-        this.walkMode = this.normalizeWalkMode((settings.getIntParams().length > 2) ? settings.getIntParams()[2] : WALKMODE_CONTINUE);
+        this.furniSource =
+                (settings.getIntParams().length > 0) ? settings.getIntParams()[0] : WiredSourceUtil.SOURCE_TRIGGER;
+        this.userSource =
+                (settings.getIntParams().length > 1) ? settings.getIntParams()[1] : WiredSourceUtil.SOURCE_TRIGGER;
+        this.walkMode = this.normalizeWalkMode(
+                (settings.getIntParams().length > 2) ? settings.getIntParams()[2] : WALKMODE_CONTINUE);
 
         if (settings.getFurniIds().length > Emulator.getConfig().getInt("hotel.wired.furni.selection.count")) {
             throw new WiredSaveException("Too many furni selected");
@@ -228,7 +229,8 @@ public class WiredEffectUserToFurni extends WiredEffectUserFurniBase {
         return true;
     }
 
-    private void moveHabboSmooth(Room room, Habbo habbo, HabboItem item, RoomTile targetTile, WiredMovementPhysics movementPhysics) {
+    private void moveHabboSmooth(
+            Room room, Habbo habbo, HabboItem item, RoomTile targetTile, WiredMovementPhysics movementPhysics) {
         if (room == null || habbo == null || item == null || targetTile == null || habbo.getRoomUnit() == null) {
             return;
         }
@@ -244,18 +246,34 @@ public class WiredEffectUserToFurni extends WiredEffectUserFurniBase {
         }
 
         double newZ = item.getZ() + Item.getCurrentHeight(item);
-        int animationDuration = noAnimation ? 0 : WiredMoveCarryHelper.getAnimationDuration(room, this, WiredUserMovementHelper.DEFAULT_ANIMATION_DURATION);
-        if (!WiredUserMovementHelper.moveUser(room, roomUnit, targetTile, newZ,
-                roomUnit.getBodyRotation(), roomUnit.getHeadRotation(), animationDuration, noAnimation, movementPhysics)) {
+        int animationDuration = noAnimation
+                ? 0
+                : WiredMoveCarryHelper.getAnimationDuration(
+                        room, this, WiredUserMovementHelper.DEFAULT_ANIMATION_DURATION);
+        if (!WiredUserMovementHelper.moveUser(
+                room,
+                roomUnit,
+                targetTile,
+                newZ,
+                roomUnit.getBodyRotation(),
+                roomUnit.getHeadRotation(),
+                animationDuration,
+                noAnimation,
+                movementPhysics)) {
             return;
         }
 
-        this.applyWalkMode(roomUnit, oldLocation, previousGoal, targetTile, wasWalking,
-                animationDuration);
+        this.applyWalkMode(roomUnit, oldLocation, previousGoal, targetTile, wasWalking, animationDuration);
         roomUnit.setPreviousLocationZ(roomUnit.getZ());
     }
 
-    private void applyWalkMode(RoomUnit roomUnit, RoomTile oldLocation, RoomTile previousGoal, RoomTile targetTile, boolean wasWalking, int delay) {
+    private void applyWalkMode(
+            RoomUnit roomUnit,
+            RoomTile oldLocation,
+            RoomTile previousGoal,
+            RoomTile targetTile,
+            boolean wasWalking,
+            int delay) {
         if (roomUnit == null || targetTile == null) {
             return;
         }

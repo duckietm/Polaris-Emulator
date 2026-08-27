@@ -4,7 +4,6 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.threading.runnables.games.GameUpCounter;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -19,14 +18,15 @@ public class InteractionGameUpCounter extends InteractionGameTimer {
         this.normalizeCounterState();
     }
 
-    public InteractionGameUpCounter(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionGameUpCounter(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.normalizeCounterState();
     }
 
     @Override
     protected void parseCustomParams(Item baseItem) {
-        this.TIMER_INTERVAL_STEPS = new int[] { MAX_UPCOUNTER_TIME };
+        this.TIMER_INTERVAL_STEPS = new int[] {MAX_UPCOUNTER_TIME};
     }
 
     private void normalizeCounterState() {

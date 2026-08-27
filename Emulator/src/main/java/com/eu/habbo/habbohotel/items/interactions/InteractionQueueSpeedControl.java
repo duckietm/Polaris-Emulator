@@ -4,12 +4,11 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class InteractionQueueSpeedControl extends InteractionRemoteSwitchControl {
-    private static final int[] MODE_STATES = new int[]{0, 3, 6, 9};
+    private static final int[] MODE_STATES = new int[] {0, 3, 6, 9};
     private static final int MODE_FRAME_COUNT = 3;
     private static final int BASE_FRAME_DURATION_MS = 500;
 
@@ -21,7 +20,8 @@ public class InteractionQueueSpeedControl extends InteractionRemoteSwitchControl
         super(set, baseItem);
     }
 
-    public InteractionQueueSpeedControl(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionQueueSpeedControl(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -86,7 +86,7 @@ public class InteractionQueueSpeedControl extends InteractionRemoteSwitchControl
             }
 
             if (!this.canToggle(client.getHabbo(), room)) {
-                super.onClick(client, room, new Object[]{"QUEUE_SPEED_USE"});
+                super.onClick(client, room, new Object[] {"QUEUE_SPEED_USE"});
                 return;
             }
         }
@@ -95,7 +95,7 @@ public class InteractionQueueSpeedControl extends InteractionRemoteSwitchControl
         applyModeState(room, nextModeState, true);
 
         if (client != null) {
-            super.onClick(client, room, new Object[]{"TOGGLE_OVERRIDE"});
+            super.onClick(client, room, new Object[] {"TOGGLE_OVERRIDE"});
         }
     }
 

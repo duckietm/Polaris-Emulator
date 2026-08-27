@@ -6,8 +6,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.users.HabboItem;
-
-import java.awt.*;
+import java.awt.Rectangle;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Set;
@@ -42,7 +41,7 @@ public class InteractionWaterItem extends InteractionMultiHeight {
 
     @Override
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
-        super.onClick(client, room, new Object[] { });
+        super.onClick(client, room, new Object[] {});
     }
 
     public void update() {

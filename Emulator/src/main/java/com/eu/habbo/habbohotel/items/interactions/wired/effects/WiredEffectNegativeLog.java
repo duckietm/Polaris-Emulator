@@ -2,7 +2,6 @@ package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 

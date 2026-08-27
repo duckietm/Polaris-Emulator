@@ -9,7 +9,6 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -24,7 +23,8 @@ public class WiredExtraAnimationTime extends InteractionWiredExtra {
         super(set, baseItem);
     }
 
-    public WiredExtraAnimationTime(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public WiredExtraAnimationTime(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -37,7 +37,9 @@ public class WiredExtraAnimationTime extends InteractionWiredExtra {
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
         int value = (settings.getIntParams().length > 0) ? settings.getIntParams()[0] : this.durationMs;
 
-        if (value == this.durationMs && settings.getStringParam() != null && !settings.getStringParam().isEmpty()) {
+        if (value == this.durationMs
+                && settings.getStringParam() != null
+                && !settings.getStringParam().isEmpty()) {
             try {
                 value = Integer.parseInt(settings.getStringParam());
             } catch (NumberFormatException ignored) {
@@ -81,7 +83,8 @@ public class WiredExtraAnimationTime extends InteractionWiredExtra {
 
         if (wiredData.startsWith("{")) {
             JsonData data = WiredExtraPayloadGuard.fromJson(wiredData, JsonData.class);
-            this.durationMs = normalizeDuration((data != null) ? data.durationMs : WiredMovementsComposer.DEFAULT_DURATION);
+            this.durationMs =
+                    normalizeDuration((data != null) ? data.durationMs : WiredMovementsComposer.DEFAULT_DURATION);
             return;
         }
 
@@ -98,9 +101,7 @@ public class WiredExtraAnimationTime extends InteractionWiredExtra {
     }
 
     @Override
-    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
-
-    }
+    public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
 
     @Override
     public boolean hasConfiguration() {

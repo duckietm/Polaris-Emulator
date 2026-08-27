@@ -7,16 +7,19 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.permissions.Permission;
-import com.eu.habbo.habbohotel.rooms.*;
+import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomChatMessage;
+import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
+import com.eu.habbo.habbohotel.rooms.RoomChatType;
+import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
-import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
+import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredTextPlaceholderUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -84,17 +87,19 @@ public class WiredEffectMakeUserSay extends InteractionWiredEffect {
                 : VISIBILITY_SOURCE_USERS;
         this.bubbleStyle = (params.length > 2) ? params[2] : RoomChatMessageBubbles.WIRED.getType();
 
-        if(gameClient.getHabbo() == null || !gameClient.getHabbo().hasPermission(Permission.ACC_SUPERWIRED)) {
+        if (gameClient.getHabbo() == null || !gameClient.getHabbo().hasPermission(Permission.ACC_SUPERWIRED)) {
             message = Emulator.getGameEnvironment().getWordFilter().filter(message, null);
         }
 
-        int maxLength = Emulator.getConfig().getInt("hotel.wired.show_message.max_length", DEFAULT_SHOW_MESSAGE_MAX_LENGTH);
-        int maxLines = Emulator.getConfig().getInt("hotel.wired.show_message.max_lines", DEFAULT_SHOW_MESSAGE_MAX_LINES);
+        int maxLength =
+                Emulator.getConfig().getInt("hotel.wired.show_message.max_length", DEFAULT_SHOW_MESSAGE_MAX_LENGTH);
+        int maxLines =
+                Emulator.getConfig().getInt("hotel.wired.show_message.max_lines", DEFAULT_SHOW_MESSAGE_MAX_LINES);
         message = clampMessage(message, maxLength, maxLines);
 
         int delay = settings.getDelay();
 
-        if(delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
+        if (delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
             throw new WiredSaveException("Delay too long");
 
         this.message = message;
@@ -144,8 +149,15 @@ public class WiredEffectMakeUserSay extends InteractionWiredEffect {
 
         String msg = this.message
                 .replace("%user%", username)
-                .replace("%online_count%", Emulator.getGameEnvironment().getHabboManager().getOnlineCount() + "")
-                .replace("%room_count%", Emulator.getGameEnvironment().getRoomManager().getActiveRooms().size() + "");
+                .replace(
+                        "%online_count%",
+                        Emulator.getGameEnvironment().getHabboManager().getOnlineCount() + "")
+                .replace(
+                        "%room_count%",
+                        Emulator.getGameEnvironment()
+                                        .getRoomManager()
+                                        .getActiveRooms()
+                                        .size() + "");
 
         return WiredTextPlaceholderUtil.applyUsernamePlaceholders(ctx, msg);
     }
@@ -171,8 +183,7 @@ public class WiredEffectMakeUserSay extends InteractionWiredEffect {
                         h,
                         new RoomChatMessage(msg, unit, RoomChatMessageBubbles.getBubble(this.bubbleStyle)),
                         RoomChatType.TALK,
-                        true
-                );
+                        true);
 
                 if (h.getRoomUnit().isIdle()) {
                     h.getRoomUnit().getRoom().unIdle(h);
@@ -189,7 +200,9 @@ public class WiredEffectMakeUserSay extends InteractionWiredEffect {
 
     @Override
     public String getWiredData() {
-        return WiredManager.getGson().toJson(new JsonData(this.message, this.getDelay(), this.userSource, this.visibilitySelection, this.bubbleStyle));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.message, this.getDelay(), this.userSource, this.visibilitySelection, this.bubbleStyle));
     }
 
     @Override
@@ -197,16 +210,19 @@ public class WiredEffectMakeUserSay extends InteractionWiredEffect {
         String wiredData = set.getString("wired_data");
 
         JsonData jsonData = WiredUtilityPayloadGuard.fromJson(wiredData, JsonData.class);
-        if(jsonData != null) {
+        if (jsonData != null) {
             this.setDelay(WiredUtilityPayloadGuard.delay(jsonData.delay));
             this.message = WiredUtilityPayloadGuard.text(jsonData.message);
-            this.userSource = (jsonData.userSource != null) ? WiredUtilityPayloadGuard.userSource(jsonData.userSource) : WiredSourceUtil.SOURCE_TRIGGER;
-            this.visibilitySelection = (jsonData.visibilitySelection != null && jsonData.visibilitySelection == VISIBILITY_ALL_ROOM_USERS)
-                    ? VISIBILITY_ALL_ROOM_USERS
-                    : VISIBILITY_SOURCE_USERS;
-            this.bubbleStyle = (jsonData.bubbleStyle != null) ? jsonData.bubbleStyle : RoomChatMessageBubbles.WIRED.getType();
-        }
-        else {
+            this.userSource = (jsonData.userSource != null)
+                    ? WiredUtilityPayloadGuard.userSource(jsonData.userSource)
+                    : WiredSourceUtil.SOURCE_TRIGGER;
+            this.visibilitySelection =
+                    (jsonData.visibilitySelection != null && jsonData.visibilitySelection == VISIBILITY_ALL_ROOM_USERS)
+                            ? VISIBILITY_ALL_ROOM_USERS
+                            : VISIBILITY_SOURCE_USERS;
+            this.bubbleStyle =
+                    (jsonData.bubbleStyle != null) ? jsonData.bubbleStyle : RoomChatMessageBubbles.WIRED.getType();
+        } else {
             this.message = "";
 
             String[] wiredDataSplit = wiredData != null ? wiredData.split("\t") : new String[0];
@@ -238,7 +254,8 @@ public class WiredEffectMakeUserSay extends InteractionWiredEffect {
 
     @Override
     public boolean requiresTriggeringUser() {
-        return (this.userSource == WiredSourceUtil.SOURCE_TRIGGER) || WiredTextPlaceholderUtil.requiresActor(this.getRoom(), this);
+        return (this.userSource == WiredSourceUtil.SOURCE_TRIGGER)
+                || WiredTextPlaceholderUtil.requiresActor(this.getRoom(), this);
     }
 
     static class JsonData {

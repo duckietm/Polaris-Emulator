@@ -6,8 +6,6 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.messages.ServerMessage;
-import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestOpenHelper;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -25,7 +23,8 @@ public class InteractionWiredChestFurni extends InteractionWiredChest {
         super(set, baseItem);
     }
 
-    public InteractionWiredChestFurni(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
+    public InteractionWiredChestFurni(
+            int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
     }
 
@@ -49,7 +48,9 @@ public class InteractionWiredChestFurni extends InteractionWiredChest {
 
         this.contents = new ChestStorage();
         // Only stock a valid, existing base item.
-        if (baseItemId > 0 && quantity > 0 && Emulator.getGameEnvironment().getItemManager().getItem(baseItemId) != null) {
+        if (baseItemId > 0
+                && quantity > 0
+                && Emulator.getGameEnvironment().getItemManager().getItem(baseItemId) != null) {
             this.contents.add(ChestStorage.KIND_FURNI, baseItemId, quantity);
         }
         return true;

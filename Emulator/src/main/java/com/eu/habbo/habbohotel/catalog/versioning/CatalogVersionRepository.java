@@ -8,6 +8,11 @@ import java.util.Optional;
 public interface CatalogVersionRepository {
     CatalogRuntimeState lockRuntimeState(Connection connection) throws SQLException;
 
+    /** Reads the runtime state without locking it. Defaults to the locking read where that is the only option. */
+    default CatalogRuntimeState readRuntimeState(Connection connection) throws SQLException {
+        return lockRuntimeState(connection);
+    }
+
     CatalogVersionSnapshot loadSnapshot(Connection connection, long versionId) throws SQLException;
 
     default CatalogVersion loadVersion(Connection connection, long versionId) throws SQLException {

@@ -1,0 +1,28 @@
+name: Discord Main Branch Notifier
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord Notification
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          AUTHOR: ${{ github.actor }}
+          COMMIT_URL: ${{ github.event.head_commit.url }}
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          PAYLOAD=$(jq -n \
+            --arg msg "$COMMIT_MSG" \
+            --arg auth "$AUTHOR" \
+            --arg url "$COMMIT_URL" \
+            '{content: "🚀 **New update on main branch!**\n**Commit:** \($msg)\n**Author:** \($auth)\n**Link:** \($url)"}')
+
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "$PAYLOAD" \
+               "$WEBHOOK_URL"

@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.catalog.versioning;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
@@ -349,6 +350,49 @@ class CatalogLiveMutationServiceTest {
         assertEquals(42, committed.offerId());
         assertEquals(CatalogPageType.NORMAL, committed.catalogType());
         assertEquals(0, committed.costPoints());
+    }
+
+    @Test
+    void updatesAPageFromEitherPayloadShape() throws Exception {
+        // Save page sends a full snapshot, save offer sends a draft. Both are accepted, and both
+        // are stored as the snapshot the live writer and the validation guard read back.
+        CatalogPageSnapshot snapshotShape = page(false);
+        CatalogDraftPageData draftShape = gson.fromJson(gson.toJson(snapshotShape), CatalogDraftPageData.class);
+
+        for (String payload : List.of(gson.toJson(snapshotShape), gson.toJson(draftShape))) {
+            service.applyBatch(List.of(new CatalogLiveMutationRequest(
+                    -1,
+                    7,
+                    "Change visibility",
+                    CatalogEntityType.PAGE,
+                    CatalogPageType.NORMAL,
+                    17,
+                    CatalogChangeOperation.UPDATE,
+                    payload)));
+        }
+
+        ArgumentCaptor<CatalogChangeEntry> change = ArgumentCaptor.forClass(CatalogChangeEntry.class);
+        verify(live, org.mockito.Mockito.times(2)).apply(eq(connection), change.capture());
+        for (CatalogChangeEntry entry : change.getAllValues()) {
+            CatalogPageSnapshot committed = gson.fromJson(entry.afterJson(), CatalogPageSnapshot.class);
+            assertEquals(17, committed.pageId());
+            assertEquals(CatalogPageType.NORMAL, committed.catalogType());
+        }
+    }
+
+    @Test
+    void rejectsAPayloadWhoseOwnIdentityContradictsTheRequest() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> service.applyBatch(List.of(new CatalogLiveMutationRequest(
+                        -1,
+                        7,
+                        "Change visibility",
+                        CatalogEntityType.PAGE,
+                        CatalogPageType.NORMAL,
+                        99,
+                        CatalogChangeOperation.UPDATE,
+                        gson.toJson(page(false))))));
     }
 
     private static CatalogPageSnapshot page(boolean visible) {

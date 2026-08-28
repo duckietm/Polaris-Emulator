@@ -8,7 +8,8 @@ import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.google.gson.Gson;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import org.junit.jupiter.api.Test;
+
+import static org.mockito.Mockito.*;
 
 class JdbcCatalogLiveEntityWriterTest {
     private final Gson gson = new Gson();

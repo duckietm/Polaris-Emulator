@@ -15,18 +15,20 @@ public final class JdbcCatalogLiveSnapshotRepository implements CatalogLiveSnaps
             + "page_headline, page_teaser, COALESCE(page_special, '') AS page_special, page_text1, page_text2, "
             + "page_text_details, page_text_teaser, COALESCE(room_id, 0) AS room_id, includes "
             + "FROM catalog_pages ORDER BY id";
-    static final String READ_NORMAL_OFFERS_SQL = "SELECT id AS offer_id, item_ids, page_id, catalog_name, "
+    static final String NORMAL_OFFERS_SELECT = "SELECT id AS offer_id, item_ids, page_id, catalog_name, "
             + "cost_credits, cost_points, points_type, amount, limited_stack, order_number, offer_id AS offer_id_client, "
-            + "song_id, extradata, have_offer, club_only FROM catalog_items ORDER BY id";
+            + "song_id, extradata, have_offer, club_only FROM catalog_items";
+    static final String READ_NORMAL_OFFERS_SQL = NORMAL_OFFERS_SELECT + " ORDER BY id";
     static final String READ_BUILDER_PAGES_SQL = "SELECT id AS page_id, parent_id, '' AS caption_save, caption, "
             + "page_layout, icon_color, icon_image, 1 AS min_rank, order_num, visible, enabled, 0 AS club_only, "
             + "'BUILDER' AS catalog_mode, 0 AS vip_only, page_headline, page_teaser, "
             + "COALESCE(page_special, '') AS page_special, page_text1, page_text2, page_text_details, "
             + "page_text_teaser, 0 AS room_id, '' AS includes FROM catalog_pages_bc ORDER BY id";
-    static final String READ_BUILDER_OFFERS_SQL = "SELECT id AS offer_id, item_ids, page_id, catalog_name, "
+    static final String BUILDER_OFFERS_SELECT = "SELECT id AS offer_id, item_ids, page_id, catalog_name, "
             + "0 AS cost_credits, 0 AS cost_points, 0 AS points_type, 1 AS amount, 0 AS limited_stack, order_number, "
             + "-1 AS offer_id_client, 0 AS song_id, extradata, 1 AS have_offer, 0 AS club_only "
-            + "FROM catalog_items_bc ORDER BY id";
+            + "FROM catalog_items_bc";
+    static final String READ_BUILDER_OFFERS_SQL = BUILDER_OFFERS_SELECT + " ORDER BY id";
     static final String LOAD_NORMAL_PAGES_SQL = READ_NORMAL_PAGES_SQL + FOR_UPDATE;
     static final String LOAD_NORMAL_OFFERS_SQL = READ_NORMAL_OFFERS_SQL + FOR_UPDATE;
     static final String LOAD_BUILDER_PAGES_SQL = READ_BUILDER_PAGES_SQL + FOR_UPDATE;
@@ -59,6 +61,56 @@ public final class JdbcCatalogLiveSnapshotRepository implements CatalogLiveSnaps
                 READ_NORMAL_OFFERS_SQL,
                 READ_BUILDER_PAGES_SQL,
                 READ_BUILDER_OFFERS_SQL);
+    }
+
+    /**
+     * Reads every page and only the offers the batch can reach.
+     *
+     * <p>Pages are read whole because the rules that judge one walk the tree around it, and they are
+     * cheap - a live catalog of 112,000 offers had 2,236 pages. The offers are the cost, and a save
+     * needs a handful of them: the ones it names, plus the ones sitting on a page it creates or
+     * deletes.
+     */
+    @Override
+    public CatalogVersionSnapshot loadForMutation(
+            Connection connection, CatalogVersion version, CatalogMutationScope scope) throws SQLException {
+        List<CatalogPageSnapshot> pages =
+                new ArrayList<>(loadPages(connection, LOAD_NORMAL_PAGES_SQL, CatalogPageType.NORMAL));
+        pages.addAll(loadPages(connection, LOAD_BUILDER_PAGES_SQL, CatalogPageType.BUILDER));
+
+        List<CatalogOfferSnapshot> offers =
+                new ArrayList<>(loadScopedOffers(connection, NORMAL_OFFERS_SELECT, CatalogPageType.NORMAL, scope));
+        offers.addAll(loadScopedOffers(connection, BUILDER_OFFERS_SELECT, CatalogPageType.BUILDER, scope));
+
+        return new CatalogVersionSnapshot(version, pages, offers);
+    }
+
+    private static List<CatalogOfferSnapshot> loadScopedOffers(
+            Connection connection, String selectSql, CatalogPageType catalogType, CatalogMutationScope scope)
+            throws SQLException {
+        if (scope.isEmpty(catalogType)) return List.of();
+
+        List<Integer> offerIds = new ArrayList<>(scope.offerIds(catalogType));
+        List<Integer> pageIds = new ArrayList<>(scope.pageIds(catalogType));
+        List<String> clauses = new ArrayList<>(2);
+        if (!offerIds.isEmpty()) clauses.add("id IN (" + placeholders(offerIds.size()) + ")");
+        if (!pageIds.isEmpty()) clauses.add("page_id IN (" + placeholders(pageIds.size()) + ")");
+
+        String sql = selectSql + " WHERE " + String.join(" OR ", clauses) + " ORDER BY id" + FOR_UPDATE;
+        List<CatalogOfferSnapshot> offers = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            int index = 1;
+            for (int offerId : offerIds) statement.setInt(index++, offerId);
+            for (int pageId : pageIds) statement.setInt(index++, pageId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) offers.add(readOffer(resultSet, catalogType));
+            }
+        }
+        return offers;
+    }
+
+    private static String placeholders(int count) {
+        return String.join(",", java.util.Collections.nCopies(count, "?"));
     }
 
     private static CatalogVersionSnapshot load(
@@ -120,25 +172,30 @@ public final class JdbcCatalogLiveSnapshotRepository implements CatalogLiveSnaps
         try (PreparedStatement statement = connection.prepareStatement(sql);
                 ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
-                offers.add(new CatalogOfferSnapshot(
-                        catalogType,
-                        resultSet.getInt("offer_id"),
-                        resultSet.getString("item_ids"),
-                        resultSet.getInt("page_id"),
-                        resultSet.getString("catalog_name"),
-                        resultSet.getInt("cost_credits"),
-                        resultSet.getInt("cost_points"),
-                        resultSet.getInt("points_type"),
-                        resultSet.getInt("amount"),
-                        resultSet.getInt("limited_stack"),
-                        resultSet.getInt("order_number"),
-                        resultSet.getInt("offer_id_client"),
-                        resultSet.getInt("song_id"),
-                        resultSet.getString("extradata"),
-                        JdbcCatalogVersionRepository.readStrictBoolean(resultSet, "have_offer"),
-                        JdbcCatalogVersionRepository.readStrictBoolean(resultSet, "club_only")));
+                offers.add(readOffer(resultSet, catalogType));
             }
         }
         return offers;
+    }
+
+    private static CatalogOfferSnapshot readOffer(ResultSet resultSet, CatalogPageType catalogType)
+            throws SQLException {
+        return new CatalogOfferSnapshot(
+                catalogType,
+                resultSet.getInt("offer_id"),
+                resultSet.getString("item_ids"),
+                resultSet.getInt("page_id"),
+                resultSet.getString("catalog_name"),
+                resultSet.getInt("cost_credits"),
+                resultSet.getInt("cost_points"),
+                resultSet.getInt("points_type"),
+                resultSet.getInt("amount"),
+                resultSet.getInt("limited_stack"),
+                resultSet.getInt("order_number"),
+                resultSet.getInt("offer_id_client"),
+                resultSet.getInt("song_id"),
+                resultSet.getString("extradata"),
+                JdbcCatalogVersionRepository.readStrictBoolean(resultSet, "have_offer"),
+                JdbcCatalogVersionRepository.readStrictBoolean(resultSet, "club_only"));
     }
 }

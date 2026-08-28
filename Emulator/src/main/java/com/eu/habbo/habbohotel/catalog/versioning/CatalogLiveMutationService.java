@@ -1,6 +1,8 @@
 package com.eu.habbo.habbohotel.catalog.versioning;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -526,7 +528,6 @@ public final class CatalogLiveMutationService {
                                 .orElseThrow(() -> new IllegalArgumentException(
                                         "Live catalog offer not found: " + request.entityId()));
                 };
-        validateIdentity(request);
         return new CatalogChangeEntry(
                 0,
                 request.entityType(),
@@ -534,7 +535,7 @@ public final class CatalogLiveMutationService {
                 request.entityId(),
                 request.operation(),
                 beforeJson,
-                request.operation() == CatalogChangeOperation.DELETE ? null : request.afterJson());
+                request.operation() == CatalogChangeOperation.DELETE ? null : canonicalAfterJson(request));
     }
 
     private CatalogChangeEntry buildCreate(Connection connection, CatalogLiveMutationRequest request)
@@ -569,19 +570,46 @@ public final class CatalogLiveMutationService {
         };
     }
 
-    private void validateIdentity(CatalogLiveMutationRequest request) {
-        if (request.operation() == CatalogChangeOperation.DELETE) return;
-        boolean valid =
-                switch (request.entityType()) {
-                    case PAGE -> {
-                        CatalogPageSnapshot page = gson.fromJson(request.afterJson(), CatalogPageSnapshot.class);
-                        yield page.pageId() == request.entityId() && page.catalogType() == request.catalogType();
-                    }
-                    case OFFER -> {
-                        CatalogOfferSnapshot offer = gson.fromJson(request.afterJson(), CatalogOfferSnapshot.class);
-                        yield offer.offerId() == request.entityId() && offer.catalogType() == request.catalogType();
-                    }
-                };
-        if (!valid) throw new IllegalArgumentException("Live catalog payload identity does not match the request");
+    /**
+     * Rewrites the payload as the full snapshot the change journal and the live writer read back.
+     *
+     * <p>The editor sends a draft: {@link CatalogDraftOfferData} and {@link CatalogDraftPageData}
+     * carry the editable fields but no identity, because the request already names the catalog and
+     * the entity. Creation has always rebuilt the snapshot from that draft; updates stored the draft
+     * verbatim, so anything reading the entry back as a snapshot - {@code JdbcCatalogLiveEntityWriter},
+     * {@code CatalogLiveValidationGuard}, and the identity check that used to live here - hit a
+     * payload with a null {@code catalogType} and an offer id of zero.
+     *
+     * <p>A payload that does carry its own identity is still checked against the request rather than
+     * silently overwritten.
+     */
+    private String canonicalAfterJson(CatalogLiveMutationRequest request) {
+        JsonObject payload = JsonParser.parseString(request.afterJson()).getAsJsonObject();
+        validateIdentity(request, payload);
+        return switch (request.entityType()) {
+            case PAGE ->
+                gson.toJson(gson.fromJson(payload, CatalogDraftPageData.class)
+                        .withId(request.catalogType(), request.entityId()));
+            case OFFER ->
+                gson.toJson(gson.fromJson(payload, CatalogDraftOfferData.class)
+                        .withId(request.catalogType(), request.entityId()));
+        };
+    }
+
+    private void validateIdentity(CatalogLiveMutationRequest request, JsonObject payload) {
+        String idField = request.entityType() == CatalogEntityType.PAGE ? "pageId" : "offerId";
+        boolean mismatch = payload.has(idField)
+                && !payload.get(idField).isJsonNull()
+                && payload.get(idField).getAsInt() != request.entityId();
+        if (!mismatch
+                && payload.has("catalogType")
+                && !payload.get("catalogType").isJsonNull()) {
+            mismatch = !request.catalogType()
+                    .name()
+                    .equals(payload.get("catalogType").getAsString());
+        }
+        if (mismatch) {
+            throw new IllegalArgumentException("Live catalog payload identity does not match the request");
+        }
     }
 }

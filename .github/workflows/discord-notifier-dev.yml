@@ -1,0 +1,115 @@
+name: Discord Development Branch Notifier
+
+on:
+  push:
+    branches:
+      - dev
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    if: github.event.head_commit != null
+    steps:
+      - name: Checkout with full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Collect diff stats
+        id: diff
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          set -e
+
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ] \
+             || ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            echo "before SHA unusable, falling back to first parent of HEAD"
+            BEFORE=$(git rev-parse "${AFTER}^" 2>/dev/null || echo "$AFTER")
+          fi
+
+          echo "Diffing $BEFORE -> $AFTER"
+
+          NUMSTAT=$(git diff --numstat "$BEFORE" "$AFTER" || true)
+
+          FILES=$(printf '%s\n' "$NUMSTAT" | grep -c . || true)
+          ADD=$(printf '%s\n' "$NUMSTAT" | awk '{ if ($1 ~ /^[0-9]+$/) a += $1 } END { print a+0 }')
+          DEL=$(printf '%s\n' "$NUMSTAT" | awk '{ if ($2 ~ /^[0-9]+$/) d += $2 } END { print d+0 }')
+          COMMITS=$(git rev-list --count "${BEFORE}..${AFTER}" 2>/dev/null || echo 1)
+
+          echo "files=$FILES  added=$ADD  removed=$DEL  commits=$COMMITS"
+
+          {
+            echo "files=$FILES"
+            echo "added=$ADD"
+            echo "removed=$DEL"
+            echo "commits=$COMMITS"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Send Discord Notification
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL_DEV }}
+          FILES: ${{ steps.diff.outputs.files }}
+          ADDED: ${{ steps.diff.outputs.added }}
+          REMOVED: ${{ steps.diff.outputs.removed }}
+          COMMITS: ${{ steps.diff.outputs.commits }}
+        run: |
+          PAYLOAD=$(jq -c \
+            --arg files "$FILES" \
+            --arg add "$ADDED" \
+            --arg del "$REMOVED" \
+            --arg commits "$COMMITS" '
+            .head_commit as $c
+            | (.repository.full_name) as $repo
+            | (.ref | sub("refs/heads/"; "")) as $branch
+            | ($c.message | split("\n")[0]) as $title
+            | ($c.message | split("\n")[1:] | join("\n")) as $body
+            | {
+                username: "Polaris Emulator - Development",
+                avatar_url: "https://images.habbo.com/c_images/album1584/EST08.gif",
+                embeds: [
+                  {
+                    author: {
+                      name: ($c.author.username // $c.author.name),
+                      url: ("https://github.com/" + ($c.author.username // "")),
+                      icon_url: (.sender.avatar_url)
+                    },
+                    title: ("🏨  " + ($title | .[0:230])),
+                    url: $c.url,
+                    description: (
+                      (if ($body | gsub("\\s"; "") | length) > 0
+                        then ($body | .[0:1400]) + "\n\n"
+                        else ""
+                      end)
+                      + "**Room:** `" + $repo + "`  •  **Branch:** `" + $branch + "`\n"
+                      + "**Commit:** [`" + ($c.id[0:7]) + "`](" + $c.url + ")"
+                      + "  •  [compare](" + .compare + ")"
+                    ),
+                    color: 16751616,
+                    thumbnail: {
+                      url: "https://www.habbo.com/habbo-imaging/avatarimage?figure=hr-165-45.hd-180-2.ch-255-66.lg-280-110.sh-305-62&direction=2&head_direction=3&size=l&action=wav"
+                    },
+                    fields: [
+                      { name: "📦 Files changed", value: ("```" + $files + "```"), inline: true },
+                      { name: "🟩 Added",         value: ("```diff\n+" + $add + "```"), inline: true },
+                      { name: "🟥 Removed",       value: ("```diff\n-" + $del + "```"), inline: true }
+                    ],
+                    footer: {
+                      text: ($repo + " • " + $commits + " commit(s) pushed to " + $branch),
+                      icon_url: "https://github.githubassets.com/favicons/favicon.png"
+                    },
+                    timestamp: $c.timestamp
+                  }
+                ]
+              }
+          ' "$GITHUB_EVENT_PATH")
+
+          curl -sS -f \
+               -H "Content-Type: application/json" \
+               -X POST \
+               -d "$PAYLOAD" \
+               "$WEBHOOK_URL"

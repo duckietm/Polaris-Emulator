@@ -119,6 +119,167 @@ class CatalogValidatorTest {
                 report.issues().stream().map(CatalogValidationIssue::entityId).toList());
     }
 
+    @Test
+    void reportsAProblemTheChangeIntroducesOnADifferentPage() {
+        // Hiding page 1 breaks page 2, which is not itself edited. Any scoped
+        // validation has to follow that edge or it will pass a broken catalog.
+        List<CatalogPageSnapshot> baselinePages =
+                List.of(page(1, -1, 0, true, true, "root", ""), page(2, 1, 0, true, true, "default_3x3", ""));
+        List<CatalogPageSnapshot> draftPages =
+                List.of(page(1, -1, 0, false, true, "root", ""), page(2, 1, 0, true, true, "default_3x3", ""));
+
+        CatalogValidationReport report = validator(Set.of(), Set.of(), Map.of())
+                .validateChanges(snapshot(baselinePages, List.of()), snapshot(draftPages, List.of()));
+
+        assertEquals(
+                List.of(new CatalogValidationIssue(
+                        "PAGE_ANCESTOR_NOT_AVAILABLE",
+                        CatalogEntityType.PAGE,
+                        2,
+                        "parentId",
+                        "Visible page is unreachable: ancestor page 1 is hidden")),
+                report.issues());
+    }
+
+    @Test
+    void reportsAnOfferBrokenByDeletingThePageItSitsOn() {
+        List<CatalogPageSnapshot> pages =
+                List.of(page(1, -1, 0, true, true, "root", ""), page(2, 1, 0, true, true, "default_3x3", ""));
+        List<CatalogOfferSnapshot> offers = List.of(offer(10, 2, "100", 5, 0, 0, 0));
+
+        CatalogValidationReport report = validator(Set.of(100), Set.of(5), Map.of())
+                .validateChanges(snapshot(pages, offers), snapshot(List.of(pages.getFirst()), offers));
+
+        assertCodes(report, "OFFER_PAGE_MISSING");
+    }
+
+    @Test
+    void staysSilentOnAProblemThatWasAlreadyThere() {
+        List<CatalogPageSnapshot> pages =
+                List.of(page(1, -1, 0, false, true, "root", ""), page(2, 1, 0, true, true, "default_3x3", ""));
+        CatalogVersionSnapshot baseline = snapshot(pages, List.of());
+        CatalogVersionSnapshot draft = snapshot(pages, List.of(offer(10, 2, "100", 5, 0, 0, 0)));
+
+        CatalogValidationReport report =
+                validator(Set.of(100), Set.of(5), Map.of()).validateChanges(baseline, draft);
+
+        assertTrue(report.valid(), () -> "unchanged problems must not block a save: " + report.issues());
+    }
+
+    @Test
+    void reportsASiblingOrderClashTheChangeCreates() {
+        List<CatalogPageSnapshot> baselinePages = List.of(
+                page(1, -1, 0, true, true, "root", ""),
+                page(2, 1, 0, true, true, "default_3x3", ""),
+                page(3, 1, 1, true, true, "default_3x3", ""));
+        List<CatalogPageSnapshot> draftPages = List.of(
+                page(1, -1, 0, true, true, "root", ""),
+                page(2, 1, 0, true, true, "default_3x3", ""),
+                page(3, 1, 0, true, true, "default_3x3", ""));
+
+        CatalogValidationReport report = validator(Set.of(), Set.of(), Map.of())
+                .validateChanges(snapshot(baselinePages, List.of()), snapshot(draftPages, List.of()));
+
+        assertCodes(report, "PAGE_SIBLING_ORDER_DUPLICATE");
+    }
+
+    @Test
+    void scopedValidationStillSeesTheProblemOnTheUneditedPage() {
+        List<CatalogPageSnapshot> baselinePages =
+                List.of(page(1, -1, 0, true, true, "root", ""), page(2, 1, 0, true, true, "default_3x3", ""));
+        List<CatalogPageSnapshot> draftPages =
+                List.of(page(1, -1, 0, false, true, "root", ""), page(2, 1, 0, true, true, "default_3x3", ""));
+
+        // Only page 1 was edited; the breakage lands on page 2.
+        CatalogValidationReport report = validator(Set.of(), Set.of(), Map.of())
+                .validateChanges(
+                        snapshot(baselinePages, List.of()), snapshot(draftPages, List.of()), List.of(pageChange(1)));
+
+        assertCodes(report, "PAGE_ANCESTOR_NOT_AVAILABLE");
+        assertEquals(
+                List.of(2),
+                report.issues().stream().map(CatalogValidationIssue::entityId).toList());
+    }
+
+    @Test
+    void scopedValidationStillSeesASiblingOrderClash() {
+        List<CatalogPageSnapshot> baselinePages = List.of(
+                page(1, -1, 0, true, true, "root", ""),
+                page(2, 1, 0, true, true, "default_3x3", ""),
+                page(3, 1, 1, true, true, "default_3x3", ""));
+        List<CatalogPageSnapshot> draftPages = List.of(
+                page(1, -1, 0, true, true, "root", ""),
+                page(2, 1, 0, true, true, "default_3x3", ""),
+                page(3, 1, 0, true, true, "default_3x3", ""));
+
+        CatalogValidationReport report = validator(Set.of(), Set.of(), Map.of())
+                .validateChanges(
+                        snapshot(baselinePages, List.of()), snapshot(draftPages, List.of()), List.of(pageChange(3)));
+
+        assertCodes(report, "PAGE_SIBLING_ORDER_DUPLICATE");
+    }
+
+    @Test
+    void scopedValidationStillSeesAnOfferOrphanedByItsPage() {
+        List<CatalogPageSnapshot> pages =
+                List.of(page(1, -1, 0, true, true, "root", ""), page(2, 1, 0, true, true, "default_3x3", ""));
+        List<CatalogOfferSnapshot> offers = List.of(offer(10, 2, "100", 5, 0, 0, 0));
+
+        CatalogValidationReport report = validator(Set.of(100), Set.of(5), Map.of())
+                .validateChanges(
+                        snapshot(pages, offers), snapshot(List.of(pages.getFirst()), offers), List.of(pageChange(2)));
+
+        assertCodes(report, "OFFER_PAGE_MISSING");
+    }
+
+    @Test
+    void scopedValidationStillIgnoresAProblemThatWasAlreadyThere() {
+        List<CatalogPageSnapshot> pages =
+                List.of(page(1, -1, 0, false, true, "root", ""), page(2, 1, 0, true, true, "default_3x3", ""));
+        CatalogVersionSnapshot baseline = snapshot(pages, List.of());
+        CatalogVersionSnapshot draft = snapshot(pages, List.of(offer(10, 2, "100", 5, 0, 0, 0)));
+
+        CatalogValidationReport report =
+                validator(Set.of(100), Set.of(5), Map.of()).validateChanges(baseline, draft, List.of(offerChange(10)));
+
+        assertTrue(report.valid(), () -> "unchanged problems must not block a save: " + report.issues());
+    }
+
+    @Test
+    void scopedValidationOnAnOfferStillJudgesThatOffer() {
+        List<CatalogPageSnapshot> pages =
+                List.of(page(1, -1, 0, true, true, "root", ""), page(2, 1, 0, true, true, "default_3x3", ""));
+        CatalogVersionSnapshot baseline = snapshot(pages, List.of(offer(10, 2, "100", 5, 0, 0, 0)));
+        CatalogVersionSnapshot draft = snapshot(pages, List.of(offer(10, 2, "404", 5, 0, 0, 0)));
+
+        CatalogValidationReport report =
+                validator(Set.of(100), Set.of(5), Map.of()).validateChanges(baseline, draft, List.of(offerChange(10)));
+
+        assertCodes(report, "OFFER_ITEM_MISSING");
+    }
+
+    private static CatalogChangeEntry pageChange(int pageId) {
+        return new CatalogChangeEntry(
+                0,
+                CatalogEntityType.PAGE,
+                com.eu.habbo.habbohotel.catalog.CatalogPageType.NORMAL,
+                pageId,
+                CatalogChangeOperation.UPDATE,
+                "{}",
+                "{}");
+    }
+
+    private static CatalogChangeEntry offerChange(int offerId) {
+        return new CatalogChangeEntry(
+                0,
+                CatalogEntityType.OFFER,
+                com.eu.habbo.habbohotel.catalog.CatalogPageType.NORMAL,
+                offerId,
+                CatalogChangeOperation.UPDATE,
+                "{}",
+                "{}");
+    }
+
     private static CatalogValidator validator(
             Set<Integer> itemIds, Set<Integer> currencyTypes, Map<Integer, Integer> liveLimitedSells) {
         return new CatalogValidator(itemIds, currencyTypes, liveLimitedSells, Set.of("root", "default_3x3"));

@@ -1,6 +1,10 @@
 package com.eu.habbo.habbohotel.catalog.versioning;
 
+import com.eu.habbo.habbohotel.catalog.CatalogPageType;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -26,26 +30,168 @@ public final class CatalogValidator {
     }
 
     public CatalogValidationReport validate(CatalogVersionSnapshot snapshot) {
-        Objects.requireNonNull(snapshot, "snapshot");
-        List<CatalogValidationIssue> issues = new ArrayList<>();
-        validatePages(snapshot, issues);
-        validateOffers(snapshot, issues);
-        return new CatalogValidationReport(issues);
+        return validate(snapshot, null);
     }
 
     public CatalogValidationReport validateChanges(CatalogVersionSnapshot baseline, CatalogVersionSnapshot candidate) {
+        return validateChanges(baseline, candidate, null);
+    }
+
+    /**
+     * Reports the problems the candidate introduces, looking only at the entities the changes can
+     * reach.
+     *
+     * <p>Validating a whole live catalog twice per save is the dominant cost of an edit: on a
+     * 112,000-offer catalog the two passes take roughly 600 ms, while the edit itself touches one
+     * row. Passing the changes narrows both passes to the entities that can actually change verdict:
+     * the edited ones, and the ones whose rules read them - descendants, siblings, pages that
+     * include them, and the offers sitting on them. Ancestors are not in scope: an edit cannot
+     * change their verdict, and the rules that walk upwards read the snapshot directly.
+     *
+     * <p>A null {@code changes} validates everything, which is what a full catalog check does.
+     */
+    public CatalogValidationReport validateChanges(
+            CatalogVersionSnapshot baseline, CatalogVersionSnapshot candidate, Collection<CatalogChangeEntry> changes) {
         Objects.requireNonNull(baseline, "baseline");
         Objects.requireNonNull(candidate, "candidate");
-        Set<CatalogValidationIssue> inherited = new HashSet<>(validate(baseline).issues());
-        List<CatalogValidationIssue> introduced = validate(candidate).issues().stream()
+        Scope scope = changes == null ? null : scopeOf(changes, baseline, candidate);
+        Set<CatalogValidationIssue> inherited =
+                new HashSet<>(validate(baseline, scope).issues());
+        List<CatalogValidationIssue> introduced = validate(candidate, scope).issues().stream()
                 .filter(issue -> !inherited.contains(issue))
                 .toList();
         return new CatalogValidationReport(introduced);
     }
 
-    private void validatePages(CatalogVersionSnapshot snapshot, List<CatalogValidationIssue> issues) {
-        Map<ParentOrder, List<Integer>> siblingOrders = new HashMap<>();
+    private CatalogValidationReport validate(CatalogVersionSnapshot snapshot, Scope scope) {
+        Objects.requireNonNull(snapshot, "snapshot");
+        List<CatalogValidationIssue> issues = new ArrayList<>();
+        validatePages(snapshot, issues, scope);
+        validateOffers(snapshot, issues, scope);
+        return new CatalogValidationReport(issues);
+    }
+
+    private record EntityKey(CatalogPageType catalogType, int entityId) {}
+
+    /** The entities whose verdict the changes can alter. A null scope means the whole catalog. */
+    private record Scope(Set<EntityKey> pages, Set<EntityKey> offers) {}
+
+    private Scope scopeOf(
+            Collection<CatalogChangeEntry> changes, CatalogVersionSnapshot baseline, CatalogVersionSnapshot candidate) {
+        Set<EntityKey> pages = new HashSet<>();
+        Set<EntityKey> offers = new HashSet<>();
+        for (CatalogChangeEntry change : changes) {
+            EntityKey key = new EntityKey(change.catalogType(), change.entityId());
+            if (change.entityType() == CatalogEntityType.PAGE) {
+                pages.add(key);
+            } else {
+                offers.add(key);
+            }
+        }
+        // An entity can be present in one snapshot and gone from the other, so both are walked from
+        // the same seeds: expanding from an already grown set would pull the tree in sideways.
+        Set<EntityKey> seeds = Set.copyOf(pages);
+        expand(baseline, seeds, pages);
+        expand(candidate, seeds, pages);
+
+        // An offer only reads whether its page exists - not whether it is visible - so editing a
+        // page leaves every offer's verdict untouched. Only pages that appear or disappear pull
+        // their offers in, which is what turns a subtree edit from ~100,000 offers into none.
+        Set<EntityKey> appearing = new HashSet<>();
+        for (EntityKey key : pages) {
+            boolean inBaseline =
+                    baseline.page(key.catalogType(), key.entityId()).isPresent();
+            boolean inCandidate =
+                    candidate.page(key.catalogType(), key.entityId()).isPresent();
+            if (inBaseline != inCandidate) appearing.add(key);
+        }
+        if (!appearing.isEmpty()) {
+            collectOffers(baseline, appearing, offers);
+            collectOffers(candidate, appearing, offers);
+        }
+        return new Scope(Set.copyOf(pages), Set.copyOf(offers));
+    }
+
+    private void expand(CatalogVersionSnapshot snapshot, Set<EntityKey> seeds, Set<EntityKey> pages) {
+        Map<EntityKey, List<CatalogPageSnapshot>> children = new HashMap<>();
         for (CatalogPageSnapshot page : snapshot.pages()) {
+            children.computeIfAbsent(new EntityKey(page.catalogType(), page.parentId()), ignored -> new ArrayList<>())
+                    .add(page);
+        }
+
+        // Only an edited page can take or free an order slot, so siblings are collected for the
+        // seeds alone. Doing it for every page reached would re-scan one parent's children once per
+        // child, which is quadratic on a wide branch.
+        for (EntityKey seed : seeds) {
+            CatalogPageSnapshot page =
+                    snapshot.page(seed.catalogType(), seed.entityId()).orElse(null);
+            if (page == null) continue;
+            EntityKey parent = new EntityKey(page.catalogType(), page.parentId());
+            for (CatalogPageSnapshot sibling : children.getOrDefault(parent, List.of())) {
+                pages.add(new EntityKey(sibling.catalogType(), sibling.pageId()));
+            }
+        }
+
+        // Descendants read the availability of everything above them, so they follow an edit down.
+        Deque<EntityKey> pending = new ArrayDeque<>(seeds);
+        while (!pending.isEmpty()) {
+            EntityKey key = pending.poll();
+            for (CatalogPageSnapshot child : children.getOrDefault(key, List.of())) {
+                EntityKey childKey = new EntityKey(child.catalogType(), child.pageId());
+                if (pages.add(childKey)) pending.add(childKey);
+            }
+        }
+
+        Set<Integer> pageIds = new HashSet<>();
+        for (EntityKey key : pages) pageIds.add(key.entityId());
+        for (CatalogPageSnapshot page : snapshot.pages()) {
+            if (includesAnyOf(page, pageIds)) {
+                pages.add(new EntityKey(page.catalogType(), page.pageId()));
+            }
+        }
+    }
+
+    private static void collectOffers(CatalogVersionSnapshot snapshot, Set<EntityKey> pages, Set<EntityKey> offers) {
+        for (CatalogOfferSnapshot offer : snapshot.offers()) {
+            if (pages.contains(new EntityKey(offer.catalogType(), offer.pageId()))) {
+                offers.add(new EntityKey(offer.catalogType(), offer.offerId()));
+            }
+        }
+    }
+
+    private static boolean includesAnyOf(CatalogPageSnapshot page, Set<Integer> pageIds) {
+        if (page.includes() == null || page.includes().isBlank()) return false;
+        for (String rawId : page.includes().split(";", -1)) {
+            try {
+                if (pageIds.contains(Integer.parseInt(rawId.trim()))) return true;
+            } catch (NumberFormatException ignored) {
+                // An unparsable include is reported by validateIncludes, not here.
+            }
+        }
+        return false;
+    }
+
+    private static List<CatalogPageSnapshot> pagesInScope(CatalogVersionSnapshot snapshot, Scope scope) {
+        if (scope == null) return snapshot.pages();
+        List<CatalogPageSnapshot> selected = new ArrayList<>(scope.pages().size());
+        for (EntityKey key : scope.pages()) {
+            snapshot.page(key.catalogType(), key.entityId()).ifPresent(selected::add);
+        }
+        return selected;
+    }
+
+    private static List<CatalogOfferSnapshot> offersInScope(CatalogVersionSnapshot snapshot, Scope scope) {
+        if (scope == null) return snapshot.offers();
+        List<CatalogOfferSnapshot> selected = new ArrayList<>(scope.offers().size());
+        for (EntityKey key : scope.offers()) {
+            snapshot.offer(key.catalogType(), key.entityId()).ifPresent(selected::add);
+        }
+        return selected;
+    }
+
+    private void validatePages(CatalogVersionSnapshot snapshot, List<CatalogValidationIssue> issues, Scope scope) {
+        Map<ParentOrder, List<Integer>> siblingOrders = new HashMap<>();
+        for (CatalogPageSnapshot page : pagesInScope(snapshot, scope)) {
             if (page.parentId() > 0
                     && snapshot.page(page.catalogType(), page.parentId()).isEmpty()) {
                 add(
@@ -88,7 +234,7 @@ public final class CatalogValidator {
             }
         });
 
-        detectCycles(snapshot, issues);
+        detectCycles(snapshot, issues, scope);
     }
 
     private void validateIncludes(
@@ -147,9 +293,9 @@ public final class CatalogValidator {
         }
     }
 
-    private void detectCycles(CatalogVersionSnapshot snapshot, List<CatalogValidationIssue> issues) {
+    private void detectCycles(CatalogVersionSnapshot snapshot, List<CatalogValidationIssue> issues, Scope scope) {
         Set<String> reported = new HashSet<>();
-        for (CatalogPageSnapshot page : snapshot.pages()) {
+        for (CatalogPageSnapshot page : pagesInScope(snapshot, scope)) {
             Map<Integer, Integer> positions = new HashMap<>();
             List<Integer> path = new ArrayList<>();
             int currentId = page.pageId();
@@ -178,8 +324,8 @@ public final class CatalogValidator {
         }
     }
 
-    private void validateOffers(CatalogVersionSnapshot snapshot, List<CatalogValidationIssue> issues) {
-        for (CatalogOfferSnapshot offer : snapshot.offers()) {
+    private void validateOffers(CatalogVersionSnapshot snapshot, List<CatalogValidationIssue> issues, Scope scope) {
+        for (CatalogOfferSnapshot offer : offersInScope(snapshot, scope)) {
             if (snapshot.page(offer.catalogType(), offer.pageId()).isEmpty()) {
                 add(
                         issues,

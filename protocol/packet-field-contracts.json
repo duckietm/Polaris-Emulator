@@ -16361,6 +16361,119 @@
       ]
     },
     {
+      "name": "WIRED_CHEST_ROOM_LOGS",
+      "direction": "client_to_server",
+      "header": 9328,
+      "java": {
+        "symbol": "WiredChestRoomLogsEvent",
+        "className": "WiredChestRoomLogsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/WiredChestRoomLogsEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_CHEST_ROOM_LOGS",
+        "className": "WiredChestRoomLogsComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/WiredChestRoomLogsComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "amount"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "page"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "filter"
+        }
+      ]
+    },
+    {
+      "name": "WIRED_CHEST_LOCK",
+      "direction": "client_to_server",
+      "header": 9329,
+      "java": {
+        "symbol": "WiredChestLockEvent",
+        "className": "WiredChestLockEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/WiredChestLockEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_CHEST_LOCK",
+        "className": "WiredChestLockComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/WiredChestLockComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "lock"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "all"
+        }
+      ]
+    },
+    {
+      "name": "WIRED_CHEST_LOCK_STATE",
+      "direction": "server_to_client",
+      "header": 9329,
+      "java": {
+        "symbol": "WiredChestLockStateComposer",
+        "className": "WiredChestLockStateComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/items/WiredChestLockStateComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_CHEST_LOCK_STATE",
+        "className": "WiredChestLockStateMessageParser",
+        "path": "packages/communication/src/messages/parser/room/furniture/WiredChestLockStateMessageParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "locked"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "all"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "affected"
+        }
+      ]
+    },
+    {
+      "name": "WIRED_CHEST_TRANSACTION_DETAILS",
+      "direction": "client_to_server",
+      "header": 9334,
+      "java": {
+        "symbol": "WiredChestTransactionDetailsEvent",
+        "className": "WiredChestTransactionDetailsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/WiredChestTransactionDetailsEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_CHEST_TRANSACTION_DETAILS",
+        "className": "WiredChestTransactionDetailsComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/WiredChestTransactionDetailsComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "transactionId"
+        }
+      ]
+    },
+    {
       "name": "WHEEL_RESULT",
       "direction": "server_to_client",
       "header": 9402,
@@ -23568,6 +23681,38 @@
         "symbol": "CHEST_FURNI_DELTA",
         "className": "ChestFurniDeltaMessageParser",
         "path": "packages/communication/src/messages/parser/room/furniture/ChestFurniDeltaMessageParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
+      "name": "WIRED_CHEST_ROOM_LOGS",
+      "direction": "server_to_client",
+      "header": 9328,
+      "java": {
+        "symbol": "WiredChestRoomLogsComposer",
+        "className": "WiredChestRoomLogsComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/items/WiredChestRoomLogsComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_CHEST_ROOM_LOGS",
+        "className": "WiredChestRoomLogsMessageParser",
+        "path": "packages/communication/src/messages/parser/room/furniture/WiredChestRoomLogsMessageParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
+      "name": "WIRED_CHEST_TRANSACTION_DETAILS",
+      "direction": "server_to_client",
+      "header": 9330,
+      "java": {
+        "symbol": "WiredChestTransactionDetailsComposer",
+        "className": "WiredChestTransactionDetailsComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/items/WiredChestTransactionDetailsComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_CHEST_TRANSACTION_DETAILS",
+        "className": "WiredChestTransactionDetailsMessageParser",
+        "path": "packages/communication/src/messages/parser/room/furniture/WiredChestTransactionDetailsMessageParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },

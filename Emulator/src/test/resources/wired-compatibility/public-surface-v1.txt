@@ -230,6 +230,7 @@ METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.ches
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#isAccessDonate(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#isAccessOpen(-):boolean throws -
 METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#isEmpty(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#isLocked(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#isNotifyDonation(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#isNotifyEmpty(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#isNotifyFull(-):boolean throws -
@@ -245,6 +246,7 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorag
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setAppearanceState(int):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setCapacityMax(int):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setDescription(java.lang.String):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setLocked(boolean):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setName(java.lang.String):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setNotifications(boolean,boolean,boolean,boolean,boolean,int):void throws -
 METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#take(int,int,int):int throws -
@@ -268,6 +270,87 @@ FIELD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage
 FIELD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage$LogEntry#withdrawn:int
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage$LogEntry(-) throws -
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage$LogEntry(java.lang.String,long,java.lang.String,int,int) throws -
+
+TYPE public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog extends java.lang.Object
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog#FILTER_ALL:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog#FILTER_CURRENCY:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog#FILTER_FURNI:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog#MAX_PAGE_SIZE:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog#SOURCE_USER:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog#SOURCE_WIRED:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog#TYPE_DEPOSIT:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog#TYPE_WITHDRAW:int
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog#details(int,int):com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Details throws -
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog#normalizeFilter(int):int throws -
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog#page(int,int,int,int):com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Page throws -
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog#prune(int):void throws -
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog#record(int,int,int,int,int,com.eu.habbo.habbohotel.users.Habbo,int,int,int,java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniStoredItem>):void throws -
+
+TYPE public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$DetailItem extends java.lang.Record
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$DetailItem spriteId:int
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$DetailItem quantity:int
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$DetailItem(int,int) throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$DetailItem#equals(java.lang.Object):boolean throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$DetailItem#hashCode(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$DetailItem#quantity(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$DetailItem#spriteId(-):int throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$DetailItem#toString(-):java.lang.String throws -
+
+TYPE public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Details extends java.lang.Record
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Details row:com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Details items:java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$DetailItem>
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Details(com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row,java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$DetailItem>) throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Details#equals(java.lang.Object):boolean throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Details#hashCode(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Details#items(-):java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$DetailItem> throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Details#row(-):com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Details#toString(-):java.lang.String throws -
+
+TYPE public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Page extends java.lang.Record
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Page page:int
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Page pageCount:int
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Page totalRows:int
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Page filter:int
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Page rows:java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row>
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Page(int,int,int,int,java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row>) throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Page#equals(java.lang.Object):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Page#filter(-):int throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Page#hashCode(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Page#page(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Page#pageCount(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Page#rows(-):java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row> throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Page#toString(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Page#totalRows(-):int throws -
+
+TYPE public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row extends java.lang.Record
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row id:int
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row chestId:int
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row chestKind:int
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row type:int
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row source:int
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row userId:int
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row userName:java.lang.String
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row currencyType:int
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row withdrawn:int
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row deposited:int
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row hasDetails:boolean
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row timestamp:int
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row(int,int,int,int,int,int,java.lang.String,int,int,int,boolean,int) throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row#chestId(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row#chestKind(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row#currencyType(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row#deposited(-):int throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row#equals(java.lang.Object):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row#hasDetails(-):boolean throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row#hashCode(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row#id(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row#source(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row#timestamp(-):int throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row#toString(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row#type(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row#userId(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row#userName(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Row#withdrawn(-):int throws -
 
 TYPE public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestWiredCompare extends java.lang.Object
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestWiredCompare#EQUAL:int

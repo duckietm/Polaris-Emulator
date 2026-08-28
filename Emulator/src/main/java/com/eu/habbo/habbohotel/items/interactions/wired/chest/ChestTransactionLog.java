@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.habbohotel.users.Habbo;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -304,8 +305,11 @@ public final class ChestTransactionLog {
                 int spriteId = Integer.parseInt(pair.substring(0, separator).trim());
                 int quantity = Integer.parseInt(pair.substring(separator + 1).trim());
                 if (spriteId > 0 && quantity > 0) items.add(new DetailItem(spriteId, quantity));
-            } catch (NumberFormatException ignored) {
-                // a malformed pair drops out of the detail rather than failing the whole row
+            } catch (NumberFormatException malformedPair) {
+                // A malformed pair drops out of the detail rather than failing the whole row, but it
+                // is still recorded: a detail that silently loses lines is worse than a short one.
+                WiredCompatibilityDiagnostics.record(
+                        WiredCompatibilityDiagnostics.FailurePoint.CHEST_STORAGE_NUMERIC_FIELD, malformedPair);
             }
         }
         return items;

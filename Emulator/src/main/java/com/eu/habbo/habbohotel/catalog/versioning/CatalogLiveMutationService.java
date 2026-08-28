@@ -194,7 +194,7 @@ public final class CatalogLiveMutationService {
             connection.setAutoCommit(false);
             try {
                 CatalogRuntimeState state = versions.lockRuntimeState(connection);
-                CatalogVersionSnapshot active = loadPhysicalLive(connection, state);
+                CatalogVersionSnapshot active = loadPhysicalLive(connection, state, CatalogMutationScope.of(requests));
                 if (active.version().status() != CatalogVersionStatus.PUBLISHED) {
                     throw new IllegalStateException("Live catalog state is not available");
                 }
@@ -478,6 +478,24 @@ public final class CatalogLiveMutationService {
         return liveSnapshots == null
                 ? versions.loadSnapshot(connection, state.activeVersionId())
                 : liveSnapshots.loadForRead(connection, version);
+    }
+
+    /**
+     * Reads what a batch of mutations can reach, rather than the whole catalog.
+     *
+     * <p>Every page is still read - the rules that judge a page walk the tree around it, and pages
+     * are cheap. Offers are not: a live catalog holds 112,000 of them and a save touches a handful,
+     * so reading and locking all of them cost about 200 ms per edit for nothing.
+     */
+    private CatalogVersionSnapshot loadPhysicalLive(
+            Connection connection, CatalogRuntimeState state, CatalogMutationScope scope) throws SQLException {
+        CatalogVersion version = versions.loadVersion(connection, state.activeVersionId());
+        if (version.status() != CatalogVersionStatus.PUBLISHED) {
+            throw new IllegalStateException("Live catalog state is not available");
+        }
+        return liveSnapshots == null
+                ? versions.loadSnapshot(connection, state.activeVersionId())
+                : liveSnapshots.loadForMutation(connection, version, scope);
     }
 
     private CatalogVersionSnapshot loadPhysicalLive(Connection connection, CatalogRuntimeState state)

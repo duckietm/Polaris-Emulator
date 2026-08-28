@@ -24,9 +24,8 @@ class JdbcCatalogValidationDataRepositoryTest {
         Set<Integer> currencies =
                 new JdbcCatalogValidationDataRepository().load(connection).currencyTypes();
 
-        // 101 and 102 are held by players; the old fixed range 0..100 rejected them.
         assertTrue(currencies.containsAll(Set.of(0, 5, 101, 102)), () -> "got " + currencies);
-        // 104 is priced in the catalog but nobody holds it and nothing pays it out.
+
         assertFalse(currencies.contains(104), () -> "got " + currencies);
     }
 

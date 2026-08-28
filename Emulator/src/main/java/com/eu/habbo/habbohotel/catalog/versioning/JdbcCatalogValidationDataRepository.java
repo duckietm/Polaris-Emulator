@@ -30,19 +30,6 @@ public final class JdbcCatalogValidationDataRepository implements CatalogValidat
                         .collect(Collectors.toUnmodifiableSet()));
     }
 
-    /**
-     * The currency types this hotel actually has.
-     *
-     * <p>There is no registry of currencies in the emulator - {@code getCurrencyAmount(int)} takes
-     * any integer - so the accepted set has to be read from the hotel rather than assumed. It used
-     * to be the fixed range 0..100, which flagged every offer priced in a higher-numbered currency
-     * even when players were holding it, and passed every offer priced in a currency nobody can
-     * hold as long as the number was small enough.
-     *
-     * <p>Type 0 is always accepted: it is the baseline currency every user has. Beyond that, a type
-     * counts as real if some user holds it, or if the hotel is configured to pay it out - the second
-     * source matters for a currency that has just been introduced and has no holders yet.
-     */
     private static Set<Integer> loadCurrencyTypes(Connection connection) throws SQLException {
         Set<Integer> types = new HashSet<>();
         types.add(0);
@@ -55,7 +42,6 @@ public final class JdbcCatalogValidationDataRepository implements CatalogValidat
                 try {
                     types.add(Integer.parseInt(value.trim()));
                 } catch (NumberFormatException ignored) {
-                    // A setting whose value is not a number simply names no currency.
                 }
             }
         }

@@ -13,53 +13,63 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.head_commit != null
     steps:
+      - name: Checkout with full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Collect diff stats
+        id: diff
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BEFORE: ${{ github.event.before }}
           AFTER: ${{ github.sha }}
-          API: ${{ github.api_url }}
-          REPO: ${{ github.repository }}
         run: |
-          echo '{}' > compare.json
+          set -e
 
-          # all-zero SHA = brand new branch, nothing to compare against
-          if [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
-            curl -sS \
-              -H "Accept: application/vnd.github+json" \
-              -H "Authorization: Bearer $GH_TOKEN" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              "$API/repos/$REPO/compare/$BEFORE...$AFTER" \
-              -o compare.json || echo '{}' > compare.json
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ] \
+             || ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            echo "before SHA unusable, falling back to first parent of HEAD"
+            BEFORE=$(git rev-parse "${AFTER}^" 2>/dev/null || echo "$AFTER")
           fi
 
-          # sanity check: if the API returned an error object, discard it
-          if ! jq -e '.stats' compare.json > /dev/null 2>&1; then
-            echo "Compare API gave no stats, falling back to event payload"
-            echo '{}' > compare.json
-          fi
+          echo "Diffing $BEFORE -> $AFTER"
+
+          NUMSTAT=$(git diff --numstat "$BEFORE" "$AFTER" || true)
+
+          FILES=$(printf '%s\n' "$NUMSTAT" | grep -c . || true)
+          ADD=$(printf '%s\n' "$NUMSTAT" | awk '{ if ($1 ~ /^[0-9]+$/) a += $1 } END { print a+0 }')
+          DEL=$(printf '%s\n' "$NUMSTAT" | awk '{ if ($2 ~ /^[0-9]+$/) d += $2 } END { print d+0 }')
+          COMMITS=$(git rev-list --count "${BEFORE}..${AFTER}" 2>/dev/null || echo 1)
+
+          echo "files=$FILES  added=$ADD  removed=$DEL  commits=$COMMITS"
+
+          {
+            echo "files=$FILES"
+            echo "added=$ADD"
+            echo "removed=$DEL"
+            echo "commits=$COMMITS"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Send Discord Notification
         env:
           WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          FILES: ${{ steps.diff.outputs.files }}
+          ADDED: ${{ steps.diff.outputs.added }}
+          REMOVED: ${{ steps.diff.outputs.removed }}
+          COMMITS: ${{ steps.diff.outputs.commits }}
         run: |
-          PAYLOAD=$(jq -c --slurpfile stats compare.json '
+          PAYLOAD=$(jq -c \
+            --arg files "$FILES" \
+            --arg add "$ADDED" \
+            --arg del "$REMOVED" \
+            --arg commits "$COMMITS" '
             .head_commit as $c
             | (.repository.full_name) as $repo
             | (.ref | sub("refs/heads/"; "")) as $branch
             | ($c.message | split("\n")[0]) as $title
             | ($c.message | split("\n")[1:] | join("\n")) as $body
-            | ($stats[0] // {}) as $s
-            | ([.commits[]? | (.added[]?, .modified[]?, .removed[]?)] | unique | length) as $fallbackFiles
-            | (($s.files // []) | length) as $apiFiles
-            | (if $apiFiles > 0 then $apiFiles else $fallbackFiles end) as $fileCount
-            | (if $apiFiles >= 300 then "300+" else ($fileCount | tostring) end) as $filesLabel
-            | ($s.stats.additions // 0) as $add
-            | ($s.stats.deletions // 0) as $del
-            | ($s.total_commits // (.commits | length)) as $commitCount
-
             | {
-                username: "Octane - Main",
+                username: "Polaris Emulator - Main",
                 avatar_url: "https://images.habbo.com/c_images/album1584/EST08.gif",
                 embeds: [
                   {
@@ -84,12 +94,12 @@ jobs:
                       url: "https://www.habbo.com/habbo-imaging/avatarimage?figure=hr-165-45.hd-180-2.ch-255-66.lg-280-110.sh-305-62&direction=2&head_direction=3&size=l&action=wav"
                     },
                     fields: [
-                      { name: "📦 Files changed", value: ("```" + $filesLabel + "```"), inline: true },
-                      { name: "🟩 Added",         value: ("```diff\n+" + ($add | tostring) + "```"), inline: true },
-                      { name: "🟥 Removed",       value: ("```diff\n-" + ($del | tostring) + "```"), inline: true }
+                      { name: "📦 Files changed", value: ("```" + $files + "```"), inline: true },
+                      { name: "🟩 Added",         value: ("```diff\n+" + $add + "```"), inline: true },
+                      { name: "🟥 Removed",       value: ("```diff\n-" + $del + "```"), inline: true }
                     ],
                     footer: {
-                      text: ($repo + " • " + ($commitCount | tostring) + " commit(s) pushed to " + $branch),
+                      text: ($repo + " • " + $commits + " commit(s) pushed to " + $branch),
                       icon_url: "https://github.githubassets.com/favicons/favicon.png"
                     },
                     timestamp: $c.timestamp

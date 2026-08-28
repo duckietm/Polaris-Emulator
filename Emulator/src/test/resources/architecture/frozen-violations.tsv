@@ -449,8 +449,9 @@ U|com/eu/habbo/habbohotel/guilds/forums/ForumThreadComment.java|CALL|getPluginMa
 U|com/eu/habbo/habbohotel/hotelview/HallOfFame.java|CALL|getConfig|1
 U|com/eu/habbo/habbohotel/hotelview/HallOfFame.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/hotelview/HotelViewManager.java|CALL|getConfig|3
-U|com/eu/habbo/habbohotel/hotelview/HotelViewManager.java|CALL|getDatabase|6
+U|com/eu/habbo/habbohotel/hotelview/HotelViewManager.java|CALL|getDatabase|7
 U|com/eu/habbo/habbohotel/hotelview/HotelViewManager.java|CALL|getGameEnvironment|4
+U|com/eu/habbo/habbohotel/hotelview/HotelViewManager.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/hotelview/NewsList.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/items/CrackableReward.java|CALL|getRandom|1
 U|com/eu/habbo/habbohotel/items/FurnidataSourceResolver.java|CALL|getConfig|3

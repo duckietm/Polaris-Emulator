@@ -10,19 +10,20 @@ import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
-import java.time.Instant;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HotelViewManager {
 
@@ -32,6 +33,8 @@ public class HotelViewManager {
     private final NewsList newsList;
     private volatile HotelViewScene scene = HotelViewScene.EMPTY;
     private volatile List<HotelViewSlot> slots = Collections.emptyList();
+    private static final long LANDING_REFRESH_COALESCE_MS = 1000L;
+    private final AtomicBoolean refreshScheduled = new AtomicBoolean(false);
 
     public HotelViewManager() {
         long millis = System.currentTimeMillis();
@@ -64,7 +67,8 @@ public class HotelViewManager {
         Map<Integer, Integer> userVotes = new HashMap<>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT slot_id, option_id FROM hotelview_landing_votes WHERE user_id = ?")) {
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT slot_id, option_id FROM hotelview_landing_votes WHERE user_id = ?")) {
             statement.setInt(1, userId);
 
             try (ResultSet set = statement.executeQuery()) {
@@ -75,15 +79,31 @@ public class HotelViewManager {
             return this.slots;
         }
 
-        if (userVotes.isEmpty()) return this.slots;
+        return applyUserVotes(userVotes);
+    }
+
+    private List<HotelViewSlot> applyUserVotes(Map<Integer, Integer> userVotes) {
+        if (userVotes == null || userVotes.isEmpty()) return this.slots;
 
         List<HotelViewSlot> result = new ArrayList<>(this.slots.size());
 
         for (HotelViewSlot slot : this.slots) {
             Integer optionId = userVotes.get(slot.id());
-            result.add(optionId == null ? slot : new HotelViewSlot(
-                    slot.id(), slot.enabled(), slot.type(), slot.title(), slot.body(), slot.imageUrl(), slot.buttonText(), slot.link(), slot.progress(), slot.progressLabel(), withUserVote(slot.configJson(), optionId)
-            ));
+            result.add(
+                    optionId == null
+                            ? slot
+                            : new HotelViewSlot(
+                                    slot.id(),
+                                    slot.enabled(),
+                                    slot.type(),
+                                    slot.title(),
+                                    slot.body(),
+                                    slot.imageUrl(),
+                                    slot.buttonText(),
+                                    slot.link(),
+                                    slot.progress(),
+                                    slot.progressLabel(),
+                                    withUserVote(slot.configJson(), optionId)));
         }
 
         return result;
@@ -94,8 +114,9 @@ public class HotelViewManager {
         List<HotelViewSlot> loadedSlots = new ArrayList<>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-            try (PreparedStatement statement = connection.prepareStatement("SELECT background_url, left_url, right_url, drape_url, left_x, left_y, right_x, right_y, drape_x, drape_y, hall_of_fame_x, hall_of_fame_y, hall_of_fame_enabled, hall_of_fame_mode, hall_of_fame_currency_type FROM hotelview_landing_settings WHERE id = 1");
-                 ResultSet set = statement.executeQuery()) {
+            try (PreparedStatement statement = connection.prepareStatement(
+                            "SELECT background_url, left_url, right_url, drape_url, left_x, left_y, right_x, right_y, drape_x, drape_y, hall_of_fame_x, hall_of_fame_y, hall_of_fame_enabled, hall_of_fame_mode, hall_of_fame_currency_type FROM hotelview_landing_settings WHERE id = 1");
+                    ResultSet set = statement.executeQuery()) {
                 if (set.next()) {
                     boolean hallOfFameEnabled = set.getBoolean("hall_of_fame_enabled");
                     String hallOfFameMode = normalizeHallOfFameMode(value(set.getString("hall_of_fame_mode")));
@@ -116,15 +137,17 @@ public class HotelViewManager {
                             hallOfFameEnabled,
                             hallOfFameMode,
                             hallOfFameCurrencyType,
-                            hallOfFameEnabled ? loadHallOfFameUsers(connection, hallOfFameMode, hallOfFameCurrencyType) : List.of()
-                    );
+                            hallOfFameEnabled
+                                    ? loadHallOfFameUsers(connection, hallOfFameMode, hallOfFameCurrencyType)
+                                    : List.of());
                 }
             }
 
             Map<Integer, Map<Integer, Integer>> voteCounts = loadVoteCounts(connection);
 
-            try (PreparedStatement statement = connection.prepareStatement("SELECT id, enabled, type, title, body, image_url, button_text, link, progress, progress_label, config_json FROM hotelview_landing_slots ORDER BY id");
-                 ResultSet set = statement.executeQuery()) {
+            try (PreparedStatement statement = connection.prepareStatement(
+                            "SELECT id, enabled, type, title, body, image_url, button_text, link, progress, progress_label, config_json FROM hotelview_landing_slots ORDER BY id");
+                    ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
                     int id = set.getInt("id");
                     if (id > 5) continue;
@@ -140,12 +163,15 @@ public class HotelViewManager {
                             value(set.getString("link")),
                             set.getInt("progress"),
                             value(set.getString("progress_label")),
-                            withRuntimeConfig(connection, value(set.getString("type")), withVoteCounts(value(set.getString("config_json")), voteCounts.get(id)))
-                    ));
+                            withRuntimeConfig(
+                                    connection,
+                                    value(set.getString("type")),
+                                    withVoteCounts(value(set.getString("config_json")), voteCounts.get(id)))));
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warn("Hotelview landing data could not be loaded. Apply database update 025_hotelview_landing.sql.", e);
+            LOGGER.warn(
+                    "Hotelview landing data could not be loaded. Apply database update 025_hotelview_landing.sql.", e);
         }
 
         this.scene = loadedScene;
@@ -156,8 +182,8 @@ public class HotelViewManager {
         if (slot.id() < 1 || slot.id() > 5) return false;
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "UPDATE hotelview_landing_slots SET enabled = ?, type = ?, title = ?, body = ?, image_url = ?, button_text = ?, link = ?, progress = ?, progress_label = ?, config_json = ? WHERE id = ?")) {
+                PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE hotelview_landing_slots SET enabled = ?, type = ?, title = ?, body = ?, image_url = ?, button_text = ?, link = ?, progress = ?, progress_label = ?, config_json = ? WHERE id = ?")) {
             statement.setBoolean(1, slot.enabled());
             statement.setString(2, slot.type());
             statement.setString(3, slot.title());
@@ -183,8 +209,8 @@ public class HotelViewManager {
 
     public synchronized boolean saveScene(HotelViewScene scene) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "UPDATE hotelview_landing_settings SET background_url = ?, left_url = ?, right_url = ?, drape_url = ?, left_x = ?, left_y = ?, right_x = ?, right_y = ?, drape_x = ?, drape_y = ?, hall_of_fame_x = ?, hall_of_fame_y = ?, hall_of_fame_enabled = ?, hall_of_fame_mode = ?, hall_of_fame_currency_type = ? WHERE id = 1")) {
+                PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE hotelview_landing_settings SET background_url = ?, left_url = ?, right_url = ?, drape_url = ?, left_x = ?, left_y = ?, right_x = ?, right_y = ?, drape_x = ?, drape_y = ?, hall_of_fame_x = ?, hall_of_fame_y = ?, hall_of_fame_enabled = ?, hall_of_fame_mode = ?, hall_of_fame_currency_type = ? WHERE id = 1")) {
             statement.setString(1, scene.backgroundUrl());
             statement.setString(2, scene.leftUrl());
             statement.setString(3, scene.rightUrl());
@@ -220,12 +246,15 @@ public class HotelViewManager {
     public synchronized boolean voteCommunityGoal(int slotId, int optionId, int userId) {
         if (slotId < 1 || slotId > 5 || optionId < 1 || userId <= 0) return false;
 
-        HotelViewSlot slot = this.slots.stream().filter(value -> value.id() == slotId && "communitygoal".equals(value.type())).findFirst().orElse(null);
+        HotelViewSlot slot = this.slots.stream()
+                .filter(value -> value.id() == slotId && "communitygoal".equals(value.type()))
+                .findFirst()
+                .orElse(null);
 
         if (slot == null || !hasVoteOption(slot.configJson(), optionId)) return false;
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("""
+                PreparedStatement statement = connection.prepareStatement("""
                      INSERT IGNORE INTO hotelview_landing_votes (slot_id, user_id, option_id)
                      VALUES (?, ?, ?)
                      """)) {
@@ -236,10 +265,7 @@ public class HotelViewManager {
             if (voteInserted) {
                 Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
                 if (habbo != null) awardVoteRewards(habbo, slot.configJson(), optionId);
-            }
-            if (voteInserted) {
-                this.reloadLandingView();
-                this.broadcastLandingView();
+                this.scheduleLandingRefresh();
             }
             return true;
         } catch (SQLException e) {
@@ -251,12 +277,16 @@ public class HotelViewManager {
     public synchronized boolean resetCommunityGoalVotes(int slotId) {
         if (slotId < 1 || slotId > 5) return false;
 
-        HotelViewSlot slot = this.slots.stream().filter(value -> value.id() == slotId && "communitygoal".equals(value.type())).findFirst().orElse(null);
+        HotelViewSlot slot = this.slots.stream()
+                .filter(value -> value.id() == slotId && "communitygoal".equals(value.type()))
+                .findFirst()
+                .orElse(null);
 
         if (slot == null) return false;
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("DELETE FROM hotelview_landing_votes WHERE slot_id = ?")) {
+                PreparedStatement statement =
+                        connection.prepareStatement("DELETE FROM hotelview_landing_votes WHERE slot_id = ?")) {
             statement.setInt(1, slotId);
             statement.executeUpdate();
             this.reloadLandingView();
@@ -268,16 +298,56 @@ public class HotelViewManager {
         }
     }
 
+    private void scheduleLandingRefresh() {
+        if (!this.refreshScheduled.compareAndSet(false, true)) return;
+
+        Emulator.getThreading()
+                .run(
+                        () -> {
+                            this.refreshScheduled.set(false);
+                            this.reloadAndBroadcastLandingView();
+                        },
+                        LANDING_REFRESH_COALESCE_MS);
+    }
+
     private void broadcastLandingView() {
-        for (Habbo habbo : Emulator.getGameEnvironment().getHabboManager().getOnlineHabbos().values()) {
+        Collection<Habbo> onlineHabbos = Emulator.getGameEnvironment()
+                .getHabboManager()
+                .getOnlineHabbos()
+                .values();
+
+        Map<Integer, Map<Integer, Integer>> votesByUser;
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            votesByUser = loadAllUserVotes(connection);
+        } catch (SQLException e) {
+            LOGGER.warn("Could not load HotelView community votes for broadcast", e);
+            votesByUser = Collections.emptyMap();
+        }
+
+        for (Habbo habbo : onlineHabbos) {
             if (habbo == null || habbo.getClient() == null) continue;
 
-            habbo.getClient().sendResponse(new HotelViewLandingComposer(
-                    habbo.getHabboInfo().getRank().getId() >= 7,
-                    this.scene,
-                    this.getSlotsForUser(habbo.getHabboInfo().getId())
-            ));
+            habbo.getClient()
+                    .sendResponse(new HotelViewLandingComposer(
+                            habbo.getHabboInfo().getRank().getId() >= 7,
+                            this.scene,
+                            applyUserVotes(votesByUser.get(habbo.getHabboInfo().getId()))));
         }
+    }
+
+    private static Map<Integer, Map<Integer, Integer>> loadAllUserVotes(Connection connection) throws SQLException {
+        Map<Integer, Map<Integer, Integer>> votes = new HashMap<>();
+
+        try (PreparedStatement statement =
+                        connection.prepareStatement("SELECT user_id, slot_id, option_id FROM hotelview_landing_votes");
+                ResultSet set = statement.executeQuery()) {
+            while (set.next()) {
+                votes.computeIfAbsent(set.getInt("user_id"), ignored -> new HashMap<>())
+                        .put(set.getInt("slot_id"), set.getInt("option_id"));
+            }
+        }
+
+        return votes;
     }
 
     private static String value(String value) {
@@ -291,13 +361,19 @@ public class HotelViewManager {
         };
     }
 
-    private static List<HotelViewHallOfFameUser> loadHallOfFameUsers(Connection connection, String mode, int currencyType) throws SQLException {
-        String query = switch (mode) {
-            case "online_time" -> "SELECT u.id, u.username, u.look, u.gender FROM users u INNER JOIN users_settings s ON s.user_id = u.id ORDER BY s.online_time DESC, u.id DESC LIMIT 10";
-            case "achievement_score" -> "SELECT u.id, u.username, u.look, u.gender FROM users u INNER JOIN users_settings s ON s.user_id = u.id ORDER BY s.achievement_score DESC, u.id DESC LIMIT 10";
-            case "currency" -> "SELECT u.id, u.username, u.look, u.gender FROM users u INNER JOIN users_currency c ON c.user_id = u.id WHERE c.type = ? ORDER BY c.amount DESC, u.id DESC LIMIT 10";
-            default -> "SELECT id, username, look, gender FROM users ORDER BY account_created DESC, id DESC LIMIT 10";
-        };
+    private static List<HotelViewHallOfFameUser> loadHallOfFameUsers(
+            Connection connection, String mode, int currencyType) throws SQLException {
+        String query =
+                switch (mode) {
+                    case "online_time" ->
+                        "SELECT u.id, u.username, u.look, u.gender FROM users u INNER JOIN users_settings s ON s.user_id = u.id ORDER BY s.online_time DESC, u.id DESC LIMIT 10";
+                    case "achievement_score" ->
+                        "SELECT u.id, u.username, u.look, u.gender FROM users u INNER JOIN users_settings s ON s.user_id = u.id ORDER BY s.achievement_score DESC, u.id DESC LIMIT 10";
+                    case "currency" ->
+                        "SELECT u.id, u.username, u.look, u.gender FROM users u INNER JOIN users_currency c ON c.user_id = u.id WHERE c.type = ? ORDER BY c.amount DESC, u.id DESC LIMIT 10";
+                    default ->
+                        "SELECT id, username, look, gender FROM users ORDER BY account_created DESC, id DESC LIMIT 10";
+                };
 
         List<HotelViewHallOfFameUser> users = new ArrayList<>(10);
 
@@ -310,8 +386,7 @@ public class HotelViewManager {
                             set.getInt("id"),
                             value(set.getString("username")),
                             value(set.getString("look")),
-                            value(set.getString("gender"))
-                    ));
+                            value(set.getString("gender"))));
                 }
             }
         }
@@ -322,10 +397,12 @@ public class HotelViewManager {
     private static Map<Integer, Map<Integer, Integer>> loadVoteCounts(Connection connection) throws SQLException {
         Map<Integer, Map<Integer, Integer>> counts = new HashMap<>();
 
-        try (PreparedStatement statement = connection.prepareStatement("SELECT slot_id, option_id, COUNT(*) AS votes FROM hotelview_landing_votes GROUP BY slot_id, option_id");
-             ResultSet set = statement.executeQuery()) {
+        try (PreparedStatement statement = connection.prepareStatement(
+                        "SELECT slot_id, option_id, COUNT(*) AS votes FROM hotelview_landing_votes GROUP BY slot_id, option_id");
+                ResultSet set = statement.executeQuery()) {
             while (set.next()) {
-                counts.computeIfAbsent(set.getInt("slot_id"), ignored -> new HashMap<>()).put(set.getInt("option_id"), set.getInt("votes"));
+                counts.computeIfAbsent(set.getInt("slot_id"), ignored -> new HashMap<>())
+                        .put(set.getInt("option_id"), set.getInt("votes"));
             }
         }
 
@@ -341,7 +418,9 @@ public class HotelViewManager {
             if (options == null || !options.isJsonArray()) return false;
 
             for (JsonElement option : options.getAsJsonArray()) {
-                if (option.isJsonObject() && option.getAsJsonObject().has("id") && option.getAsJsonObject().get("id").getAsInt() == optionId) return true;
+                if (option.isJsonObject()
+                        && option.getAsJsonObject().has("id")
+                        && option.getAsJsonObject().get("id").getAsInt() == optionId) return true;
             }
         } catch (RuntimeException ignored) {
         }
@@ -391,7 +470,9 @@ public class HotelViewManager {
         if (furniId > 0) {
             Item baseItem = Emulator.getGameEnvironment().getItemManager().getItem(furniId);
             if (baseItem != null) {
-                HabboItem reward = Emulator.getGameEnvironment().getItemManager().createItem(habbo.getHabboInfo().getId(), baseItem, 0, 0, "");
+                HabboItem reward = Emulator.getGameEnvironment()
+                        .getItemManager()
+                        .createItem(habbo.getHabboInfo().getId(), baseItem, 0, 0, "");
                 if (reward != null) {
                     habbo.getInventory().getItemsComponent().addItem(reward);
                     if (habbo.getClient() != null) {
@@ -430,7 +511,8 @@ public class HotelViewManager {
 
             config.remove("userVote");
             JsonObject voteCounts = new JsonObject();
-            if (counts != null) counts.forEach((optionId, total) -> voteCounts.addProperty(String.valueOf(optionId), total));
+            if (counts != null)
+                counts.forEach((optionId, total) -> voteCounts.addProperty(String.valueOf(optionId), total));
             config.add("voteCounts", voteCounts);
             return config.toString();
         } catch (RuntimeException ignored) {
@@ -466,19 +548,24 @@ public class HotelViewManager {
     }
 
     private static String withRuntimeConfig(Connection connection, String type, String configJson) {
-        if (!"nextlimitedrarecountdown".equals(type) && !"expiringcatalogpage".equals(type) && !"expiringcatalogpagesmall".equals(type)) return configJson;
+        if (!"nextlimitedrarecountdown".equals(type)
+                && !"expiringcatalogpage".equals(type)
+                && !"expiringcatalogpagesmall".equals(type)) return configJson;
 
         try {
             JsonElement parsed = JsonParser.parseString(configJson);
             JsonObject config = parsed.isJsonObject() ? parsed.getAsJsonObject() : new JsonObject();
 
             if ("nextlimitedrarecountdown".equals(type)) {
-                boolean useServerLTD = !config.has("useServerLTD") || config.get("useServerLTD").getAsBoolean();
+                boolean useServerLTD = !config.has("useServerLTD")
+                        || config.get("useServerLTD").getAsBoolean();
                 boolean enabled = Emulator.getConfig().getBoolean("hotel.view.ltdcountdown.enabled");
                 int timestamp = Emulator.getConfig().getInt("hotel.view.ltdcountdown.timestamp");
                 int pageId = Emulator.getConfig().getInt("hotel.view.ltdcountdown.pageid");
 
-                if (useServerLTD && enabled && timestamp > 0) config.addProperty("endsAt", Instant.ofEpochSecond(timestamp).toString());
+                if (useServerLTD && enabled && timestamp > 0)
+                    config.addProperty(
+                            "endsAt", Instant.ofEpochSecond(timestamp).toString());
                 if (useServerLTD && enabled && pageId > 0) config.addProperty("catalogPage", String.valueOf(pageId));
             } else if (config.has("featuredSlot")) {
                 applyFeaturedCatalogCountdown(connection, config);
@@ -494,7 +581,8 @@ public class HotelViewManager {
         int slotId = config.get("featuredSlot").getAsInt();
         if (slotId < 1) return;
 
-        try (PreparedStatement statement = connection.prepareStatement("SELECT expire_timestamp, page_name, page_id FROM catalog_featured_pages WHERE slot_id = ?")) {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT expire_timestamp, page_name, page_id FROM catalog_featured_pages WHERE slot_id = ?")) {
             statement.setInt(1, slotId);
 
             try (ResultSet set = statement.executeQuery()) {
@@ -504,7 +592,9 @@ public class HotelViewManager {
                 String pageName = value(set.getString("page_name"));
                 int pageId = set.getInt("page_id");
 
-                if (timestamp > 0) config.addProperty("endsAt", Instant.ofEpochSecond(timestamp).toString());
+                if (timestamp > 0)
+                    config.addProperty(
+                            "endsAt", Instant.ofEpochSecond(timestamp).toString());
                 if (!pageName.isBlank()) config.addProperty("catalogPage", pageName);
                 else if (pageId > 0) config.addProperty("catalogPage", String.valueOf(pageId));
             }
@@ -514,5 +604,4 @@ public class HotelViewManager {
     public void dispose() {
         LOGGER.info("HotelView Manager -> Disposed!");
     }
-
 }

@@ -7,7 +7,6 @@ import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredCh
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,7 +24,8 @@ import java.util.Map;
  *   bool notifyFull, bool notifyDonation, bool notifyWithdraw, bool notifyEmpty, bool notifyWired, int notifyMode,
  *   int entryCount, [int currencyType, int amount]*,
  *   int chestKind (0 = currency, 1 = furni),
- *   int furniCount, [int baseItemId, int quantity]*
+ *   int furniCount, [int baseItemId, int quantity]*,
+ *   bool locked
  * </pre>
  * For a furni chest, {@code used} is the total stored furni count and the currency entry list is empty;
  * for a currency chest the furni list is empty.
@@ -41,16 +41,15 @@ public class ChestDataComposer extends MessageComposer {
     protected ServerMessage composeInternal() {
         ChestStorage c = this.chest.getContents();
         int chestKind = (this.chest instanceof InteractionWiredChestFurni)
-                ? ChestStorage.KIND_FURNI : ChestStorage.KIND_CURRENCY;
+                ? ChestStorage.KIND_FURNI
+                : ChestStorage.KIND_CURRENCY;
 
         this.response.init(Outgoing.ChestDataComposer);
         this.response.appendInt(this.chest.getId());
         this.response.appendString(c.getName());
         this.response.appendString(c.getDescription());
         this.response.appendInt(c.getCapacityMax());
-        int used = (this.chest instanceof InteractionWiredChestFurni)
-                ? c.furniItemCount()
-                : c.total(chestKind);
+        int used = (this.chest instanceof InteractionWiredChestFurni) ? c.furniItemCount() : c.total(chestKind);
         this.response.appendInt(used);
         this.response.appendBoolean(c.isAccessOpen());
         this.response.appendBoolean(c.isAccessDonate());
@@ -88,6 +87,9 @@ public class ChestDataComposer extends MessageComposer {
             this.response.appendInt(e.getKey());
             this.response.appendInt(e.getValue());
         }
+
+        // Appended last so an older client that stops reading here still parses the window state.
+        this.response.appendBoolean(c.isLocked());
 
         return this.response;
     }

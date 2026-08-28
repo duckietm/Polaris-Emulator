@@ -30,6 +30,17 @@ public final class ChestFurniWithdrawHelper {
                         habbo.getHabboInfo().getUsername(),
                         withdrawn,
                         0));
+        ChestTransactionLog.record(
+                chest.getRoomId(),
+                chest.getId(),
+                ChestStorage.KIND_FURNI,
+                ChestTransactionLog.TYPE_WITHDRAW,
+                ChestTransactionLog.SOURCE_USER,
+                habbo,
+                -1,
+                withdrawn,
+                0,
+                removedItems);
         chest.persistContents();
 
         client.sendResponse(new ChestDataComposer(chest));

@@ -7,7 +7,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
-
+import com.eu.habbo.messages.outgoing.rooms.items.ChestDataComposer;
 import java.util.List;
 
 public class ChestWithdrawFurniEvent extends MessageHandler {
@@ -36,6 +36,12 @@ public class ChestWithdrawFurniEvent extends MessageHandler {
         if (!(item instanceof InteractionWiredChest chest)) return;
 
         if (!room.hasRights(habbo)) return;
+
+        // A locked chest refuses hand withdrawals; the pushed state lets the window show the lock.
+        if (chest.getContents().isLocked()) {
+            this.client.sendResponse(new ChestDataComposer(chest));
+            return;
+        }
 
         int requested = (amount < 0) ? Integer.MAX_VALUE : Math.min(amount, MAX_WITHDRAW_AMOUNT);
         if (requested <= 0) return;

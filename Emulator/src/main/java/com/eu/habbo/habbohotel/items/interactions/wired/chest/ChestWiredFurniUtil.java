@@ -35,6 +35,17 @@ public final class ChestWiredFurniUtil {
                 chest.getContents().removeFurniByType(wallItem, baseItemId, legacyPosterId, amount);
         int given = giveStoredItemsToInventory(habbo, removed);
         if (given > 0) {
+            ChestTransactionLog.record(
+                    chest.getRoomId(),
+                    chest.getId(),
+                    ChestStorage.KIND_FURNI,
+                    ChestTransactionLog.TYPE_WITHDRAW,
+                    ChestTransactionLog.SOURCE_WIRED,
+                    habbo,
+                    -1,
+                    given,
+                    0,
+                    removed);
             chest.persistContents();
         }
         return given;

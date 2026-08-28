@@ -15,6 +15,10 @@ public class Incoming {
     public static final int ChestDepositInventoryItemEvent = 9325; // Deposit one inventory row into active chest
     public static final int ChestWithdrawAllFurniEvent = 9326; // Withdraw all furni (official Vefehonuj shape)
     public static final int ChestOpenEvent = 9327; // Open wired chest (official Nod)
+    public static final int WiredChestRoomLogsEvent = 9328; // Room-wide chest transaction log page
+    public static final int WiredChestLockEvent = 9329; // Lock / unlock the room's chests
+    // 9330-9333 are the Trax editor; the chests tab continues at 9334.
+    public static final int WiredChestTransactionDetailsEvent = 9334; // One transaction with its furni
     public static final int ChangeNameCheckUsernameEvent = 3950;
     public static final int ConfirmChangeNameEvent = 2977;
     public static final int ActivateEffectEvent = 2959;

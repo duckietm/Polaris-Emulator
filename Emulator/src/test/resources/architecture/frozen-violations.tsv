@@ -564,6 +564,9 @@ U|com/eu/habbo/habbohotel/items/interactions/pets/InteractionPetTrampoline.java|
 U|com/eu/habbo/habbohotel/items/interactions/wired/WiredInputGuard.java|CALL|getConfig|4
 U|com/eu/habbo/habbohotel/items/interactions/wired/WiredNumericInputGuard.java|CALL|getConfig|2
 U|com/eu/habbo/habbohotel/items/interactions/wired/chest/ChestFurniDepositHelper.java|CALL|getThreading|1
+U|com/eu/habbo/habbohotel/items/interactions/wired/chest/ChestTransactionLog.java|CALL|getDatabase|5
+U|com/eu/habbo/habbohotel/items/interactions/wired/chest/ChestTransactionLog.java|CALL|getIntUnixTimestamp|2
+U|com/eu/habbo/habbohotel/items/interactions/wired/chest/ChestTransactionLog.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/chest/ChestWiredFurniUtil.java|CALL|getGameEnvironment|4
 U|com/eu/habbo/habbohotel/items/interactions/wired/chest/ChestWiredFurniUtil.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/chest/InteractionWiredChest.java|CALL|getGameEnvironment|3

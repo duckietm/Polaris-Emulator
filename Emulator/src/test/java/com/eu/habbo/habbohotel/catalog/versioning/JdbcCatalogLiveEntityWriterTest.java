@@ -8,8 +8,7 @@ import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.google.gson.Gson;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-
-import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.Test;
 
 class JdbcCatalogLiveEntityWriterTest {
     private final Gson gson = new Gson();
@@ -49,8 +48,8 @@ class JdbcCatalogLiveEntityWriterTest {
         verify(statement).setInt(11, 88);
         verify(statement).setInt(12, 3);
         verify(statement).setString(13, "x");
-        verify(statement).setBoolean(14, true);
-        verify(statement).setBoolean(15, true);
+        verify(statement).setString(14, "1");
+        verify(statement).setString(15, "1");
         verify(statement).executeUpdate();
     }
 }

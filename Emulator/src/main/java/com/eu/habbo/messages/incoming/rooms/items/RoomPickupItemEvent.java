@@ -14,24 +14,20 @@ public class RoomPickupItemEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        this.packet.readInt(); //10 = floorItem and 20 = wallItem
+        this.packet.readInt(); // 10 = floorItem and 20 = wallItem
         int itemId = this.packet.readInt();
 
-        if (!RoomItemInputGuard.isPositiveId(itemId))
-            return;
+        if (!RoomItemInputGuard.isPositiveId(itemId)) return;
 
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
-        if (room == null)
-            return;
+        if (room == null) return;
 
         HabboItem item = room.getHabboItem(itemId);
 
-        if (item == null)
-            return;
+        if (item == null) return;
 
-        if (item instanceof InteractionPostIt)
-            return;
+        if (item instanceof InteractionPostIt) return;
 
         if (item.getUserId() == this.client.getHabbo().getHabboInfo().getId()) {
             room.pickUpItem(item, this.client.getHabbo());
@@ -39,7 +35,8 @@ public class RoomPickupItemEvent extends MessageHandler {
             if (room.hasRights(this.client.getHabbo())) {
                 if (this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)) {
                     item.setUserId(this.client.getHabbo().getHabboInfo().getId());
-                } else if (this.client.getHabbo().getHabboInfo().getId() != room.getOwnerId() && item.getUserId() == room.getOwnerId()) {
+                } else if (this.client.getHabbo().getHabboInfo().getId() != room.getOwnerId()
+                        && item.getUserId() == room.getOwnerId()) {
                     return;
                 }
 

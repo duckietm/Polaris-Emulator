@@ -108,9 +108,7 @@ public class CatalogAdminSaveOfferEvent extends MessageHandler {
                     result,
                     this.client.getHabbo().getHabboInfo().getUsername(),
                     gson));
-        } catch (IllegalArgumentException
-                | com.eu.habbo.habbohotel.catalog.versioning.CatalogConcurrentModificationException
-                | com.eu.habbo.habbohotel.catalog.versioning.CatalogUndoConflictException exception) {
+        } catch (RuntimeException exception) {
             this.client.sendResponse(CatalogAdminSmartSaveResponder.failure(
                     operationId,
                     "saveOffer",

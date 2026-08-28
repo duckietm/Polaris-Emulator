@@ -11,7 +11,6 @@ import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -108,7 +107,7 @@ public class ModToolIssueChatlogComposer extends MessageComposer {
     }
 
     static String formatTimestamp(int timestamp) {
-        return TIMESTAMP_FORMATTER.format(Instant.ofEpochSecond(timestamp));
+        return ModToolChatlogTimestamp.format(timestamp);
     }
 
     public ModToolIssue getIssue() {

@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -63,6 +64,17 @@ public class WiredEffectGiveCurrencyFromChest extends InteractionWiredEffect {
                 int given = contents.take(ChestStorage.KIND_CURRENCY, entry.type, this.amount);
                 if (given > 0) {
                     grant(habbo, entry.type, given);
+                    ChestTransactionLog.record(
+                            room.getId(),
+                            chest.getId(),
+                            ChestStorage.KIND_CURRENCY,
+                            ChestTransactionLog.TYPE_WITHDRAW,
+                            ChestTransactionLog.SOURCE_WIRED,
+                            habbo,
+                            entry.type,
+                            given,
+                            0,
+                            null);
                     chest.persistContents();
                 }
                 break;

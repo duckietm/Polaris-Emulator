@@ -89,6 +89,12 @@ public class ChestStorage {
     private boolean notifyEmpty = false;
     private boolean notifyWired = false;
     private int notifyMode = 0; // 0 = always
+    /**
+     * Anti-theft switch driven from the wired chests tab. A locked chest still accepts deposits and
+     * still answers wired effects — it only refuses player-initiated withdrawals, which is the way a
+     * room owner freezes a chest that is being emptied.
+     */
+    private boolean locked = false;
 
     /** Defensive snapshot — safe to iterate off-thread; mutate the chest through the dedicated methods. */
     public synchronized List<Entry> entries() {
@@ -410,6 +416,14 @@ public class ChestStorage {
         return this.notifyMode;
     }
 
+    public boolean isLocked() {
+        return this.locked;
+    }
+
+    public void setLocked(boolean locked) {
+        this.locked = locked;
+    }
+
     public void setNotifications(
             boolean full, boolean donation, boolean withdraw, boolean empty, boolean wired, int mode) {
         this.notifyFull = full;
@@ -448,6 +462,7 @@ public class ChestStorage {
         data.notifyEmpty = this.notifyEmpty;
         data.notifyWired = this.notifyWired;
         data.notifyMode = this.notifyMode;
+        data.locked = this.locked;
         data.log = this.log;
         data.furniItems = this.furniItems;
         data.nextFurniInventoryId = this.nextFurniInventoryId;
@@ -482,6 +497,7 @@ public class ChestStorage {
                 chest.notifyEmpty = data.notifyEmpty;
                 chest.notifyWired = data.notifyWired;
                 chest.notifyMode = data.notifyMode;
+                chest.locked = data.locked;
                 if (data.log != null) {
                     for (LogEntry le : data.log) {
                         if (le != null) chest.log.add(le);
@@ -522,6 +538,7 @@ public class ChestStorage {
         boolean notifyEmpty = false;
         boolean notifyWired = false;
         int notifyMode = 0;
+        boolean locked = false;
         List<LogEntry> log;
         List<ChestFurniStoredItem> furniItems;
         int nextFurniInventoryId = 1;

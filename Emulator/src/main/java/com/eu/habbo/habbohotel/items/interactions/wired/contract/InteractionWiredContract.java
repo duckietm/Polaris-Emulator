@@ -31,6 +31,10 @@ public abstract class InteractionWiredContract extends InteractionWiredExtra {
     public static final int DIR_PAY = 0;
     public static final int DIR_RECEIVE = 1;
 
+    public static final int TYPE_PAYMENT = 0;
+    public static final int TYPE_TRADE = 1;
+    public static final int TYPE_REWARD = 2;
+
     public static final int KIND_CURRENCY = 0;
     public static final int KIND_FURNI = 1;
 
@@ -66,6 +70,19 @@ public abstract class InteractionWiredContract extends InteractionWiredExtra {
 
     /** The client {@code WiredActionLayoutCode} for this contract's dialog (110-113). */
     protected abstract int contractCode();
+
+    /**
+     * Which of the three official shapes this contract is, for the negotiation window: 0 payment,
+     * 1 trade, 2 reward. A custom contract is negotiated like a payment, because that is what it is
+     * from the player's side -- give something, get something.
+     */
+    public int contractType() {
+        return switch (contractCode()) {
+            case 112 -> TYPE_TRADE;
+            case 111 -> TYPE_REWARD;
+            default -> TYPE_PAYMENT;
+        };
+    }
 
     @Override
     public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {

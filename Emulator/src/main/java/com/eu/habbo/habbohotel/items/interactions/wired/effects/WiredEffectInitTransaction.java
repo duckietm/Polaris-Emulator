@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
 import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -39,6 +40,12 @@ import java.util.Map;
  * is the existing config-based wired chest ({@link InteractionWiredChest}).</p>
  */
 public class WiredEffectInitTransaction extends InteractionWiredEffect {
+    /** How long a player has to complete a negotiation before the offer lapses. */
+    private static final int NEGOTIATION_TIMEOUT_SECONDS = 120;
+
+    /** The artwork the window frames the reward with; the richer layouts come from the dialog later. */
+    private static final String LAYOUT_GENERIC = "generic";
+
     public static final WiredEffectType type = WiredEffectType.INIT_TRANSACTION;
 
     private final List<Integer> contractIds = new ArrayList<>();
@@ -73,6 +80,15 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect {
         Habbo actor = ctx.actor().map(room::getHabbo).orElse(null);
         if (actor == null) {
             this.fire(ctx, room, WiredEvent.Type.TRANSACTION_FAIL);
+            return;
+        }
+
+        // A contract that asks the player for something is negotiated: they see what it costs, choose
+        // which items pay for it and confirm. One that asks for nothing has nothing to negotiate, so
+        // it stays instant -- a pure reward should not make somebody click through a trade window.
+        ContractRules rules = ContractRules.from(contracts);
+        if (!rules.asksForNothing()) {
+            openNegotiation(room, actor, contracts, rules);
             return;
         }
 
@@ -147,6 +163,30 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect {
         }
 
         this.fire(ctx, room, WiredEvent.Type.TRANSACTION_COMPLETE);
+    }
+
+    /**
+     * Hand the player over to the negotiation window. The outcome is not known here: it arrives when
+     * they confirm or walk away, and the transaction triggers fire from there instead.
+     */
+    private void openNegotiation(
+            Room room, Habbo actor, List<InteractionWiredContract> contracts, ContractRules rules) {
+        InteractionWiredChest chest = null;
+        for (InteractionWiredContract contract : contracts) {
+            chest = this.resolveChest(room, contract.getChestIds());
+            if (chest != null) break;
+        }
+
+        room.getWiredRuntime()
+                .getTradingManager()
+                .open(
+                        actor,
+                        rules,
+                        contracts.get(0).contractType(),
+                        "",
+                        LAYOUT_GENERIC,
+                        NEGOTIATION_TIMEOUT_SECONDS,
+                        chest);
     }
 
     private InteractionWiredChest resolveChest(Room room, List<Integer> ids) {

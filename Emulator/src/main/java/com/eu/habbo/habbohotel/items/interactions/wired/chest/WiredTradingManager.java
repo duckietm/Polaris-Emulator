@@ -8,6 +8,8 @@ import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWire
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.wired.core.WiredEvent;
+import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.WiredTradeCancelledComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.WiredTradeCompletedComposer;
@@ -107,6 +109,8 @@ public class WiredTradingManager {
         if (habbo != null && habbo.getClient() != null) {
             habbo.getClient().sendResponse(new WiredTradeCancelledComposer(failureId));
         }
+
+        raise(habbo, WiredEvent.Type.TRANSACTION_FAIL);
     }
 
     /** End a negotiation that settled. The items it consumed are gone by then, by design. */
@@ -123,6 +127,8 @@ public class WiredTradingManager {
         if (habbo != null && habbo.getClient() != null) {
             habbo.getClient().sendResponse(new WiredTradeCompletedComposer());
         }
+
+        raise(habbo, WiredEvent.Type.TRANSACTION_COMPLETE);
     }
 
     /**
@@ -182,6 +188,22 @@ public class WiredTradingManager {
 
     private synchronized Negotiation getNegotiation(Habbo habbo) {
         return habbo == null ? null : this.sessions.get(habbo.getHabboInfo().getId());
+    }
+
+    /**
+     * Fire the room's transaction triggers for how this negotiation ended.
+     *
+     * <p>Init Transaction used to raise these itself, because it knew the outcome the moment it ran.
+     * A negotiated contract does not settle until the player confirms or walks away, so the triggers
+     * have to fire from here or a room would react before anything had actually happened.
+     */
+    private void raise(Habbo habbo, WiredEvent.Type type) {
+        if (this.room == null || habbo == null) return;
+
+        WiredEvent.Builder builder = WiredEvent.builder(type, this.room);
+        if (habbo.getRoomUnit() != null) builder.actor(habbo.getRoomUnit());
+
+        WiredManager.dispatchEffectTriggeredEvent(builder.build());
     }
 
     /** Drop every negotiation, handing every held item back. Called when the room lets go. */

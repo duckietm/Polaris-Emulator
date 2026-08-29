@@ -1706,6 +1706,9 @@ FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.contr
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract#KIND_CURRENCY:int
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract#KIND_FURNI:int
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract#RULES_FORMAT:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract#TYPE_PAYMENT:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract#TYPE_REWARD:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract#TYPE_TRADE:int
 FIELD protected final com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract#chestIds:java.util.List<java.lang.Integer>
 FIELD protected final com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract#getRule:java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract$Term>
 FIELD protected final com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract#giveRules:java.util.List<java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract$Term>>
@@ -1713,6 +1716,7 @@ FIELD protected final com.eu.habbo.habbohotel.items.interactions.wired.contract.
 CONSTRUCTOR protected com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
 CONSTRUCTOR protected com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract(java.sql.ResultSet,com.eu.habbo.habbohotel.items.Item) throws java.sql.SQLException
 METHOD protected abstract com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract#contractCode(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract#contractType(-):int throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract#execute(com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.Room,java.lang.Object[]):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract#getChestIds(-):java.util.List<java.lang.Integer> throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract#getGetRule(-):java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract$Term> throws -

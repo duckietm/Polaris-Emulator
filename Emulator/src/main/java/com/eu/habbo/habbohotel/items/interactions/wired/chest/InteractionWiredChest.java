@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
+import com.eu.habbo.messages.outgoing.rooms.items.FloorItemUpdateComposer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
@@ -256,6 +257,11 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
         if (room == null || state == this.publishedState) return;
 
         this.publishedState = state;
-        room.updateItemState(this);
+
+        // Not updateItemState: that broadcasts ItemStateComposer, which reads the legacy extradata
+        // string. A chest keeps its state in its furni data, so that composer would send zero every
+        // time and slam the lid shut whatever the chest was actually doing. The full item update
+        // re-serializes the furni data, state included.
+        room.sendComposer(new FloorItemUpdateComposer(this).compose());
     }
 }

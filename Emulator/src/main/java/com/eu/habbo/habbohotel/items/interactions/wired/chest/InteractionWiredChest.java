@@ -109,6 +109,20 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
     }
 
     /**
+     * Whether the chest should be showing open right now.
+     *
+     * <p>Both kinds ask this same question; they only differ in what they draw once the answer is
+     * yes, which is why the answer lives here and the drawing lives in the subclasses.
+     */
+    protected boolean showsOpen() {
+        return switch (this.contents.getAppearanceState()) {
+            case APPEARANCE_ALWAYS_OPEN -> true;
+            case APPEARANCE_ALWAYS_CLOSED -> false;
+            default -> this.isBeingLookedInto();
+        };
+    }
+
+    /**
      * Forget anyone who is no longer in the room.
      *
      * <p>The client says when it closes a chest, but a client that reloads, crashes or is simply an

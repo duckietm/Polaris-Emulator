@@ -48,11 +48,7 @@ public class InteractionWiredChestFurni extends InteractionWiredChest {
      */
     @Override
     protected int visualState() {
-        return switch (this.contents.getAppearanceState()) {
-            case APPEARANCE_ALWAYS_OPEN -> 1;
-            case APPEARANCE_ALWAYS_CLOSED -> 0;
-            default -> this.isBeingLookedInto() ? 1 : 0;
-        };
+        return this.showsOpen() ? 1 : 0;
     }
 
     @Override

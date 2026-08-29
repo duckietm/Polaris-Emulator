@@ -484,6 +484,7 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.Interaction
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest#persistContents(com.eu.habbo.habbohotel.rooms.Room):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest#publishState(com.eu.habbo.habbohotel.rooms.Room):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest#serializeExtradata(com.eu.habbo.messages.ServerMessage):void throws -
+METHOD protected com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest#showsOpen(-):boolean throws -
 METHOD protected abstract com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest#storedCount(-):int throws -
 METHOD protected abstract com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest#visualState(-):int throws -
 

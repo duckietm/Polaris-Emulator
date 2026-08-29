@@ -172,6 +172,42 @@ class ChestExtradataWireTest {
     }
 
     @Test
+    void aCoinChestClosesItsLidWhenNobodyIsLooking() {
+        InteractionWiredChestCurrency chest = new InteractionWiredChestCurrency(1, 2, mock(Item.class), "", 0, 0);
+        chest.getContents().add(ChestStorage.KIND_CURRENCY, -1, 500);
+
+        // The coin chest's sprite states are one axis: 0 is the closed chest, 1 to 4 are the open one
+        // with more and more gold. Money inside is not a reason to have the lid up.
+        assertEquals("0", read(chest).data().get("state"));
+    }
+
+    @Test
+    void anEmptyCoinChestStillOpensItsLid() {
+        InteractionWiredChestCurrency chest = new InteractionWiredChestCurrency(1, 2, mock(Item.class), "", 0, 0);
+        Habbo viewer = mock(Habbo.class, RETURNS_DEEP_STUBS);
+        when(viewer.getHabboInfo().getId()).thenReturn(99);
+
+        chest.openFor(viewer, null);
+
+        // An open-but-empty chest has its own sprite; without this an empty chest read as shut even
+        // while somebody had it open, and only appeared to work once coins went in.
+        assertEquals("1", read(chest).data().get("state"));
+    }
+
+    @Test
+    void aFullCoinChestShowsTheFullestPile() {
+        InteractionWiredChestCurrency chest = new InteractionWiredChestCurrency(1, 2, mock(Item.class), "", 0, 0);
+        Habbo viewer = mock(Habbo.class, RETURNS_DEEP_STUBS);
+        when(viewer.getHabboInfo().getId()).thenReturn(99);
+        chest.openFor(viewer, null);
+
+        chest.getContents()
+                .add(ChestStorage.KIND_CURRENCY, -1, chest.getContents().getCapacity());
+
+        assertEquals("4", read(chest).data().get("state"));
+    }
+
+    @Test
     void carriesTheKeysTheOfficialWindowReads() {
         Map<String, String> data = read(new TestChest(false)).data();
 

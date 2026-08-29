@@ -19,8 +19,15 @@ public class InteractionWiredChestCurrency extends InteractionWiredChest {
     /** Client WiredActionLayoutCode value for the chest dialog. */
     public static final int CODE = 100;
 
-    /** The coin chest sprite draws four progressively fuller piles above empty. */
-    private static final int FILL_LEVELS = 4;
+    /**
+     * The coin chest's sprite states are one axis, not two: zero is the closed chest, and one to four
+     * are the open chest with progressively more gold in it. Being open and being full are not
+     * separate questions for this furni.
+     */
+    private static final int CLOSED = 0;
+
+    private static final int OPEN_EMPTY = 1;
+    private static final int OPEN_FULLEST = 4;
 
     public static final int CURRENCY_CREDITS = -1;
 
@@ -47,20 +54,22 @@ public class InteractionWiredChestCurrency extends InteractionWiredChest {
     }
 
     /**
-     * A coin chest has no lid. Its sprite states are fill levels -- the asset draws a different pile
-     * for each -- so the state is how full it is rather than whether anyone is looking.
-     *
-     * <p>Empty is state zero; anything at all shows the first pile, so a chest with one coin in it does
-     * not read as empty from across the room.
+     * Closed unless the chest should be showing open, and then open at whatever the gold inside comes
+     * to. An empty open chest is its own state, so a chest with nothing in it still opens its lid
+     * rather than reading as shut.
      */
     @Override
     protected int visualState() {
-        int stored = this.storedCount();
-        if (stored <= 0) return 0;
+        if (!this.showsOpen()) return CLOSED;
 
+        int stored = this.storedCount();
+        if (stored <= 0) return OPEN_EMPTY;
+
+        // Three fuller sprites share the ceiling between them, so a chest filled to the brim shows
+        // the fullest one rather than stopping a step short.
         int ceiling = Math.max(1, this.contents.getCapacity());
-        int level = 1 + (int) ((long) stored * (FILL_LEVELS - 1) / ceiling);
-        return Math.min(level, FILL_LEVELS);
+        int level = OPEN_EMPTY + 1 + (int) ((long) (stored - 1) * 3 / ceiling);
+        return Math.min(level, OPEN_FULLEST);
     }
 
     @Override

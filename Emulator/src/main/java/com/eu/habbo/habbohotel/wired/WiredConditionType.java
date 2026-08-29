@@ -48,7 +48,12 @@ public enum WiredConditionType {
     CHEST_HAS_ITEM_TYPE(48),
     NO_BATTLEBANZAI(44),
     USER_ON_FURNI_WITH_STATE(45),
-    TRG_FURNI_ADJACENT_STATE(46);
+    TRG_FURNI_ADJACENT_STATE(46),
+    // A user-scoped condition whose answer comes from the user themselves — gender, room rights —
+    // so the dialog offers the user source and the quantifier and nothing to type in. These used to
+    // borrow ACTOR_WEARS_BADGE, which showed a badge-code field that was read and then ignored.
+    USER_ATTRIBUTE(49),
+    NOT_USER_ATTRIBUTE(50);
 
     public final int code;
 

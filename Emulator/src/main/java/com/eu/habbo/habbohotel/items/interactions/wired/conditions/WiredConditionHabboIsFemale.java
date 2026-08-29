@@ -5,14 +5,18 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboGender;
+import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * Passes when the resolved user's gender is female. Reuses the {@link WiredConditionHabboWearsBadge}
- * dialog and serialization (badge-code text field unused), so it needs no new client dialog.
+ * Passes when the resolved user's gender is female. It keeps {@link WiredConditionHabboWearsBadge}'s
+ * serialization — the user source and the quantifier are the settings it needs — but answers
+ * {@link WiredConditionType#USER_ATTRIBUTE} so the client opens the dialog without the badge-code
+ * field.
  */
 public class WiredConditionHabboIsFemale extends WiredConditionHabboWearsBadge {
+    public static final WiredConditionType type = WiredConditionType.USER_ATTRIBUTE;
 
     public WiredConditionHabboIsFemale(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -27,5 +31,10 @@ public class WiredConditionHabboIsFemale extends WiredConditionHabboWearsBadge {
     protected boolean matchesBadge(Room room, RoomUnit roomUnit) {
         Habbo habbo = room.getHabbo(roomUnit);
         return habbo != null && habbo.getHabboInfo().getGender() == HabboGender.F;
+    }
+
+    @Override
+    public WiredConditionType getType() {
+        return type;
     }
 }

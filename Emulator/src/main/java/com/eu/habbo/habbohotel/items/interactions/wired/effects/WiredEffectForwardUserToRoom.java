@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomManager;
+import com.eu.habbo.habbohotel.rooms.RoomState;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
@@ -21,17 +22,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Forwards the resolved user(s) to another room, identified by a numeric room id stored in the
- * single text field of the {@link WiredEffectType#SHOW_MESSAGE} client dialog (text field = target
- * room id + a user-source selector), so it needs no new client dialog.
- * <p>
- * The room-change itself is performed exactly as the proven RCON {@code ForwardUser} handler does it:
- * leave the current room (if any), send {@link ForwardToRoomComposer}, then
- * {@link RoomManager#enterRoom(Habbo, int, String, boolean)} with checks overridden. This is a faithful
- * implementation of the {@code wf_act_forward_user_to_room} behaviour (navigate a user to a room),
- * not a URL/in-client link.
- */
 public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
     public static final WiredEffectType type = WiredEffectType.SHOW_MESSAGE;
 
@@ -132,7 +122,22 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
 
             RoomManager roomManager = Emulator.getGameEnvironment().getRoomManager();
 
-            if (roomManager.loadRoom(targetRoomId) == null) {
+            Room targetRoom = roomManager.loadRoom(targetRoomId);
+            if (targetRoom == null) {
+                continue;
+            }
+
+            // Bypass the destination's password/lock only when the forward is legitimate:
+            //   - sameOwner: the wired's room and the target share an owner -- the maze /
+            //     chained-event-room case, where every room is locked but one person owns
+            //     them all, so forwarding anyone (including visitors) between them is intended.
+            //   - the forwarded user themselves owns or holds rights in the target -- cross-
+            //     owner event setups where staff forward each other into their locked rooms.
+            // Otherwise never force a user through SOMEONE ELSE'S lock: respect the target's
+            // access state and skip it unless it is OPEN.
+            boolean sameOwner = targetRoom.getOwnerId() == room.getOwnerId();
+            boolean canBypass = sameOwner || targetRoom.hasRights(habbo);
+            if (!canBypass && targetRoom.getState() != RoomState.OPEN) {
                 continue;
             }
 
@@ -141,7 +146,7 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
             }
 
             habbo.getClient().sendResponse(new ForwardToRoomComposer(targetRoomId));
-            roomManager.enterRoom(habbo, targetRoomId, "", true);
+            roomManager.enterRoom(habbo, targetRoomId, "", canBypass);
         }
     }
 

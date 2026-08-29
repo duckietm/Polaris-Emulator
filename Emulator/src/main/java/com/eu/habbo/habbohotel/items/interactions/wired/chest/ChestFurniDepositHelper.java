@@ -55,7 +55,7 @@ public final class ChestFurniDepositHelper {
                 0,
                 1,
                 List.of(stored));
-        chest.persistContents();
+        chest.persistContents(room);
 
         habbo.getClient().sendResponse(new RemoveHabboItemComposer(removed.getGiftAdjustedId()));
         habbo.getClient().sendResponse(new InventoryRefreshComposer());

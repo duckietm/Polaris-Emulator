@@ -56,7 +56,7 @@ public class ChestSaveOptionsEvent extends MessageHandler {
             c.setLocked(true);
         }
 
-        chest.persistContents();
+        chest.persistContents(room);
         this.client.sendResponse(new ChestDataComposer(chest, habbo));
     }
 }

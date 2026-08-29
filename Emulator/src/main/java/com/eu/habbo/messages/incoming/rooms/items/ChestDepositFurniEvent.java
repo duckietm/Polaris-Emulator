@@ -98,7 +98,7 @@ public class ChestDepositFurniEvent extends MessageHandler {
                 0,
                 deposited,
                 added);
-        chest.persistContents();
+        chest.persistContents(room);
 
         for (HabboItem removed : toRemove) {
             habbo.getClient().sendResponse(new RemoveHabboItemComposer(removed.getGiftAdjustedId()));

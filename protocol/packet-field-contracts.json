@@ -17043,6 +17043,28 @@
           "name": "resultCode"
         }
       ]
+    },
+    {
+      "name": "CHEST_CLOSE",
+      "direction": "client_to_server",
+      "header": 9339,
+      "java": {
+        "symbol": "ChestCloseEvent",
+        "className": "ChestCloseEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestCloseEvent.java"
+      },
+      "typescript": {
+        "symbol": "CHEST_CLOSE",
+        "className": "ChestCloseComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestCloseComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "itemId"
+        }
+      ]
     }
   ],
   "unpaired": [

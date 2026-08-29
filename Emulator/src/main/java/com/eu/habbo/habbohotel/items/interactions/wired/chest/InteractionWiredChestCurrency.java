@@ -19,6 +19,9 @@ public class InteractionWiredChestCurrency extends InteractionWiredChest {
     /** Client WiredActionLayoutCode value for the chest dialog. */
     public static final int CODE = 100;
 
+    /** The coin chest sprite draws four progressively fuller piles above empty. */
+    private static final int FILL_LEVELS = 4;
+
     public static final int CURRENCY_CREDITS = -1;
 
     public InteractionWiredChestCurrency(ResultSet set, Item baseItem) throws SQLException {
@@ -41,6 +44,28 @@ public class InteractionWiredChestCurrency extends InteractionWiredChest {
         // "Tutti possono aprire" toggle: anyone if accessOpen, otherwise room rights only.
         if (!this.contents.isAccessOpen() && !room.hasRights(client.getHabbo())) return;
         ChestOpenHelper.open(client, this, room);
+    }
+
+    /**
+     * A coin chest has no lid. Its sprite states are fill levels -- the asset draws a different pile
+     * for each -- so the state is how full it is rather than whether anyone is looking.
+     *
+     * <p>Empty is state zero; anything at all shows the first pile, so a chest with one coin in it does
+     * not read as empty from across the room.
+     */
+    @Override
+    protected int visualState() {
+        int stored = this.storedCount();
+        if (stored <= 0) return 0;
+
+        int ceiling = Math.max(1, this.contents.getCapacity());
+        int level = 1 + (int) ((long) stored * (FILL_LEVELS - 1) / ceiling);
+        return Math.min(level, FILL_LEVELS);
+    }
+
+    @Override
+    protected int storedCount() {
+        return this.contents.total(ChestStorage.KIND_CURRENCY);
     }
 
     @Override

@@ -299,6 +299,7 @@ import com.eu.habbo.messages.incoming.rooms.bots.BotPlaceEvent;
 import com.eu.habbo.messages.incoming.rooms.bots.BotSaveSettingsEvent;
 import com.eu.habbo.messages.incoming.rooms.bots.BotSettingsEvent;
 import com.eu.habbo.messages.incoming.rooms.items.AdvertisingSaveEvent;
+import com.eu.habbo.messages.incoming.rooms.items.ChestCloseEvent;
 import com.eu.habbo.messages.incoming.rooms.items.ChestDepositEvent;
 import com.eu.habbo.messages.incoming.rooms.items.ChestDepositFurniEvent;
 import com.eu.habbo.messages.incoming.rooms.items.ChestDepositInventoryItemEvent;
@@ -927,6 +928,7 @@ public class PacketManager {
         this.registerHandler(Incoming.ChestSaveSettingsEvent, ChestSaveSettingsEvent.class);
         this.registerHandler(Incoming.ChestSaveNotificationsEvent, ChestSaveNotificationsEvent.class);
         this.registerHandler(Incoming.ChestSaveOptionsEvent, ChestSaveOptionsEvent.class);
+        this.registerHandler(Incoming.ChestCloseEvent, ChestCloseEvent.class);
         this.registerHandler(Incoming.ChestUpgradeCapacityEvent, ChestUpgradeCapacityEvent.class);
         this.registerHandler(Incoming.ChestRequestLogEvent, ChestRequestLogEvent.class);
         this.registerHandler(Incoming.WiredChestRoomLogsEvent, WiredChestRoomLogsEvent.class);

@@ -39,6 +39,6 @@ public class ChestWithdrawAllFurniEvent extends MessageHandler {
 
         List<ChestFurniStoredItem> removedItems = chest.getContents().removeAllFurniItems();
 
-        ChestFurniWithdrawHelper.completeWithdraw(this.client, chest, removedItems);
+        ChestFurniWithdrawHelper.completeWithdraw(this.client, chest, room, removedItems);
     }
 }

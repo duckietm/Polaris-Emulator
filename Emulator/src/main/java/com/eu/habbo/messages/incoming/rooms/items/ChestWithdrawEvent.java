@@ -64,7 +64,7 @@ public class ChestWithdrawEvent extends MessageHandler {
                 taken,
                 0,
                 null);
-        chest.persistContents();
+        chest.persistContents(room);
 
         if (currencyType < 0) habbo.giveCredits(taken);
         else habbo.givePoints(currencyType, taken);

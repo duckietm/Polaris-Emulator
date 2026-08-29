@@ -49,6 +49,6 @@ public class ChestWithdrawFurniEvent extends MessageHandler {
         List<ChestFurniStoredItem> removedItems =
                 chest.getContents().removeFurniByWireType(wallItem, typeId, legacyPosterId, requested);
 
-        ChestFurniWithdrawHelper.completeWithdraw(this.client, chest, removedItems);
+        ChestFurniWithdrawHelper.completeWithdraw(this.client, chest, room, removedItems);
     }
 }

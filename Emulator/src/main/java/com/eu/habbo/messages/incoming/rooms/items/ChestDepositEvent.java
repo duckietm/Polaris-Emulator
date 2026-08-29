@@ -75,7 +75,7 @@ public class ChestDepositEvent extends MessageHandler {
                 0,
                 accepted,
                 null);
-        chest.persistContents();
+        chest.persistContents(room);
 
         this.client.sendResponse(new ChestDataComposer(chest, this.client.getHabbo()));
     }

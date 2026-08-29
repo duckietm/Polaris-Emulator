@@ -53,7 +53,7 @@ public class WiredChestLockEvent extends MessageHandler {
             if (chest.getContents().isLocked() == lock) continue;
 
             chest.getContents().setLocked(lock);
-            chest.persistContents();
+            chest.persistContents(room);
             affected++;
         }
 

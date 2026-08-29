@@ -38,7 +38,7 @@ public class ChestSaveNotificationsEvent extends MessageHandler {
         if (!room.hasRights(habbo)) return;
 
         chest.getContents().setNotifications(full, donation, withdraw, empty, wired, mode);
-        chest.persistContents();
+        chest.persistContents(room);
 
         this.client.sendResponse(new ChestDataComposer(chest, this.client.getHabbo()));
     }

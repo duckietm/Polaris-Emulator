@@ -47,7 +47,7 @@ public class ChestSaveSettingsEvent extends MessageHandler {
         c.setAccessOpen(accessOpen);
         c.setAccessDonate(accessDonate);
         c.setAppearanceState(appearanceState);
-        chest.persistContents();
+        chest.persistContents(room);
 
         this.client.sendResponse(new ChestDataComposer(chest, this.client.getHabbo()));
     }

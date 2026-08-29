@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.users.Habbo;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -75,6 +76,20 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
 
     public ChestStorage getContents() {
         return this.contents;
+    }
+
+    /**
+     * Whether the lock stands between this player and the chest.
+     *
+     * <p>A lock closes a chest to the room, not to the person who owns it. The official window keeps
+     * withdrawing available while {@code locked && owner} and greys depositing only for someone who is
+     * not the owner, so the owner can always reach their own chest — which is what makes the lock safe
+     * to leave on. Everyone else is refused in both directions until it comes off.
+     */
+    public boolean isLockedFor(Habbo habbo) {
+        if (!this.contents.isLocked()) return false;
+
+        return habbo == null || habbo.getHabboInfo().getId() != this.getUserId();
     }
 
     /** Schedule a save of the (mutated) contents to items.wired_data via {@code InteractionWired.run()}. */

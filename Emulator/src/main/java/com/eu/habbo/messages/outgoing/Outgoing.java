@@ -17,6 +17,7 @@ public class Outgoing {
     public static final int WiredTradeItemsComposer = 9332;
     public static final int WiredTradeCancelledComposer = 9333;
     public static final int WiredTradeCompletedComposer = 9334;
+    public static final int ChestUpgradeResultComposer = 9335;
     public static final int FavoriteRoomsCountComposer = 151;
     public static final int UserCurrencyComposer = 2018;
     public static final int RedeemVoucherOKComposer = 3336;

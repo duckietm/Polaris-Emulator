@@ -158,6 +158,9 @@ METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.WiredTimer
 TYPE public abstract interface com.eu.habbo.habbohotel.items.interactions.wired.WiredTriggerReset
 METHOD public abstract com.eu.habbo.habbohotel.items.interactions.wired.WiredTriggerReset#resetTimer(-):void throws -
 
+TYPE public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestAutoLock extends java.lang.Object
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestAutoLock#onOwnerLeftRoom(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.users.Habbo):void throws -
+
 TYPE public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestDepositSession extends java.lang.Object
 METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestDepositSession#clear(int):void throws -
 METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestDepositSession#getChestItemId(int):int throws -
@@ -212,6 +215,7 @@ CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestS
 METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#add(int,int,int):void throws -
 METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#addFurniItem(com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniStoredItem):com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniStoredItem throws -
 METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#addLog(com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage$LogEntry):void throws -
+METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#applyAutoLockOnOwnerExit(-):boolean throws -
 METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#count(int,int):int throws -
 METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#countFurniByWireType(boolean,int,java.lang.String):int throws -
 METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#depositCurrency(int,int):int throws -
@@ -230,6 +234,7 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorag
 METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#has(int,int,int):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#isAccessDonate(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#isAccessOpen(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#isAutoLock(-):boolean throws -
 METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#isEmpty(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#isLocked(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#isNotifyDonation(-):boolean throws -
@@ -245,6 +250,7 @@ METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.ches
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setAccessDonate(boolean):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setAccessOpen(boolean):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setAppearanceState(int):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setAutoLock(boolean):void throws -
 METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setCapacity(int):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setCapacityMax(int):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setDescription(java.lang.String):void throws -
@@ -460,6 +466,7 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.Interaction
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest#getContents(-):com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest#getWiredData(-):java.lang.String throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest#hasConfiguration(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest#isLockedFor(com.eu.habbo.habbohotel.users.Habbo):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest#loadWiredData(java.sql.ResultSet,com.eu.habbo.habbohotel.rooms.Room):void throws java.sql.SQLException
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest#onPickUp(-):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest#onWalk(com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.Room,java.lang.Object[]):void throws java.lang.Exception

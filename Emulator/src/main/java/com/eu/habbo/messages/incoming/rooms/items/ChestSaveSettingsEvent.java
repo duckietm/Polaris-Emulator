@@ -10,10 +10,11 @@ import com.eu.habbo.messages.outgoing.rooms.items.ChestDataComposer;
 
 /**
  * Saves a wired chest's settings (room-rights only): {@code int itemId, string name, string description,
- * bool accessOpen, bool accessDonate, int appearanceState, bool locked, int capacity}.
+ * bool accessOpen, bool accessDonate, int appearanceState}.
  *
- * <p>The lock and the ceiling ride with the rest of the settings because that is how the official
- * window saves them -- one message, one confirmation, no half-applied state.
+ * <p>The lock, the auto-lock and the capacity ceiling are not here: they live in the chest
+ * window itself and save through {@link ChestSaveOptionsEvent} the moment they are touched,
+ * so closing a chest is one click rather than a trip through a settings dialog.
  */
 public class ChestSaveSettingsEvent extends MessageHandler {
     @Override
@@ -35,8 +36,6 @@ public class ChestSaveSettingsEvent extends MessageHandler {
         boolean accessOpen = this.packet.readBoolean();
         boolean accessDonate = this.packet.readBoolean();
         int appearanceState = this.packet.readInt();
-        boolean locked = this.packet.readBoolean();
-        int capacity = this.packet.readInt();
 
         HabboItem item = room.getHabboItem(itemId);
         if (!(item instanceof InteractionWiredChest chest)) return;
@@ -48,11 +47,9 @@ public class ChestSaveSettingsEvent extends MessageHandler {
         c.setAccessOpen(accessOpen);
         c.setAccessDonate(accessDonate);
         c.setAppearanceState(appearanceState);
-        c.setLocked(locked);
-        c.setCapacity(capacity);
         chest.persistContents();
 
-        this.client.sendResponse(new ChestDataComposer(chest));
+        this.client.sendResponse(new ChestDataComposer(chest, this.client.getHabbo()));
     }
 
     private static String bound(String value, int max) {

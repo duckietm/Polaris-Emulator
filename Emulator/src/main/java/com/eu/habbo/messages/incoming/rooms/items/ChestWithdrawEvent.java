@@ -39,10 +39,10 @@ public class ChestWithdrawEvent extends MessageHandler {
         if (!room.hasRights(habbo)) return;
 
         ChestStorage contents = chest.getContents();
-        // A locked chest refuses hand withdrawals. Push the state back instead of failing silently,
-        // so the window can show the lock rather than leaving the button looking broken.
-        if (contents.isLocked()) {
-            this.client.sendResponse(new ChestDataComposer(chest));
+        // A locked chest refuses everyone but its owner. Push the state back instead of failing
+        // silently, so the window can show the lock rather than leaving the button looking broken.
+        if (chest.isLockedFor(habbo)) {
+            this.client.sendResponse(new ChestDataComposer(chest, this.client.getHabbo()));
             return;
         }
 
@@ -69,6 +69,6 @@ public class ChestWithdrawEvent extends MessageHandler {
         if (currencyType < 0) habbo.giveCredits(taken);
         else habbo.givePoints(currencyType, taken);
 
-        this.client.sendResponse(new ChestDataComposer(chest));
+        this.client.sendResponse(new ChestDataComposer(chest, this.client.getHabbo()));
     }
 }

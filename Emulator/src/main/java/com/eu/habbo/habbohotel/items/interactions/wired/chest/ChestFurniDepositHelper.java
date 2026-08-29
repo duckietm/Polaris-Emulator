@@ -25,8 +25,8 @@ public final class ChestFurniDepositHelper {
         ChestStorage contents = chest.getContents();
         if (!contents.isAccessDonate() && !room.hasRights(habbo)) return false;
 
-        // A lock freezes the chest, not just the way out of it.
-        if (contents.isLocked()) return false;
+        // A locked chest is closed to the room in both directions, but never to its owner.
+        if (chest.isLockedFor(habbo)) return false;
 
         Item baseItem = inventoryItem.getBaseItem();
         if (baseItem == null || baseItem.getType() != FurnitureType.FLOOR) return false;
@@ -61,7 +61,7 @@ public final class ChestFurniDepositHelper {
         habbo.getClient().sendResponse(new InventoryRefreshComposer());
         Emulator.getThreading().runPersistence(new QueryDeleteHabboItems(List.of(removed)));
 
-        habbo.getClient().sendResponse(new ChestDataComposer(chest));
+        habbo.getClient().sendResponse(new ChestDataComposer(chest, habbo));
         ChestFurniPackets.sendDelta(habbo.getClient(), chest.getId(), List.of(), List.of(stored));
         return true;
     }

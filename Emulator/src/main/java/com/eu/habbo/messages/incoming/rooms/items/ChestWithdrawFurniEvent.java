@@ -37,9 +37,9 @@ public class ChestWithdrawFurniEvent extends MessageHandler {
 
         if (!room.hasRights(habbo)) return;
 
-        // A locked chest refuses hand withdrawals; the pushed state lets the window show the lock.
-        if (chest.getContents().isLocked()) {
-            this.client.sendResponse(new ChestDataComposer(chest));
+        // A locked chest refuses everyone but its owner; the pushed state lets the window show it.
+        if (chest.isLockedFor(habbo)) {
+            this.client.sendResponse(new ChestDataComposer(chest, this.client.getHabbo()));
             return;
         }
 

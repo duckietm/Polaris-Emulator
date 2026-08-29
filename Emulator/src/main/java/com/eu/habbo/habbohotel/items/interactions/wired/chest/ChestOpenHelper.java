@@ -16,7 +16,7 @@ public final class ChestOpenHelper {
         if (!chest.getContents().isAccessOpen() && !room.hasRights(client.getHabbo())) return;
 
         client.sendResponse(new ChestOpenComposer(chest.getId()));
-        client.sendResponse(new ChestDataComposer(chest));
+        client.sendResponse(new ChestDataComposer(chest, client.getHabbo()));
 
         if (chest instanceof InteractionWiredChestFurni) {
             ChestFurniPackets.sendFullChunks(client, chest.getId(), chest.getContents());

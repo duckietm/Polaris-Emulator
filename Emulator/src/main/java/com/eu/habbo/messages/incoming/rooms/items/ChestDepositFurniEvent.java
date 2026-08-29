@@ -106,7 +106,7 @@ public class ChestDepositFurniEvent extends MessageHandler {
         habbo.getClient().sendResponse(new InventoryRefreshComposer());
         Emulator.getThreading().runPersistence(new QueryDeleteHabboItems(toRemove));
 
-        this.client.sendResponse(new ChestDataComposer(chest));
+        this.client.sendResponse(new ChestDataComposer(chest, this.client.getHabbo()));
         ChestFurniPackets.sendDelta(this.client, chest.getId(), List.of(), added);
     }
 

@@ -43,10 +43,9 @@ public class ChestDepositEvent extends MessageHandler {
 
         if (!contents.isAccessDonate() && !room.hasRights(habbo)) return;
 
-        // The official window greys out depositing on a locked chest: a lock freezes the chest,
-        // not just the way out of it.
-        if (contents.isLocked()) {
-            this.client.sendResponse(new ChestDataComposer(chest));
+        // A locked chest is closed to the room in both directions, but never to its owner.
+        if (chest.isLockedFor(habbo)) {
+            this.client.sendResponse(new ChestDataComposer(chest, this.client.getHabbo()));
             return;
         }
 
@@ -78,6 +77,6 @@ public class ChestDepositEvent extends MessageHandler {
                 null);
         chest.persistContents();
 
-        this.client.sendResponse(new ChestDataComposer(chest));
+        this.client.sendResponse(new ChestDataComposer(chest, this.client.getHabbo()));
     }
 }

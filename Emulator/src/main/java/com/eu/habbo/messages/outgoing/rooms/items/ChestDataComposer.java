@@ -4,6 +4,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniStoredIt
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestFurni;
+import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
@@ -25,16 +26,31 @@ import java.util.Map;
  *   int entryCount, [int currencyType, int amount]*,
  *   int chestKind (0 = currency, 1 = furni),
  *   int furniCount, [int baseItemId, int quantity]*,
- *   bool locked, int capacity
+ *   bool locked, int capacity, bool autoLock, bool viewerOwnsChest, int chestSpriteId
  * </pre>
  * For a furni chest, {@code used} is the total stored furni count and the currency entry list is empty;
  * for a currency chest the furni list is empty.
  */
 public class ChestDataComposer extends MessageComposer {
     private final InteractionWiredChest chest;
+    private final Habbo viewer;
 
+    /**
+     * Kept for plugin jars compiled against it. The window's owner-only controls stay off, because a
+     * push with no addressee cannot tell whether it is going to the owner. In-tree callers use the
+     * two-argument form.
+     */
     public ChestDataComposer(InteractionWiredChest chest) {
+        this(chest, null);
+    }
+
+    /**
+     * @param viewer who this push is going to. The window enables its owner-only controls from it, so
+     *     a caller that knows the recipient should always say so.
+     */
+    public ChestDataComposer(InteractionWiredChest chest, Habbo viewer) {
         this.chest = chest;
+        this.viewer = viewer;
     }
 
     @Override
@@ -91,6 +107,13 @@ public class ChestDataComposer extends MessageComposer {
         // Appended last so an older client that stops reading here still parses the window state.
         this.response.appendBoolean(c.isLocked());
         this.response.appendInt(c.getCapacity());
+        this.response.appendBoolean(c.isAutoLock());
+        this.response.appendBoolean(
+                this.viewer != null && this.viewer.getHabboInfo().getId() == this.chest.getUserId());
+
+        // The chest's own furnidata id, so the upgrade window can show what is being upgraded.
+        this.response.appendInt(
+                this.chest.getBaseItem() == null ? 0 : this.chest.getBaseItem().getSpriteId());
 
         return this.response;
     }

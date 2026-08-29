@@ -91,11 +91,17 @@ public class ChestStorage {
     private int notifyMode = 0; // 0 = always
     /**
      * Anti-theft switch, set from the chest's own window or across the room from the wired chests
-     * tab. A locked chest still answers wired effects but refuses everything a player does by hand,
-     * deposits included — the way the official window greys both out. A lock freezes the chest, not
-     * just the way out of it.
+     * tab. A locked chest still answers wired effects but refuses everything anyone <em>else</em>
+     * does by hand, deposits included. The owner is never locked out of their own chest, which is
+     * what makes the lock safe to leave on.
      */
     private boolean locked = false;
+
+    /**
+     * Closes the chest by itself when its owner leaves the room, so a chest is never left open behind
+     * someone who has walked away.
+     */
+    private boolean autoLock = false;
 
     /**
      * A ceiling the owner sets by hand, at or below the capacity they have actually bought. Buying
@@ -432,6 +438,26 @@ public class ChestStorage {
         this.locked = locked;
     }
 
+    public boolean isAutoLock() {
+        return this.autoLock;
+    }
+
+    public void setAutoLock(boolean autoLock) {
+        this.autoLock = autoLock;
+    }
+
+    /**
+     * Close the chest because its owner has left the room.
+     *
+     * @return true when this call is what locked it, so the caller knows the state changed
+     */
+    public synchronized boolean applyAutoLockOnOwnerExit() {
+        if (!this.autoLock || this.locked) return false;
+
+        this.locked = true;
+        return true;
+    }
+
     /** The effective ceiling: what the owner asked for, never above what they own. */
     public synchronized int getCapacity() {
         return Math.min(this.capacity <= 0 ? this.capacityMax : this.capacity, this.capacityMax);
@@ -480,6 +506,7 @@ public class ChestStorage {
         data.notifyWired = this.notifyWired;
         data.notifyMode = this.notifyMode;
         data.locked = this.locked;
+        data.autoLock = this.autoLock;
         data.capacity = this.capacity;
         data.log = this.log;
         data.furniItems = this.furniItems;
@@ -516,6 +543,7 @@ public class ChestStorage {
                 chest.notifyWired = data.notifyWired;
                 chest.notifyMode = data.notifyMode;
                 chest.locked = data.locked;
+                chest.autoLock = data.autoLock;
                 // Absent in a payload written before the owner could set one: fall back to the
                 // bought capacity, which is what the chest behaved as.
                 chest.capacity = data.capacity > 0 ? data.capacity : chest.capacityMax;
@@ -560,6 +588,7 @@ public class ChestStorage {
         boolean notifyWired = false;
         int notifyMode = 0;
         boolean locked = false;
+        boolean autoLock = false;
         int capacity = 0;
         List<LogEntry> log;
         List<ChestFurniStoredItem> furniItems;

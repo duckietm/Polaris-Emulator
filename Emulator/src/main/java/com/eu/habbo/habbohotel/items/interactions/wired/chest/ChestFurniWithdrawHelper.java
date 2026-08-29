@@ -43,7 +43,7 @@ public final class ChestFurniWithdrawHelper {
                 removedItems);
         chest.persistContents();
 
-        client.sendResponse(new ChestDataComposer(chest));
+        client.sendResponse(new ChestDataComposer(chest, client.getHabbo()));
         ChestFurniPackets.sendDelta(
                 client,
                 chest.getId(),

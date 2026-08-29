@@ -40,6 +40,6 @@ public class ChestSaveNotificationsEvent extends MessageHandler {
         chest.getContents().setNotifications(full, donation, withdraw, empty, wired, mode);
         chest.persistContents();
 
-        this.client.sendResponse(new ChestDataComposer(chest));
+        this.client.sendResponse(new ChestDataComposer(chest, this.client.getHabbo()));
     }
 }

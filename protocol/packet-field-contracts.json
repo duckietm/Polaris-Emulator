@@ -8170,16 +8170,6 @@
           "kind": "scalar",
           "type": "int",
           "name": "appearanceState"
-        },
-        {
-          "kind": "scalar",
-          "type": "boolean",
-          "name": "locked"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "capacity"
         }
       ]
     },
@@ -16987,6 +16977,70 @@
           "kind": "scalar",
           "type": "int",
           "name": ""
+        }
+      ]
+    },
+    {
+      "name": "CHEST_SAVE_OPTIONS",
+      "direction": "client_to_server",
+      "header": 9338,
+      "java": {
+        "symbol": "ChestSaveOptionsEvent",
+        "className": "ChestSaveOptionsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestSaveOptionsEvent.java"
+      },
+      "typescript": {
+        "symbol": "CHEST_SAVE_OPTIONS",
+        "className": "ChestSaveOptionsComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestSaveOptionsComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "itemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "locked"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "autoLock"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "capacity"
+        }
+      ]
+    },
+    {
+      "name": "CHEST_UPGRADE_RESULT",
+      "direction": "server_to_client",
+      "header": 9335,
+      "java": {
+        "symbol": "ChestUpgradeResultComposer",
+        "className": "ChestUpgradeResultComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/items/ChestUpgradeResultComposer.java"
+      },
+      "typescript": {
+        "symbol": "CHEST_UPGRADE_RESULT",
+        "className": "ChestUpgradeResultMessageParser",
+        "path": "packages/communication/src/messages/parser/room/furniture/ChestUpgradeResultMessageParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "chestId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "resultCode"
         }
       ]
     }

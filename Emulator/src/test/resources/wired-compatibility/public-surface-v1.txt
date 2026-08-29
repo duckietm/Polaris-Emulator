@@ -547,12 +547,14 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradeS
 METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradeSettlement$Plan#toString(-):java.lang.String throws -
 
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingManager extends java.lang.Object
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingManager#CONTRACT_TYPE_CHEST_DEPOSIT:int
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingManager(com.eu.habbo.habbohotel.rooms.Room) throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingManager#cancel(com.eu.habbo.habbohotel.users.Habbo,int):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingManager#complete(com.eu.habbo.habbohotel.users.Habbo):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingManager#dispose(-):void throws -
 METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingManager#getSession(com.eu.habbo.habbohotel.users.Habbo):com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingManager#open(com.eu.habbo.habbohotel.users.Habbo,com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules,int,java.lang.String,java.lang.String,int,com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest):com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingManager#openDeposit(com.eu.habbo.habbohotel.users.Habbo,com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest,int):com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingManager#pushState(com.eu.habbo.habbohotel.users.Habbo,com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingManager#settle(com.eu.habbo.habbohotel.users.Habbo,long):boolean throws -
 

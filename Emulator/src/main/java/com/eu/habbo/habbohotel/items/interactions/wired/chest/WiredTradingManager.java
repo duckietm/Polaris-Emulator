@@ -11,11 +11,13 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
+import com.eu.habbo.messages.outgoing.rooms.items.ChestDataComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.WiredTradeCancelledComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.WiredTradeCompletedComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.WiredTradeItemsComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.WiredTradeOpenComposer;
 import com.eu.habbo.threading.runnables.QueryDeleteHabboItems;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,11 +33,23 @@ import java.util.Map;
  * true; the manager decides who is told.
  */
 public class WiredTradingManager {
+    /** A table opened to fill a chest rather than to satisfy a contract. */
+    public static final int CONTRACT_TYPE_CHEST_DEPOSIT = 3;
+
+    private static final String LAYOUT_GENERIC = "generic";
+
     private final Room room;
     private final Map<Integer, Negotiation> sessions = new HashMap<>();
 
-    /** A session plus the two things settling it will need: where the goods come from, and go to. */
-    private record Negotiation(WiredTradingSession session, InteractionWiredChest chest, InventoryVault vault) {}
+    /**
+     * A session plus the two things settling it will need: where the goods come from, and go to.
+     *
+     * <p>{@code depositOnly} separates the two reasons a table like this opens. A contract judges the
+     * offer against its rules and moves only what a satisfied rule claims. A deposit judges nothing:
+     * the player is filling a chest, so everything they put down goes in.
+     */
+    private record Negotiation(
+            WiredTradingSession session, InteractionWiredChest chest, InventoryVault vault, boolean depositOnly) {}
 
     public WiredTradingManager(Room room) {
         this.room = room;
@@ -60,6 +74,37 @@ public class WiredTradingManager {
             String layoutType,
             int timeoutSeconds,
             InteractionWiredChest chest) {
+        return open(habbo, rules, contractType, rewardText, layoutType, timeoutSeconds, chest, false);
+    }
+
+    /**
+     * Open the same table for a plain deposit: nothing to satisfy, everything offered goes into the
+     * chest. This is the official's start-deposit flow -- the button sends one message and the server
+     * answers by opening the offering window, rather than the window opening itself.
+     */
+    public WiredTradingSession openDeposit(Habbo habbo, InteractionWiredChest chest, int timeoutSeconds) {
+        if (chest == null) return null;
+
+        return open(
+                habbo,
+                ContractRules.of(List.of(List.of()), List.of()),
+                CONTRACT_TYPE_CHEST_DEPOSIT,
+                "",
+                LAYOUT_GENERIC,
+                timeoutSeconds,
+                chest,
+                true);
+    }
+
+    private WiredTradingSession open(
+            Habbo habbo,
+            ContractRules rules,
+            int contractType,
+            String rewardText,
+            String layoutType,
+            int timeoutSeconds,
+            InteractionWiredChest chest,
+            boolean depositOnly) {
         if (habbo == null || habbo.getClient() == null || rules == null) return null;
 
         boolean replaced;
@@ -70,7 +115,7 @@ public class WiredTradingManager {
             InventoryVault vault = new InventoryVault(habbo);
             session = new WiredTradingSession(
                     rules, vault, currencyLookup(habbo), timeoutSeconds, System.currentTimeMillis());
-            this.sessions.put(habbo.getHabboInfo().getId(), new Negotiation(session, chest, vault));
+            this.sessions.put(habbo.getHabboInfo().getId(), new Negotiation(session, chest, vault, depositOnly));
         }
 
         habbo.getClient()
@@ -150,6 +195,8 @@ public class WiredTradingManager {
             return false;
         }
 
+        if (negotiation.depositOnly()) return settleDeposit(habbo, negotiation);
+
         List<Term> paidRule = negotiation
                 .session()
                 .getRules()
@@ -176,7 +223,7 @@ public class WiredTradingManager {
             // way the item has left the player, which is what they agreed to.
             if (chest == null
                     || !chest.getContents().tryDepositFurni(ChestFurniStoredItem.fromHabboItem(item, item.getId()))) {
-                Emulator.getThreading().runPersistence(new QueryDeleteHabboItems(List.of(item)));
+                deleteFromDatabase(List.of(item));
             }
         });
 
@@ -184,6 +231,82 @@ public class WiredTradingManager {
         negotiation.session().consume(plan.itemsToTake());
         complete(habbo);
         return true;
+    }
+
+    /**
+     * Move everything on the table into the chest.
+     *
+     * <p>Items are only released from the vault once the chest has actually accepted them, so a chest
+     * that fills up mid-deposit stops rather than swallowing the rest: {@link #complete} hands back
+     * everything not consumed, and nobody loses furniture to a full chest.
+     */
+    private boolean settleDeposit(Habbo habbo, Negotiation negotiation) {
+        InteractionWiredChest chest = negotiation.chest();
+        if (chest == null) {
+            cancel(habbo, WiredTradingSession.FAILURE_CONTRACT_GONE);
+            return false;
+        }
+
+        List<Integer> depositedIds = new ArrayList<>();
+        List<HabboItem> depositedItems = new ArrayList<>();
+        List<ChestFurniStoredItem> storedRows = new ArrayList<>();
+
+        for (OfferedItem offered : negotiation.session().getOfferedItems()) {
+            HabboItem item = negotiation.vault().peek(offered.itemId());
+            if (item == null) continue;
+
+            ChestFurniStoredItem stored = ChestFurniStoredItem.fromHabboItem(item, item.getId());
+            if (!chest.getContents().tryDepositFurni(stored)) break;
+
+            negotiation.vault().release(offered.itemId());
+            depositedIds.add(offered.itemId());
+            depositedItems.add(item);
+            storedRows.add(stored);
+        }
+
+        if (!depositedItems.isEmpty()) {
+            chest.getContents()
+                    .addLog(new ChestStorage.LogEntry(
+                            "deposit",
+                            System.currentTimeMillis(),
+                            habbo.getHabboInfo().getUsername(),
+                            0,
+                            storedRows.size()));
+            ChestTransactionLog.record(
+                    chest.getRoomId(),
+                    chest.getId(),
+                    ChestStorage.KIND_FURNI,
+                    ChestTransactionLog.TYPE_DEPOSIT,
+                    ChestTransactionLog.SOURCE_USER,
+                    habbo,
+                    -1,
+                    0,
+                    storedRows.size(),
+                    storedRows);
+            chest.persistContents();
+
+            deleteFromDatabase(depositedItems);
+
+            if (habbo.getClient() != null) {
+                habbo.getClient().sendResponse(new InventoryRefreshComposer());
+                habbo.getClient().sendResponse(new ChestDataComposer(chest, habbo));
+                ChestFurniPackets.sendDelta(habbo.getClient(), chest.getId(), List.of(), storedRows);
+            }
+        }
+
+        negotiation.session().consume(depositedIds);
+        complete(habbo);
+        return true;
+    }
+
+    /**
+     * The one place in this class that reaches the persistence queue, so an item leaving a player for
+     * good always leaves the same way.
+     */
+    private static void deleteFromDatabase(List<HabboItem> items) {
+        if (items.isEmpty()) return;
+
+        Emulator.getThreading().runPersistence(new QueryDeleteHabboItems(items));
     }
 
     private synchronized Negotiation getNegotiation(Habbo habbo) {
@@ -297,6 +420,11 @@ public class WiredTradingManager {
                     itemId,
                     item.getBaseItem().getType() == FurnitureType.WALL,
                     item.getBaseItem().getId());
+        }
+
+        /** Look at a held item without taking it out of the vault's hands. */
+        synchronized HabboItem peek(int itemId) {
+            return this.held.get(itemId);
         }
 
         /** The items still held, for a settlement that has to hand them somewhere other than back. */

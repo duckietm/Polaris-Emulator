@@ -934,18 +934,24 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredC
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasMinItems#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
 
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasRights extends com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboWearsBadge
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasRights#type:com.eu.habbo.habbohotel.wired.WiredConditionType
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasRights(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasRights(java.sql.ResultSet,com.eu.habbo.habbohotel.items.Item) throws java.sql.SQLException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasRights#getType(-):com.eu.habbo.habbohotel.wired.WiredConditionType throws -
 METHOD protected com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasRights#matchesBadge(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.rooms.RoomUnit):boolean throws -
 
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboIsFemale extends com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboWearsBadge
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboIsFemale#type:com.eu.habbo.habbohotel.wired.WiredConditionType
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboIsFemale(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboIsFemale(java.sql.ResultSet,com.eu.habbo.habbohotel.items.Item) throws java.sql.SQLException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboIsFemale#getType(-):com.eu.habbo.habbohotel.wired.WiredConditionType throws -
 METHOD protected com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboIsFemale#matchesBadge(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.rooms.RoomUnit):boolean throws -
 
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboIsMale extends com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboWearsBadge
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboIsMale#type:com.eu.habbo.habbohotel.wired.WiredConditionType
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboIsMale(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboIsMale(java.sql.ResultSet,com.eu.habbo.habbohotel.items.Item) throws java.sql.SQLException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboIsMale#getType(-):com.eu.habbo.habbohotel.wired.WiredConditionType throws -
 METHOD protected com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboIsMale#matchesBadge(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.rooms.RoomUnit):boolean throws -
 
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboLacksCredits extends com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTeamGameBase
@@ -991,8 +997,10 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredC
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboLacksDuckets#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
 
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboNotHasRights extends com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasRights
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboNotHasRights#type:com.eu.habbo.habbohotel.wired.WiredConditionType
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboNotHasRights(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboNotHasRights(java.sql.ResultSet,com.eu.habbo.habbohotel.items.Item) throws java.sql.SQLException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboNotHasRights#getType(-):com.eu.habbo.habbohotel.wired.WiredConditionType throws -
 METHOD protected com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboNotHasRights#matchesBadge(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.rooms.RoomUnit):boolean throws -
 
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboNotOwnsFurni extends com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboOwnsFurni
@@ -4878,6 +4886,8 @@ ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 43 CHEST_HAS_ITEM_TYPE
 ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 44 NO_BATTLEBANZAI
 ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 45 USER_ON_FURNI_WITH_STATE
 ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 46 TRG_FURNI_ADJACENT_STATE
+ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 47 USER_ATTRIBUTE
+ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 48 NOT_USER_ATTRIBUTE
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#ACTOR_DIR:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#ACTOR_HAS_HANDITEM:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#ACTOR_IN_GROUP:com.eu.habbo.habbohotel.wired.WiredConditionType
@@ -4908,6 +4918,7 @@ FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#NOT_H
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#NOT_MATCH_SSHOT:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#NOT_STUFF_IS:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#NOT_TRIGGERER_MATCH:com.eu.habbo.habbohotel.wired.WiredConditionType
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#NOT_USER_ATTRIBUTE:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#NOT_USER_COUNT:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#NOT_USER_PERFORMS_ACTION:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#NO_BATTLEBANZAI:com.eu.habbo.habbohotel.wired.WiredConditionType
@@ -4920,6 +4931,7 @@ FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#TIME_
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#TRG_FURNI_ADJACENT_STATE:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#TRIGGERER_MATCH:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#TRIGGER_ON_FURNI:com.eu.habbo.habbohotel.wired.WiredConditionType
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#USER_ATTRIBUTE:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#USER_COUNT:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#USER_ON_FURNI_WITH_STATE:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#USER_PERFORMS_ACTION:com.eu.habbo.habbohotel.wired.WiredConditionType

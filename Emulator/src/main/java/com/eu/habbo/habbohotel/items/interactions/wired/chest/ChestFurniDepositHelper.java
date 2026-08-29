@@ -25,6 +25,9 @@ public final class ChestFurniDepositHelper {
         ChestStorage contents = chest.getContents();
         if (!contents.isAccessDonate() && !room.hasRights(habbo)) return false;
 
+        // A lock freezes the chest, not just the way out of it.
+        if (contents.isLocked()) return false;
+
         Item baseItem = inventoryItem.getBaseItem();
         if (baseItem == null || baseItem.getType() != FurnitureType.FLOOR) return false;
 

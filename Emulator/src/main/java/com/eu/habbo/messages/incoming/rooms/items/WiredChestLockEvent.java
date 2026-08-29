@@ -15,9 +15,9 @@ import com.eu.habbo.messages.outgoing.rooms.items.WiredChestLockStateComposer;
  * {@code all = true} touches every chest in the room and is reserved for the room owner (or staff
  * holding {@link Permission#ACC_ANYROOMOWNER}) — it can freeze furni belonging to other people.
  *
- * <p>A locked chest keeps accepting deposits and keeps answering wired effects; it only refuses
- * player-initiated withdrawals. That is the point of the switch: stop a chest being emptied by hand
- * without breaking the room that runs on it.
+ * <p>A locked chest keeps answering wired effects but refuses everything a player does by hand,
+ * deposits included. That is the point of the switch: freeze a chest without breaking the room that
+ * runs on it.
  */
 public class WiredChestLockEvent extends MessageHandler {
     @Override

@@ -43,6 +43,13 @@ public class ChestDepositEvent extends MessageHandler {
 
         if (!contents.isAccessDonate() && !room.hasRights(habbo)) return;
 
+        // The official window greys out depositing on a locked chest: a lock freezes the chest,
+        // not just the way out of it.
+        if (contents.isLocked()) {
+            this.client.sendResponse(new ChestDataComposer(chest));
+            return;
+        }
+
         int balance = (currencyType < 0)
                 ? habbo.getHabboInfo().getCredits()
                 : habbo.getHabboInfo().getCurrencyAmount(currencyType);

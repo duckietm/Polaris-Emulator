@@ -221,6 +221,7 @@ METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.Ches
 METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#furniItemCount(-):int throws -
 METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#furniItems(-):java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniStoredItem> throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#getAppearanceState(-):int throws -
+METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#getCapacity(-):int throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#getCapacityMax(-):int throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#getDescription(-):java.lang.String throws -
 METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#getLog(-):java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage$LogEntry> throws -
@@ -244,6 +245,7 @@ METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.ches
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setAccessDonate(boolean):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setAccessOpen(boolean):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setAppearanceState(int):void throws -
+METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setCapacity(int):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setCapacityMax(int):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setDescription(java.lang.String):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setLocked(boolean):void throws -

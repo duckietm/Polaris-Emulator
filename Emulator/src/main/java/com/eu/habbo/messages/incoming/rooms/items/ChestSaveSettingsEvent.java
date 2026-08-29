@@ -10,7 +10,10 @@ import com.eu.habbo.messages.outgoing.rooms.items.ChestDataComposer;
 
 /**
  * Saves a wired chest's settings (room-rights only): {@code int itemId, string name, string description,
- * bool accessOpen, bool accessDonate, int appearanceState}.
+ * bool accessOpen, bool accessDonate, int appearanceState, bool locked, int capacity}.
+ *
+ * <p>The lock and the ceiling ride with the rest of the settings because that is how the official
+ * window saves them -- one message, one confirmation, no half-applied state.
  */
 public class ChestSaveSettingsEvent extends MessageHandler {
     @Override
@@ -32,6 +35,8 @@ public class ChestSaveSettingsEvent extends MessageHandler {
         boolean accessOpen = this.packet.readBoolean();
         boolean accessDonate = this.packet.readBoolean();
         int appearanceState = this.packet.readInt();
+        boolean locked = this.packet.readBoolean();
+        int capacity = this.packet.readInt();
 
         HabboItem item = room.getHabboItem(itemId);
         if (!(item instanceof InteractionWiredChest chest)) return;
@@ -43,6 +48,8 @@ public class ChestSaveSettingsEvent extends MessageHandler {
         c.setAccessOpen(accessOpen);
         c.setAccessDonate(accessDonate);
         c.setAppearanceState(appearanceState);
+        c.setLocked(locked);
+        c.setCapacity(capacity);
         chest.persistContents();
 
         this.client.sendResponse(new ChestDataComposer(chest));

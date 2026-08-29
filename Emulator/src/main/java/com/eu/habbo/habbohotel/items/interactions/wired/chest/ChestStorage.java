@@ -90,11 +90,19 @@ public class ChestStorage {
     private boolean notifyWired = false;
     private int notifyMode = 0; // 0 = always
     /**
-     * Anti-theft switch driven from the wired chests tab. A locked chest still accepts deposits and
-     * still answers wired effects — it only refuses player-initiated withdrawals, which is the way a
-     * room owner freezes a chest that is being emptied.
+     * Anti-theft switch, set from the chest's own window or across the room from the wired chests
+     * tab. A locked chest still answers wired effects but refuses everything a player does by hand,
+     * deposits included — the way the official window greys both out. A lock freezes the chest, not
+     * just the way out of it.
      */
     private boolean locked = false;
+
+    /**
+     * A ceiling the owner sets by hand, at or below the capacity they have actually bought. Buying
+     * more room and choosing to use it are two different decisions: a chest can be big and still be
+     * told to stop at five hundred.
+     */
+    private int capacity = DEFAULT_CAPACITY;
 
     /** Defensive snapshot — safe to iterate off-thread; mutate the chest through the dedicated methods. */
     public synchronized List<Entry> entries() {
@@ -123,7 +131,7 @@ public class ChestStorage {
      * capacity, so a concurrent deposit can't push it over the limit. Atomic.
      */
     public synchronized boolean tryDepositFurni(ChestFurniStoredItem item) {
-        if (item == null || this.furniItems.size() >= this.getCapacityMax()) {
+        if (item == null || this.furniItems.size() >= this.getCapacity()) {
             return false;
         }
         this.addFurniItem(item);
@@ -270,7 +278,7 @@ public class ChestStorage {
     }
 
     /**
-     * Capacity-guarded currency deposit. Accepts at most what fits under {@link #getCapacityMax()},
+     * Capacity-guarded currency deposit. Accepts at most what fits under {@link #getCapacity()},
      * adds it, and returns the accepted amount (0 when full) so the caller debits the user by exactly
      * that. Atomic, so two concurrent deposits can't jointly overflow the capacity.
      */
@@ -278,7 +286,7 @@ public class ChestStorage {
         if (amount <= 0) {
             return 0;
         }
-        int capacityLeft = this.getCapacityMax() - this.total(KIND_CURRENCY);
+        int capacityLeft = this.getCapacity() - this.total(KIND_CURRENCY);
         int accepted = Math.min(amount, capacityLeft);
         if (accepted <= 0) {
             return 0;
@@ -424,6 +432,15 @@ public class ChestStorage {
         this.locked = locked;
     }
 
+    /** The effective ceiling: what the owner asked for, never above what they own. */
+    public synchronized int getCapacity() {
+        return Math.min(this.capacity <= 0 ? this.capacityMax : this.capacity, this.capacityMax);
+    }
+
+    public synchronized void setCapacity(int capacity) {
+        this.capacity = Math.max(1, Math.min(capacity, this.capacityMax));
+    }
+
     public void setNotifications(
             boolean full, boolean donation, boolean withdraw, boolean empty, boolean wired, int mode) {
         this.notifyFull = full;
@@ -463,6 +480,7 @@ public class ChestStorage {
         data.notifyWired = this.notifyWired;
         data.notifyMode = this.notifyMode;
         data.locked = this.locked;
+        data.capacity = this.capacity;
         data.log = this.log;
         data.furniItems = this.furniItems;
         data.nextFurniInventoryId = this.nextFurniInventoryId;
@@ -498,6 +516,9 @@ public class ChestStorage {
                 chest.notifyWired = data.notifyWired;
                 chest.notifyMode = data.notifyMode;
                 chest.locked = data.locked;
+                // Absent in a payload written before the owner could set one: fall back to the
+                // bought capacity, which is what the chest behaved as.
+                chest.capacity = data.capacity > 0 ? data.capacity : chest.capacityMax;
                 if (data.log != null) {
                     for (LogEntry le : data.log) {
                         if (le != null) chest.log.add(le);
@@ -539,6 +560,7 @@ public class ChestStorage {
         boolean notifyWired = false;
         int notifyMode = 0;
         boolean locked = false;
+        int capacity = 0;
         List<LogEntry> log;
         List<ChestFurniStoredItem> furniItems;
         int nextFurniInventoryId = 1;

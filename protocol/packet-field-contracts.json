@@ -8170,6 +8170,16 @@
           "kind": "scalar",
           "type": "int",
           "name": "appearanceState"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "locked"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "capacity"
         }
       ]
     },

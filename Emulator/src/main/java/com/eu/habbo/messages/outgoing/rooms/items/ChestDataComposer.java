@@ -25,7 +25,7 @@ import java.util.Map;
  *   int entryCount, [int currencyType, int amount]*,
  *   int chestKind (0 = currency, 1 = furni),
  *   int furniCount, [int baseItemId, int quantity]*,
- *   bool locked
+ *   bool locked, int capacity
  * </pre>
  * For a furni chest, {@code used} is the total stored furni count and the currency entry list is empty;
  * for a currency chest the furni list is empty.
@@ -90,6 +90,7 @@ public class ChestDataComposer extends MessageComposer {
 
         // Appended last so an older client that stops reading here still parses the window state.
         this.response.appendBoolean(c.isLocked());
+        this.response.appendInt(c.getCapacity());
 
         return this.response;
     }

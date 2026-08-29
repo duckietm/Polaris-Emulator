@@ -513,6 +513,54 @@ CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.chest.Intera
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredContract$Trade(java.sql.ResultSet,com.eu.habbo.habbohotel.items.Item) throws java.sql.SQLException
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredContract$Trade#getLayoutCode(-):int throws -
 
+TYPE public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession extends java.lang.Object
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#CONFIRM_DELAY_MILLIS:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#FAILURE_CONTRACT_GONE:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#FAILURE_LEFT_ROOM:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#FAILURE_REQUIREMENTS:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#FAILURE_REWARD_UNAVAILABLE:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#FAILURE_SILENT:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#FAILURE_TIMEOUT:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#MAX_OFFERED_ITEMS:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#STATE_ADDING_ITEMS:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#STATE_CONFIRMED:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#STATE_CONFIRMING:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#STATE_COUNTDOWN:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#STATE_READY:int
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession(com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules,com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession$ItemVault,java.util.function.IntUnaryOperator,int,long) throws -
+METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#accept(long):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#canAccept(-):boolean throws -
+METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#close(-):java.util.List<java.lang.Integer> throws -
+METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#confirm(long):com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession$Confirmation throws -
+METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#consume(java.util.List<java.lang.Integer>):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#evaluate(-):com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$Match throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#getOfferedItems(-):java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$OfferedItem> throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#getRules(-):com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#getState(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#hasExpired(long):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#isClosed(-):boolean throws -
+METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#offerItems(java.util.List<java.lang.Integer>):int throws -
+METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#readyToConfirm(long):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#secondsLeft(long):int throws -
+METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession#withdrawItems(java.util.List<java.lang.Integer>):int throws -
+
+TYPE public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession$Confirmation extends java.lang.Record
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession$Confirmation settled:boolean
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession$Confirmation match:com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$Match
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession$Confirmation failureId:int
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession$Confirmation(boolean,com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$Match,int) throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession$Confirmation#equals(java.lang.Object):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession$Confirmation#failureId(-):int throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession$Confirmation#hashCode(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession$Confirmation#match(-):com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$Match throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession$Confirmation#settled(-):boolean throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession$Confirmation#toString(-):java.lang.String throws -
+
+TYPE public abstract static interface com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession$ItemVault
+METHOD public abstract com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession$ItemVault#describe(int):com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$OfferedItem throws -
+METHOD public abstract com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession$ItemVault#giveBack(int):void throws -
+METHOD public abstract com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession$ItemVault#take(int):boolean throws -
+
 TYPE public final com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTransactionExecutor extends java.lang.Object
 METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTransactionExecutor#execute(com.eu.habbo.habbohotel.users.Habbo,com.eu.habbo.habbohotel.rooms.Room,java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredContract>):boolean throws -
 

@@ -377,6 +377,51 @@ METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.Ches
 METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestWiredFurniUtil#mintToInventory(com.eu.habbo.habbohotel.users.Habbo,boolean,int,int):int throws -
 METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestWiredFurniUtil#takeFromInventory(com.eu.habbo.habbohotel.users.Habbo,boolean,int,java.lang.String,int):java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniStoredItem> throws -
 
+TYPE public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator extends java.lang.Object
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator#firstSatisfied(com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules,java.util.function.IntUnaryOperator,java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$OfferedItem>):com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$Match throws -
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator#match(int,java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractTerm>,java.util.function.IntUnaryOperator,java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$OfferedItem>):com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$Match throws -
+
+TYPE public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$Match extends java.lang.Record
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$Match ruleIndex:int
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$Match consumedItemIds:java.util.List<java.lang.Integer>
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$Match missing:java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractTerm>
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$Match(int,java.util.List<java.lang.Integer>,java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractTerm>) throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$Match#consumedItemIds(-):java.util.List<java.lang.Integer> throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$Match#equals(java.lang.Object):boolean throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$Match#hashCode(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$Match#missing(-):java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractTerm> throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$Match#ruleIndex(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$Match#satisfied(-):boolean throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$Match#toString(-):java.lang.String throws -
+
+TYPE public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$OfferedItem extends java.lang.Record
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$OfferedItem itemId:int
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$OfferedItem wallItem:boolean
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$OfferedItem baseItemId:int
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$OfferedItem(int,boolean,int) throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$OfferedItem#baseItemId(-):int throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$OfferedItem#equals(java.lang.Object):boolean throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$OfferedItem#hashCode(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$OfferedItem#itemId(-):int throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$OfferedItem#toString(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator$OfferedItem#wallItem(-):boolean throws -
+
+TYPE public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules extends java.lang.Object
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules#MAX_COINS:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules#MAX_FURNI:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules#MAX_RULES:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules#MAX_TERMS_PER_RULE:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules#RULES_MARKER:int
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules#asksForNothing(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules#flatten(-):java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractTerm> throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules#getRule(-):java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractTerm> throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules#giveRules(-):java.util.List<java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractTerm>> throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules#givesNothing(-):boolean throws -
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules#of(java.util.List<java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractTerm>>,java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractTerm>):com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules throws -
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules#parse(int[],java.lang.String):com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules#serialize(-):int[] throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRules#serializePosters(-):java.lang.String throws -
+
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractTerm extends java.lang.Object
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractTerm#DIR_PAY:int
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractTerm#DIR_RECEIVE:int

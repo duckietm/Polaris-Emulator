@@ -127,7 +127,8 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
                 continue;
             }
 
-            boolean canBypass = targetRoom.hasRights(room.getOwnerId()) || targetRoom.hasRights(habbo);
+            boolean canBypass =
+                    targetRoom.getRightsManager().hasRights(room.getOwnerId()) || targetRoom.hasRights(habbo);
             if (!canBypass && targetRoom.getState() != RoomState.OPEN) {
                 continue;
             }

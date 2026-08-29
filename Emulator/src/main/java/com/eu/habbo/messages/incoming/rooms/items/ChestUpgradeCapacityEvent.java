@@ -79,7 +79,9 @@ public class ChestUpgradeCapacityEvent extends MessageHandler {
         habbo.giveCredits(-totalCredits);
         habbo.givePoints(DIAMOND_TYPE, -totalDiamonds);
 
-        c.setCapacityMax(c.getCapacityMax() + (ChestStorage.CAPACITY_STEP * quantity));
+        // Not setCapacityMax: a chest that was using all its room should end up bigger, not just
+        // allowed to be bigger.
+        c.growCapacity(ChestStorage.CAPACITY_STEP * quantity);
         chest.persistContents(room);
 
         this.client.sendResponse(new ChestDataComposer(chest, habbo));

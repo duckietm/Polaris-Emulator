@@ -503,6 +503,22 @@ public class ChestStorage {
         this.capacity = Math.max(1, Math.min(capacity, this.capacityMax));
     }
 
+    /**
+     * Buy more room.
+     *
+     * <p>A ceiling that was sitting at the old maximum was not a decision, it was the absence of one,
+     * so it follows the purchase up -- paying to enlarge a chest has to enlarge it. A ceiling the
+     * owner deliberately lowered stays where they put it, and the room they just bought waits for
+     * them to use it.
+     */
+    public synchronized void growCapacity(int extra) {
+        if (extra <= 0) return;
+
+        boolean wasUsingEverything = this.capacity >= this.capacityMax || this.capacity <= 0;
+        this.setCapacityMax(this.capacityMax + extra);
+        if (wasUsingEverything) this.capacity = this.capacityMax;
+    }
+
     public void setNotifications(
             boolean full, boolean donation, boolean withdraw, boolean empty, boolean wired, int mode) {
         this.notifyFull = full;

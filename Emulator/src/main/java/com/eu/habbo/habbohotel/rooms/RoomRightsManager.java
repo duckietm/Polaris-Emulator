@@ -154,6 +154,15 @@ public class RoomRightsManager {
     }
 
     /**
+     * Checks whether a user (by id) owns the room or holds persistent rights,
+     * without needing an online {@link Habbo}. Does not consider the transient
+     * in-room rights level (that requires the user to be present).
+     */
+    public boolean hasRights(int userId) {
+        return userId == this.room.getOwnerId() || this.rights.contains(userId);
+    }
+
+    /**
      * Gives rights to a habbo.
      */
     public void giveRights(Habbo habbo) {

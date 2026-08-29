@@ -1828,6 +1828,10 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         return this.rightsManager.hasRights(habbo);
     }
 
+    public boolean hasRights(int userId) {
+        return this.rightsManager.hasRights(userId);
+    }
+
     public boolean hasExplicitRights(Habbo habbo) {
         return habbo != null && this.rights.contains(habbo.getHabboInfo().getId());
     }

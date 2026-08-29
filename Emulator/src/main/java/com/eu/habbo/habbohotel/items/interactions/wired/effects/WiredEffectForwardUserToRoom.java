@@ -127,16 +127,7 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
                 continue;
             }
 
-            // Bypass the destination's password/lock only when the forward is legitimate:
-            //   - sameOwner: the wired's room and the target share an owner -- the maze /
-            //     chained-event-room case, where every room is locked but one person owns
-            //     them all, so forwarding anyone (including visitors) between them is intended.
-            //   - the forwarded user themselves owns or holds rights in the target -- cross-
-            //     owner event setups where staff forward each other into their locked rooms.
-            // Otherwise never force a user through SOMEONE ELSE'S lock: respect the target's
-            // access state and skip it unless it is OPEN.
-            boolean sameOwner = targetRoom.getOwnerId() == room.getOwnerId();
-            boolean canBypass = sameOwner || targetRoom.hasRights(habbo);
+            boolean canBypass = targetRoom.hasRights(room.getOwnerId()) || targetRoom.hasRights(habbo);
             if (!canBypass && targetRoom.getState() != RoomState.OPEN) {
                 continue;
             }

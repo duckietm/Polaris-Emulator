@@ -166,7 +166,14 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
             serverMessage.appendString(entry.getValue());
         }
 
-        super.serializeExtradata(serverMessage);
+        // Deliberately not super: InteractionDefault writes a second format header and the legacy
+        // string after it, and those two extra fields desynchronise the reader for every item that
+        // follows in the room's furniture list -- which draws the room empty. Only the limited block
+        // belongs here, exactly as HabboItem writes it.
+        if (this.isLimited()) {
+            serverMessage.appendInt(this.getLimitedSells());
+            serverMessage.appendInt(this.getLimitedStack());
+        }
     }
 
     /** How many upgrades have been bought, which is what the official calls the capacity level. */

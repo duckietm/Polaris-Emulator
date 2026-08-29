@@ -45,8 +45,8 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
      */
     private final Set<Integer> viewers = ConcurrentHashMap.newKeySet();
 
-    /** The state the room was last told about, so an unchanged chest sends nothing. */
-    private int publishedState = -1;
+    /** What the room was last told the chest looks like, so an unchanged chest sends nothing. */
+    private String publishedAppearance = "";
 
     protected InteractionWiredChest(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -344,10 +344,12 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
     public void publishState(Room room) {
         this.pruneViewers(room);
 
-        int state = this.visualState();
-        if (room == null || state == this.publishedState) return;
+        // Not just the state: a chest showing what it holds changes appearance when its contents
+        // change, and a deposit that leaves the lid where it was would otherwise never reach the room.
+        String appearance = this.visualState() + "|" + this.previewItems();
+        if (room == null || appearance.equals(this.publishedAppearance)) return;
 
-        this.publishedState = state;
+        this.publishedAppearance = appearance;
 
         // Not updateItemState: that broadcasts ItemStateComposer, which reads the legacy extradata
         // string. A chest keeps its state in its furni data, so that composer would send zero every

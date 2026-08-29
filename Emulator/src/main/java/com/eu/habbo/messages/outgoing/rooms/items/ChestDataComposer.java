@@ -27,7 +27,7 @@ import java.util.Map;
  *   int chestKind (0 = currency, 1 = furni),
  *   int furniCount, [int baseItemId, int quantity]*,
  *   bool locked, int capacity, bool autoLock, bool viewerOwnsChest, int chestSpriteId,
- *   bool wiredEnabled, bool starterChest
+ *   bool wiredEnabled, bool starterChest, int previewMode, int previewAmount
  * </pre>
  * For a furni chest, {@code used} is the total stored furni count and the currency entry list is empty;
  * for a currency chest the furni list is empty.
@@ -120,6 +120,11 @@ public class ChestDataComposer extends MessageComposer {
         // the window greys its own controls from these rather than guessing.
         this.response.appendBoolean(c.isWiredEnabled());
         this.response.appendBoolean(this.chest.isStarterChest());
+
+        // The window edits these, so it has to be told what they currently are -- without them it
+        // reopens showing the preview switched off however the owner left it.
+        this.response.appendInt(c.getPreviewMode());
+        this.response.appendInt(c.getPreviewAmount());
 
         return this.response;
     }

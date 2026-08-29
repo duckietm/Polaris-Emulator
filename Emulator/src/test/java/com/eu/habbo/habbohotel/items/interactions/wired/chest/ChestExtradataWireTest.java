@@ -79,6 +79,14 @@ class ChestExtradataWireTest {
         }
     }
 
+    private static ChestFurniStoredItem storedFurni(int baseItemId, int spriteId) {
+        ChestFurniStoredItem item = new ChestFurniStoredItem();
+        item.baseItemId = baseItemId;
+        item.spriteId = spriteId;
+        item.extradata = "0";
+        return item;
+    }
+
     /** Read a serialized chest back: the format header, then the map, then whatever is left. */
     private record Wire(int format, Map<String, String> data, int trailingBytes) {}
 
@@ -205,6 +213,38 @@ class ChestExtradataWireTest {
                 .add(ChestStorage.KIND_CURRENCY, -1, chest.getContents().getCapacity());
 
         assertEquals("4", read(chest).data().get("state"));
+    }
+
+    @Test
+    void aChestShowsNothingUntilItsOwnerAsksItTo() {
+        InteractionWiredChestFurni chest = new InteractionWiredChestFurni(1, 2, mock(Item.class), "", 0, 0);
+        chest.getContents().addFurniItem(storedFurni(1389, 9500));
+
+        // What is in a chest is its owner's business until they put it on show.
+        assertEquals("", read(chest).data().get("preview_items"));
+        assertEquals("0", read(chest).data().get("preview_mode"));
+    }
+
+    @Test
+    void aChestOnShowNamesDistinctTypesOnly() {
+        InteractionWiredChestFurni chest = new InteractionWiredChestFurni(1, 2, mock(Item.class), "", 0, 0);
+        chest.getContents().setPreview(1, 4);
+        chest.getContents().addFurniItem(storedFurni(1389, 9500));
+        chest.getContents().addFurniItem(storedFurni(1389, 9500));
+        chest.getContents().addFurniItem(storedFurni(77, 88));
+
+        // Four of the same chair on a lid says less than four different things.
+        assertEquals("9500,88", read(chest).data().get("preview_items"));
+    }
+
+    @Test
+    void aChestOnShowStopsAtTheCountItsOwnerChose() {
+        InteractionWiredChestFurni chest = new InteractionWiredChestFurni(1, 2, mock(Item.class), "", 0, 0);
+        chest.getContents().setPreview(1, 1);
+        chest.getContents().addFurniItem(storedFurni(1389, 9500));
+        chest.getContents().addFurniItem(storedFurni(77, 88));
+
+        assertEquals("9500", read(chest).data().get("preview_items"));
     }
 
     @Test

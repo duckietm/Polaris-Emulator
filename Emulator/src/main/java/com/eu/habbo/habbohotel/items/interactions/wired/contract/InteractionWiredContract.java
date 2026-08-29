@@ -151,11 +151,44 @@ public abstract class InteractionWiredContract extends InteractionWiredExtra {
     }
 
     /**
+     * Write the grammar as int params: {@code [-1, ruleCount, (nodeCount, node*)..., rewardCount,
+     * node*]}, a node being {@code kind, currencyType, wallItem, baseItemId, amount}.
+     *
+     * <p>Shared by the dialog push and read back by {@link #readRules}, so the encode and the decode
+     * cannot fall out of step.
+     */
+    protected int[] buildRuleParams() {
+        List<Integer> out = new ArrayList<>();
+        out.add(RULES_FORMAT);
+        out.add(this.giveRules.size());
+
+        for (List<Term> rule : this.giveRules) {
+            out.add(rule.size());
+            for (Term term : rule) appendNode(out, term);
+        }
+
+        out.add(this.getRule.size());
+        for (Term term : this.getRule) appendNode(out, term);
+
+        int[] params = new int[out.size()];
+        for (int i = 0; i < params.length; i++) params[i] = out.get(i);
+        return params;
+    }
+
+    private static void appendNode(List<Integer> out, Term term) {
+        out.add(term.isFurni() ? KIND_FURNI : KIND_CURRENCY);
+        out.add(term.isFurni() ? 0 : term.currencyType);
+        out.add(term.wallItem ? 1 : 0);
+        out.add(term.isFurni() ? term.baseItemId : 0);
+        out.add(term.amount);
+    }
+
+    /**
      * The alternatives format: {@code [-1, ruleCount, (nodeCount, node*)..., rewardCount, node*]},
      * where a node is {@code kind, currencyType, wallItem, baseItemId, amount}. Every count is bounded
      * before it is used, so a crafted payload cannot make the save path read past its own array.
      */
-    private void readRules(int[] params) {
+    void readRules(int[] params) {
         if (params.length < 2) return;
 
         int ruleCount = Math.max(0, Math.min(MAX_RULES, params[1]));
@@ -298,13 +331,11 @@ public abstract class InteractionWiredContract extends InteractionWiredExtra {
         message.appendInt(this.getId());
         message.appendString("");
 
-        message.appendInt(1 + (this.terms.size() * 3));
-        message.appendInt(this.terms.size());
-        for (Term t : this.terms) {
-            message.appendInt(t.direction);
-            message.appendInt(t.currencyType);
-            message.appendInt(t.amount);
-        }
+        // The same array the dialog sends back on save, so the two directions cannot drift into
+        // disagreeing about what a contract says -- which is exactly what had gone wrong.
+        int[] params = buildRuleParams();
+        message.appendInt(params.length);
+        for (int param : params) message.appendInt(param);
 
         message.appendInt(0);
         message.appendInt(this.contractCode());

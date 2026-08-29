@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.contract;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -116,5 +117,87 @@ class InteractionWiredContractRulesTest {
 
         assertEquals(1, contract.getGiveRules().get(0).size());
         assertEquals(4, contract.getGiveRules().get(0).get(0).amount);
+    }
+
+    @Test
+    void readsTheExactArrayTheDialogWrites() {
+        // Pinned identically in the client's contractTermWire.test.ts. The dialog and the contract
+        // used to disagree about the shape of a term, and the only symptom was a saved contract
+        // coming back empty -- so the agreement is stated in both languages, not just one.
+        int[] fromDialog = {
+            InteractionWiredContract.RULES_FORMAT,
+            2,
+            2,
+            InteractionWiredContract.KIND_FURNI,
+            0,
+            0,
+            1389,
+            2,
+            InteractionWiredContract.KIND_CURRENCY,
+            -1,
+            0,
+            0,
+            5,
+            1,
+            InteractionWiredContract.KIND_FURNI,
+            0,
+            0,
+            4242,
+            1,
+            1,
+            InteractionWiredContract.KIND_CURRENCY,
+            0,
+            0,
+            0,
+            9,
+        };
+
+        TestContract contract = new TestContract();
+        contract.readRules(fromDialog);
+
+        assertEquals(2, contract.getGiveRules().size());
+        assertEquals(2, contract.getGiveRules().get(0).size());
+        assertEquals(1389, contract.getGiveRules().get(0).get(0).baseItemId);
+        assertEquals(2, contract.getGiveRules().get(0).get(0).amount);
+        assertEquals(5, contract.getGiveRules().get(0).get(1).amount);
+        assertEquals(4242, contract.getGiveRules().get(1).get(0).baseItemId);
+        assertEquals(1, contract.getGetRule().size());
+        assertEquals(9, contract.getGetRule().get(0).amount);
+    }
+
+    @Test
+    void writesBackTheSameArrayItRead() {
+        int[] fromDialog = {
+            InteractionWiredContract.RULES_FORMAT,
+            2,
+            2,
+            InteractionWiredContract.KIND_FURNI,
+            0,
+            0,
+            1389,
+            2,
+            InteractionWiredContract.KIND_CURRENCY,
+            -1,
+            0,
+            0,
+            5,
+            1,
+            InteractionWiredContract.KIND_FURNI,
+            0,
+            0,
+            4242,
+            1,
+            1,
+            InteractionWiredContract.KIND_CURRENCY,
+            0,
+            0,
+            0,
+            9,
+        };
+
+        TestContract contract = new TestContract();
+        contract.readRules(fromDialog);
+
+        assertArrayEquals(fromDialog, contract.buildRuleParams());
     }
 }

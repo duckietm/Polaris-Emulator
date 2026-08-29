@@ -8170,6 +8170,16 @@
           "kind": "scalar",
           "type": "int",
           "name": "appearanceState"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "previewMode"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "previewAmount"
         }
       ]
     },

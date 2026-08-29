@@ -10,7 +10,8 @@ import com.eu.habbo.messages.outgoing.rooms.items.ChestDataComposer;
 
 /**
  * Saves a wired chest's settings (room-rights only): {@code int itemId, string name, string description,
- * bool accessOpen, bool accessDonate, int appearanceState}.
+ * bool accessOpen, bool accessDonate, int appearanceState} and, from a client that knows about
+ * the preview, {@code int previewMode, int previewAmount} after them.
  *
  * <p>The lock, the auto-lock and the capacity ceiling are not here: they live in the chest
  * window itself and save through {@link ChestSaveOptionsEvent} the moment they are touched,
@@ -37,6 +38,11 @@ public class ChestSaveSettingsEvent extends MessageHandler {
         boolean accessDonate = this.packet.readBoolean();
         int appearanceState = this.packet.readInt();
 
+        // Appended: a client that does not send them leaves the preview as it was.
+        boolean hasPreview = this.packet.bytesAvailable() >= 8;
+        int previewMode = hasPreview ? this.packet.readInt() : 0;
+        int previewAmount = hasPreview ? this.packet.readInt() : 1;
+
         HabboItem item = room.getHabboItem(itemId);
         if (!(item instanceof InteractionWiredChest chest)) return;
         if (!room.hasRights(habbo)) return;
@@ -47,6 +53,7 @@ public class ChestSaveSettingsEvent extends MessageHandler {
         c.setAccessOpen(accessOpen);
         c.setAccessDonate(accessDonate);
         c.setAppearanceState(appearanceState);
+        if (hasPreview) c.setPreview(previewMode, previewAmount);
         chest.persistContents(room);
 
         this.client.sendResponse(new ChestDataComposer(chest, this.client.getHabbo()));

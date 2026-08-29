@@ -218,6 +218,7 @@ FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#KIND_FURNI:int
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#MAX_CAPACITY:int
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#MAX_LOG:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#MAX_PREVIEW_ITEMS:int
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#STARTER_CAPACITY:int
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage(-) throws -
 METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#add(int,int,int):void throws -
@@ -241,6 +242,8 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorag
 METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#getLog(-):java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage$LogEntry> throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#getName(-):java.lang.String throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#getNotifyMode(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#getPreviewAmount(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#getPreviewMode(-):int throws -
 METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#growCapacity(int):void throws -
 METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#has(int,int,int):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#isAccessDonate(-):boolean throws -
@@ -269,6 +272,7 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorag
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setLocked(boolean):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setName(java.lang.String):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setNotifications(boolean,boolean,boolean,boolean,boolean,int):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#setPreview(int,int):void throws -
 METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#take(int,int,int):int throws -
 METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#toJson(-):java.lang.String throws -
 METHOD public synchronized com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage#total(int):int throws -

@@ -38,6 +38,9 @@ public class ChestStorage {
     /** What a starter chest holds. Deliberately below {@link #DEFAULT_CAPACITY}: it is a taste. */
     public static final int STARTER_CAPACITY = 500;
 
+    /** How many stored items a chest can show on top of itself. The sprite has room for four. */
+    public static final int MAX_PREVIEW_ITEMS = 4;
+
     /** A single chest row. {@code type} is the currency type (KIND_CURRENCY) or base item id (KIND_FURNI). */
     public static class Entry {
         public int kind;
@@ -114,6 +117,16 @@ public class ChestStorage {
      * the moment somebody did.
      */
     private boolean wiredEnabled = false;
+
+    /**
+     * Whether the chest shows some of what it holds on top of itself, and how many.
+     *
+     * <p>Off by default on purpose: a preview tells the whole room what is in your chest, which is
+     * something to opt into rather than to discover.
+     */
+    private int previewMode = 0;
+
+    private int previewAmount = 1;
 
     /**
      * A ceiling the owner sets by hand, at or below the capacity they have actually bought. Buying
@@ -474,6 +487,19 @@ public class ChestStorage {
         this.wiredEnabled = true;
     }
 
+    public int getPreviewMode() {
+        return this.previewMode;
+    }
+
+    public int getPreviewAmount() {
+        return Math.max(1, Math.min(this.previewAmount, MAX_PREVIEW_ITEMS));
+    }
+
+    public void setPreview(int mode, int amount) {
+        this.previewMode = mode > 0 ? 1 : 0;
+        this.previewAmount = Math.max(1, Math.min(amount, MAX_PREVIEW_ITEMS));
+    }
+
     public boolean isAutoLock() {
         return this.autoLock;
     }
@@ -560,6 +586,8 @@ public class ChestStorage {
         data.locked = this.locked;
         data.autoLock = this.autoLock;
         data.wiredEnabled = this.wiredEnabled;
+        data.previewMode = this.previewMode;
+        data.previewAmount = this.previewAmount;
         data.capacity = this.capacity;
         data.log = this.log;
         data.furniItems = this.furniItems;
@@ -601,6 +629,8 @@ public class ChestStorage {
                 // already answered wired. Reading it as "not upgraded" would silently break every
                 // room built on one.
                 chest.wiredEnabled = (data.wiredEnabled == null) || data.wiredEnabled;
+                chest.previewMode = data.previewMode;
+                chest.previewAmount = data.previewAmount <= 0 ? 1 : data.previewAmount;
                 // Absent in a payload written before the owner could set one: fall back to the
                 // bought capacity, which is what the chest behaved as.
                 chest.capacity = data.capacity > 0 ? data.capacity : chest.capacityMax;
@@ -647,6 +677,8 @@ public class ChestStorage {
         boolean locked = false;
         boolean autoLock = false;
         Boolean wiredEnabled;
+        int previewMode = 0;
+        int previewAmount = 1;
         int capacity = 0;
         List<LogEntry> log;
         List<ChestFurniStoredItem> furniItems;

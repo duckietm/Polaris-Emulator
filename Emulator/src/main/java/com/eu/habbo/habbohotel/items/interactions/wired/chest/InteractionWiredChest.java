@@ -12,6 +12,7 @@ import com.eu.habbo.messages.outgoing.rooms.items.FloorItemUpdateComposer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -220,6 +221,9 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
         data.put("notify_mode", Integer.toString(this.contents.getNotifyMode()));
 
         data.put("is_wired_enabled", this.contents.isWiredEnabled() ? "1" : "0");
+        data.put("preview_mode", Integer.toString(this.contents.getPreviewMode()));
+        data.put("preview_amount", Integer.toString(this.contents.getPreviewAmount()));
+        data.put("preview_items", this.previewItems());
 
         serverMessage.appendInt(MAP_DATA_FORMAT + (this.isLimited() ? 256 : 0));
         serverMessage.appendInt(data.size());
@@ -236,6 +240,30 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
             serverMessage.appendInt(this.getLimitedSells());
             serverMessage.appendInt(this.getLimitedStack());
         }
+    }
+
+    /**
+     * The furnidata ids the chest shows on top of itself, newest first, comma separated.
+     *
+     * <p>Empty unless the owner asked for a preview: what is in a chest is the owner's business until
+     * they decide to put it on show. Distinct types only -- four of the same chair on the lid says
+     * less than four different things.
+     */
+    private String previewItems() {
+        if (this.contents.getPreviewMode() <= 0) return "";
+
+        StringBuilder ids = new StringBuilder();
+        Set<Integer> seen = new LinkedHashSet<>();
+
+        for (ChestFurniStoredItem stored : this.contents.furniItems()) {
+            if (seen.size() >= this.contents.getPreviewAmount()) break;
+            if (!seen.add(stored.wireTypeId())) continue;
+
+            if (ids.length() > 0) ids.append(',');
+            ids.append(stored.wireTypeId());
+        }
+
+        return ids.toString();
     }
 
     /** How many upgrades have been bought, which is what the official calls the capacity level. */

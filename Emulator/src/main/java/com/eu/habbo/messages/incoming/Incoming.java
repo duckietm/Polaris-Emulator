@@ -19,6 +19,9 @@ public class Incoming {
     public static final int WiredChestLockEvent = 9329; // Lock / unlock the room's chests
     // 9330-9333 are the Trax editor; the chests tab continues at 9334.
     public static final int WiredChestTransactionDetailsEvent = 9334; // One transaction with its furni
+    public static final int WiredTradeOfferItemsEvent = 9335; // Put items on / take them off the table
+    public static final int WiredTradeAcceptEvent = 9336; // Accept, then confirm
+    public static final int WiredTradeCancelEvent = 9337; // Walk away from the negotiation
     public static final int ChangeNameCheckUsernameEvent = 3950;
     public static final int ConfirmChangeNameEvent = 2977;
     public static final int ActivateEffectEvent = 2959;

@@ -569,9 +569,11 @@ U|com/eu/habbo/habbohotel/items/interactions/wired/chest/ChestTransactionLog.jav
 U|com/eu/habbo/habbohotel/items/interactions/wired/chest/ChestTransactionLog.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/chest/ChestWiredFurniUtil.java|CALL|getGameEnvironment|4
 U|com/eu/habbo/habbohotel/items/interactions/wired/chest/ChestWiredFurniUtil.java|CALL|getThreading|1
+U|com/eu/habbo/habbohotel/items/interactions/wired/chest/ContractWireUtil.java|CALL|getGameEnvironment|3
 U|com/eu/habbo/habbohotel/items/interactions/wired/chest/InteractionWiredChest.java|CALL|getGameEnvironment|3
 U|com/eu/habbo/habbohotel/items/interactions/wired/chest/InteractionWiredChestFurni.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/chest/InteractionWiredContract.java|CALL|getGameEnvironment|1
+U|com/eu/habbo/habbohotel/items/interactions/wired/chest/WiredTradingManager.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionCounterTimeMatches.java|CALL|getConfig|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionCounterTimeMatches.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/conditions/WiredConditionDateRangeActive.java|CALL|getIntUnixTimestamp|1

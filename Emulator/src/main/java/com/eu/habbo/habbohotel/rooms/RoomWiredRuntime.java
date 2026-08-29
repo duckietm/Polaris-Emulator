@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.rooms;
 
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingManager;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import java.util.Collection;
 import java.util.List;
@@ -10,10 +11,17 @@ public final class RoomWiredRuntime {
     private final AtomicLong cacheGeneration = new AtomicLong();
     private final WiredGravityService gravity;
     private final WiredOpacityService opacity;
+    private final WiredTradingManager trading;
 
     RoomWiredRuntime(Room room) {
         this.gravity = new WiredGravityService(room);
         this.opacity = new WiredOpacityService(room);
+        this.trading = new WiredTradingManager(room);
+    }
+
+    /** The room's open wired contract negotiations, one per player. */
+    public WiredTradingManager getTradingManager() {
+        return this.trading;
     }
 
     long cacheGeneration() {
@@ -98,5 +106,8 @@ public final class RoomWiredRuntime {
     void dispose() {
         this.gravity.dispose();
         this.opacity.dispose();
+        // Every open negotiation is holding somebody's furniture out of their inventory. Letting the
+        // room go without handing it back would lose it.
+        this.trading.dispose();
     }
 }

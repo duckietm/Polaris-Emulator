@@ -35,6 +35,7 @@ public final class ChestFurniDepositHelper {
         if (removed == null) return false;
         habbo.getInventory().getItemsComponent().removeHabboItem(removed);
 
+        int storedBefore = contents.furniItemCount();
         ChestFurniStoredItem stored = ChestFurniStoredItem.fromHabboItem(removed, removed.getId());
 
         // Atomic capacity-guarded add; if the chest is full, hand the item back rather than lose it.
@@ -56,6 +57,9 @@ public final class ChestFurniDepositHelper {
                 1,
                 List.of(stored));
         chest.persistContents(room);
+
+        ChestNotifications.donation(chest, room, habbo, 1);
+        ChestNotifications.afterChange(chest, room, storedBefore, contents.furniItemCount());
 
         habbo.getClient().sendResponse(new RemoveHabboItemComposer(removed.getGiftAdjustedId()));
         habbo.getClient().sendResponse(new InventoryRefreshComposer());

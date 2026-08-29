@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestNotifications;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -75,7 +76,8 @@ public class WiredEffectGiveFurniFromChest extends InteractionWiredEffect {
                         habbo.getInventory().getItemsComponent().addItem(created);
                     }
                     habbo.getClient().sendResponse(new InventoryRefreshComposer());
-                    chest.persistContents();
+                    chest.persistContents(room);
+                    ChestNotifications.wired(chest, room, 1);
                 }
                 break;
             }

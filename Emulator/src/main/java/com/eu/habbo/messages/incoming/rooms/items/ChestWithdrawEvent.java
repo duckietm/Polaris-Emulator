@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestNotifications;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
@@ -48,6 +49,7 @@ public class ChestWithdrawEvent extends MessageHandler {
 
         // Atomic check-and-take: never returns more than is present, so racing another thread
         // (another user or a wired effect on the room thread) can't over-withdraw or duplicate.
+        int storedBefore = contents.total(ChestStorage.KIND_CURRENCY);
         int taken = contents.withdrawCurrency(currencyType, amount);
         if (taken <= 0) return;
 
@@ -65,6 +67,9 @@ public class ChestWithdrawEvent extends MessageHandler {
                 0,
                 null);
         chest.persistContents(room);
+
+        ChestNotifications.withdrawal(chest, room, habbo, taken);
+        ChestNotifications.afterChange(chest, room, storedBefore, contents.total(ChestStorage.KIND_CURRENCY));
 
         if (currencyType < 0) habbo.giveCredits(taken);
         else habbo.givePoints(currencyType, taken);

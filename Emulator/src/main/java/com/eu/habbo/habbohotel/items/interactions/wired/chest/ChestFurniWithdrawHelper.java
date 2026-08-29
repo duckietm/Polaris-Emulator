@@ -54,6 +54,12 @@ public final class ChestFurniWithdrawHelper {
                 removedItems);
         chest.persistContents(room);
 
+        int storedNow = chest.getContents().furniItemCount();
+        ChestNotifications.withdrawal(chest, room, habbo, removedItems.size());
+        // The items are already out by the time this runs, so what it held before is what is
+        // left plus what just left.
+        ChestNotifications.afterChange(chest, room, storedNow + removedItems.size(), storedNow);
+
         client.sendResponse(new ChestDataComposer(chest, client.getHabbo()));
         ChestFurniPackets.sendDelta(
                 client,

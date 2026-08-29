@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestNotifications;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
@@ -56,6 +57,7 @@ public class ChestDepositEvent extends MessageHandler {
 
         // Never debit more than the user owns; the chest decides atomically how much fits.
         int desired = Math.min(amount, balance);
+        int storedBefore = contents.total(ChestStorage.KIND_CURRENCY);
         int accepted = contents.depositCurrency(currencyType, desired);
         if (accepted <= 0) return;
 
@@ -76,6 +78,9 @@ public class ChestDepositEvent extends MessageHandler {
                 accepted,
                 null);
         chest.persistContents(room);
+
+        ChestNotifications.donation(chest, room, habbo, accepted);
+        ChestNotifications.afterChange(chest, room, storedBefore, contents.total(ChestStorage.KIND_CURRENCY));
 
         this.client.sendResponse(new ChestDataComposer(chest, this.client.getHabbo()));
     }

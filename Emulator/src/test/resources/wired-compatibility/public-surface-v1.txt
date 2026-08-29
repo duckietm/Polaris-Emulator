@@ -202,6 +202,12 @@ TYPE public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFu
 METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniWithdrawHelper#completeWithdraw(com.eu.habbo.habbohotel.gameclients.GameClient,com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest,com.eu.habbo.habbohotel.rooms.Room,java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniStoredItem>):int throws -
 METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniWithdrawHelper#completeWithdraw(com.eu.habbo.habbohotel.gameclients.GameClient,com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest,java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniStoredItem>):int throws -
 
+TYPE public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestNotifications extends java.lang.Object
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestNotifications#afterChange(com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest,com.eu.habbo.habbohotel.rooms.Room,int,int):void throws -
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestNotifications#donation(com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest,com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.users.Habbo,int):void throws -
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestNotifications#wired(com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest,com.eu.habbo.habbohotel.rooms.Room,int):void throws -
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestNotifications#withdrawal(com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest,com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.users.Habbo,int):void throws -
+
 TYPE public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestOpenHelper extends java.lang.Object
 METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestOpenHelper#open(com.eu.habbo.habbohotel.gameclients.GameClient,com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest,com.eu.habbo.habbohotel.rooms.Room):void throws -
 
@@ -480,6 +486,7 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.Interaction
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest#onPickUp(-):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest#onWalk(com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.Room,java.lang.Object[]):void throws java.lang.Exception
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest#openFor(com.eu.habbo.habbohotel.users.Habbo,com.eu.habbo.habbohotel.rooms.Room):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest#owner(-):com.eu.habbo.habbohotel.users.Habbo throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest#persistContents(-):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest#persistContents(com.eu.habbo.habbohotel.rooms.Room):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest#publishState(com.eu.habbo.habbohotel.rooms.Room):void throws -

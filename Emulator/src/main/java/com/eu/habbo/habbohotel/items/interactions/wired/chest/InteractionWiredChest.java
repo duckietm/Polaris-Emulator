@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -77,15 +78,28 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
      * next persist writes it out permanently.
      */
     private static void resolveLegacySpriteIds(ChestStorage contents) {
-        if (Emulator.getGameEnvironment() == null
-                || Emulator.getGameEnvironment().getItemManager() == null) return;
+        GameEnvironment environment = Emulator.getGameEnvironment();
+        if (environment == null || environment.getItemManager() == null) return;
 
         for (ChestFurniStoredItem stored : contents.furniItems()) {
             if (stored.spriteId > 0) continue;
 
-            Item base = Emulator.getGameEnvironment().getItemManager().getItem(stored.baseItemId);
+            Item base = environment.getItemManager().getItem(stored.baseItemId);
             if (base != null) stored.spriteId = base.getSpriteId();
         }
+    }
+
+    /**
+     * The player who owns this chest, if they are online anywhere in the hotel.
+     *
+     * <p>Notifications go to them wherever they are, which is the point of a chest telling you that
+     * somebody donated to it while you were somewhere else.
+     */
+    public Habbo owner() {
+        GameEnvironment environment = Emulator.getGameEnvironment();
+        if (environment == null || environment.getHabboManager() == null) return null;
+
+        return environment.getHabboManager().getHabbo(this.getUserId());
     }
 
     @Override

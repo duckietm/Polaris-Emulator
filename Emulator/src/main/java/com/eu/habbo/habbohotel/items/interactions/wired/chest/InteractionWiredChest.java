@@ -80,6 +80,11 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
      * <p>Read off the furni it is, because that is the only thing that distinguishes one: it holds
      * less and it cannot be made bigger, which is the whole point of handing one out.
      */
+    /** Whether wired may reach this chest. Off until its owner upgrades it, and then permanent. */
+    public boolean answersWired() {
+        return this.contents.isWiredEnabled();
+    }
+
     public boolean isStarterChest() {
         Item base = this.getBaseItem();
         return base != null && base.getName() != null && base.getName().endsWith("_starter");
@@ -214,9 +219,7 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
         data.put("state_control_mode", Integer.toString(this.contents.getAppearanceState()));
         data.put("notify_mode", Integer.toString(this.contents.getNotifyMode()));
 
-        // Every chest here answers wired; the one-way "make this chest wired" upgrade the official
-        // window offers does not exist on this server, so the flag is constant rather than absent.
-        data.put("is_wired_enabled", "1");
+        data.put("is_wired_enabled", this.contents.isWiredEnabled() ? "1" : "0");
 
         serverMessage.appendInt(MAP_DATA_FORMAT + (this.isLimited() ? 256 : 0));
         serverMessage.appendInt(data.size());

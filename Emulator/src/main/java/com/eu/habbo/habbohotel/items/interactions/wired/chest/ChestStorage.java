@@ -107,6 +107,15 @@ public class ChestStorage {
     private boolean autoLock = false;
 
     /**
+     * Whether wired may reach this chest at all.
+     *
+     * <p>A one-way upgrade: a chest starts as storage and its owner decides to make it part of the
+     * room's machinery. It cannot be turned back off, because a room built around a chest would break
+     * the moment somebody did.
+     */
+    private boolean wiredEnabled = false;
+
+    /**
      * A ceiling the owner sets by hand, at or below the capacity they have actually bought. Buying
      * more room and choosing to use it are two different decisions: a chest can be big and still be
      * told to stop at five hundred.
@@ -456,6 +465,15 @@ public class ChestStorage {
         this.locked = locked;
     }
 
+    public boolean isWiredEnabled() {
+        return this.wiredEnabled;
+    }
+
+    /** One way only: a room built on a chest must not lose it. */
+    public void enableWired() {
+        this.wiredEnabled = true;
+    }
+
     public boolean isAutoLock() {
         return this.autoLock;
     }
@@ -525,6 +543,7 @@ public class ChestStorage {
         data.notifyMode = this.notifyMode;
         data.locked = this.locked;
         data.autoLock = this.autoLock;
+        data.wiredEnabled = this.wiredEnabled;
         data.capacity = this.capacity;
         data.log = this.log;
         data.furniItems = this.furniItems;
@@ -562,6 +581,10 @@ public class ChestStorage {
                 chest.notifyMode = data.notifyMode;
                 chest.locked = data.locked;
                 chest.autoLock = data.autoLock;
+                // Absent means a chest saved before the upgrade existed, and every one of those
+                // already answered wired. Reading it as "not upgraded" would silently break every
+                // room built on one.
+                chest.wiredEnabled = (data.wiredEnabled == null) || data.wiredEnabled;
                 // Absent in a payload written before the owner could set one: fall back to the
                 // bought capacity, which is what the chest behaved as.
                 chest.capacity = data.capacity > 0 ? data.capacity : chest.capacityMax;
@@ -607,6 +630,7 @@ public class ChestStorage {
         int notifyMode = 0;
         boolean locked = false;
         boolean autoLock = false;
+        Boolean wiredEnabled;
         int capacity = 0;
         List<LogEntry> log;
         List<ChestFurniStoredItem> furniItems;

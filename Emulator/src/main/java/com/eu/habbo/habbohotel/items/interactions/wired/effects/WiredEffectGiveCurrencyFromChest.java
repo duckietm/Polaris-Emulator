@@ -87,7 +87,8 @@ public class WiredEffectGiveCurrencyFromChest extends InteractionWiredEffect {
     private InteractionWiredChest resolveChest(Room room) {
         for (Integer id : this.chestIds) {
             HabboItem item = room.getHabboItem(id);
-            if (item instanceof InteractionWiredChest chest) {
+            // Wired only reaches a chest whose owner upgraded it to answer wired.
+            if (item instanceof InteractionWiredChest chest && chest.answersWired()) {
                 return chest;
             }
         }

@@ -303,6 +303,7 @@ import com.eu.habbo.messages.incoming.rooms.items.ChestCloseEvent;
 import com.eu.habbo.messages.incoming.rooms.items.ChestDepositEvent;
 import com.eu.habbo.messages.incoming.rooms.items.ChestDepositFurniEvent;
 import com.eu.habbo.messages.incoming.rooms.items.ChestDepositInventoryItemEvent;
+import com.eu.habbo.messages.incoming.rooms.items.ChestEnableWiredEvent;
 import com.eu.habbo.messages.incoming.rooms.items.ChestOpenEvent;
 import com.eu.habbo.messages.incoming.rooms.items.ChestRequestLogEvent;
 import com.eu.habbo.messages.incoming.rooms.items.ChestSaveNotificationsEvent;
@@ -929,6 +930,7 @@ public class PacketManager {
         this.registerHandler(Incoming.ChestSaveNotificationsEvent, ChestSaveNotificationsEvent.class);
         this.registerHandler(Incoming.ChestSaveOptionsEvent, ChestSaveOptionsEvent.class);
         this.registerHandler(Incoming.ChestCloseEvent, ChestCloseEvent.class);
+        this.registerHandler(Incoming.ChestEnableWiredEvent, ChestEnableWiredEvent.class);
         this.registerHandler(Incoming.ChestUpgradeCapacityEvent, ChestUpgradeCapacityEvent.class);
         this.registerHandler(Incoming.ChestRequestLogEvent, ChestRequestLogEvent.class);
         this.registerHandler(Incoming.WiredChestRoomLogsEvent, WiredChestRoomLogsEvent.class);

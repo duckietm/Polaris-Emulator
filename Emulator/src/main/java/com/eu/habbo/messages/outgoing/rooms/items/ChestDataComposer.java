@@ -26,7 +26,8 @@ import java.util.Map;
  *   int entryCount, [int currencyType, int amount]*,
  *   int chestKind (0 = currency, 1 = furni),
  *   int furniCount, [int baseItemId, int quantity]*,
- *   bool locked, int capacity, bool autoLock, bool viewerOwnsChest, int chestSpriteId
+ *   bool locked, int capacity, bool autoLock, bool viewerOwnsChest, int chestSpriteId,
+ *   bool wiredEnabled, bool starterChest
  * </pre>
  * For a furni chest, {@code used} is the total stored furni count and the currency entry list is empty;
  * for a currency chest the furni list is empty.
@@ -114,6 +115,11 @@ public class ChestDataComposer extends MessageComposer {
         // The chest's own furnidata id, so the upgrade window can show what is being upgraded.
         this.response.appendInt(
                 this.chest.getBaseItem() == null ? 0 : this.chest.getBaseItem().getSpriteId());
+
+        // Whether wired may reach it, and whether it is the starter chest that can never be grown --
+        // the window greys its own controls from these rather than guessing.
+        this.response.appendBoolean(c.isWiredEnabled());
+        this.response.appendBoolean(this.chest.isStarterChest());
 
         return this.response;
     }

@@ -193,7 +193,8 @@ public class WiredEffectInitTransaction extends InteractionWiredEffect {
         if (ids == null) return null;
         for (Integer id : ids) {
             HabboItem item = room.getHabboItem(id);
-            if (item instanceof InteractionWiredChest chest) return chest;
+            // Wired only reaches a chest whose owner upgraded it to answer wired.
+            if (item instanceof InteractionWiredChest chest && chest.answersWired()) return chest;
         }
         return null;
     }

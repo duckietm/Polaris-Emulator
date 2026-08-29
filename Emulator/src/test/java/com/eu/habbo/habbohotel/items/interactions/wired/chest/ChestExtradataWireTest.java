@@ -221,7 +221,7 @@ class ChestExtradataWireTest {
         chest.getContents().addFurniItem(storedFurni(1389, 9500));
 
         // What is in a chest is its owner's business until they put it on show.
-        assertEquals("", read(chest).data().get("preview_items"));
+        assertEquals("", read(chest).data().get("visuals"));
         assertEquals("0", read(chest).data().get("preview_mode"));
     }
 
@@ -234,7 +234,8 @@ class ChestExtradataWireTest {
         chest.getContents().addFurniItem(storedFurni(77, 88));
 
         // Four of the same chair on a lid says less than four different things.
-        assertEquals("9500,88", read(chest).data().get("preview_items"));
+        // isWallItem,typeId entries joined by semicolons -- the shape the client reads.
+        assertEquals("false,9500;false,88", read(chest).data().get("visuals"));
     }
 
     @Test
@@ -244,7 +245,7 @@ class ChestExtradataWireTest {
         chest.getContents().addFurniItem(storedFurni(1389, 9500));
         chest.getContents().addFurniItem(storedFurni(77, 88));
 
-        assertEquals("9500", read(chest).data().get("preview_items"));
+        assertEquals("false,9500", read(chest).data().get("visuals"));
     }
 
     @Test

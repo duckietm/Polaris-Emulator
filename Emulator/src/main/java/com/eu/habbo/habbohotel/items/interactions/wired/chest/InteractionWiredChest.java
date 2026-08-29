@@ -223,7 +223,7 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
         data.put("is_wired_enabled", this.contents.isWiredEnabled() ? "1" : "0");
         data.put("preview_mode", Integer.toString(this.contents.getPreviewMode()));
         data.put("preview_amount", Integer.toString(this.contents.getPreviewAmount()));
-        data.put("preview_items", this.previewItems());
+        data.put("visuals", this.previewItems());
 
         serverMessage.appendInt(MAP_DATA_FORMAT + (this.isLimited() ? 256 : 0));
         serverMessage.appendInt(data.size());
@@ -243,27 +243,28 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
     }
 
     /**
-     * The furnidata ids the chest shows on top of itself, newest first, comma separated.
+     * What the chest floats above its lid, in the shape the client reads: {@code isWallItem,typeId}
+     * entries joined by semicolons, which is how the official writes it.
      *
-     * <p>Empty unless the owner asked for a preview: what is in a chest is the owner's business until
-     * they decide to put it on show. Distinct types only -- four of the same chair on the lid says
-     * less than four different things.
+     * <p>Empty unless the owner asked for it: what is in a chest is their business until they decide
+     * to put it on show. Distinct types only -- four of the same chair above a lid says less than
+     * four different things.
      */
     private String previewItems() {
         if (this.contents.getPreviewMode() <= 0) return "";
 
-        StringBuilder ids = new StringBuilder();
+        StringBuilder visuals = new StringBuilder();
         Set<Integer> seen = new LinkedHashSet<>();
 
         for (ChestFurniStoredItem stored : this.contents.furniItems()) {
             if (seen.size() >= this.contents.getPreviewAmount()) break;
             if (!seen.add(stored.wireTypeId())) continue;
 
-            if (ids.length() > 0) ids.append(',');
-            ids.append(stored.wireTypeId());
+            if (visuals.length() > 0) visuals.append(';');
+            visuals.append("false,").append(stored.wireTypeId());
         }
 
-        return ids.toString();
+        return visuals.toString();
     }
 
     /** How many upgrades have been bought, which is what the official calls the capacity level. */

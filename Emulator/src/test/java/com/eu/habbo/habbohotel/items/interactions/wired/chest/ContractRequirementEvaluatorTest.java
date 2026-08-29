@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator.Match;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator.OfferedItem;
+import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract;
+import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract.Term;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntUnaryOperator;
@@ -24,12 +26,12 @@ class ContractRequirementEvaluatorTest {
         return type -> balances.getOrDefault(type, 0);
     }
 
-    private static ContractTerm coins(int amount) {
-        return ContractTerm.currency(ContractTerm.DIR_PAY, CREDITS, amount);
+    private static Term coins(int amount) {
+        return Term.currency(InteractionWiredContract.DIR_PAY, CREDITS, amount);
     }
 
-    private static ContractTerm furni(int baseItemId, int amount) {
-        return ContractTerm.furni(ContractTerm.DIR_PAY, false, baseItemId, "", amount);
+    private static Term furni(int baseItemId, int amount) {
+        return Term.furni(InteractionWiredContract.DIR_PAY, false, baseItemId, "", amount);
     }
 
     private static OfferedItem offered(int itemId, int baseItemId) {

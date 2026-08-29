@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator.OfferedItem;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingSession.Confirmation;
+import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract;
+import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract.Term;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -54,8 +56,8 @@ class WiredTradingSessionTest {
         }
     }
 
-    private static ContractTerm furni(int baseItemId, int amount) {
-        return ContractTerm.furni(ContractTerm.DIR_PAY, false, baseItemId, "", amount);
+    private static Term furni(int baseItemId, int amount) {
+        return Term.furni(InteractionWiredContract.DIR_PAY, false, baseItemId, "", amount);
     }
 
     private static WiredTradingSession session(ContractRules rules, FakeVault vault, int credits) {
@@ -241,8 +243,8 @@ class WiredTradingSessionTest {
 
     @Test
     void aWalletOnlyContractNeedsNothingOnTheTable() {
-        ContractRules rules =
-                ContractRules.of(List.of(List.of(ContractTerm.currency(ContractTerm.DIR_PAY, CREDITS, 5))), List.of());
+        ContractRules rules = ContractRules.of(
+                List.of(List.of(Term.currency(InteractionWiredContract.DIR_PAY, CREDITS, 5))), List.of());
         WiredTradingSession session = session(rules, new FakeVault(), 5);
 
         assertTrue(session.canAccept());

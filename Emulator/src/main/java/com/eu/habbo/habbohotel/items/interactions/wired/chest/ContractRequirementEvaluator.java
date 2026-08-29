@@ -1,5 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 
+import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract;
+import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract.Term;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -34,7 +36,7 @@ public final class ContractRequirementEvaluator {
      * @param consumedItemIds the offered items the rule claims, in the order they were matched
      * @param missing what is still short, for the "requirements not met" indicator; empty on a match
      */
-    public record Match(int ruleIndex, List<Integer> consumedItemIds, List<ContractTerm> missing) {
+    public record Match(int ruleIndex, List<Integer> consumedItemIds, List<Term> missing) {
         public boolean satisfied() {
             return this.ruleIndex >= 0;
         }
@@ -51,7 +53,7 @@ public final class ContractRequirementEvaluator {
     public static Match firstSatisfied(ContractRules rules, IntUnaryOperator walletBalance, List<OfferedItem> offered) {
         if (rules == null) return NO_RULES;
 
-        List<List<ContractTerm>> alternatives = rules.giveRules();
+        List<List<Term>> alternatives = rules.giveRules();
         if (alternatives.isEmpty()) return NO_RULES;
 
         Match closest = null;
@@ -70,15 +72,15 @@ public final class ContractRequirementEvaluator {
 
     /** Check one alternative on its own. Exposed so a caller can explain a specific rule. */
     public static Match match(
-            int ruleIndex, List<ContractTerm> rule, IntUnaryOperator walletBalance, List<OfferedItem> offered) {
+            int ruleIndex, List<Term> rule, IntUnaryOperator walletBalance, List<OfferedItem> offered) {
         List<Integer> consumed = new ArrayList<>();
-        List<ContractTerm> missing = new ArrayList<>();
+        List<Term> missing = new ArrayList<>();
 
         // Offered furni is claimed as it is matched, so two terms asking for the same base item can
         // never both be paid by the same single item.
         boolean[] claimed = new boolean[offered == null ? 0 : offered.size()];
 
-        for (ContractTerm term : rule) {
+        for (Term term : rule) {
             if (term == null || term.amount <= 0) continue;
 
             // Currency is settled once, below, against the rule's total: checking term by term would
@@ -107,25 +109,26 @@ public final class ContractRequirementEvaluator {
                 : new Match(-1, List.of(), List.copyOf(missing));
     }
 
-    private static List<ContractTerm> totalCurrencyShortfall(List<ContractTerm> rule, IntUnaryOperator walletBalance) {
+    private static List<Term> totalCurrencyShortfall(List<Term> rule, IntUnaryOperator walletBalance) {
         Map<Integer, Integer> required = new LinkedHashMap<>();
-        for (ContractTerm term : rule) {
+        for (Term term : rule) {
             if (term != null && term.isCurrency() && term.amount > 0) {
                 required.merge(term.currencyType, term.amount, Integer::sum);
             }
         }
 
-        List<ContractTerm> shortfalls = new ArrayList<>();
+        List<Term> shortfalls = new ArrayList<>();
         for (Map.Entry<Integer, Integer> entry : required.entrySet()) {
             int held = walletBalance == null ? 0 : walletBalance.applyAsInt(entry.getKey());
             if (held < entry.getValue()) {
-                shortfalls.add(ContractTerm.currency(ContractTerm.DIR_PAY, entry.getKey(), entry.getValue() - held));
+                shortfalls.add(
+                        Term.currency(InteractionWiredContract.DIR_PAY, entry.getKey(), entry.getValue() - held));
             }
         }
         return shortfalls;
     }
 
-    private static ContractTerm shortfall(ContractTerm term, int amount) {
-        return ContractTerm.furni(ContractTerm.DIR_PAY, term.wallItem, term.baseItemId, term.legacyPosterId, amount);
+    private static Term shortfall(Term term, int amount) {
+        return Term.furni(InteractionWiredContract.DIR_PAY, term.wallItem, term.baseItemId, term.posterId(), amount);
     }
 }

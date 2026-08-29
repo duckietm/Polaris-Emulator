@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract.Term;
 import com.eu.habbo.messages.ServerMessage;
 import java.util.List;
 
@@ -32,10 +33,10 @@ public final class ContractWireUtil {
      * </pre>
      */
     public static void appendRules(ServerMessage message, ContractRules rules) {
-        List<List<ContractTerm>> alternatives = rules.giveRules();
+        List<List<Term>> alternatives = rules.giveRules();
 
         message.appendInt(alternatives.size());
-        for (List<ContractTerm> rule : alternatives) {
+        for (List<Term> rule : alternatives) {
             appendRule(message, rule);
         }
 
@@ -46,9 +47,9 @@ public final class ContractWireUtil {
     }
 
     /** One rule: every node in it has to be met together. */
-    public static void appendRule(ServerMessage message, List<ContractTerm> rule) {
+    public static void appendRule(ServerMessage message, List<Term> rule) {
         message.appendInt(rule.size());
-        for (ContractTerm term : rule) {
+        for (Term term : rule) {
             appendNode(message, term);
         }
     }
@@ -58,7 +59,7 @@ public final class ContractWireUtil {
      * amount}. Both kinds carry every field so the client reads a fixed-width row and simply ignores
      * the half that does not apply.
      */
-    public static void appendNode(ServerMessage message, ContractTerm term) {
+    public static void appendNode(ServerMessage message, Term term) {
         message.appendInt(term.isFurni() ? NODE_FURNI : NODE_CURRENCY);
         message.appendInt(term.isFurni() ? 0 : term.currencyType);
         message.appendBoolean(term.wallItem);

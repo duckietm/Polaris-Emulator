@@ -1,8 +1,8 @@
 package com.eu.habbo.messages.outgoing.rooms.items;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator.OfferedItem;
-import com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractTerm;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractWireUtil;
+import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract.Term;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
@@ -28,16 +28,16 @@ public class WiredTradeItemsComposer extends MessageComposer {
     private final boolean canAccept;
     private final int secondsLeft;
     private final List<OfferedItem> offered;
-    private final List<ContractTerm> reward;
-    private final List<ContractTerm> missing;
+    private final List<Term> reward;
+    private final List<Term> missing;
 
     public WiredTradeItemsComposer(
             int state,
             boolean canAccept,
             int secondsLeft,
             List<OfferedItem> offered,
-            List<ContractTerm> reward,
-            List<ContractTerm> missing) {
+            List<Term> reward,
+            List<Term> missing) {
         this.state = state;
         this.canAccept = canAccept;
         this.secondsLeft = secondsLeft;
@@ -60,24 +60,23 @@ public class WiredTradeItemsComposer extends MessageComposer {
             this.response.appendInt(ContractWireUtil.spriteIdOf(item.baseItemId()));
         }
 
-        List<ContractTerm> rewardFurni =
-                this.reward.stream().filter(ContractTerm::isFurni).toList();
+        List<Term> rewardFurni = this.reward.stream().filter(Term::isFurni).toList();
         this.response.appendInt(rewardFurni.size());
-        for (ContractTerm term : rewardFurni) {
+        for (Term term : rewardFurni) {
             this.response.appendInt(ContractWireUtil.spriteIdOf(term.baseItemId));
             this.response.appendInt(term.amount);
         }
 
-        List<ContractTerm> rewardCurrency =
-                this.reward.stream().filter(ContractTerm::isCurrency).toList();
+        List<Term> rewardCurrency =
+                this.reward.stream().filter(Term::isCurrency).toList();
         this.response.appendInt(rewardCurrency.size());
-        for (ContractTerm term : rewardCurrency) {
+        for (Term term : rewardCurrency) {
             this.response.appendInt(term.currencyType);
             this.response.appendInt(term.amount);
         }
 
         this.response.appendInt(this.missing.size());
-        for (ContractTerm term : this.missing) {
+        for (Term term : this.missing) {
             ContractWireUtil.appendNode(this.response, term);
         }
 

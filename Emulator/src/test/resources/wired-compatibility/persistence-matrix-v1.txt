@@ -486,32 +486,32 @@ CASE legacy-zero ERROR java.lang.NullPointerException
 CASE legacy-tab ERROR java.lang.NullPointerException
 
 TYPE com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContractPayment
-CASE blank OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXX0=
-CASE json-empty OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXX0=
+CASE blank OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXSwiZ2l2ZVJ1bGVzIjpbXSwiZ2V0UnVsZSI6W119
+CASE json-empty OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXSwiZ2l2ZVJ1bGVzIjpbW11dLCJnZXRSdWxlIjpbXX0=
 CASE json-malformed ERROR java.io.EOFException
-CASE legacy-zero OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXX0=
-CASE legacy-tab OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXX0=
+CASE legacy-zero OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXSwiZ2l2ZVJ1bGVzIjpbXSwiZ2V0UnVsZSI6W119
+CASE legacy-tab OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXSwiZ2l2ZVJ1bGVzIjpbXSwiZ2V0UnVsZSI6W119
 
 TYPE com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContractReward
-CASE blank OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXX0=
-CASE json-empty OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXX0=
+CASE blank OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXSwiZ2l2ZVJ1bGVzIjpbXSwiZ2V0UnVsZSI6W119
+CASE json-empty OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXSwiZ2l2ZVJ1bGVzIjpbW11dLCJnZXRSdWxlIjpbXX0=
 CASE json-malformed ERROR java.io.EOFException
-CASE legacy-zero OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXX0=
-CASE legacy-tab OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXX0=
+CASE legacy-zero OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXSwiZ2l2ZVJ1bGVzIjpbXSwiZ2V0UnVsZSI6W119
+CASE legacy-tab OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXSwiZ2l2ZVJ1bGVzIjpbXSwiZ2V0UnVsZSI6W119
 
 TYPE com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContractTrade
-CASE blank OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXX0=
-CASE json-empty OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXX0=
+CASE blank OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXSwiZ2l2ZVJ1bGVzIjpbXSwiZ2V0UnVsZSI6W119
+CASE json-empty OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXSwiZ2l2ZVJ1bGVzIjpbW11dLCJnZXRSdWxlIjpbXX0=
 CASE json-malformed ERROR java.io.EOFException
-CASE legacy-zero OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXX0=
-CASE legacy-tab OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXX0=
+CASE legacy-zero OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXSwiZ2l2ZVJ1bGVzIjpbXSwiZ2V0UnVsZSI6W119
+CASE legacy-tab OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXSwiZ2l2ZVJ1bGVzIjpbXSwiZ2V0UnVsZSI6W119
 
 TYPE com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredCustomContract
-CASE blank OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXX0=
-CASE json-empty OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXX0=
+CASE blank OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXSwiZ2l2ZVJ1bGVzIjpbXSwiZ2V0UnVsZSI6W119
+CASE json-empty OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXSwiZ2l2ZVJ1bGVzIjpbW11dLCJnZXRSdWxlIjpbXX0=
 CASE json-malformed ERROR java.io.EOFException
-CASE legacy-zero OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXX0=
-CASE legacy-tab OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXX0=
+CASE legacy-zero OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXSwiZ2l2ZVJ1bGVzIjpbXSwiZ2V0UnVsZSI6W119
+CASE legacy-tab OUT eyJ0ZXJtcyI6W10sImNoZXN0SWRzIjpbXSwiZ2l2ZVJ1bGVzIjpbXSwiZ2V0UnVsZSI6W119
 
 TYPE com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectAddTag
 CASE blank OUT eyJ0YWciOiIiLCJkZWxheSI6MCwidXNlclNvdXJjZSI6MH0=

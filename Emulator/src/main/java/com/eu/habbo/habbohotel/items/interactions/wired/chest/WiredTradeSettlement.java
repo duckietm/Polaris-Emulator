@@ -1,5 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 
+import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract;
+import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract.Term;
 import com.eu.habbo.habbohotel.users.Habbo;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -23,7 +25,7 @@ public final class WiredTradeSettlement {
     private WiredTradeSettlement() {}
 
     /** What a settlement will do, once it is known to be possible. */
-    public record Plan(List<Integer> itemsToTake, List<ContractTerm> currencyToTake, List<ContractTerm> rewardToGive) {}
+    public record Plan(List<Integer> itemsToTake, List<Term> currencyToTake, List<Term> rewardToGive) {}
 
     /**
      * Work out whether the exchange can happen, without moving anything.
@@ -36,26 +38,26 @@ public final class WiredTradeSettlement {
      */
     public static Plan plan(
             IntUnaryOperator walletBalance,
-            List<ContractTerm> paidRule,
+            List<Term> paidRule,
             List<Integer> consumedItemIds,
-            List<ContractTerm> reward,
+            List<Term> reward,
             ChestStorage chestContents) {
         if (paidRule == null || consumedItemIds == null || reward == null) return null;
 
         // Settled on the rule's total, the same way the requirement was judged: two terms in one rule
         // asking for five each need ten, not five twice over.
         Map<Integer, Integer> currencyNeeded = new LinkedHashMap<>();
-        for (ContractTerm term : paidRule) {
+        for (Term term : paidRule) {
             if (term != null && term.isCurrency() && term.amount > 0) {
                 currencyNeeded.merge(term.currencyType, term.amount, Integer::sum);
             }
         }
 
-        List<ContractTerm> currencyToTake = new ArrayList<>();
+        List<Term> currencyToTake = new ArrayList<>();
         for (Map.Entry<Integer, Integer> entry : currencyNeeded.entrySet()) {
             int held = walletBalance == null ? 0 : walletBalance.applyAsInt(entry.getKey());
             if (held < entry.getValue()) return null;
-            currencyToTake.add(ContractTerm.currency(ContractTerm.DIR_PAY, entry.getKey(), entry.getValue()));
+            currencyToTake.add(Term.currency(InteractionWiredContract.DIR_PAY, entry.getKey(), entry.getValue()));
         }
 
         // A chest-backed contract may only hand out what the chest actually holds. Without this a
@@ -63,7 +65,7 @@ public final class WiredTradeSettlement {
         if (chestContents != null) {
             Map<Integer, Integer> currencyOwed = new LinkedHashMap<>();
             Map<Integer, Integer> furniOwed = new LinkedHashMap<>();
-            for (ContractTerm term : reward) {
+            for (Term term : reward) {
                 if (term == null || term.amount <= 0) continue;
                 if (term.isFurni()) furniOwed.merge(term.baseItemId, term.amount, Integer::sum);
                 else currencyOwed.merge(term.currencyType, term.amount, Integer::sum);
@@ -91,7 +93,7 @@ public final class WiredTradeSettlement {
     public static void apply(Habbo habbo, Plan plan, InteractionWiredChest chest, ItemRelease release) {
         if (habbo == null || plan == null) return;
 
-        for (ContractTerm term : plan.currencyToTake()) {
+        for (Term term : plan.currencyToTake()) {
             ChestWiredCurrencyUtil.take(habbo, term.currencyType, term.amount);
             if (chest != null) {
                 chest.getContents().add(ChestStorage.KIND_CURRENCY, term.currencyType, term.amount);
@@ -102,7 +104,7 @@ public final class WiredTradeSettlement {
             if (release != null) release.release(itemId, chest);
         }
 
-        for (ContractTerm term : plan.rewardToGive()) {
+        for (Term term : plan.rewardToGive()) {
             if (term.amount <= 0) continue;
 
             if (term.isCurrency()) {
@@ -115,7 +117,7 @@ public final class WiredTradeSettlement {
 
             if (chest != null) {
                 ChestWiredFurniUtil.giveFromChestByType(
-                        habbo, chest, term.wallItem, term.baseItemId, term.legacyPosterId, term.amount);
+                        habbo, chest, term.wallItem, term.baseItemId, term.posterId(), term.amount);
             } else {
                 ChestWiredFurniUtil.mintToInventory(habbo, term.wallItem, term.baseItemId, term.amount);
             }

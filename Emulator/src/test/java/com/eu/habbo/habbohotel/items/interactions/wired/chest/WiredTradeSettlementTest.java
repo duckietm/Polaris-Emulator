@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradeSettlement.Plan;
+import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract;
+import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract.Term;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntUnaryOperator;
@@ -24,12 +26,12 @@ class WiredTradeSettlementTest {
         return type -> balances.getOrDefault(type, 0);
     }
 
-    private static ContractTerm coins(int direction, int amount) {
-        return ContractTerm.currency(direction, CREDITS, amount);
+    private static Term coins(int direction, int amount) {
+        return Term.currency(direction, CREDITS, amount);
     }
 
-    private static ContractTerm furni(int direction, int baseItemId, int amount) {
-        return ContractTerm.furni(direction, false, baseItemId, "", amount);
+    private static Term furni(int direction, int baseItemId, int amount) {
+        return Term.furni(direction, false, baseItemId, "", amount);
     }
 
     private static ChestStorage chestWith(int kind, int type, int quantity) {
@@ -41,7 +43,11 @@ class WiredTradeSettlementTest {
     @Test
     void aPlanCarriesTheExactItemsThatWereOffered() {
         Plan plan = WiredTradeSettlement.plan(
-                wallet(Map.of()), List.of(furni(ContractTerm.DIR_PAY, CHAIR, 2)), List.of(101, 102), List.of(), null);
+                wallet(Map.of()),
+                List.of(furni(InteractionWiredContract.DIR_PAY, CHAIR, 2)),
+                List.of(101, 102),
+                List.of(),
+                null);
 
         assertNotNull(plan);
         assertEquals(List.of(101, 102), plan.itemsToTake());
@@ -51,7 +57,7 @@ class WiredTradeSettlementTest {
     void currencyIsPlannedOnTheRuleTotal() {
         Plan plan = WiredTradeSettlement.plan(
                 wallet(Map.of(CREDITS, 10)),
-                List.of(coins(ContractTerm.DIR_PAY, 5), coins(ContractTerm.DIR_PAY, 5)),
+                List.of(coins(InteractionWiredContract.DIR_PAY, 5), coins(InteractionWiredContract.DIR_PAY, 5)),
                 List.of(),
                 List.of(),
                 null);
@@ -65,7 +71,7 @@ class WiredTradeSettlementTest {
     void aWalletThatCannotCoverTheTotalRefusesTheWholePlan() {
         assertNull(WiredTradeSettlement.plan(
                 wallet(Map.of(CREDITS, 9)),
-                List.of(coins(ContractTerm.DIR_PAY, 5), coins(ContractTerm.DIR_PAY, 5)),
+                List.of(coins(InteractionWiredContract.DIR_PAY, 5), coins(InteractionWiredContract.DIR_PAY, 5)),
                 List.of(),
                 List.of(),
                 null));
@@ -77,9 +83,9 @@ class WiredTradeSettlementTest {
 
         assertNull(WiredTradeSettlement.plan(
                 wallet(Map.of(CREDITS, 100)),
-                List.of(coins(ContractTerm.DIR_PAY, 1)),
+                List.of(coins(InteractionWiredContract.DIR_PAY, 1)),
                 List.of(),
-                List.of(coins(ContractTerm.DIR_RECEIVE, 5)),
+                List.of(coins(InteractionWiredContract.DIR_RECEIVE, 5)),
                 nearlyEmpty));
     }
 
@@ -89,9 +95,9 @@ class WiredTradeSettlementTest {
 
         Plan plan = WiredTradeSettlement.plan(
                 wallet(Map.of(CREDITS, 100)),
-                List.of(coins(ContractTerm.DIR_PAY, 1)),
+                List.of(coins(InteractionWiredContract.DIR_PAY, 1)),
                 List.of(),
-                List.of(coins(ContractTerm.DIR_RECEIVE, 5)),
+                List.of(coins(InteractionWiredContract.DIR_RECEIVE, 5)),
                 stocked);
 
         assertNotNull(plan);
@@ -108,14 +114,20 @@ class WiredTradeSettlementTest {
                 wallet(Map.of()),
                 List.of(),
                 List.of(),
-                List.of(furni(ContractTerm.DIR_RECEIVE, CHAIR, 3), furni(ContractTerm.DIR_RECEIVE, CHAIR, 3)),
+                List.of(
+                        furni(InteractionWiredContract.DIR_RECEIVE, CHAIR, 3),
+                        furni(InteractionWiredContract.DIR_RECEIVE, CHAIR, 3)),
                 stocked));
     }
 
     @Test
     void aContractWithoutAChestMintsAndSoIsNeverShort() {
         Plan plan = WiredTradeSettlement.plan(
-                wallet(Map.of()), List.of(), List.of(), List.of(furni(ContractTerm.DIR_RECEIVE, CHAIR, 999)), null);
+                wallet(Map.of()),
+                List.of(),
+                List.of(),
+                List.of(furni(InteractionWiredContract.DIR_RECEIVE, CHAIR, 999)),
+                null);
 
         assertNotNull(plan);
     }

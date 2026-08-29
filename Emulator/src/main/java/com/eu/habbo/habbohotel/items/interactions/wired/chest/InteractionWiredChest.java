@@ -70,6 +70,19 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
         this.contents = ChestStorage.fromJson(set.getString("wired_data"));
         resolveLegacySpriteIds(this.contents);
+
+        if (this.isStarterChest()) this.contents.applyStarterCeiling();
+    }
+
+    /**
+     * Whether this is the starter chest players are given rather than one they bought.
+     *
+     * <p>Read off the furni it is, because that is the only thing that distinguishes one: it holds
+     * less and it cannot be made bigger, which is the whole point of handing one out.
+     */
+    public boolean isStarterChest() {
+        Item base = this.getBaseItem();
+        return base != null && base.getName() != null && base.getName().endsWith("_starter");
     }
 
     /**

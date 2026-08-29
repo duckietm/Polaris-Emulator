@@ -35,6 +35,9 @@ public class ChestStorage {
     public static final int CAPACITY_STEP = 5000;
     public static final int MAX_CAPACITY = 1_000_000;
 
+    /** What a starter chest holds. Deliberately below {@link #DEFAULT_CAPACITY}: it is a taste. */
+    public static final int STARTER_CAPACITY = 500;
+
     /** A single chest row. {@code type} is the currency type (KIND_CURRENCY) or base item id (KIND_FURNI). */
     public static class Entry {
         public int kind;
@@ -396,6 +399,21 @@ public class ChestStorage {
 
     public void setCapacityMax(int value) {
         this.capacityMax = Math.max(DEFAULT_CAPACITY, Math.min(MAX_CAPACITY, value));
+    }
+
+    /**
+     * Shrink a starter chest to its own ceiling.
+     *
+     * <p>Separate from {@link #setCapacityMax(int)} because that one floors at the ordinary default
+     * -- which is the right guard for a chest somebody bought and the wrong one for a chest that is
+     * meant to be small. Only applied while the chest is still at its default, so a starter that was
+     * somehow grown keeps what it has rather than losing it.
+     */
+    public synchronized void applyStarterCeiling() {
+        if (this.capacityMax != DEFAULT_CAPACITY) return;
+
+        this.capacityMax = STARTER_CAPACITY;
+        if (this.capacity > STARTER_CAPACITY || this.capacity <= 0) this.capacity = STARTER_CAPACITY;
     }
 
     public int getAppearanceState() {

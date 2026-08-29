@@ -55,6 +55,12 @@ public class ChestUpgradeCapacityEvent extends MessageHandler {
             return;
         }
 
+        // A starter chest is a taste, not a foundation: it does not grow.
+        if (chest.isStarterChest()) {
+            this.refuse(itemId, ChestUpgradeResultComposer.RESULT_STARTER_CHEST);
+            return;
+        }
+
         ChestStorage c = chest.getContents();
         if (c.getCapacityMax() + (ChestStorage.CAPACITY_STEP * quantity) > ChestStorage.MAX_CAPACITY) {
             this.refuse(itemId, ChestUpgradeResultComposer.RESULT_AT_CAPACITY);

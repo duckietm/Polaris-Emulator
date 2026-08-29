@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.catalog.versioning;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
@@ -101,7 +102,8 @@ class CatalogLiveMutationServiceTest {
     void recordsTheClientOperationIdInTheSameLiveTransaction() throws Exception {
         CatalogVersionSnapshot physicalLive = new CatalogVersionSnapshot(
                 versions.loadVersion(connection, ACTIVE_VERSION_ID), List.of(page(true)), List.of());
-        when(liveSnapshots.load(eq(connection), any(CatalogVersion.class))).thenReturn(physicalLive);
+        when(liveSnapshots.loadForMutation(eq(connection), any(CatalogVersion.class), any(CatalogMutationScope.class)))
+                .thenReturn(physicalLive);
         when(operations.findForUpdate(connection, "save-page-1", 7)).thenReturn(Optional.empty());
         CatalogLiveMutationService physicalService = new CatalogLiveMutationService(
                 serviceDataSource(), versions, journal, snapshots, liveSnapshots, live, hook, null, operations, gson);
@@ -393,6 +395,60 @@ class CatalogLiveMutationServiceTest {
                         99,
                         CatalogChangeOperation.UPDATE,
                         gson.toJson(page(false))))));
+    }
+
+    @Test
+    void aSaveReadsOnlyTheOffersTheBatchCanReach() throws Exception {
+        CatalogOfferSnapshot existing = new CatalogOfferSnapshot(
+                CatalogPageType.NORMAL, 42, "12", 17, "chair", 3, 0, 0, 1, 0, 1, -1, 0, "", true, false);
+        CatalogVersionSnapshot physicalLive = new CatalogVersionSnapshot(
+                versions.loadVersion(connection, ACTIVE_VERSION_ID), List.of(page(true)), List.of(existing));
+        ArgumentCaptor<CatalogMutationScope> scope = ArgumentCaptor.forClass(CatalogMutationScope.class);
+        when(liveSnapshots.loadForMutation(eq(connection), any(CatalogVersion.class), scope.capture()))
+                .thenReturn(physicalLive);
+        CatalogDraftOfferData offer =
+                new CatalogDraftOfferData("12", 17, "chair", 3, 0, 0, 1, 0, 1, -1, 0, "", true, false);
+        CatalogLiveMutationService physicalService = new CatalogLiveMutationService(
+                serviceDataSource(), versions, journal, snapshots, liveSnapshots, live, hook, null, gson);
+
+        physicalService.applyBatch(List.of(new CatalogLiveMutationRequest(
+                -1,
+                7,
+                "Update offer",
+                CatalogEntityType.OFFER,
+                CatalogPageType.NORMAL,
+                42,
+                CatalogChangeOperation.UPDATE,
+                gson.toJson(offer))));
+
+        // The whole catalog is never read for one edit; only what the batch names.
+        verify(liveSnapshots, org.mockito.Mockito.never()).load(eq(connection), any(CatalogVersion.class));
+        assertEquals(java.util.Set.of(42), scope.getValue().offerIds(CatalogPageType.NORMAL));
+        assertTrue(scope.getValue().pageIds(CatalogPageType.NORMAL).isEmpty());
+    }
+
+    @Test
+    void aPageEditAlsoReachesTheOffersSittingOnIt() throws Exception {
+        CatalogVersionSnapshot physicalLive = new CatalogVersionSnapshot(
+                versions.loadVersion(connection, ACTIVE_VERSION_ID), List.of(page(true)), List.of());
+        ArgumentCaptor<CatalogMutationScope> scope = ArgumentCaptor.forClass(CatalogMutationScope.class);
+        when(liveSnapshots.loadForMutation(eq(connection), any(CatalogVersion.class), scope.capture()))
+                .thenReturn(physicalLive);
+        CatalogLiveMutationService physicalService = new CatalogLiveMutationService(
+                serviceDataSource(), versions, journal, snapshots, liveSnapshots, live, hook, null, gson);
+
+        physicalService.applyBatch(List.of(new CatalogLiveMutationRequest(
+                -1,
+                7,
+                "Change visibility",
+                CatalogEntityType.PAGE,
+                CatalogPageType.NORMAL,
+                17,
+                CatalogChangeOperation.UPDATE,
+                gson.toJson(page(false)))));
+
+        // A page edit can orphan or free the offers on that page, so they are read with it.
+        assertEquals(java.util.Set.of(17), scope.getValue().pageIds(CatalogPageType.NORMAL));
     }
 
     private static CatalogPageSnapshot page(boolean visible) {

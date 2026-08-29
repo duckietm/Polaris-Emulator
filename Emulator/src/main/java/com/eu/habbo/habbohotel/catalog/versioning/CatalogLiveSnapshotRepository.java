@@ -12,4 +12,15 @@ public interface CatalogLiveSnapshotRepository {
     default CatalogVersionSnapshot loadForRead(Connection connection, CatalogVersion version) throws SQLException {
         return load(connection, version);
     }
+
+    /**
+     * Reads every page, and only the offers the given mutations can reach, locking what it reads.
+     *
+     * <p>Defaults to the full locking read, so an implementation that cannot narrow stays correct -
+     * a snapshot with more offers than needed is never wrong, only slower.
+     */
+    default CatalogVersionSnapshot loadForMutation(
+            Connection connection, CatalogVersion version, CatalogMutationScope scope) throws SQLException {
+        return load(connection, version);
+    }
 }

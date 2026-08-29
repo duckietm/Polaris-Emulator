@@ -2,11 +2,14 @@ package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import io.netty.buffer.ByteBuf;
 import java.nio.charset.StandardCharsets;
@@ -125,6 +128,47 @@ class ChestExtradataWireTest {
 
         assertEquals(MAP_FORMAT + LIMITED_FLAG, wire.format());
         assertEquals(8, wire.trailingBytes(), "expected exactly the two limited ints and nothing else");
+    }
+
+    @Test
+    void aRestingFurniChestIsClosed() {
+        InteractionWiredChestFurni chest = new InteractionWiredChestFurni(1, 2, mock(Item.class), "", 0, 0);
+
+        // Exactly what the database holds for a real chest: the default appearance mode, nobody
+        // looking inside. The sprite's frame 0 is the closed chest, so this must be "0".
+        assertEquals(0, chest.getContents().getAppearanceState());
+        assertEquals("0", read(chest).data().get("state"));
+    }
+
+    @Test
+    void aFurniChestOpensWhileSomebodyLooksInside() {
+        InteractionWiredChestFurni chest = new InteractionWiredChestFurni(1, 2, mock(Item.class), "", 0, 0);
+        Habbo viewer = mock(Habbo.class, RETURNS_DEEP_STUBS);
+        when(viewer.getHabboInfo().getId()).thenReturn(99);
+
+        chest.openFor(viewer, null);
+        assertEquals("1", read(chest).data().get("state"));
+
+        chest.closeFor(viewer, null);
+        assertEquals("0", read(chest).data().get("state"));
+    }
+
+    @Test
+    void aViewerWhoLeftTheRoomStopsHoldingTheLidOpen() {
+        InteractionWiredChestFurni chest = new InteractionWiredChestFurni(1, 2, mock(Item.class), "", 0, 0);
+        Habbo viewer = mock(Habbo.class, RETURNS_DEEP_STUBS);
+        when(viewer.getHabboInfo().getId()).thenReturn(99);
+
+        chest.openFor(viewer, null);
+        assertEquals("1", read(chest).data().get("state"));
+
+        // They are gone, and their client never got to say so -- a reload, a crash, an older build.
+        Room room = mock(Room.class);
+        when(room.getHabbo(99)).thenReturn(null);
+        chest.pruneViewers(room);
+
+        assertEquals(
+                "0", read(chest).data().get("state"), "a chest whose only viewer has left must not stay open forever");
     }
 
     @Test

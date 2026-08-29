@@ -108,10 +108,26 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
         return !this.viewers.isEmpty();
     }
 
+    /**
+     * Forget anyone who is no longer in the room.
+     *
+     * <p>The client says when it closes a chest, but a client that reloads, crashes or is simply an
+     * older build never gets to. A viewer who has left the room certainly is not looking inside, and
+     * without this the lid would stay up for the rest of the room's life -- which is exactly how a
+     * chest ends up permanently open for everybody.
+     */
+    // Package-private so the leak this guards against can be tested without a live room.
+    void pruneViewers(Room room) {
+        if (room == null || this.viewers.isEmpty()) return;
+
+        this.viewers.removeIf(id -> room.getHabbo(id) == null);
+    }
+
     /** @return true when this changed the furni's appearance, so the caller knows to tell the room */
     public boolean openFor(Habbo habbo, Room room) {
         if (habbo == null) return false;
 
+        this.pruneViewers(room);
         int before = this.visualState();
         this.viewers.add(habbo.getHabboInfo().getId());
         if (this.visualState() == before) return false;
@@ -124,6 +140,7 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
     public boolean closeFor(Habbo habbo, Room room) {
         if (habbo == null) return false;
 
+        this.pruneViewers(room);
         int before = this.visualState();
         this.viewers.remove(habbo.getHabboInfo().getId());
         if (this.visualState() == before) return false;
@@ -253,6 +270,8 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
      * a packet to everyone standing there.
      */
     public void publishState(Room room) {
+        this.pruneViewers(room);
+
         int state = this.visualState();
         if (room == null || state == this.publishedState) return;
 

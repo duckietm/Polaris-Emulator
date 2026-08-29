@@ -302,6 +302,7 @@ FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest
 METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog#details(int,int):com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Details throws -
 METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog#normalizeFilter(int):int throws -
 METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog#page(int,int,int,int):com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Page throws -
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog#page(int,int,int,int,int):com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog$Page throws -
 METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog#prune(int):void throws -
 METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog#record(int,int,int,int,int,com.eu.habbo.habbohotel.users.Habbo,int,int,int,java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniStoredItem>):void throws -
 

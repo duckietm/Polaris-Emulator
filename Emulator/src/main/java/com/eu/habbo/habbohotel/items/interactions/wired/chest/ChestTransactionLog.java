@@ -161,15 +161,26 @@ public final class ChestTransactionLog {
      * Read one page of a room's transactions, newest first. Page numbers are 1-based; a page past the
      * end comes back empty rather than as an error, so a stale client just renders nothing.
      */
+    /** Every chest in the room. */
     public static Page page(int roomId, int filter, int amount, int page) {
+        return page(roomId, filter, amount, page, 0);
+    }
+
+    /**
+     * One page of the log, optionally narrowed to a single chest.
+     *
+     * @param chestId the chest to read, or zero for the whole room. A room with a dozen chests in
+     *     it produces a log nobody can read; this is how you ask about the one you care about.
+     */
+    public static Page page(int roomId, int filter, int amount, int page, int chestId) {
         int size = Math.max(1, Math.min(amount, MAX_PAGE_SIZE));
         int requested = Math.max(1, page);
         int normalizedFilter = normalizeFilter(filter);
 
         if (requested == 1) prune(roomId);
 
-        String where = "room_id = ?" + filterClause(normalizedFilter);
-        int totalRows = count(roomId, where);
+        String where = "room_id = ?" + filterClause(normalizedFilter) + chestClause(chestId);
+        int totalRows = count(roomId, where, chestId);
         int pageCount = Math.max(1, (int) Math.ceil(totalRows / (double) size));
         int current = Math.min(requested, pageCount);
         List<Row> rows = new ArrayList<>();
@@ -179,9 +190,11 @@ public final class ChestTransactionLog {
                         + " transaction_type, source, user_id, user_name, currency_type, withdrawn, deposited,"
                         + " details IS NOT NULL AS has_details, timestamp FROM wired_chest_transactions WHERE "
                         + where + " ORDER BY id DESC LIMIT ? OFFSET ?")) {
-            statement.setInt(1, roomId);
-            statement.setInt(2, size);
-            statement.setInt(3, (current - 1) * size);
+            int index = 1;
+            statement.setInt(index++, roomId);
+            if (chestId > 0) statement.setInt(index++, chestId);
+            statement.setInt(index++, size);
+            statement.setInt(index, (current - 1) * size);
 
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) rows.add(readRow(set));
@@ -229,11 +242,12 @@ public final class ChestTransactionLog {
         }
     }
 
-    private static int count(int roomId, String where) {
+    private static int count(int roomId, String where, int chestId) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement =
                         connection.prepareStatement("SELECT COUNT(*) FROM wired_chest_transactions WHERE " + where)) {
             statement.setInt(1, roomId);
+            if (chestId > 0) statement.setInt(2, chestId);
             try (ResultSet set = statement.executeQuery()) {
                 if (set.next()) return set.getInt(1);
             }
@@ -262,6 +276,11 @@ public final class ChestTransactionLog {
     /** Only the filter values the client may send; anything else reads as "everything". */
     public static int normalizeFilter(int filter) {
         return (filter == FILTER_CURRENCY || filter == FILTER_FURNI) ? filter : FILTER_ALL;
+    }
+
+    /** Bound as a parameter rather than inlined: a chest id arrives from the client. */
+    private static String chestClause(int chestId) {
+        return chestId > 0 ? " AND chest_id = ?" : "";
     }
 
     private static String filterClause(int filter) {

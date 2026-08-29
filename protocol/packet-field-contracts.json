@@ -16389,6 +16389,11 @@
           "kind": "scalar",
           "type": "int",
           "name": "filter"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "chestId"
         }
       ]
     },

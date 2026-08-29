@@ -16474,6 +16474,82 @@
       ]
     },
     {
+      "name": "WIRED_TRADE_ACCEPT",
+      "direction": "client_to_server",
+      "header": 9336,
+      "java": {
+        "symbol": "WiredTradeAcceptEvent",
+        "className": "WiredTradeAcceptEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/WiredTradeAcceptEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_TRADE_ACCEPT",
+        "className": "WiredTradeAcceptComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/WiredTradeAcceptComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "confirm"
+        }
+      ]
+    },
+    {
+      "name": "WIRED_TRADE_CANCEL",
+      "direction": "client_to_server",
+      "header": 9337,
+      "java": {
+        "symbol": "WiredTradeCancelEvent",
+        "className": "WiredTradeCancelEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/WiredTradeCancelEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_TRADE_CANCEL",
+        "className": "WiredTradeCancelComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/WiredTradeCancelComposer.ts"
+      },
+      "fields": []
+    },
+    {
+      "name": "WIRED_TRADE_CANCELLED",
+      "direction": "server_to_client",
+      "header": 9333,
+      "java": {
+        "symbol": "WiredTradeCancelledComposer",
+        "className": "WiredTradeCancelledComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/items/WiredTradeCancelledComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_TRADE_CANCELLED",
+        "className": "WiredTradeCancelledMessageParser",
+        "path": "packages/communication/src/messages/parser/room/furniture/WiredTradeCancelledMessageParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "failureId"
+        }
+      ]
+    },
+    {
+      "name": "WIRED_TRADE_COMPLETED",
+      "direction": "server_to_client",
+      "header": 9334,
+      "java": {
+        "symbol": "WiredTradeCompletedComposer",
+        "className": "WiredTradeCompletedComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/items/WiredTradeCompletedComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_TRADE_COMPLETED",
+        "className": "WiredTradeCompletedMessageParser",
+        "path": "packages/communication/src/messages/parser/room/furniture/WiredTradeCompletedMessageParser.ts"
+      },
+      "fields": []
+    },
+    {
       "name": "WHEEL_RESULT",
       "direction": "server_to_client",
       "header": 9402,
@@ -23713,6 +23789,54 @@
         "symbol": "WIRED_CHEST_TRANSACTION_DETAILS",
         "className": "WiredChestTransactionDetailsMessageParser",
         "path": "packages/communication/src/messages/parser/room/furniture/WiredChestTransactionDetailsMessageParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
+      "name": "WIRED_TRADE_OFFER_ITEMS",
+      "direction": "client_to_server",
+      "header": 9335,
+      "java": {
+        "symbol": "WiredTradeOfferItemsEvent",
+        "className": "WiredTradeOfferItemsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/WiredTradeOfferItemsEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_TRADE_OFFER_ITEMS",
+        "className": "WiredTradeOfferItemsComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/WiredTradeOfferItemsComposer.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
+      "name": "WIRED_TRADE_OPEN",
+      "direction": "server_to_client",
+      "header": 9331,
+      "java": {
+        "symbol": "WiredTradeOpenComposer",
+        "className": "WiredTradeOpenComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/items/WiredTradeOpenComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_TRADE_OPEN",
+        "className": "WiredTradeOpenMessageParser",
+        "path": "packages/communication/src/messages/parser/room/furniture/WiredTradeOpenMessageParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
+      "name": "WIRED_TRADE_ITEMS",
+      "direction": "server_to_client",
+      "header": 9332,
+      "java": {
+        "symbol": "WiredTradeItemsComposer",
+        "className": "WiredTradeItemsComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/items/WiredTradeItemsComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_TRADE_ITEMS",
+        "className": "WiredTradeItemsMessageParser",
+        "path": "packages/communication/src/messages/parser/room/furniture/WiredTradeItemsMessageParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },

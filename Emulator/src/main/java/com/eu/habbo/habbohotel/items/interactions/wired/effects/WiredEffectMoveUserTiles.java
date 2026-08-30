@@ -31,7 +31,7 @@ public class WiredEffectMoveUserTiles extends InteractionWiredEffect {
     private static final int MIN_TILE_COUNT = 1;
     private static final int MAX_TILE_COUNT = 10;
 
-    public static final WiredEffectType type = WiredEffectType.MOVE_ROTATE_USER;
+    public static final WiredEffectType type = WiredEffectType.MOVE_USER_TILES;
 
     private int movementDirection = -1;
     private int rotationDirection = -1;

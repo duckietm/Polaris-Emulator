@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class WiredEffectSit extends InteractionWiredEffect {
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredEffectSit.class);
-    public static final WiredEffectType type = WiredEffectType.KICK_USER;
+    public static final WiredEffectType type = WiredEffectType.USER_TARGET;
 
     private String message = "";
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;

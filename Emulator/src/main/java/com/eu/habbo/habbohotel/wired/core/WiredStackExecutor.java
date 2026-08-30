@@ -186,6 +186,8 @@ final class WiredStackExecutor {
             this.hooks.executeEffects(stack, executableEffects, context, currentTime);
         }
 
+        reportUnresolvedSources(roomDiagnostics, state, monitorSourceLabel, monitorSourceId);
+
         fireExecutedEvent(stack, event);
         long elapsedMs = state.elapsedMs();
         roomDiagnostics.recordExecution(
@@ -202,6 +204,51 @@ final class WiredStackExecutor {
                 elapsedMs,
                 WiredStructuredDiagnostics.Outcome.EXECUTED);
         return true;
+    }
+
+    /**
+     * A chain that fires and finds nothing to act on used to be completely silent: no error, no log,
+     * nothing in the monitor. Whoever built it had no way to tell "the trigger never fired" from "the
+     * effect had no furni". One line per firing, naming the sources that came back empty.
+     */
+    private void reportUnresolvedSources(
+            WiredRoomDiagnostics diagnostics, WiredState state, String sourceLabel, int sourceId) {
+        if (state.unresolvedFurniSources().isEmpty()
+                && state.unresolvedUserSources().isEmpty()) {
+            return;
+        }
+
+        StringBuilder reason = new StringBuilder("Nothing to act on:");
+        if (!state.unresolvedFurniSources().isEmpty()) {
+            reason.append(" furni source ").append(describeSources(state.unresolvedFurniSources()));
+        }
+        if (!state.unresolvedUserSources().isEmpty()) {
+            reason.append(" user source ").append(describeSources(state.unresolvedUserSources()));
+        }
+
+        diagnostics.recordNoTargets(this.clock.getAsLong(), reason.toString(), sourceLabel, sourceId);
+    }
+
+    private static String describeSources(Set<Integer> sources) {
+        StringBuilder names = new StringBuilder();
+        for (Integer source : sources) {
+            if (names.length() > 0) {
+                names.append(", ");
+            }
+            names.append(describeSource(source));
+        }
+        return names.toString();
+    }
+
+    private static String describeSource(int source) {
+        return switch (source) {
+            case WiredSourceUtil.SOURCE_TRIGGER -> "the triggering item";
+            case WiredSourceUtil.SOURCE_CLICKED_USER -> "the clicked user";
+            case WiredSourceUtil.SOURCE_SELECTED -> "the picked furni";
+            case WiredSourceUtil.SOURCE_SELECTOR -> "the selector";
+            case WiredSourceUtil.SOURCE_SIGNAL -> "the signal";
+            default -> "source " + source;
+        };
     }
 
     private void logMatchedStack(Room room, WiredStack stack, WiredEvent event, boolean negateConditions, Mode mode) {

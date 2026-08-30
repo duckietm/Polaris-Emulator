@@ -33,6 +33,14 @@ public final class WiredState {
     private String abortReason;
 
     /**
+     * Sources that answered with nothing during this run. Kept as a small ordered set so one firing
+     * reports "furni source 200" once, however many effects asked for it.
+     */
+    private final java.util.LinkedHashSet<Integer> unresolvedFurniSources = new java.util.LinkedHashSet<>();
+
+    private final java.util.LinkedHashSet<Integer> unresolvedUserSources = new java.util.LinkedHashSet<>();
+
+    /**
      * Create a new wired state with the specified step limit.
      * @param maxSteps maximum number of steps allowed (triggers, conditions, effects)
      */
@@ -54,6 +62,24 @@ public final class WiredState {
     static WiredState restoreDelayedSnapshot(
             UUID runId, int maxSteps, int steps, long startTimeMs, boolean aborted, String abortReason) {
         return new WiredState(runId, maxSteps, steps, startTimeMs, aborted, abortReason);
+    }
+
+    /** Note that a furni source resolved to nothing, so the firing can say so once it is over. */
+    void noteUnresolvedFurniSource(int sourceType) {
+        this.unresolvedFurniSources.add(sourceType);
+    }
+
+    /** Note that a user source resolved to nothing. */
+    void noteUnresolvedUserSource(int sourceType) {
+        this.unresolvedUserSources.add(sourceType);
+    }
+
+    java.util.Set<Integer> unresolvedFurniSources() {
+        return this.unresolvedFurniSources;
+    }
+
+    java.util.Set<Integer> unresolvedUserSources() {
+        return this.unresolvedUserSources;
     }
 
     /**

@@ -86,7 +86,13 @@ public enum WiredEffectType {
     CHANGE_OPACITY(114),
     // Walking to a furni borrowed TELEPORT, whose dialog offers a "teleport instantly" checkbox. This
     // effect calls setGoalLocation and walks: the flag is stored, serialized and never consulted.
-    WALK_TO_FURNI(115);
+    WALK_TO_FURNI(115),
+    // Sitting, lying and fast-walking borrowed KICK_USER, whose dialog asks for the message shown to
+    // the person being kicked. These three store it and never read it: nobody is being kicked.
+    USER_TARGET(116),
+    // Moving a user several tiles borrowed MOVE_ROTATE_USER, whose dialog sends three slots. This
+    // effect reads a fourth, the tile count, so it was stuck at one tile whatever the box was for.
+    MOVE_USER_TILES(117);
 
     public final int code;
 

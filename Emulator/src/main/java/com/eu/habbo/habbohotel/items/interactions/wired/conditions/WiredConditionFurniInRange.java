@@ -34,7 +34,7 @@ public class WiredConditionFurniInRange extends InteractionWiredCondition {
     private static final int QUANTIFIER_ALL = 0;
     private static final int QUANTIFIER_ANY = 1;
 
-    public static final WiredConditionType type = WiredConditionType.HAS_ALTITUDE;
+    public static final WiredConditionType type = WiredConditionType.FURNI_RANGE;
 
     private final HashSet<HabboItem> items;
     private int comparison = COMPARISON_EQUAL;

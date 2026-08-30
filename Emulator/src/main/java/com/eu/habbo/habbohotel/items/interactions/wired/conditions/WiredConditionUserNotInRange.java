@@ -36,7 +36,7 @@ public class WiredConditionUserNotInRange extends InteractionWiredCondition {
     private static final int QUANTIFIER_ALL = 0;
     private static final int QUANTIFIER_ANY = 1;
 
-    public static final WiredConditionType type = WiredConditionType.HAS_ALTITUDE;
+    public static final WiredConditionType type = WiredConditionType.USER_RANGE;
 
     private int comparison = COMPARISON_EQUAL;
     private double radius = 0.0D;

@@ -68,7 +68,14 @@ public enum WiredConditionType {
     // "Badge code", and with the badge's length limit rather than their own.
     USER_TAG(54),
     NOT_USER_TAG(55),
-    USER_MOTTO(56);
+    USER_MOTTO(56),
+    // The three shapes that borrowed HAS_ALTITUDE. Its dialog gates furni selection to game counters,
+    // which leaves the borrowers unable to pick the furni they are about; it also names the value an
+    // altitude when it is a radius, offers furni sources where users are resolved, and carries a
+    // comparison operator that the property checks never read.
+    USER_RANGE(57),
+    FURNI_RANGE(58),
+    FURNI_PROPERTY(59);
 
     public final int code;
 

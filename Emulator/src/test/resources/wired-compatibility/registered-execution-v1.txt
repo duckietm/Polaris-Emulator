@@ -9,7 +9,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionChestH
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionChestHasItems | CONDITION | type=CHEST_HAS_ITEMS | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionCounterTimeMatches | CONDITION | type=COUNTER_TIME_MATCHES | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionDateRangeActive | CONDITION | type=DATE_RANGE | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFrozen | CONDITION | type=ACTOR_WEARS_EFFECT | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFrozen | CONDITION | type=USER_STATE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniHaveFurni | CONDITION | type=FURNI_HAS_FURNI | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniHaveHabbo | CONDITION | type=FURNI_HAVE_HABBO | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniInRange | CONDITION | type=HAS_ALTITUDE | operator=AND | evaluate=false
@@ -41,7 +41,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionMatchT
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionMoreTimeElapsed | CONDITION | type=TIME_MORE_THAN | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionMottoContains | CONDITION | type=ACTOR_WEARS_BADGE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionMovementValidation | CONDITION | type=MOVEMENT_VALIDATION | operator=AND | evaluate=true
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotFrozen | CONDITION | type=NOT_ACTOR_WEARS_EFFECT | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotFrozen | CONDITION | type=NOT_USER_STATE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotFurniHaveFurni | CONDITION | type=NOT_FURNI_HAVE_FURNI | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotFurniHaveHabbo | CONDITION | type=NOT_FURNI_HAVE_HABBO | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotFurniTypeMatch | CONDITION | type=NOT_STUFF_IS | operator=AND | evaluate=true

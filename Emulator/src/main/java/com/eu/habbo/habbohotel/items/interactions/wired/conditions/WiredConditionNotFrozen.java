@@ -10,8 +10,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
+/**
+ * Passes when the resolved user is NOT frozen. Answers {@link WiredConditionType#NOT_USER_STATE} so the
+ * dialog drops the effect id and phrases its quantifier the way a negated condition reads.
+ */
 public class WiredConditionNotFrozen extends WiredConditionHabboHasEffect {
-    private static final WiredConditionType type = WiredConditionType.NOT_ACTOR_WEARS_EFFECT;
+    private static final WiredConditionType type = WiredConditionType.NOT_USER_STATE;
 
     public WiredConditionNotFrozen(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);

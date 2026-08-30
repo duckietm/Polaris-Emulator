@@ -12,7 +12,7 @@ import java.sql.SQLException;
  * SHOW_MESSAGE(7) client text dialog (NEG_LOG shares code 7).
  */
 public class WiredEffectNegativeLog extends WiredEffectLog {
-    public static final WiredEffectType type = WiredEffectType.NEG_LOG;
+    public static final WiredEffectType type = WiredEffectType.EFFECT_MESSAGE;
 
     public WiredEffectNegativeLog(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);

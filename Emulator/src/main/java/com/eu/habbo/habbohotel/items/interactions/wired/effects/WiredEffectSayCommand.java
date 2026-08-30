@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 public class WiredEffectSayCommand extends InteractionWiredEffect {
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredEffectSayCommand.class);
 
-    public static final WiredEffectType type = WiredEffectType.SHOW_MESSAGE;
+    public static final WiredEffectType type = WiredEffectType.EFFECT_TEXT;
 
     private String command = "";
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;

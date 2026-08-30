@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class WiredEffectGiveBadge extends InteractionWiredEffect {
-    public static final WiredEffectType type = WiredEffectType.SHOW_MESSAGE;
+    public static final WiredEffectType type = WiredEffectType.EFFECT_BADGE;
 
     private String badge = "";
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;

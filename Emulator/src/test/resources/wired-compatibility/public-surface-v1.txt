@@ -1577,6 +1577,7 @@ TYPE public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffect
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectAlert(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectAlert(java.sql.ResultSet,com.eu.habbo.habbohotel.items.Item) throws java.sql.SQLException
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectAlert#execute(com.eu.habbo.habbohotel.wired.core.WiredContext):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectAlert#getType(-):com.eu.habbo.habbohotel.wired.WiredEffectType throws -
 
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectAllUsersLeaveTeam extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectAllUsersLeaveTeam#type:com.eu.habbo.habbohotel.wired.WiredEffectType
@@ -1976,6 +1977,7 @@ TYPE public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffect
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveEffect(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveEffect(java.sql.ResultSet,com.eu.habbo.habbohotel.items.Item) throws java.sql.SQLException
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveEffect#execute(com.eu.habbo.habbohotel.wired.core.WiredContext):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveEffect#getType(-):com.eu.habbo.habbohotel.wired.WiredEffectType throws -
 
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveExperience extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveExperience#type:com.eu.habbo.habbohotel.wired.WiredEffectType
@@ -2011,6 +2013,7 @@ TYPE public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffect
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveHandItem(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveHandItem(java.sql.ResultSet,com.eu.habbo.habbohotel.items.Item) throws java.sql.SQLException
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveHandItem#execute(com.eu.habbo.habbohotel.wired.core.WiredContext):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveHandItem#getType(-):com.eu.habbo.habbohotel.wired.WiredEffectType throws -
 
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveHotelviewBonusRarePoints extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveHotelviewBonusRarePoints#type:com.eu.habbo.habbohotel.wired.WiredEffectType
@@ -4757,6 +4760,12 @@ ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 79 CHANGE_OPACITY
 ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 80 WALK_TO_FURNI
 ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 81 USER_TARGET
 ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 82 MOVE_USER_TILES
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 83 EFFECT_AMOUNT
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 84 EFFECT_BADGE
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 85 EFFECT_TAG
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 86 EFFECT_ID
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 87 EFFECT_MESSAGE
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 88 EFFECT_TEXT
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#ADJUST_CLOCK:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#BOT_CLOTHES:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#BOT_DANCE:com.eu.habbo.habbohotel.wired.WiredEffectType
@@ -4772,6 +4781,12 @@ FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#CHANGE_O
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#CHANGE_VAR_VAL:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#CHASE:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#CONTROL_CLOCK:com.eu.habbo.habbohotel.wired.WiredEffectType
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#EFFECT_AMOUNT:com.eu.habbo.habbohotel.wired.WiredEffectType
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#EFFECT_BADGE:com.eu.habbo.habbohotel.wired.WiredEffectType
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#EFFECT_ID:com.eu.habbo.habbohotel.wired.WiredEffectType
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#EFFECT_MESSAGE:com.eu.habbo.habbohotel.wired.WiredEffectType
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#EFFECT_TAG:com.eu.habbo.habbohotel.wired.WiredEffectType
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#EFFECT_TEXT:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#FLEE:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#FREEZE:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#FURNI_ALTITUDE_SELECTOR:com.eu.habbo.habbohotel.wired.WiredEffectType

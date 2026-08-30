@@ -29,7 +29,7 @@ import java.util.List;
  * Persisted on the user's next data save (matching the mimic path).
  */
 public class WiredEffectGiveLook extends InteractionWiredEffect {
-    public static final WiredEffectType type = WiredEffectType.SHOW_MESSAGE;
+    public static final WiredEffectType type = WiredEffectType.EFFECT_TEXT;
 
     private static final int MAX_LOOK_LENGTH = 256;
 

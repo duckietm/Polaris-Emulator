@@ -26,7 +26,7 @@ import java.util.List;
  * {@link InClientLinkComposer}, as proven by ClickUserEvent / InteractionInformationTerminal.
  */
 public class WiredEffectOpenHabboPages extends InteractionWiredEffect {
-    public static final WiredEffectType type = WiredEffectType.SHOW_MESSAGE;
+    public static final WiredEffectType type = WiredEffectType.EFFECT_TEXT;
 
     private String link = "";
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;

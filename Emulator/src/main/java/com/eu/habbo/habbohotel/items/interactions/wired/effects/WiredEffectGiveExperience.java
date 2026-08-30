@@ -26,7 +26,7 @@ import java.util.List;
  * capped by {@link WiredNumericInputGuard#maxRewardAmount()} per execution to bound abuse.
  */
 public class WiredEffectGiveExperience extends InteractionWiredEffect {
-    public static final WiredEffectType type = WiredEffectType.SHOW_MESSAGE;
+    public static final WiredEffectType type = WiredEffectType.EFFECT_AMOUNT;
 
     private int amount = 0;
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;

@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class WiredEffectGiveRespect extends InteractionWiredEffect {
-    public static final WiredEffectType type = WiredEffectType.SHOW_MESSAGE;
+    public static final WiredEffectType type = WiredEffectType.EFFECT_AMOUNT;
 
     private int respects = 0;
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;

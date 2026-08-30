@@ -27,7 +27,7 @@ import java.util.List;
  * selector) like {@link WiredEffectGiveRespect}, so it needs no new client dialog. Amount capped.
  */
 public class WiredEffectGiveDiamonds extends InteractionWiredEffect {
-    public static final WiredEffectType type = WiredEffectType.SHOW_MESSAGE;
+    public static final WiredEffectType type = WiredEffectType.EFFECT_AMOUNT;
 
     private int amount = 0;
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;

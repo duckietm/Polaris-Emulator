@@ -78,7 +78,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredCustom
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectAddTag | EFFECT | type=EFFECT_TAG | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectAdjustClock | EFFECT | type=ADJUST_CLOCK | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectAlert | EFFECT | type=EFFECT_MESSAGE | actor=true | execute=OK
-com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectAllUsersLeaveTeam | EFFECT | type=LEAVE_TEAM | actor=true | execute=OK
+com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectAllUsersLeaveTeam | EFFECT | type=ALL_USERS_LEAVE_TEAM | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectBotClothes | EFFECT | type=BOT_CLOTHES | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectBotFollowHabbo | EFFECT | type=BOT_FOLLOW_AVATAR | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectBotGiveHandItem | EFFECT | type=BOT_GIVE_HANDITEM | actor=true | execute=OK

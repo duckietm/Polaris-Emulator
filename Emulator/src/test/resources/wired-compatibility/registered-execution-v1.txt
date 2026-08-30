@@ -152,7 +152,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectToggleRandom
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectTriggerStacks | EFFECT | type=CALL_STACKS | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectUnfreeze | EFFECT | type=UNFREEZE | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectUserToFurni | EFFECT | type=USER_TO_FURNI | actor=true | execute=OK
-com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectWalkToFurni | EFFECT | type=TELEPORT | actor=true | execute=OK
+com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectWalkToFurni | EFFECT | type=WALK_TO_FURNI | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectWhisper | EFFECT | type=SHOW_MESSAGE | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraAnimationTime | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextVariable | EXTRA | configured=true | execute=false

@@ -130,9 +130,13 @@ TYPE public final com.eu.habbo.habbohotel.items.interactions.wired.WiredNumericI
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.WiredNumericInputGuard#DEFAULT_MAX_RESPECT_AMOUNT:int
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.WiredNumericInputGuard#DEFAULT_MAX_REWARD_AMOUNT:int
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.WiredNumericInputGuard#MAX_ABSOLUTE_AMOUNT:int
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.WiredNumericInputGuard#clampAmount(int,int):int throws -
 METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.WiredNumericInputGuard#maxRespectAmount(-):int throws -
 METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.WiredNumericInputGuard#maxRewardAmount(-):int throws -
 METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.WiredNumericInputGuard#parsePositiveAmount(java.lang.String,int):int throws -
+
+TYPE public final com.eu.habbo.habbohotel.items.interactions.wired.WiredRewardPolicy extends java.lang.Object
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.WiredRewardPolicy#canConfigure(com.eu.habbo.habbohotel.gameclients.GameClient):boolean throws -
 
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings extends java.lang.Object
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings(int[],java.lang.String,int[],int) throws -

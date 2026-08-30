@@ -727,6 +727,7 @@ U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectWalkToFurn
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectWalkToFurni.java|CALL|getRandom|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectWhisper.java|CALL|getConfig|3
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectWhisper.java|CALL|getGameEnvironment|3
+U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredLinkPolicy.java|CALL|getConfig|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/extra/WiredExtraContextVariable.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/extra/WiredExtraFurniVariable.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/extra/WiredExtraOrEval.java|CALL|getConfig|1

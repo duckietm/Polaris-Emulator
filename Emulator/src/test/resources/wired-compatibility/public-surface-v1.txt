@@ -4608,6 +4608,9 @@ ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 51 NOT_USER_STATE
 ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 52 USER_TAG
 ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 53 NOT_USER_TAG
 ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 54 USER_MOTTO
+ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 55 USER_RANGE
+ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 56 FURNI_RANGE
+ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 57 FURNI_PROPERTY
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#ACTOR_DIR:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#ACTOR_HAS_HANDITEM:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#ACTOR_IN_GROUP:com.eu.habbo.habbohotel.wired.WiredConditionType
@@ -4620,6 +4623,8 @@ FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#COUNT
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#DATE_RANGE:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#FURNI_HAS_FURNI:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#FURNI_HAVE_HABBO:com.eu.habbo.habbohotel.wired.WiredConditionType
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#FURNI_PROPERTY:com.eu.habbo.habbohotel.wired.WiredConditionType
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#FURNI_RANGE:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#HAS_ALTITUDE:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#HAS_VAR:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#MATCH_DATE:com.eu.habbo.habbohotel.wired.WiredConditionType
@@ -4659,6 +4664,7 @@ FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#USER_
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#USER_MOTTO:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#USER_ON_FURNI_WITH_STATE:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#USER_PERFORMS_ACTION:com.eu.habbo.habbohotel.wired.WiredConditionType
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#USER_RANGE:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#USER_STATE:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#USER_TAG:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#VAR_AGE_MATCH:com.eu.habbo.habbohotel.wired.WiredConditionType

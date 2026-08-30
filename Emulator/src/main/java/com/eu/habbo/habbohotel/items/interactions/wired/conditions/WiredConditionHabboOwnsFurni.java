@@ -29,7 +29,7 @@ public class WiredConditionHabboOwnsFurni extends InteractionWiredCondition {
     protected static final int QUANTIFIER_ALL = 0;
     protected static final int QUANTIFIER_ANY = 1;
 
-    public static final WiredConditionType type = WiredConditionType.HAS_ALTITUDE;
+    public static final WiredConditionType type = WiredConditionType.FURNI_PROPERTY;
 
     protected final HashSet<HabboItem> items;
     protected int furniSource = WiredSourceUtil.SOURCE_TRIGGER;

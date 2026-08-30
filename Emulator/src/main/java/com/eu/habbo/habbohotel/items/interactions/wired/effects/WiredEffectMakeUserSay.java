@@ -20,6 +20,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredTextPlaceholderUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+import com.eu.habbo.messages.outgoing.rooms.users.RoomUserTalkComposer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -171,6 +172,7 @@ public class WiredEffectMakeUserSay extends InteractionWiredEffect {
             }
 
             List<RoomUnit> sourceUsers = resolveUsers(ctx);
+            boolean toEveryone = this.visibilitySelection == VISIBILITY_ALL_ROOM_USERS;
 
             for (RoomUnit unit : sourceUsers) {
                 Habbo h = room.getHabbo(unit);
@@ -178,18 +180,35 @@ public class WiredEffectMakeUserSay extends InteractionWiredEffect {
                     continue;
                 }
 
-                String msg = buildMessage(ctx, h);
-                room.talk(
-                        h,
-                        new RoomChatMessage(msg, unit, RoomChatMessageBubbles.getBubble(this.bubbleStyle)),
-                        RoomChatType.TALK,
-                        true);
+                RoomChatMessage chatMessage = new RoomChatMessage(
+                        buildMessage(ctx, h), unit, RoomChatMessageBubbles.getBubble(this.bubbleStyle));
+
+                if (toEveryone) {
+                    room.talk(h, chatMessage, RoomChatType.TALK, true);
+                } else {
+                    sayToSpeakerOnly(h, chatMessage);
+                }
 
                 if (h.getRoomUnit().isIdle()) {
                     h.getRoomUnit().getRoom().unIdle(h);
                 }
             }
         }
+    }
+
+    /**
+     * The dialog's "message visibility" choice, which this box stored and never read. Everyone goes
+     * through the room's own chat path, so distance, ignore lists and tents keep applying; the narrow
+     * choice puts the bubble on the speaker's own screen only, and needs none of that filtering because
+     * the speaker is the single recipient.
+     */
+    private void sayToSpeakerOnly(Habbo speaker, RoomChatMessage chatMessage) {
+        GameClient client = speaker.getClient();
+        if (client == null) {
+            return;
+        }
+
+        client.sendResponse(new RoomUserTalkComposer(chatMessage));
     }
 
     @Deprecated

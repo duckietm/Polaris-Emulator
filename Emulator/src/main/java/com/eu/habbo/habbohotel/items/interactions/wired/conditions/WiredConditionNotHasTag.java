@@ -16,7 +16,7 @@ import java.util.List;
  * reuses the same tag text dialog via NOT_ACTOR_WEARS_BADGE.
  */
 public class WiredConditionNotHasTag extends WiredConditionHasTag {
-    public static final WiredConditionType type = WiredConditionType.NOT_ACTOR_WEARS_BADGE;
+    public static final WiredConditionType type = WiredConditionType.NOT_USER_TAG;
 
     public WiredConditionNotHasTag(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);

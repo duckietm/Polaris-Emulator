@@ -62,7 +62,13 @@ public enum WiredConditionType {
     // These used to borrow ACTOR_WEARS_EFFECT, whose dialog asked for an effect id that the predicate
     // never read: the check is WiredFreezeUtil.isFrozen, not an effect comparison.
     USER_STATE(52),
-    NOT_USER_STATE(53);
+    NOT_USER_STATE(53),
+    // A piece of text read off the user that is not a badge code. These borrowed ACTOR_WEARS_BADGE,
+    // whose field is genuinely used here — only mislabelled: a tag and a motto were both presented as
+    // "Badge code", and with the badge's length limit rather than their own.
+    USER_TAG(54),
+    NOT_USER_TAG(55),
+    USER_MOTTO(56);
 
     public final int code;
 

@@ -35,8 +35,8 @@ class WiredSourceTriggerFallbackTest {
         HabboItem walkedOn = mock(HabboItem.class);
         HabboItem wiredBox = mock(HabboItem.class);
 
-        List<HabboItem> resolved = WiredSourceUtil.resolveItemsRaw(
-                contextWith(walkedOn, wiredBox), WiredSourceUtil.SOURCE_TRIGGER, null);
+        List<HabboItem> resolved =
+                WiredSourceUtil.resolveItemsRaw(contextWith(walkedOn, wiredBox), WiredSourceUtil.SOURCE_TRIGGER, null);
 
         assertEquals(1, resolved.size());
         assertSame(walkedOn, resolved.get(0), "the walked-on furni, not the wired box");

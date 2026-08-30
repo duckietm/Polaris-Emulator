@@ -27,9 +27,15 @@ public final class WiredSourceUtil {
             return resolvedItems;
         }
 
-        return (sourceType == SOURCE_SELECTOR)
+        List<HabboItem> filtered = (sourceType == SOURCE_SELECTOR)
                 ? resolvedItems
                 : WiredSelectionFilterSupport.filterItems(ctx.room(), ctx.triggerItem(), ctx, resolvedItems);
+
+        if (filtered.isEmpty() && ctx.state() != null) {
+            ctx.state().noteUnresolvedFurniSource(sourceType);
+        }
+
+        return filtered;
     }
 
     public static List<HabboItem> resolveItemsRaw(
@@ -48,9 +54,15 @@ public final class WiredSourceUtil {
             return resolvedUsers;
         }
 
-        return (sourceType == SOURCE_SELECTOR)
+        List<RoomUnit> filtered = (sourceType == SOURCE_SELECTOR)
                 ? resolvedUsers
                 : WiredSelectionFilterSupport.filterUsers(ctx.room(), ctx.triggerItem(), ctx, resolvedUsers);
+
+        if (filtered.isEmpty() && ctx.state() != null) {
+            ctx.state().noteUnresolvedUserSource(sourceType);
+        }
+
+        return filtered;
     }
 
     public static List<RoomUnit> resolveUsersRaw(WiredContext ctx, int sourceType) {

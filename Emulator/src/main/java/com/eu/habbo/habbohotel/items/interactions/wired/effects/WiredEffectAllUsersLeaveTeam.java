@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.List;
 
 public class WiredEffectAllUsersLeaveTeam extends InteractionWiredEffect {
-    public static final WiredEffectType type = WiredEffectType.LEAVE_TEAM;
+    public static final WiredEffectType type = WiredEffectType.ALL_USERS_LEAVE_TEAM;
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;
 
     public WiredEffectAllUsersLeaveTeam(ResultSet set, Item baseItem) throws SQLException {

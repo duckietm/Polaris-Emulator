@@ -1,7 +1,9 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.triggers;
 
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredTriggerType;
+import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -17,5 +19,15 @@ public class WiredTriggerTeamWins extends WiredTriggerGameStarts {
     @Override
     public WiredTriggerType getType() {
         return WiredTriggerType.CUSTOM;
+    }
+    /**
+     * Both team-result triggers report {@link WiredTriggerType#CUSTOM}, so
+     * {@code RoomSpecialTypes.getTriggers} hands the engine the same set for either event and the
+     * inherited {@code matches} accepts everything. Without this check a room's "wins" wired ran on
+     * team loses as well.
+     */
+    @Override
+    public boolean matches(HabboItem triggerItem, WiredEvent event) {
+        return event != null && event.getType() == WiredEvent.Type.TEAM_WINS;
     }
 }

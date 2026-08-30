@@ -231,7 +231,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerRepeater |
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerRepeaterLong | TRIGGER | type=PERIODICALLY_LONG | event=TIMER_REPEAT_LONG | actor=false | match=true
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerRepeaterShort | TRIGGER | type=PERIODICALLY_SHORT | event=TIMER_REPEAT_SHORT | actor=false | match=true
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerScoreAchieved | TRIGGER | type=SCORE_ACHIEVED | event=SCORE_ACHIEVED | actor=true | match=false
-com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTeamLoses | TRIGGER | type=CUSTOM | event=TEAM_WINS | actor=false | match=true
+com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTeamLoses | TRIGGER | type=CUSTOM | event=TEAM_WINS | actor=false | match=false
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTeamWins | TRIGGER | type=CUSTOM | event=TEAM_WINS | actor=false | match=true
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTransactionComplete | TRIGGER | type=TRANSACTION_COMPLETE | event=TRANSACTION_COMPLETE | actor=false | match=true
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTransactionFail | TRIGGER | type=TRANSACTION_FAIL | event=TRANSACTION_FAIL | actor=false | match=true

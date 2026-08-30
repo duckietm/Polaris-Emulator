@@ -563,6 +563,7 @@ U|com/eu/habbo/habbohotel/items/interactions/pets/InteractionPetToy.java|CALL|ge
 U|com/eu/habbo/habbohotel/items/interactions/pets/InteractionPetTrampoline.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/WiredInputGuard.java|CALL|getConfig|4
 U|com/eu/habbo/habbohotel/items/interactions/wired/WiredNumericInputGuard.java|CALL|getConfig|2
+U|com/eu/habbo/habbohotel/items/interactions/wired/WiredRewardPolicy.java|CALL|getConfig|2
 U|com/eu/habbo/habbohotel/items/interactions/wired/chest/ChestFurniDepositHelper.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/chest/ChestTransactionLog.java|CALL|getDatabase|5
 U|com/eu/habbo/habbohotel/items/interactions/wired/chest/ChestTransactionLog.java|CALL|getIntUnixTimestamp|2

@@ -4933,6 +4933,7 @@ ENUM com.eu.habbo.habbohotel.wired.WiredTriggerType 30 TRANSACTION_FAIL
 ENUM com.eu.habbo.habbohotel.wired.WiredTriggerType 31 USER_GETS_HANDITEM
 ENUM com.eu.habbo.habbohotel.wired.WiredTriggerType 32 DICE_ROLLED
 ENUM com.eu.habbo.habbohotel.wired.WiredTriggerType 33 PRESS_KEYBIND
+ENUM com.eu.habbo.habbohotel.wired.WiredTriggerType 34 TEAM_GAME_RESULT
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredTriggerType#AT_GIVEN_TIME:com.eu.habbo.habbohotel.wired.WiredTriggerType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredTriggerType#BOT_REACHED_AVTR:com.eu.habbo.habbohotel.wired.WiredTriggerType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredTriggerType#BOT_REACHED_STF:com.eu.habbo.habbohotel.wired.WiredTriggerType
@@ -4959,6 +4960,7 @@ FIELD public static final com.eu.habbo.habbohotel.wired.WiredTriggerType#SCORE_A
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredTriggerType#STARTS_DANCING:com.eu.habbo.habbohotel.wired.WiredTriggerType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredTriggerType#STATE_CHANGED:com.eu.habbo.habbohotel.wired.WiredTriggerType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredTriggerType#STOPS_DANCING:com.eu.habbo.habbohotel.wired.WiredTriggerType
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredTriggerType#TEAM_GAME_RESULT:com.eu.habbo.habbohotel.wired.WiredTriggerType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredTriggerType#TRANSACTION_COMPLETE:com.eu.habbo.habbohotel.wired.WiredTriggerType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredTriggerType#TRANSACTION_FAIL:com.eu.habbo.habbohotel.wired.WiredTriggerType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredTriggerType#UNIDLES:com.eu.habbo.habbohotel.wired.WiredTriggerType

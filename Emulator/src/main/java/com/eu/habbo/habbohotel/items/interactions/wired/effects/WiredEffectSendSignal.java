@@ -142,19 +142,38 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
             usersToSend = Collections.singletonList(triggeringUser);
         }
 
-        Collection<HabboItem> furniToSend =
-                !forwardedFurni.isEmpty() ? forwardedFurni : Collections.singletonList(null);
+        // "Send signal for each furni", the mirror of signalPerUser, which this box stored and never
+        // read: it always split. Off now means one signal carrying the first forwarded furni, so the
+        // receiving stack still has a source item to work with and reads the full count from
+        // @signal_furni_count.
+        Collection<HabboItem> furniToSend;
+        if (forwardedFurni.isEmpty()) {
+            furniToSend = Collections.singletonList(null);
+        } else if (signalPerFurni) {
+            furniToSend = forwardedFurni;
+        } else {
+            furniToSend = Collections.singletonList(forwardedFurni.get(0));
+        }
 
         int nextDepth = currentDepth + 1;
         int signalUserCount = signalPerUser
                 ? (int) usersToSend.stream().filter(Objects::nonNull).count()
                 : (!forwardedUsers.isEmpty() ? forwardedUsers.size() : (triggeringUser != null ? 1 : 0));
+        int signalFurniCount = forwardedFurni.size();
 
         for (RoomUnit user : usersToSend) {
             for (HabboItem sourceItem : furniToSend) {
                 for (HabboItem antenna : resolvedAntennas) {
                     fireSignalAtAntenna(
-                            ctx, room, antenna, user, triggeringUser, sourceItem, signalUserCount, nextDepth);
+                            ctx,
+                            room,
+                            antenna,
+                            user,
+                            triggeringUser,
+                            sourceItem,
+                            signalUserCount,
+                            signalFurniCount,
+                            nextDepth);
                 }
             }
         }
@@ -168,6 +187,7 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
             RoomUnit originActor,
             HabboItem sourceItem,
             int signalUserCount,
+            int signalFurniCount,
             int depth) {
         if (antenna == null) return;
         RoomTile tile = room.getLayout().getTile(antenna.getX(), antenna.getY());
@@ -192,7 +212,7 @@ public class WiredEffectSendSignal extends InteractionWiredEffect {
                 .callStackDepth(depth)
                 .signalChannel(signalChannel)
                 .signalUserCount(signalUserCount)
-                .signalFurniCount(sourceItem != null ? 1 : 0)
+                .signalFurniCount(signalFurniCount)
                 .contextVariableScope(ctx.contextVariables().copy())
                 .triggeredByEffect(true);
 

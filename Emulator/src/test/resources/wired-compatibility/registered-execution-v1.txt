@@ -5,6 +5,7 @@
 com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestCurrency | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestFurni | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionActorDir | CONDITION | type=ACTOR_DIR | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionBattleBanzaiRunning | CONDITION | type=NO_BATTLEBANZAI | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionChestHasItemType | CONDITION | type=CHEST_HAS_ITEM_TYPE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionChestHasItems | CONDITION | type=CHEST_HAS_ITEMS | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionCounterTimeMatches | CONDITION | type=COUNTER_TIME_MATCHES | operator=AND | evaluate=false
@@ -17,6 +18,8 @@ com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniN
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniTypeMatch | CONDITION | type=STUFF_IS | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionGroupMember | CONDITION | type=ACTOR_IN_GROUP | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboCount | CONDITION | type=USER_COUNT | operator=AND | evaluate=true
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasCredits | CONDITION | type=USER_AMOUNT | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasDuckets | CONDITION | type=USER_AMOUNT | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasEffect | CONDITION | type=ACTOR_WEARS_EFFECT | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasHandItem | CONDITION | type=ACTOR_HAS_HANDITEM | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasMinItems | CONDITION | type=USER_AMOUNT | operator=AND | evaluate=false

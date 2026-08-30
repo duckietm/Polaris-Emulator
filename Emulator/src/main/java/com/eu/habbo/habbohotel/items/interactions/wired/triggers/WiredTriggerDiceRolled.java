@@ -97,7 +97,7 @@ public class WiredTriggerDiceRolled extends InteractionWiredTrigger {
         String wiredData = set.getString("wired_data");
 
         if (wiredData != null && wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            JsonData data = parsePayload(wiredData);
             if (data != null) {
                 this.requiredValue = Math.max(ANY_VALUE, data.requiredValue);
             }
@@ -112,6 +112,19 @@ public class WiredTriggerDiceRolled extends InteractionWiredTrigger {
     @Override
     public boolean isTriggeredByRoomUnit() {
         return false;
+    }
+
+    /**
+     * A truncated document leaves Gson throwing EOFException, which is checked - so it escapes a
+     * RuntimeException catch and takes the whole furni load down. Anything unreadable is simply no
+     * configuration.
+     */
+    private static JsonData parsePayload(String wiredData) {
+        try {
+            return WiredManager.getGson().fromJson(wiredData, JsonData.class);
+        } catch (Exception exception) {
+            return null;
+        }
     }
 
     static class JsonData {

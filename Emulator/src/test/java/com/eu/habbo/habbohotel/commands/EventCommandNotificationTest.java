@@ -18,9 +18,20 @@ class EventCommandNotificationTest {
     }
 
     @Test
-    void reportsAnEmptyMessageWhenOnlyTheCommandWasTyped() {
+    void leavesTheMessageEmptyWhenOnlyTheCommandWasTyped() {
+        // Announcing without a message is allowed, so this is a valid result and not
+        // an error the command has to report.
         assertEquals("", EventCommand.joinMessage(new String[] {":event"}));
         assertEquals("", EventCommand.joinMessage(new String[] {":event", "   "}));
+    }
+
+    @Test
+    void announcesTheRoomEvenWithNoMessageToShow() {
+        Map<String, String> keys = EventCommand.notificationKeys("Piazza", 47, "Simo", "hd-180-1", "16:43", "", true);
+
+        assertEquals("", keys.get("MESSAGE"));
+        assertEquals("navigator/goto/47", keys.get("linkUrl"));
+        assertEquals("Piazza", keys.get("ROOMNAME"));
     }
 
     @Test

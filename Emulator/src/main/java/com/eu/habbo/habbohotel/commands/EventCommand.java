@@ -100,12 +100,9 @@ public class EventCommand extends Command {
         }
 
         boolean closing = isClosingArgument(params);
+        // The message is optional: ":event" on its own announces the room, and the
+        // client leaves out the box that would have held the text.
         String message = closing ? "" : joinMessage(params);
-
-        if (!closing && message.isEmpty()) {
-            sender.whisperLocalized("commands.error.cmd_event.usage", RoomChatMessageBubbles.ALERT);
-            return true;
-        }
 
         Map<String, String> keys = notificationKeys(
                 room.getName(),

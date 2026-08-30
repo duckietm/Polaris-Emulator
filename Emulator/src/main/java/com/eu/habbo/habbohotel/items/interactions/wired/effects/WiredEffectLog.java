@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
@@ -88,7 +89,33 @@ public class WiredEffectLog extends InteractionWiredEffect {
 
     @Override
     public void execute(WiredContext ctx) {
-        LOGGER.info("[WiredLog room {}] {}", ctx.room().getId(), this.message);
+        LOGGER.info("[WiredLog room {}] {}{}", ctx.room().getId(), this.message, describeUsers(ctx));
+    }
+
+    /**
+     * The dialog carries a user source and the log line never mentioned who. It names them now, so a
+     * line written for "the triggering user" can be told apart from one written for the whole room.
+     * Empty when the source resolves to nobody, which keeps a log line that never needed a user clean.
+     */
+    private String describeUsers(WiredContext ctx) {
+        List<RoomUnit> users = WiredSourceUtil.resolveUsers(ctx, this.userSource);
+        if (users.isEmpty()) {
+            return "";
+        }
+
+        Room room = ctx.room();
+        StringBuilder names = new StringBuilder();
+
+        for (RoomUnit unit : users) {
+            Habbo habbo = (room != null) ? room.getHabbo(unit) : null;
+            String name = (habbo != null && habbo.getHabboInfo() != null)
+                    ? habbo.getHabboInfo().getUsername()
+                    : ("#" + unit.getId());
+
+            names.append(names.isEmpty() ? "" : ", ").append(name);
+        }
+
+        return " [" + names + "]";
     }
 
     @Override

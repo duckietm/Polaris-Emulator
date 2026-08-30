@@ -19,6 +19,16 @@ public class InteractionWiredChestCurrency extends InteractionWiredChest {
     /** Client WiredActionLayoutCode value for the chest dialog. */
     public static final int CODE = 100;
 
+    /**
+     * The coin chest's sprite states are one axis, not two: zero is the closed chest, and one to four
+     * are the open chest with progressively more gold in it. Being open and being full are not
+     * separate questions for this furni.
+     */
+    private static final int CLOSED = 0;
+
+    private static final int OPEN_EMPTY = 1;
+    private static final int OPEN_FULLEST = 4;
+
     public static final int CURRENCY_CREDITS = -1;
 
     public InteractionWiredChestCurrency(ResultSet set, Item baseItem) throws SQLException {
@@ -41,6 +51,30 @@ public class InteractionWiredChestCurrency extends InteractionWiredChest {
         // "Tutti possono aprire" toggle: anyone if accessOpen, otherwise room rights only.
         if (!this.contents.isAccessOpen() && !room.hasRights(client.getHabbo())) return;
         ChestOpenHelper.open(client, this, room);
+    }
+
+    /**
+     * Closed unless the chest should be showing open, and then open at whatever the gold inside comes
+     * to. An empty open chest is its own state, so a chest with nothing in it still opens its lid
+     * rather than reading as shut.
+     */
+    @Override
+    protected int visualState() {
+        if (!this.showsOpen()) return CLOSED;
+
+        int stored = this.storedCount();
+        if (stored <= 0) return OPEN_EMPTY;
+
+        // Three fuller sprites share the ceiling between them, so a chest filled to the brim shows
+        // the fullest one rather than stopping a step short.
+        int ceiling = Math.max(1, this.contents.getCapacity());
+        int level = OPEN_EMPTY + 1 + (int) ((long) (stored - 1) * 3 / ceiling);
+        return Math.min(level, OPEN_FULLEST);
+    }
+
+    @Override
+    protected int storedCount() {
+        return this.contents.total(ChestStorage.KIND_CURRENCY);
     }
 
     @Override

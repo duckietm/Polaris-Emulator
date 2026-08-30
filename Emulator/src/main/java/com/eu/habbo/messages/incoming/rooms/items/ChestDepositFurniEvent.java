@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniPackets;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniStoredItem;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -86,7 +87,18 @@ public class ChestDepositFurniEvent extends MessageHandler {
 
         contents.addLog(new ChestStorage.LogEntry(
                 "deposit", System.currentTimeMillis(), habbo.getHabboInfo().getUsername(), 0, deposited));
-        chest.persistContents();
+        ChestTransactionLog.record(
+                room.getId(),
+                chest.getId(),
+                ChestStorage.KIND_FURNI,
+                ChestTransactionLog.TYPE_DEPOSIT,
+                ChestTransactionLog.SOURCE_USER,
+                habbo,
+                -1,
+                0,
+                deposited,
+                added);
+        chest.persistContents(room);
 
         for (HabboItem removed : toRemove) {
             habbo.getClient().sendResponse(new RemoveHabboItemComposer(removed.getGiftAdjustedId()));
@@ -94,7 +106,7 @@ public class ChestDepositFurniEvent extends MessageHandler {
         habbo.getClient().sendResponse(new InventoryRefreshComposer());
         Emulator.getThreading().runPersistence(new QueryDeleteHabboItems(toRemove));
 
-        this.client.sendResponse(new ChestDataComposer(chest));
+        this.client.sendResponse(new ChestDataComposer(chest, this.client.getHabbo()));
         ChestFurniPackets.sendDelta(this.client, chest.getId(), List.of(), added);
     }
 

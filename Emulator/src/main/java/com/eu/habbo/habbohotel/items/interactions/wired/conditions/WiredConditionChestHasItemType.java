@@ -48,7 +48,8 @@ public class WiredConditionChestHasItemType extends InteractionWiredCondition {
         int total = 0;
         for (Integer id : this.chestIds) {
             HabboItem item = room.getHabboItem(id);
-            if (item instanceof InteractionWiredChest chest) {
+            // Wired only reaches a chest whose owner upgraded it to answer wired.
+            if (item instanceof InteractionWiredChest chest && chest.answersWired()) {
                 total += chest.getContents().count(ChestStorage.KIND_FURNI, this.baseItemId);
             }
         }

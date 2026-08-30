@@ -35,6 +35,12 @@ public class ChestStorage {
     public static final int CAPACITY_STEP = 5000;
     public static final int MAX_CAPACITY = 1_000_000;
 
+    /** What a starter chest holds. Deliberately below {@link #DEFAULT_CAPACITY}: it is a taste. */
+    public static final int STARTER_CAPACITY = 500;
+
+    /** How many stored items a chest can show on top of itself. The sprite has room for four. */
+    public static final int MAX_PREVIEW_ITEMS = 4;
+
     /** A single chest row. {@code type} is the currency type (KIND_CURRENCY) or base item id (KIND_FURNI). */
     public static class Entry {
         public int kind;
@@ -89,6 +95,45 @@ public class ChestStorage {
     private boolean notifyEmpty = false;
     private boolean notifyWired = false;
     private int notifyMode = 0; // 0 = always
+    /**
+     * Anti-theft switch, set from the chest's own window or across the room from the wired chests
+     * tab. A locked chest still answers wired effects but refuses everything anyone <em>else</em>
+     * does by hand, deposits included. The owner is never locked out of their own chest, which is
+     * what makes the lock safe to leave on.
+     */
+    private boolean locked = false;
+
+    /**
+     * Closes the chest by itself when its owner leaves the room, so a chest is never left open behind
+     * someone who has walked away.
+     */
+    private boolean autoLock = false;
+
+    /**
+     * Whether wired may reach this chest at all.
+     *
+     * <p>A one-way upgrade: a chest starts as storage and its owner decides to make it part of the
+     * room's machinery. It cannot be turned back off, because a room built around a chest would break
+     * the moment somebody did.
+     */
+    private boolean wiredEnabled = false;
+
+    /**
+     * Whether the chest shows some of what it holds on top of itself, and how many.
+     *
+     * <p>Off by default on purpose: a preview tells the whole room what is in your chest, which is
+     * something to opt into rather than to discover.
+     */
+    private int previewMode = 0;
+
+    private int previewAmount = 1;
+
+    /**
+     * A ceiling the owner sets by hand, at or below the capacity they have actually bought. Buying
+     * more room and choosing to use it are two different decisions: a chest can be big and still be
+     * told to stop at five hundred.
+     */
+    private int capacity = DEFAULT_CAPACITY;
 
     /** Defensive snapshot — safe to iterate off-thread; mutate the chest through the dedicated methods. */
     public synchronized List<Entry> entries() {
@@ -117,7 +162,7 @@ public class ChestStorage {
      * capacity, so a concurrent deposit can't push it over the limit. Atomic.
      */
     public synchronized boolean tryDepositFurni(ChestFurniStoredItem item) {
-        if (item == null || this.furniItems.size() >= this.getCapacityMax()) {
+        if (item == null || this.furniItems.size() >= this.getCapacity()) {
             return false;
         }
         this.addFurniItem(item);
@@ -264,7 +309,7 @@ public class ChestStorage {
     }
 
     /**
-     * Capacity-guarded currency deposit. Accepts at most what fits under {@link #getCapacityMax()},
+     * Capacity-guarded currency deposit. Accepts at most what fits under {@link #getCapacity()},
      * adds it, and returns the accepted amount (0 when full) so the caller debits the user by exactly
      * that. Atomic, so two concurrent deposits can't jointly overflow the capacity.
      */
@@ -272,7 +317,7 @@ public class ChestStorage {
         if (amount <= 0) {
             return 0;
         }
-        int capacityLeft = this.getCapacityMax() - this.total(KIND_CURRENCY);
+        int capacityLeft = this.getCapacity() - this.total(KIND_CURRENCY);
         int accepted = Math.min(amount, capacityLeft);
         if (accepted <= 0) {
             return 0;
@@ -378,6 +423,21 @@ public class ChestStorage {
         this.capacityMax = Math.max(DEFAULT_CAPACITY, Math.min(MAX_CAPACITY, value));
     }
 
+    /**
+     * Shrink a starter chest to its own ceiling.
+     *
+     * <p>Separate from {@link #setCapacityMax(int)} because that one floors at the ordinary default
+     * -- which is the right guard for a chest somebody bought and the wrong one for a chest that is
+     * meant to be small. Only applied while the chest is still at its default, so a starter that was
+     * somehow grown keeps what it has rather than losing it.
+     */
+    public synchronized void applyStarterCeiling() {
+        if (this.capacityMax != DEFAULT_CAPACITY) return;
+
+        this.capacityMax = STARTER_CAPACITY;
+        if (this.capacity > STARTER_CAPACITY || this.capacity <= 0) this.capacity = STARTER_CAPACITY;
+    }
+
     public int getAppearanceState() {
         return this.appearanceState;
     }
@@ -408,6 +468,81 @@ public class ChestStorage {
 
     public int getNotifyMode() {
         return this.notifyMode;
+    }
+
+    public boolean isLocked() {
+        return this.locked;
+    }
+
+    public void setLocked(boolean locked) {
+        this.locked = locked;
+    }
+
+    public boolean isWiredEnabled() {
+        return this.wiredEnabled;
+    }
+
+    /** One way only: a room built on a chest must not lose it. */
+    public void enableWired() {
+        this.wiredEnabled = true;
+    }
+
+    public int getPreviewMode() {
+        return this.previewMode;
+    }
+
+    public int getPreviewAmount() {
+        return Math.max(1, Math.min(this.previewAmount, MAX_PREVIEW_ITEMS));
+    }
+
+    public void setPreview(int mode, int amount) {
+        this.previewMode = mode > 0 ? 1 : 0;
+        this.previewAmount = Math.max(1, Math.min(amount, MAX_PREVIEW_ITEMS));
+    }
+
+    public boolean isAutoLock() {
+        return this.autoLock;
+    }
+
+    public void setAutoLock(boolean autoLock) {
+        this.autoLock = autoLock;
+    }
+
+    /**
+     * Close the chest because its owner has left the room.
+     *
+     * @return true when this call is what locked it, so the caller knows the state changed
+     */
+    public synchronized boolean applyAutoLockOnOwnerExit() {
+        if (!this.autoLock || this.locked) return false;
+
+        this.locked = true;
+        return true;
+    }
+
+    /** The effective ceiling: what the owner asked for, never above what they own. */
+    public synchronized int getCapacity() {
+        return Math.min(this.capacity <= 0 ? this.capacityMax : this.capacity, this.capacityMax);
+    }
+
+    public synchronized void setCapacity(int capacity) {
+        this.capacity = Math.max(1, Math.min(capacity, this.capacityMax));
+    }
+
+    /**
+     * Buy more room.
+     *
+     * <p>A ceiling that was sitting at the old maximum was not a decision, it was the absence of one,
+     * so it follows the purchase up -- paying to enlarge a chest has to enlarge it. A ceiling the
+     * owner deliberately lowered stays where they put it, and the room they just bought waits for
+     * them to use it.
+     */
+    public synchronized void growCapacity(int extra) {
+        if (extra <= 0) return;
+
+        boolean wasUsingEverything = this.capacity >= this.capacityMax || this.capacity <= 0;
+        this.setCapacityMax(this.capacityMax + extra);
+        if (wasUsingEverything) this.capacity = this.capacityMax;
     }
 
     public void setNotifications(
@@ -448,6 +583,12 @@ public class ChestStorage {
         data.notifyEmpty = this.notifyEmpty;
         data.notifyWired = this.notifyWired;
         data.notifyMode = this.notifyMode;
+        data.locked = this.locked;
+        data.autoLock = this.autoLock;
+        data.wiredEnabled = this.wiredEnabled;
+        data.previewMode = this.previewMode;
+        data.previewAmount = this.previewAmount;
+        data.capacity = this.capacity;
         data.log = this.log;
         data.furniItems = this.furniItems;
         data.nextFurniInventoryId = this.nextFurniInventoryId;
@@ -482,6 +623,17 @@ public class ChestStorage {
                 chest.notifyEmpty = data.notifyEmpty;
                 chest.notifyWired = data.notifyWired;
                 chest.notifyMode = data.notifyMode;
+                chest.locked = data.locked;
+                chest.autoLock = data.autoLock;
+                // Absent means a chest saved before the upgrade existed, and every one of those
+                // already answered wired. Reading it as "not upgraded" would silently break every
+                // room built on one.
+                chest.wiredEnabled = (data.wiredEnabled == null) || data.wiredEnabled;
+                chest.previewMode = data.previewMode;
+                chest.previewAmount = data.previewAmount <= 0 ? 1 : data.previewAmount;
+                // Absent in a payload written before the owner could set one: fall back to the
+                // bought capacity, which is what the chest behaved as.
+                chest.capacity = data.capacity > 0 ? data.capacity : chest.capacityMax;
                 if (data.log != null) {
                     for (LogEntry le : data.log) {
                         if (le != null) chest.log.add(le);
@@ -522,6 +674,12 @@ public class ChestStorage {
         boolean notifyEmpty = false;
         boolean notifyWired = false;
         int notifyMode = 0;
+        boolean locked = false;
+        boolean autoLock = false;
+        Boolean wiredEnabled;
+        int previewMode = 0;
+        int previewAmount = 1;
+        int capacity = 0;
         List<LogEntry> log;
         List<ChestFurniStoredItem> furniItems;
         int nextFurniInventoryId = 1;

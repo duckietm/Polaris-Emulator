@@ -4,7 +4,9 @@ import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestNotifications;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -63,7 +65,19 @@ public class WiredEffectGiveCurrencyFromChest extends InteractionWiredEffect {
                 int given = contents.take(ChestStorage.KIND_CURRENCY, entry.type, this.amount);
                 if (given > 0) {
                     grant(habbo, entry.type, given);
-                    chest.persistContents();
+                    ChestTransactionLog.record(
+                            room.getId(),
+                            chest.getId(),
+                            ChestStorage.KIND_CURRENCY,
+                            ChestTransactionLog.TYPE_WITHDRAW,
+                            ChestTransactionLog.SOURCE_WIRED,
+                            habbo,
+                            entry.type,
+                            given,
+                            0,
+                            null);
+                    chest.persistContents(room);
+                    ChestNotifications.wired(chest, room, given);
                 }
                 break;
             }
@@ -73,7 +87,8 @@ public class WiredEffectGiveCurrencyFromChest extends InteractionWiredEffect {
     private InteractionWiredChest resolveChest(Room room) {
         for (Integer id : this.chestIds) {
             HabboItem item = room.getHabboItem(id);
-            if (item instanceof InteractionWiredChest chest) {
+            // Wired only reaches a chest whose owner upgraded it to answer wired.
+            if (item instanceof InteractionWiredChest chest && chest.answersWired()) {
                 return chest;
             }
         }

@@ -92,7 +92,17 @@ public enum WiredEffectType {
     USER_TARGET(116),
     // Moving a user several tiles borrowed MOVE_ROTATE_USER, whose dialog sends three slots. This
     // effect reads a fourth, the tile count, so it was stuck at one tile whatever the box was for.
-    MOVE_USER_TILES(117);
+    MOVE_USER_TILES(117),
+    // Nineteen effects borrowed SHOW_MESSAGE, whose dialog is a chat composer: a message textarea, a
+    // bubble style and a visibility choice. Only the three that actually make someone speak read the
+    // last two. The rest kept the textarea for something that is not a message at all — an amount, a
+    // badge code, a tag, a room or effect id, a figure, a link, a command.
+    EFFECT_AMOUNT(118),
+    EFFECT_BADGE(119),
+    EFFECT_TAG(120),
+    EFFECT_ID(121),
+    EFFECT_MESSAGE(122),
+    EFFECT_TEXT(123);
 
     public final int code;
 

@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
-    public static final WiredEffectType type = WiredEffectType.SHOW_MESSAGE;
+    public static final WiredEffectType type = WiredEffectType.EFFECT_ID;
 
     private String roomIdText = "";
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;

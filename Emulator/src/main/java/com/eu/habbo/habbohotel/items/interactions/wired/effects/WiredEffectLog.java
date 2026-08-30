@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class WiredEffectLog extends InteractionWiredEffect {
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredEffectLog.class);
-    public static final WiredEffectType type = WiredEffectType.SHOW_MESSAGE;
+    public static final WiredEffectType type = WiredEffectType.EFFECT_MESSAGE;
 
     private String message = "";
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;

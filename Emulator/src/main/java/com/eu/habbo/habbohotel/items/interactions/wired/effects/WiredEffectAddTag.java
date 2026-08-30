@@ -26,7 +26,7 @@ import java.util.List;
  * persist (a profile tag is inherently persistent).
  */
 public class WiredEffectAddTag extends InteractionWiredEffect {
-    public static final WiredEffectType type = WiredEffectType.SHOW_MESSAGE;
+    public static final WiredEffectType type = WiredEffectType.EFFECT_TAG;
 
     private static final int MAX_TAG_LENGTH = 38;
 

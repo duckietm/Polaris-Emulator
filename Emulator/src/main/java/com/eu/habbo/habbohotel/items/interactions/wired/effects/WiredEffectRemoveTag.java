@@ -26,7 +26,7 @@ import java.util.List;
  * client dialog required.
  */
 public class WiredEffectRemoveTag extends InteractionWiredEffect {
-    public static final WiredEffectType type = WiredEffectType.SHOW_MESSAGE;
+    public static final WiredEffectType type = WiredEffectType.EFFECT_TAG;
 
     private static final int MAX_TAG_LENGTH = 38;
 

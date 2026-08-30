@@ -19,13 +19,13 @@ com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionGroupM
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboCount | CONDITION | type=USER_COUNT | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasEffect | CONDITION | type=ACTOR_WEARS_EFFECT | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasHandItem | CONDITION | type=ACTOR_HAS_HANDITEM | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasMinItems | CONDITION | type=TEAM_HAS_SCORE | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasMinItems | CONDITION | type=USER_AMOUNT | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboHasRights | CONDITION | type=USER_ATTRIBUTE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboIsFemale | CONDITION | type=USER_ATTRIBUTE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboIsMale | CONDITION | type=USER_ATTRIBUTE | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboLacksCredits | CONDITION | type=TEAM_HAS_SCORE | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboLacksDiamonds | CONDITION | type=TEAM_HAS_SCORE | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboLacksDuckets | CONDITION | type=TEAM_HAS_SCORE | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboLacksCredits | CONDITION | type=USER_AMOUNT | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboLacksDiamonds | CONDITION | type=USER_AMOUNT | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboLacksDuckets | CONDITION | type=USER_AMOUNT | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboNotHasRights | CONDITION | type=NOT_USER_ATTRIBUTE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboNotOwnsFurni | CONDITION | type=HAS_ALTITUDE | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionHabboOwnsBadge | CONDITION | type=ACTOR_WEARS_BADGE | operator=AND | evaluate=false

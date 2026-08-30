@@ -26,7 +26,7 @@ public class WiredConditionMottoContains extends InteractionWiredCondition {
     protected static final int QUANTIFIER_ANY = 1;
     protected static final int MAX_TEXT_LENGTH = 64;
 
-    public static final WiredConditionType type = WiredConditionType.ACTOR_WEARS_BADGE;
+    public static final WiredConditionType type = WiredConditionType.USER_MOTTO;
 
     protected String text = "";
     protected int userSource = WiredSourceUtil.SOURCE_TRIGGER;

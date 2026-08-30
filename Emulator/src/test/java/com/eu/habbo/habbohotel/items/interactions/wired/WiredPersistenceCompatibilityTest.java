@@ -73,7 +73,7 @@ class WiredPersistenceCompatibilityTest {
     @Test
     void matrixCoversEveryRegisteredInteractionWiredClass() throws Exception {
         Set<Class<? extends InteractionWired>> types = WiredInteractionRegistryFixture.wiredTypes();
-        assertEquals(235, types.size(), "Review every added or removed registered wired persistence type");
+        assertEquals(250, types.size(), "Review every added or removed registered wired persistence type");
     }
 
     @Test

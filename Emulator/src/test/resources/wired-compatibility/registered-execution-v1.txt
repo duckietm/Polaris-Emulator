@@ -41,6 +41,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionMatchT
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionMoreTimeElapsed | CONDITION | type=TIME_MORE_THAN | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionMottoContains | CONDITION | type=USER_MOTTO | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionMovementValidation | CONDITION | type=MOVEMENT_VALIDATION | operator=AND | evaluate=true
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNoBattleBanzaiRunning | CONDITION | type=NO_BATTLEBANZAI | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotFrozen | CONDITION | type=NOT_USER_STATE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotFurniHaveFurni | CONDITION | type=NOT_FURNI_HAVE_FURNI | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotFurniHaveHabbo | CONDITION | type=NOT_FURNI_HAVE_HABBO | operator=AND | evaluate=true
@@ -64,10 +65,12 @@ com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionSelect
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTeamHasRank | CONDITION | type=TEAM_HAS_RANK | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTeamHasScore | CONDITION | type=TEAM_HAS_SCORE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTeamMember | CONDITION | type=ACTOR_IN_TEAM | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTriggerFurniAdjacentState | CONDITION | type=TRG_FURNI_ADJACENT_STATE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTriggerOnFurni | CONDITION | type=TRIGGER_ON_FURNI | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTriggererMatch | CONDITION | type=TRIGGERER_MATCH | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserInRange | CONDITION | type=USER_RANGE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserNotInRange | CONDITION | type=USER_RANGE | operator=AND | evaluate=true
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserOnFurniWithState | CONDITION | type=USER_ON_FURNI_WITH_STATE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserPerformsAction | CONDITION | type=USER_PERFORMS_ACTION | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionVariableAgeMatch | CONDITION | type=VAR_AGE_MATCH | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionVariableValueMatch | CONDITION | type=VAR_VAL_MATCH | operator=AND | evaluate=false
@@ -80,6 +83,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectAdjustClock 
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectAlert | EFFECT | type=EFFECT_MESSAGE | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectAllUsersLeaveTeam | EFFECT | type=ALL_USERS_LEAVE_TEAM | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectBotClothes | EFFECT | type=BOT_CLOTHES | actor=false | execute=OK
+com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectBotDance | EFFECT | type=BOT_DANCE | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectBotFollowHabbo | EFFECT | type=BOT_FOLLOW_AVATAR | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectBotGiveHandItem | EFFECT | type=BOT_GIVE_HANDITEM | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectBotTalk | EFFECT | type=BOT_TALK | actor=false | execute=OK
@@ -105,7 +109,11 @@ com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveEffect |
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveExperience | EFFECT | type=EFFECT_AMOUNT | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveFurniFromChest | EFFECT | type=GIVE_FURNI_FROM_CHEST | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveHandItem | EFFECT | type=EFFECT_ID | actor=true | execute=OK
+com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveHotelviewBonusRarePoints | EFFECT | type=SHOW_MESSAGE | actor=true | execute=OK
+com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveHotelviewHofPoints | EFFECT | type=SHOW_MESSAGE | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveLook | EFFECT | type=EFFECT_TEXT | actor=true | execute=OK
+com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveOrTakeFurni | EFFECT | type=GIVE_OR_TAKE_FURNI | actor=true | execute=OK
+com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGivePointsType | EFFECT | type=GIVE_POINTS_TYPE | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveRespect | EFFECT | type=EFFECT_AMOUNT | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveReward | EFFECT | type=GIVE_REWARD | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveScore | EFFECT | type=GIVE_SCORE | actor=true | execute=OK
@@ -134,6 +142,8 @@ com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectNegativeShow
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectNegativeTriggerStacks | EFFECT | type=NEG_CALL_STACKS | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectOpenHabboPages | EFFECT | type=EFFECT_TEXT | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceFurni | EFFECT | type=PLACE_FURNI | actor=false | execute=OK
+com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlayYoutube | EFFECT | type=PLAY_YOUTUBE | actor=false | execute=OK
+com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectQuickBopper | EFFECT | type=QUICK_BOPPER | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRelativeMove | EFFECT | type=RELATIVE_MOVE | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRemoveBadge | EFFECT | type=EFFECT_BADGE | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRemoveFurni | EFFECT | type=REMOVE_FURNI | actor=false | execute=OK
@@ -144,6 +154,8 @@ com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectResetTimers 
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSayCommand | EFFECT | type=EFFECT_TEXT | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSendSignal | EFFECT | type=SEND_SIGNAL | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetAltitude | EFFECT | type=SET_ALTITUDE | actor=false | execute=OK
+com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetRollerSpeed | EFFECT | type=SET_ROLLER_SPEED | actor=false | execute=OK
+com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetRoomAd | EFFECT | type=SET_ROOM_AD | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSit | EFFECT | type=USER_TARGET | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectTeleport | EFFECT | type=TELEPORT | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectToggleFurni | EFFECT | type=TOGGLE_STATE | actor=false | execute=OK
@@ -210,6 +222,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerBotReached
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerBotReachedHabbo | TRIGGER | type=BOT_REACHED_AVTR | event=BOT_REACHED_HABBO | actor=true | match=false
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerClockCounter | TRIGGER | type=CLOCK_COUNTER | event=CLOCK_COUNTER_REACHED | actor=false | match=false
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerCollision | TRIGGER | type=COLLISION | event=BOT_COLLISION | actor=true | match=false
+com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerDiceRolled | TRIGGER | type=DICE_ROLLED | event=DICE_ROLLED | actor=false | match=true
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerFurniStateToggled | TRIGGER | type=STATE_CHANGED | event=FURNI_STATE_CHANGED | actor=true | match=true
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerGameEnds | TRIGGER | type=GAME_ENDS | event=GAME_ENDS | actor=false | match=true
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerGameStarts | TRIGGER | type=GAME_STARTS | event=GAME_STARTS | actor=false | match=true
@@ -226,6 +239,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboStops
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboUnidles | TRIGGER | type=UNIDLES | event=USER_UNIDLES | actor=true | match=false
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboWalkOffFurni | TRIGGER | type=WALKS_OFF_FURNI | event=USER_WALKS_OFF | actor=true | match=true
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboWalkOnFurni | TRIGGER | type=WALKS_ON_FURNI | event=USER_WALKS_ON | actor=true | match=true
+com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerPressKeybind | TRIGGER | type=PRESS_KEYBIND | event=PRESS_KEYBIND | actor=false | match=true
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerReceiveSignal | TRIGGER | type=RECEIVE_SIGNAL | event=SIGNAL_RECEIVED | actor=false | match=false
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerRepeater | TRIGGER | type=PERIODICALLY | event=TIMER_REPEAT | actor=false | match=true
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerRepeaterLong | TRIGGER | type=PERIODICALLY_LONG | event=TIMER_REPEAT_LONG | actor=false | match=true
@@ -235,5 +249,6 @@ com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTeamLoses 
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTeamWins | TRIGGER | type=TEAM_GAME_RESULT | event=TEAM_WINS | actor=false | match=true
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTransactionComplete | TRIGGER | type=TRANSACTION_COMPLETE | event=TRANSACTION_COMPLETE | actor=false | match=true
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTransactionFail | TRIGGER | type=TRANSACTION_FAIL | event=TRANSACTION_FAIL | actor=false | match=true
+com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerUserGetsHandItem | TRIGGER | type=USER_GETS_HANDITEM | event=USER_GETS_HANDITEM | actor=true | match=false
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerUsernameAsTrigger | TRIGGER | type=SAY_SOMETHING | event=USER_SAYS | actor=true | match=false
 com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerVariableChanged | TRIGGER | type=VARIABLE_CHANGED | event=VARIABLE_CHANGED | actor=false | match=false

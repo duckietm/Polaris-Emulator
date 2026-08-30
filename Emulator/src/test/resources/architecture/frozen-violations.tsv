@@ -689,6 +689,8 @@ U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectMoveRotate
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectMoveRotateUser.java|CALL|getConfig|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectMoveUserTiles.java|CALL|getConfig|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectMuteHabbo.java|CALL|getGameEnvironment|2
+U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectOverrideHeight.java|CALL|getConfig|1
+U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectOverrideHeight.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectPlaceFurni.java|CALL|getConfig|2
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectPlaceFurni.java|CALL|getGameEnvironment|5
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectPlayYoutube.java|CALL|getConfig|1

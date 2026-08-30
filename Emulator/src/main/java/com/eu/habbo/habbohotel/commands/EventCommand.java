@@ -7,7 +7,6 @@ import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
-import com.eu.habbo.messages.outgoing.generic.alerts.GenericAlertComposer;
 import java.text.SimpleDateFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -96,8 +95,7 @@ public class EventCommand extends Command {
         if (room == null) {
             // A whisper only reaches a user standing in a room, so this branch has to
             // use an alert to be seen at all.
-            gameClient.sendResponse(
-                    new GenericAlertComposer(Emulator.getTexts().getValue("commands.error.cmd_event.noroom")));
+            sender.alertLocalized("commands.error.cmd_event.noroom");
             return true;
         }
 
@@ -105,8 +103,7 @@ public class EventCommand extends Command {
         String message = closing ? "" : joinMessage(params);
 
         if (!closing && message.isEmpty()) {
-            sender.whisper(
-                    Emulator.getTexts().getValue("commands.error.cmd_event.usage"), RoomChatMessageBubbles.ALERT);
+            sender.whisperLocalized("commands.error.cmd_event.usage", RoomChatMessageBubbles.ALERT);
             return true;
         }
 
@@ -134,10 +131,10 @@ public class EventCommand extends Command {
             habbo.getClient().sendResponse(notification);
         }
 
-        sender.whisper(
-                Emulator.getTexts()
-                        .getValue(closing ? "commands.error.cmd_event.ended" : "commands.error.cmd_event.started")
-                        .replace("%room%", room.getName()),
+        sender.whisperLocalized(
+                closing ? "commands.error.cmd_event.ended" : "commands.error.cmd_event.started",
+                "%room%",
+                room.getName(),
                 RoomChatMessageBubbles.ALERT);
 
         return true;

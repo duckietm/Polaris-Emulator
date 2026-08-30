@@ -553,6 +553,10 @@ public class Habbo implements Runnable {
         this.whisper(this.getText(textKey).replace(placeholder, replacement), bubble);
     }
 
+    public void whisperLocalized(String textKey, RoomChatMessageBubbles bubble) {
+        this.whisper(this.getText(textKey), bubble);
+    }
+
     private String getText(String key) {
         return Emulator.getTexts().getValue(key);
     }
@@ -589,6 +593,10 @@ public class Habbo implements Runnable {
         } else {
             this.client.sendResponse(new GenericAlertComposer(message));
         }
+    }
+
+    public void alertLocalized(String textKey) {
+        this.alert(this.getText(textKey));
     }
 
     public void alert(String[] messages) {

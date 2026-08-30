@@ -4885,6 +4885,8 @@ ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 46 TRG_FURNI_ADJACENT_STAT
 ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 47 USER_ATTRIBUTE
 ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 48 NOT_USER_ATTRIBUTE
 ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 49 USER_AMOUNT
+ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 50 USER_STATE
+ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 51 NOT_USER_STATE
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#ACTOR_DIR:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#ACTOR_HAS_HANDITEM:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#ACTOR_IN_GROUP:com.eu.habbo.habbohotel.wired.WiredConditionType
@@ -4918,6 +4920,7 @@ FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#NOT_T
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#NOT_USER_ATTRIBUTE:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#NOT_USER_COUNT:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#NOT_USER_PERFORMS_ACTION:com.eu.habbo.habbohotel.wired.WiredConditionType
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#NOT_USER_STATE:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#NO_BATTLEBANZAI:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#SLC_QUANTITY:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#STUFF_IS:com.eu.habbo.habbohotel.wired.WiredConditionType
@@ -4933,6 +4936,7 @@ FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#USER_
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#USER_COUNT:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#USER_ON_FURNI_WITH_STATE:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#USER_PERFORMS_ACTION:com.eu.habbo.habbohotel.wired.WiredConditionType
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#USER_STATE:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#VAR_AGE_MATCH:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#VAR_VAL_MATCH:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public final com.eu.habbo.habbohotel.wired.WiredConditionType#code:int

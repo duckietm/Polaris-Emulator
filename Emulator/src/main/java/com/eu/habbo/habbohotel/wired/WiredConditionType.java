@@ -57,7 +57,12 @@ public enum WiredConditionType {
     // A threshold on something the user holds — inventory items, credits, diamonds, duckets. These
     // used to borrow TEAM_HAS_SCORE, whose dialog offered a team colour and a comparison operator that
     // the predicate never consulted; each of these boxes fixes its own direction.
-    USER_AMOUNT(51);
+    USER_AMOUNT(51),
+    // A boolean state the user is in that nothing types a value for — frozen, and whatever joins it.
+    // These used to borrow ACTOR_WEARS_EFFECT, whose dialog asked for an effect id that the predicate
+    // never read: the check is WiredFreezeUtil.isFrozen, not an effect comparison.
+    USER_STATE(52),
+    NOT_USER_STATE(53);
 
     public final int code;
 

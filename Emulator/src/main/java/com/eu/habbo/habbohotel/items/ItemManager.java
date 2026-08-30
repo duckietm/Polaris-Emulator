@@ -280,6 +280,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectNegat
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectNegativeShowMessage;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectNegativeTriggerStacks;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectOpenHabboPages;
+import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectOverrideHeight;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceFurni;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlayYoutube;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectQuickBopper;
@@ -848,6 +849,7 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_cnd_habbo_has_credits", WiredConditionHabboHasCredits.class));
         this.interactionsList.add(new ItemInteraction("wf_cnd_habbo_has_duckets", WiredConditionHabboHasDuckets.class));
         this.interactionsList.add(new ItemInteraction("wf_cnd_battlebanzai", WiredConditionBattleBanzaiRunning.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_override_height", WiredEffectOverrideHeight.class));
         this.interactionsList.add(new ItemInteraction("wf_var_quest", WiredExtraQuest.class));
         this.interactionsList.add(new ItemInteraction("wf_var_quest_chain", WiredExtraQuestChain.class));
 

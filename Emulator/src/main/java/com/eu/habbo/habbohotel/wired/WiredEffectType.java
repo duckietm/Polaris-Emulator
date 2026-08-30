@@ -107,7 +107,10 @@ public enum WiredEffectType {
     // LEAVE_TEAM, whose dialog offers a user source that this effect never consults when choosing
     // targets - execute() walks getCurrentHabbos(). The stored value still decides
     // requiresTriggeringUser(), so it keeps its slot and is simply no longer asked for.
-    ALL_USERS_LEAVE_TEAM(124);
+    ALL_USERS_LEAVE_TEAM(124),
+    // The official OVERRIDE_HEIGHT: a two-way choice and a 0..8000 thousandths slider. Its dialog is
+    // its own, so it takes the next free code rather than borrowing one.
+    OVERRIDE_HEIGHT(125);
 
     public final int code;
 

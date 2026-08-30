@@ -144,6 +144,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectNegativeSend
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectNegativeShowMessage | EFFECT | type=NEG_SHOW_MESSAGE | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectNegativeTriggerStacks | EFFECT | type=NEG_CALL_STACKS | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectOpenHabboPages | EFFECT | type=EFFECT_TEXT | actor=true | execute=OK
+com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectOverrideHeight | EFFECT | type=OVERRIDE_HEIGHT | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlaceFurni | EFFECT | type=PLACE_FURNI | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectPlayYoutube | EFFECT | type=PLAY_YOUTUBE | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectQuickBopper | EFFECT | type=QUICK_BOPPER | actor=false | execute=OK

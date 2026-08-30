@@ -18,7 +18,7 @@ public class WiredTriggerTeamWins extends WiredTriggerGameStarts {
 
     @Override
     public WiredTriggerType getType() {
-        return WiredTriggerType.CUSTOM;
+        return WiredTriggerType.TEAM_GAME_RESULT;
     }
     /**
      * Both team-result triggers report {@link WiredTriggerType#CUSTOM}, so

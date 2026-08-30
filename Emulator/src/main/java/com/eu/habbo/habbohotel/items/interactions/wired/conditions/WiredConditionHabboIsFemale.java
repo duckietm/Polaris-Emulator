@@ -16,7 +16,6 @@ import java.sql.SQLException;
  * field.
  */
 public class WiredConditionHabboIsFemale extends WiredConditionHabboWearsBadge {
-    public static final WiredConditionType type = WiredConditionType.USER_ATTRIBUTE;
 
     public WiredConditionHabboIsFemale(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -35,6 +34,6 @@ public class WiredConditionHabboIsFemale extends WiredConditionHabboWearsBadge {
 
     @Override
     public WiredConditionType getType() {
-        return type;
+        return WiredConditionType.USER_ATTRIBUTE;
     }
 }

@@ -27,7 +27,7 @@ public class WiredConditionNotSameHeight extends InteractionWiredCondition {
     private static final int QUANTIFIER_ALL = 0;
     private static final int QUANTIFIER_ANY = 1;
 
-    public static final WiredConditionType type = WiredConditionType.HAS_ALTITUDE;
+    public static final WiredConditionType type = WiredConditionType.FURNI_PROPERTY;
 
     private final HashSet<HabboItem> items;
     private int furniSource = WiredSourceUtil.SOURCE_TRIGGER;

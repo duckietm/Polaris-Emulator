@@ -59,7 +59,9 @@ final class WiredEffectPayloadGuard {
 
         try {
             return WiredManager.getGson().fromJson(wiredData, type);
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
+            // A truncated document reaches here as EOFException, which is checked and so slipped
+            // straight through a RuntimeException-only catch and failed the whole furni load.
             return null;
         }
     }

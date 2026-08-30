@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
@@ -121,12 +122,19 @@ public class WiredEffectSetRoomAd extends InteractionWiredEffect {
     }
 
     private static int maxCaptionLength() {
-        return Emulator.getConfig().getInt("hotel.wired.set_room_ad.caption_max_length", DEFAULT_MAX_CAPTION_LENGTH);
+        // Reached while loading a furni, which can happen before the configuration exists.
+        ConfigurationManager config = Emulator.getConfig();
+        return config == null
+                ? DEFAULT_MAX_CAPTION_LENGTH
+                : config.getInt("hotel.wired.set_room_ad.caption_max_length", DEFAULT_MAX_CAPTION_LENGTH);
     }
 
     private static int maxDescriptionLength() {
-        return Emulator.getConfig()
-                .getInt("hotel.wired.set_room_ad.description_max_length", DEFAULT_MAX_DESCRIPTION_LENGTH);
+        // Reached while loading a furni, which can happen before the configuration exists.
+        ConfigurationManager config = Emulator.getConfig();
+        return config == null
+                ? DEFAULT_MAX_DESCRIPTION_LENGTH
+                : config.getInt("hotel.wired.set_room_ad.description_max_length", DEFAULT_MAX_DESCRIPTION_LENGTH);
     }
 
     @Override

@@ -4735,11 +4735,13 @@ TYPE public com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTrigg
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTeamLoses(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTeamLoses(java.sql.ResultSet,com.eu.habbo.habbohotel.items.Item) throws java.sql.SQLException
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTeamLoses#getType(-):com.eu.habbo.habbohotel.wired.WiredTriggerType throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTeamLoses#matches(com.eu.habbo.habbohotel.users.HabboItem,com.eu.habbo.habbohotel.wired.core.WiredEvent):boolean throws -
 
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTeamWins extends com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerGameStarts
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTeamWins(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTeamWins(java.sql.ResultSet,com.eu.habbo.habbohotel.items.Item) throws java.sql.SQLException
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTeamWins#getType(-):com.eu.habbo.habbohotel.wired.WiredTriggerType throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTeamWins#matches(com.eu.habbo.habbohotel.users.HabboItem,com.eu.habbo.habbohotel.wired.core.WiredEvent):boolean throws -
 
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTransactionComplete extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerTransactionComplete#type:com.eu.habbo.habbohotel.wired.WiredTriggerType

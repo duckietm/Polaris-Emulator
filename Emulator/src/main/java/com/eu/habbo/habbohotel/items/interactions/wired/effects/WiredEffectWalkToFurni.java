@@ -24,7 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 
 public class WiredEffectWalkToFurni extends InteractionWiredEffect {
-    public static final WiredEffectType type = WiredEffectType.TELEPORT;
+    public static final WiredEffectType type = WiredEffectType.WALK_TO_FURNI;
 
     protected List<HabboItem> items;
     private boolean fastTeleport = false;

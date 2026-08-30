@@ -4754,6 +4754,7 @@ ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 76 PLAY_YOUTUBE
 ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 77 QUICK_BOPPER
 ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 78 SET_ROOM_AD
 ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 79 CHANGE_OPACITY
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 80 WALK_TO_FURNI
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#ADJUST_CLOCK:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#BOT_CLOTHES:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#BOT_DANCE:com.eu.habbo.habbohotel.wired.WiredEffectType
@@ -4834,6 +4835,7 @@ FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#USERS_SI
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#USERS_TEAM_SELECTOR:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#USERS_WITH_VAR_SELECTOR:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#USER_TO_FURNI:com.eu.habbo.habbohotel.wired.WiredEffectType
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#WALK_TO_FURNI:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public final com.eu.habbo.habbohotel.wired.WiredEffectType#code:int
 METHOD public static com.eu.habbo.habbohotel.wired.WiredEffectType#valueOf(java.lang.String):com.eu.habbo.habbohotel.wired.WiredEffectType throws -
 METHOD public static com.eu.habbo.habbohotel.wired.WiredEffectType#values(-):com.eu.habbo.habbohotel.wired.WiredEffectType[] throws -

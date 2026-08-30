@@ -16,13 +16,16 @@ import java.sql.SQLException;
 import java.util.List;
 
 /**
- * Passes when the resolved user owns at least {@code amount} inventory items. Reuses the TEAM_HAS_SCORE
- * dialog (numeric amount + source + quantifier) exactly like {@link WiredConditionHabboLacksCredits}, so
- * no new client dialog is required; only the per-user predicate differs. Note: {@code itemCount()} counts
- * non-placed inventory items (room_id = 0), not furni placed in rooms.
+ * Passes when the resolved user owns at least {@code amount} inventory items. It keeps
+ * {@link WiredConditionTeamGameBase}'s storage — the amount, the user source and the quantifier are the
+ * settings it needs — but answers {@link WiredConditionType#USER_AMOUNT}, whose dialog leaves out the
+ * team colour and the comparison operator. This box compares one way and always has: {@code >= amount}.
+ *
+ * <p>Note: {@code itemCount()} counts non-placed inventory items (room_id = 0), not furni placed in
+ * rooms.
  */
 public class WiredConditionHabboHasMinItems extends WiredConditionTeamGameBase {
-    public static final WiredConditionType type = WiredConditionType.TEAM_HAS_SCORE;
+    public static final WiredConditionType type = WiredConditionType.USER_AMOUNT;
 
     private int teamType = GameTeamColors.RED.type;
     private int comparison = COMPARISON_EQUAL;

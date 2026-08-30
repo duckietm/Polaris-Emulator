@@ -53,7 +53,11 @@ public enum WiredConditionType {
     // so the dialog offers the user source and the quantifier and nothing to type in. These used to
     // borrow ACTOR_WEARS_BADGE, which showed a badge-code field that was read and then ignored.
     USER_ATTRIBUTE(49),
-    NOT_USER_ATTRIBUTE(50);
+    NOT_USER_ATTRIBUTE(50),
+    // A threshold on something the user holds — inventory items, credits, diamonds, duckets. These
+    // used to borrow TEAM_HAS_SCORE, whose dialog offered a team colour and a comparison operator that
+    // the predicate never consulted; each of these boxes fixes its own direction.
+    USER_AMOUNT(51);
 
     public final int code;
 

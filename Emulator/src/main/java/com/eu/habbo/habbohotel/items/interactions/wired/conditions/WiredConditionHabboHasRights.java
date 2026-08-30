@@ -15,7 +15,6 @@ import java.sql.SQLException;
  * client opens the dialog without the badge-code field.
  */
 public class WiredConditionHabboHasRights extends WiredConditionHabboWearsBadge {
-    public static final WiredConditionType type = WiredConditionType.USER_ATTRIBUTE;
 
     public WiredConditionHabboHasRights(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -34,6 +33,6 @@ public class WiredConditionHabboHasRights extends WiredConditionHabboWearsBadge 
 
     @Override
     public WiredConditionType getType() {
-        return type;
+        return WiredConditionType.USER_ATTRIBUTE;
     }
 }

@@ -16,7 +16,6 @@ import java.sql.SQLException;
  * badge-code field. Gender is not something you type in.
  */
 public class WiredConditionHabboIsMale extends WiredConditionHabboWearsBadge {
-    public static final WiredConditionType type = WiredConditionType.USER_ATTRIBUTE;
 
     public WiredConditionHabboIsMale(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -35,6 +34,6 @@ public class WiredConditionHabboIsMale extends WiredConditionHabboWearsBadge {
 
     @Override
     public WiredConditionType getType() {
-        return type;
+        return WiredConditionType.USER_ATTRIBUTE;
     }
 }

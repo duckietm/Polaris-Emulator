@@ -15,7 +15,6 @@ import java.sql.SQLException;
  * "none of the users" instead of "any of them".
  */
 public class WiredConditionHabboNotHasRights extends WiredConditionHabboHasRights {
-    public static final WiredConditionType type = WiredConditionType.NOT_USER_ATTRIBUTE;
 
     public WiredConditionHabboNotHasRights(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -34,6 +33,6 @@ public class WiredConditionHabboNotHasRights extends WiredConditionHabboHasRight
 
     @Override
     public WiredConditionType getType() {
-        return type;
+        return WiredConditionType.NOT_USER_ATTRIBUTE;
     }
 }

@@ -102,7 +102,12 @@ public enum WiredEffectType {
     EFFECT_TAG(120),
     EFFECT_ID(121),
     EFFECT_MESSAGE(122),
-    EFFECT_TEXT(123);
+    EFFECT_TEXT(123),
+    // Everyone in the room leaves their game, so there is no set of users to pick. It borrowed
+    // LEAVE_TEAM, whose dialog offers a user source that this effect never consults when choosing
+    // targets - execute() walks getCurrentHabbos(). The stored value still decides
+    // requiresTriggeringUser(), so it keeps its slot and is simply no longer asked for.
+    ALL_USERS_LEAVE_TEAM(124);
 
     public final int code;
 

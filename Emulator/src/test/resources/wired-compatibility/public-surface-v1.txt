@@ -4766,7 +4766,9 @@ ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 85 EFFECT_TAG
 ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 86 EFFECT_ID
 ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 87 EFFECT_MESSAGE
 ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 88 EFFECT_TEXT
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 89 ALL_USERS_LEAVE_TEAM
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#ADJUST_CLOCK:com.eu.habbo.habbohotel.wired.WiredEffectType
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#ALL_USERS_LEAVE_TEAM:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#BOT_CLOTHES:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#BOT_DANCE:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#BOT_FOLLOW_AVATAR:com.eu.habbo.habbohotel.wired.WiredEffectType

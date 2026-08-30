@@ -83,7 +83,10 @@ public enum WiredEffectType {
     PLAY_YOUTUBE(92),
     QUICK_BOPPER(93),
     SET_ROOM_AD(94),
-    CHANGE_OPACITY(114);
+    CHANGE_OPACITY(114),
+    // Walking to a furni borrowed TELEPORT, whose dialog offers a "teleport instantly" checkbox. This
+    // effect calls setGoalLocation and walks: the flag is stored, serialized and never consulted.
+    WALK_TO_FURNI(115);
 
     public final int code;
 

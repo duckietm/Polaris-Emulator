@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredNumericInputGuard;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredRewardPolicy;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -68,6 +69,11 @@ public class WiredEffectGiveHotelviewBonusRarePoints extends InteractionWiredEff
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
+        // Value out of nothing: the amount cap bounds one firing, not a room full of them.
+        if (!WiredRewardPolicy.canConfigure(gameClient)) {
+            return false;
+        }
+
         int nextAmount = WiredNumericInputGuard.parsePositiveAmount(
                 settings.getStringParam(), WiredNumericInputGuard.maxRewardAmount());
         if (nextAmount <= 0) {
@@ -126,8 +132,10 @@ public class WiredEffectGiveHotelviewBonusRarePoints extends InteractionWiredEff
         String wiredData = set.getString("wired_data");
         this.amount = 0;
 
-        if (wiredData != null && wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+        // The guard answers null for anything it cannot parse, truncated documents included,
+        // so the defaults below cover a corrupt row instead of the load failing on it.
+        JsonData data = WiredEffectPayloadGuard.fromJson(wiredData, JsonData.class);
+        if (data != null) {
             this.setDelay(data.delay);
             this.amount = Math.min(Math.max(data.amount, 0), WiredNumericInputGuard.maxRewardAmount());
             this.userSource = data.userSource;

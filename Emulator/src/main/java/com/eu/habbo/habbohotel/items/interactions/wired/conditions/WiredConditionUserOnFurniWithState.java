@@ -148,7 +148,7 @@ public class WiredConditionUserOnFurniWithState extends WiredConditionTriggerOnF
         }
 
         if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            JsonData data = parsePayload(wiredData);
             if (data == null) {
                 return;
             }
@@ -254,6 +254,19 @@ public class WiredConditionUserOnFurniWithState extends WiredConditionTriggerOnF
     @Override
     public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
         return false;
+    }
+
+    /**
+     * A truncated document leaves Gson throwing EOFException, which is checked - so it escapes a
+     * RuntimeException catch and takes the whole furni load down. Anything unreadable is simply no
+     * configuration.
+     */
+    private static JsonData parsePayload(String wiredData) {
+        try {
+            return WiredManager.getGson().fromJson(wiredData, JsonData.class);
+        } catch (Exception exception) {
+            return null;
+        }
     }
 
     static class JsonData {

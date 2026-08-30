@@ -5846,6 +5846,7 @@ METHOD public synchronized com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnosti
 METHOD public com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics#completeDelayedEvent(-):void throws -
 METHOD public com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics#recordExecution(long,long,java.lang.String,int,java.lang.String):void throws -
 METHOD public com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics#recordKilled(long,java.lang.String,java.lang.String,int):void throws -
+METHOD public com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics#recordNoTargets(long,java.lang.String,java.lang.String,int):void throws -
 METHOD public com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics#recordRecursionTimeout(long,java.lang.String,java.lang.String,int):void throws -
 METHOD public synchronized com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics#snapshot(int,int,long,long):com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Snapshot throws -
 METHOD public com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics#tryConsumeExecutionBudget(int,long,java.lang.String,int,java.lang.String):boolean throws -
@@ -5907,11 +5908,13 @@ ENUM com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Type 2 EXECUTOR_OVE
 ENUM com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Type 3 MARKED_AS_HEAVY
 ENUM com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Type 4 KILLED
 ENUM com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Type 5 RECURSION_TIMEOUT
+ENUM com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Type 6 NO_TARGETS
 FIELD public static final com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Type#DELAYED_EVENTS_CAP:com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Type
 FIELD public static final com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Type#EXECUTION_CAP:com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Type
 FIELD public static final com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Type#EXECUTOR_OVERLOAD:com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Type
 FIELD public static final com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Type#KILLED:com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Type
 FIELD public static final com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Type#MARKED_AS_HEAVY:com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Type
+FIELD public static final com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Type#NO_TARGETS:com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Type
 FIELD public static final com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Type#RECURSION_TIMEOUT:com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Type
 METHOD public static com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Type#valueOf(java.lang.String):com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Type throws -
 METHOD public static com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Type#values(-):com.eu.habbo.habbohotel.wired.core.WiredRoomDiagnostics$Type[] throws -

@@ -114,10 +114,10 @@ com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveVariable
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectInitTransaction | EFFECT | type=INIT_TRANSACTION | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectJoinTeam | EFFECT | type=JOIN_TEAM | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectKickHabbo | EFFECT | type=KICK_USER | actor=true | execute=OK
-com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectLay | EFFECT | type=KICK_USER | actor=true | execute=OK
+com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectLay | EFFECT | type=USER_TARGET | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectLeaveTeam | EFFECT | type=LEAVE_TEAM | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectLog | EFFECT | type=SHOW_MESSAGE | actor=false | execute=OK
-com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMakeFastWalk | EFFECT | type=KICK_USER | actor=true | execute=OK
+com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMakeFastWalk | EFFECT | type=USER_TARGET | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMakeUserSay | EFFECT | type=SHOW_MESSAGE | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMatchFurni | EFFECT | type=MATCH_SSHOT | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveFurniAsGroup | EFFECT | type=MOVE_FURNI_AS_GROUP | actor=false | execute=OK
@@ -126,7 +126,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveFurniTo 
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveFurniTowards | EFFECT | type=CHASE | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveRotateFurni | EFFECT | type=MOVE_ROTATE | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveRotateUser | EFFECT | type=MOVE_ROTATE_USER | actor=true | execute=OK
-com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveUserTiles | EFFECT | type=MOVE_ROTATE_USER | actor=true | execute=OK
+com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMoveUserTiles | EFFECT | type=MOVE_USER_TILES | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMuteHabbo | EFFECT | type=MUTE_TRIGGER | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectNegativeLog | EFFECT | type=NEG_LOG | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectNegativeSendSignal | EFFECT | type=NEG_SEND_SIGNAL | actor=false | execute=OK
@@ -144,7 +144,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectResetTimers 
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSayCommand | EFFECT | type=SHOW_MESSAGE | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSendSignal | EFFECT | type=SEND_SIGNAL | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetAltitude | EFFECT | type=SET_ALTITUDE | actor=false | execute=OK
-com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSit | EFFECT | type=KICK_USER | actor=true | execute=OK
+com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSit | EFFECT | type=USER_TARGET | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectTeleport | EFFECT | type=TELEPORT | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectToggleFurni | EFFECT | type=TOGGLE_STATE | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectToggleMoodlight | EFFECT | type=RESET_TIMERS | actor=false | execute=OK

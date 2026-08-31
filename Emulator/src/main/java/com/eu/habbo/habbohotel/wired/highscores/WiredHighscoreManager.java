@@ -171,16 +171,29 @@ public class WiredHighscoreManager {
         }
 
         if (scoreType == WiredHighscoreScoreType.LONGESTTIME) {
-            return highscores.collect(Collectors.groupingBy(h -> h.getUsers().hashCode())).entrySet().stream()
-                    .map(e -> e.getValue().stream()
-                            .max(Comparator.comparingInt(WiredHighscoreRow::getValue))
-                            .orElse(null))
-                    .filter(Objects::nonNull)
-                    .sorted(Comparator.comparingInt(WiredHighscoreRow::getValue).reversed())
-                    .collect(Collectors.toList());
+            return bestPerTeam(highscores, true);
+        }
+
+        // The fastest time is the same shape read the other way round: keep each team's smallest
+        // score and put the smallest first, or the board would crown whoever was slowest.
+        if (scoreType == WiredHighscoreScoreType.FASTESTTIME) {
+            return bestPerTeam(highscores, false);
         }
 
         return null;
+    }
+
+    private static List<WiredHighscoreRow> bestPerTeam(Stream<WiredHighscoreRow> highscores, boolean longest) {
+        Comparator<WiredHighscoreRow> byValue = Comparator.comparingInt(WiredHighscoreRow::getValue);
+
+        return highscores.collect(Collectors.groupingBy(h -> h.getUsers().hashCode())).entrySet().stream()
+                .map(e -> (longest
+                                ? e.getValue().stream().max(byValue)
+                                : e.getValue().stream().min(byValue))
+                        .orElse(null))
+                .filter(Objects::nonNull)
+                .sorted(longest ? byValue.reversed() : byValue)
+                .collect(Collectors.toList());
     }
 
     private boolean timeMatchesEntry(WiredHighscoreDataEntry entry, WiredHighscoreClearType timeType) {

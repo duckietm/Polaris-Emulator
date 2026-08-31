@@ -653,6 +653,8 @@ U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectFurniToFur
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectGiveFurniFromChest.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectGiveOrTakeFurni.java|CALL|getGameEnvironment|3
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectGiveOrTakeFurni.java|CALL|getThreading|1
+U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectGivePointsHighscore.java|CALL|getGameEnvironment|1
+U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectGivePointsHighscore.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectGiveRespect.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectGiveReward.java|CALL|getTexts|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectGiveScore.java|CALL|getConfig|1

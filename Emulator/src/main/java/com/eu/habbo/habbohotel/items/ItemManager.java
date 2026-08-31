@@ -252,6 +252,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveH
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveHotelviewHofPoints;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveLook;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveOrTakeFurni;
+import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGivePointsHighscore;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGivePointsType;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveRespect;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveReward;
@@ -837,6 +838,8 @@ public class ItemManager {
                 new ItemInteraction("wf_act_give_hotelview_hof_points", WiredEffectGiveHotelviewHofPoints.class));
         this.interactionsList.add(new ItemInteraction("wf_act_give_or_take_furni", WiredEffectGiveOrTakeFurni.class));
         this.interactionsList.add(new ItemInteraction("wf_act_give_points_type", WiredEffectGivePointsType.class));
+        this.interactionsList.add(
+                new ItemInteraction("wf_act_give_points_highscore", WiredEffectGivePointsHighscore.class));
         this.interactionsList.add(new ItemInteraction("wf_act_play_youtube_sound", WiredEffectPlayYoutube.class));
         this.interactionsList.add(new ItemInteraction("wf_act_quick_bopper", WiredEffectQuickBopper.class));
         this.interactionsList.add(new ItemInteraction("wf_act_roller_speed", WiredEffectSetRollerSpeed.class));

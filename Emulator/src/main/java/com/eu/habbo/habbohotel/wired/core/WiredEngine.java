@@ -1043,6 +1043,16 @@ public final class WiredEngine {
         return this.executionGuard.snapshot(roomId);
     }
 
+    /**
+     * Note a furni that cannot be fed by anything in its room. Not an execution failure, so it does
+     * not go through the guard's counters - it only needs to reach the monitor.
+     */
+    public void noteUnreachable(int roomId, String reason, String sourceLabel, int sourceId) {
+        this.executionGuard
+                .diagnostics(roomId)
+                .recordUnreachable(System.currentTimeMillis(), reason, sourceLabel, sourceId);
+    }
+
     private void handleRateLimit(
             Room room,
             WiredEvent.Type eventType,

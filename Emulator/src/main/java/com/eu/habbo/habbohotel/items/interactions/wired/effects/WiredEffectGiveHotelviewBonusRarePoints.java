@@ -23,7 +23,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class WiredEffectGiveHotelviewBonusRarePoints extends InteractionWiredEffect {
-    public static final WiredEffectType type = WiredEffectType.SHOW_MESSAGE;
+    // The amount travels in the string slot and the user source in the int slot, which is
+    // exactly what the amount dialog reads - the box asked for a number through a window that
+    // said "what should the user say?", and the swap costs no migration.
+    public static final WiredEffectType type = WiredEffectType.EFFECT_AMOUNT;
 
     private int amount = 0;
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;

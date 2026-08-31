@@ -6152,8 +6152,10 @@ TYPE public final com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreTy
 ENUM com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType 0 PERTEAM
 ENUM com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType 1 MOSTWIN
 ENUM com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType 2 CLASSIC
-ENUM com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType 3 LONGESTTIME
+ENUM com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType 3 FASTESTTIME
+ENUM com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType 4 LONGESTTIME
 FIELD public static final com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType#CLASSIC:com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType
+FIELD public static final com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType#FASTESTTIME:com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType
 FIELD public static final com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType#LONGESTTIME:com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType
 FIELD public static final com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType#MOSTWIN:com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType
 FIELD public static final com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType#PERTEAM:com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreScoreType

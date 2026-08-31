@@ -6,6 +6,6 @@
 INSERT INTO `emulator_texts` (`key`, `value`) VALUES
 	('commands.keys.cmd_afk', 'afk;absent;away'),
 	('commands.description.cmd_afk', ':afk'),
-	('commands.generic.cmd_afk.away', 'Vous etes maintenant absent. Tapez :afk pour revenir.'),
-	('commands.generic.cmd_afk.back', 'Bon retour !')
+	('commands.generic.cmd_afk.away', 'You are now away. Type :afk to return.'),
+	('commands.generic.cmd_afk.back', 'Welcome back!')
 ON DUPLICATE KEY UPDATE `value` = `value`;

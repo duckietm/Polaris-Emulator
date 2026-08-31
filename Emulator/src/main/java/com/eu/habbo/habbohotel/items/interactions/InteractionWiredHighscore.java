@@ -152,18 +152,7 @@ public class InteractionWiredHighscore extends HabboItem {
      * nothing about why, which is indistinguishable from a broken board.
      */
     private void warnIfNoGameCanEnd(Room room) {
-        if (room == null || room.getRoomSpecialTypes() == null) {
-            return;
-        }
-
-        boolean canEndAGame = !room.getRoomSpecialTypes()
-                        .getItemsOfType(InteractionGameTimer.class)
-                        .isEmpty()
-                || !room.getRoomSpecialTypes()
-                        .getItemsOfType(InteractionGameUpCounter.class)
-                        .isEmpty();
-
-        if (canEndAGame) {
+        if (canEndAGame(room)) {
             return;
         }
 
@@ -172,6 +161,23 @@ public class InteractionWiredHighscore extends HabboItem {
                 "A highscore board only fills when a game ends, and this room has no game timer",
                 this.getBaseItem().getName(),
                 this.getId());
+    }
+
+    /**
+     * Whether anything in the room could bring a game to an end. A room with no timer and no
+     * up-counter can never reach Game.onEnd(), which is the only writer a board has.
+     */
+    static boolean canEndAGame(Room room) {
+        if (room == null || room.getRoomSpecialTypes() == null) {
+            return false;
+        }
+
+        return !room.getRoomSpecialTypes()
+                        .getItemsOfType(InteractionGameTimer.class)
+                        .isEmpty()
+                || !room.getRoomSpecialTypes()
+                        .getItemsOfType(InteractionGameUpCounter.class)
+                        .isEmpty();
     }
 
     @Override

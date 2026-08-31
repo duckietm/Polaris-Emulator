@@ -9,7 +9,8 @@ import com.eu.habbo.habbohotel.users.Habbo;
 public class AfkCommand extends Command {
 
     private static final String DEFAULT_KEYS = "afk;absent;away";
-    private static final String DEFAULT_AWAY = "You are now away. When you send a message you will automaticly will be back.";
+    private static final String DEFAULT_AWAY =
+            "You are now away. When you send a message you will automaticly will be back.";
     private static final String DEFAULT_BACK = "Welcome back!";
 
     public AfkCommand() {

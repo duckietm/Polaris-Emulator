@@ -800,6 +800,13 @@ CASE json-malformed OUT eyJiYXNlSXRlbUlkIjowLCJxdWFudGl0eSI6MSwiZ2l2ZU9yVGFrZSI6
 CASE legacy-zero OUT eyJiYXNlSXRlbUlkIjowLCJxdWFudGl0eSI6MSwiZ2l2ZU9yVGFrZSI6MCwidXNlclNvdXJjZSI6MCwiZGVsYXkiOjB9
 CASE legacy-tab OUT eyJiYXNlSXRlbUlkIjowLCJxdWFudGl0eSI6MSwiZ2l2ZU9yVGFrZSI6MCwidXNlclNvdXJjZSI6MCwiZGVsYXkiOjB9
 
+TYPE com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGivePointsHighscore
+CASE blank OUT eyJhbW91bnQiOjAsImRlbGF5IjowLCJ1c2VyU291cmNlIjowfQ==
+CASE json-empty OUT eyJhbW91bnQiOjAsImRlbGF5IjowLCJ1c2VyU291cmNlIjowfQ==
+CASE json-malformed OUT eyJhbW91bnQiOjAsImRlbGF5IjowLCJ1c2VyU291cmNlIjowfQ==
+CASE legacy-zero OUT eyJhbW91bnQiOjAsImRlbGF5IjowLCJ1c2VyU291cmNlIjowfQ==
+CASE legacy-tab OUT eyJhbW91bnQiOjAsImRlbGF5IjowLCJ1c2VyU291cmNlIjowfQ==
+
 TYPE com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGivePointsType
 CASE blank OUT eyJwb2ludHNUeXBlIjowLCJhbW91bnQiOjAsImRlbGF5IjowLCJ1c2VyU291cmNlIjowfQ==
 CASE json-empty OUT eyJwb2ludHNUeXBlIjowLCJhbW91bnQiOjAsImRlbGF5IjowLCJ1c2VyU291cmNlIjowfQ==

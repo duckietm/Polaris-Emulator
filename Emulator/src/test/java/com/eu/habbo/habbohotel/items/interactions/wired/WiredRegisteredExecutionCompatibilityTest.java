@@ -66,7 +66,7 @@ class WiredRegisteredExecutionCompatibilityTest {
     @Test
     void executionMatrixCoversEveryRegisteredWiredClass() throws Exception {
         assertEquals(
-                254,
+                255,
                 WiredInteractionRegistryFixture.wiredTypes().size(),
                 "Review every added or removed registered wired execution type");
     }

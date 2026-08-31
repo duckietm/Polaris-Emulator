@@ -112,10 +112,11 @@ com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveEffect |
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveExperience | EFFECT | type=EFFECT_AMOUNT | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveFurniFromChest | EFFECT | type=GIVE_FURNI_FROM_CHEST | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveHandItem | EFFECT | type=EFFECT_ID | actor=true | execute=OK
-com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveHotelviewBonusRarePoints | EFFECT | type=SHOW_MESSAGE | actor=true | execute=OK
-com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveHotelviewHofPoints | EFFECT | type=SHOW_MESSAGE | actor=true | execute=OK
+com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveHotelviewBonusRarePoints | EFFECT | type=EFFECT_AMOUNT | actor=true | execute=OK
+com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveHotelviewHofPoints | EFFECT | type=EFFECT_AMOUNT | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveLook | EFFECT | type=EFFECT_TEXT | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveOrTakeFurni | EFFECT | type=GIVE_OR_TAKE_FURNI | actor=true | execute=OK
+com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGivePointsHighscore | EFFECT | type=EFFECT_AMOUNT | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGivePointsType | EFFECT | type=GIVE_POINTS_TYPE | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveRespect | EFFECT | type=EFFECT_AMOUNT | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveReward | EFFECT | type=GIVE_REWARD | actor=true | execute=OK

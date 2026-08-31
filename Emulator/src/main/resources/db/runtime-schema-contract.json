@@ -168,6 +168,7 @@
     "wheel_prizes": ["amount", "enabled", "id", "label", "points_type", "sort_order", "type", "value", "weight"],
     "wheel_recent_wins": ["id", "look", "prize_label", "user_id", "username", "won_at"],
     "wheel_user_state": ["extra_spins", "free_spins", "last_reset", "user_id"],
+    "wired_chest_transactions": ["chest_id", "chest_kind", "currency_type", "deposited", "details", "id", "room_id", "source", "timestamp", "transaction_type", "user_id", "user_name", "withdrawn"],
     "wired_emulator_settings": ["comment", "key", "value"],
     "wired_rewards_given": ["reward_id", "timestamp", "user_id", "wired_item"],
     "wordfilter": ["hide", "key", "mute", "prefix_only", "replacement", "report"],

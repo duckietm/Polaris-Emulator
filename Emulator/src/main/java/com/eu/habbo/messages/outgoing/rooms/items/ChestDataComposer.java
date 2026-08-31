@@ -4,10 +4,10 @@ import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniStoredIt
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestFurni;
+import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,32 +25,48 @@ import java.util.Map;
  *   bool notifyFull, bool notifyDonation, bool notifyWithdraw, bool notifyEmpty, bool notifyWired, int notifyMode,
  *   int entryCount, [int currencyType, int amount]*,
  *   int chestKind (0 = currency, 1 = furni),
- *   int furniCount, [int baseItemId, int quantity]*
+ *   int furniCount, [int baseItemId, int quantity]*,
+ *   bool locked, int capacity, bool autoLock, bool viewerOwnsChest, int chestSpriteId,
+ *   bool wiredEnabled, bool starterChest, int previewMode, int previewAmount
  * </pre>
  * For a furni chest, {@code used} is the total stored furni count and the currency entry list is empty;
  * for a currency chest the furni list is empty.
  */
 public class ChestDataComposer extends MessageComposer {
     private final InteractionWiredChest chest;
+    private final Habbo viewer;
 
+    /**
+     * Kept for plugin jars compiled against it. The window's owner-only controls stay off, because a
+     * push with no addressee cannot tell whether it is going to the owner. In-tree callers use the
+     * two-argument form.
+     */
     public ChestDataComposer(InteractionWiredChest chest) {
+        this(chest, null);
+    }
+
+    /**
+     * @param viewer who this push is going to. The window enables its owner-only controls from it, so
+     *     a caller that knows the recipient should always say so.
+     */
+    public ChestDataComposer(InteractionWiredChest chest, Habbo viewer) {
         this.chest = chest;
+        this.viewer = viewer;
     }
 
     @Override
     protected ServerMessage composeInternal() {
         ChestStorage c = this.chest.getContents();
         int chestKind = (this.chest instanceof InteractionWiredChestFurni)
-                ? ChestStorage.KIND_FURNI : ChestStorage.KIND_CURRENCY;
+                ? ChestStorage.KIND_FURNI
+                : ChestStorage.KIND_CURRENCY;
 
         this.response.init(Outgoing.ChestDataComposer);
         this.response.appendInt(this.chest.getId());
         this.response.appendString(c.getName());
         this.response.appendString(c.getDescription());
         this.response.appendInt(c.getCapacityMax());
-        int used = (this.chest instanceof InteractionWiredChestFurni)
-                ? c.furniItemCount()
-                : c.total(chestKind);
+        int used = (this.chest instanceof InteractionWiredChestFurni) ? c.furniItemCount() : c.total(chestKind);
         this.response.appendInt(used);
         this.response.appendBoolean(c.isAccessOpen());
         this.response.appendBoolean(c.isAccessDonate());
@@ -88,6 +104,27 @@ public class ChestDataComposer extends MessageComposer {
             this.response.appendInt(e.getKey());
             this.response.appendInt(e.getValue());
         }
+
+        // Appended last so an older client that stops reading here still parses the window state.
+        this.response.appendBoolean(c.isLocked());
+        this.response.appendInt(c.getCapacity());
+        this.response.appendBoolean(c.isAutoLock());
+        this.response.appendBoolean(
+                this.viewer != null && this.viewer.getHabboInfo().getId() == this.chest.getUserId());
+
+        // The chest's own furnidata id, so the upgrade window can show what is being upgraded.
+        this.response.appendInt(
+                this.chest.getBaseItem() == null ? 0 : this.chest.getBaseItem().getSpriteId());
+
+        // Whether wired may reach it, and whether it is the starter chest that can never be grown --
+        // the window greys its own controls from these rather than guessing.
+        this.response.appendBoolean(c.isWiredEnabled());
+        this.response.appendBoolean(this.chest.isStarterChest());
+
+        // The window edits these, so it has to be told what they currently are -- without them it
+        // reopens showing the preview switched off however the owner left it.
+        this.response.appendInt(c.getPreviewMode());
+        this.response.appendInt(c.getPreviewAmount());
 
         return this.response;
     }

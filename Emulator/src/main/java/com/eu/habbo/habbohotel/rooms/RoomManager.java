@@ -15,6 +15,7 @@ import com.eu.habbo.habbohotel.games.tag.RollerskateGame;
 import com.eu.habbo.habbohotel.games.wired.WiredGame;
 import com.eu.habbo.habbohotel.guilds.Guild;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestAutoLock;
 import com.eu.habbo.habbohotel.messenger.MessengerBuddy;
 import com.eu.habbo.habbohotel.navigation.NavigatorFilterComparator;
 import com.eu.habbo.habbohotel.navigation.NavigatorFilterField;
@@ -1140,6 +1141,8 @@ public class RoomManager {
             habbo.getRoomUnit().setPathFinderRoom(null);
 
             this.logExit(habbo);
+            // Before they are gone from the room: close the chests they asked to have closed.
+            ChestAutoLock.onOwnerLeftRoom(room, habbo);
             room.removeHabbo(habbo, true);
             BuildersClubRoomSupport.sendCurrentRoomPlacementStatus(room);
 

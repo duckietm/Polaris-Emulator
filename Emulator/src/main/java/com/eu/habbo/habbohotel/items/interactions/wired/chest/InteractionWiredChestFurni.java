@@ -40,6 +40,22 @@ public class InteractionWiredChestFurni extends InteractionWiredChest {
         ChestOpenHelper.open(client, this, room);
     }
 
+    /**
+     * A furni chest has a lid: its sprite is closed or open, and the owner decides which.
+     *
+     * <p>The default mode opens it while someone is looking inside, which is why the base class tracks
+     * who has the window open.
+     */
+    @Override
+    protected int visualState() {
+        return this.showsOpen() ? 1 : 0;
+    }
+
+    @Override
+    protected int storedCount() {
+        return this.contents.furniItemCount();
+    }
+
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
         int[] params = settings.getIntParams();

@@ -1,6 +1,8 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestNotifications;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -42,6 +44,12 @@ public class ChestDepositEvent extends MessageHandler {
 
         if (!contents.isAccessDonate() && !room.hasRights(habbo)) return;
 
+        // A locked chest is closed to the room in both directions, but never to its owner.
+        if (chest.isLockedFor(habbo)) {
+            this.client.sendResponse(new ChestDataComposer(chest, this.client.getHabbo()));
+            return;
+        }
+
         int balance = (currencyType < 0)
                 ? habbo.getHabboInfo().getCredits()
                 : habbo.getHabboInfo().getCurrencyAmount(currencyType);
@@ -49,15 +57,31 @@ public class ChestDepositEvent extends MessageHandler {
 
         // Never debit more than the user owns; the chest decides atomically how much fits.
         int desired = Math.min(amount, balance);
+        int storedBefore = contents.total(ChestStorage.KIND_CURRENCY);
         int accepted = contents.depositCurrency(currencyType, desired);
         if (accepted <= 0) return;
 
         if (currencyType < 0) habbo.giveCredits(-accepted);
         else habbo.givePoints(currencyType, -accepted);
 
-        contents.addLog(new ChestStorage.LogEntry("deposit", System.currentTimeMillis(), habbo.getHabboInfo().getUsername(), 0, accepted));
-        chest.persistContents();
+        contents.addLog(new ChestStorage.LogEntry(
+                "deposit", System.currentTimeMillis(), habbo.getHabboInfo().getUsername(), 0, accepted));
+        ChestTransactionLog.record(
+                room.getId(),
+                chest.getId(),
+                ChestStorage.KIND_CURRENCY,
+                ChestTransactionLog.TYPE_DEPOSIT,
+                ChestTransactionLog.SOURCE_USER,
+                habbo,
+                currencyType,
+                0,
+                accepted,
+                null);
+        chest.persistContents(room);
 
-        this.client.sendResponse(new ChestDataComposer(chest));
+        ChestNotifications.donation(chest, room, habbo, accepted);
+        ChestNotifications.afterChange(chest, room, storedBefore, contents.total(ChestStorage.KIND_CURRENCY));
+
+        this.client.sendResponse(new ChestDataComposer(chest, this.client.getHabbo()));
     }
 }

@@ -25,6 +25,9 @@ public final class ChestFurniDepositHelper {
         ChestStorage contents = chest.getContents();
         if (!contents.isAccessDonate() && !room.hasRights(habbo)) return false;
 
+        // A locked chest is closed to the room in both directions, but never to its owner.
+        if (chest.isLockedFor(habbo)) return false;
+
         Item baseItem = inventoryItem.getBaseItem();
         if (baseItem == null || baseItem.getType() != FurnitureType.FLOOR) return false;
 
@@ -32,6 +35,7 @@ public final class ChestFurniDepositHelper {
         if (removed == null) return false;
         habbo.getInventory().getItemsComponent().removeHabboItem(removed);
 
+        int storedBefore = contents.furniItemCount();
         ChestFurniStoredItem stored = ChestFurniStoredItem.fromHabboItem(removed, removed.getId());
 
         // Atomic capacity-guarded add; if the chest is full, hand the item back rather than lose it.
@@ -41,13 +45,27 @@ public final class ChestFurniDepositHelper {
         }
         contents.addLog(new ChestStorage.LogEntry(
                 "deposit", System.currentTimeMillis(), habbo.getHabboInfo().getUsername(), 0, 1));
-        chest.persistContents();
+        ChestTransactionLog.record(
+                chest.getRoomId(),
+                chest.getId(),
+                ChestStorage.KIND_FURNI,
+                ChestTransactionLog.TYPE_DEPOSIT,
+                ChestTransactionLog.SOURCE_USER,
+                habbo,
+                -1,
+                0,
+                1,
+                List.of(stored));
+        chest.persistContents(room);
+
+        ChestNotifications.donation(chest, room, habbo, 1);
+        ChestNotifications.afterChange(chest, room, storedBefore, contents.furniItemCount());
 
         habbo.getClient().sendResponse(new RemoveHabboItemComposer(removed.getGiftAdjustedId()));
         habbo.getClient().sendResponse(new InventoryRefreshComposer());
         Emulator.getThreading().runPersistence(new QueryDeleteHabboItems(List.of(removed)));
 
-        habbo.getClient().sendResponse(new ChestDataComposer(chest));
+        habbo.getClient().sendResponse(new ChestDataComposer(chest, habbo));
         ChestFurniPackets.sendDelta(habbo.getClient(), chest.getId(), List.of(), List.of(stored));
         return true;
     }

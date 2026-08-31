@@ -15,8 +15,11 @@ public final class ChestOpenHelper {
         if (client == null || chest == null || room == null) return;
         if (!chest.getContents().isAccessOpen() && !room.hasRights(client.getHabbo())) return;
 
+        // The lid opens for the room, not just for the person who clicked.
+        chest.openFor(client.getHabbo(), room);
+
         client.sendResponse(new ChestOpenComposer(chest.getId()));
-        client.sendResponse(new ChestDataComposer(chest));
+        client.sendResponse(new ChestDataComposer(chest, client.getHabbo()));
 
         if (chest instanceof InteractionWiredChestFurni) {
             ChestFurniPackets.sendFullChunks(client, chest.getId(), chest.getContents());

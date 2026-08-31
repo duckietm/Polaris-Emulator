@@ -19,7 +19,9 @@ public final class WiredRoomDiagnostics {
         KILLED,
         RECURSION_TIMEOUT,
         /** A chain fired and an effect had nothing to act on, so it did nothing and said nothing. */
-        NO_TARGETS
+        NO_TARGETS,
+        /** A furni is waiting on something the room has no way of producing. */
+        UNREACHABLE
     }
 
     public enum Severity {
@@ -428,6 +430,16 @@ public final class WiredRoomDiagnostics {
         record(Type.NO_TARGETS, now, reason, sourceLabel, sourceId);
     }
 
+    /**
+     * A furni was placed that can only ever be fed by something the room does not contain - a
+     * highscore board with no way to end a game, say. Nothing has failed yet and nothing will: the
+     * furni will simply sit there empty, which reads exactly like a bug.
+     */
+    public void recordUnreachable(long now, String reason, String sourceLabel, int sourceId) {
+        rollWindowIfNeeded(now);
+        record(Type.UNREACHABLE, now, reason, sourceLabel, sourceId);
+    }
+
     public synchronized void clearLogs() {
         for (Type type : Type.values()) {
             LogEntry entry = this.logs.get(type);
@@ -645,6 +657,8 @@ public final class WiredRoomDiagnostics {
 
     private Severity defaultSeverity(Type type) {
         // Neither of these is the engine failing; they describe a setup, so they read as warnings.
-        return (type == Type.MARKED_AS_HEAVY || type == Type.NO_TARGETS) ? Severity.WARNING : Severity.ERROR;
+        return (type == Type.MARKED_AS_HEAVY || type == Type.NO_TARGETS || type == Type.UNREACHABLE)
+                ? Severity.WARNING
+                : Severity.ERROR;
     }
 }

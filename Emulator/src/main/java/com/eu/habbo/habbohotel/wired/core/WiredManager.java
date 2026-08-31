@@ -289,6 +289,18 @@ public final class WiredManager {
         return engine.getDiagnosticsSnapshot(roomId);
     }
 
+    /**
+     * Note a furni that nothing in its room can ever feed. Silent when the engine is not up, so a
+     * furni loading before the engine cannot fail on this.
+     */
+    public static void noteUnreachable(int roomId, String reason, String sourceLabel, int sourceId) {
+        if (engine == null) {
+            return;
+        }
+
+        engine.noteUnreachable(roomId, reason, sourceLabel, sourceId);
+    }
+
     public static void clearDiagnosticsLogs(int roomId) {
         if (engine == null) {
             return;

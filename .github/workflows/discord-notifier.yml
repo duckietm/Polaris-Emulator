@@ -14,7 +14,7 @@ jobs:
     if: github.event.head_commit != null
     steps:
       - name: Checkout with full history
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 

@@ -8,16 +8,20 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomManager;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import com.eu.habbo.messages.outgoing.navigator.CanCreateRoomComposer;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RoomBundleLayout extends SingleBundle {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomBundleLayout.class);
@@ -34,6 +38,20 @@ public class RoomBundleLayout extends SingleBundle {
     }
 
     @Override
+    public void serialize(ServerMessage message) {
+        message.appendString("room_bundle");
+        message.appendInt(3);
+        message.appendString(this.getHeaderImage());
+        message.appendString(this.getTeaserImage());
+        message.appendString("");
+        message.appendInt(4);
+        message.appendString(this.getTextOne());
+        message.appendString(this.getTextDetails());
+        message.appendString(this.getTextTeaser());
+        message.appendString(this.getTextTwo());
+    }
+
+    @Override
     public Int2ObjectMap<CatalogItem> getCatalogItems() {
         if (Emulator.getIntUnixTimestamp() - this.lastUpdate < 120) {
             this.lastUpdate = Emulator.getIntUnixTimestamp();
@@ -45,14 +63,10 @@ public class RoomBundleLayout extends SingleBundle {
             if (this.roomId > 0 && roomManager != null) {
                 this.room = roomManager.loadRoom(this.roomId);
 
-                if (this.room != null)
-                    this.room.preventUnloading = true;
+                if (this.room != null) this.room.preventUnloading = true;
             } else if (this.roomId <= 0) {
                 LOGGER.error("No room id specified for room bundle {}({})", this.getPageName(), this.getId());
             }
-            // roomManager can be null when CatalogManager.loadFurnitureValues() runs
-            // during GameEnvironment.load() before RoomManager is constructed; in that
-            // case skip eager room loading — the bundle resolves lazily at runtime.
         }
 
         if (this.room == null) {
@@ -95,13 +109,20 @@ public class RoomBundleLayout extends SingleBundle {
             }
 
             if (!item[0].getExtradata().isEmpty()) {
-                items.put(Emulator.getGameEnvironment().getItemManager().getItem(Integer.parseInt(item[0].getExtradata())), 1);
+                items.put(
+                        Emulator.getGameEnvironment()
+                                .getItemManager()
+                                .getItem(Integer.parseInt(item[0].getExtradata())),
+                        1);
             }
 
             StringBuilder data = new StringBuilder();
 
             for (Map.Entry<Item, Integer> set : items.entrySet()) {
-                data.append(set.getKey().getId()).append(":").append(set.getValue()).append(";");
+                data.append(set.getKey().getId())
+                        .append(":")
+                        .append(set.getValue())
+                        .append(";");
             }
 
             item[0].setItemId(data.toString());
@@ -132,8 +153,13 @@ public class RoomBundleLayout extends SingleBundle {
         }
 
         if (habbo != null) {
-            int count = Emulator.getGameEnvironment().getRoomManager().getRoomsForHabbo(habbo).size();
-            int max = habbo.getHabboStats().hasActiveClub() ? RoomManager.MAXIMUM_ROOMS_HC : RoomManager.MAXIMUM_ROOMS_USER;
+            int count = Emulator.getGameEnvironment()
+                    .getRoomManager()
+                    .getRoomsForHabbo(habbo)
+                    .size();
+            int max = habbo.getHabboStats().hasActiveClub()
+                    ? RoomManager.MAXIMUM_ROOMS_HC
+                    : RoomManager.MAXIMUM_ROOMS_USER;
 
             if (count >= max) {
                 habbo.getClient().sendResponse(new CanCreateRoomComposer(count, max));
@@ -141,8 +167,7 @@ public class RoomBundleLayout extends SingleBundle {
             }
         }
 
-        if (this.room == null)
-            return;
+        if (this.room == null) return;
 
         this.room.save();
 
@@ -158,7 +183,9 @@ public class RoomBundleLayout extends SingleBundle {
         int roomId = 0;
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-            try (PreparedStatement statement = connection.prepareStatement("INSERT INTO rooms (owner_id, owner_name, name, description, model, password, state, users_max, category, paper_floor, paper_wall, paper_landscape, thickness_wall, thickness_floor, moodlight_data, override_model)  (SELECT ?, ?, name, description, model, password, state, users_max, category, paper_floor, paper_wall, paper_landscape, thickness_wall, thickness_floor, moodlight_data, override_model FROM rooms WHERE id = ?)", Statement.RETURN_GENERATED_KEYS)) {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO rooms (owner_id, owner_name, name, description, model, password, state, users_max, category, paper_floor, paper_wall, paper_landscape, thickness_wall, thickness_floor, moodlight_data, override_model)  (SELECT ?, ?, name, description, model, password, state, users_max, category, paper_floor, paper_wall, paper_landscape, thickness_wall, thickness_floor, moodlight_data, override_model FROM rooms WHERE id = ?)",
+                    Statement.RETURN_GENERATED_KEYS)) {
                 statement.setInt(1, userId);
                 statement.setString(2, userName);
                 statement.setInt(3, this.room.getId());
@@ -170,10 +197,11 @@ public class RoomBundleLayout extends SingleBundle {
                 }
             }
 
-            if (roomId == 0)
-                return;
+            if (roomId == 0) return;
 
-            try (PreparedStatement statement = connection.prepareStatement("INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, limited_data, guild_id) (SELECT ?, ?, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, ?, ? FROM items WHERE room_id = ?)", Statement.RETURN_GENERATED_KEYS)) {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, limited_data, guild_id) (SELECT ?, ?, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, ?, ? FROM items WHERE room_id = ?)",
+                    Statement.RETURN_GENERATED_KEYS)) {
                 statement.setInt(1, userId);
                 statement.setInt(2, roomId);
                 statement.setString(3, "0:0");
@@ -183,7 +211,9 @@ public class RoomBundleLayout extends SingleBundle {
             }
 
             if (this.room.hasCustomLayout()) {
-                try (PreparedStatement statement = connection.prepareStatement("INSERT INTO room_models_custom (id, name, door_x, door_y, door_dir, heightmap) (SELECT ?, ?, door_x, door_y, door_dir, heightmap FROM room_models_custom WHERE id = ? LIMIT 1)", Statement.RETURN_GENERATED_KEYS)) {
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO room_models_custom (id, name, door_x, door_y, door_dir, heightmap) (SELECT ?, ?, door_x, door_y, door_dir, heightmap FROM room_models_custom WHERE id = ? LIMIT 1)",
+                        Statement.RETURN_GENERATED_KEYS)) {
                     statement.setInt(1, roomId);
                     statement.setString(2, "custom_" + roomId);
                     statement.setInt(3, this.room.getId());
@@ -194,7 +224,9 @@ public class RoomBundleLayout extends SingleBundle {
             }
 
             if (Emulator.getConfig().getBoolean("bundle.bots.enabled")) {
-                try (PreparedStatement statement = connection.prepareStatement("INSERT INTO bots (user_id, room_id, name, motto, figure, gender, x, y, z, chat_lines, chat_auto, chat_random, chat_delay, dance, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO bots (user_id, room_id, name, motto, figure, gender, x, y, z, chat_lines, chat_auto, chat_random, chat_delay, dance, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        Statement.RETURN_GENERATED_KEYS)) {
                     synchronized (this.room.getCurrentBots()) {
                         statement.setInt(1, userId);
                         statement.setInt(2, roomId);
@@ -214,7 +246,8 @@ public class RoomBundleLayout extends SingleBundle {
                             statement.setString(11, bot.isChatAuto() ? "1" : "0");
                             statement.setString(12, bot.isChatRandom() ? "1" : "0");
                             statement.setInt(13, bot.getChatDelay());
-                            statement.setInt(14, bot.getRoomUnit().getDanceType().getType());
+                            statement.setInt(
+                                    14, bot.getRoomUnit().getDanceType().getType());
                             statement.setString(15, bot.getType());
                             statement.addBatch();
                         }

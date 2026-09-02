@@ -21,7 +21,7 @@ public class WiredTriggerTeamWins extends WiredTriggerGameStarts {
         return WiredTriggerType.TEAM_GAME_RESULT;
     }
     /**
-     * Both team-result triggers report {@link WiredTriggerType#CUSTOM}, so
+     * Both team-result triggers report {@link WiredTriggerType#TEAM_GAME_RESULT}, so
      * {@code RoomSpecialTypes.getTriggers} hands the engine the same set for either event and the
      * inherited {@code matches} accepts everything. Without this check a room's "wins" wired ran on
      * team loses as well.

@@ -27,6 +27,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,13 +44,15 @@ public class HabboStats implements Runnable {
     public final IntArrayList secretRecipes;
     public final HabboNavigatorWindowSettings navigatorWindowSettings;
     public final THashMap<String, Object> cache;
-    // public final Map<String, Object> cache;
     public final ArrayList<CalendarRewardClaimed> calendarRewardsClaimed;
     public final Int2ObjectMap<HabboOfferPurchase> offerCache = new Int2ObjectOpenHashMap<>();
     private final AtomicInteger lastOnlineTime = new AtomicInteger(Emulator.getIntUnixTimestamp());
     private final Map<Achievement, Integer> achievementProgress;
     private final Map<Achievement, Integer> achievementCache;
+    private static final int RECENT_PURCHASES_LIMIT = 50; // Here you can set the limit of recent items bought
     private final Map<Integer, CatalogItem> recentPurchases;
+    private List<Integer> recentPurchaseIds = null;
+    private boolean recentPurchasesInitialized = false;
     private final IntArrayList favoriteRooms;
     private final IntArrayList ignoredUsers;
     private IntArrayList roomsVists;
@@ -121,7 +125,7 @@ public class HabboStats implements Runnable {
         this.cache = new THashMap<>(1000);
         this.achievementProgress = new HashMap<>(0);
         this.achievementCache = new HashMap<>(0);
-        this.recentPurchases = new HashMap<>(0);
+        this.recentPurchases = new LinkedHashMap<>(0);
         this.favoriteRooms = new IntArrayList(0);
         this.ignoredUsers = new IntArrayList(0);
         this.roomsVists = new IntArrayList(0);
@@ -359,6 +363,21 @@ public class HabboStats implements Runnable {
                                 stats.achievementProgress.put(achievement, set.getInt("progress"));
                             }
                         }
+                    }
+                }
+
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "SELECT catalog_item_id, MAX(timestamp) AS last_ts FROM logs_shop_purchases WHERE user_id = ? AND catalog_item_id IS NOT NULL AND catalog_item_id > 0 GROUP BY catalog_item_id ORDER BY last_ts DESC LIMIT "
+                                + RECENT_PURCHASES_LIMIT)) {
+                    statement.setInt(1, habboInfo.getId());
+                    try (ResultSet set = statement.executeQuery()) {
+                        List<Integer> ids = new ArrayList<>();
+                        while (set.next()) {
+                            ids.add(set.getInt("catalog_item_id"));
+                        }
+
+                        Collections.reverse(ids);
+                        stats.recentPurchaseIds = ids;
                     }
                 }
             }
@@ -696,8 +715,20 @@ public class HabboStats implements Runnable {
     }
 
     public void addPurchase(CatalogItem item) {
-        if (!this.recentPurchases.containsKey(item.getId())) {
+        if (item == null) return;
+
+        synchronized (this.recentPurchases) {
+            // Re-insert so the item moves to the tail (most recent), and cap the list by
+            // dropping the oldest entries from the head.
+            this.recentPurchases.remove(item.getId());
             this.recentPurchases.put(item.getId(), item);
+
+            while (this.recentPurchases.size() > RECENT_PURCHASES_LIMIT) {
+                Iterator<Integer> iterator = this.recentPurchases.keySet().iterator();
+                if (!iterator.hasNext()) break;
+                iterator.next();
+                iterator.remove();
+            }
         }
     }
 
@@ -705,8 +736,48 @@ public class HabboStats implements Runnable {
         return this.recentPurchases;
     }
 
+    public boolean isRecentPurchasesInitialized() {
+        return this.recentPurchasesInitialized;
+    }
+
+    // The persisted purchase ids loaded at login, oldest-first (null once initialised).
+    public List<Integer> getRecentPurchaseIds() {
+        return this.recentPurchaseIds;
+    }
+
+    // Seed the recent-purchases map from the login history (oldest-first CatalogItems the
+    // CatalogManager resolved). Any purchases already recorded this session are newer than the
+    // history, so they are re-applied on top. Idempotent — the first caller wins.
+    public void initRecentPurchases(List<CatalogItem> history) {
+        synchronized (this.recentPurchases) {
+            if (this.recentPurchasesInitialized) return;
+            this.recentPurchasesInitialized = true;
+            this.recentPurchaseIds = null;
+
+            if (history == null || history.isEmpty()) return;
+
+            List<CatalogItem> session = new ArrayList<>(this.recentPurchases.values());
+            this.recentPurchases.clear();
+
+            for (CatalogItem item : history) addPurchase(item);
+            for (CatalogItem item : session) addPurchase(item);
+        }
+    }
+
+    // Thread-safe single lookup for the "buy again" flow. The recent-purchases map is mutated
+    // under its own monitor by addPurchase (and snapshotted the same way by the page composer),
+    // so reads that can race those writes must take the same lock rather than touching the
+    // non-thread-safe LinkedHashMap directly.
+    public CatalogItem getRecentPurchase(int itemId) {
+        synchronized (this.recentPurchases) {
+            return this.recentPurchases.get(itemId);
+        }
+    }
+
     public void disposeRecentPurchases() {
-        this.recentPurchases.clear();
+        synchronized (this.recentPurchases) {
+            this.recentPurchases.clear();
+        }
     }
 
     public boolean addFavoriteRoom(int roomId) {

@@ -64,6 +64,7 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboBadge;
 import com.eu.habbo.habbohotel.users.HabboGender;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.users.HabboStats;
 import com.eu.habbo.habbohotel.users.inventory.EffectsComponent;
 import com.eu.habbo.messages.outgoing.catalog.AlertLimitedSoldOutComposer;
 import com.eu.habbo.messages.outgoing.catalog.AlertPurchaseFailedComposer;
@@ -951,6 +952,25 @@ public class CatalogManager {
         }
 
         return item[0];
+    }
+
+    public void loadRecentPurchases(Habbo habbo) {
+        if (habbo == null) return;
+
+        HabboStats stats = habbo.getHabboStats();
+        if (stats == null || stats.isRecentPurchasesInitialized()) return;
+
+        List<Integer> ids = stats.getRecentPurchaseIds();
+        List<CatalogItem> history = new ArrayList<>();
+
+        if (ids != null) {
+            for (int id : ids) {
+                CatalogItem item = this.getCatalogItem(id);
+                if (item != null) history.add(item);
+            }
+        }
+
+        stats.initRecentPurchases(history);
     }
 
     public List<CatalogPage> getCatalogPages(int parentId, final Habbo habbo) {

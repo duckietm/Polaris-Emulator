@@ -6,7 +6,7 @@
 
     <groupId>com.eu.habbo</groupId>
     <artifactId>Polaris</artifactId>
-    <version>4.2.72</version>
+    <version>4.2.75</version>
     <name>Polaris</name>
     <licenses>
         <license>
@@ -18,7 +18,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.build.outputTimestamp>2026-08-23T08:49:17Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2026-08-31T09:50:08Z</project.build.outputTimestamp>
         <maven.compiler.release>25</maven.compiler.release>
         <maven.build.java.version>[25,27)</maven.build.java.version>
 

@@ -149,6 +149,7 @@ U|com/eu/habbo/habbohotel/commands/AboutCommand.java|FIELD|version|1
 U|com/eu/habbo/habbohotel/commands/AddYoutubePlaylistCommand.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/commands/AddYoutubePlaylistCommand.java|CALL|getGameEnvironment|3
 U|com/eu/habbo/habbohotel/commands/AddYoutubePlaylistCommand.java|CALL|getTexts|6
+U|com/eu/habbo/habbohotel/commands/AfkCommand.java|CALL|getTexts|3
 U|com/eu/habbo/habbohotel/commands/AlertCommand.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/commands/AlertCommand.java|CALL|getTexts|6
 U|com/eu/habbo/habbohotel/commands/AllowTradingCommand.java|CALL|getDatabase|2

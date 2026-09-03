@@ -68,6 +68,10 @@ public class PetPackageNameEvent extends MessageHandler {
                             pet = petManager.createPet(32, name, this.client);
                         }
 
+                        if (item.getBaseItem().getName().equalsIgnoreCase("cowbox")) {
+                            pet = petManager.createPet(35, name, this.client);
+                        }
+
                         if (item.getBaseItem().getName().equalsIgnoreCase("cowbox_gold")) {
                             pet = petManager.createPet(35, 28, name, this.client);
                         }

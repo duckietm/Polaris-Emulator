@@ -37,7 +37,7 @@
         <article class="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-2xl shadow-black/20">
             <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Regola furni</p>
             <p class="mt-3 text-sm leading-6 text-slate-300">
-                Se la source furni restituisce elementi, il flow attuale apre un ramo per ogni furni.
+                Se la source furni restituisce elementi e <em>per ogni furni</em> e attivo, si apre un ramo per ogni furni. Se l opzione e spenta si apre un ramo solo, che porta con se il primo furni inoltrato; la pila che riceve legge comunque il totale da <code>@signal_furni_count</code>.
                 Se non restituisce nulla, viene emesso un solo ramo senza furni allegati.
             </p>
         </article>
@@ -60,7 +60,7 @@
             </li>
             <li><span class="font-bold text-sky-300">7.</span> Se “per ogni utente” è disattivo, si usa un solo ramo utente:
                 l'utente che innesca.</li>
-            <li><span class="font-bold text-sky-300">8.</span> Se la source furni ha elementi, si apre un ramo per ogni furni.</li>
+            <li><span class="font-bold text-sky-300">8.</span> Se la source furni ha elementi e <em>per ogni furni</em> e attivo, si apre un ramo per ogni furni; se e spenta, un ramo solo con il primo furni.</li>
             <li><span class="font-bold text-sky-300">9.</span> Se la source furni è vuota, si apre un solo ramo senza furni.</li>
             <li><span class="font-bold text-sky-300">10.</span> Per ogni combinazione antenna + utente + furni viene emesso un segnale separato.</li>
             <li><span class="font-bold text-sky-300">11.</span> Ogni segnale porta con sé:

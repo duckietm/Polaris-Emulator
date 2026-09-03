@@ -88,7 +88,7 @@
     "pet_actions": ["can_swim", "happy_actions", "offspring_type", "pet_name", "pet_type", "random_actions", "tired_actions"],
     "pet_breeding": ["offspring_id", "pet_id"],
     "pet_breeding_races": ["breed", "pet_type", "rarity_level"],
-    "pet_breeds": ["color_one", "color_two", "has_color_one", "has_color_two", "race"],
+    "pet_breeds": ["club_only", "color_one", "color_two", "has_color_one", "has_color_two", "race"],
     "pet_commands": ["command_id", "pet_id"],
     "pet_commands_data": ["command_id", "cost_energy", "cost_happiness", "required_level", "reward_xp", "text"],
     "pet_drinks": ["item_id", "pet_id"],

@@ -60,6 +60,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionTrophy;
 import com.eu.habbo.habbohotel.modtool.ScripterManager;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.pets.Pet;
+import com.eu.habbo.habbohotel.pets.PetManager;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboBadge;
 import com.eu.habbo.habbohotel.users.HabboGender;
@@ -2109,15 +2110,23 @@ public class CatalogManager {
                             bots.add(bot);
                         } else {
                             if (petData.length < 3) throw new SQLException("Invalid catalog pet data");
-                            Pet pet = Emulator.getGameEnvironment()
-                                    .getPetManager()
-                                    .createPet(
-                                            connection,
-                                            baseItem,
-                                            petData[0],
-                                            petData[1],
-                                            petData[2],
-                                            habbo.getClient());
+
+                            PetManager petManager =
+                                    Emulator.getGameEnvironment().getPetManager();
+
+                            try {
+                                int petType = Integer.parseInt(
+                                        baseItem.getName().toLowerCase().replace("a0 pet", ""));
+                                int breedColor = Integer.parseInt(petData[1]);
+                                if (petManager.isClubOnlyBreed(petType, breedColor)
+                                        && !habbo.getHabboStats().hasActiveClub()) {
+                                    throw new SQLException("HC required for club-only pet breed");
+                                }
+                            } catch (NumberFormatException ignored) {
+                            }
+
+                            Pet pet = petManager.createPet(
+                                    connection, baseItem, petData[0], petData[1], petData[2], habbo.getClient());
                             if (pet == null) throw new SQLException("Unable to create catalog pet");
                             pets.add(pet);
                         }

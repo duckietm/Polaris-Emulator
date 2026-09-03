@@ -286,7 +286,7 @@ final class CatalogPurchaseApplicationService {
         CatalogItem item;
 
         if (page instanceof RecentPurchasesLayout)
-            item = this.client.getHabbo().getHabboStats().getRecentPurchases().get(itemId);
+            item = this.client.getHabbo().getHabboStats().getRecentPurchase(itemId);
         else item = page.getCatalogItem(itemId);
 
         if (item == null && !(page instanceof RecentPurchasesLayout)) {

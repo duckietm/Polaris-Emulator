@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.rooms.pets;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.pets.Pet;
+import com.eu.habbo.habbohotel.pets.PetManager;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -41,37 +42,34 @@ public class PetPackageNameEvent extends MessageHandler {
                         }
 
                         Pet pet = null;
+                        PetManager petManager = Emulator.getGameEnvironment().getPetManager();
 
                         if (item.getBaseItem().getName().equalsIgnoreCase("val11_present")) {
-                            pet = Emulator.getGameEnvironment().getPetManager().createPet(11, name, this.client);
+                            pet = petManager.createPet(11, name, this.client);
                         }
 
                         if (item.getBaseItem().getName().equalsIgnoreCase("gnome_box")) {
-                            pet = Emulator.getGameEnvironment()
-                                    .getPetManager()
-                                    .createGnome(name, room, this.client.getHabbo());
+                            pet = petManager.createGnome(name, room, this.client.getHabbo());
                         }
 
                         if (item.getBaseItem().getName().equalsIgnoreCase("leprechaun_box")) {
-                            pet = Emulator.getGameEnvironment()
-                                    .getPetManager()
-                                    .createLeprechaun(name, room, this.client.getHabbo());
+                            pet = petManager.createLeprechaun(name, room, this.client.getHabbo());
                         }
 
                         if (item.getBaseItem().getName().equalsIgnoreCase("velociraptor_egg")) {
-                            pet = Emulator.getGameEnvironment().getPetManager().createPet(34, name, this.client);
+                            pet = petManager.createPet(34, name, this.client);
                         }
 
                         if (item.getBaseItem().getName().equalsIgnoreCase("pterosaur_egg")) {
-                            pet = Emulator.getGameEnvironment().getPetManager().createPet(33, name, this.client);
+                            pet = petManager.createPet(33, name, this.client);
                         }
 
                         if (item.getBaseItem().getName().equalsIgnoreCase("petbox_epic")) {
-                            pet = Emulator.getGameEnvironment().getPetManager().createPet(32, name, this.client);
+                            pet = petManager.createPet(32, name, this.client);
                         }
 
                         if (item.getBaseItem().getName().equalsIgnoreCase("cowbox_gold")) {
-                            pet = Emulator.getGameEnvironment().getPetManager().createPet(35, 28, name, this.client);
+                            pet = petManager.createPet(35, 28, name, this.client);
                         }
 
                         if (pet != null) {

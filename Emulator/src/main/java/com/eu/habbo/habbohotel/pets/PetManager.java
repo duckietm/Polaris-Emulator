@@ -406,6 +406,18 @@ public class PetManager {
         }
     }
 
+    public boolean isClubOnlyBreed(int petType, int color) {
+        Set<PetRace> races = this.petRaces.get(petType);
+
+        if (races == null) return false;
+
+        for (PetRace race : races) {
+            if (race.colorOne == color || race.colorTwo == color) return race.clubOnly;
+        }
+
+        return false;
+    }
+
     public Set<PetRace> getBreeds(String petName) {
         if (!petName.matches("a0 pet\\d{1,3}")) {
             LOGGER.error("Pet data '{}' not found. Expected format: a0 pet<0-999>", petName);

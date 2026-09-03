@@ -1,8 +1,10 @@
 package com.eu.habbo.messages.incoming.catalog;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.catalog.CatalogManager;
 import com.eu.habbo.habbohotel.catalog.CatalogPage;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
+import com.eu.habbo.habbohotel.catalog.layouts.RecentPurchasesLayout;
 import com.eu.habbo.habbohotel.modtool.ScripterManager;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -17,8 +19,8 @@ public class RequestCatalogPageEvent extends MessageHandler {
         String mode = this.packet.readString();
         CatalogPageType requestedType = CatalogPageType.fromString(mode);
 
-        CatalogPage page =
-                Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(catalogPageId, requestedType);
+        CatalogManager catalogManager = Emulator.getGameEnvironment().getCatalogManager();
+        CatalogPage page = catalogManager.getCatalogPage(catalogPageId, requestedType);
 
         if (catalogPageId > 0 && page != null) {
             boolean canSeeCatalogIds = this.client.getHabbo().hasPermission(Permission.ACC_CATALOG_IDS);
@@ -29,6 +31,10 @@ public class RequestCatalogPageEvent extends MessageHandler {
                     canSeeCatalogIds);
 
             if (canOpen) {
+                if (page instanceof RecentPurchasesLayout) {
+                    catalogManager.loadRecentPurchases(this.client.getHabbo());
+                }
+
                 this.client.sendResponse(new CatalogPageComposer(page, this.client.getHabbo(), offerId, mode));
             } else {
                 if (!page.isVisible()) {

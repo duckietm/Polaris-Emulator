@@ -17,11 +17,14 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreDataEntry;
+import com.eu.habbo.habbohotel.wired.highscores.WiredHighscoreManager;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Records a score for the resolved users on every highscore board in the room.
@@ -126,15 +129,50 @@ public class WiredEffectGivePointsHighscore extends InteractionWiredEffect {
 
         int now = Emulator.getIntUnixTimestamp();
 
+        WiredHighscoreManager highscores =
+                Emulator.getGameEnvironment().getItemManager().getHighscoreManager();
+
         for (HabboItem item : room.getRoomSpecialTypes().getItemsOfType(InteractionWiredHighscore.class)) {
-            Emulator.getGameEnvironment()
-                    .getItemManager()
-                    .getHighscoreManager()
-                    .addHighscoreData(new WiredHighscoreDataEntry(item.getId(), userIds, this.amount, true, now));
+            // A box called "give points" adds to what the user has, it does not file a fresh result
+            // every time it fires. Appending left a classic board showing the same person five times
+            // with the same ten points instead of once with fifty, and no way to reach a total at
+            // all. The official give-score box accumulates too - it just does it inside the game and
+            // writes once when the game ends, which is the path this box exists to work without.
+            List<WiredHighscoreDataEntry> existing = highscores.getEntriesForItemId(item.getId());
+            List<WiredHighscoreDataEntry> entries = (existing == null) ? new ArrayList<>() : new ArrayList<>(existing);
+            int index = indexOfSameUsers(entries, userIds);
+
+            if (index < 0) {
+                highscores.addHighscoreData(new WiredHighscoreDataEntry(item.getId(), userIds, this.amount, true, now));
+            } else {
+                WiredHighscoreDataEntry previous = entries.get(index);
+                entries.set(
+                        index,
+                        new WiredHighscoreDataEntry(
+                                item.getId(), userIds, previous.getScore() + this.amount, true, now));
+                highscores.setEntriesForItemId(item.getId(), entries);
+            }
 
             ((InteractionWiredHighscore) item).reloadData();
             room.updateItem(item);
         }
+    }
+
+    /**
+     * The row this exact set of users already holds on the board, or -1. Order does not matter: a
+     * team scoring again is the same team however the resolver happened to list it.
+     */
+    private static int indexOfSameUsers(List<WiredHighscoreDataEntry> entries, List<Integer> userIds) {
+        Set<Integer> wanted = new HashSet<>(userIds);
+
+        for (int index = 0; index < entries.size(); index++) {
+            WiredHighscoreDataEntry entry = entries.get(index);
+            if (entry != null && new HashSet<>(entry.getUserIds()).equals(wanted)) {
+                return index;
+            }
+        }
+
+        return -1;
     }
 
     @Override

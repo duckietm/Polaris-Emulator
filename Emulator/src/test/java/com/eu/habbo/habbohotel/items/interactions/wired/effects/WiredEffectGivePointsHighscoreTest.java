@@ -215,4 +215,44 @@ class WiredEffectGivePointsHighscoreTest {
         when(itemManager.getHighscoreManager()).thenReturn(manager);
         emulator.when(Emulator::getGameEnvironment).thenReturn(environment);
     }
+
+    @Test
+    @DisplayName("a second firing adds to the row those users already hold, rather than filing another")
+    void secondFiringAddsToTheExistingRow() {
+        WiredEffectGivePointsHighscore effect = configured(10);
+
+        InteractionWiredHighscore board = mock(InteractionWiredHighscore.class);
+        when(board.getId()).thenReturn(101);
+
+        Room room = roomWith(board);
+        RoomUnit unit = mock(RoomUnit.class);
+        Habbo standingThere = habbo(77);
+        when(room.getHabbo(unit)).thenReturn(standingThere);
+
+        WiredHighscoreManager manager = mock(WiredHighscoreManager.class);
+        // The same person already has ten on this board -- listed as a one-element team, which is
+        // how the resolver hands a single user over.
+        when(manager.getEntriesForItemId(101))
+                .thenReturn(
+                        new java.util.ArrayList<>(List.of(new WiredHighscoreDataEntry(101, List.of(77), 10, true, 1))));
+
+        try (MockedStatic<Emulator> emulator = mockStatic(Emulator.class);
+                MockedStatic<WiredSourceUtil> sources = mockStatic(WiredSourceUtil.class)) {
+            wire(emulator, manager);
+            WiredContext ctx = context(room);
+            sources.when(() -> WiredSourceUtil.resolveUsers(ctx, WiredSourceUtil.SOURCE_TRIGGER))
+                    .thenReturn(List.of(unit));
+
+            effect.execute(ctx);
+
+            verify(manager, never()).addHighscoreData(any());
+
+            ArgumentCaptor<List<WiredHighscoreDataEntry>> saved = ArgumentCaptor.forClass(List.class);
+            verify(manager).setEntriesForItemId(org.mockito.ArgumentMatchers.eq(101), saved.capture());
+
+            assertEquals(1, saved.getValue().size(), "the board keeps one row for this person");
+            assertEquals(20, saved.getValue().get(0).getScore(), "ten already there plus ten given");
+            assertEquals(List.of(77), saved.getValue().get(0).getUserIds());
+        }
+    }
 }

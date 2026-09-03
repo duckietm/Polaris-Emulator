@@ -70,6 +70,10 @@ public class PetPackageNameEvent extends MessageHandler {
                             pet = Emulator.getGameEnvironment().getPetManager().createPet(32, name, this.client);
                         }
 
+                        if (item.getBaseItem().getName().equalsIgnoreCase("cowbox_gold")) {
+                            pet = Emulator.getGameEnvironment().getPetManager().createPet(35, 28, name, this.client);
+                        }
+
                         if (pet != null) {
                             room.placePet(pet, item.getX(), item.getY(), item.getZ(), item.getRotation());
                             pet.setUserId(this.client.getHabbo().getHabboInfo().getId());

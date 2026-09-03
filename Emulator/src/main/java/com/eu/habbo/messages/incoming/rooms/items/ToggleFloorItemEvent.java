@@ -30,6 +30,7 @@ public class ToggleFloorItemEvent extends MessageHandler {
             "velociraptor_egg",
             "pterosaur_egg",
             "petbox_epic",
+            "cowbox",
             "cowbox_gold"));
 
     @Override

@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
+import com.eu.habbo.habbohotel.items.interactions.InteractionPlant;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
@@ -33,6 +34,10 @@ public class ClickFurniEvent extends MessageHandler {
 
         if (isClickTileItem(item)) {
             WiredManager.triggerUserClicksTile(room, this.client.getHabbo().getRoomUnit(), item);
+        }
+
+        if (item instanceof InteractionPlant) {
+            item.onClick(this.client, room, new Object[] {0});
         }
     }
 

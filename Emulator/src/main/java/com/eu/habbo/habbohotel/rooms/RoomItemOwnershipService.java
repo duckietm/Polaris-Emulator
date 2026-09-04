@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.rooms;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.InteractionPlant;
 import com.eu.habbo.habbohotel.items.interactions.InteractionPostIt;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
@@ -47,7 +48,6 @@ final class RoomItemOwnershipService {
                 this.index.items().put(item.getId(), item);
                 this.index.registerIncarnation(item);
             } catch (Exception ignored) {
-                // Preserve the legacy best-effort registration behavior.
             }
         }
 
@@ -119,6 +119,7 @@ final class RoomItemOwnershipService {
         }
 
         boolean trackedBuildersClubItem = BuildersClubRoomSupport.isTrackedItem(item.getId());
+        boolean destroyOnPickup = isDestroyedOnPickup(item);
 
         if (Emulator.getPluginManager().isRegistered(FurniturePickedUpEvent.class, true)) {
             Event furniturePickedUpEvent = new FurniturePickedUpEvent(item, picker);
@@ -145,6 +146,11 @@ final class RoomItemOwnershipService {
             return;
         }
 
+        if (destroyOnPickup) {
+            Emulator.getGameEnvironment().getItemManager().deleteItem(item);
+            return;
+        }
+
         Habbo owner = picker != null && picker.getHabboInfo().getId() == item.getUserId()
                 ? picker
                 : Emulator.getGameServer().getGameClientManager().getHabbo(item.getUserId());
@@ -163,7 +169,7 @@ final class RoomItemOwnershipService {
             for (HabboItem item : this.index.items().values()) {
                 if (item.getUserId() == userId) {
                     items.add(item);
-                    if (!BuildersClubRoomSupport.isTrackedItem(item.getId())) {
+                    if (!BuildersClubRoomSupport.isTrackedItem(item.getId()) && !isDestroyedOnPickup(item)) {
                         inventoryItems.add(item);
                     }
                     item.setRoomId(0);
@@ -200,7 +206,7 @@ final class RoomItemOwnershipService {
         for (Map.Entry<Integer, Set<HabboItem>> entry : itemsByOwner.entrySet()) {
             Set<HabboItem> inventoryItems = new HashSet<>();
             for (HabboItem item : entry.getValue()) {
-                if (!BuildersClubRoomSupport.isTrackedItem(item.getId())) {
+                if (!BuildersClubRoomSupport.isTrackedItem(item.getId()) && !isDestroyedOnPickup(item)) {
                     inventoryItems.add(item);
                 }
             }
@@ -213,6 +219,10 @@ final class RoomItemOwnershipService {
                 addInventoryItems(owner, inventoryItems);
             }
         }
+    }
+
+    private static boolean isDestroyedOnPickup(HabboItem item) {
+        return item instanceof InteractionPlant && ((InteractionPlant) item).isDead();
     }
 
     private void addOwnerName(HabboItem item) {

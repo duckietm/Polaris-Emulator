@@ -53,6 +53,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionMuteArea;
 import com.eu.habbo.habbohotel.items.interactions.InteractionNoSidesVendingMachine;
 import com.eu.habbo.habbohotel.items.interactions.InteractionObstacle;
 import com.eu.habbo.habbohotel.items.interactions.InteractionOneWayGate;
+import com.eu.habbo.habbohotel.items.interactions.InteractionPlant;
 import com.eu.habbo.habbohotel.items.interactions.InteractionPostIt;
 import com.eu.habbo.habbohotel.items.interactions.InteractionPressurePlate;
 import com.eu.habbo.habbohotel.items.interactions.InteractionPuzzleBox;
@@ -82,6 +83,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionVendingMachine;
 import com.eu.habbo.habbohotel.items.interactions.InteractionVikingCotie;
 import com.eu.habbo.habbohotel.items.interactions.InteractionVoteCounter;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWater;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWaterCan;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWaterItem;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredDisableControl;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredHighscore;
@@ -395,6 +397,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -413,7 +416,6 @@ public class ItemManager {
             ORDER BY id DESC
             """;
 
-    // Configuration. Loaded from database & updated accordingly.
     public static volatile boolean RECYCLER_ENABLED = true;
 
     private final Int2ObjectMap<Item> items;
@@ -423,6 +425,8 @@ public class ItemManager {
     private final YoutubeManager youtubeManager;
     private final WiredHighscoreManager highscoreManager;
     private final TreeMap<Integer, NewUserGift> newuserGifts;
+    private final Map<String, PlantConfig> plantConfigs;
+    private final Map<Integer, PlantData> plantData;
 
     public ItemManager() {
         this.items = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>());
@@ -432,6 +436,8 @@ public class ItemManager {
         this.youtubeManager = new YoutubeManager();
         this.highscoreManager = new WiredHighscoreManager();
         this.newuserGifts = new TreeMap<>();
+        this.plantConfigs = new ConcurrentHashMap<>();
+        this.plantData = new ConcurrentHashMap<>();
     }
 
     public void load() {
@@ -442,6 +448,7 @@ public class ItemManager {
         this.loadItemInteractions();
         this.loadItems();
         this.loadCrackable();
+        this.loadPlants();
         this.loadSoundTracks();
         this.youtubeManager.load();
         this.highscoreManager.load();
@@ -452,6 +459,8 @@ public class ItemManager {
 
     protected void loadItemInteractions() {
         this.interactionsList.add(new ItemInteraction("default", InteractionDefault.class));
+        this.interactionsList.add(new ItemInteraction("water_can", InteractionWaterCan.class));
+        this.interactionsList.add(new ItemInteraction("plants", InteractionPlant.class));
         this.interactionsList.add(new ItemInteraction("gate", InteractionGate.class));
         this.interactionsList.add(new ItemInteraction("guild_furni", InteractionGuildFurni.class));
         this.interactionsList.add(new ItemInteraction("guild_gate", InteractionGuildGate.class));
@@ -1098,6 +1107,46 @@ public class ItemManager {
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
         }
+    }
+
+    public void loadPlants() {
+        this.plantConfigs.clear();
+        this.plantData.clear();
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM item_plants");
+                    ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    PlantConfig config = new PlantConfig(set);
+                    if (config.getItemName() != null) {
+                        this.plantConfigs.put(config.getItemName().toLowerCase(), config);
+                    }
+                }
+            }
+            try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM item_plants_data");
+                    ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    this.plantData.put(set.getInt("item_id"), new PlantData(set));
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+    }
+
+    public PlantConfig getPlantConfig(String itemName) {
+        return itemName == null ? null : this.plantConfigs.get(itemName.toLowerCase());
+    }
+
+    public PlantData getPlantData(int itemId) {
+        return this.plantData.get(itemId);
+    }
+
+    public void putPlantData(int itemId, PlantData data) {
+        this.plantData.put(itemId, data);
+    }
+
+    public void removePlantData(int itemId) {
+        this.plantData.remove(itemId);
     }
 
     public int getCrackableCount(int itemId) {

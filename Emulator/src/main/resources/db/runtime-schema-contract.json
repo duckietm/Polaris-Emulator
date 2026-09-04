@@ -56,6 +56,8 @@
     "hotelview_news": ["button_link", "button_text", "button_type", "id", "image", "text", "title"],
     "housekeeping_log": ["action", "actor_id", "actor_name", "detail", "id", "success", "target_id", "target_label", "target_type", "timestamp"],
     "infostand_backgrounds": ["category", "id", "is_ambassador_only", "is_hc_only", "min_rank"],
+    "item_plants": ["death_count", "grow_counts", "id", "item_name"],
+    "item_plants_data": ["count_state", "item_id", "last_water_date", "state"],
     "items": ["extra_data", "guild_id", "id", "item_id", "limited_data", "room_id", "rot", "user_id", "wall_pos", "wired_data", "x", "y", "z"],
     "items_base": ["allow_gift", "allow_inventory_stack", "allow_lay", "allow_marketplace_sell", "allow_recycle", "allow_sit", "allow_stack", "allow_trade", "allow_walk", "clothing_on_walk", "customparams", "effect_id_female", "effect_id_male", "id", "interaction_modes_count", "interaction_type", "item_name", "length", "multiheight", "public_name", "sprite_id", "stack_height", "type", "vending_ids", "width"],
     "items_crackable": ["achievement_cracked", "achievement_tick", "count", "item_id", "item_name", "prizes", "required_effect", "subscription_duration", "subscription_type"],

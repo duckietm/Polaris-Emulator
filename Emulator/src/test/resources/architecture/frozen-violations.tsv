@@ -1060,9 +1060,9 @@ U|com/eu/habbo/habbohotel/wired/core/WiredManager.java|CALL|getRandom|1
 U|com/eu/habbo/habbohotel/wired/core/WiredManager.java|CALL|getThreading|2
 U|com/eu/habbo/habbohotel/wired/core/WiredSelectionFilterSupport.java|CALL|getRandom|1
 U|com/eu/habbo/habbohotel/wired/core/WiredUserMovementHelper.java|CALL|getThreading|3
-U|com/eu/habbo/habbohotel/wired/highscores/WiredHighscoreManager.java|CALL|getDatabase|2
+U|com/eu/habbo/habbohotel/wired/highscores/WiredHighscoreManager.java|CALL|getDatabase|3
 U|com/eu/habbo/habbohotel/wired/highscores/WiredHighscoreManager.java|CALL|getGameEnvironment|1
-U|com/eu/habbo/habbohotel/wired/highscores/WiredHighscoreManager.java|CALL|getThreading|2
+U|com/eu/habbo/habbohotel/wired/highscores/WiredHighscoreManager.java|CALL|getThreading|3
 U|com/eu/habbo/habbohotel/wired/highscores/WiredHighscoreMidnightUpdater.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/wired/highscores/WiredHighscoreMidnightUpdater.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/habbohotel/wired/highscores/WiredHighscoreMidnightUpdater.java|CALL|getThreading|1

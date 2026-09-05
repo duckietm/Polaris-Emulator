@@ -75,7 +75,13 @@ public enum WiredConditionType {
     // comparison operator that the property checks never read.
     USER_RANGE(57),
     FURNI_RANGE(58),
-    FURNI_PROPERTY(59);
+    FURNI_PROPERTY(59),
+    // The official client has a USER_LEVEL condition, but its level is an account-wide one
+    // Polaris does not keep. This reads the level the wired level-up add-on derives from a
+    // variable instead, which is the only level a room actually owns. It takes 61 rather than
+    // the first free code: 60 is where the array condition lands, and rather than have the two
+    // collide on whichever merges second, this leaves that seat empty.
+    USER_LEVEL(61);
 
     public final int code;
 

@@ -72,6 +72,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTrigge
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTriggerOnFurni | CONDITION | type=TRIGGER_ON_FURNI | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionTriggererMatch | CONDITION | type=TRIGGERER_MATCH | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserInRange | CONDITION | type=USER_RANGE | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel | CONDITION | type=USER_LEVEL | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserNotInRange | CONDITION | type=USER_RANGE | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserOnFurniWithState | CONDITION | type=USER_ON_FURNI_WITH_STATE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserPerformsAction | CONDITION | type=USER_PERFORMS_ACTION | operator=AND | evaluate=false
@@ -200,6 +201,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableEcho | 
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLevelUpSystem | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableReference | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableTextConnector | EXTRA | configured=true | execute=false
+com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi | EXTRA | configured=true | execute=true
 com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniAltitude | EFFECT | type=FURNI_ALTITUDE_SELECTOR | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniArea | EFFECT | type=FURNI_AREA_SELECTOR | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniByType | EFFECT | type=FURNI_BYTYPE_SELECTOR | actor=false | execute=OK

@@ -1667,6 +1667,29 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredC
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserInRange#saveData(com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserInRange#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
 
+TYPE public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel#COMPARISON_EQUAL:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel#COMPARISON_GREATER_THAN:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel#COMPARISON_GREATER_THAN_OR_EQUAL:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel#COMPARISON_LESS_THAN:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel#COMPARISON_LESS_THAN_OR_EQUAL:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel#COMPARISON_NOT_EQUAL:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel#MAX_LEVEL:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel#MIN_LEVEL:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel#QUANTIFIER_ALL:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel#QUANTIFIER_ANY:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel#type:com.eu.habbo.habbohotel.wired.WiredConditionType
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel(java.sql.ResultSet,com.eu.habbo.habbohotel.items.Item) throws java.sql.SQLException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel#evaluate(com.eu.habbo.habbohotel.wired.core.WiredContext):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel#execute(com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.Room,java.lang.Object[]):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel#getType(-):com.eu.habbo.habbohotel.wired.WiredConditionType throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel#getWiredData(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel#loadWiredData(java.sql.ResultSet,com.eu.habbo.habbohotel.rooms.Room):void throws java.sql.SQLException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel#onPickUp(-):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel#saveData(com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserLevel#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
+
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserNotInRange extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserNotInRange#type:com.eu.habbo.habbohotel.wired.WiredConditionType
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionUserNotInRange(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
@@ -3943,6 +3966,44 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraV
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableTextConnector#saveData(com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings,com.eu.habbo.habbohotel.gameclients.GameClient):boolean throws com.eu.habbo.messages.incoming.wired.WiredSaveException
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableTextConnector#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
 
+TYPE public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi#CODE:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi#KEY_BYTES:int
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi(java.sql.ResultSet,com.eu.habbo.habbohotel.items.Item) throws java.sql.SQLException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi#execute(com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.Room,java.lang.Object[]):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi#getReadKey(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi#getVariableItemId(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi#getVariableToken(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi#getWiredData(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi#getWriteKey(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi#hasConfiguration(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi#isWriteEnabled(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi#loadWiredData(java.sql.ResultSet,com.eu.habbo.habbohotel.rooms.Room):void throws java.sql.SQLException
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi#mintKey(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi#onPickUp(-):void throws -
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi#resolve(java.lang.String):com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Lookup throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi#saveData(com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings,com.eu.habbo.habbohotel.gameclients.GameClient):boolean throws com.eu.habbo.messages.incoming.wired.WiredSaveException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
+
+TYPE public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Access extends java.lang.Enum<com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Access>
+ENUM com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Access 0 READ
+ENUM com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Access 1 WRITE
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Access#READ:com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Access
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Access#WRITE:com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Access
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Access#valueOf(java.lang.String):com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Access throws -
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Access#values(-):com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Access[] throws -
+
+TYPE public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Lookup extends java.lang.Record
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Lookup addon:com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi
+RECORD com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Lookup access:com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Access
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Lookup(com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi,com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Access) throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Lookup#access(-):com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Access throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Lookup#addon(-):com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Lookup#equals(java.lang.Object):boolean throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Lookup#hashCode(-):int throws -
+METHOD public final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi$Lookup#toString(-):java.lang.String throws -
+
 TYPE public final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredVariableReferenceSupport extends java.lang.Object
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredVariableReferenceSupport#SHARED_AVAILABILITY:int
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredVariableReferenceSupport#TARGET_ROOM:int
@@ -4976,6 +5037,7 @@ ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 54 USER_MOTTO
 ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 55 USER_RANGE
 ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 56 FURNI_RANGE
 ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 57 FURNI_PROPERTY
+ENUM com.eu.habbo.habbohotel.wired.WiredConditionType 58 USER_LEVEL
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#ACTOR_DIR:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#ACTOR_HAS_HANDITEM:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#ACTOR_IN_GROUP:com.eu.habbo.habbohotel.wired.WiredConditionType
@@ -5026,6 +5088,7 @@ FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#TRIGG
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#USER_AMOUNT:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#USER_ATTRIBUTE:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#USER_COUNT:com.eu.habbo.habbohotel.wired.WiredConditionType
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#USER_LEVEL:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#USER_MOTTO:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#USER_ON_FURNI_WITH_STATE:com.eu.habbo.habbohotel.wired.WiredConditionType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredConditionType#USER_PERFORMS_ACTION:com.eu.habbo.habbohotel.wired.WiredConditionType

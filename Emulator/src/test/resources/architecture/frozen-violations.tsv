@@ -753,6 +753,7 @@ U|com/eu/habbo/habbohotel/items/interactions/wired/extra/WiredExtraVariableFilte
 U|com/eu/habbo/habbohotel/items/interactions/wired/extra/WiredExtraVariableFilterBase.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/habbohotel/items/interactions/wired/extra/WiredExtraVariableReference.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/extra/WiredExtraVariableTextConnector.java|CALL|getGameEnvironment|1
+U|com/eu/habbo/habbohotel/items/interactions/wired/extra/WiredExtraVariableWebApi.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/extra/WiredVariableReferenceSupport.java|CALL|getDatabase|8
 U|com/eu/habbo/habbohotel/items/interactions/wired/extra/WiredVariableReferenceSupport.java|CALL|getIntUnixTimestamp|4
 U|com/eu/habbo/habbohotel/items/interactions/wired/extra/WiredVariableReferenceSupport.java|CALL|getThreading|4
@@ -1793,6 +1794,8 @@ U|com/eu/habbo/networking/gameserver/encoders/GameServerMessageLogger.java|CALL|
 U|com/eu/habbo/networking/gameserver/handlers/WebSocketHttpHandler.java|CALL|getConfig|3
 U|com/eu/habbo/networking/gameserver/handlers/WebSocketHttpHandler.java|CALL|getGameServer|1
 U|com/eu/habbo/networking/gameserver/stats/EmuStatsHttpHandler.java|CALL|getGameServer|1
+U|com/eu/habbo/networking/gameserver/wired/WiredVariableApiHandler.java|CALL|getConfig|6
+U|com/eu/habbo/networking/gameserver/wired/WiredVariableApiHandler.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/networking/rconserver/RCONServer.java|CALL|getConfig|5
 U|com/eu/habbo/networking/rconserver/RCONServerHandler.java|CALL|getConfig|2
 U|com/eu/habbo/networking/rconserver/RCONServerHandler.java|CALL|getRconServer|2

@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -33,5 +34,10 @@ public class WiredEffectGiveEffect extends WiredEffectWhisper {
                 room.giveEffect(roomUnit, effectId, Integer.MAX_VALUE);
             }
         }
+    }
+
+    @Override
+    public WiredEffectType getType() {
+        return WiredEffectType.EFFECT_ID;
     }
 }

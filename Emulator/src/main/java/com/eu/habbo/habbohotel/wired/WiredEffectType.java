@@ -83,7 +83,34 @@ public enum WiredEffectType {
     PLAY_YOUTUBE(92),
     QUICK_BOPPER(93),
     SET_ROOM_AD(94),
-    CHANGE_OPACITY(114);
+    CHANGE_OPACITY(114),
+    // Walking to a furni borrowed TELEPORT, whose dialog offers a "teleport instantly" checkbox. This
+    // effect calls setGoalLocation and walks: the flag is stored, serialized and never consulted.
+    WALK_TO_FURNI(115),
+    // Sitting, lying and fast-walking borrowed KICK_USER, whose dialog asks for the message shown to
+    // the person being kicked. These three store it and never read it: nobody is being kicked.
+    USER_TARGET(116),
+    // Moving a user several tiles borrowed MOVE_ROTATE_USER, whose dialog sends three slots. This
+    // effect reads a fourth, the tile count, so it was stuck at one tile whatever the box was for.
+    MOVE_USER_TILES(117),
+    // Nineteen effects borrowed SHOW_MESSAGE, whose dialog is a chat composer: a message textarea, a
+    // bubble style and a visibility choice. Only the three that actually make someone speak read the
+    // last two. The rest kept the textarea for something that is not a message at all — an amount, a
+    // badge code, a tag, a room or effect id, a figure, a link, a command.
+    EFFECT_AMOUNT(118),
+    EFFECT_BADGE(119),
+    EFFECT_TAG(120),
+    EFFECT_ID(121),
+    EFFECT_MESSAGE(122),
+    EFFECT_TEXT(123),
+    // Everyone in the room leaves their game, so there is no set of users to pick. It borrowed
+    // LEAVE_TEAM, whose dialog offers a user source that this effect never consults when choosing
+    // targets - execute() walks getCurrentHabbos(). The stored value still decides
+    // requiresTriggeringUser(), so it keeps its slot and is simply no longer asked for.
+    ALL_USERS_LEAVE_TEAM(124),
+    // The official OVERRIDE_HEIGHT: a two-way choice and a 0..8000 thousandths slider. Its dialog is
+    // its own, so it takes the next free code rather than borrowing one.
+    OVERRIDE_HEIGHT(125);
 
     public final int code;
 

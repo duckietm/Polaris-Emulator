@@ -12,22 +12,23 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.List;
 
 /**
- * Negation of {@link WiredConditionSameHeight}: passes when the selected furni do NOT all share the same
- * stack height (Z) — i.e. at least one differs. Same furni-picker resolution (via {@code this.items}) and
- * dialog reuse; needs at least 2 furni to be meaningful.
+ * Negation of {@link WiredConditionSameHeight}, under whichever quantifier the dialog is set to.
+ * {@code all} - the historical and default behaviour - passes when the targets do not all share one
+ * stack height, i.e. at least one differs; {@code any} passes when no two of them meet at all. Same
+ * furni-picker resolution (via {@code this.items}) and dialog reuse; needs at least 2 furni to mean
+ * anything.
  */
 public class WiredConditionNotSameHeight extends InteractionWiredCondition {
     private static final int QUANTIFIER_ALL = 0;
     private static final int QUANTIFIER_ANY = 1;
 
-    public static final WiredConditionType type = WiredConditionType.HAS_ALTITUDE;
+    public static final WiredConditionType type = WiredConditionType.FURNI_PROPERTY;
 
     private final HashSet<HabboItem> items;
     private int furniSource = WiredSourceUtil.SOURCE_TRIGGER;
@@ -58,21 +59,9 @@ public class WiredConditionNotSameHeight extends InteractionWiredCondition {
             return false;
         }
 
-        BigDecimal reference = null;
-        for (HabboItem item : targets) {
-            if (item == null) {
-                continue;
-            }
-
-            BigDecimal z = BigDecimal.valueOf(item.getZ());
-            if (reference == null) {
-                reference = z;
-            } else if (reference.compareTo(z) != 0) {
-                return true;
-            }
-        }
-
-        return false;
+        return this.quantifier == QUANTIFIER_ANY
+                ? !WiredConditionSameHeight.anyPairShareHeight(targets)
+                : !WiredConditionSameHeight.allShareHeight(targets);
     }
 
     @Deprecated

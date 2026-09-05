@@ -15,12 +15,18 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
+/**
+ * Passes when the resolved user is frozen. It keeps the wearing-effect storage — the user source and
+ * the quantifier are the settings it needs — but answers {@link WiredConditionType#USER_STATE}, whose
+ * dialog leaves out the effect id. Being frozen is a state, not an effect you name:
+ * {@code matchesFrozen} asks {@code WiredFreezeUtil}, and the stored id is never read.
+ */
 public class WiredConditionFrozen extends InteractionWiredCondition {
     protected static final int QUANTIFIER_ALL = 0;
     protected static final int QUANTIFIER_ANY = 1;
     protected static final int MAX_EFFECT_ID = 10_000;
 
-    public static final WiredConditionType type = WiredConditionType.ACTOR_WEARS_EFFECT;
+    public static final WiredConditionType type = WiredConditionType.USER_STATE;
 
     protected int effectId = 0;
     protected int userSource = WiredSourceUtil.SOURCE_TRIGGER;

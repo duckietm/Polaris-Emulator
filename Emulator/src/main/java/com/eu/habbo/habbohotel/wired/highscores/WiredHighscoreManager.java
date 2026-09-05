@@ -107,13 +107,7 @@ public class WiredHighscoreManager {
                     PreparedStatement statement = connection.prepareStatement(
                             "INSERT INTO `items_highscore_data` (`item_id`, `user_ids`, `score`, `is_win`, `timestamp`) VALUES (?, ?, ?, ?, ?)")) {
                 statement.setInt(1, entry.getItemId());
-                statement.setString(
-                        2,
-                        String.join(
-                                ",",
-                                entry.getUserIds().stream()
-                                        .map(Object::toString)
-                                        .collect(Collectors.toList())));
+                statement.setString(2, joinUserIds(entry.getUserIds()));
                 statement.setInt(3, entry.getScore());
                 statement.setInt(4, entry.isWin() ? 1 : 0);
                 statement.setInt(5, entry.getTimestamp());
@@ -171,16 +165,29 @@ public class WiredHighscoreManager {
         }
 
         if (scoreType == WiredHighscoreScoreType.LONGESTTIME) {
-            return highscores.collect(Collectors.groupingBy(h -> h.getUsers().hashCode())).entrySet().stream()
-                    .map(e -> e.getValue().stream()
-                            .max(Comparator.comparingInt(WiredHighscoreRow::getValue))
-                            .orElse(null))
-                    .filter(Objects::nonNull)
-                    .sorted(Comparator.comparingInt(WiredHighscoreRow::getValue).reversed())
-                    .collect(Collectors.toList());
+            return bestPerTeam(highscores, true);
+        }
+
+        // The fastest time is the same shape read the other way round: keep each team's smallest
+        // score and put the smallest first, or the board would crown whoever was slowest.
+        if (scoreType == WiredHighscoreScoreType.FASTESTTIME) {
+            return bestPerTeam(highscores, false);
         }
 
         return null;
+    }
+
+    private static List<WiredHighscoreRow> bestPerTeam(Stream<WiredHighscoreRow> highscores, boolean longest) {
+        Comparator<WiredHighscoreRow> byValue = Comparator.comparingInt(WiredHighscoreRow::getValue);
+
+        return highscores.collect(Collectors.groupingBy(h -> h.getUsers().hashCode())).entrySet().stream()
+                .map(e -> (longest
+                                ? e.getValue().stream().max(byValue)
+                                : e.getValue().stream().min(byValue))
+                        .orElse(null))
+                .filter(Objects::nonNull)
+                .sorted(longest ? byValue.reversed() : byValue)
+                .collect(Collectors.toList());
     }
 
     private boolean timeMatchesEntry(WiredHighscoreDataEntry entry, WiredHighscoreClearType timeType) {
@@ -209,8 +216,50 @@ public class WiredHighscoreManager {
         return this.data.get(itemId);
     }
 
+    /**
+     * Replace everything this board holds, in memory and on disk.
+     *
+     * <p>Nothing ever deleted from {@code items_highscore_data}: the table was only read at boot and
+     * appended to, so the reset box emptied the board in memory and every score came back at the next
+     * start. The write is threaded like the insert, and the memory swap happens first so a board that
+     * is read in the same tick already shows the new state.
+     */
     public void setEntriesForItemId(int itemId, List<WiredHighscoreDataEntry> entries) {
-        this.data.put(itemId, Collections.synchronizedList(entries));
+        List<WiredHighscoreDataEntry> stored = Collections.synchronizedList(new ArrayList<>(entries));
+        this.data.put(itemId, stored);
+
+        Emulator.getThreading().run(() -> {
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+                try (PreparedStatement delete =
+                        connection.prepareStatement("DELETE FROM `items_highscore_data` WHERE `item_id` = ?")) {
+                    delete.setInt(1, itemId);
+                    delete.execute();
+                }
+
+                if (stored.isEmpty()) {
+                    return;
+                }
+
+                try (PreparedStatement insert = connection.prepareStatement(
+                        "INSERT INTO `items_highscore_data` (`item_id`, `user_ids`, `score`, `is_win`, `timestamp`) VALUES (?, ?, ?, ?, ?)")) {
+                    for (WiredHighscoreDataEntry entry : stored) {
+                        insert.setInt(1, entry.getItemId());
+                        insert.setString(2, joinUserIds(entry.getUserIds()));
+                        insert.setInt(3, entry.getScore());
+                        insert.setInt(4, entry.isWin() ? 1 : 0);
+                        insert.setInt(5, entry.getTimestamp());
+                        insert.addBatch();
+                    }
+                    insert.executeBatch();
+                }
+            } catch (SQLException e) {
+                LOGGER.error("Caught SQL exception", e);
+            }
+        });
+    }
+
+    static String joinUserIds(List<Integer> userIds) {
+        return String.join(",", userIds.stream().map(Object::toString).collect(Collectors.toList()));
     }
 
     private long getTodayStartTimestamp() {

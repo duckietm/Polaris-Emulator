@@ -376,6 +376,10 @@ The monitor currently supports:
 - `MARKED_AS_HEAVY`
 - `KILLED`
 - `RECURSION_TIMEOUT`
+- `NO_TARGETS` — a chain fired and an effect had nothing to act on, so it did
+  nothing and said nothing
+- `UNREACHABLE` — a furni is waiting on something the room has no way of
+  producing, such as a highscore board in a room with no game that can end
 
 Each log/history entry can carry:
 

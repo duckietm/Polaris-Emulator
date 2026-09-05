@@ -127,6 +127,7 @@ public class GameServer extends Server {
             wsFuture.channel().closeFuture().addListener(ignored -> this.webSocketListening = false);
             LOGGER.info("WebSocket server started on {}:{} (SSL: {})", wsHost, wsPort, wsInitializer.isSslEnabled());
             com.eu.habbo.networking.gameserver.cms.CmsApiHandler.logStartupStatus(wsHost, wsPort);
+            com.eu.habbo.networking.gameserver.wired.WiredVariableApiHandler.logStartupStatus(wsHost, wsPort);
 
             if (configuration().getBoolean("crypto.ws.signing.enabled", false)) {
                 try {

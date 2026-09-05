@@ -4,10 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveDuckets;
+import com.eu.habbo.habbohotel.permissions.Permission;
+import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -103,8 +107,12 @@ class RoomItemPersistenceBehaviorTest {
         RoomItemManager manager = new RoomItemManager(new Room(41, 7));
         WiredEffectGiveDuckets wired = new WiredEffectGiveDuckets(1001, 7, mock(Item.class), "0", 0, 0);
         wired.setRoomId(41);
+        GameClient author = mock(GameClient.class);
+        Habbo authorHabbo = mock(Habbo.class);
+        when(author.getHabbo()).thenReturn(authorHabbo);
+        when(authorHabbo.hasPermission(Permission.ACC_SUPERWIRED)).thenReturn(true);
         assertTrue(wired.saveData(
-                new WiredSettings(new int[] {WiredSourceUtil.SOURCE_TRIGGER}, "25", new int[0], 0), null));
+                new WiredSettings(new int[] {WiredSourceUtil.SOURCE_TRIGGER}, "25", new int[0], 0), author));
         wired.needsUpdate(true);
         items(manager).put(wired.getId(), wired);
 

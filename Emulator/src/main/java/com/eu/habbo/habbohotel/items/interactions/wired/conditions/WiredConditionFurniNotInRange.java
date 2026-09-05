@@ -28,7 +28,7 @@ public class WiredConditionFurniNotInRange extends InteractionWiredCondition {
     private static final int QUANTIFIER_ALL = 0;
     private static final int QUANTIFIER_ANY = 1;
 
-    public static final WiredConditionType type = WiredConditionType.HAS_ALTITUDE;
+    public static final WiredConditionType type = WiredConditionType.FURNI_RANGE;
 
     private final HashSet<HabboItem> items;
     private int comparison = COMPARISON_EQUAL;
@@ -221,6 +221,19 @@ public class WiredConditionFurniNotInRange extends InteractionWiredCondition {
         return true;
     }
 
+    /**
+     * The dialog offers three operators against the radius, and until now every one of them behaved
+     * as "within". They now mean what they say, with {@code equals} keeping the historical inclusive
+     * reading so a box saved before this change evaluates exactly as it did.
+     */
+    private boolean matchesRadius(double distance) {
+        return switch (this.comparison) {
+            case COMPARISON_LESS -> distance < this.radius;
+            case COMPARISON_GREATER -> distance > this.radius;
+            default -> distance <= this.radius;
+        };
+    }
+
     private boolean isOutsideRange(RoomTile origin, RoomLayout layout, HabboItem item) {
         if (item == null) {
             return true;
@@ -231,7 +244,7 @@ public class WiredConditionFurniNotInRange extends InteractionWiredCondition {
             return true;
         }
 
-        return origin.distance(tile) > this.radius;
+        return !this.matchesRadius(origin.distance(tile));
     }
 
     private void refresh(Room room) {

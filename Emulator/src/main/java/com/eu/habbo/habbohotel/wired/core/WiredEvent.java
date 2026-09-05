@@ -112,10 +112,10 @@ public final class WiredEvent {
         USER_STOPS_DANCING(WiredTriggerType.STOPS_DANCING),
 
         /** Team wins a game */
-        TEAM_WINS(WiredTriggerType.CUSTOM),
+        TEAM_WINS(WiredTriggerType.TEAM_GAME_RESULT),
 
         /** Team loses a game */
-        TEAM_LOSES(WiredTriggerType.CUSTOM),
+        TEAM_LOSES(WiredTriggerType.TEAM_GAME_RESULT),
 
         /** Signal received from a Send Signal effect */
         SIGNAL_RECEIVED(WiredTriggerType.RECEIVE_SIGNAL),

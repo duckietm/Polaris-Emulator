@@ -13,7 +13,8 @@ import java.util.List;
 
 /**
  * Negation of {@link WiredConditionHabboOwnsFurni}: passes when the triggering user does NOT own furni of
- * the selected type(s). Reuses the same HAS_ALTITUDE picker dialog and inventory check.
+ * the selected type(s). Inherits FURNI_PROPERTY from its parent, so it gets the same picker without the
+ * counter-only gate that the altitude dialog imposed.
  */
 public class WiredConditionHabboNotOwnsFurni extends WiredConditionHabboOwnsFurni {
 

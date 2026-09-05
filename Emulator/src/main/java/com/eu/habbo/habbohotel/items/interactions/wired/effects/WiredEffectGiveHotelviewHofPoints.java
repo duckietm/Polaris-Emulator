@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredNumericInputGuard;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredRewardPolicy;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -21,7 +22,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class WiredEffectGiveHotelviewHofPoints extends InteractionWiredEffect {
-    public static final WiredEffectType type = WiredEffectType.SHOW_MESSAGE;
+    // The amount travels in the string slot and the user source in the int slot, which is
+    // exactly what the amount dialog reads - the box asked for a number through a window that
+    // said "what should the user say?", and the swap costs no migration.
+    public static final WiredEffectType type = WiredEffectType.EFFECT_AMOUNT;
 
     private int amount = 0;
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;
@@ -67,6 +71,11 @@ public class WiredEffectGiveHotelviewHofPoints extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
+        // Value out of nothing: the amount cap bounds one firing, not a room full of them.
+        if (!WiredRewardPolicy.canConfigure(gameClient)) {
+            return false;
+        }
+
         int nextAmount = WiredNumericInputGuard.parsePositiveAmount(
                 settings.getStringParam(), WiredNumericInputGuard.maxRewardAmount());
         if (nextAmount <= 0) {
@@ -121,8 +130,10 @@ public class WiredEffectGiveHotelviewHofPoints extends InteractionWiredEffect {
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
         String wiredData = set.getString("wired_data");
 
-        if (wiredData != null && wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+        // The guard answers null for anything it cannot parse, truncated documents included,
+        // so the defaults below cover a corrupt row instead of the load failing on it.
+        JsonData data = WiredEffectPayloadGuard.fromJson(wiredData, JsonData.class);
+        if (data != null) {
             this.amount = Math.min(Math.max(data.amount, 0), WiredNumericInputGuard.maxRewardAmount());
             this.setDelay(data.delay);
             this.userSource = data.userSource;

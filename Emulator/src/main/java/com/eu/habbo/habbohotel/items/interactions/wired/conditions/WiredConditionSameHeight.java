@@ -15,20 +15,24 @@ import com.eu.habbo.messages.ServerMessage;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
 /**
- * Passes when ALL selected furni share the same stack height (Z). Reuses the HAS_ALTITUDE furni-picker
- * dialog (the numeric field is unused here, kept only for dialog/serialization compatibility), and
- * resolves the selected furni exactly like {@link WiredConditionFurniInRange} (via {@code this.items}),
- * so it has no new client requirement. Z equality uses {@link BigDecimal#compareTo} for exactness.
+ * Passes when the selected furni share a stack height (Z). Reuses the HAS_ALTITUDE furni-picker dialog
+ * (the numeric field is unused here, kept only for dialog/serialization compatibility), and resolves the
+ * selected furni exactly like {@link WiredConditionFurniInRange} (via {@code this.items}), so it has no
+ * new client requirement. Z equality uses {@link BigDecimal#compareTo} for exactness.
+ *
+ * <p>The quantifier the dialog offers decides how many have to agree: {@code all} - the historical and
+ * default behaviour - wants one height across every target, {@code any} wants two of them to meet.
  */
 public class WiredConditionSameHeight extends InteractionWiredCondition {
     private static final int QUANTIFIER_ALL = 0;
     private static final int QUANTIFIER_ANY = 1;
 
-    public static final WiredConditionType type = WiredConditionType.HAS_ALTITUDE;
+    public static final WiredConditionType type = WiredConditionType.FURNI_PROPERTY;
 
     private final HashSet<HabboItem> items;
     private int furniSource = WiredSourceUtil.SOURCE_TRIGGER;
@@ -59,10 +63,18 @@ public class WiredConditionSameHeight extends InteractionWiredCondition {
             return false;
         }
 
+        return this.quantifier == QUANTIFIER_ANY ? anyPairShareHeight(targets) : allShareHeight(targets);
+    }
+
+    /**
+     * True when every target sits at one and the same height. Both helpers skip a null target rather
+     * than failing on it, so {@link WiredConditionNotSameHeight} stays the exact complement of this box.
+     */
+    static boolean allShareHeight(List<HabboItem> targets) {
         BigDecimal reference = null;
         for (HabboItem item : targets) {
             if (item == null) {
-                return false;
+                continue;
             }
 
             BigDecimal z = BigDecimal.valueOf(item.getZ());
@@ -74,6 +86,27 @@ public class WiredConditionSameHeight extends InteractionWiredCondition {
         }
 
         return true;
+    }
+
+    /** True when at least two targets meet at the same height. */
+    static boolean anyPairShareHeight(List<HabboItem> targets) {
+        List<BigDecimal> seen = new ArrayList<>();
+        for (HabboItem item : targets) {
+            if (item == null) {
+                continue;
+            }
+
+            BigDecimal z = BigDecimal.valueOf(item.getZ());
+            for (BigDecimal other : seen) {
+                if (other.compareTo(z) == 0) {
+                    return true;
+                }
+            }
+
+            seen.add(z);
+        }
+
+        return false;
     }
 
     @Deprecated

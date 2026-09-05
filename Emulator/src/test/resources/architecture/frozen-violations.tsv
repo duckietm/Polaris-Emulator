@@ -567,6 +567,7 @@ U|com/eu/habbo/habbohotel/items/interactions/pets/InteractionPetToy.java|CALL|ge
 U|com/eu/habbo/habbohotel/items/interactions/pets/InteractionPetTrampoline.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/WiredInputGuard.java|CALL|getConfig|4
 U|com/eu/habbo/habbohotel/items/interactions/wired/WiredNumericInputGuard.java|CALL|getConfig|2
+U|com/eu/habbo/habbohotel/items/interactions/wired/WiredRewardPolicy.java|CALL|getConfig|2
 U|com/eu/habbo/habbohotel/items/interactions/wired/chest/ChestFurniDepositHelper.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/chest/ChestTransactionLog.java|CALL|getDatabase|5
 U|com/eu/habbo/habbohotel/items/interactions/wired/chest/ChestTransactionLog.java|CALL|getIntUnixTimestamp|2
@@ -656,6 +657,8 @@ U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectFurniToFur
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectGiveFurniFromChest.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectGiveOrTakeFurni.java|CALL|getGameEnvironment|3
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectGiveOrTakeFurni.java|CALL|getThreading|1
+U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectGivePointsHighscore.java|CALL|getGameEnvironment|1
+U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectGivePointsHighscore.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectGiveRespect.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectGiveReward.java|CALL|getTexts|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectGiveScore.java|CALL|getConfig|1
@@ -688,6 +691,8 @@ U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectMoveRotate
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectMoveRotateUser.java|CALL|getConfig|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectMoveUserTiles.java|CALL|getConfig|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectMuteHabbo.java|CALL|getGameEnvironment|2
+U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectOverrideHeight.java|CALL|getConfig|1
+U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectOverrideHeight.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectPlaceFurni.java|CALL|getConfig|2
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectPlaceFurni.java|CALL|getGameEnvironment|5
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectPlayYoutube.java|CALL|getConfig|1
@@ -730,6 +735,7 @@ U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectWalkToFurn
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectWalkToFurni.java|CALL|getRandom|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectWhisper.java|CALL|getConfig|3
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectWhisper.java|CALL|getGameEnvironment|3
+U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredLinkPolicy.java|CALL|getConfig|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/extra/WiredExtraContextVariable.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/extra/WiredExtraFurniVariable.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/extra/WiredExtraOrEval.java|CALL|getConfig|1
@@ -747,6 +753,7 @@ U|com/eu/habbo/habbohotel/items/interactions/wired/extra/WiredExtraVariableFilte
 U|com/eu/habbo/habbohotel/items/interactions/wired/extra/WiredExtraVariableFilterBase.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/habbohotel/items/interactions/wired/extra/WiredExtraVariableReference.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/extra/WiredExtraVariableTextConnector.java|CALL|getGameEnvironment|1
+U|com/eu/habbo/habbohotel/items/interactions/wired/extra/WiredExtraVariableWebApi.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/extra/WiredVariableReferenceSupport.java|CALL|getDatabase|8
 U|com/eu/habbo/habbohotel/items/interactions/wired/extra/WiredVariableReferenceSupport.java|CALL|getIntUnixTimestamp|4
 U|com/eu/habbo/habbohotel/items/interactions/wired/extra/WiredVariableReferenceSupport.java|CALL|getThreading|4
@@ -1054,9 +1061,9 @@ U|com/eu/habbo/habbohotel/wired/core/WiredManager.java|CALL|getRandom|1
 U|com/eu/habbo/habbohotel/wired/core/WiredManager.java|CALL|getThreading|2
 U|com/eu/habbo/habbohotel/wired/core/WiredSelectionFilterSupport.java|CALL|getRandom|1
 U|com/eu/habbo/habbohotel/wired/core/WiredUserMovementHelper.java|CALL|getThreading|3
-U|com/eu/habbo/habbohotel/wired/highscores/WiredHighscoreManager.java|CALL|getDatabase|2
+U|com/eu/habbo/habbohotel/wired/highscores/WiredHighscoreManager.java|CALL|getDatabase|3
 U|com/eu/habbo/habbohotel/wired/highscores/WiredHighscoreManager.java|CALL|getGameEnvironment|1
-U|com/eu/habbo/habbohotel/wired/highscores/WiredHighscoreManager.java|CALL|getThreading|2
+U|com/eu/habbo/habbohotel/wired/highscores/WiredHighscoreManager.java|CALL|getThreading|3
 U|com/eu/habbo/habbohotel/wired/highscores/WiredHighscoreMidnightUpdater.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/wired/highscores/WiredHighscoreMidnightUpdater.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/habbohotel/wired/highscores/WiredHighscoreMidnightUpdater.java|CALL|getThreading|1
@@ -1787,6 +1794,8 @@ U|com/eu/habbo/networking/gameserver/encoders/GameServerMessageLogger.java|CALL|
 U|com/eu/habbo/networking/gameserver/handlers/WebSocketHttpHandler.java|CALL|getConfig|3
 U|com/eu/habbo/networking/gameserver/handlers/WebSocketHttpHandler.java|CALL|getGameServer|1
 U|com/eu/habbo/networking/gameserver/stats/EmuStatsHttpHandler.java|CALL|getGameServer|1
+U|com/eu/habbo/networking/gameserver/wired/WiredVariableApiHandler.java|CALL|getConfig|6
+U|com/eu/habbo/networking/gameserver/wired/WiredVariableApiHandler.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/networking/rconserver/RCONServer.java|CALL|getConfig|5
 U|com/eu/habbo/networking/rconserver/RCONServerHandler.java|CALL|getConfig|2
 U|com/eu/habbo/networking/rconserver/RCONServerHandler.java|CALL|getRconServer|2

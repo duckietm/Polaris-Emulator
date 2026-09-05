@@ -26,7 +26,7 @@ import java.util.List;
  * {@link InClientLinkComposer}, as proven by ClickUserEvent / InteractionInformationTerminal.
  */
 public class WiredEffectOpenHabboPages extends InteractionWiredEffect {
-    public static final WiredEffectType type = WiredEffectType.SHOW_MESSAGE;
+    public static final WiredEffectType type = WiredEffectType.EFFECT_TEXT;
 
     private String link = "";
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;
@@ -72,11 +72,18 @@ public class WiredEffectOpenHabboPages extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
-        String value = settings.getStringParam();
-        if (value == null || value.trim().isEmpty()) {
+        String value = WiredLinkPolicy.normalize(settings.getStringParam());
+        if (value.isEmpty()) {
             return false;
         }
-        this.link = value.trim();
+
+        // The link is pushed at every resolved user's client, so it is bounded by who configures it.
+        Habbo configurer = (gameClient != null) ? gameClient.getHabbo() : null;
+        if (!WiredLinkPolicy.canUse(value, configurer)) {
+            return false;
+        }
+
+        this.link = value;
 
         int[] params = settings.getIntParams();
         this.userSource = (params.length > 0) ? params[0] : WiredSourceUtil.SOURCE_TRIGGER;
@@ -120,7 +127,9 @@ public class WiredEffectOpenHabboPages extends InteractionWiredEffect {
 
         if (wiredData.startsWith("{")) {
             JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            this.link = data.link == null ? "" : data.link;
+            // Normalised, but not re-gated: the save path is the boundary. Dropping a stored link here
+            // would silently blank a box an ACC_SUPERWIRED user was entitled to configure.
+            this.link = WiredLinkPolicy.normalize(data.link);
             this.setDelay(data.delay);
             this.userSource = data.userSource;
         } else {

@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredRewardPolicy;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -23,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class WiredEffectGiveBadge extends InteractionWiredEffect {
-    public static final WiredEffectType type = WiredEffectType.SHOW_MESSAGE;
+    public static final WiredEffectType type = WiredEffectType.EFFECT_BADGE;
 
     private String badge = "";
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;
@@ -68,6 +69,11 @@ public class WiredEffectGiveBadge extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
+        // Value out of nothing: the amount cap bounds one firing, not a room full of them.
+        if (!WiredRewardPolicy.canConfigure(gameClient)) {
+            return false;
+        }
+
         String nextBadge =
                 settings.getStringParam() != null ? settings.getStringParam().trim() : "";
         if (nextBadge.isEmpty()) {

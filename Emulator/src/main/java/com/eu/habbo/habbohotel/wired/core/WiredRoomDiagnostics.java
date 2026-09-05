@@ -17,7 +17,11 @@ public final class WiredRoomDiagnostics {
         EXECUTOR_OVERLOAD,
         MARKED_AS_HEAVY,
         KILLED,
-        RECURSION_TIMEOUT
+        RECURSION_TIMEOUT,
+        /** A chain fired and an effect had nothing to act on, so it did nothing and said nothing. */
+        NO_TARGETS,
+        /** A furni is waiting on something the room has no way of producing. */
+        UNREACHABLE
     }
 
     public enum Severity {
@@ -415,6 +419,27 @@ public final class WiredRoomDiagnostics {
         record(Type.RECURSION_TIMEOUT, now, reason, sourceLabel, sourceId);
     }
 
+    /**
+     * A chain ran to its effects and one of them resolved no furni or no users. Nothing is wrong with
+     * the engine - the setup asked for something that was not there - but until now that was the one
+     * way a chain could do nothing without leaving a trace, which is a long evening for whoever built
+     * it. Entries aggregate by type, so a busy room adds a count rather than a wall of lines.
+     */
+    public void recordNoTargets(long now, String reason, String sourceLabel, int sourceId) {
+        rollWindowIfNeeded(now);
+        record(Type.NO_TARGETS, now, reason, sourceLabel, sourceId);
+    }
+
+    /**
+     * A furni was placed that can only ever be fed by something the room does not contain - a
+     * highscore board with no way to end a game, say. Nothing has failed yet and nothing will: the
+     * furni will simply sit there empty, which reads exactly like a bug.
+     */
+    public void recordUnreachable(long now, String reason, String sourceLabel, int sourceId) {
+        rollWindowIfNeeded(now);
+        record(Type.UNREACHABLE, now, reason, sourceLabel, sourceId);
+    }
+
     public synchronized void clearLogs() {
         for (Type type : Type.values()) {
             LogEntry entry = this.logs.get(type);
@@ -631,6 +656,9 @@ public final class WiredRoomDiagnostics {
     }
 
     private Severity defaultSeverity(Type type) {
-        return (type == Type.MARKED_AS_HEAVY) ? Severity.WARNING : Severity.ERROR;
+        // Neither of these is the engine failing; they describe a setup, so they read as warnings.
+        return (type == Type.MARKED_AS_HEAVY || type == Type.NO_TARGETS || type == Type.UNREACHABLE)
+                ? Severity.WARNING
+                : Severity.ERROR;
     }
 }

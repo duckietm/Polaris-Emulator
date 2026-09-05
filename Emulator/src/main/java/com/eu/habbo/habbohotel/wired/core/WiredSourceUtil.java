@@ -20,16 +20,35 @@ public final class WiredSourceUtil {
 
     private WiredSourceUtil() {}
 
+    /**
+     * "Use the triggering item" means the furni the event happened on, and falls back to the wired
+     * trigger box when the event has no furni of its own.
+     *
+     * <p>Twenty of the thirty-four events carry no source item - says, enters room, game starts, team
+     * wins, dances, key presses - so without that fallback the option resolved to an empty list and
+     * every furni effect built on one of those triggers did nothing at all, with no way to see why.
+     * The selectors already asked for the fallback through {@link #resolveItemsRaw}; effects and
+     * conditions now get the same answer to the same question.
+     *
+     * <p>Nothing that works today changes: the fourteen events that do carry a furni still resolve to
+     * it. Removing furni is safe here because that effect refuses to touch any wired furni at all.
+     */
     public static List<HabboItem> resolveItems(WiredContext ctx, int sourceType, Collection<HabboItem> selectedItems) {
-        List<HabboItem> resolvedItems = resolveItemsInternal(ctx, sourceType, selectedItems, false);
+        List<HabboItem> resolvedItems = resolveItemsInternal(ctx, sourceType, selectedItems, true);
 
         if (ctx == null) {
             return resolvedItems;
         }
 
-        return (sourceType == SOURCE_SELECTOR)
+        List<HabboItem> filtered = (sourceType == SOURCE_SELECTOR)
                 ? resolvedItems
                 : WiredSelectionFilterSupport.filterItems(ctx.room(), ctx.triggerItem(), ctx, resolvedItems);
+
+        if (filtered.isEmpty() && ctx.state() != null) {
+            ctx.state().noteUnresolvedFurniSource(sourceType);
+        }
+
+        return filtered;
     }
 
     public static List<HabboItem> resolveItemsRaw(
@@ -48,9 +67,15 @@ public final class WiredSourceUtil {
             return resolvedUsers;
         }
 
-        return (sourceType == SOURCE_SELECTOR)
+        List<RoomUnit> filtered = (sourceType == SOURCE_SELECTOR)
                 ? resolvedUsers
                 : WiredSelectionFilterSupport.filterUsers(ctx.room(), ctx.triggerItem(), ctx, resolvedUsers);
+
+        if (filtered.isEmpty() && ctx.state() != null) {
+            ctx.state().noteUnresolvedUserSource(sourceType);
+        }
+
+        return filtered;
     }
 
     public static List<RoomUnit> resolveUsersRaw(WiredContext ctx, int sourceType) {

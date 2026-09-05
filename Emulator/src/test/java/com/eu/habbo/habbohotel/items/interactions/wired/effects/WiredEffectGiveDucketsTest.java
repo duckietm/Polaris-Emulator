@@ -6,8 +6,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -35,7 +37,13 @@ class WiredEffectGiveDucketsTest {
                 mock(WiredServices.class),
                 new WiredState(100));
 
-        assertTrue(effect.saveData(settings, null));
+        // Configuring a box that grants value needs the permission; this test is about the grant path.
+        GameClient author = mock(GameClient.class);
+        Habbo authorHabbo = mock(Habbo.class);
+        when(author.getHabbo()).thenReturn(authorHabbo);
+        when(authorHabbo.hasPermission(Permission.ACC_SUPERWIRED)).thenReturn(true);
+
+        assertTrue(effect.saveData(settings, author));
         effect.execute(context);
 
         verify(habbo).givePixels(25);

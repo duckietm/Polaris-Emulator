@@ -15,8 +15,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
+/**
+ * Passes when the resolved user holds fewer than {@code amount} credits. It keeps
+ * {@link WiredConditionTeamGameBase}'s storage - the amount, the user source and the quantifier are the
+ * settings it needs - but answers {@link WiredConditionType#USER_AMOUNT}, whose dialog leaves out the
+ * team colour and the comparison operator. This box compares one way and always has: {@code < amount}.
+ */
 public class WiredConditionHabboLacksCredits extends WiredConditionTeamGameBase {
-    public static final WiredConditionType type = WiredConditionType.TEAM_HAS_SCORE;
+    public static final WiredConditionType type = WiredConditionType.USER_AMOUNT;
 
     private int teamType = GameTeamColors.RED.type;
     private int comparison = COMPARISON_EQUAL;

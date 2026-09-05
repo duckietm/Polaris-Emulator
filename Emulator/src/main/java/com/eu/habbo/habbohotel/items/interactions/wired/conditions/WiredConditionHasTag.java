@@ -25,7 +25,7 @@ public class WiredConditionHasTag extends InteractionWiredCondition {
     protected static final int QUANTIFIER_ANY = 1;
     protected static final int MAX_TAG_LENGTH = 38;
 
-    public static final WiredConditionType type = WiredConditionType.ACTOR_WEARS_BADGE;
+    public static final WiredConditionType type = WiredConditionType.USER_TAG;
 
     protected String tag = "";
     protected int userSource = WiredSourceUtil.SOURCE_TRIGGER;

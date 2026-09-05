@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredNumericInputGuard;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredRewardPolicy;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -25,7 +26,7 @@ import java.util.List;
  * {@link WiredEffectGiveRespect}, so it needs no new client dialog. Amount capped per execution.
  */
 public class WiredEffectGiveDuckets extends InteractionWiredEffect {
-    public static final WiredEffectType type = WiredEffectType.SHOW_MESSAGE;
+    public static final WiredEffectType type = WiredEffectType.EFFECT_AMOUNT;
 
     private int amount = 0;
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;
@@ -70,6 +71,11 @@ public class WiredEffectGiveDuckets extends InteractionWiredEffect {
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
+        // Value out of nothing: the amount cap bounds one firing, not a room full of them.
+        if (!WiredRewardPolicy.canConfigure(gameClient)) {
+            return false;
+        }
+
         int nextAmount = WiredNumericInputGuard.parsePositiveAmount(
                 settings.getStringParam(), WiredNumericInputGuard.maxRewardAmount());
         if (nextAmount <= 0) {
@@ -118,7 +124,9 @@ public class WiredEffectGiveDuckets extends InteractionWiredEffect {
 
         if (wiredData.startsWith("{")) {
             JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            this.amount = data.amount;
+            // The cap is a property of the system, not of the moment a furni was saved:
+            // a value stored under a looser limit is brought back inside it here.
+            this.amount = WiredNumericInputGuard.clampAmount(data.amount, WiredNumericInputGuard.maxRewardAmount());
             this.setDelay(data.delay);
             this.userSource = data.userSource;
         } else {

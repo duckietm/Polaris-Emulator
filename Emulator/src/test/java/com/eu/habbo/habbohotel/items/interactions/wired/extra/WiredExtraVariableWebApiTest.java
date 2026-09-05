@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.extra;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashSet;
@@ -42,6 +43,15 @@ class WiredExtraVariableWebApiTest {
         assertEquals("42", WiredExtraVariableWebApi.firstField("42"));
         assertEquals("", WiredExtraVariableWebApi.firstField(""));
         assertEquals("", WiredExtraVariableWebApi.firstField(null));
+    }
+
+    @Test
+    void aKeyNobodyMintedOpensNothing() {
+        // The HTTP surface answers "unknown key" on null, so an absent query parameter and a wrong
+        // one take the same path and reveal nothing about which one it was.
+        assertNull(WiredExtraVariableWebApi.resolve(null));
+        assertNull(WiredExtraVariableWebApi.resolve(""));
+        assertNull(WiredExtraVariableWebApi.resolve(WiredExtraVariableWebApi.mintKey()));
     }
 
     @Test

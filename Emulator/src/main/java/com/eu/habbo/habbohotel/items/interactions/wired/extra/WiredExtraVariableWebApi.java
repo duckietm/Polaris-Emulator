@@ -16,6 +16,8 @@ import java.security.SecureRandom;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Base64;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Exposes one room variable to an outside caller over HTTP.
@@ -35,6 +37,15 @@ public class WiredExtraVariableWebApi extends InteractionWiredExtra {
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final Base64.Encoder KEY_ENCODER = Base64.getUrlEncoder().withoutPadding();
     private static final char FIELD_SEPARATOR = '\t';
+
+    /**
+     * Every live key, so an HTTP caller is resolved without walking the hotel. Entries are put back
+     * on load and on save and dropped on pick-up, but the map is still treated as a hint rather than
+     * the truth: {@link #resolve} re-reads the box it lands on and evicts the entry when the key has
+     * since been rotated away or the box has gone. That keeps a rotation from leaving the old key
+     * working, which a registry trusted blindly would do.
+     */
+    private static final Map<String, WiredExtraVariableWebApi> KEYS = new ConcurrentHashMap<>();
 
     private String variableToken = "";
     private int variableItemId = 0;
@@ -92,9 +103,11 @@ public class WiredExtraVariableWebApi extends InteractionWiredExtra {
         // pair half usable, which is the state a rotation exists to end.
         boolean rotate = intParams.length > 1 && intParams[1] == 1;
         if (rotate || this.readKey.isEmpty() || this.writeKey.isEmpty()) {
+            forget();
             this.readKey = mintKey();
             this.writeKey = mintKey();
         }
+        remember();
 
         this.setExtradata("");
         this.needsUpdate(true);
@@ -142,6 +155,7 @@ public class WiredExtraVariableWebApi extends InteractionWiredExtra {
                 this.readKey = data.readKey == null ? "" : data.readKey;
                 this.writeKey = data.writeKey == null ? "" : data.writeKey;
                 this.writeEnabled = data.writeEnabled;
+                remember();
             }
             return;
         }
@@ -154,6 +168,7 @@ public class WiredExtraVariableWebApi extends InteractionWiredExtra {
     public void onPickUp() {
         // Picking the box up ends the exposure: the keys go with it, so a caller holding the old
         // pair cannot reach the variable again if the box is put back down.
+        forget();
         this.variableToken = "";
         this.variableItemId = 0;
         this.readKey = "";
@@ -185,6 +200,57 @@ public class WiredExtraVariableWebApi extends InteractionWiredExtra {
     public boolean isWriteEnabled() {
         return this.writeEnabled;
     }
+
+    private void remember() {
+        if (!this.readKey.isEmpty()) {
+            KEYS.put(this.readKey, this);
+        }
+        if (!this.writeKey.isEmpty()) {
+            KEYS.put(this.writeKey, this);
+        }
+    }
+
+    private void forget() {
+        // Removing by key and value, so a box cannot evict a key another box has since minted.
+        if (!this.readKey.isEmpty()) {
+            KEYS.remove(this.readKey, this);
+        }
+        if (!this.writeKey.isEmpty()) {
+            KEYS.remove(this.writeKey, this);
+        }
+    }
+
+    /**
+     * The box a key currently opens, and what it opens it for, or null when the key opens nothing.
+     * A key that the registry still holds but the box no longer recognises has been rotated away, so
+     * it is dropped here rather than answered.
+     */
+    public static Lookup resolve(String key) {
+        if (key == null || key.isEmpty()) {
+            return null;
+        }
+
+        WiredExtraVariableWebApi addon = KEYS.get(key);
+        if (addon == null) {
+            return null;
+        }
+        if (key.equals(addon.readKey)) {
+            return new Lookup(addon, Access.READ);
+        }
+        if (key.equals(addon.writeKey)) {
+            return new Lookup(addon, Access.WRITE);
+        }
+
+        KEYS.remove(key, addon);
+        return null;
+    }
+
+    public enum Access {
+        READ,
+        WRITE
+    }
+
+    public record Lookup(WiredExtraVariableWebApi addon, Access access) {}
 
     static String firstField(String stringParam) {
         if (stringParam == null) {

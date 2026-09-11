@@ -354,4 +354,45 @@ public class RoomCompetitionManager {
             return 0;
         }
     }
+
+    /** How many rooms are taking part, which is what the navigator pages through. */
+    public int entryCount(RoomCompetition competition) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT COUNT(*) AS total FROM room_competition_entries WHERE competition_id = ?")) {
+            statement.setInt(1, competition.id());
+
+            try (ResultSet set = statement.executeQuery()) {
+                return set.next() ? set.getInt("total") : 0;
+            }
+        } catch (SQLException exception) {
+            LOGGER.error("Caught SQL exception", exception);
+            return 0;
+        }
+    }
+
+    /** One page of the rooms taking part, most voted first. */
+    public List<Integer> entryRoomsPage(RoomCompetition competition, int pageIndex, int pageSize) {
+        List<Integer> rooms = new ArrayList<>();
+        int size = Math.max(1, pageSize);
+
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT room_id FROM room_competition_entries WHERE competition_id = ?"
+                                + " ORDER BY votes DESC, submitted_at ASC LIMIT ? OFFSET ?")) {
+            statement.setInt(1, competition.id());
+            statement.setInt(2, size);
+            statement.setInt(3, Math.max(0, pageIndex) * size);
+
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    rooms.add(set.getInt("room_id"));
+                }
+            }
+        } catch (SQLException exception) {
+            LOGGER.error("Caught SQL exception", exception);
+        }
+
+        return rooms;
+    }
 }

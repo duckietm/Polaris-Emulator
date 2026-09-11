@@ -351,6 +351,7 @@ import com.eu.habbo.messages.incoming.rooms.bots.BotPickupEvent;
 import com.eu.habbo.messages.incoming.rooms.bots.BotPlaceEvent;
 import com.eu.habbo.messages.incoming.rooms.bots.BotSaveSettingsEvent;
 import com.eu.habbo.messages.incoming.rooms.bots.BotSettingsEvent;
+import com.eu.habbo.messages.incoming.rooms.competition.CompetitionRoomsSearchEvent;
 import com.eu.habbo.messages.incoming.rooms.competition.ForwardToACompetitionRoomEvent;
 import com.eu.habbo.messages.incoming.rooms.competition.ForwardToASubmittableRoomEvent;
 import com.eu.habbo.messages.incoming.rooms.competition.ForwardToRandomCompetitionRoomEvent;
@@ -1057,6 +1058,7 @@ public class PacketManager {
         this.registerHandler(Incoming.RoomCompetitionInitEvent, RoomCompetitionInitEvent.class);
         this.registerHandler(Incoming.SubmitRoomToCompetitionEvent, SubmitRoomToCompetitionEvent.class);
         this.registerHandler(Incoming.VoteForRoomEvent, VoteForRoomEvent.class);
+        this.registerHandler(Incoming.CompetitionRoomsSearchEvent, CompetitionRoomsSearchEvent.class);
         this.registerHandler(Incoming.RoomUserStartTypingEvent, RoomUserStartTypingEvent.class);
         this.registerHandler(Incoming.RoomUserStopTypingEvent, RoomUserStopTypingEvent.class);
         this.registerHandler(Incoming.ClickFurniEvent, ClickFurniEvent.class);

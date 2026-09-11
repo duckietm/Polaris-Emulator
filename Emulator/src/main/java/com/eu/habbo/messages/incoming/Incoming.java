@@ -573,6 +573,7 @@ public class Incoming {
     public static final int OpenMysteryTrophyEvent = 3074;
     // Room competitions (AIR 13 RoomCompetitionController)
     public static final int VoteForRoomEvent = 143;
+    public static final int CompetitionRoomsSearchEvent = 433;
     public static final int ForwardToACompetitionRoomEvent = 172;
     public static final int ForwardToRandomCompetitionRoomEvent = 865;
     public static final int RoomCompetitionInitEvent = 1334;

@@ -20204,6 +20204,65 @@
         "path": "packages/communication/src/messages/outgoing/camera/PhotoCompetitionMessageComposer.ts"
       },
       "fields": []
+    },
+    {
+      "name": "COMPETITION_ROOM_SEARCH",
+      "direction": "client_to_server",
+      "header": 433,
+      "java": {
+        "symbol": "CompetitionRoomsSearchEvent",
+        "className": "CompetitionRoomsSearchEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/competition/CompetitionRoomsSearchEvent.java"
+      },
+      "typescript": {
+        "symbol": "COMPETITION_ROOM_SEARCH",
+        "className": "CompetitionRoomsSearchMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/navigator/CompetitionRoomsSearchMessageComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "goalId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "pageIndex"
+        }
+      ]
+    },
+    {
+      "name": "COMPETITION_ROOMS_DATA",
+      "direction": "server_to_client",
+      "header": 3954,
+      "java": {
+        "symbol": "CompetitionRoomsDataComposer",
+        "className": "CompetitionRoomsDataComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/competition/CompetitionRoomsDataComposer.java"
+      },
+      "typescript": {
+        "symbol": "COMPETITION_ROOMS_DATA",
+        "className": "CompetitionRoomsDataMessageParser",
+        "path": "packages/communication/src/messages/parser/navigator/CompetitionRoomsDataMessageParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "goalId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "pageIndex"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "pageCount"
+        }
+      ]
     }
   ],
   "unpaired": [
@@ -20365,14 +20424,6 @@
       "header": 389,
       "symbol": "GETUSERGAMEACHIEVEMENTSMESSAGE",
       "path": "packages/communication/src/messages/outgoing/game/lobby/GetUserGameAchievementsMessageComposer.ts",
-      "reason": "Header is registered only by the Octane Renderer packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "typescript",
-      "header": 433,
-      "symbol": "COMPETITION_ROOM_SEARCH",
-      "path": "packages/communication/src/messages/outgoing/navigator/CompetitionRoomsSearchMessageComposer.ts",
       "reason": "Header is registered only by the Octane Renderer packet registry"
     },
     {
@@ -21093,14 +21144,6 @@
       "header": 3684,
       "symbol": "BOT_RECEIVED",
       "path": "packages/communication/src/messages/parser/bots/BotReceivedMessageParser.ts",
-      "reason": "Header is registered only by the Octane Renderer packet registry"
-    },
-    {
-      "direction": "server_to_client",
-      "side": "typescript",
-      "header": 3954,
-      "symbol": "COMPETITION_ROOMS_DATA",
-      "path": "packages/communication/src/messages/parser/navigator/CompetitionRoomsDataMessageParser.ts",
       "reason": "Header is registered only by the Octane Renderer packet registry"
     },
     {

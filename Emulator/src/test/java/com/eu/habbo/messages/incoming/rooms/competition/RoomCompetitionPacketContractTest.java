@@ -27,7 +27,8 @@ class RoomCompetitionPacketContractTest {
             "RoomCompetitionInitEvent = 1334",
             "ForwardToASubmittableRoomEvent = 1450",
             "GetIsUserPartOfCompetitionEvent = 2077",
-            "SubmitRoomToCompetitionEvent = 2595"
+            "SubmitRoomToCompetitionEvent = 2595",
+            "CompetitionRoomsSearchEvent = 433"
         }) {
             assertTrue(incoming.contains(pair), pair);
             String name = pair.substring(0, pair.indexOf(' '));
@@ -43,6 +44,15 @@ class RoomCompetitionPacketContractTest {
         assertTrue(init.contains("RoomCompetitionResult.RULES"));
         assertTrue(init.contains("competition.submissionOpen(now)"));
         assertTrue(init.contains("competition.votingOpen(now)"));
+    }
+
+    @Test
+    void theParticipantsTravelInAnOrdinaryNavigatorSearchResult() throws Exception {
+        String handler = handler("CompetitionRoomsSearchEvent");
+
+        assertTrue(handler.contains("new NewNavigatorSearchResultsComposer(SEARCH_CODE, competition.code(), results)"));
+        assertTrue(handler.contains("new CompetitionRoomsDataComposer(competition.id(), pageIndex, pages)"));
+        assertTrue(handler.contains("entryRoomsPage(competition, pageIndex, PAGE_SIZE)"));
     }
 
     @Test

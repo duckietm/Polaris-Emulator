@@ -19581,7 +19581,7 @@
         "className": "RoomUnitChatWhisperComposer",
         "path": "packages/communication/src/messages/outgoing/room/unit/chat/RoomUnitChatWhisperComposer.ts"
       },
-      "reason": "Java analyzer: Packet fields delegated to external constructor RoomChatMessage inside handle; TypeScript analyzer: Outgoing value recipientName + \u0027 \u0027 + message has no statically resolvable wire type"
+      "reason": "Java analyzer: Packet fields delegated to external constructor RoomChatMessage inside handle; TypeScript analyzer: Outgoing value recipientName + ' ' + message has no statically resolvable wire type"
     },
     {
       "name": "RELEASE_ISSUES",
@@ -20525,7 +20525,7 @@
         "className": "ClientHelloMessageComposer",
         "path": "packages/communication/src/messages/outgoing/handshake/ClientHelloMessageComposer.ts"
       },
-      "reason": "TypeScript analyzer: Outgoing value `NITRO-${OctaneVersion.RENDERER_VERSION.replaceAll(\u0027.\u0027, \u0027-\u0027)}` has no statically resolvable wire type"
+      "reason": "TypeScript analyzer: Outgoing value `NITRO-${OctaneVersion.RENDERER_VERSION.replaceAll('.', '-')}` has no statically resolvable wire type"
     },
     {
       "name": "SNOWWAR_LOAD_STAGE_READY",
@@ -21325,7 +21325,7 @@
         "className": "AchievementsParser",
         "path": "packages/communication/src/messages/parser/inventory/achievements/AchievementsParser.ts"
       },
-      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor AchievementData inside parse"
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },
     {
       "name": "GROUP_FORUM_UPDATE_MESSAGE",
@@ -21581,7 +21581,7 @@
         "className": "TalentLevelUpMessageParser",
         "path": "packages/communication/src/messages/parser/talent/TalentLevelUpMessageParser.ts"
       },
-      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in IfStatement inside parse"
+      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },
     {
       "name": "CLUB_GIFT_SELECTED",
@@ -25164,6 +25164,22 @@
         "symbol": "REWARD_TRACKS",
         "className": "RewardTracksMessageParser",
         "path": "packages/communication/src/messages/parser/quest/RewardTracksMessageParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
+      "name": "WIRED_ENVIRONMENT",
+      "direction": "server_to_client",
+      "header": 5111,
+      "java": {
+        "symbol": "WiredEnvironmentComposer",
+        "className": "WiredEnvironmentComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredEnvironmentComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_ENVIRONMENT",
+        "className": "WiredEnvironmentParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredEnvironmentParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     }

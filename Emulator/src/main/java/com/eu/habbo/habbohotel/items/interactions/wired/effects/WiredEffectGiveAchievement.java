@@ -14,6 +14,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
+import com.eu.habbo.messages.outgoing.wired.WiredEnvironmentComposer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -80,7 +81,25 @@ public class WiredEffectGiveAchievement extends InteractionWiredEffect {
 
         this.setDelay(settings.getDelay());
 
+        Room room = gameClient.getHabbo().getHabboInfo().getCurrentRoom();
+        if (room != null) room.sendComposer(new WiredEnvironmentComposer(room).compose());
         return true;
+    }
+
+    public String getAchievementCode() {
+        return this.achievement;
+    }
+
+    @Override
+    public void onPlace(Room room) {
+        super.onPlace(room);
+        room.sendComposer(new WiredEnvironmentComposer(room).compose());
+    }
+
+    @Override
+    public void onPickUp(Room room) {
+        super.onPickUp(room);
+        room.sendComposer(new WiredEnvironmentComposer(room).compose());
     }
 
     @Override

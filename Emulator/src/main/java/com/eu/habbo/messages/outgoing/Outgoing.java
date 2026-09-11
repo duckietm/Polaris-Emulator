@@ -665,6 +665,8 @@ public class Outgoing {
     public static final int HousekeepingDashboardComposer = 9204;
     public static final int HousekeepingActionLogComposer = 9205;
 
+    public static final int WiredEnvironmentComposer = 5111;
+
     // Custom features — IDs 9400+ reserved
     public static final int RareValuesComposer = 9400;
     public static final int HotLooksComposer = 9360; // AIR 13 avatar editor hot looks tab

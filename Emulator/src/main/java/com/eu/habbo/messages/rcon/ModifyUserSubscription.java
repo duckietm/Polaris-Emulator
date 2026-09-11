@@ -23,7 +23,7 @@ public class ModifyUserSubscription extends RCONMessage<ModifyUserSubscription.J
     public void handle(Gson gson, JSON json) {
         try {
 
-            if(json.user_id <= 0) {
+            if (json.user_id <= 0) {
                 this.status = RCONMessage.HABBO_NOT_FOUND;
                 this.message = "User not found";
                 return;
@@ -43,8 +43,11 @@ public class ModifyUserSubscription extends RCONMessage<ModifyUserSubscription.J
                 return;
             }
 
-            int maxDuration = parseMaxDuration(Emulator.getConfig().getValue("rcon.subscription.max_duration_seconds", String.valueOf(DEFAULT_MAX_DURATION_SECONDS)));
-            if (json.action.equalsIgnoreCase("add") || json.action.equalsIgnoreCase("+") || json.action.equalsIgnoreCase("a")) {
+            int maxDuration = parseMaxDuration(Emulator.getConfig()
+                    .getValue("rcon.subscription.max_duration_seconds", String.valueOf(DEFAULT_MAX_DURATION_SECONDS)));
+            if (json.action.equalsIgnoreCase("add")
+                    || json.action.equalsIgnoreCase("+")
+                    || json.action.equalsIgnoreCase("a")) {
                 if (!isValidDuration(json.duration, maxDuration)) {
                     this.status = RCONMessage.STATUS_ERROR;
                     this.message = "duration must be between 1 and " + maxDuration + " seconds";
@@ -53,38 +56,46 @@ public class ModifyUserSubscription extends RCONMessage<ModifyUserSubscription.J
 
                 habbo.getHabboStats().createSubscription(json.type, json.duration);
                 this.status = RCONMessage.STATUS_OK;
-                this.message = "Successfully added %time% seconds to %subscription% on %user%".replace("%time%", json.duration + "").replace("%user%", habbo.getUsername()).replace("%subscription%", json.type);
-            } else if (json.action.equalsIgnoreCase("remove") || json.action.equalsIgnoreCase("-") || json.action.equalsIgnoreCase("r")) {
-                Subscription s = habbo.getHabboStats().getSubscription(json.type);
+                this.message = "Successfully added %time% seconds to %subscription% on %user%"
+                        .replace("%time%", json.duration + "")
+                        .replace("%user%", habbo.getUsername())
+                        .replace("%subscription%", json.type);
+            } else if (json.action.equalsIgnoreCase("remove")
+                    || json.action.equalsIgnoreCase("-")
+                    || json.action.equalsIgnoreCase("r")) {
+                if (json.duration != -1 && !isValidDuration(json.duration, maxDuration)) {
+                    this.status = RCONMessage.STATUS_ERROR;
+                    this.message =
+                            "duration must be between 1 and " + maxDuration + " seconds, or -1 to remove all time";
+                    return;
+                }
+                Subscription s = habbo.getHabboStats().removeSubscription(json.type, json.duration);
 
                 if (s == null) {
                     this.status = RCONMessage.STATUS_ERROR;
-                    this.message = "%user% does not have the %subscription% subscription".replace("%user%", habbo.getUsername()).replace("%subscription%", json.type);
+                    this.message = "%user% does not have the %subscription% subscription"
+                            .replace("%user%", habbo.getUsername())
+                            .replace("%subscription%", json.type);
                     return;
                 }
 
                 if (json.duration != -1) {
-                    if (!isValidDuration(json.duration, maxDuration)) {
-                        this.status = RCONMessage.STATUS_ERROR;
-                        this.message = "duration must be between 1 and " + maxDuration + " seconds, or -1 to remove all time";
-                        return;
-                    }
-
-                    s.addDuration(-Math.min(json.duration, s.getRemaining()));
                     this.status = RCONMessage.STATUS_OK;
-                    this.message = "Successfully removed %time% seconds from %subscription% on %user%".replace("%time%", json.duration + "").replace("%user%", habbo.getUsername()).replace("%subscription%", json.type);
+                    this.message = "Successfully removed %time% seconds from %subscription% on %user%"
+                            .replace("%time%", json.duration + "")
+                            .replace("%user%", habbo.getUsername())
+                            .replace("%subscription%", json.type);
                 } else {
-                    s.addDuration(-s.getRemaining());
                     this.status = RCONMessage.STATUS_OK;
-                    this.message = "Successfully removed %subscription% sub from %user%".replace("%user%", habbo.getUsername()).replace("%subscription%", json.type);
+                    this.message = "Successfully removed %subscription% sub from %user%"
+                            .replace("%user%", habbo.getUsername())
+                            .replace("%subscription%", json.type);
                 }
-            }
-            else {
+            } else {
                 this.status = RCONMessage.STATUS_ERROR;
                 this.message = "Invalid action specified. Must be add, +, remove or -";
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             this.status = RCONMessage.SYSTEM_ERROR;
             this.message = "Exception occurred";
             LOGGER.error("Exception occurred", e);
@@ -123,6 +134,5 @@ public class ModifyUserSubscription extends RCONMessage<ModifyUserSubscription.J
         public String action = ""; // Can be add or remove
 
         public int duration = -1; // Time to add/remove in seconds. -1 means remove subscription entirely
-
     }
 }

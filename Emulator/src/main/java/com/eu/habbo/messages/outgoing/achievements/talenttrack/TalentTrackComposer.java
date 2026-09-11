@@ -9,7 +9,6 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -17,6 +16,7 @@ import java.util.NoSuchElementException;
 public class TalentTrackComposer extends MessageComposer {
     public final Habbo habbo;
     public final TalentTrackType type;
+
     public TalentTrackComposer(Habbo habbo, TalentTrackType type) {
         this.habbo = habbo;
         this.type = type;
@@ -27,9 +27,10 @@ public class TalentTrackComposer extends MessageComposer {
         this.response.init(Outgoing.TalentTrackComposer);
         this.response.appendString(this.type.name().toLowerCase());
 
-        LinkedHashMap<Integer, TalentTrackLevel> talentTrackLevels = Emulator.getGameEnvironment().getAchievementManager().getTalenTrackLevels(this.type);
+        LinkedHashMap<Integer, TalentTrackLevel> talentTrackLevels =
+                Emulator.getGameEnvironment().getAchievementManager().getTalenTrackLevels(this.type);
         if (talentTrackLevels != null) {
-            this.response.appendInt(talentTrackLevels.size()); //Count
+            this.response.appendInt(talentTrackLevels.size()); // Count
             for (Map.Entry<Integer, TalentTrackLevel> set : talentTrackLevels.entrySet()) {
                 try {
                     TalentTrackLevel level = set.getValue();
@@ -50,22 +51,20 @@ public class TalentTrackComposer extends MessageComposer {
                     this.response.appendInt(level.achievements.size());
 
                     final TalentTrackState finalState = state;
-                    for (Map.Entry<com.eu.habbo.habbohotel.achievements.Achievement, Integer> achievementEntry : level.achievements.entrySet()) {
+                    for (Map.Entry<com.eu.habbo.habbohotel.achievements.Achievement, Integer> achievementEntry :
+                            level.achievements.entrySet()) {
                         com.eu.habbo.habbohotel.achievements.Achievement achievement = achievementEntry.getKey();
                         int index = achievementEntry.getValue();
                         if (achievement != null) {
                             this.response.appendInt(achievement.id);
 
-                            //TODO Move this to TalenTrackLevel class
-                            this.response.appendInt(index); //idk
+                            // TODO Move this to TalenTrackLevel class
+                            this.response.appendInt(index); // idk
                             this.response.appendString("ACH_" + achievement.name + index);
 
-                            int progress = Math.max(0, this.habbo.getHabboStats().getAchievementProgress(achievement));
-                            AchievementLevel achievementLevel = achievement.getLevelForProgress(progress);
-
-                            if (achievementLevel == null) {
-                                achievementLevel = achievement.firstLevel();
-                            }
+                            int progress =
+                                    Math.max(0, this.habbo.getHabboStats().getAchievementProgress(achievement));
+                            AchievementLevel achievementLevel = achievement.levels.get(index);
                             if (finalState != TalentTrackState.LOCKED) {
                                 if (achievementLevel != null && achievementLevel.progress <= progress) {
                                     this.response.appendInt(2);
@@ -81,13 +80,11 @@ public class TalentTrackComposer extends MessageComposer {
                             this.response.appendInt(0);
                             this.response.appendInt(0);
                             this.response.appendString("");
-                            this.response.appendString("");
                             this.response.appendInt(0);
                             this.response.appendInt(0);
                             this.response.appendInt(0);
                         }
                     }
-
 
                     if (level.perks != null && level.perks.length > 0) {
                         this.response.appendInt(level.perks.length);
@@ -98,11 +95,15 @@ public class TalentTrackComposer extends MessageComposer {
                         this.response.appendInt(-1);
                     }
 
-                    if (!level.items.isEmpty()) {
-                        this.response.appendInt(level.items.size());
+                    if (!level.items.isEmpty() || level.hcDays > 0) {
+                        this.response.appendInt(level.items.size() + (level.hcDays > 0 ? 1 : 0));
                         for (Item item : level.items) {
                             this.response.appendString(item.getName());
                             this.response.appendInt(0);
+                        }
+                        if (level.hcDays > 0) {
+                            this.response.appendString("HABBO_CLUB");
+                            this.response.appendInt(level.hcDays);
                         }
                     } else {
                         this.response.appendInt(-1);

@@ -6,9 +6,11 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
-import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemComposer;
+import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemsComposer;
 import com.eu.habbo.threading.runnables.QueryDeleteHabboItems;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class RequestInventoryItemsDelete extends MessageHandler {
@@ -38,9 +40,9 @@ public class RequestInventoryItemsDelete extends MessageHandler {
                     habbo.getInventory().getItemsComponent().getAndRemoveHabboItem(item);
             if (habboInventoryItem != null) toRemove.put(habboInventoryItem.getId(), habboInventoryItem);
         }
-        toRemove.values().forEach(object -> {
-            habbo.getClient().sendResponse(new RemoveHabboItemComposer(object.getGiftAdjustedId()));
-        });
+        List<Integer> removedItemIds = new ArrayList<>();
+        toRemove.values().forEach(object -> removedItemIds.add(object.getGiftAdjustedId()));
+        habbo.getClient().sendResponse(new RemoveHabboItemsComposer(removedItemIds));
         habbo.getClient().sendResponse(new InventoryRefreshComposer());
         Emulator.getThreading().runPersistence(new QueryDeleteHabboItems(toRemove.values()));
     }

@@ -62,6 +62,7 @@ public class Outgoing {
     public static final int GiftConfigurationComposer = 2234;
     public static final int UserClubComposer = 954;
     public static final int InventoryBadgesComposer = 717;
+    public static final int BadgeInfoComposer = 3228;
     public static final int RoomUserTypingComposer = 1717;
     public static final int GuildJoinErrorComposer = 762;
     public static final int RoomCategoriesComposer = 1562;
@@ -113,7 +114,16 @@ public class Outgoing {
     public static final int RoomUserTalkComposer = 1446;
     public static final int TradeStartComposer = 2505;
     public static final int InventoryItemUpdateComposer = 104;
-    public static final int ModToolIssueUpdateComposer = 3150;
+    public static final int ModToolIssuePickFailedComposer = 3150;
+
+    /**
+     * @deprecated 3150 is the header the client reads as "these tickets could not be picked", not as
+     *     a serialized issue. {@link com.eu.habbo.messages.outgoing.modtool.ModToolIssuePickFailedComposer}
+     *     writes the shape the client parses. Kept for plugins that reference it.
+     */
+    @Deprecated
+    public static final int ModToolIssueUpdateComposer = ModToolIssuePickFailedComposer;
+
     public static final int MeMenuSettingsComposer = 513;
     public static final int ModToolRoomInfoComposer = 1333;
     public static final int GuildListComposer = 420;
@@ -144,6 +154,16 @@ public class Outgoing {
     public static final int WiredMonitorDataComposer = 5101; // CUSTOM
     public static final int WiredRoomSettingsDataComposer = 5102; // CUSTOM
     public static final int WiredUserVariablesDataComposer = 5103; // CUSTOM
+    // AIR 13 wired leftovers. 420 (WiredClickUserResponse) and 2901 (WiredUserVariablesPage) are
+    // already GuildListComposer / PetInformationComposer, so those two use the custom range.
+    public static final int WiredEnvironmentComposer = 347;
+    public static final int WiredClickSettingsComposer = 2288;
+    public static final int WiredRoomLogPageComposer = 918;
+    public static final int WiredAllVariablesHashComposer = 1646;
+    public static final int WiredAllVariablesDiffComposer = 2498;
+    public static final int WiredClickUserResponseComposer = 9460; // CUSTOM
+    public static final int WiredVariableHoldersPageComposer = 9461; // CUSTOM
+    public static final int WiredVariableHoldersComposer = 9462; // CUSTOM
     public static final int ConfInvisStateComposer = 5104; // CUSTOM
     public static final int TranslationLanguagesComposer = 5106; // CUSTOM
     public static final int TranslationResultComposer = 5107; // CUSTOM
@@ -286,7 +306,15 @@ public class Outgoing {
 
     public static final int TalentTrackEmailVerifiedComposer = 612; // PRODUCTION-201611291003-338511768
     public static final int TalentTrackEmailFailedComposer = 1815; // PRODUCTION-201611291003-338511768
-    public static final int UnknownAvatarEditorComposer = 3473; // PRODUCTION-201611291003-338511768
+    public static final int AvatarEffectSelectedComposer = 3473;
+
+    /**
+     * @deprecated 3473 tells a client which effect is on. Use {@link
+     *     com.eu.habbo.messages.outgoing.inventory.AvatarEffectSelectedComposer}.
+     */
+    @Deprecated
+    public static final int UnknownAvatarEditorComposer =
+            AvatarEffectSelectedComposer; // PRODUCTION-201611291003-338511768
 
     public static final int GuildMembershipRequestedComposer = 1180; // PRODUCTION-201611291003-338511768
 
@@ -362,7 +390,17 @@ public class Outgoing {
     // Personal word filter (AIR 13 CustomFilterResult / ModifyCustomFilterResult)
     public static final int CustomWordFilterWordsComposer = 3883;
     public static final int CustomWordFilterModifyResultComposer = 3333;
-    public static final int VerifyMobileNumberComposer = 3639; // PRODUCTION-201611291003-338511768
+    public static final int NewUserExperienceNotCompleteComposer = 3639;
+
+    /**
+     * @deprecated the name is a misreading: 3639 tells the client the new user experience is not
+     *     finished. Use {@link
+     *     com.eu.habbo.messages.outgoing.habboway.nux.NewUserExperienceNotCompleteComposer}.
+     */
+    @Deprecated
+    public static final int VerifyMobileNumberComposer =
+            NewUserExperienceNotCompleteComposer; // PRODUCTION-201611291003-338511768
+
     public static final int NewUserGiftComposer = 3575; // PRODUCTION-201611291003-338511768
     public static final int UpdateUserLookComposer = 2429; // PRODUCTION-201611291003-338511768
     public static final int RoomUserIgnoredComposer = 207; // PRODUCTION-201611291003-338511768
@@ -443,7 +481,8 @@ public class Outgoing {
     public static final int SimpleAlertComposer = 5100; // PRODUCTION-201611291003-338511768
     public static final int MessengerErrorComposer = 896; // PRODUCTION-201611291003-338511768
     public static final int CameraPriceComposer = 3878; // PRODUCTION-201611291003-338511768
-    public static final int PetBreedingCompleted = 2527; // PRODUCTION-201611291003-338511768
+    public static final int PetBreedingCompleted = 2527;
+    public static final int NestBreedingSuccessComposer = 1901; // PRODUCTION-201611291003-338511768
     public static final int RoomUserUnbannedComposer = 3429; // PRODUCTION-201611291003-338511768
     public static final int HotelViewCommunityGoalComposer = 2525; // PRODUCTION-201611291003-338511768
     public static final int UserClassificationComposer = 966; // PRODUCTION-201611291003-338511768
@@ -481,7 +520,16 @@ public class Outgoing {
     public static final int CraftingResultComposer = 618; // PRODUCTION-201611291003-338511768
     public static final int CraftingComposerFour = 2124; // PRODUCTION-201611291003-338511768
 
-    public static final int UnknownComposer_100 = 1553; // PRODUCTION-201611291003-338511768 //PetBReedingResult
+    public static final int MonsterplantBreedingResultComposer = 1553;
+
+    /**
+     * @deprecated 1553 is the result of breeding two monsterplants. Use {@link
+     *     com.eu.habbo.messages.outgoing.rooms.pets.breeding.MonsterplantBreedingResultComposer}.
+     */
+    @Deprecated
+    public static final int UnknownComposer_100 =
+            MonsterplantBreedingResultComposer; // PRODUCTION-201611291003-338511768 //PetBReedingResult
+
     public static final int ConnectionErrorComposer = 1004; // PRODUCTION-201611291003-338511768
     public static final int BotForceOpenContextMenuComposer = 296; // PRODUCTION-201611291003-338511768
     public static final int UnknownComposer_1111 = 1551; // PRODUCTION-201611291003-338511768
@@ -502,6 +550,7 @@ public class Outgoing {
     public static final int UnknownComposer_152 = 3954; // PRODUCTION-201611291003-338511768
     public static final int UnknownComposer_1577 = 2641; // PRODUCTION-201611291003-338511768
     public static final int NewYearResolutionCompletedComposer = 740; // PRODUCTION-201611291003-338511768
+    // The game hub's directory status; the name is kept because plugins compile against it.
     public static final int UnknownComposer_1741 = 2246; // PRODUCTION-201611291003-338511768
     public static final int UnknownComposer_1744 = 2873; // PRODUCTION-201611291003-338511768
     public static final int AdventCalendarProductComposer = 2551; // PRODUCTION-201611291003-338511768
@@ -581,7 +630,14 @@ public class Outgoing {
     public static final int QuestExpiredComposer = 3027;
     public static final int UnknownTradeComposer = 3128;
     public static final int UnknownMessengerErrorComposer = 3359;
-    public static final int UnknownComposer8 = 3441;
+    public static final int PetSupplementedNotificationComposer = 3441;
+
+    /**
+     * @deprecated kept for the plugin ABI; use {@link #PetSupplementedNotificationComposer}.
+     */
+    @Deprecated
+    public static final int UnknownComposer8 = PetSupplementedNotificationComposer;
+
     public static final int RemoveRoomEventComposer = 3479;
     public static final int UnknownCompetitionComposer = 3506;
     public static final int UnknownRoomViewerComposer = 3523;
@@ -589,7 +645,14 @@ public class Outgoing {
     public static final int HotelViewNextLTDAvailableComposer = 44;
     public static final int HotelViewSecondsUntilComposer = 3926;
     public static final int UnknownRoomDesktopComposer = 69;
-    public static final int UnknownGuildComposer3 = 876;
+    public static final int ExtendedProfileChangedComposer = 876;
+
+    /**
+     * @deprecated the name is a misreading: 876 tells a client that the profile of this user changed.
+     *     Use {@link com.eu.habbo.messages.outgoing.users.ExtendedProfileChangedComposer}.
+     */
+    @Deprecated
+    public static final int UnknownGuildComposer3 = ExtendedProfileChangedComposer;
 
     public static final int GameCenterGameComposer = 3805;
 
@@ -623,6 +686,17 @@ public class Outgoing {
     public static final int SnowStormOnPlayerExitedArenaComposer = 5027;
     public static final int SnowStormGenericErrorComposer = 5028;
     public static final int SnowStormUserRematchedComposer = 5029;
+
+    // AIR 13 game hub: all-time / group leaderboards, game notifications and
+    // the "get more games" token offers.
+    public static final int Game2FriendsLeaderboardComposer = 47;
+    public static final int Game2TotalLeaderboardComposer = 2594;
+    public static final int Game2TotalGroupLeaderboardComposer = 1769;
+    public static final int Game2WeeklyGroupLeaderboardComposer = 2956;
+    public static final int Game2GameNotFoundComposer = 444;
+    public static final int Game2GameCancelledComposer = 3493;
+    public static final int Game2UserBlockedComposer = 3508;
+    public static final int SnowWarGameTokensComposer = 3419;
 
     // Furni Editor
     public static final int FurniEditorSearchComposer = 10040;
@@ -668,6 +742,7 @@ public class Outgoing {
     // Custom features — IDs 9400+ reserved
     public static final int RareValuesComposer = 9400;
     public static final int HotLooksComposer = 9360; // AIR 13 avatar editor hot looks tab
+    public static final int BuildHeightAvailableComposer = 9350; // Build height widget availability
     public static final int WheelDataComposer = 9401;
     public static final int WheelResultComposer = 9402;
     public static final int WheelRecentWinsComposer = 9403;
@@ -691,6 +766,8 @@ public class Outgoing {
     public static final int MessengerMessageFailedComposer = 4903;
     public static final int MessengerMessageComposer = 4904;
     public static final int MessengerReadCursorComposer = 4905;
+    public static final int ConsoleReadReceiptComposer = 4086;
+    public static final int FriendIsTypingComposer = 4088;
     // Quest engine (AIR 13 daily tasks and reward track; 9450-9452 replace the colliding official 2392/596/2142)
     public static final int ActiveDailyTasksComposer = 2900;
     public static final int DailyTasksAddedComposer = 670;
@@ -699,4 +776,42 @@ public class Outgoing {
     public static final int RewardTrackClaimResultComposer = 9451;
     public static final int RewardTrackProgressComposer = 9452;
     public static final int RewardTrackPremiumPurchaseResultComposer = 2248;
+    // AIR 13 official rooms view, room flags and batched removals (official ids, free in both repos)
+    public static final int OfficialRoomsComposer = 438;
+    public static final int ConfigurationItemStatesComposer = 1508;
+    public static final int ObjectRemoveMultipleComposer = 1451;
+    public static final int SpecialSystemChatComposer = 1971;
+    public static final int SpecialRoomEventComposer = 2163;
+    public static final int ItemRemoveMultipleComposer = 2204;
+    public static final int FurniListRemoveMultipleComposer = 2813;
+    public static final int YouAreNotSpectatorComposer = 3242;
+    public static final int ObjectRemoveConfirmComposer = 3488;
+    public static final int ItemsStateUpdateComposer = 3697;
+    // AIR 13 marketplace batch results, LTD raffle, purchasable chat styles and the
+    // my-reports list (official ids, free in both repos)
+    public static final int MarketplaceCancelAllOffersComposer = 1949;
+    public static final int MarketplaceClearOwnHistoryComposer = 175;
+    public static final int LtdRaffleEnteredComposer = 933;
+    public static final int LtdRaffleResultComposer = 2316;
+    public static final int PurchasableChatStylesComposer = 946;
+    public static final int ChatStyleNotificationComposer = 2580;
+    public static final int MyReportsStatusComposer = 2981;
+    // AIR 13 session block list (official ids 2649 / 366, free in both repos)
+    public static final int BlockListComposer = 2649;
+    public static final int BlockResultComposer = 366;
+    // AIR 13 PetRespectFailed (official 2703 is taken by RemoveFloorItemComposer),
+    // BanInfo (official 2524 is taken by FavoriteRoomChangedComposer) and Discord preferences
+    // (official 1600 is taken by GenericErrorMessages): 9470-9472 of the custom range.
+    public static final int PetRespectFailedComposer = 9470;
+    public static final int BanInfoComposer = 9471;
+    public static final int DiscordPreferencesComposer = 9472;
+    // AIR 13 IncomeRewardNotification: the official id is free on our outgoing table.
+    public static final int IncomeRewardNotificationComposer = 1753;
+    // AIR 13 treasure hunt. TreasureHuntFirstWinner's official id 1631 is taken by
+    // RoomUserActionComposer, so it uses 9485 of the custom range; the other two are official.
+    public static final int TreasureHuntFirstWinnerComposer = 9485;
+    public static final int TreasureHuntFailComposer = 2383;
+    public static final int TreasureHuntUpdateComposer = 3368;
+    // AIR 13 self donation tool result: the official id is free on our outgoing table.
+    public static final int SelfDonationResultComposer = 2920;
 }

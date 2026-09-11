@@ -2,6 +2,8 @@ package com.eu.habbo.messages.outgoing.inventory;
 
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.interactions.InteractionGift;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestCurrency;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -75,6 +77,11 @@ public class InventoryItemsComposer extends MessageComposer {
             this.addExtraDataToResponse(habboItem);
         } else {
             if (habboItem.getBaseItem().getName().equals("gnome_box")) this.response.appendInt(13);
+            // Official `FurniCategory` (AIR 13): a chest reports 24 (furni chest,
+            // brown) or 25 (coins chest, gold) so `GroupItem.updateItemImageVisual`
+            // draws the chest overlay with its contents count on the inventory tile.
+            else if (habboItem instanceof InteractionWiredChestCurrency) this.response.appendInt(25);
+            else if (habboItem instanceof InteractionWiredChest) this.response.appendInt(24);
             else
                 this.response.appendInt(
                         habboItem instanceof InteractionGift

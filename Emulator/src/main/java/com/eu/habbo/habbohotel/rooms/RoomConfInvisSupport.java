@@ -5,18 +5,15 @@ import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.interactions.InteractionConfInvisControl;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.outgoing.rooms.items.ConfInvisStateComposer;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
 public final class RoomConfInvisSupport {
-    private RoomConfInvisSupport() {
-    }
+    private RoomConfInvisSupport() {}
 
     public static boolean isControllerItem(HabboItem item) {
-        return item instanceof InteractionConfInvisControl
-            || hasInteractionName(item, "wf_conf_invis_control");
+        return item instanceof InteractionConfInvisControl || hasInteractionName(item, "wf_conf_invis_control");
     }
 
     public static boolean isControllerActive(HabboItem item) {
@@ -25,9 +22,9 @@ public final class RoomConfInvisSupport {
 
     public static boolean isTarget(HabboItem item) {
         return item != null
-            && item.getBaseItem() != null
-            && item.getBaseItem().getType() == FurnitureType.FLOOR
-            && hasCustomParamToken(item.getBaseItem().getCustomParams(), "is_invisible");
+                && item.getBaseItem() != null
+                && item.getBaseItem().getType() == FurnitureType.FLOOR
+                && hasCustomParamToken(item.getBaseItem().getCustomParams(), "is_invisible");
     }
 
     public static List<Integer> collectHiddenFloorItemIds(Room room) {
@@ -70,6 +67,7 @@ public final class RoomConfInvisSupport {
         }
 
         room.sendComposer(new ConfInvisStateComposer(room).compose());
+        RoomHanditemBlockSupport.broadcastConfigurationItemStates(room);
     }
 
     public static void sendState(Room room, GameClient client) {
@@ -97,7 +95,10 @@ public final class RoomConfInvisSupport {
     }
 
     private static boolean hasInteractionName(HabboItem item, String interactionName) {
-        if (item == null || item.getBaseItem() == null || item.getBaseItem().getInteractionType() == null || interactionName == null) {
+        if (item == null
+                || item.getBaseItem() == null
+                || item.getBaseItem().getInteractionType() == null
+                || interactionName == null) {
             return false;
         }
 

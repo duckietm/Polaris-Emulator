@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.games.snowwar.mapping.SnowWarMap;
 import com.eu.habbo.habbohotel.games.snowwar.mapping.SnowWarMapsManager;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.messages.outgoing.gamecenter.Game2GameCancelledComposer;
 import com.eu.habbo.messages.outgoing.snowwar.SnowStormEditorDataComposer;
 import com.eu.habbo.messages.outgoing.snowwar.SnowStormGamesInformationComposer;
 import com.eu.habbo.messages.outgoing.snowwar.SnowStormGamesLeftComposer;
@@ -58,6 +59,7 @@ public class SnowWarManager {
     private final ConcurrentHashMap<Integer, SnowWarGame> userGames = new ConcurrentHashMap<>();
     private final SnowWarArenaRepository arenas = new SnowWarArenaRepository(this::openConnection);
     private final SnowWarLeaderboardRepository leaderboard = new SnowWarLeaderboardRepository(this::openConnection);
+    private final SnowWarTokenOfferRepository tokenOffers = new SnowWarTokenOfferRepository(this::openConnection);
 
     // Per-user fixed-window packet counter for the generic SnowWar flood cap.
     // Value is [windowStartMillis, countInWindow]; guarded per-entry by the
@@ -111,6 +113,29 @@ public class SnowWarManager {
     public SnowWarLeaderboardRepository.Page getLeaderboard(
             int viewerUserId, boolean weekly, boolean friendsOnly, int weekOffset, int startRank, int limit) {
         return this.leaderboard.load(viewerUserId, weekly, friendsOnly, weekOffset, startRank, limit);
+    }
+
+    public SnowWarLeaderboardRepository.GroupPage getGroupLeaderboard(
+            int viewerUserId, boolean weekly, int weekOffset, int startRank, int limit) {
+        return this.leaderboard.loadGroups(viewerUserId, weekly, weekOffset, startRank, limit);
+    }
+
+    public SnowWarTokenOfferRepository getTokenOffers() {
+        return this.tokenOffers;
+    }
+
+    /**
+     * AIR games_main footer: the free games left for this user, {@code -1}
+     * meaning unlimited. Configure {@code gamecenter.games.free.daily} with a
+     * non-negative allowance to switch the hub to a real counter; the games
+     * bought with tokens are added on top of it.
+     */
+    public int getGamesLeft(int userId) {
+        int daily = Emulator.getConfig().getInt("gamecenter.games.free.daily", 10);
+        if (daily < 0) {
+            return -1;
+        }
+        return daily + this.tokenOffers.getExtraGames(userId);
     }
 
     void recordScores(List<SnowWarGamePlayer> players) {
@@ -369,6 +394,10 @@ public class SnowWarManager {
 
         if (this.getQueueSize() < this.getMinimumPlayers()) {
             this.countdownRunning = false;
+            // AIR Game2GameCancelled (3493): the countdown had already started
+            // and the lobby fell apart, so the waiting clients drop back to the
+            // hub instead of sitting on a frozen counter.
+            this.broadcastToQueue(new Game2GameCancelledComposer());
             this.broadcastQueuePositions();
             return;
         }

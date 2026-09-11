@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.quests.ActiveDailyTasksComposer;
 import com.eu.habbo.messages.outgoing.quests.DailyTaskUpdatedComposer;
+import com.eu.habbo.messages.outgoing.quests.DailyTasksAddedComposer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -253,14 +254,22 @@ public class DailyTaskManager {
                 continue;
             }
             progress.setRepeats(progress.getRepeats() + amount);
+            boolean justCompleted = false;
             if (progress.getRepeats() >= task.getRequiredRepeats()) {
                 progress.setRepeats(task.getRequiredRepeats());
                 progress.setStatus(UserDailyTaskState.STATUS_COMPLETED);
+                justCompleted = true;
             }
             this.save(state.getUserId(), progress);
             habbo.getClient()
                     .sendResponse(new DailyTaskUpdatedComposer(
                             task.getId(), progress.getRepeats(), progress.getStatus(), secondsLeftToday()));
+
+            // The bonus task is the one the day builds up to, so its unlocking is announced rather
+            // than left to a status change nobody watches: that is what the client celebrates.
+            if (justCompleted && task.isBonus()) {
+                habbo.getClient().sendResponse(new DailyTasksAddedComposer(List.of(this.toWire(task, state))));
+            }
         }
     }
 

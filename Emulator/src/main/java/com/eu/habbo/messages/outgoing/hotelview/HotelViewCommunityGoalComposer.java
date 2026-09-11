@@ -16,16 +16,17 @@ public class HotelViewCommunityGoalComposer extends MessageComposer {
     private final int timeLeft;
     private final int[] rankData;
 
-    public HotelViewCommunityGoalComposer(boolean achieved,
-                                          int personalContributionScore,
-                                          int personalRank,
-                                          int totalAmount,
-                                          int communityHighestAchievedLevel,
-                                          int scoreRemainingUntilNextLevel,
-                                          int percentCompletionTowardsNextLevel,
-                                          String competitionName,
-                                          int timeLeft,
-                                          int[] rankData) {
+    public HotelViewCommunityGoalComposer(
+            boolean achieved,
+            int personalContributionScore,
+            int personalRank,
+            int totalAmount,
+            int communityHighestAchievedLevel,
+            int scoreRemainingUntilNextLevel,
+            int percentCompletionTowardsNextLevel,
+            String competitionName,
+            int timeLeft,
+            int[] rankData) {
         this.achieved = achieved;
         this.personalContributionScore = personalContributionScore;
         this.personalRank = personalRank;
@@ -38,20 +39,25 @@ public class HotelViewCommunityGoalComposer extends MessageComposer {
         this.rankData = rankData;
     }
 
-    //:test 1579 b:1 i:0 i:1 i:2 i:3 i:4 i:5 s:a i:6 i:1 i:1
+    // :test 1579 b:1 i:0 i:1 i:2 i:3 i:4 i:5 s:a i:6 i:1 i:1
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.HotelViewCommunityGoalComposer);
-        this.response.appendBoolean(this.achieved); //Achieved?
-        this.response.appendInt(this.personalContributionScore); //User Amount
-        this.response.appendInt(this.personalRank); //User Rank
-        this.response.appendInt(this.personalRank); //Total Amount
-        this.response.appendInt(this.totalAmount); //Community Highest Achieved
-        this.response.appendInt(this.communityHighestAchievedLevel); //Community Score Untill Next Level
-        this.response.appendInt(this.scoreRemainingUntilNextLevel); //Percent Completed Till Next Level
+        // AIR 13 CommunityGoalData reads: bool hasGoalExpired, personalContributionScore,
+        // personalContributionRank, communityTotalScore, communityHighestAchievedLevel,
+        // scoreRemainingUntilNextLevel, percentCompletionTowardsNextLevel, goalCode,
+        // timeRemainingInSeconds, rewardUserLimits[]. The old body wrote personalRank
+        // twice and never wrote percentCompletionTowardsNextLevel, shifting every value.
+        this.response.appendBoolean(this.achieved);
+        this.response.appendInt(this.personalContributionScore);
+        this.response.appendInt(this.personalRank);
+        this.response.appendInt(this.totalAmount);
+        this.response.appendInt(this.communityHighestAchievedLevel);
+        this.response.appendInt(this.scoreRemainingUntilNextLevel);
+        this.response.appendInt(this.percentCompletionTowardsNextLevel);
         this.response.appendString(this.competitionName);
-        this.response.appendInt(this.timeLeft); //Timer
-        this.response.appendInt(this.rankData.length); //Rank Count
+        this.response.appendInt(this.timeLeft); // Timer
+        this.response.appendInt(this.rankData.length); // Rank Count
         for (int i : this.rankData) {
             this.response.appendInt(i);
         }

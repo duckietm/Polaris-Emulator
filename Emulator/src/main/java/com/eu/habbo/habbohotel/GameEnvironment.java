@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.bots.BotManager;
 import com.eu.habbo.habbohotel.campaign.calendar.CalendarManager;
 import com.eu.habbo.habbohotel.catalog.CatalogManager;
 import com.eu.habbo.habbohotel.commands.CommandHandler;
+import com.eu.habbo.habbohotel.communitygoals.CommunityGoalManager;
 import com.eu.habbo.habbohotel.crafting.CraftingManager;
 import com.eu.habbo.habbohotel.guides.GuideManager;
 import com.eu.habbo.habbohotel.guilds.GuildManager;
@@ -31,6 +32,7 @@ import com.eu.habbo.habbohotel.rooms.RoomManager;
 import com.eu.habbo.habbohotel.soundboard.SoundboardManager;
 import com.eu.habbo.habbohotel.translations.GoogleTranslateManager;
 import com.eu.habbo.habbohotel.traxeditor.TraxEditorManager;
+import com.eu.habbo.habbohotel.treasurehunt.TreasureHuntManager;
 import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.habbohotel.users.custombadge.CustomBadgeManager;
 import com.eu.habbo.habbohotel.users.infostand.InfostandBackgroundManager;
@@ -63,6 +65,8 @@ public class GameEnvironment {
     private FurnitureTextProvider furnitureTextProvider;
     private CatalogManager catalogManager;
     private HotelViewManager hotelViewManager;
+    private CommunityGoalManager communityGoalManager;
+    private TreasureHuntManager treasureHuntManager;
     private RoomManager roomManager;
     private CommandHandler commandHandler;
     private PermissionsManager permissionsManager;
@@ -107,6 +111,10 @@ public class GameEnvironment {
                 "habbo manager", () -> new HabboManager(this.persistenceExecutor), HabboManager::dispose);
         this.hotelViewManager =
                 this.services.create("hotel view manager", HotelViewManager::new, HotelViewManager::dispose);
+        this.communityGoalManager = this.services.create(
+                "community goal manager", CommunityGoalManager::new, CommunityGoalManager::dispose);
+        this.treasureHuntManager =
+                this.services.create("treasure hunt manager", TreasureHuntManager::new, TreasureHuntManager::dispose);
         this.itemManager = this.services.create("item manager", ItemManager::new, ItemManager::dispose);
         this.itemManager.load();
         this.furnitureTextProvider = this.services.create("furniture text provider", FurnitureTextProvider::new);
@@ -250,6 +258,12 @@ public class GameEnvironment {
         steps.put("item manager", this.itemManager == null ? null : () -> this.itemManager.dispose());
         steps.put("hotel view manager", this.hotelViewManager == null ? null : () -> this.hotelViewManager.dispose());
         steps.put(
+                "community goal manager",
+                this.communityGoalManager == null ? null : () -> this.communityGoalManager.dispose());
+        steps.put(
+                "treasure hunt manager",
+                this.treasureHuntManager == null ? null : () -> this.treasureHuntManager.dispose());
+        steps.put(
                 "subscription manager",
                 this.subscriptionManager == null ? null : () -> this.subscriptionManager.dispose());
         steps.put("calendar manager", this.calendarManager == null ? null : () -> this.calendarManager.dispose());
@@ -317,6 +331,14 @@ public class GameEnvironment {
 
     public HotelViewManager getHotelViewManager() {
         return this.hotelViewManager;
+    }
+
+    public CommunityGoalManager getCommunityGoalManager() {
+        return this.communityGoalManager;
+    }
+
+    public TreasureHuntManager getTreasureHuntManager() {
+        return this.treasureHuntManager;
     }
 
     public RoomManager getRoomManager() {

@@ -9,7 +9,9 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionStackWalkHelper;
 import com.eu.habbo.habbohotel.items.interactions.InteractionSwitch;
 import com.eu.habbo.habbohotel.items.interactions.InteractionSwitchRemoteControl;
 import com.eu.habbo.habbohotel.items.interactions.InteractionTeleport;
+import com.eu.habbo.habbohotel.items.interactions.InteractionTileWalkMagic;
 import com.eu.habbo.habbohotel.items.interactions.InteractionVendingMachine;
+import com.eu.habbo.habbohotel.items.interactions.StackHelperExtradata;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -45,7 +47,11 @@ public class RoomFloorItemsComposer extends MessageComposer {
                             ? ((((InteractionGift) item).getColorId() * 1000) + ((InteractionGift) item).getRibbonId())
                             : (item instanceof InteractionMusicDisc
                                     ? ((InteractionMusicDisc) item).getSongId()
-                                    : (item instanceof InteractionStackWalkHelper ? 2147483001 : 1)));
+                                    : (item instanceof InteractionStackWalkHelper
+                                            ? 2147483001
+                                            : (item instanceof InteractionTileWalkMagic
+                                                    ? StackHelperExtradata.multiWalkExtra(item.getExtradata())
+                                                    : 1))));
             item.serializeExtradata(this.response);
             this.response.appendInt(item.getSecondsToExpiration());
             this.response.appendInt(

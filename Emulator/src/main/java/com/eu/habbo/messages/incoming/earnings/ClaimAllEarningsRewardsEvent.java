@@ -1,8 +1,11 @@
 package com.eu.habbo.messages.incoming.earnings;
 
 import com.eu.habbo.habbohotel.earnings.EarningsCenterManager;
+import com.eu.habbo.habbohotel.earnings.EarningsClaimResult;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.earnings.EarningsClaimResultComposer;
+import com.eu.habbo.messages.outgoing.earnings.IncomeRewardNotificationComposer;
+import java.util.List;
 
 public class ClaimAllEarningsRewardsEvent extends MessageHandler {
     @Override
@@ -18,6 +21,14 @@ public class ClaimAllEarningsRewardsEvent extends MessageHandler {
     @Override
     public void handle() {
         EarningsCenterManager manager = new EarningsCenterManager();
-        this.client.sendResponse(new EarningsClaimResultComposer(manager.claimAll(this.client.getHabbo())));
+        List<EarningsClaimResult> results = manager.claimAll(this.client.getHabbo());
+        this.client.sendResponse(new EarningsClaimResultComposer(results));
+
+        // Official IncomeRewardNotification (1753): one bubble per credited category.
+        for (EarningsClaimResult result : results) {
+            if (result.isSuccess()) {
+                this.client.sendResponse(new IncomeRewardNotificationComposer(result.getCategory()));
+            }
+        }
     }
 }

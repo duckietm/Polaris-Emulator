@@ -27,10 +27,22 @@ public class ReportPhotoEvent extends MessageHandler {
         this.packet.readInt();
         int topicId = this.packet.readInt();
         int itemId = this.packet.readInt();
+        // Official class_2390 and friends end with the unlawful-activity reporter name and
+        // e-mail; older clients stop before them, so they are read only while bytes remain.
+        String reporterName = "";
+        String reporterEmail = "";
 
-        if (!ModToolReportInputGuard.isPositiveId(roomId) ||
-                !ModToolReportInputGuard.isPositiveId(topicId) ||
-                !ModToolReportInputGuard.isPositiveId(itemId)) {
+        if (this.packet.bytesAvailable() > 0) {
+            reporterName = this.packet.readString();
+        }
+
+        if (this.packet.bytesAvailable() > 0) {
+            reporterEmail = this.packet.readString();
+        }
+
+        if (!ModToolReportInputGuard.isPositiveId(roomId)
+                || !ModToolReportInputGuard.isPositiveId(topicId)
+                || !ModToolReportInputGuard.isPositiveId(itemId)) {
             return;
         }
 
@@ -50,12 +62,20 @@ public class ReportPhotoEvent extends MessageHandler {
 
         if (photoOwner == null) return;
 
-        ModToolIssue issue = new ModToolIssue(this.client.getHabbo().getHabboInfo().getId(), this.client.getHabbo().getHabboInfo().getUsername(), photoOwner.getId(), photoOwner.getUsername(), roomId, "", ModToolTicketType.PHOTO);
+        ModToolIssue issue = new ModToolIssue(
+                this.client.getHabbo().getHabboInfo().getId(),
+                this.client.getHabbo().getHabboInfo().getUsername(),
+                photoOwner.getId(),
+                photoOwner.getUsername(),
+                roomId,
+                ModToolReportInputGuard.withReporterContact("", reporterName, reporterEmail),
+                ModToolTicketType.PHOTO);
         issue.photoItem = item;
 
         new InsertModToolIssue(issue).run();
 
-        this.client.sendResponse(new ModToolReportReceivedAlertComposer(ModToolReportReceivedAlertComposer.REPORT_RECEIVED, ""));
+        this.client.sendResponse(
+                new ModToolReportReceivedAlertComposer(ModToolReportReceivedAlertComposer.REPORT_RECEIVED, ""));
         Emulator.getGameEnvironment().getModToolManager().addTicket(issue);
         Emulator.getGameEnvironment().getModToolManager().updateTicketToMods(issue);
     }

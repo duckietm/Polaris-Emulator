@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.modtool.ScripterManager;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.messages.outgoing.modtool.ModToolIssueResponseAlertComposer;
 import com.eu.habbo.plugin.events.support.SupportUserAlertedReason;
 
 public class ModToolAlertEvent extends MessageHandler {
@@ -20,10 +21,31 @@ public class ModToolAlertEvent extends MessageHandler {
 
             Habbo alertedUser = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
 
-            if (alertedUser != null)
-                Emulator.getGameEnvironment().getModToolManager().alert(this.client.getHabbo(), alertedUser, message, SupportUserAlertedReason.ALERT);
+            if (alertedUser == null) return;
+
+            // Writing to somebody whose report you are holding is answering that report: the client
+            // shows it under the call for help, not as a warning out of nowhere.
+            if (Emulator.getGameEnvironment()
+                            .getModToolManager()
+                            .pickedTicketOf(
+                                    this.client.getHabbo().getHabboInfo().getId(),
+                                    alertedUser.getHabboInfo().getId())
+                    != null) {
+                alertedUser.getClient().sendResponse(new ModToolIssueResponseAlertComposer(message));
+                return;
+            }
+
+            Emulator.getGameEnvironment()
+                    .getModToolManager()
+                    .alert(this.client.getHabbo(), alertedUser, message, SupportUserAlertedReason.ALERT);
         } else {
-            ScripterManager.scripterDetected(this.client, Emulator.getTexts().getValue("scripter.warning.modtools.kick").replace("%username%", this.client.getHabbo().getHabboInfo().getUsername()));
+            ScripterManager.scripterDetected(
+                    this.client,
+                    Emulator.getTexts()
+                            .getValue("scripter.warning.modtools.kick")
+                            .replace(
+                                    "%username%",
+                                    this.client.getHabbo().getHabboInfo().getUsername()));
         }
     }
 }

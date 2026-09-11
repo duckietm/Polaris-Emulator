@@ -161,6 +161,8 @@ final class RoomItemMovementService {
             return FurnitureMovementError.CANT_STACK;
         }
 
+        z = RoomBuildHeight.apply(actor, layout, tile, z);
+
         // Plugin height override (match your NEW behavior: base + updatedHeight)
         if (Emulator.getPluginManager().isRegistered(FurnitureBuildheightEvent.class, true)) {
             FurnitureBuildheightEvent event =

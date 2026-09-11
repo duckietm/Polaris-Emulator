@@ -88,6 +88,11 @@ public class WiredEffectGiveAchievement extends InteractionWiredEffect {
         return type;
     }
 
+    /** The achievement this box hands out; read by the AIR 13 {@code WiredEnvironment} packet. */
+    public String getAchievement() {
+        return this.achievement;
+    }
+
     @Override
     public void execute(WiredContext ctx) {
         Room room = ctx.room();

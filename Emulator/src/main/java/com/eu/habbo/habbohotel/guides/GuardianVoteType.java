@@ -19,4 +19,18 @@ public enum GuardianVoteType {
         return this.type;
     }
 
+    /**
+     * The wire code the official client expects in the two vote fields of
+     * {@code ChatReviewSessionResults} (3276): {@code GuideSessionController.statusFromVote}
+     * reads 0 = ok, 1 = bad, 2 = very bad and -1 = refused / inconclusive. Only the trailing
+     * status array uses {@link #getType()}, which indexes STATUS_KEYS directly.
+     */
+    public int getVoteCode() {
+        return switch (this) {
+            case ACCEPTABLY -> 0;
+            case BADLY -> 1;
+            case AWFULLY -> 2;
+            default -> -1;
+        };
+    }
 }

@@ -10,6 +10,13 @@ public class BullyReportRequestComposer extends MessageComposer {
     public static final int INVALID_REQUESTS = 2;
     public static final int TOO_RECENT = 3;
 
+    /** The kinds of pending case, as the client reads them: each carries a different set of fields. */
+    public static final int TYPE_GUIDE_SESSION = 0;
+
+    public static final int TYPE_BULLY_REPORT = 1;
+    public static final int TYPE_HELPER_SESSION = 2;
+    public static final int TYPE_ROOM_REPORT = 3;
+
     private final int errorCode;
     private final int errorCodeType;
 
@@ -23,22 +30,28 @@ public class BullyReportRequestComposer extends MessageComposer {
         this.response.init(Outgoing.BullyReportRequestComposer);
         this.response.appendInt(this.errorCode);
 
+        // Only a pending case says anything more: every other answer is the code alone, and the
+        // client stops reading there.
         if (this.errorCode == ONGOING_HELPER_CASE) {
             this.response.appendInt(this.errorCodeType);
-            this.response.appendInt(1); //Timestamp
-            this.response.appendBoolean(true); //Pending guide session.
+            this.response.appendInt(1); // How long ago it was opened.
 
-            this.response.appendString("admin");
-            this.response.appendString("ca-1807-64.lg-3365-78.hr-3370-42-31.hd-3093-1359.ch-3372-65");
-            switch (this.errorCodeType) {
-                case 3:
-                    this.response.appendString("room Name");
-                    break;
-                case 1:
-                    this.response.appendString("description");
+            // A room report read as a guide carries no other party at all, so the flag has to agree
+            // with the strings that follow or the client reads past the end of the packet.
+            this.response.appendBoolean(this.errorCodeType != TYPE_ROOM_REPORT);
+
+            if (this.errorCodeType == TYPE_ROOM_REPORT) {
+                return this.response;
+            }
+
+            this.response.appendString("");
+            this.response.appendString("");
+
+            if (this.errorCodeType == TYPE_BULLY_REPORT) {
+                this.response.appendString("");
             }
         }
-        //:test 1917 i:1 i:3 i:1 b:0 s:1 s:1 s:1
+
         return this.response;
     }
 

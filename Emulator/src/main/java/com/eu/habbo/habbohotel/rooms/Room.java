@@ -609,6 +609,14 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         this.loader.load(generation);
     }
 
+    /**
+     * Re-reads every wired box's stored configuration, dropping in-memory edits that were never
+     * persisted. Backs the AIR 13 wired settings "roll back" button.
+     */
+    public void reloadWiredData() {
+        this.loader.reloadWiredData();
+    }
+
     private RoomLoader createLoader() {
         return new RoomLoader(
                 new RoomLoadOperations(this, this.dependencies.database()),
@@ -1840,6 +1848,11 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         return this.wiredAccess.modifyMask();
     }
 
+    /** Timezone chosen in the AIR 13 wired settings tab; empty means "hotel default". */
+    public String getWiredTimezone() {
+        return this.wiredAccess.timezone();
+    }
+
     public boolean canInspectWired(Habbo habbo) {
         return this.wiredAccess.canInspect(habbo);
     }
@@ -1854,6 +1867,10 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
     public boolean saveWiredSettings(int inspectMask, int modifyMask) {
         return this.wiredAccess.save(inspectMask, modifyMask);
+    }
+
+    public boolean saveWiredSettings(int inspectMask, int modifyMask, String timezone) {
+        return this.wiredAccess.save(inspectMask, modifyMask, timezone);
     }
 
     public void giveRights(Habbo habbo) {

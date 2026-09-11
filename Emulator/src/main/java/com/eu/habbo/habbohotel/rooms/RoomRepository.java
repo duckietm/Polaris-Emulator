@@ -9,11 +9,12 @@ import java.util.Objects;
 final class RoomRepository {
 
     private static final String FIND_WIRED_SETTINGS_SQL =
-            "SELECT inspect_mask, modify_mask FROM room_wired_settings " + "WHERE room_id = ? LIMIT 1";
+            "SELECT inspect_mask, modify_mask, timezone FROM room_wired_settings " + "WHERE room_id = ? LIMIT 1";
     private static final String SAVE_WIRED_SETTINGS_SQL =
-            "INSERT INTO room_wired_settings (room_id, inspect_mask, modify_mask) "
-                    + "VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE "
-                    + "inspect_mask = VALUES(inspect_mask), modify_mask = VALUES(modify_mask)";
+            "INSERT INTO room_wired_settings (room_id, inspect_mask, modify_mask, timezone) "
+                    + "VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE "
+                    + "inspect_mask = VALUES(inspect_mask), modify_mask = VALUES(modify_mask), "
+                    + "timezone = VALUES(timezone)";
     private static final String UPDATE_USER_COUNT_SQL = "UPDATE rooms SET users = ? WHERE id = ? LIMIT 1";
     private static final String UPSERT_CUSTOM_LAYOUT_SQL = "INSERT INTO room_models_custom "
             + "(id, name, door_x, door_y, door_dir, heightmap) "
@@ -39,7 +40,11 @@ final class RoomRepository {
 
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
-                    return new WiredSettings(resultSet.getInt("inspect_mask"), resultSet.getInt("modify_mask"));
+                    String timezone = resultSet.getString("timezone");
+                    return new WiredSettings(
+                            resultSet.getInt("inspect_mask"),
+                            resultSet.getInt("modify_mask"),
+                            (timezone != null) ? timezone : "");
                 }
             }
         }
@@ -47,12 +52,13 @@ final class RoomRepository {
         return WiredSettings.defaults();
     }
 
-    void saveWiredSettings(int roomId, int inspectMask, int modifyMask) throws SQLException {
+    void saveWiredSettings(int roomId, int inspectMask, int modifyMask, String timezone) throws SQLException {
         try (Connection connection = this.database.openConnection();
                 PreparedStatement statement = connection.prepareStatement(SAVE_WIRED_SETTINGS_SQL)) {
             statement.setInt(1, roomId);
             statement.setInt(2, inspectMask);
             statement.setInt(3, modifyMask);
+            statement.setString(4, (timezone != null) ? timezone : "");
             statement.executeUpdate();
         }
     }
@@ -112,10 +118,10 @@ final class RoomRepository {
         }
     }
 
-    record WiredSettings(int inspectMask, int modifyMask) {
+    record WiredSettings(int inspectMask, int modifyMask, String timezone) {
 
         static WiredSettings defaults() {
-            return new WiredSettings(Room.WIRED_ACCESS_DEFAULT_INSPECT_MASK, Room.WIRED_ACCESS_DEFAULT_MODIFY_MASK);
+            return new WiredSettings(Room.WIRED_ACCESS_DEFAULT_INSPECT_MASK, Room.WIRED_ACCESS_DEFAULT_MODIFY_MASK, "");
         }
     }
 }

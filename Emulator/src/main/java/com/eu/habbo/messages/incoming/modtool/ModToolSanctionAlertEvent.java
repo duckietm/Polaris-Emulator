@@ -8,7 +8,7 @@ import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.modtool.ModToolIssueHandledComposer;
-
+import com.eu.habbo.messages.outgoing.modtool.ModeratorActionResultComposer;
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -24,7 +24,9 @@ public class ModToolSanctionAlertEvent extends MessageHandler {
         String message = ModToolInputGuard.normalize(this.packet.readString());
         int cfhTopic = this.packet.readInt();
 
-        if (!ModToolTicketGuard.isPositiveId(userId) || !ModToolTicketGuard.isPositiveId(cfhTopic) || !ModToolInputGuard.isSafeMessage(message)) {
+        if (!ModToolTicketGuard.isPositiveId(userId)
+                || !ModToolTicketGuard.isPositiveId(cfhTopic)
+                || !ModToolInputGuard.isSafeMessage(message)) {
             return;
         }
 
@@ -36,19 +38,28 @@ public class ModToolSanctionAlertEvent extends MessageHandler {
                     return;
                 }
 
-                ModToolSanctions modToolSanctions = Emulator.getGameEnvironment().getModToolSanctions();
+                ModToolSanctions modToolSanctions =
+                        Emulator.getGameEnvironment().getModToolSanctions();
 
                 if (Emulator.getConfig().getBoolean("hotel.sanctions.enabled")) {
-                    Map<Integer, ArrayList<ModToolSanctionItem>> modToolSanctionItemsHashMap = Emulator.getGameEnvironment().getModToolSanctions().getSanctions(habbo.getHabboInfo().getId());
-                    ArrayList<ModToolSanctionItem> modToolSanctionItems = modToolSanctionItemsHashMap.get(habbo.getHabboInfo().getId());
+                    Map<Integer, ArrayList<ModToolSanctionItem>> modToolSanctionItemsHashMap =
+                            Emulator.getGameEnvironment()
+                                    .getModToolSanctions()
+                                    .getSanctions(habbo.getHabboInfo().getId());
+                    ArrayList<ModToolSanctionItem> modToolSanctionItems =
+                            modToolSanctionItemsHashMap.get(habbo.getHabboInfo().getId());
 
                     if (modToolSanctionItems != null && !modToolSanctionItems.isEmpty()) {
                         ModToolSanctionItem item = modToolSanctionItems.get(modToolSanctionItems.size() - 1);
 
-                        if (item != null && item.probationTimestamp > 0 && item.probationTimestamp >= Emulator.getIntUnixTimestamp()) {
-                            modToolSanctions.run(userId, this.client.getHabbo(), item.sanctionLevel, cfhTopic, message, 0, false, 0);
+                        if (item != null
+                                && item.probationTimestamp > 0
+                                && item.probationTimestamp >= Emulator.getIntUnixTimestamp()) {
+                            modToolSanctions.run(
+                                    userId, this.client.getHabbo(), item.sanctionLevel, cfhTopic, message, 0, false, 0);
                         } else {
-                            modToolSanctions.run(userId, this.client.getHabbo(), item.sanctionLevel, cfhTopic, message, 0, false, 0);
+                            modToolSanctions.run(
+                                    userId, this.client.getHabbo(), item.sanctionLevel, cfhTopic, message, 0, false, 0);
                         }
                     } else {
                         modToolSanctions.run(userId, this.client.getHabbo(), 0, cfhTopic, message, 0, false, 0);
@@ -58,8 +69,12 @@ public class ModToolSanctionAlertEvent extends MessageHandler {
                 }
 
                 ModToolManager.bumpUserSettingCounter(userId, "cfh_warnings");
+                this.client.sendResponse(new ModeratorActionResultComposer(userId, true));
             } else {
-                this.client.sendResponse(new ModToolIssueHandledComposer(Emulator.getTexts().getValue("generic.user.not_found").replace("%user%", Emulator.getConfig().getValue("hotel.player.name"))));
+                this.client.sendResponse(new ModeratorActionResultComposer(userId, false));
+                this.client.sendResponse(new ModToolIssueHandledComposer(Emulator.getTexts()
+                        .getValue("generic.user.not_found")
+                        .replace("%user%", Emulator.getConfig().getValue("hotel.player.name"))));
             }
         }
     }

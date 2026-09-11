@@ -24,11 +24,14 @@ public class InteractionBadgeDisplay extends HabboItem {
         serverMessage.appendInt(2 + (this.isLimited() ? 256 : 0));
         serverMessage.appendInt(4);
         serverMessage.appendString("0");
+        // Official `FurnitureBadgeDisplayWidgetHandler.handleEngravingRequest` (AIR 13) reads the
+        // string array as [1] badge code, [2] owner name, [3] engraving date. The stored extradata
+        // is "<username>	<date>	<badge code>".
         String[] data = this.getExtradata().split((char) 9 + "");
         if (data.length == 3) {
             serverMessage.appendString(data[2]);
-            serverMessage.appendString(data[1]);
             serverMessage.appendString(data[0]);
+            serverMessage.appendString(data[1]);
         } else {
             serverMessage.appendString(this.getExtradata());
             serverMessage.appendString("Unknown User");

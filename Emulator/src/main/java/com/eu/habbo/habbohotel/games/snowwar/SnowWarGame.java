@@ -16,6 +16,7 @@ import com.eu.habbo.habbohotel.games.snowwar.objects.SnowWarTreeObject;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
+import com.eu.habbo.messages.outgoing.gamecenter.Game2UserBlockedComposer;
 import com.eu.habbo.messages.outgoing.snowwar.SnowStormFullGameStatusComposer;
 import com.eu.habbo.messages.outgoing.snowwar.SnowStormGameEndedComposer;
 import com.eu.habbo.messages.outgoing.snowwar.SnowStormIntializeGameArenaViewComposer;
@@ -359,6 +360,15 @@ public class SnowWarGame {
 
         if (player.getHabbo().getClient() != null) {
             player.getHabbo().getClient().sendResponse(new SnowStormRejoinPreviousRoomComposer());
+
+            // AIR Game2UserBlocked (3508): abandoning a live match blocks the
+            // play button for a while (GamesMainViewController.changeBlockStatus).
+            if (this.state == SnowWarGameState.RUNNING) {
+                int blockSeconds = Math.max(0, Emulator.getConfig().getInt("gamecenter.game.leave.block.seconds", 180));
+                if (blockSeconds > 0) {
+                    player.getHabbo().getClient().sendResponse(new Game2UserBlockedComposer(blockSeconds));
+                }
+            }
         }
 
         int remainingPlayers;

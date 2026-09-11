@@ -13,6 +13,11 @@ public final class MysteryBoxColour {
 
     private MysteryBoxColour() {}
 
+    /** Whether the client has a swatch for this colour. */
+    public static boolean isKnown(String colour) {
+        return colour != null && KNOWN.contains(colour);
+    }
+
     public static String of(String itemName) {
         if (itemName == null || itemName.isEmpty()) {
             return "";

@@ -83,6 +83,18 @@ class MysteryBoxContractTest {
     }
 
     @Test
+    void theTrackerDrawsTheColoursTheHotelConfiguredAndNothingElse() throws Exception {
+        String composer = source("com/eu/habbo/messages/outgoing/mysterybox/MysteryBoxKeysComposer.java");
+
+        assertTrue(composer.contains("mysterybox.tracker.box.colour"));
+        assertTrue(composer.contains("mysterybox.tracker.key.colour"));
+        assertTrue(composer.contains("MysteryBoxColour.isKnown(trimmed) ? trimmed : \"\""));
+        assertTrue(
+                composer.contains("public MysteryBoxKeysComposer()"),
+                "the no-argument constructor plugins use is kept");
+    }
+
+    @Test
     void theTableTheMigrationCreatesIsTheOneTheContractDeclares() throws Exception {
         String migration =
                 Files.readString(Path.of("src/main/resources/db/migration/V20260911120000__mystery_box.sql"));

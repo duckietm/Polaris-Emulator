@@ -1758,6 +1758,7 @@ U|com/eu/habbo/messages/outgoing/modtool/ModToolUserInfoComposer.java|CALL|getCo
 U|com/eu/habbo/messages/outgoing/modtool/ModToolUserInfoComposer.java|CALL|getDatabase|4
 U|com/eu/habbo/messages/outgoing/modtool/ModToolUserInfoComposer.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/messages/outgoing/modtool/ModToolUserInfoComposer.java|CALL|getIntUnixTimestamp|1
+U|com/eu/habbo/messages/outgoing/mysterybox/MysteryBoxKeysComposer.java|CALL|getConfig|2
 U|com/eu/habbo/messages/outgoing/navigator/NewNavigatorCategoryUserCountComposer.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/outgoing/rooms/RoomBannedUsersComposer.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/messages/outgoing/rooms/RoomDataComposer.java|CALL|getGameEnvironment|2

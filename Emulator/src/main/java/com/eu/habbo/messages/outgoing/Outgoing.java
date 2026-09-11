@@ -114,7 +114,16 @@ public class Outgoing {
     public static final int RoomUserTalkComposer = 1446;
     public static final int TradeStartComposer = 2505;
     public static final int InventoryItemUpdateComposer = 104;
-    public static final int ModToolIssueUpdateComposer = 3150;
+    public static final int ModToolIssuePickFailedComposer = 3150;
+
+    /**
+     * @deprecated 3150 is the header the client reads as "these tickets could not be picked", not as
+     *     a serialized issue. {@link com.eu.habbo.messages.outgoing.modtool.ModToolIssuePickFailedComposer}
+     *     writes the shape the client parses. Kept for plugins that reference it.
+     */
+    @Deprecated
+    public static final int ModToolIssueUpdateComposer = ModToolIssuePickFailedComposer;
+
     public static final int MeMenuSettingsComposer = 513;
     public static final int ModToolRoomInfoComposer = 1333;
     public static final int GuildListComposer = 420;
@@ -373,7 +382,17 @@ public class Outgoing {
     // Personal word filter (AIR 13 CustomFilterResult / ModifyCustomFilterResult)
     public static final int CustomWordFilterWordsComposer = 3883;
     public static final int CustomWordFilterModifyResultComposer = 3333;
-    public static final int VerifyMobileNumberComposer = 3639; // PRODUCTION-201611291003-338511768
+    public static final int NewUserExperienceNotCompleteComposer = 3639;
+
+    /**
+     * @deprecated the name is a misreading: 3639 tells the client the new user experience is not
+     *     finished. Use {@link
+     *     com.eu.habbo.messages.outgoing.habboway.nux.NewUserExperienceNotCompleteComposer}.
+     */
+    @Deprecated
+    public static final int VerifyMobileNumberComposer =
+            NewUserExperienceNotCompleteComposer; // PRODUCTION-201611291003-338511768
+
     public static final int NewUserGiftComposer = 3575; // PRODUCTION-201611291003-338511768
     public static final int UpdateUserLookComposer = 2429; // PRODUCTION-201611291003-338511768
     public static final int RoomUserIgnoredComposer = 207; // PRODUCTION-201611291003-338511768
@@ -493,7 +512,16 @@ public class Outgoing {
     public static final int CraftingResultComposer = 618; // PRODUCTION-201611291003-338511768
     public static final int CraftingComposerFour = 2124; // PRODUCTION-201611291003-338511768
 
-    public static final int UnknownComposer_100 = 1553; // PRODUCTION-201611291003-338511768 //PetBReedingResult
+    public static final int MonsterplantBreedingResultComposer = 1553;
+
+    /**
+     * @deprecated 1553 is the result of breeding two monsterplants. Use {@link
+     *     com.eu.habbo.messages.outgoing.rooms.pets.breeding.MonsterplantBreedingResultComposer}.
+     */
+    @Deprecated
+    public static final int UnknownComposer_100 =
+            MonsterplantBreedingResultComposer; // PRODUCTION-201611291003-338511768 //PetBReedingResult
+
     public static final int ConnectionErrorComposer = 1004; // PRODUCTION-201611291003-338511768
     public static final int BotForceOpenContextMenuComposer = 296; // PRODUCTION-201611291003-338511768
     public static final int UnknownComposer_1111 = 1551; // PRODUCTION-201611291003-338511768
@@ -609,7 +637,14 @@ public class Outgoing {
     public static final int HotelViewNextLTDAvailableComposer = 44;
     public static final int HotelViewSecondsUntilComposer = 3926;
     public static final int UnknownRoomDesktopComposer = 69;
-    public static final int UnknownGuildComposer3 = 876;
+    public static final int ExtendedProfileChangedComposer = 876;
+
+    /**
+     * @deprecated the name is a misreading: 876 tells a client that the profile of this user changed.
+     *     Use {@link com.eu.habbo.messages.outgoing.users.ExtendedProfileChangedComposer}.
+     */
+    @Deprecated
+    public static final int UnknownGuildComposer3 = ExtendedProfileChangedComposer;
 
     public static final int GameCenterGameComposer = 3805;
 

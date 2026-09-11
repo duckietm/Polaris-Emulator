@@ -295,6 +295,7 @@ U|com/eu/habbo/habbohotel/commands/RoomMuteCommand.java|CALL|getTexts|2
 U|com/eu/habbo/habbohotel/commands/RoomPixelsCommand.java|CALL|getTexts|4
 U|com/eu/habbo/habbohotel/commands/RoomPointsCommand.java|CALL|getConfig|4
 U|com/eu/habbo/habbohotel/commands/RoomPointsCommand.java|CALL|getTexts|7
+U|com/eu/habbo/habbohotel/commands/RoomSpecialEffectCommand.java|CALL|getTexts|2
 U|com/eu/habbo/habbohotel/commands/SayAllCommand.java|CALL|getTexts|2
 U|com/eu/habbo/habbohotel/commands/SayCommand.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/commands/SayCommand.java|CALL|getTexts|5
@@ -858,9 +859,9 @@ U|com/eu/habbo/habbohotel/permissions/PermissionsManager.java|CALL|getPluginMana
 U|com/eu/habbo/habbohotel/pets/GnomePet.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/pets/GnomePet.java|CALL|getGameEnvironment|10
 U|com/eu/habbo/habbohotel/pets/HorsePet.java|CALL|getDatabase|1
-U|com/eu/habbo/habbohotel/pets/MonsterplantPet.java|CALL|getConfig|2
+U|com/eu/habbo/habbohotel/pets/MonsterplantPet.java|CALL|getConfig|3
 U|com/eu/habbo/habbohotel/pets/MonsterplantPet.java|CALL|getDatabase|1
-U|com/eu/habbo/habbohotel/pets/MonsterplantPet.java|CALL|getGameEnvironment|9
+U|com/eu/habbo/habbohotel/pets/MonsterplantPet.java|CALL|getGameEnvironment|7
 U|com/eu/habbo/habbohotel/pets/MonsterplantPet.java|CALL|getIntUnixTimestamp|9
 U|com/eu/habbo/habbohotel/pets/MonsterplantPet.java|CALL|getRandom|2
 U|com/eu/habbo/habbohotel/pets/MonsterplantPet.java|CALL|getThreading|3
@@ -908,6 +909,7 @@ U|com/eu/habbo/habbohotel/pets/actions/ActionTripleJump.java|CALL|getThreading|2
 U|com/eu/habbo/habbohotel/pets/actions/ActionWagTail.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/pets/actions/ActionWave.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/pets/actions/ActionWings.java|CALL|getThreading|1
+U|com/eu/habbo/habbohotel/pets/breeding/MonsterplantBreedingRequests.java|CALL|getIntUnixTimestamp|2
 U|com/eu/habbo/habbohotel/pets/breeding/PetBreedingSession.java|CALL|getConfig|1
 U|com/eu/habbo/habbohotel/pets/breeding/PetBreedingSession.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/pets/breeding/PetBreedingSession.java|CALL|getThreading|1
@@ -1296,6 +1298,7 @@ U|com/eu/habbo/messages/incoming/guilds/RequestGuildJoinEvent.java|CALL|getPlugi
 U|com/eu/habbo/messages/incoming/guilds/RequestGuildManageEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/guilds/RequestGuildMembersEvent.java|CALL|getGameEnvironment|4
 U|com/eu/habbo/messages/incoming/guilds/RequestOwnGuildsEvent.java|CALL|getGameEnvironment|1
+U|com/eu/habbo/messages/incoming/guilds/forums/GetUnreadForumsCountEvent.java|CALL|getDatabase|1
 U|com/eu/habbo/messages/incoming/guilds/forums/GuildForumDataEvent.java|CALL|getGameEnvironment|4
 U|com/eu/habbo/messages/incoming/guilds/forums/GuildForumListEvent.java|CALL|getDatabase|2
 U|com/eu/habbo/messages/incoming/guilds/forums/GuildForumListEvent.java|CALL|getGameEnvironment|3
@@ -1321,7 +1324,7 @@ U|com/eu/habbo/messages/incoming/handshake/InitDiffieHandshakeEvent.java|CALL|ge
 U|com/eu/habbo/messages/incoming/handshake/MachineIDEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/handshake/MachineIDEvent.java|CALL|getGameServer|1
 U|com/eu/habbo/messages/incoming/handshake/MachineIDEvent.java|CALL|getThreading|1
-U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getConfig|10
+U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getConfig|11
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getCrypto|1
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getDatabase|1
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getDate|1
@@ -1415,7 +1418,7 @@ U|com/eu/habbo/messages/incoming/modtool/ModToolIssueDefaultSanctionEvent.java|C
 U|com/eu/habbo/messages/incoming/modtool/ModToolKickEvent.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/messages/incoming/modtool/ModToolKickEvent.java|CALL|getTexts|1
 U|com/eu/habbo/messages/incoming/modtool/ModToolPickTicketEvent.java|CALL|getGameEnvironment|2
-U|com/eu/habbo/messages/incoming/modtool/ModToolPickTicketEvent.java|CALL|getTexts|4
+U|com/eu/habbo/messages/incoming/modtool/ModToolPickTicketEvent.java|CALL|getTexts|3
 U|com/eu/habbo/messages/incoming/modtool/ModToolReleaseTicketEvent.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/messages/incoming/modtool/ModToolReleaseTicketEvent.java|CALL|getTexts|1
 U|com/eu/habbo/messages/incoming/modtool/ModToolRequestIssueChatlogEvent.java|CALL|getGameEnvironment|7
@@ -1696,6 +1699,8 @@ U|com/eu/habbo/messages/incoming/users/SaveUserVolumesEvent.java|CALL|getPluginM
 U|com/eu/habbo/messages/incoming/users/SaveWardrobeEvent.java|CALL|getPluginManager|1
 U|com/eu/habbo/messages/incoming/users/SaveWardrobeEvent.java|CALL|getThreading|1
 U|com/eu/habbo/messages/incoming/users/UserActivityEvent.java|CALL|getGameEnvironment|10
+U|com/eu/habbo/messages/incoming/users/UserNuxEvent.java|CALL|getConfig|1
+U|com/eu/habbo/messages/incoming/users/UserNuxEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/users/UserNuxEvent.java|CALL|getTexts|1
 U|com/eu/habbo/messages/incoming/users/UserSaveLookEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/users/UserSaveLookEvent.java|CALL|getPluginManager|1
@@ -2316,6 +2321,7 @@ D|com/eu/habbo/messages/incoming/catalog/CatalogBuyItemAsGiftEvent.java|3
 D|com/eu/habbo/messages/incoming/friends/AcceptFriendRequestEvent.java|1
 D|com/eu/habbo/messages/incoming/friends/FriendRequestEvent.java|1
 D|com/eu/habbo/messages/incoming/guilds/GuildChangeSettingsEvent.java|1
+D|com/eu/habbo/messages/incoming/guilds/forums/GetUnreadForumsCountEvent.java|1
 D|com/eu/habbo/messages/incoming/guilds/forums/GuildForumListEvent.java|2
 D|com/eu/habbo/messages/incoming/guilds/forums/GuildForumMarkAsReadEvent.java|1
 D|com/eu/habbo/messages/incoming/guilds/forums/GuildForumModerateThreadEvent.java|1

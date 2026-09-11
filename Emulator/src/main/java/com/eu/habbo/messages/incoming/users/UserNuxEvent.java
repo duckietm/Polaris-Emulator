@@ -1,10 +1,13 @@
 package com.eu.habbo.messages.incoming.users;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.items.NewUserGift;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.messages.outgoing.habboway.nux.NewUserGiftComposer;
 import com.eu.habbo.messages.outgoing.habboway.nux.NuxAlertComposer;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class UserNuxEvent extends MessageHandler {
@@ -33,10 +36,22 @@ public class UserNuxEvent extends MessageHandler {
                     .sendResponse(new NuxAlertComposer("helpBubble/add/" + keys.get(step) + "/"
                             + Emulator.getTexts().getValue("nux.step." + step)));
         } else if (!habbo.getHabboStats().nuxReward) {
-
+            // The tour is over and the welcome gift has not been taken: offer what there is to pick.
+            sendGiftOffer(habbo);
         } else {
             habbo.getClient().sendResponse(new NuxAlertComposer("nux/lobbyoffer/show"));
         }
+    }
+
+    /** The gifts a new player chooses between, as one step of options. */
+    private static void sendGiftOffer(Habbo habbo) {
+        if (!Emulator.getConfig().getBoolean("hotel.nux.gifts.enabled")) return;
+
+        List<NewUserGift> gifts = Emulator.getGameEnvironment().getItemManager().getNewUserGifts();
+
+        if (gifts.isEmpty()) return;
+
+        habbo.getClient().sendResponse(new NewUserGiftComposer(List.of(gifts)));
     }
 
     /** Official HabboNuxDialogs: 0 comes from "Verify and get gifts". */

@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.modtool.ScripterManager;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.modtool.ModToolIssueInfoComposer;
+import com.eu.habbo.messages.outgoing.modtool.ModToolIssuePickFailedComposer;
 
 public class ModToolPickTicketEvent extends MessageHandler {
     public static boolean send = false;
@@ -27,8 +28,9 @@ public class ModToolPickTicketEvent extends MessageHandler {
 
             if (issue != null) {
                 if (!ModToolTicketGuard.canPick(issue)) {
+                    // Somebody else got there first: the window says who, instead of a bare alert.
                     this.client.sendResponse(new ModToolIssueInfoComposer(issue));
-                    this.client.getHabbo().alert(Emulator.getTexts().getValue("support.ticket.picked.failed"));
+                    this.client.sendResponse(new ModToolIssuePickFailedComposer(issue));
 
                     return;
                 }

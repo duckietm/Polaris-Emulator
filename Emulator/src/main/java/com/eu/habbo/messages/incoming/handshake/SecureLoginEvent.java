@@ -27,6 +27,7 @@ import com.eu.habbo.messages.outgoing.gamecenter.GameCenterAccountInfoComposer;
 import com.eu.habbo.messages.outgoing.gamecenter.GameCenterGameListComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.GenericAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.MessagesForYouComposer;
+import com.eu.habbo.messages.outgoing.habboway.nux.NewUserExperienceNotCompleteComposer;
 import com.eu.habbo.messages.outgoing.habboway.nux.NewUserIdentityComposer;
 import com.eu.habbo.messages.outgoing.handshake.AvailabilityStatusMessageComposer;
 import com.eu.habbo.messages.outgoing.handshake.EnableNotificationsComposer;
@@ -311,6 +312,13 @@ public class SecureLoginEvent extends MessageHandler {
                         .compose());
                 messages.add(new UserClothesComposer(this.client.getHabbo()).compose());
                 messages.add(new NewUserIdentityComposer(habbo).compose());
+
+                // The gift offer of the first days: the client shows it only once it is told the
+                // new user experience has not been finished.
+                if (!this.client.getHabbo().getHabboStats().nuxReward
+                        && Emulator.getConfig().getBoolean("hotel.nux.gifts.enabled")) {
+                    messages.add(new NewUserExperienceNotCompleteComposer().compose());
+                }
                 messages.add(new UserPermissionsComposer(this.client.getHabbo()).compose());
                 messages.add(new AvailableCommandsComposer(Emulator.getGameEnvironment()
                                 .getCommandHandler()

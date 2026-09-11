@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.users.DanceType;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredMovementPhysics;
+import com.eu.habbo.habbohotel.rooms.raidprotection.RaidProtectionSettings;
 import com.eu.habbo.messages.ISerialize;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.HideDoorbellComposer;
@@ -126,6 +127,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     private final RoomPersistence persistence;
     private final RoomRepository repository;
     private final RoomWiredAccessService wiredAccess;
+    private final RoomRaidProtectionService raidProtection;
     private final RoomWiredVisibilityService wiredVisibility = new RoomWiredVisibilityService(this);
     private final RoomWiredRuntime wiredRuntime = new RoomWiredRuntime(this);
     private final RoomUserCountPersistence userCountPersistence;
@@ -257,6 +259,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         this.persistence = new RoomPersistence(this.dependencies.database());
         this.repository = new RoomRepository(this.dependencies.database());
         this.wiredAccess = new RoomWiredAccessService(this, this.repository);
+        this.raidProtection = new RoomRaidProtectionService(this, this.repository, this.dependencies.unixTime());
         this.id = id;
         this.ownerId = ownerId;
         this.userCountPersistence = this.createUserCountPersistence();
@@ -281,6 +284,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         this.persistence = new RoomPersistence(this.dependencies.database());
         this.repository = new RoomRepository(this.dependencies.database());
         this.wiredAccess = new RoomWiredAccessService(this, this.repository);
+        this.raidProtection = new RoomRaidProtectionService(this, this.repository, this.dependencies.unixTime());
         RoomSnapshot.Initial initial = RoomSnapshot.readInitial(set);
         this.id = initial.id();
         this.ownerId = initial.ownerId();
@@ -1519,6 +1523,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
     public void addHabbo(Habbo habbo) {
         this.unitManager.addHabbo(habbo);
+        this.raidProtection.onArrival(habbo);
     }
 
     public void kickHabbo(Habbo habbo, boolean alert) {
@@ -1671,11 +1676,13 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
     public void talk(Habbo habbo, RoomChatMessage roomChatMessage, RoomChatType chatType) {
         this.chatManager.talk(habbo, roomChatMessage, chatType);
+        this.scoreRaidProtection(habbo, roomChatMessage);
     }
 
     public void talk(
             final Habbo habbo, final RoomChatMessage roomChatMessage, RoomChatType chatType, boolean ignoreWired) {
         this.chatManager.talk(habbo, roomChatMessage, chatType, ignoreWired);
+        this.scoreRaidProtection(habbo, roomChatMessage);
     }
 
     public Set<RoomTile> getLockedTiles() {
@@ -1871,6 +1878,36 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
     public boolean saveWiredSettings(int inspectMask, int modifyMask, String timezone) {
         return this.wiredAccess.save(inspectMask, modifyMask, timezone);
+    }
+
+    public boolean canManageRaidProtection(Habbo habbo) {
+        return this.raidProtection.canManage(habbo);
+    }
+
+    public RaidProtectionSettings getRaidProtectionSettings() {
+        return this.raidProtection.settings();
+    }
+
+    public int getLastRaidAtSeconds() {
+        return this.raidProtection.lastRaidAtSeconds();
+    }
+
+    public boolean isRaidIncidentActive() {
+        return this.raidProtection.incidentActive();
+    }
+
+    /** Returns one of the RoomRaidProtectionService result codes the client understands. */
+    public int saveRaidProtectionSettings(Habbo habbo, RaidProtectionSettings settings) {
+        return this.raidProtection.save(habbo, settings);
+    }
+
+    /** Feeds a chat message to raid protection. Commands and wired output are not people talking. */
+    private void scoreRaidProtection(Habbo habbo, RoomChatMessage roomChatMessage) {
+        if (roomChatMessage == null || roomChatMessage.isCommand) {
+            return;
+        }
+
+        this.raidProtection.onTalk(habbo, roomChatMessage.getMessage());
     }
 
     public void giveRights(Habbo habbo) {

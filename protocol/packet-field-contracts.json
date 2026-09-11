@@ -20253,6 +20253,256 @@
           "name": "ownerId"
         }
       ]
+    },
+    {
+      "name": "RAID_PROTECTION_SETTINGS_REQUEST",
+      "direction": "client_to_server",
+      "header": 206,
+      "java": {
+        "symbol": "RaidProtectionSettingsRequestEvent",
+        "className": "RaidProtectionSettingsRequestEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/raidprotection/RaidProtectionSettingsRequestEvent.java"
+      },
+      "typescript": {
+        "symbol": "RAID_PROTECTION_SETTINGS_REQUEST",
+        "className": "RaidProtectionSettingsRequestComposer",
+        "path": "packages/communication/src/messages/outgoing/roomsettings/RaidProtectionSettingsRequestComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "roomId"
+        }
+      ]
+    },
+    {
+      "name": "RAID_PROTECTION_SETTINGS_SAVE",
+      "direction": "client_to_server",
+      "header": 9346,
+      "java": {
+        "symbol": "RaidProtectionSettingsSaveEvent",
+        "className": "RaidProtectionSettingsSaveEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/raidprotection/RaidProtectionSettingsSaveEvent.java"
+      },
+      "typescript": {
+        "symbol": "RAID_PROTECTION_SETTINGS_SAVE",
+        "className": "RaidProtectionSettingsSaveComposer",
+        "path": "packages/communication/src/messages/outgoing/roomsettings/RaidProtectionSettingsSaveComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "roomId"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "enabled"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "detectionSensitivity"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "actionType"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "banDurationSeconds"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "guardEnabled"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "guardDurationSeconds"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "guardSensitivity"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "confirmed"
+        }
+      ]
+    },
+    {
+      "name": "RAID_PROTECTION_CAPABILITY",
+      "direction": "server_to_client",
+      "header": 734,
+      "java": {
+        "symbol": "RaidProtectionCapabilityComposer",
+        "className": "RaidProtectionCapabilityComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/raidprotection/RaidProtectionCapabilityComposer.java"
+      },
+      "typescript": {
+        "symbol": "RAID_PROTECTION_CAPABILITY",
+        "className": "RaidProtectionCapabilityParser",
+        "path": "packages/communication/src/messages/parser/roomsettings/RaidProtectionCapabilityParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "roomId"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "canManage"
+        }
+      ]
+    },
+    {
+      "name": "RAID_PROTECTION_SETTINGS",
+      "direction": "server_to_client",
+      "header": 3553,
+      "java": {
+        "symbol": "RaidProtectionSettingsComposer",
+        "className": "RaidProtectionSettingsComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/raidprotection/RaidProtectionSettingsComposer.java"
+      },
+      "typescript": {
+        "symbol": "RAID_PROTECTION_SETTINGS",
+        "className": "RaidProtectionSettingsParser",
+        "path": "packages/communication/src/messages/parser/roomsettings/RaidProtectionSettingsParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "roomId"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "enabled"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "detectionSensitivity"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "actionType"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "banDurationSeconds"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "guardEnabled"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "guardDurationSeconds"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "guardSensitivity"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "incidentActive"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "lastRaidAtEpochSeconds"
+        }
+      ]
+    },
+    {
+      "name": "RAID_PROTECTION_SAVE_RESULT",
+      "direction": "server_to_client",
+      "header": 3620,
+      "java": {
+        "symbol": "RaidProtectionSaveResultComposer",
+        "className": "RaidProtectionSaveResultComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/raidprotection/RaidProtectionSaveResultComposer.java"
+      },
+      "typescript": {
+        "symbol": "RAID_PROTECTION_SAVE_RESULT",
+        "className": "RaidProtectionSaveResultParser",
+        "path": "packages/communication/src/messages/parser/roomsettings/RaidProtectionSaveResultParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "roomId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "resultCode"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "enabled"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "detectionSensitivity"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "actionType"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "banDurationSeconds"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "guardEnabled"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "guardDurationSeconds"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "guardSensitivity"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "incidentActive"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "lastRaidAtEpochSeconds"
+        }
+      ]
     }
   ],
   "unpaired": [
@@ -21584,7 +21834,7 @@
         "className": "RoomUnitChatWhisperComposer",
         "path": "packages/communication/src/messages/outgoing/room/unit/chat/RoomUnitChatWhisperComposer.ts"
       },
-      "reason": "Java analyzer: Packet fields delegated to external constructor RoomChatMessage inside handle; TypeScript analyzer: Outgoing value recipientName + \u0027 \u0027 + message has no statically resolvable wire type"
+      "reason": "Java analyzer: Packet fields delegated to external constructor RoomChatMessage inside handle; TypeScript analyzer: Outgoing value recipientName + ' ' + message has no statically resolvable wire type"
     },
     {
       "name": "RELEASE_ISSUES",

@@ -722,4 +722,8 @@ public class Incoming {
     // AIR 13 self donation tool (official id 2499) and community goal vote (official id 3536)
     public static final int SelfDonationEvent = 2499;
     public static final int CommunityGoalVoteEvent = 3536;
+    // AIR 15 raid protection. The request keeps its official id 206; the save's official 2687 is
+    // already SetStackHelperAdjacentHeightEvent, so it uses the custom features range.
+    public static final int RaidProtectionSettingsRequestEvent = 206;
+    public static final int RaidProtectionSettingsSaveEvent = 9346;
 }

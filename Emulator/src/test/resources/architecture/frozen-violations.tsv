@@ -1405,7 +1405,7 @@ U|com/eu/habbo/messages/incoming/mentions/MarkMentionsReadEvent.java|CALL|getGam
 U|com/eu/habbo/messages/incoming/mentions/RequestMentionsEvent.java|CALL|getConfig|1
 U|com/eu/habbo/messages/incoming/mentions/RequestMentionsEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/modtool/DeletePendingCallsForHelpEvent.java|CALL|getGameEnvironment|2
-U|com/eu/habbo/messages/incoming/modtool/ModToolAlertEvent.java|CALL|getGameEnvironment|2
+U|com/eu/habbo/messages/incoming/modtool/ModToolAlertEvent.java|CALL|getGameEnvironment|3
 U|com/eu/habbo/messages/incoming/modtool/ModToolAlertEvent.java|CALL|getTexts|1
 U|com/eu/habbo/messages/incoming/modtool/ModToolChangeRoomSettingsEvent.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/messages/incoming/modtool/ModToolChangeRoomSettingsEvent.java|CALL|getTexts|1

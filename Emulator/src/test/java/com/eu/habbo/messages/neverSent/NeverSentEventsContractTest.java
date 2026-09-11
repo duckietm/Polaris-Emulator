@@ -81,6 +81,37 @@ class NeverSentEventsContractTest {
     }
 
     @Test
+    void aRefusedRoomEventSaysWhyInsteadOfNothing() throws Exception {
+        String promotion = source("com/eu/habbo/messages/incoming/rooms/promotions/UpdateRoomPromotionEvent.java");
+
+        assertTrue(promotion.contains("new CanCreateEventComposer(CanCreateEventComposer.ERROR_NOT_IN_GUEST_ROOM)"));
+        assertTrue(promotion.contains("new CanCreateEventComposer(CanCreateEventComposer.ERROR_NOT_THE_OWNER)"));
+    }
+
+    @Test
+    void theErrorCodesAreTheOnesTheClientHasSentencesFor() throws Exception {
+        String composer = source("com/eu/habbo/messages/outgoing/navigator/CanCreateEventComposer.java");
+
+        assertTrue(composer.contains("ERROR_NOT_IN_GUEST_ROOM = 1"));
+        assertTrue(composer.contains("ERROR_NOT_THE_OWNER = 2"));
+        assertTrue(composer.contains("ERROR_ROOM_CLOSED = 3"));
+        assertTrue(composer.contains("ERROR_DISABLED = 4"));
+        assertTrue(composer.contains("ERROR_ALREADY_HERE = 5"));
+        assertTrue(composer.contains("ERROR_ALREADY_ELSEWHERE = 6"));
+    }
+
+    @Test
+    void writingToSomebodyWhoseReportYouHoldAnswersThatReport() throws Exception {
+        String alert = source("com/eu/habbo/messages/incoming/modtool/ModToolAlertEvent.java");
+        String manager = source("com/eu/habbo/habbohotel/modtool/ModToolManager.java");
+
+        assertTrue(alert.contains("new ModToolIssueResponseAlertComposer(message)"));
+        assertTrue(alert.indexOf("pickedTicketOf(") < alert.indexOf(".alert(this.client.getHabbo()"));
+        assertTrue(manager.contains("if (issue.state != ModToolTicketState.PICKED) continue;"));
+        assertTrue(manager.contains("if (issue.modId != moderatorId) continue;"));
+    }
+
+    @Test
     void theRoomEffectsTheClientCanPlayHaveACommand() throws Exception {
         String command = source("com/eu/habbo/habbohotel/commands/RoomSpecialEffectCommand.java");
         String handler = source("com/eu/habbo/habbohotel/commands/CommandHandler.java");

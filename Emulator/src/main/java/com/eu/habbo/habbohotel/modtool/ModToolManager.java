@@ -923,6 +923,26 @@ public class ModToolManager {
         return this.tickets.get(ticketId);
     }
 
+    /**
+     * The call for help this moderator is handling for this player, if there is one. A message sent
+     * to them while it is open is an answer to that report, not a moderation warning out of the blue.
+     */
+    public ModToolIssue pickedTicketOf(int moderatorId, int reporterId) {
+        synchronized (this.tickets) {
+            for (ModToolIssue issue : this.tickets.values()) {
+                if (issue.senderId != reporterId) continue;
+
+                if (issue.modId != moderatorId) continue;
+
+                if (issue.state != ModToolTicketState.PICKED) continue;
+
+                return issue;
+            }
+        }
+
+        return null;
+    }
+
     public Int2ObjectMap<CfhCategory> getCfhCategories() {
         return this.cfhCategories;
     }

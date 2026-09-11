@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 
 class RoomCompetitionTest {
     private static RoomCompetition competition() {
-        return new RoomCompetition(1, "spring", "Spring", List.of("chair"), 3, 100, 200, 200, 300);
+        return new RoomCompetition(1, "spring", "Spring", List.of("chair"), 3, 100, 200, 200, 300, 0);
     }
 
     @Test
@@ -38,5 +38,28 @@ class RoomCompetitionTest {
         assertEquals(List.of(), RoomCompetitionManager.splitFurni(""));
         assertEquals(List.of(), RoomCompetitionManager.splitFurni(null));
         assertEquals(List.of("chair"), RoomCompetitionManager.splitFurni("chair,,"));
+    }
+
+    @Test
+    void withoutAThresholdEveryRoomIsOldEnough() {
+        RoomCompetition competition = competition();
+
+        assertTrue(competition.acceptsRoomCreatedAt(0));
+        assertTrue(competition.acceptsRoomCreatedAt(1));
+    }
+
+    @Test
+    void withAThresholdOnlyRoomsMadeAfterItEnter() {
+        RoomCompetition competition = new RoomCompetition(1, "spring", "Spring", List.of(), 3, 100, 200, 200, 300, 150);
+
+        assertFalse(competition.acceptsRoomCreatedAt(150));
+        assertTrue(competition.acceptsRoomCreatedAt(151));
+    }
+
+    @Test
+    void aRoomWhoseAgeIsUnknownCountsAsTooOld() {
+        RoomCompetition competition = new RoomCompetition(1, "spring", "Spring", List.of(), 3, 100, 200, 200, 300, 150);
+
+        assertFalse(competition.acceptsRoomCreatedAt(0));
     }
 }

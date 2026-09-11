@@ -76,7 +76,7 @@ public class RoomCompetitionManager {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "SELECT id, code, name, required_furni, votes_per_user, submit_starts, submit_ends,"
-                                + " vote_starts, vote_ends FROM room_competitions WHERE enabled = 1"
+                                + " vote_starts, vote_ends, rooms_created_after FROM room_competitions WHERE enabled = 1"
                                 + " AND submit_starts <= ? AND vote_ends > ? ORDER BY submit_starts DESC LIMIT 1")) {
             statement.setInt(1, now);
             statement.setInt(2, now);
@@ -95,7 +95,8 @@ public class RoomCompetitionManager {
                         set.getInt("submit_starts"),
                         set.getInt("submit_ends"),
                         set.getInt("vote_starts"),
-                        set.getInt("vote_ends"));
+                        set.getInt("vote_ends"),
+                        set.getInt("rooms_created_after"));
             }
         } catch (SQLException exception) {
             LOGGER.error("Caught SQL exception", exception);
@@ -142,6 +143,10 @@ public class RoomCompetitionManager {
 
         if (room.getState() != RoomState.OPEN) {
             return RoomCompetitionSubmitState.of(RoomCompetitionResult.DOOR_CLOSED);
+        }
+
+        if (!competition.acceptsRoomCreatedAt(this.roomCreatedAt(room.getId()))) {
+            return RoomCompetitionSubmitState.of(RoomCompetitionResult.ROOM_NOT_ELIGIBLE);
         }
 
         List<String> missing = this.missingFurni(room, competition);
@@ -329,5 +334,24 @@ public class RoomCompetitionManager {
         }
 
         return rooms;
+    }
+
+    /**
+     * When the room was made. Rooms that existed before the hotel started recording it answer zero,
+     * which the competition reads as an age it cannot vouch for.
+     */
+    int roomCreatedAt(int roomId) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT date_created FROM rooms WHERE id = ? LIMIT 1")) {
+            statement.setInt(1, roomId);
+
+            try (ResultSet set = statement.executeQuery()) {
+                return set.next() ? set.getInt("date_created") : 0;
+            }
+        } catch (SQLException exception) {
+            LOGGER.error("Caught SQL exception", exception);
+            return 0;
+        }
     }
 }

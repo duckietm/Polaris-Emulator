@@ -962,7 +962,7 @@ U|com/eu/habbo/habbohotel/rooms/RoomManager.java|CALL|getConfig|1
 U|com/eu/habbo/habbohotel/rooms/RoomManager.java|CALL|getDatabase|15
 U|com/eu/habbo/habbohotel/rooms/RoomManager.java|CALL|getGameEnvironment|15
 U|com/eu/habbo/habbohotel/rooms/RoomManager.java|CALL|getGameServer|1
-U|com/eu/habbo/habbohotel/rooms/RoomManager.java|CALL|getIntUnixTimestamp|6
+U|com/eu/habbo/habbohotel/rooms/RoomManager.java|CALL|getIntUnixTimestamp|7
 U|com/eu/habbo/habbohotel/rooms/RoomManager.java|CALL|getPluginManager|9
 U|com/eu/habbo/habbohotel/rooms/RoomPromotion.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/rooms/RoomPromotionManager.java|CALL|getDatabase|1
@@ -996,7 +996,7 @@ U|com/eu/habbo/habbohotel/rooms/RoomWordQuizManager.java|CALL|getIntUnixTimestam
 U|com/eu/habbo/habbohotel/rooms/TraxManager.java|CALL|getGameEnvironment|13
 U|com/eu/habbo/habbohotel/rooms/TraxManager.java|CALL|getIntUnixTimestamp|6
 U|com/eu/habbo/habbohotel/rooms/TraxManager.java|CALL|getThreading|3
-U|com/eu/habbo/habbohotel/rooms/competition/RoomCompetitionManager.java|CALL|getDatabase|8
+U|com/eu/habbo/habbohotel/rooms/competition/RoomCompetitionManager.java|CALL|getDatabase|9
 U|com/eu/habbo/habbohotel/rooms/competition/RoomCompetitionManager.java|CALL|getIntUnixTimestamp|4
 U|com/eu/habbo/habbohotel/rooms/pathfinding/impl/PathfinderImpl.java|CALL|getConfig|2
 U|com/eu/habbo/habbohotel/soundboard/SoundboardManager.java|CALL|getDatabase|3

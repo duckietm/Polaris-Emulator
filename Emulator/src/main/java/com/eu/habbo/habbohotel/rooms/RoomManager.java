@@ -503,7 +503,8 @@ public class RoomManager {
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "INSERT INTO rooms (owner_id, owner_name, name, description, model, users_max, category, trade_mode) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                        "INSERT INTO rooms (owner_id, owner_name, name, description, model, users_max, category, trade_mode,"
+                                + " date_created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         Statement.RETURN_GENERATED_KEYS)) {
             statement.setInt(1, ownerId);
             statement.setString(2, ownerName);
@@ -513,6 +514,9 @@ public class RoomManager {
             statement.setInt(6, usersMax);
             statement.setInt(7, categoryId);
             statement.setInt(8, tradeType);
+            // Recorded from now on; rooms made before this column existed keep the zero it
+            // defaults to, which the room competition reads as "age unknown".
+            statement.setInt(9, Emulator.getIntUnixTimestamp());
             statement.execute();
             try (ResultSet set = statement.getGeneratedKeys()) {
                 if (set.next()) room = this.loadRoom(set.getInt(1));

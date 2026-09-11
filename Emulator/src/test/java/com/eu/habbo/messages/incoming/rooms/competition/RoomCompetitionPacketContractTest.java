@@ -46,6 +46,14 @@ class RoomCompetitionPacketContractTest {
     }
 
     @Test
+    void aRoomTooOldForTheCompetitionIsNotEligible() throws Exception {
+        String manager = source("com/eu/habbo/habbohotel/rooms/competition/RoomCompetitionManager.java");
+
+        assertTrue(manager.contains("competition.acceptsRoomCreatedAt(this.roomCreatedAt(room.getId()))"));
+        assertTrue(manager.contains("SELECT date_created FROM rooms WHERE id = ? LIMIT 1"));
+    }
+
+    @Test
     void onlyTheLastStepWritesAnEntryAndEveryStepRereadsTheRoom() throws Exception {
         String submit = handler("SubmitRoomToCompetitionEvent");
 

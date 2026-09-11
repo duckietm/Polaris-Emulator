@@ -16,7 +16,13 @@ public record RoomCompetition(
         int submitStarts,
         int submitEnds,
         int voteStarts,
-        int voteEnds) {
+        int voteEnds,
+        int roomsCreatedAfter) {
+
+    /** Whether a room built at this moment may enter; zero leaves the rule off. */
+    public boolean acceptsRoomCreatedAt(int createdAt) {
+        return this.roomsCreatedAfter <= 0 || createdAt > this.roomsCreatedAfter;
+    }
 
     public boolean submissionOpen(int now) {
         return this.submitStarts <= now && now < this.submitEnds;

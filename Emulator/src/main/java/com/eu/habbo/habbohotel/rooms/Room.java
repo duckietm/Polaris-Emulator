@@ -68,7 +68,9 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     private RoomRollerManager rollerManager;
     private RoomMessagingManager messagingManager;
     private RoomCycleManager cycleManager;
-    private RoomVariableManagers variableManagers;
+    private RoomUserVariableManager userVariableManager;
+    private RoomFurniVariableManager furniVariableManager;
+    private RoomVariableManager roomVariableManager;
 
     public static final Comparator<Room> SORT_SCORE = (o1, o2) -> o2.getScore() - o1.getScore();
     public static final Comparator<Room> SORT_ID = (o1, o2) -> o2.getId() - o1.getId();
@@ -387,7 +389,9 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         this.rollerManager = new RoomRollerManager(this);
         this.messagingManager = new RoomMessagingManager(this);
         this.cycleManager = new RoomCycleManager(this);
-        this.variableManagers = new RoomVariableManagers(this, this.dependencies);
+        this.userVariableManager = new RoomUserVariableManager(this);
+        this.furniVariableManager = new RoomFurniVariableManager(this);
+        this.roomVariableManager = new RoomVariableManager(this);
     }
 
     // ==================== MANAGER GETTERS ====================
@@ -470,19 +474,15 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     }
 
     public RoomUserVariableManager getUserVariableManager() {
-        return this.variableManagers.user();
+        return this.userVariableManager;
     }
 
     public RoomFurniVariableManager getFurniVariableManager() {
-        return this.variableManagers.furni();
+        return this.furniVariableManager;
     }
 
     public RoomVariableManager getRoomVariableManager() {
-        return this.variableManagers.room();
-    }
-
-    public RoomArrayVariableManager getArrayVariableManager() {
-        return this.variableManagers.array();
+        return this.roomVariableManager;
     }
 
     /**

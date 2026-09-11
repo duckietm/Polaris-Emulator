@@ -552,9 +552,14 @@ final class WiredDelayedExecutionSnapshot {
             int signalFurniCount,
             int variableTargetType,
             int variableDefinitionItemId,
+            String internalVariableKey,
             boolean variableCreated,
             boolean variableDeleted,
             WiredEvent.VariableChangeKind variableChangeKind,
+            int variableChangeOrigin,
+            long oldVariableValue,
+            long newVariableValue,
+            com.eu.habbo.habbohotel.wired.arrays.WiredArrayChange arrayChange,
             WiredContextVariableScope contextVariableScope,
             long createdAtMs) {
 
@@ -582,9 +587,14 @@ final class WiredDelayedExecutionSnapshot {
                     event.getSignalFurniCount(),
                     event.getVariableTargetType(),
                     event.getVariableDefinitionItemId(),
+                    event.getInternalVariableKey(),
                     event.isVariableCreated(),
                     event.isVariableDeleted(),
                     event.getVariableChangeKind(),
+                    event.getVariableChangeOrigin(),
+                    event.getOldVariableValue(),
+                    event.getNewVariableValue(),
+                    event.getArrayChange(),
                     event.getContextVariableScope() != null
                             ? event.getContextVariableScope().copy()
                             : null,
@@ -612,9 +622,13 @@ final class WiredDelayedExecutionSnapshot {
                     .signalFurniCount(this.signalFurniCount)
                     .variableTargetType(this.variableTargetType)
                     .variableDefinitionItemId(this.variableDefinitionItemId)
+                    .internalVariableKey(this.internalVariableKey)
                     .variableCreated(this.variableCreated)
                     .variableDeleted(this.variableDeleted)
                     .variableChangeKind(this.variableChangeKind)
+                    .variableChangeOrigin(this.variableChangeOrigin)
+                    .variableValues(this.oldVariableValue, this.newVariableValue)
+                    .arrayChange(this.arrayChange)
                     .createdAtMs(this.createdAtMs);
             if (this.contextVariableScope != null) {
                 builder.contextVariableScope(this.contextVariableScope.copy());

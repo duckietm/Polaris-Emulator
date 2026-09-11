@@ -498,6 +498,16 @@ public class RoomFurniVariableManager {
         WiredVariableDefinitionInfo definitionInfo = this.getDefinitionInfo(definitionItemId);
         if (definitionInfo == null || definitionInfo.isReadOnly()) return 0;
 
+        if (this.getDefinitionExtra(definitionItemId)
+                        instanceof com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition array
+                && array.isArray()) {
+            List<Integer> owners = this.room.getArrayVariableManager().clearAllAssignments(array);
+            for (Integer ownerId : owners)
+                this.emitVariableChangedEvent(ownerId, definitionItemId, false, true, null, false, null);
+            this.broadcastSnapshot();
+            return owners.size();
+        }
+
         Map<Integer, Integer> previousValues = new LinkedHashMap<>();
         for (Map.Entry<Integer, ConcurrentHashMap<Integer, VariableAssignment>> entry :
                 this.activeAssignmentsByFurniId.entrySet()) {
@@ -545,6 +555,11 @@ public class RoomFurniVariableManager {
             return;
         }
 
+        if (definition.isArrayDeclared()) {
+            this.removeDefinition(definition.getId());
+            return;
+        }
+
         this.ensurePermanentAssignmentsLoaded();
 
         if (!definition.isPermanentAvailability()) {
@@ -561,6 +576,15 @@ public class RoomFurniVariableManager {
         }
 
         this.broadcastSnapshot();
+    }
+
+    public boolean hasAssignmentsForDefinition(int definitionItemId) {
+        if (definitionItemId <= 0) return false;
+        this.ensurePermanentAssignmentsLoaded();
+        for (ConcurrentHashMap<Integer, VariableAssignment> assignments : this.activeAssignmentsByFurniId.values()) {
+            if (assignments.containsKey(definitionItemId)) return true;
+        }
+        return false;
     }
 
     public Snapshot createSnapshot() {
@@ -741,10 +765,11 @@ public class RoomFurniVariableManager {
             baseDefinitions.add(new WiredVariableDefinitionInfo(
                     definition.getId(),
                     definition.getVariableName(),
-                    definition.hasValue(),
+                    definition.hasValue() && !definition.isArray(),
                     definition.getAvailability(),
                     WiredVariableTextConnectorSupport.isTextConnected(this.room, definition),
-                    false));
+                    false,
+                    definition.isArray()));
         }
 
         for (WiredExtraVariableEcho echo : this.getFurniEchoes()) {
@@ -783,10 +808,11 @@ public class RoomFurniVariableManager {
             return new WiredVariableDefinitionInfo(
                     definition.getId(),
                     definition.getVariableName(),
-                    definition.hasValue(),
+                    definition.hasValue() && !definition.isArray(),
                     definition.getAvailability(),
                     WiredVariableTextConnectorSupport.isTextConnected(this.room, definition),
-                    false);
+                    false,
+                    definition.isArray());
         }
 
         if (extra instanceof WiredExtraVariableEcho && ((WiredExtraVariableEcho) extra).isFurniEcho()) {
@@ -939,7 +965,15 @@ public class RoomFurniVariableManager {
             return;
         }
 
-        WiredManager.triggerFurniVariableChanged(this.room, furniId, definitionItemId, created, deleted, changeKind);
+        WiredManager.triggerFurniVariableChanged(
+                this.room,
+                furniId,
+                definitionItemId,
+                created,
+                deleted,
+                changeKind,
+                previousValue == null ? 0L : previousValue,
+                currentValue == null ? 0L : currentValue);
     }
 
     private static WiredEvent.VariableChangeKind resolveVariableChangeKind(

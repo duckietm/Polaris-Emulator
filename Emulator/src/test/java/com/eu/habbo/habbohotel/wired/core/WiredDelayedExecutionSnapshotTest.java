@@ -15,8 +15,10 @@ import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomTileState;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.wired.WiredVariableChangeOrigin;
 import com.eu.habbo.habbohotel.wired.api.IWiredEffect;
 import com.eu.habbo.habbohotel.wired.api.WiredDelayedSnapshotProvider;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayChange;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -75,9 +77,13 @@ class WiredDelayedExecutionSnapshotTest {
                 .signalFurniCount(13)
                 .variableTargetType(14)
                 .variableDefinitionItemId(801)
+                .internalVariableKey("@altitude")
                 .variableCreated(true)
                 .variableDeleted(false)
                 .variableChangeKind(WiredEvent.VariableChangeKind.INCREASED)
+                .variableChangeOrigin(WiredVariableChangeOrigin.CREATOR_TOOLS)
+                .variableValues(Long.MIN_VALUE, Long.MAX_VALUE)
+                .arrayChange(WiredArrayChange.field(2, 7, Long.MIN_VALUE, Long.MAX_VALUE, 4, 4))
                 .contextVariableScope(eventVariables)
                 .createdAtMs(123_456L)
                 .build();
@@ -125,9 +131,14 @@ class WiredDelayedExecutionSnapshotTest {
         assertEquals(13, delayed.event().getSignalFurniCount());
         assertEquals(14, delayed.event().getVariableTargetType());
         assertEquals(801, delayed.event().getVariableDefinitionItemId());
+        assertEquals("@altitude", delayed.event().getInternalVariableKey());
         assertTrue(delayed.event().isVariableCreated());
         assertFalse(delayed.event().isVariableDeleted());
         assertEquals(WiredEvent.VariableChangeKind.INCREASED, delayed.event().getVariableChangeKind());
+        assertEquals(WiredVariableChangeOrigin.CREATOR_TOOLS, delayed.event().getVariableChangeOrigin());
+        assertEquals(Long.MIN_VALUE, delayed.event().getOldVariableValue());
+        assertEquals(Long.MAX_VALUE, delayed.event().getNewVariableValue());
+        assertEquals(event.getArrayChange(), delayed.event().getArrayChange());
         assertEquals(123_456L, delayed.event().getCreatedAtMs());
         assertEquals(5, delayed.event().getContextVariableScope().getValue(801));
         assertEquals(Set.of(actor, target), delayed.targets().users());

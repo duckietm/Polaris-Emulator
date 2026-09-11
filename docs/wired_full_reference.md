@@ -212,6 +212,7 @@ Custom wired variables are defined by:
 - `wf_var_user`
 - `wf_var_furni`
 - `wf_var_room`
+- `wf_var_context`
 
 Shared rules:
 
@@ -237,11 +238,32 @@ Timestamp rules:
 - furni variables: creation/update are tied to the assignment on that furni
 - room variables: practically meaningful timestamp is mainly the last update time
 
-Current context-status note:
+Array rules:
 
-- `context` appears in several variable-related layouts
-- it is still partial / placeholder in several runtime paths
-- `user`, `furni`, and `room/global` are the truly active targets today
+- user, furni, room, and context definition boxes can define a scalar, simple array, or record array
+- arrays use `list` or sparse `slots` indexing and support up to eight stable-ID record fields
+- permanent arrays use optimistic versioning and delta persistence; context arrays remain execution-scoped
+- captured entries expose live `alias.field` context values that Change Variable Value can write;
+  they follow the same entry through insert, move, swap, and shuffle, and become unavailable after
+  removal or replacement. Metadata includes `@array.alias.found`, `@array.alias.index`, and `alias.index`
+- built-in values can be watched by Variable Changed, including change origin and exact old/new metadata;
+  Give supports effects, hand items, and room rights, and Remove can revoke room rights
+- `@player.score` is an individual player score; the existing `@team.score` remains the team total
+- array operands and indexes accept built-in variables as well as custom scalar variables;
+  field operands remain signed 64-bit, while writes into scalar variables reject values outside signed 32-bit range
+- the configured entry, populated-cell, and owner limits are enforced on both save and execution paths
+- temporary user arrays are removed when the user leaves; permanent arrays survive and reload from storage
+- shared references stop reading a source that is removed, unshared, or given a different schema
+- each owner can hold at most 128 array assignments and 16,384 total stored field cells in a room;
+  a room can hold at most 4,096 assignments and 262,144 cells, including empty assignments in the count
+- permanent array caches are also bounded by assignment count and cell weight; evicted values reload
+  from storage, while temporary values remain until their normal cleanup
+- one Modify Array action batches its successful permanent owner updates into a single transaction;
+  each owner still uses its own evaluated operands
+
+Clear existing entries before shrinking an array, removing fields, changing its shape, or changing
+persistence. Adding fields is rejected if any cached or stored owner would exceed the per-array cell
+limit, and rejected schema saves leave the existing definition and values intact.
 
 ### 2.12 Useful global config keys
 
@@ -255,6 +277,10 @@ Current context-status note:
 | `hotel.wired.furni.selection.count` | Max furni selection size stored by wired boxes |
 | `hotel.wired.max_delay` | Max accepted delay value |
 | `hotel.wired.message.max_length` | Max wired/bot text size |
+| `hotel.wired.arrays.max_entries` | Maximum logical capacity accepted for one array definition |
+| `hotel.wired.arrays.max_populated_cells_per_owner` | Maximum populated field cells for one owner and array |
+| `hotel.wired.arrays.max_owners_per_execution` | Maximum owners processed by one array box execution |
+| `hotel.wired.arrays.metrics_log_interval_ms` | Minimum interval between aggregate array persistence metric log entries |
 | `wired.effect.teleport.delay` | Teleport effect delay |
 | `wired.tick.interval.ms` | Global tick loop interval |
 | `wired.tick.debug` | Tick debug logging |
@@ -780,6 +806,15 @@ Current context-status note:
 
 ---
 
+### `wf_act_modify_array`
+
+- **Class:** `WiredEffectModifyArray`
+- **Behavior:** modifies a selected array with append, insert, replace, remove, remove-first/last,
+  swap, move, clear, or unbiased shuffle operations.
+- **Main settings:** array definition, owner source, operation, index references, and per-field values.
+- **Notes:** input references may be constants, scalar variables, captured fields, or addressed array cells;
+  failed mutations are atomic and do not partially persist.
+
 ## 5. Selectors
 
 ### General selector notes
@@ -1202,6 +1237,14 @@ Common patterns:
 - **Main settings:** variable selection, compare field (`creation` or `update` time), compare type (`lower than` / `higher than`), duration value + unit, quantifier, source.
 - **Notes:** room/global variables are mostly meaningful for update time.
 
+### `wf_cnd_check_array`
+
+- **Class:** `WiredConditionCheckArray`
+- **Behavior:** checks array state, one addressed entry, or the number of entries matching up to eight criteria.
+- **Main settings:** owner source, all/any owner quantifier, empty/full/length/available state checks,
+  first-class comparisons, criteria mode, and optional index.
+- **Notes:** references accept signed 64-bit constants, scalar variables, captured fields, and array cells.
+
 ---
 
 ### `wf_cnd_habbo_has_rank`
@@ -1381,6 +1424,17 @@ Common patterns:
 - **Main settings:** text area mapping in the form `0=text`, `1=text`, and so on.
 - **Notes:** must live in the same stack context as the corresponding `wf_var_*` definition to be meaningful.
 
+### `wf_xtra_array_capture_variable`
+
+- **Class:** `WiredExtraArrayCaptureVariable`
+- **Behavior:** captures an entry by index or by first/last/random criteria match for the current execution.
+- **Main settings:** array definition, owner source, context alias variable, capture mode, direction, and criteria.
+- **Notes:** publishes live field projections as `alias.field`, writable through Change Variable Value
+  when the source array allows writes. The capture follows the entry identity, including in copied
+  contexts and shared-room references; replacing or deleting that entry invalidates field access.
+  `@array.alias.found` records whether capture succeeded; `@array.alias.index` follows the entry and
+  retains the captured index once removed. Duplicate aliases in one stack are rejected.
+
 ---
 
 ## 8. Variable Definitions
@@ -1405,6 +1459,13 @@ Common patterns:
 - **Behavior:** defines a room/global variable.
 - **Main settings:** variable name, availability (`while room is active` / `permanent`).
 - **Notes:** always has a value; there is no separate “has value” checkbox for room variables.
+
+### `wf_var_context`
+
+- **Class:** `WiredExtraContextVariable`
+- **Behavior:** defines an execution-scoped scalar or array shared by the current Wired context.
+- **Main settings:** variable name, value flag for scalars, or array format/mode/capacity/fields.
+- **Notes:** context arrays never persist to the room database and can trigger Variable Changed events.
 
 ---
 

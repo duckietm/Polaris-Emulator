@@ -42,6 +42,8 @@ class WiredHandlerAuthorizationTest {
      */
     private static final Set<String> EXEMPT = Set.of(
             "WiredFeatureCapabilitiesEvent.java",
+            // Resolves array targets after the inspection/update handlers check their gates.
+            "WiredArrayCreatorToolsSupport.java",
             "WiredConditionSaveAdapter.java",
             "WiredFurniRuntimeStatePolicy.java",
             "WiredUserInspectMovePolicy.java",

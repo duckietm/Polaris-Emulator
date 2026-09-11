@@ -154,6 +154,7 @@ public class Outgoing {
     public static final int WiredMonitorDataComposer = 5101; // CUSTOM
     public static final int WiredRoomSettingsDataComposer = 5102; // CUSTOM
     public static final int WiredUserVariablesDataComposer = 5103; // CUSTOM
+    public static final int WiredArrayInspectionDataComposer = 5111; // CUSTOM
     // AIR 13 wired leftovers. 420 (WiredClickUserResponse) and 2901 (WiredUserVariablesPage) are
     // already GuildListComposer / PetInformationComposer, so those two use the custom range.
     public static final int WiredEnvironmentComposer = 347;

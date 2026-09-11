@@ -230,8 +230,12 @@ public abstract class InteractionWired extends InteractionDefault {
     }
 
     public static WiredSettings readSettings(ClientMessage packet, boolean isEffect) {
+        return readSettings(packet, isEffect, WiredInputGuard.MAX_STRING_PARAM_LENGTH);
+    }
+
+    public static WiredSettings readSettings(ClientMessage packet, boolean isEffect, int maximumStringLength) {
         int[] intParams = WiredInputGuard.readIntParams(packet);
-        String stringParam = WiredInputGuard.readStringParam(packet);
+        String stringParam = WiredInputGuard.readStringParam(packet, maximumStringLength);
         int[] itemIds = WiredInputGuard.readFurniIds(packet);
 
         WiredSettings settings = new WiredSettings(intParams, stringParam, itemIds, -1);

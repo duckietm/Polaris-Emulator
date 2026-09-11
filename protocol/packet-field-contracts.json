@@ -9802,43 +9802,6 @@
       "fields": []
     },
     {
-      "name": "WIRED_USER_VARIABLE_UPDATE",
-      "direction": "client_to_server",
-      "header": 10025,
-      "java": {
-        "symbol": "WiredUserVariableUpdateEvent",
-        "className": "WiredUserVariableUpdateEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredUserVariableUpdateEvent.java"
-      },
-      "typescript": {
-        "symbol": "WIRED_USER_VARIABLE_UPDATE",
-        "className": "WiredUserVariableUpdateComposer",
-        "path": "packages/communication/src/messages/outgoing/roomevents/WiredUserVariableUpdateComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "targetType"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "targetId"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "definitionItemId"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "value"
-        }
-      ]
-    },
-    {
       "name": "WIRED_USER_VARIABLE_MANAGE",
       "direction": "client_to_server",
       "header": 10026,
@@ -20253,6 +20216,153 @@
           "name": "ownerId"
         }
       ]
+    },
+    {
+      "name": "WIRED_ARRAY_INSPECTION_REQUEST",
+      "direction": "client_to_server",
+      "header": 10034,
+      "java": {
+        "symbol": "WiredArrayInspectionRequestEvent",
+        "className": "WiredArrayInspectionRequestEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredArrayInspectionRequestEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_ARRAY_INSPECTION_REQUEST",
+        "className": "WiredArrayInspectionRequestComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredArrayInspectionRequestComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "variableType"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "requestedOwnerId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "definitionItemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "page"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "pageSize"
+        }
+      ]
+    },
+    {
+      "name": "WIRED_ARRAY_INSPECTION_UPDATE",
+      "direction": "client_to_server",
+      "header": 10035,
+      "java": {
+        "symbol": "WiredArrayInspectionUpdateEvent",
+        "className": "WiredArrayInspectionUpdateEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredArrayInspectionUpdateEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_ARRAY_INSPECTION_UPDATE",
+        "className": "WiredArrayInspectionUpdateComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredArrayInspectionUpdateComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "variableType"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "requestedOwnerId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "definitionItemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "index"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "fieldId"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "value"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "page"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "pageSize"
+        }
+      ]
+    },
+    {
+      "name": "WIRED_USER_VARIABLE_UPDATE",
+      "direction": "client_to_server",
+      "header": 10025,
+      "java": {
+        "symbol": "WiredUserVariableUpdateEvent",
+        "className": "WiredUserVariableUpdateEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredUserVariableUpdateEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_USER_VARIABLE_UPDATE",
+        "className": "WiredUserVariableUpdateComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredUserVariableUpdateComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "targetType"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "targetId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "definitionItemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "value"
+        },
+        {
+          "kind": "optional",
+          "controller": "variableToken",
+          "fields": [
+            {
+              "kind": "scalar",
+              "type": "string",
+              "name": "variableToken"
+            }
+          ]
+        }
+      ]
     }
   ],
   "unpaired": [
@@ -21584,7 +21694,7 @@
         "className": "RoomUnitChatWhisperComposer",
         "path": "packages/communication/src/messages/outgoing/room/unit/chat/RoomUnitChatWhisperComposer.ts"
       },
-      "reason": "Java analyzer: Packet fields delegated to external constructor RoomChatMessage inside handle; TypeScript analyzer: Outgoing value recipientName + \u0027 \u0027 + message has no statically resolvable wire type"
+      "reason": "Java analyzer: Packet fields delegated to external constructor RoomChatMessage inside handle; TypeScript analyzer: Outgoing value recipientName + ' ' + message has no statically resolvable wire type"
     },
     {
       "name": "RELEASE_ISSUES",
@@ -27569,6 +27679,22 @@
         "path": "packages/communication/src/messages/parser/navigator/CompetitionRoomsDataMessageParser.ts"
       },
       "reason": "TypeScript analyzer: Packet fields delegated to external constructor CompetitionRoomsData inside parse"
+    },
+    {
+      "name": "WIRED_ARRAY_INSPECTION_DATA",
+      "direction": "server_to_client",
+      "header": 5111,
+      "java": {
+        "symbol": "WiredArrayInspectionDataComposer",
+        "className": "WiredArrayInspectionDataComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredArrayInspectionDataComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_ARRAY_INSPECTION_DATA",
+        "className": "WiredArrayInspectionDataParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredArrayInspectionDataParser.ts"
+      },
+      "reason": "The single string field is a separately versioned bounded JSON inspection document."
     }
   ]
 }

@@ -542,6 +542,7 @@ public class RoomUserVariableManager {
             return;
         }
 
+        this.room.getArrayVariableManager().clearAssignmentsForUser(userId);
         if (this.activeAssignmentsByUserId.remove(userId) != null) {
             this.broadcastSnapshot();
         }
@@ -555,6 +556,16 @@ public class RoomUserVariableManager {
     public int clearAllAssignments(int definitionItemId) {
         WiredVariableDefinitionInfo definitionInfo = this.getDefinitionInfo(definitionItemId);
         if (definitionInfo == null || definitionInfo.isReadOnly()) return 0;
+
+        if (this.getDefinitionExtra(definitionItemId)
+                        instanceof com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition array
+                && array.isArray()) {
+            List<Integer> owners = this.room.getArrayVariableManager().clearAllAssignments(array);
+            for (Integer ownerId : owners)
+                this.emitVariableChangedEvent(ownerId, definitionItemId, false, true, null, false, null);
+            this.broadcastSnapshot();
+            return owners.size();
+        }
 
         Map<Integer, Integer> previousValues = new LinkedHashMap<>();
         for (Map.Entry<Integer, ConcurrentHashMap<Integer, VariableAssignment>> entry :
@@ -610,6 +621,11 @@ public class RoomUserVariableManager {
             return;
         }
 
+        if (definition.isArrayDeclared()) {
+            this.removeDefinition(definition.getId());
+            return;
+        }
+
         if (!definition.isPermanentAvailability()) {
             this.deletePersistentAssignmentsForDefinition(definition.getId());
         } else {
@@ -647,6 +663,23 @@ public class RoomUserVariableManager {
         this.broadcastSnapshot();
     }
 
+    public boolean hasAssignmentsForDefinition(int definitionItemId) {
+        if (definitionItemId <= 0) return false;
+        for (ConcurrentHashMap<Integer, VariableAssignment> assignments : this.activeAssignmentsByUserId.values()) {
+            if (assignments.containsKey(definitionItemId)) return true;
+        }
+        try {
+            return this.repository.hasDefinition(this.room.getId(), definitionItemId);
+        } catch (SQLException exception) {
+            LOGGER.error(
+                    "Failed to inspect wired user variable {} in room {}",
+                    definitionItemId,
+                    this.room.getId(),
+                    exception);
+            throw new IllegalArgumentException("Unable to verify whether this variable contains stored values.");
+        }
+    }
+
     public Snapshot createSnapshot() {
         List<DefinitionEntry> definitions = new ArrayList<>();
         Map<Integer, DefinitionEntry> definitionsById = new LinkedHashMap<>();
@@ -656,7 +689,7 @@ public class RoomUserVariableManager {
             DefinitionEntry entry = new DefinitionEntry(
                     definition.getItemId(),
                     definition.getName(),
-                    definition.hasValue(),
+                    definition.hasValue() && !definition.isArray(),
                     definition.getAvailability(),
                     definition.isTextConnected(),
                     definition.isReadOnly());
@@ -847,7 +880,8 @@ public class RoomUserVariableManager {
                     definition.hasValue(),
                     definition.getAvailability(),
                     WiredVariableTextConnectorSupport.isTextConnected(this.room, definition),
-                    false));
+                    false,
+                    definition.isArray()));
         }
 
         for (WiredExtraVariableReference reference : this.getUserReferences()) {
@@ -896,10 +930,11 @@ public class RoomUserVariableManager {
             return new WiredVariableDefinitionInfo(
                     definition.getId(),
                     definition.getVariableName(),
-                    definition.hasValue(),
+                    definition.hasValue() && !definition.isArray(),
                     definition.getAvailability(),
                     WiredVariableTextConnectorSupport.isTextConnected(this.room, definition),
-                    false);
+                    false,
+                    definition.isArray());
         }
 
         if (extra instanceof WiredExtraVariableReference && ((WiredExtraVariableReference) extra).isUserReference()) {
@@ -1102,7 +1137,15 @@ public class RoomUserVariableManager {
             return;
         }
 
-        WiredManager.triggerUserVariableChanged(this.room, userId, definitionItemId, created, deleted, changeKind);
+        WiredManager.triggerUserVariableChanged(
+                this.room,
+                userId,
+                definitionItemId,
+                created,
+                deleted,
+                changeKind,
+                previousValue == null ? 0L : previousValue,
+                currentValue == null ? 0L : currentValue);
     }
 
     private static WiredEvent.VariableChangeKind resolveVariableChangeKind(

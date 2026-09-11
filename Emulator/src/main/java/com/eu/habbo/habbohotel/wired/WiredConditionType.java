@@ -89,7 +89,8 @@ public enum WiredConditionType {
     USER_COOLDOWN(64),
     USER_ONCE(65),
     USER_DAILY(66),
-    USER_HIGHSCORE_POINTS(67);
+    USER_HIGHSCORE_POINTS(67),
+    CHECK_ARRAY(60);
 
     public final int code;
 

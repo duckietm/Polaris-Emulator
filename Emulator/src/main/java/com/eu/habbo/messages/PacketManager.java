@@ -537,6 +537,8 @@ import com.eu.habbo.messages.incoming.users.UserSaveLookEvent;
 import com.eu.habbo.messages.incoming.users.UserWearBadgeEvent;
 import com.eu.habbo.messages.incoming.wired.WiredAllVariablesRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredApplySetConditionsEvent;
+import com.eu.habbo.messages.incoming.wired.WiredArrayInspectionRequestEvent;
+import com.eu.habbo.messages.incoming.wired.WiredArrayInspectionUpdateEvent;
 import com.eu.habbo.messages.incoming.wired.WiredConditionSaveDataEvent;
 import com.eu.habbo.messages.incoming.wired.WiredEffectSaveDataEvent;
 import com.eu.habbo.messages.incoming.wired.WiredFeatureCapabilitiesEvent;
@@ -1316,6 +1318,8 @@ public class PacketManager {
         this.registerHandler(Incoming.WiredUserInspectMoveEvent, WiredUserInspectMoveEvent.class);
         this.registerHandler(Incoming.WiredFurniRuntimeStateRequestEvent, WiredFurniRuntimeStateRequestEvent.class);
         this.registerHandler(Incoming.WiredFeatureCapabilitiesEvent, WiredFeatureCapabilitiesEvent.class);
+        this.registerHandler(Incoming.WiredArrayInspectionRequestEvent, WiredArrayInspectionRequestEvent.class);
+        this.registerHandler(Incoming.WiredArrayInspectionUpdateEvent, WiredArrayInspectionUpdateEvent.class);
         this.registerHandler(Incoming.WiredUserSelectedEvent, WiredUserSelectedEvent.class);
         this.registerHandler(Incoming.WiredMenuPermissionsSaveEvent, WiredMenuPermissionsSaveEvent.class);
         this.registerHandler(Incoming.WiredRoomStateActionEvent, WiredRoomStateActionEvent.class);

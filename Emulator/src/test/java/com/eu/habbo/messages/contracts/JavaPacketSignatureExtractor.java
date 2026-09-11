@@ -113,7 +113,12 @@ final class JavaPacketSignatureExtractor {
                 if (tryCatch.callsToSkip().contains(call)) continue;
                 String wireType = wireType(call, side);
                 if (wireType != null) {
-                    fields.add(new ScalarSchema(wireType, inferredName(call)));
+                    ScalarSchema field = new ScalarSchema(wireType, inferredName(call));
+                    IfStmt guard = call.findAncestor(IfStmt.class).orElse(null);
+                    fields.add(
+                            guard != null && isOptionalTail(guard, method, side)
+                                    ? new OptionalSchema(inferredName(call), List.of(field))
+                                    : field);
                     continue;
                 }
                 if (isLocalCall(call) && methods.containsKey(call.getNameAsString())) {
@@ -203,12 +208,29 @@ final class JavaPacketSignatureExtractor {
         controls.addAll(method.findAll(WhileStmt.class));
         controls.addAll(method.findAll(DoStmt.class));
         for (Node control : controls) {
+            if (control instanceof IfStmt guard && isOptionalTail(guard, method, side)) continue;
             if (control.findAll(MethodCallExpr.class).stream().anyMatch(call -> wireType(call, side) != null)) {
                 return Optional.of("Data-dependent packet operations in "
                         + control.getClass().getSimpleName() + " inside " + method.getNameAsString());
             }
         }
         return Optional.empty();
+    }
+
+    private static boolean isOptionalTail(IfStmt guard, MethodDeclaration method, JavaPacketSide side) {
+        if (side != JavaPacketSide.INCOMING || guard.getElseStmt().isPresent()) return false;
+        String condition = guard.getCondition().toString();
+        if (!condition.equals("this.packet.bytesAvailable() > 0") && !condition.equals("packet.bytesAvailable() > 0"))
+            return false;
+        List<MethodCallExpr> fields = guard.findAll(MethodCallExpr.class).stream()
+                .filter(call -> wireType(call, side) != null)
+                .toList();
+        if (fields.size() != 1 || inferredName(fields.getFirst()).isEmpty()) return false;
+        MethodCallExpr field = fields.getFirst();
+        return method.findAll(MethodCallExpr.class).stream()
+                .filter(call -> wireType(call, side) != null)
+                .noneMatch(call ->
+                        call.getBegin().orElseThrow().isAfter(field.getBegin().orElseThrow()));
     }
 
     private static String wireType(MethodCallExpr call, JavaPacketSide side) {
@@ -228,6 +250,11 @@ final class JavaPacketSignatureExtractor {
         Node current = call;
         while (current.getParentNode().isPresent()) {
             current = current.getParentNode().orElseThrow();
+            if (current instanceof com.github.javaparser.ast.expr.AssignExpr assignment
+                    && assignment.getOperator() == com.github.javaparser.ast.expr.AssignExpr.Operator.ASSIGN
+                    && assignment.getTarget().isNameExpr()) {
+                return assignment.getTarget().asNameExpr().getNameAsString();
+            }
             if (current instanceof com.github.javaparser.ast.body.VariableDeclarator variable) {
                 return variable.getNameAsString();
             }

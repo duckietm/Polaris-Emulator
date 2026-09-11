@@ -301,6 +301,11 @@ public final class WiredManager {
         engine.noteUnreachable(roomId, reason, sourceLabel, sourceId);
     }
 
+    public static boolean tryConsumeArrayWork(Room room, int cost, int sourceId) {
+        WiredEngine currentEngine = getEngine();
+        return room != null && (currentEngine == null || currentEngine.tryConsumeArrayWork(room, cost, sourceId));
+    }
+
     public static void clearDiagnosticsLogs(int roomId) {
         if (engine == null) {
             return;
@@ -584,14 +589,26 @@ public final class WiredManager {
             boolean created,
             boolean deleted,
             WiredEvent.VariableChangeKind changeKind) {
+        return triggerUserVariableChanged(room, userId, definitionItemId, created, deleted, changeKind, 0L, 0L);
+    }
+
+    public static boolean triggerUserVariableChanged(
+            Room room,
+            int userId,
+            int definitionItemId,
+            boolean created,
+            boolean deleted,
+            WiredEvent.VariableChangeKind changeKind,
+            long previousValue,
+            long currentValue) {
         if (!isEnabled() || room == null || definitionItemId <= 0) {
             return false;
         }
 
         Habbo habbo = room.getHabbo(userId);
         RoomUnit roomUnit = (habbo != null) ? habbo.getRoomUnit() : null;
-        WiredEvent event =
-                WiredEvents.userVariableChanged(room, roomUnit, definitionItemId, created, deleted, changeKind);
+        WiredEvent event = WiredEvents.userVariableChanged(
+                room, roomUnit, definitionItemId, created, deleted, changeKind, previousValue, currentValue);
         return handleEvent(event);
     }
 
@@ -602,22 +619,45 @@ public final class WiredManager {
             boolean created,
             boolean deleted,
             WiredEvent.VariableChangeKind changeKind) {
+        return triggerFurniVariableChanged(room, furniId, definitionItemId, created, deleted, changeKind, 0L, 0L);
+    }
+
+    public static boolean triggerFurniVariableChanged(
+            Room room,
+            int furniId,
+            int definitionItemId,
+            boolean created,
+            boolean deleted,
+            WiredEvent.VariableChangeKind changeKind,
+            long previousValue,
+            long currentValue) {
         if (!isEnabled() || room == null || furniId <= 0 || definitionItemId <= 0) {
             return false;
         }
 
         HabboItem item = room.getHabboItem(furniId);
-        WiredEvent event = WiredEvents.furniVariableChanged(room, item, definitionItemId, created, deleted, changeKind);
+        WiredEvent event = WiredEvents.furniVariableChanged(
+                room, item, definitionItemId, created, deleted, changeKind, previousValue, currentValue);
         return handleEvent(event);
     }
 
     public static boolean triggerRoomVariableChanged(
             Room room, int definitionItemId, WiredEvent.VariableChangeKind changeKind) {
+        return triggerRoomVariableChanged(room, definitionItemId, changeKind, 0L, 0L);
+    }
+
+    public static boolean triggerRoomVariableChanged(
+            Room room,
+            int definitionItemId,
+            WiredEvent.VariableChangeKind changeKind,
+            long previousValue,
+            long currentValue) {
         if (!isEnabled() || room == null || definitionItemId <= 0) {
             return false;
         }
 
-        WiredEvent event = WiredEvents.roomVariableChanged(room, definitionItemId, changeKind);
+        WiredEvent event =
+                WiredEvents.roomVariableChanged(room, definitionItemId, changeKind, previousValue, currentValue);
         return handleEvent(event);
     }
 

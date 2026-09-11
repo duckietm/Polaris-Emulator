@@ -52,7 +52,9 @@ class WiredInteractionProtocolContractTest {
             "WiredUserVariableManageEvent",
             "WiredUserInspectMoveEvent",
             "WiredFurniRuntimeStateRequestEvent",
-            "WiredFeatureCapabilitiesEvent");
+            "WiredFeatureCapabilitiesEvent",
+            "WiredArrayInspectionRequestEvent",
+            "WiredArrayInspectionUpdateEvent");
 
     private static final List<String> OUTGOING_HEADERS = List.of(
             "WiredTriggerDataComposer",
@@ -64,7 +66,8 @@ class WiredInteractionProtocolContractTest {
             "WiredMovementsComposer",
             "WiredMonitorDataComposer",
             "WiredRoomSettingsDataComposer",
-            "WiredUserVariablesDataComposer");
+            "WiredUserVariablesDataComposer",
+            "WiredArrayInspectionDataComposer");
 
     @Test
     void interactionLayoutAndHeaderContractsStayStable() throws Exception {

@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.handshake;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.MaintenanceMode;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.gameclients.GameClientManager;
 import com.eu.habbo.habbohotel.gameclients.SessionResumeManager;
@@ -64,6 +65,15 @@ public class SecureLoginEvent extends MessageHandler {
         return 500;
     }
 
+    private static int rankIdOf(Habbo habbo) {
+        if (habbo == null
+                || habbo.getHabboInfo() == null
+                || habbo.getHabboInfo().getRank() == null) {
+            return Integer.MIN_VALUE;
+        }
+        return habbo.getHabboInfo().getRank().getId();
+    }
+
     @Override
     public void handle() throws Exception {
         if (!this.client.getChannel().isOpen()) {
@@ -123,11 +133,6 @@ public class SecureLoginEvent extends MessageHandler {
             // Store SSO ticket on client for grace period tracking
             this.client.setSsoTicket(sso);
 
-            // Race condition fix: if the old WebSocket connection is still alive on the
-            // server when the client reconnects, the SSO ticket won't be in the DB yet
-            // (it was cleared on first login, and parkHabbo hasn't run because the old
-            // channel hasn't closed). Find the old client by SSO ticket and force-dispose
-            // it, which parks the habbo and restores the ticket to the DB.
             GameClient existingClient =
                     Emulator.getGameServer().getGameClientManager().findClientBySsoTicket(sso);
             if (existingClient != null && existingClient != this.client) {
@@ -136,11 +141,6 @@ public class SecureLoginEvent extends MessageHandler {
                 Emulator.getGameServer().getGameClientManager().disposeClient(existingClient);
             }
 
-            // First, look up the user ID to check for ghost sessions. Neither this
-            // lookup nor loadHabbo() enforces auth_ticket_expires_at: tickets are
-            // single-use (consumed right after login), so replay is bounded by
-            // consumption, and a parked (ghost) session's real time bound is the
-            // reconnect grace window.
             int lookupUserId = 0;
             try (java.sql.Connection conn =
                             Emulator.getDatabase().getDataSource().getConnection();
@@ -156,7 +156,6 @@ public class SecureLoginEvent extends MessageHandler {
                 LOGGER.error("Caught exception looking up user for session resume", e);
             }
 
-            // Check if this user has a ghost session (disconnected within grace period)
             Habbo habbo = null;
             boolean isSessionResume = false;
 
@@ -165,7 +164,6 @@ public class SecureLoginEvent extends MessageHandler {
             }
 
             if (habbo != null) {
-                // Session resume — reattach the existing Habbo to the new client
                 isSessionResume = true;
                 LOGGER.info(
                         "[SessionResume] Resuming session for {} (id={})",
@@ -184,16 +182,19 @@ public class SecureLoginEvent extends MessageHandler {
                     return;
                 }
 
-                // The parking flow restored this ticket to the DB for the grace
-                // window; the resume consumed it, so clear it again (single-use).
-                // The next disposal parks the habbo and restores it once more, so
-                // mid-session reconnect chains keep working. debug_sso = 1 skips
-                // the clearing (handled inside consumeSsoTicket).
+                if (!MaintenanceMode.canLogin(rankIdOf(habbo))) {
+                    LOGGER.info(
+                            "[Maintenance] Rejected resumed session for user id={} (rank below hotel.maintenance.min_rank)",
+                            habbo.getHabboInfo().getId());
+                    this.client.sendResponse(new GenericAlertComposer(MaintenanceMode.getMessage()));
+                    Emulator.getGameServer().getGameClientManager().forceDisposeClient(this.client);
+                    return;
+                }
+
                 Emulator.getGameEnvironment()
                         .getHabboManager()
                         .consumeSsoTicket(habbo.getHabboInfo().getId());
             } else {
-                // Normal login — load from database
                 HabboManager habboManager = Emulator.getGameEnvironment().getHabboManager();
                 habbo = habboManager.loadHabbo(sso);
                 if (habbo == null && !recoveryToken.isEmpty()) {
@@ -233,6 +234,18 @@ public class SecureLoginEvent extends MessageHandler {
                         if (this.client.getHabbo().getHabboInfo().getRank() == null) {
                             throw new NullPointerException(
                                     habbo.getHabboInfo().getUsername() + " has a NON EXISTING RANK!");
+                        }
+
+                        // Maintenance mode: only hotel.maintenance.min_rank and above may
+                        // log in. The HTTP auth API refuses earlier, but the socket login
+                        // is a separate door (SSO ticket, recovery token), so gate here too.
+                        if (!MaintenanceMode.canLogin(rankIdOf(this.client.getHabbo()))) {
+                            LOGGER.info(
+                                    "[Maintenance] Rejected login for user id={} (rank below hotel.maintenance.min_rank)",
+                                    this.client.getHabbo().getHabboInfo().getId());
+                            this.client.sendResponse(new GenericAlertComposer(MaintenanceMode.getMessage()));
+                            Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
+                            return;
                         }
 
                         // If the machine fingerprint already arrived (UniqueID before login),

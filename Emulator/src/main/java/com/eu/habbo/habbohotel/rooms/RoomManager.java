@@ -939,7 +939,8 @@ public class RoomManager {
 
         // AIR 15 raid protection: the capability is per room, and the client discards it on leaving.
         habbo.getClient()
-                .sendResponse(new RaidProtectionCapabilityComposer(room.getId(), room.canManageRaidProtection(habbo)));
+                .sendResponse(new RaidProtectionCapabilityComposer(
+                        room.getId(), room.getRaidProtection().canManage(habbo)));
 
         habbo.getClient().sendResponse(new RoomThicknessComposer(room));
 

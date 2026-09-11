@@ -17,15 +17,15 @@ import org.slf4j.LoggerFactory;
  * <p>Shaped after {@link RoomWiredAccessService}: settings load lazily on first use, a save updates
  * memory immediately and persists off the room thread, and a failed write rolls the memory back.
  */
-final class RoomRaidProtectionService {
+public final class RoomRaidProtectionService {
     /** The save succeeded; the client closes its window on this code. */
-    static final int RESULT_OK = 0;
+    public static final int RESULT_OK = 0;
 
     /** The user may not manage this room's protection. */
-    static final int RESULT_NOT_AUTHORIZED = 1;
+    public static final int RESULT_NOT_AUTHORIZED = 1;
 
     /** At least one value was outside the set the client offers. */
-    static final int RESULT_INVALID = 2;
+    public static final int RESULT_INVALID = 2;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomRaidProtectionService.class);
 
@@ -49,22 +49,22 @@ final class RoomRaidProtectionService {
         this.unixTime = unixTime;
     }
 
-    RaidProtectionSettings settings() {
+    public RaidProtectionSettings settings() {
         this.ensureLoaded();
         return this.settings;
     }
 
-    int lastRaidAtSeconds() {
+    public int lastRaidAtSeconds() {
         this.ensureLoaded();
         return this.lastRaidAtSeconds;
     }
 
-    boolean incidentActive() {
+    public boolean incidentActive() {
         return this.incidentActive;
     }
 
     /** The room's owner, plus hotel staff who can already kick and ban from the moderation tool. */
-    boolean canManage(Habbo habbo) {
+    public boolean canManage(Habbo habbo) {
         if (habbo == null) {
             return false;
         }
@@ -72,7 +72,7 @@ final class RoomRaidProtectionService {
         return this.room.isOwner(habbo) || habbo.hasPermission(Permission.ACC_SUPPORTTOOL);
     }
 
-    int save(Habbo habbo, RaidProtectionSettings requested) {
+    public int save(Habbo habbo, RaidProtectionSettings requested) {
         if (!this.canManage(habbo)) {
             return RESULT_NOT_AUTHORIZED;
         }
@@ -104,7 +104,7 @@ final class RoomRaidProtectionService {
      * Scores a user walking in. Someone with rights in the room is never part of a raid, so their
      * arrival is not counted at all.
      */
-    void onArrival(Habbo habbo) {
+    public void onArrival(Habbo habbo) {
         if (habbo == null || !this.isWatching() || this.room.hasRights(habbo)) {
             return;
         }
@@ -113,18 +113,25 @@ final class RoomRaidProtectionService {
         this.evaluate();
     }
 
-    /** Scores a chat message. Only a recent arrival's message counts; see the monitor. */
-    void onTalk(Habbo habbo, String message) {
+    /**
+     * Scores a chat message. Commands and wired output are not people talking, and only a recent
+     * arrival's message counts at all; see the monitor.
+     */
+    public void onTalk(Habbo habbo, RoomChatMessage roomChatMessage) {
+        if (roomChatMessage == null || roomChatMessage.isCommand) {
+            return;
+        }
+
         if (habbo == null || !this.isWatching() || this.room.hasRights(habbo)) {
             return;
         }
 
-        this.monitor.recordMessage(habbo.getHabboInfo().getId(), message, this.now());
+        this.monitor.recordMessage(habbo.getHabboInfo().getId(), roomChatMessage.getMessage(), this.now());
         this.evaluate();
     }
 
     /** Drops the live score, for a room that is unloading. */
-    void reset() {
+    public void reset() {
         this.monitor.reset();
         this.incidentActive = false;
         this.guardUntilSeconds = 0L;

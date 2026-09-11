@@ -43,10 +43,13 @@ public class RaidProtectionSettingsSaveEvent extends MessageHandler {
                 guardEnabled,
                 guardDurationSeconds,
                 guardSensitivity);
-        int result = room.saveRaidProtectionSettings(this.client.getHabbo(), requested);
+        int result = room.getRaidProtection().save(this.client.getHabbo(), requested);
 
         this.client.sendResponse(new RaidProtectionSaveResultComposer(
-                result, room.getRaidProtectionSettings(), room.isRaidIncidentActive(), room.getLastRaidAtSeconds()));
+                result,
+                room.getRaidProtection().settings(),
+                room.getRaidProtection().incidentActive(),
+                room.getRaidProtection().lastRaidAtSeconds()));
     }
 
     @Override

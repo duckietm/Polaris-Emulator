@@ -10,7 +10,6 @@ import com.eu.habbo.habbohotel.users.DanceType;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredMovementPhysics;
-import com.eu.habbo.habbohotel.rooms.raidprotection.RaidProtectionSettings;
 import com.eu.habbo.messages.ISerialize;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.HideDoorbellComposer;
@@ -69,9 +68,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     private RoomRollerManager rollerManager;
     private RoomMessagingManager messagingManager;
     private RoomCycleManager cycleManager;
-    private RoomUserVariableManager userVariableManager;
-    private RoomFurniVariableManager furniVariableManager;
-    private RoomVariableManager roomVariableManager;
+    private RoomVariableManagers variableManagers;
 
     public static final Comparator<Room> SORT_SCORE = (o1, o2) -> o2.getScore() - o1.getScore();
     public static final Comparator<Room> SORT_ID = (o1, o2) -> o2.getId() - o1.getId();
@@ -390,9 +387,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         this.rollerManager = new RoomRollerManager(this);
         this.messagingManager = new RoomMessagingManager(this);
         this.cycleManager = new RoomCycleManager(this);
-        this.userVariableManager = new RoomUserVariableManager(this);
-        this.furniVariableManager = new RoomFurniVariableManager(this);
-        this.roomVariableManager = new RoomVariableManager(this);
+        this.variableManagers = new RoomVariableManagers(this, this.dependencies);
     }
 
     // ==================== MANAGER GETTERS ====================
@@ -475,15 +470,19 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     }
 
     public RoomUserVariableManager getUserVariableManager() {
-        return this.userVariableManager;
+        return this.variableManagers.user();
     }
 
     public RoomFurniVariableManager getFurniVariableManager() {
-        return this.furniVariableManager;
+        return this.variableManagers.furni();
     }
 
     public RoomVariableManager getRoomVariableManager() {
-        return this.roomVariableManager;
+        return this.variableManagers.room();
+    }
+
+    public RoomArrayVariableManager getArrayVariableManager() {
+        return this.variableManagers.array();
     }
 
     /**
@@ -1676,13 +1675,13 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
     public void talk(Habbo habbo, RoomChatMessage roomChatMessage, RoomChatType chatType) {
         this.chatManager.talk(habbo, roomChatMessage, chatType);
-        this.scoreRaidProtection(habbo, roomChatMessage);
+        this.raidProtection.onTalk(habbo, roomChatMessage);
     }
 
     public void talk(
             final Habbo habbo, final RoomChatMessage roomChatMessage, RoomChatType chatType, boolean ignoreWired) {
         this.chatManager.talk(habbo, roomChatMessage, chatType, ignoreWired);
-        this.scoreRaidProtection(habbo, roomChatMessage);
+        this.raidProtection.onTalk(habbo, roomChatMessage);
     }
 
     public Set<RoomTile> getLockedTiles() {
@@ -1880,34 +1879,8 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         return this.wiredAccess.save(inspectMask, modifyMask, timezone);
     }
 
-    public boolean canManageRaidProtection(Habbo habbo) {
-        return this.raidProtection.canManage(habbo);
-    }
-
-    public RaidProtectionSettings getRaidProtectionSettings() {
-        return this.raidProtection.settings();
-    }
-
-    public int getLastRaidAtSeconds() {
-        return this.raidProtection.lastRaidAtSeconds();
-    }
-
-    public boolean isRaidIncidentActive() {
-        return this.raidProtection.incidentActive();
-    }
-
-    /** Returns one of the RoomRaidProtectionService result codes the client understands. */
-    public int saveRaidProtectionSettings(Habbo habbo, RaidProtectionSettings settings) {
-        return this.raidProtection.save(habbo, settings);
-    }
-
-    /** Feeds a chat message to raid protection. Commands and wired output are not people talking. */
-    private void scoreRaidProtection(Habbo habbo, RoomChatMessage roomChatMessage) {
-        if (roomChatMessage == null || roomChatMessage.isCommand) {
-            return;
-        }
-
-        this.raidProtection.onTalk(habbo, roomChatMessage.getMessage());
+    public RoomRaidProtectionService getRaidProtection() {
+        return this.raidProtection;
     }
 
     public void giveRights(Habbo habbo) {

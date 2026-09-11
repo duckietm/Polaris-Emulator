@@ -13,6 +13,10 @@ import com.eu.habbo.messages.outgoing.Outgoing;
  * not twice.
  *
  * <p>The client closes the panel on result code 0 and leaves it open on anything else.
+ *
+ * <p>The nine snapshot appends are written out here rather than borrowed from
+ * {@link RaidProtectionSettingsComposer}: the packet contract extractor reads composeInternal
+ * statically and cannot follow a call into another class.
  */
 public class RaidProtectionSaveResultComposer extends MessageComposer {
     private final int resultCode;
@@ -33,8 +37,15 @@ public class RaidProtectionSaveResultComposer extends MessageComposer {
         this.response.init(Outgoing.RaidProtectionSaveResultComposer);
         this.response.appendInt(this.settings.getRoomId());
         this.response.appendInt(this.resultCode);
-        RaidProtectionSettingsComposer.appendAfterRoomId(
-                this.response, this.settings, this.incidentActive, this.lastRaidAtSeconds);
+        this.response.appendBoolean(this.settings.isEnabled());
+        this.response.appendInt(this.settings.getDetectionSensitivity());
+        this.response.appendInt(this.settings.getActionType());
+        this.response.appendInt(this.settings.getBanDurationSeconds());
+        this.response.appendBoolean(this.settings.isGuardEnabled());
+        this.response.appendInt(this.settings.getGuardDurationSeconds());
+        this.response.appendInt(this.settings.getGuardSensitivity());
+        this.response.appendBoolean(this.incidentActive);
+        this.response.appendInt(this.lastRaidAtSeconds);
         return this.response;
     }
 }

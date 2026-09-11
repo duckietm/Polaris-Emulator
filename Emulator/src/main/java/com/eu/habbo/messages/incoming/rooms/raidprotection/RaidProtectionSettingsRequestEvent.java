@@ -16,12 +16,14 @@ public class RaidProtectionSettingsRequestEvent extends MessageHandler {
         int roomId = this.packet.readInt();
         Room room = currentRoom();
 
-        if (room == null || room.getId() != roomId || !room.canManageRaidProtection(this.client.getHabbo())) {
+        if (room == null || room.getId() != roomId || !room.getRaidProtection().canManage(this.client.getHabbo())) {
             return;
         }
 
         this.client.sendResponse(new RaidProtectionSettingsComposer(
-                room.getRaidProtectionSettings(), room.isRaidIncidentActive(), room.getLastRaidAtSeconds()));
+                room.getRaidProtection().settings(),
+                room.getRaidProtection().incidentActive(),
+                room.getRaidProtection().lastRaidAtSeconds()));
     }
 
     @Override

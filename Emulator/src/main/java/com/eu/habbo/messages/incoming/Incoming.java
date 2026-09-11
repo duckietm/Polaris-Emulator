@@ -571,6 +571,7 @@ public class Incoming {
     public static final int SetBuildUnderpassEvent = 7022;
     public static final int SetBuildHeightEvent = 9351;
     public static final int OpenMysteryTrophyEvent = 3074;
+    public static final int MysteryBoxWaitingCanceledEvent = 2012;
     // Room competitions (AIR 13 RoomCompetitionController)
     public static final int VoteForRoomEvent = 143;
     public static final int CompetitionRoomsSearchEvent = 433;

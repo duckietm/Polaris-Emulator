@@ -20231,6 +20231,28 @@
           "name": "pageIndex"
         }
       ]
+    },
+    {
+      "name": "MYSTERYBOXWAITINGCANCELEDMESSAGE",
+      "direction": "client_to_server",
+      "header": 2012,
+      "java": {
+        "symbol": "MysteryBoxWaitingCanceledEvent",
+        "className": "MysteryBoxWaitingCanceledEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/MysteryBoxWaitingCanceledEvent.java"
+      },
+      "typescript": {
+        "symbol": "MYSTERYBOXWAITINGCANCELEDMESSAGE",
+        "className": "MysteryBoxWaitingCanceledMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/mysterybox/MysteryBoxWaitingCanceledMessageComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "ownerId"
+        }
+      ]
     }
   ],
   "unpaired": [
@@ -20560,14 +20582,6 @@
       "header": 1866,
       "symbol": "MARKETPLACE_BUY_TOKENS",
       "path": "packages/communication/src/messages/outgoing/marketplace/BuyMarketplaceTokensMessageComposer.ts",
-      "reason": "Header is registered only by the Octane Renderer packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "typescript",
-      "header": 2012,
-      "symbol": "MYSTERYBOXWAITINGCANCELEDMESSAGE",
-      "path": "packages/communication/src/messages/outgoing/mysterybox/MysteryBoxWaitingCanceledMessageComposer.ts",
       "reason": "Header is registered only by the Octane Renderer packet registry"
     },
     {

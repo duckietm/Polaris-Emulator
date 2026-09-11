@@ -85,6 +85,7 @@
     "messenger_members": ["conversation_id", "joined_at", "joined_message_id", "last_read_message_id", "left_at", "left_message_id", "role", "user_id"],
     "messenger_messages": ["conversation_id", "created_at", "id", "message", "metadata", "sender_id", "type"],
     "messenger_offline": ["id", "message", "sended_on", "user_from_id", "user_id"],
+    "mystery_box_prizes": ["catalog_item_id", "colour", "enabled", "id", "weight"],
     "namechange_log": ["new_name", "old_name", "timestamp", "user_id"],
     "navigator_filter": ["compare", "database_query", "field", "key"],
     "navigator_flatcats": ["can_trade", "caption", "caption_save", "id", "list_type", "max_user_count", "min_rank", "order_num", "public"],

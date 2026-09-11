@@ -570,6 +570,11 @@ U|com/eu/habbo/habbohotel/items/interactions/games/tag/icetag/InteractionIceTagF
 U|com/eu/habbo/habbohotel/items/interactions/games/tag/icetag/InteractionIceTagField.java|CALL|getIntUnixTimestamp|2
 U|com/eu/habbo/habbohotel/items/interactions/games/tag/rollerskate/InteractionRollerskateField.java|CALL|getGameEnvironment|3
 U|com/eu/habbo/habbohotel/items/interactions/games/tag/rollerskate/InteractionRollerskateField.java|CALL|getIntUnixTimestamp|2
+U|com/eu/habbo/habbohotel/items/interactions/mysterybox/MysteryBoxManager.java|CALL|getIntUnixTimestamp|2
+U|com/eu/habbo/habbohotel/items/interactions/mysterybox/MysteryBoxManager.java|CALL|getThreading|1
+U|com/eu/habbo/habbohotel/items/interactions/mysterybox/MysteryBoxPrizes.java|CALL|getDatabase|1
+U|com/eu/habbo/habbohotel/items/interactions/mysterybox/MysteryBoxPrizes.java|CALL|getGameEnvironment|2
+U|com/eu/habbo/habbohotel/items/interactions/mysterybox/MysteryBoxPrizes.java|CALL|getRandom|1
 U|com/eu/habbo/habbohotel/items/interactions/pets/InteractionMonsterPlantSeed.java|CALL|getRandom|2
 U|com/eu/habbo/habbohotel/items/interactions/pets/InteractionPetBreedingNest.java|CALL|getGameEnvironment|3
 U|com/eu/habbo/habbohotel/items/interactions/pets/InteractionPetBreedingNest.java|CALL|getThreading|2

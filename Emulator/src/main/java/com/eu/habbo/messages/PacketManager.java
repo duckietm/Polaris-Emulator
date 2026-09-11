@@ -384,6 +384,7 @@ import com.eu.habbo.messages.incoming.rooms.items.MoodLightSaveSettingsEvent;
 import com.eu.habbo.messages.incoming.rooms.items.MoodLightSettingsEvent;
 import com.eu.habbo.messages.incoming.rooms.items.MoodLightTurnOnEvent;
 import com.eu.habbo.messages.incoming.rooms.items.MoveWallItemEvent;
+import com.eu.habbo.messages.incoming.rooms.items.MysteryBoxWaitingCanceledEvent;
 import com.eu.habbo.messages.incoming.rooms.items.OpenMysteryTrophyEvent;
 import com.eu.habbo.messages.incoming.rooms.items.PostItDeleteEvent;
 import com.eu.habbo.messages.incoming.rooms.items.PostItPlaceEvent;
@@ -1051,6 +1052,7 @@ public class PacketManager {
         this.registerHandler(Incoming.SetBuildUnderpassEvent, SetBuildUnderpassEvent.class);
         this.registerHandler(Incoming.SetBuildHeightEvent, SetBuildHeightEvent.class);
         this.registerHandler(Incoming.OpenMysteryTrophyEvent, OpenMysteryTrophyEvent.class);
+        this.registerHandler(Incoming.MysteryBoxWaitingCanceledEvent, MysteryBoxWaitingCanceledEvent.class);
         this.registerHandler(Incoming.ForwardToACompetitionRoomEvent, ForwardToACompetitionRoomEvent.class);
         this.registerHandler(Incoming.ForwardToASubmittableRoomEvent, ForwardToASubmittableRoomEvent.class);
         this.registerHandler(Incoming.ForwardToRandomCompetitionRoomEvent, ForwardToRandomCompetitionRoomEvent.class);

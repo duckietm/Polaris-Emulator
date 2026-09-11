@@ -279,6 +279,12 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                         return;
                     }
 
+                    if (item.getHabbiconId() > 0) {
+                        this.client.sendResponse(
+                                new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+                        return;
+                    }
+
                     if (item.isClubOnly()
                             && !this.client.getHabbo().getHabboStats().hasActiveClub()) {
                         LOGGER.debug("item requires club -> itemId={}", itemId);

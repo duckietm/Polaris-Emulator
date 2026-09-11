@@ -45,6 +45,8 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
 
     private int rentDays;
 
+    private int habbiconId;
+
     private Map<Integer, Integer> bundle;
 
     public CatalogItem(ResultSet set) throws SQLException {
@@ -53,7 +55,7 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
     }
 
     public static boolean haveOffer(CatalogItem item) {
-        if (!item.haveOffer) return false;
+        if (!item.haveOffer || item.getHabbiconId() > 0) return false;
 
         if (item.getAmount() != 1) return false;
 
@@ -94,9 +96,20 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
         this.offerId = set.getInt("offer_id");
         this.orderNumber = set.getInt("order_number");
         this.rentDays = RentableFurniture.readRentDays(set);
+        this.habbiconId = 0;
+        for (int column = 1; column <= set.getMetaData().getColumnCount(); column++) {
+            if ("habbicon_id".equalsIgnoreCase(set.getMetaData().getColumnLabel(column))) {
+                this.habbiconId = set.getInt("habbicon_id");
+                break;
+            }
+        }
 
         this.bundle = new HashMap<>();
         this.loadBundle();
+    }
+
+    public int getHabbiconId() {
+        return this.habbiconId;
     }
 
     public int getId() {
@@ -298,11 +311,19 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
         message.appendInt(this.getCredits());
         message.appendInt(this.getPoints());
         message.appendInt(this.getPointsType());
-        message.appendBoolean(this.allowGift);
+        message.appendBoolean(this.habbiconId <= 0 && this.allowGift);
 
-        Set<Item> items = this.getBaseItems();
+        Set<Item> items = this.habbiconId > 0 ? Set.of() : this.getBaseItems();
 
-        message.appendInt(items.size());
+        message.appendInt(this.habbiconId > 0 ? 1 : items.size());
+
+        if (this.habbiconId > 0) {
+            message.appendString("habbicon");
+            message.appendInt(this.habbiconId);
+            message.appendString("");
+            message.appendInt(1);
+            message.appendBoolean(false);
+        }
 
         for (Item item : items) {
             message.appendString(item.getType().code.toLowerCase());

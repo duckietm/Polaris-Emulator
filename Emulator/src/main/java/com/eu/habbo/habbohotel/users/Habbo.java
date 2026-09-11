@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.economy.EconomyLedger;
 import com.eu.habbo.habbohotel.economy.EconomyOperation;
 import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.habbicons.HabbiconService;
 import com.eu.habbo.habbohotel.messenger.Messenger;
 import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -78,6 +79,16 @@ public class Habbo implements Runnable {
     private volatile boolean disconnected = false;
     private volatile boolean disconnecting = false;
     public boolean roomBypass = false;
+
+    private HabbiconService habbiconService;
+
+    public HabbiconService getHabbiconService() {
+        return this.habbiconService;
+    }
+
+    void setHabbiconService(HabbiconService habbiconService) {
+        this.habbiconService = habbiconService;
+    }
 
     public Habbo(ResultSet set) {
         this.client = null;

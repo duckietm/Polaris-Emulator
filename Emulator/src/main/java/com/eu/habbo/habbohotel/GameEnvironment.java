@@ -13,6 +13,7 @@ import com.eu.habbo.habbohotel.commands.CommandHandler;
 import com.eu.habbo.habbohotel.crafting.CraftingManager;
 import com.eu.habbo.habbohotel.guides.GuideManager;
 import com.eu.habbo.habbohotel.guilds.GuildManager;
+import com.eu.habbo.habbohotel.habbicons.HabbiconService;
 import com.eu.habbo.habbohotel.hotelview.HotelViewManager;
 import com.eu.habbo.habbohotel.hotlooks.HotLooksManager;
 import com.eu.habbo.habbohotel.items.FurnitureTextProvider;
@@ -83,6 +84,7 @@ public class GameEnvironment {
     private InfostandBackgroundManager infostandBackgroundManager;
     private WheelManager wheelManager;
     private HotLooksManager hotLooksManager;
+    private final HabbiconService habbiconService;
     private SoundboardManager soundboardManager;
     private TraxEditorManager traxEditorManager;
     private MentionManager mentionManager;
@@ -96,6 +98,11 @@ public class GameEnvironment {
     }
 
     public GameEnvironment(Executor persistenceExecutor) {
+        this(persistenceExecutor, null);
+    }
+
+    public GameEnvironment(Executor persistenceExecutor, HabbiconService habbiconService) {
+        this.habbiconService = habbiconService;
         this.persistenceExecutor = Objects.requireNonNull(persistenceExecutor, "persistenceExecutor");
     }
 
@@ -104,7 +111,9 @@ public class GameEnvironment {
 
         this.permissionsManager = this.services.create("permissions manager", PermissionsManager::new);
         this.habboManager = this.services.create(
-                "habbo manager", () -> new HabboManager(this.persistenceExecutor), HabboManager::dispose);
+                "habbo manager",
+                () -> new HabboManager(this.persistenceExecutor, this.habbiconService),
+                HabboManager::dispose);
         this.hotelViewManager =
                 this.services.create("hotel view manager", HotelViewManager::new, HotelViewManager::dispose);
         this.itemManager = this.services.create("item manager", ItemManager::new, ItemManager::dispose);

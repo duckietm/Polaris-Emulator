@@ -5,6 +5,7 @@ import com.eu.habbo.database.SqlQueries;
 import com.eu.habbo.habbohotel.economy.EconomyLedger;
 import com.eu.habbo.habbohotel.economy.EconomyOperation;
 import com.eu.habbo.habbohotel.economy.EconomyOperationId;
+import com.eu.habbo.habbohotel.habbicons.HabbiconService;
 import com.eu.habbo.habbohotel.modtool.ModToolBan;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.permissions.Rank;
@@ -47,12 +48,18 @@ public class HabboManager {
     private final ConcurrentHashMap<String, Habbo> onlineHabbosByName;
     private final ConcurrentHashMap<Integer, String> usernameCache = new ConcurrentHashMap<>();
     private final DisconnectPersistenceGate disconnectPersistence;
+    private final HabbiconService habbiconService;
 
     public HabboManager() {
         this(Runnable::run);
     }
 
     public HabboManager(Executor persistenceExecutor) {
+        this(persistenceExecutor, null);
+    }
+
+    public HabboManager(Executor persistenceExecutor, HabbiconService habbiconService) {
+        this.habbiconService = habbiconService;
         long millis = System.currentTimeMillis();
 
         this.onlineHabbos = new ConcurrentHashMap<>();
@@ -83,6 +90,7 @@ public class HabboManager {
     }
 
     public void addHabbo(Habbo habbo) {
+        habbo.setHabbiconService(this.habbiconService);
         this.onlineHabbos.put(habbo.getHabboInfo().getId(), habbo);
         this.onlineHabbosByName.put(habbo.getHabboInfo().getUsername().toLowerCase(), habbo);
     }

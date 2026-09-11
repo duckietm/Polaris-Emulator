@@ -23,4 +23,12 @@ public interface WiredArrayView {
     Long readField(int index, int fieldId);
 
     Map<Integer, WiredArrayEntry> entriesView();
+
+    default int findEntryIndex(long runtimeId) {
+        if (runtimeId <= 0) return -1;
+        for (Map.Entry<Integer, WiredArrayEntry> entry : entriesView().entrySet()) {
+            if (entry.getValue().getRuntimeId() == runtimeId) return entry.getKey();
+        }
+        return -1;
+    }
 }

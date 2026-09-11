@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.wired;
 
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomArrayVariableManager;
+import com.eu.habbo.habbohotel.wired.WiredVariableChangeOrigin;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayChange;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayNumericOperation;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayView;
@@ -56,6 +57,7 @@ public final class WiredArrayInspectionUpdateEvent extends MessageHandler {
                 .actor(resolved.unit())
                 .sourceItem(resolved.item())
                 .variableTargetType(resolved.legacyTargetType())
+                .variableChangeOrigin(WiredVariableChangeOrigin.CREATOR_TOOLS)
                 .variableDefinitionItemId(resolved.definition().getId())
                 .arrayChange(WiredArrayChange.field(
                         index,

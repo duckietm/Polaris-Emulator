@@ -222,6 +222,65 @@ class RoomArrayVariableRepositoryTest {
         }
     }
 
+    @Test
+    void successfulOwnersShareOneTransactionAndKeepTheirOwnValues() throws Exception {
+        var database = new RoomJdbcTestSupport.RecordingDataSource();
+        database.rows(sql -> sql.contains("FOR UPDATE") ? List.of(Map.of("version", 4L)) : List.of());
+        var repository = new RoomArrayVariableRepository(database);
+        var firstKey = new RoomArrayVariableManager.Key(44, 91, 2, 501);
+        var secondKey = new RoomArrayVariableManager.Key(44, 91, 2, 502);
+        WiredArrayValue first = WiredArrayValue.empty(definition(), 16);
+        WiredArrayValue second = WiredArrayValue.empty(definition(), 16);
+        first.apply(WiredArrayStructuralOperation.APPEND, 0, 0, Map.of(1, 10L, 2, 20L));
+        second.apply(WiredArrayStructuralOperation.APPEND, 0, 0, Map.of(1, 30L, 2, 40L));
+
+        var versions = repository.replaceBatch(
+                Map.of(
+                        firstKey,
+                                new RoomArrayVariableRepository.Replacement(
+                                        4, WiredArrayPersistenceDelta.between(null, first)),
+                        secondKey,
+                                new RoomArrayVariableRepository.Replacement(
+                                        4, WiredArrayPersistenceDelta.between(null, second))),
+                123);
+
+        assertEquals(Map.of(firstKey, 5L, secondKey, 5L), versions);
+        assertEquals(1, database.connectionCount());
+        var entries = database.calls().stream()
+                .filter(call -> call.operation().equals("batch"))
+                .toList();
+        assertEquals(2, entries.size());
+        assertEquals(501, entries.getFirst().parameters().get(4));
+        assertEquals("{\"1\":10,\"2\":20}", entries.getFirst().parameters().get(6));
+        assertEquals(502, entries.getLast().parameters().get(4));
+        assertEquals("{\"1\":30,\"2\":40}", entries.getLast().parameters().get(6));
+    }
+
+    @Test
+    void batchChecksEveryVersionBeforeWritingEntries() throws Exception {
+        var database = new RoomJdbcTestSupport.RecordingDataSource();
+        var queries = new java.util.concurrent.atomic.AtomicInteger();
+        database.rows(sql -> sql.contains("FOR UPDATE")
+                ? List.of(Map.of("version", queries.incrementAndGet() == 1 ? 4L : 5L))
+                : List.of());
+        var repository = new RoomArrayVariableRepository(database);
+        WiredArrayValue value = WiredArrayValue.empty(definition(), 16);
+        var delta = WiredArrayPersistenceDelta.between(null, value);
+
+        var versions = repository.replaceBatch(
+                Map.of(
+                        new RoomArrayVariableManager.Key(44, 91, 2, 501),
+                                new RoomArrayVariableRepository.Replacement(4, delta),
+                        new RoomArrayVariableManager.Key(44, 91, 2, 502),
+                                new RoomArrayVariableRepository.Replacement(4, delta)),
+                123);
+
+        assertTrue(versions.isEmpty());
+        assertTrue(database.calls().stream()
+                .noneMatch(call ->
+                        call.sql().startsWith("UPDATE") || call.operation().equals("batch")));
+    }
+
     private static WiredArrayDefinition definition() {
         WiredVariableDefinitionData data = new WiredVariableDefinitionData();
         data.valueShape = "array";

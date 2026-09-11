@@ -86,6 +86,45 @@ final class RoomArrayVariableRepository {
         }
     }
 
+    Map<RoomArrayVariableManager.Key, Long> replaceBatch(
+            Map<RoomArrayVariableManager.Key, Replacement> replacements, int now) throws SQLException {
+        if (replacements.isEmpty()) return Map.of();
+        var ordered = new java.util.ArrayList<>(replacements.entrySet());
+        ordered.sort(java.util.Comparator.comparingInt(entry -> entry.getKey().ownerId()));
+        try (Connection connection = this.database.openConnection()) {
+            boolean originalAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                Map<RoomArrayVariableManager.Key, Long> versions = new LinkedHashMap<>();
+                for (var entry : ordered) {
+                    ensureHeader(connection, entry.getKey(), now);
+                    long version = lockVersion(connection, entry.getKey());
+                    if (version != entry.getValue().expectedVersion()) {
+                        connection.rollback();
+                        return Map.of();
+                    }
+                    versions.put(entry.getKey(), Math.addExact(version, 1L));
+                }
+                for (var entry : ordered) {
+                    var key = entry.getKey();
+                    var delta = entry.getValue().delta();
+                    updateHeader(connection, key, delta.logicalLength(), versions.get(key), now);
+                    deleteEntries(connection, key, delta.removedIndexes());
+                    upsertEntries(connection, key, delta.upsertedEntries());
+                }
+                connection.commit();
+                return versions;
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            } finally {
+                connection.setAutoCommit(originalAutoCommit);
+            }
+        }
+    }
+
+    record Replacement(long expectedVersion, WiredArrayPersistenceDelta delta) {}
+
     boolean delete(RoomArrayVariableManager.Key key, long expectedVersion) throws SQLException {
         try (Connection connection = this.database.openConnection()) {
             boolean originalAutoCommit = connection.getAutoCommit();
@@ -112,6 +151,70 @@ final class RoomArrayVariableRepository {
                 throw exception;
             } finally {
                 connection.setAutoCommit(originalAutoCommit);
+            }
+        }
+    }
+
+    StorageUsageSnapshot storageUsageSnapshot(int roomId) throws SQLException {
+        String sql = """
+                SELECT owner_type, owner_id, COUNT(*) AS arrays, COALESCE(SUM(cells), 0) AS cells
+                FROM (
+                    SELECT array_value.owner_type, array_value.owner_id,
+                           COALESCE(SUM(JSON_LENGTH(entry.entry_data)), 0) AS cells
+                    FROM room_wired_array_values array_value
+                    LEFT JOIN room_wired_array_entries entry
+                      ON entry.room_id = array_value.room_id AND entry.variable_item_id = array_value.variable_item_id
+                     AND entry.owner_type = array_value.owner_type AND entry.owner_id = array_value.owner_id
+                    WHERE array_value.room_id = ?
+                    GROUP BY array_value.variable_item_id, array_value.owner_type, array_value.owner_id
+                ) owner_sizes
+                GROUP BY owner_type, owner_id
+                """;
+        try (Connection connection = this.database.openConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, roomId);
+            try (ResultSet set = statement.executeQuery()) {
+                long arrays = 0, cells = 0;
+                Map<Owner, OwnerUsage> owners = new LinkedHashMap<>();
+                while (set.next()) {
+                    var usage = new OwnerUsage(set.getLong("arrays"), set.getLong("cells"));
+                    arrays += usage.arrays();
+                    cells += usage.cells();
+                    owners.put(new Owner(set.getInt("owner_type"), set.getInt("owner_id")), usage);
+                }
+                return new StorageUsageSnapshot(arrays, cells, owners);
+            }
+        }
+    }
+
+    record Owner(int type, int id) {}
+
+    record OwnerUsage(long arrays, long cells) {}
+
+    record StorageUsageSnapshot(long arrays, long cells, Map<Owner, OwnerUsage> owners) {
+        OwnerUsage owner(int type, int id) {
+            return owners.getOrDefault(new Owner(type, id), new OwnerUsage(0, 0));
+        }
+    }
+
+    int maximumOccupiedEntries(int roomId, int definitionItemId) throws SQLException {
+        String sql = """
+                SELECT COALESCE(MAX(owner_sizes.occupied), 0) AS maximum_entries FROM (
+                    SELECT GREATEST(array_value.logical_length, COUNT(entry.entry_index)) AS occupied
+                    FROM room_wired_array_values array_value
+                    LEFT JOIN room_wired_array_entries entry
+                      ON entry.room_id = array_value.room_id AND entry.variable_item_id = array_value.variable_item_id
+                     AND entry.owner_type = array_value.owner_type AND entry.owner_id = array_value.owner_id
+                    WHERE array_value.room_id = ? AND array_value.variable_item_id = ?
+                    GROUP BY array_value.owner_type, array_value.owner_id, array_value.logical_length
+                ) owner_sizes
+                """;
+        try (Connection connection = this.database.openConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, roomId);
+            statement.setInt(2, definitionItemId);
+            try (ResultSet set = statement.executeQuery()) {
+                return set.next() ? set.getInt("maximum_entries") : 0;
             }
         }
     }

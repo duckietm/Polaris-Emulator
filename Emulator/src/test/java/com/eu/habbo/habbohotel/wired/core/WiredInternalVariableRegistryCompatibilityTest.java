@@ -14,8 +14,19 @@ class WiredInternalVariableRegistryCompatibilityTest {
     @Test
     void everyCurrentCapabilitySetIsFrozenExactly() {
         assertEquals(
-                Set.of("@position_x", "@position_y", "@direction"),
+                Set.of(
+                        "@position_x",
+                        "@position_y",
+                        "@direction",
+                        "@altitude",
+                        "@effect_id",
+                        "@handitem_id",
+                        "@team_score",
+                        "@player_score"),
                 keys(WiredInternalVariableRegistry.Capability.USER_DESTINATION));
+        assertEquals(
+                Set.of("@team_red_score", "@team_green_score", "@team_blue_score", "@team_yellow_score"),
+                keys(WiredInternalVariableRegistry.Capability.ROOM_DESTINATION));
         assertEquals(
                 Set.of("@state", "@position_x", "@position_y", "@rotation", "@altitude", "@gravity", "@opacity"),
                 keys(WiredInternalVariableRegistry.Capability.FURNI_DESTINATION));
@@ -35,6 +46,7 @@ class WiredInternalVariableRegistryCompatibilityTest {
                         "@is_frozen",
                         "@effect_id",
                         "@team_score",
+                        "@player_score",
                         "@team_color",
                         "@team_type",
                         "@sign",
@@ -115,6 +127,12 @@ class WiredInternalVariableRegistryCompatibilityTest {
                         "@antenna_id",
                         "@chat_type",
                         "@chat_style",
+                        "@event.variable_update.box_id",
+                        "@event.variable_update.change_type",
+                        "@event.variable_update.old_value",
+                        "@event.variable_update.new_value",
+                        "@event.variable_update.difference",
+                        "@event.variable_update.change_origin",
                         "@array.change_type",
                         "@array.index",
                         "@array.source_index",
@@ -135,6 +153,14 @@ class WiredInternalVariableRegistryCompatibilityTest {
                         Map.entry("@position.y", "@position_y"),
                         Map.entry("@effect", "@effect_id"),
                         Map.entry("@handitems", "@handitem_id"),
+                        Map.entry("@handitem", "@handitem_id"),
+                        Map.entry("@team.score", "@team_score"),
+                        Map.entry("@player.score", "@player_score"),
+                        Map.entry("@team.color", "@team_color"),
+                        Map.entry("@team.type", "@team_type"),
+                        Map.entry("@event.chat.type", "@chat_type"),
+                        Map.entry("@event.chat.style", "@chat_style"),
+                        Map.entry("@event.signal.antenna_id", "@antenna_id"),
                         Map.entry("@is_mute", "@is_muted"),
                         Map.entry("@teams.red.score", "@team_red_score"),
                         Map.entry("@teams.green.score", "@team_green_score"),
@@ -151,12 +177,12 @@ class WiredInternalVariableRegistryCompatibilityTest {
     }
 
     @Test
-    void currentPublicCapabilityMethodsDelegateWithoutBehaviorChange() {
+    void publicCapabilityMethodsExposeLegacyAndNewWritableValues() {
         assertTrue(WiredInternalVariableSupport.canUseUserReference("@effect"));
         assertTrue(WiredInternalVariableSupport.canUseFurniDestination(" @altitude "));
         assertTrue(WiredInternalVariableSupport.canUseRoomReference("@teams.red.score"));
         assertTrue(WiredInternalVariableSupport.canUseContextReference("@chat_style"));
-        assertFalse(WiredInternalVariableSupport.canUseUserDestination("@altitude"));
+        assertTrue(WiredInternalVariableSupport.canUseUserDestination("@altitude"));
         assertTrue(WiredInternalVariableSupport.canUseFurniReference("@gravity"));
         assertFalse(WiredInternalVariableSupport.canUseRoomReference(""));
     }

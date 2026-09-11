@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 
 /** Captures one array entry into an execution-scoped {@code @array.<alias>} namespace. */
 public final class WiredExtraArrayCaptureVariable extends InteractionWiredExtra implements WiredLargePayload {
-    public static final int CODE = 116;
+    public static final int CODE = 127;
     public static final int MODE_INDEX = 0;
     public static final int MODE_FIND = 1;
     public static final int DIRECTION_FIRST = 0;
@@ -221,7 +221,7 @@ public final class WiredExtraArrayCaptureVariable extends InteractionWiredExtra 
         return definition == null ? "" : definition.getVariableName();
     }
 
-    /** Read-only context projections exposed to ordinary variable pickers. */
+    /** Context projections exposed to ordinary variable pickers. */
     public List<String> getCaptureProjectionNames(Room room) {
         String alias = this.getCaptureAlias(room);
         WiredArrayVariableDefinition definition =
@@ -231,10 +231,25 @@ public final class WiredExtraArrayCaptureVariable extends InteractionWiredExtra 
         List<String> names = new ArrayList<>();
         names.add("@array." + alias + ".found");
         names.add("@array." + alias + ".index");
+        names.add(alias + ".index");
         for (var field : definition.getArrayDefinition().getFields()) {
             names.add(alias + "." + field.getName());
         }
         return List.copyOf(names);
+    }
+
+    public boolean isWritableProjection(Room room, String path) {
+        String prefix = this.getCaptureAlias(room).toLowerCase(java.util.Locale.ROOT) + ".";
+        if (path == null || !path.toLowerCase(java.util.Locale.ROOT).startsWith(prefix)) return false;
+        WiredArrayVariableDefinition definition =
+                WiredArrayDefinitionSupport.resolve(room, this.variableType, this.variableItemId);
+        if (definition == null
+                || !definition.isArray()
+                || !definition.isArrayWritable()
+                || !definition.isArraySourceValid()) return false;
+        String field = path.substring(prefix.length());
+        return definition.getArrayDefinition().getFields().stream()
+                .anyMatch(candidate -> candidate.getName().equalsIgnoreCase(field));
     }
 
     public void publishMissing(WiredContext ctx) {
@@ -267,6 +282,9 @@ public final class WiredExtraArrayCaptureVariable extends InteractionWiredExtra 
 
         int inspectedLength = 0;
         for (WiredArrayRuntimeSupport.Owner owner : owners) {
+            Object valueLease = definition.getArrayVariableType() == WiredArrayVariableType.CONTEXT
+                    ? null
+                    : ctx.room().getArrayVariableManager().retainCapturedValue(definition, owner.id());
             WiredArrayView value = WiredArrayRuntimeSupport.getValue(ctx, definition, owner);
             if (value == null) continue;
             inspectedLength = Math.max(inspectedLength, value.getLengthForCondition());
@@ -280,11 +298,8 @@ public final class WiredExtraArrayCaptureVariable extends InteractionWiredExtra 
             ctx.contextVariables()
                     .publishArrayCapture(
                             alias,
-                            WiredArrayCaptureSnapshot.found(
-                                    definition.getArrayDefinition(),
-                                    matchedIndex,
-                                    value.getLengthForCondition(),
-                                    entry));
+                            WiredArrayCaptureSnapshot.bound(
+                                    definition, owner, matchedIndex, value.getLengthForCondition(), entry, valueLease));
             WiredContextVariableSupport.assignVariable(ctx, ctx.room(), this.contextVariableItemId, matchedIndex, true);
             return true;
         }

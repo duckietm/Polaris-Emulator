@@ -21,7 +21,19 @@ public enum WiredArrayNumericOperation {
     BITWISE_NOT(103),
     LEFT_SHIFT(104),
     RIGHT_SHIFT(105),
-    BIT_COUNT(110);
+    BIT_COUNT(110),
+    NEXT_LOW_BIT(111),
+    NEXT_HIGH_BIT(112),
+    PREVIOUS_LOW_BIT(113),
+    PREVIOUS_HIGH_BIT(114),
+    GET_BIT(115),
+    SET_BIT(116),
+    CLEAR_BIT(117),
+    TOGGLE_BIT(118),
+    NEXT_LOW_BIT_EXCLUSIVE(119),
+    NEXT_HIGH_BIT_EXCLUSIVE(120),
+    PREVIOUS_LOW_BIT_EXCLUSIVE(121),
+    PREVIOUS_HIGH_BIT_EXCLUSIVE(122);
 
     private final int code;
 
@@ -61,7 +73,32 @@ public enum WiredArrayNumericOperation {
             case LEFT_SHIFT -> current << reference;
             case RIGHT_SHIFT -> current >> reference;
             case BIT_COUNT -> Long.bitCount(current);
+            case GET_BIT -> isBitPosition(reference) ? (current >>> reference) & 1L : 0L;
+            case SET_BIT -> isBitPosition(reference) ? current | (1L << reference) : current;
+            case CLEAR_BIT -> isBitPosition(reference) ? current & ~(1L << reference) : current;
+            case TOGGLE_BIT -> isBitPosition(reference) ? current ^ (1L << reference) : current;
+            case NEXT_LOW_BIT -> scanBit(current, reference, 1, false);
+            case NEXT_HIGH_BIT -> scanBit(current, reference, 1, true);
+            case PREVIOUS_LOW_BIT -> scanBit(current, reference, -1, false);
+            case PREVIOUS_HIGH_BIT -> scanBit(current, reference, -1, true);
+            case NEXT_LOW_BIT_EXCLUSIVE -> isBitPosition(reference) ? scanBit(current, reference + 1, 1, false) : -1;
+            case NEXT_HIGH_BIT_EXCLUSIVE -> isBitPosition(reference) ? scanBit(current, reference + 1, 1, true) : -1;
+            case PREVIOUS_LOW_BIT_EXCLUSIVE ->
+                isBitPosition(reference) ? scanBit(current, reference - 1, -1, false) : -1;
+            case PREVIOUS_HIGH_BIT_EXCLUSIVE ->
+                isBitPosition(reference) ? scanBit(current, reference - 1, -1, true) : -1;
         };
+    }
+
+    private static boolean isBitPosition(long position) {
+        return position >= 0 && position < Long.SIZE;
+    }
+
+    private static long scanBit(long value, long from, int step, boolean wantSet) {
+        for (long position = from; isBitPosition(position); position += step) {
+            if ((((value >>> position) & 1L) == 1L) == wantSet) return position;
+        }
+        return -1L;
     }
 
     public static WiredArrayNumericOperation fromCode(int code) {

@@ -12,9 +12,9 @@ class WiredArrayProtocolContractTest {
 
     @Test
     void keepsBackendLayoutCodesAndBoundedPayloadInSync() {
-        assertEquals(115, WiredEffectType.MODIFY_ARRAY.code);
-        assertEquals(49, WiredConditionType.CHECK_ARRAY.code);
-        assertEquals(116, WiredExtraArrayCaptureVariable.CODE);
+        assertEquals(126, WiredEffectType.MODIFY_ARRAY.code);
+        assertEquals(60, WiredConditionType.CHECK_ARRAY.code);
+        assertEquals(127, WiredExtraArrayCaptureVariable.CODE);
         assertEquals(32_768, WiredLargePayload.MAX_STRING_PARAM_LENGTH);
     }
 }

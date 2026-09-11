@@ -48,7 +48,7 @@ public class WiredExtraVariableReference extends InteractionWiredExtra implement
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
+        Room room = findLoadedRoom(this.getRoomId());
 
         if (room == null) {
             throw new WiredSaveException("Room not found");
@@ -254,6 +254,14 @@ public class WiredExtraVariableReference extends InteractionWiredExtra implement
     @Override
     public boolean isArraySourceValid() {
         return WiredVariableReferenceSupport.isSharedSourceStillAvailable(this);
+    }
+
+    Room loadedSourceRoom() {
+        return findLoadedRoom(this.sourceRoomId);
+    }
+
+    private static Room findLoadedRoom(int roomId) {
+        return Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
     }
 
     private String buildEditorPayload(Room room) {

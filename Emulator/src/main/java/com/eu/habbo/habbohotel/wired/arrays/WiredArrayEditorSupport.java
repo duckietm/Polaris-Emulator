@@ -25,7 +25,8 @@ public final class WiredArrayEditorSupport {
         result.value = source.value;
         result.variableType =
                 WiredArrayVariableType.fromCode(source.variableType).code();
-        result.variableItemId = source.variableItemId;
+        result.variableItemId = WiredArrayRuntimeSupport.tokenItemId(source.variableToken, source.variableItemId);
+        result.variableToken = source.variableToken == null ? "" : source.variableToken.trim();
         result.variableSource = WiredArrayRuntimeSupport.normalizeSource(
                 WiredArrayVariableType.fromCode(result.variableType), source.variableSource);
         result.capturePath = source.capturePath == null ? "" : source.capturePath.trim();
@@ -42,7 +43,8 @@ public final class WiredArrayEditorSupport {
         result.value = source.value == null ? "0" : source.value.trim();
         result.variableType =
                 WiredArrayVariableType.fromCode(source.variableType).code();
-        result.variableItemId = source.variableItemId;
+        result.variableItemId = WiredArrayRuntimeSupport.tokenItemId(source.variableToken, source.variableItemId);
+        result.variableToken = source.variableToken == null ? "" : source.variableToken.trim();
         result.variableSource = WiredArrayRuntimeSupport.normalizeSource(
                 WiredArrayVariableType.fromCode(result.variableType), source.variableSource);
         result.capturePath = source.capturePath == null ? "" : source.capturePath.trim();
@@ -86,7 +88,8 @@ public final class WiredArrayEditorSupport {
                 && (value.mode != WiredArrayReference.CONSTANT || value.value != null)
                 && (value.mode != WiredArrayReference.VARIABLE
                         || value.capturePath != null && !value.capturePath.isBlank()
-                        || value.variableItemId > 0);
+                        || value.variableItemId > 0
+                        || value.variableToken != null && !value.variableToken.isBlank());
     }
 
     public static boolean validRawCriteria(List<WiredArrayCriterion> values) {
@@ -108,7 +111,8 @@ public final class WiredArrayEditorSupport {
             return address.value >= 0
                     && address.value < definition.getArrayDefinition().getMaxEntries();
         }
-        return isValidScalarReference(address.variableType, address.variableItemId, address.capturePath, room);
+        return isValidScalarReference(
+                address.variableType, address.variableItemId, address.capturePath, address.variableToken, room);
     }
 
     /** Bounds-checks a saved index against a schema without resolving a variable-mode source. */
@@ -135,11 +139,14 @@ public final class WiredArrayEditorSupport {
                 return false;
             }
         }
+        if (WiredArrayRuntimeSupport.isInternalReference(reference.variableType, reference.variableToken)) return true;
         if (reference.capturePath != null && !reference.capturePath.isBlank()) {
-            return WiredArrayRuntimeSupport.isValidCapturePath(reference.capturePath);
+            return WiredArrayRuntimeSupport.isValidCaptureProjectionPath(reference.capturePath);
         }
-        WiredArrayVariableDefinition definition =
-                WiredArrayDefinitionSupport.resolve(room, reference.variableType, reference.variableItemId);
+        WiredArrayVariableDefinition definition = WiredArrayDefinitionSupport.resolve(
+                room,
+                reference.variableType,
+                WiredArrayRuntimeSupport.tokenItemId(reference.variableToken, reference.variableItemId));
         if (definition == null) return false;
         if (!definition.isArray()) return definition.hasValue();
         return definition.getArrayDefinition() != null
@@ -148,8 +155,14 @@ public final class WiredArrayEditorSupport {
     }
 
     public static boolean isValidScalarReference(int type, int itemId, String capturePath, Room room) {
+        return isValidScalarReference(type, itemId, capturePath, "", room);
+    }
+
+    public static boolean isValidScalarReference(int type, int itemId, String capturePath, String token, Room room) {
+        if (WiredArrayRuntimeSupport.isInternalReference(type, token)) return true;
+        itemId = WiredArrayRuntimeSupport.tokenItemId(token, itemId);
         if (capturePath != null && !capturePath.isBlank()) {
-            return WiredArrayRuntimeSupport.isValidCapturePath(capturePath);
+            return WiredArrayRuntimeSupport.isValidCaptureProjectionPath(capturePath);
         }
         WiredArrayVariableDefinition definition = WiredArrayDefinitionSupport.resolve(room, type, itemId);
         return definition != null && !definition.isArray() && definition.hasValue();

@@ -40,6 +40,39 @@ public final class WiredArraySettings {
                 Math.max(10_000L, metricsLogIntervalMs)));
     }
 
+    /** Aggregate bounds include empty assignments, so sparse arrays cannot bypass storage limits. */
+    public static int maxArraysPerOwner() {
+        return 128;
+    }
+
+    public static int maxArraysPerRoom() {
+        return 4096;
+    }
+
+    public static int maxTotalCellsPerOwner() {
+        return 16_384;
+    }
+
+    public static int maxTotalCellsPerRoom() {
+        return 262_144;
+    }
+
+    public static int maxCachedCellsPerRoom() {
+        return 262_144;
+    }
+
+    public static int maxPersistentRowsPerMutation() {
+        return 8192;
+    }
+
+    public static int usageEntriesPerUnit() {
+        return 16;
+    }
+
+    public static int usageRowsPerUnit() {
+        return 8;
+    }
+
     private static int clamp(int configured, int maximum) {
         return Math.max(1, Math.min(maximum, configured));
     }

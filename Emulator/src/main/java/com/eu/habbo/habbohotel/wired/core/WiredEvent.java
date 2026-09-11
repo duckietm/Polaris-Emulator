@@ -202,11 +202,14 @@ public final class WiredEvent {
     private final int signalFurniCount; // forwarded furni in SIGNAL_RECEIVED
     private final int variableTargetType;
     private final int variableDefinitionItemId;
+    private final String internalVariableKey;
     private final boolean variableCreated;
     private final boolean variableDeleted;
     private final VariableChangeKind variableChangeKind;
     private final int variableChangeOrigin;
     private final WiredArrayChange arrayChange;
+    private final long oldVariableValue;
+    private final long newVariableValue;
     private final WiredContextVariableScope contextVariableScope;
     private final long createdAtMs;
 
@@ -232,11 +235,14 @@ public final class WiredEvent {
         this.signalFurniCount = builder.signalFurniCount;
         this.variableTargetType = builder.variableTargetType;
         this.variableDefinitionItemId = builder.variableDefinitionItemId;
+        this.internalVariableKey = builder.internalVariableKey;
         this.variableCreated = builder.variableCreated;
         this.variableDeleted = builder.variableDeleted;
         this.variableChangeKind = builder.variableChangeKind;
         this.variableChangeOrigin = builder.variableChangeOrigin;
         this.arrayChange = builder.arrayChange;
+        this.oldVariableValue = builder.oldVariableValue;
+        this.newVariableValue = builder.newVariableValue;
         this.contextVariableScope = builder.contextVariableScope;
         this.createdAtMs = builder.createdAtMs;
     }
@@ -396,8 +402,24 @@ public final class WiredEvent {
     }
 
     /** One of the {@link WiredVariableChangeOrigin} codes; only meaningful for VARIABLE_CHANGED. */
+    public String getInternalVariableKey() {
+        return this.internalVariableKey;
+    }
+
     public int getVariableChangeOrigin() {
         return this.variableChangeOrigin;
+    }
+
+    public boolean isScalarVariableChange() {
+        return this.type == Type.VARIABLE_CHANGED && this.arrayChange == null;
+    }
+
+    public long getOldVariableValue() {
+        return this.oldVariableValue;
+    }
+
+    public long getNewVariableValue() {
+        return this.newVariableValue;
     }
 
     public WiredArrayChange getArrayChange() {
@@ -471,12 +493,15 @@ public final class WiredEvent {
         private int signalFurniCount;
         private int variableTargetType = -1;
         private int variableDefinitionItemId;
+        private String internalVariableKey = "";
         private boolean variableCreated;
         private boolean variableDeleted;
         private VariableChangeKind variableChangeKind = VariableChangeKind.NONE;
         // Read when the builder is made, on the thread that performed the write.
         private int variableChangeOrigin = WiredVariableChangeOrigin.current();
         private WiredArrayChange arrayChange;
+        private long oldVariableValue;
+        private long newVariableValue;
         private WiredContextVariableScope contextVariableScope;
         private long createdAtMs = System.currentTimeMillis();
 
@@ -644,6 +669,17 @@ public final class WiredEvent {
 
         public Builder variableChangeOrigin(int variableChangeOrigin) {
             this.variableChangeOrigin = WiredVariableChangeOrigin.normalize(variableChangeOrigin);
+            return this;
+        }
+
+        public Builder internalVariableKey(String key) {
+            this.internalVariableKey = key == null ? "" : WiredInternalVariableSupport.normalizeKey(key);
+            return this;
+        }
+
+        public Builder variableValues(long previousValue, long currentValue) {
+            this.oldVariableValue = previousValue;
+            this.newVariableValue = currentValue;
             return this;
         }
 

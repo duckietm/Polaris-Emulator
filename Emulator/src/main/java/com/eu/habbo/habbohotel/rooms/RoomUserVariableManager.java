@@ -542,6 +542,7 @@ public class RoomUserVariableManager {
             return;
         }
 
+        this.room.getArrayVariableManager().clearAssignmentsForUser(userId);
         if (this.activeAssignmentsByUserId.remove(userId) != null) {
             this.broadcastSnapshot();
         }
@@ -555,6 +556,16 @@ public class RoomUserVariableManager {
     public int clearAllAssignments(int definitionItemId) {
         WiredVariableDefinitionInfo definitionInfo = this.getDefinitionInfo(definitionItemId);
         if (definitionInfo == null || definitionInfo.isReadOnly()) return 0;
+
+        if (this.getDefinitionExtra(definitionItemId)
+                        instanceof com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition array
+                && array.isArray()) {
+            List<Integer> owners = this.room.getArrayVariableManager().clearAllAssignments(array);
+            for (Integer ownerId : owners)
+                this.emitVariableChangedEvent(ownerId, definitionItemId, false, true, null, false, null);
+            this.broadcastSnapshot();
+            return owners.size();
+        }
 
         Map<Integer, Integer> previousValues = new LinkedHashMap<>();
         for (Map.Entry<Integer, ConcurrentHashMap<Integer, VariableAssignment>> entry :
@@ -1126,7 +1137,15 @@ public class RoomUserVariableManager {
             return;
         }
 
-        WiredManager.triggerUserVariableChanged(this.room, userId, definitionItemId, created, deleted, changeKind);
+        WiredManager.triggerUserVariableChanged(
+                this.room,
+                userId,
+                definitionItemId,
+                created,
+                deleted,
+                changeKind,
+                previousValue == null ? 0L : previousValue,
+                currentValue == null ? 0L : currentValue);
     }
 
     private static WiredEvent.VariableChangeKind resolveVariableChangeKind(

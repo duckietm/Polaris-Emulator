@@ -68,17 +68,22 @@ public class WiredExtraContextVariable extends InteractionWiredExtra
         try {
             nextArrayDefinition =
                     WiredArrayDefinitionSupport.parseArrayDefinition(definitionData, this.array.definition());
-            room.getArrayVariableManager().validateDefinitionChange(this, nextArrayDefinition, false);
+
         } catch (IllegalArgumentException exception) {
             throw new WiredSaveException(exception.getMessage());
         }
 
-        this.variableName = normalizedName;
-        this.array.assign(nextArrayDefinition);
-        this.hasValue = this.array.isArray() || ((intParams.length > 0) && (intParams[0] == 1));
+        try {
+            room.getArrayVariableManager().updateDefinition(this, nextArrayDefinition, false, () -> {
+                this.variableName = normalizedName;
+                this.array.assign(nextArrayDefinition);
+                this.hasValue = this.array.isArray() || ((intParams.length > 0) && (intParams[0] == 1));
 
-        WiredContextVariableSupport.broadcastDefinitions(room);
-        room.getArrayVariableManager().handleDefinitionUpdated(this);
+                WiredContextVariableSupport.broadcastDefinitions(room);
+            });
+        } catch (IllegalArgumentException exception) {
+            throw new WiredSaveException(exception.getMessage());
+        }
         return true;
     }
 

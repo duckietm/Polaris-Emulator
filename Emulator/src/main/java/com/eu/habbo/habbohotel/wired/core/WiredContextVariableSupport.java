@@ -69,12 +69,21 @@ public final class WiredContextVariableSupport {
             }
             int virtualItemId = -1;
             for (String projection : projections) {
-                definitions.add(
-                        new WiredVariableDefinitionInfo(virtualItemId--, projection, true, 0, false, true, false));
+                definitions.add(new WiredVariableDefinitionInfo(
+                        virtualItemId--, projection, true, 0, false, !isWritableCapture(room, projection), false));
             }
         }
 
         return definitions;
+    }
+
+    public static boolean isWritableCapture(Room room, String path) {
+        if (room == null || room.getRoomSpecialTypes() == null) return false;
+        for (InteractionWiredExtra extra : room.getRoomSpecialTypes().getExtras()) {
+            if (extra instanceof WiredExtraArrayCaptureVariable capture && capture.isWritableProjection(room, path))
+                return true;
+        }
+        return false;
     }
 
     public static WiredExtraContextVariable getDefinition(Room room, int definitionItemId) {
@@ -144,6 +153,29 @@ public final class WiredContextVariableSupport {
 
     public static Integer getCurrentValue(WiredContext ctx, int definitionItemId) {
         return ctx != null ? ctx.contextVariables().getValue(definitionItemId) : null;
+    }
+
+    public static void triggerVariableChanged(
+            WiredContext ctx,
+            Room room,
+            int definitionItemId,
+            boolean created,
+            boolean deleted,
+            WiredEvent.VariableChangeKind kind,
+            long previousValue,
+            long currentValue) {
+        if (ctx == null || room == null) return;
+        WiredManager.handleEvent(WiredEvent.builder(WiredEvent.Type.VARIABLE_CHANGED, room)
+                .actor(ctx.actor().orElse(null))
+                .variableTargetType(2)
+                .variableDefinitionItemId(definitionItemId)
+                .variableCreated(created)
+                .variableDeleted(deleted)
+                .variableChangeKind(kind)
+                .variableValues(previousValue, currentValue)
+                .contextVariableScope(ctx.contextVariables())
+                .triggeredByEffect(true)
+                .build());
     }
 
     public static int getCreatedAt(WiredContext ctx, int definitionItemId) {

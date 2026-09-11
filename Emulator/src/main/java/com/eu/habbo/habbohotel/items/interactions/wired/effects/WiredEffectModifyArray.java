@@ -82,7 +82,9 @@ public final class WiredEffectModifyArray extends InteractionWiredEffect impleme
             return;
         }
 
-        boolean changed = false;
+        List<PreparedMutation> prepared = new ArrayList<>();
+        long copiedEntries = 0;
+        long persistentRows = 0;
         for (WiredArrayRuntimeSupport.Owner owner : owners) {
             WiredArrayView before = WiredArrayRuntimeSupport.getValue(ctx, definition, owner);
             Integer first = structuralOperation.requiresFirstIndex()
@@ -104,18 +106,60 @@ public final class WiredEffectModifyArray extends InteractionWiredEffect impleme
                 continue;
             }
 
-            RoomArrayVariableManager.MutationOutcome outcome =
-                    WiredArrayRuntimeSupport.mutate(ctx, definition, owner, structuralOperation, first, second, values);
+            prepared.add(new PreparedMutation(
+                    owner, before == null ? 0 : before.getLengthForCondition(), first, second, values));
+            copiedEntries += before == null ? 0 : before.getOccupiedCount();
+            if (definition.isArrayPermanent())
+                persistentRows += WiredArrayRuntimeSupport.estimatedStructuralRows(
+                        before, definition, structuralOperation, first, second);
+        }
+        if (!WiredArrayRuntimeSupport.allowMutationWork(
+                ctx, this.getId(), prepared.size(), copiedEntries, persistentRows)) return;
+        List<RoomArrayVariableManager.MutationOutcome> outcomes;
+        if (definition.getArrayVariableType() == WiredArrayVariableType.CONTEXT) {
+            outcomes = prepared.stream()
+                    .map(mutation -> WiredArrayRuntimeSupport.mutate(
+                            ctx,
+                            definition,
+                            mutation.owner(),
+                            structuralOperation,
+                            mutation.first(),
+                            mutation.second(),
+                            mutation.values()))
+                    .toList();
+        } else {
+            outcomes = ctx.room()
+                    .getArrayVariableManager()
+                    .mutateBatch(
+                            definition,
+                            prepared.stream()
+                                    .map(mutation -> new RoomArrayVariableManager.StructuralMutation(
+                                            mutation.owner().id(),
+                                            structuralOperation,
+                                            mutation.first(),
+                                            mutation.second(),
+                                            mutation.values()))
+                                    .toList());
+        }
+        boolean changed = false;
+        for (int position = 0; position < prepared.size(); position++) {
+            PreparedMutation mutation = prepared.get(position);
+            RoomArrayVariableManager.MutationOutcome outcome = outcomes.get(position);
             if (outcome.changed()) {
                 changed = true;
-                int oldLength = before == null ? 0 : before.getLengthForCondition();
-                int newLength =
-                        outcome.value() == null ? oldLength : outcome.value().getLengthForCondition();
+                int newLength = outcome.value() == null
+                        ? mutation.oldLength()
+                        : outcome.value().getLengthForCondition();
                 WiredArrayRuntimeSupport.dispatchChange(
                         ctx,
                         definition,
-                        owner,
-                        WiredArrayChange.structural(structuralOperation, first, second, oldLength, newLength));
+                        mutation.owner(),
+                        WiredArrayChange.structural(
+                                structuralOperation,
+                                mutation.first(),
+                                mutation.second(),
+                                mutation.oldLength(),
+                                newLength));
             } else if (outcome.result() != WiredArrayMutationResult.NO_CHANGE) {
                 this.logFailure(ctx, outcome.result());
             }
@@ -305,7 +349,11 @@ public final class WiredEffectModifyArray extends InteractionWiredEffect impleme
             return;
         }
         if (!WiredArrayEditorSupport.isValidScalarReference(
-                normalized.variableType, normalized.variableItemId, normalized.capturePath, room)) {
+                normalized.variableType,
+                normalized.variableItemId,
+                normalized.capturePath,
+                normalized.variableToken,
+                room)) {
             throw new WiredSaveException("Choose a scalar variable with a value");
         }
     }
@@ -351,6 +399,9 @@ public final class WiredEffectModifyArray extends InteractionWiredEffect impleme
             throw new WiredSaveException("Invalid Modify Array data");
         }
     }
+
+    private record PreparedMutation(
+            WiredArrayRuntimeSupport.Owner owner, int oldLength, int first, int second, Map<Integer, Long> values) {}
 
     private void logFailure(WiredContext ctx, WiredArrayMutationResult result) {
         ctx.debug("Modify Array %s failed: %s", this.getId(), result.name());

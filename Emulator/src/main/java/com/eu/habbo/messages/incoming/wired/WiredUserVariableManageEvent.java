@@ -130,9 +130,11 @@ public class WiredUserVariableManageEvent extends MessageHandler {
             ownerId = habbo.getHabboInfo().getId();
         }
 
+        var outcome =
+                action == ACTION_REMOVE ? null : room.getArrayVariableManager().give(definition, ownerId, true);
         boolean changed = action == ACTION_REMOVE
                 ? room.getArrayVariableManager().remove(definition, ownerId)
-                : room.getArrayVariableManager().give(definition, ownerId, true).changed();
+                : outcome.changed();
         if (!changed) return true;
 
         WiredEvent.Builder event = WiredEvent.builder(WiredEvent.Type.VARIABLE_CHANGED, room)
@@ -141,7 +143,15 @@ public class WiredUserVariableManageEvent extends MessageHandler {
                 .variableTargetType(targetType)
                 .variableDefinitionItemId(definition.getId());
         if (action == ACTION_REMOVE) event.variableDeleted(true);
-        else event.arrayChange(WiredArrayChange.created()).variableCreated(true);
+        else if (outcome.previousValue() == null)
+            event.arrayChange(WiredArrayChange.created()).variableCreated(true);
+        else
+            event.arrayChange(WiredArrayChange.structural(
+                    com.eu.habbo.habbohotel.wired.arrays.WiredArrayStructuralOperation.CLEAR,
+                    0,
+                    0,
+                    outcome.previousValue().getLengthForCondition(),
+                    0));
         WiredManager.handleEvent(event.build());
         return true;
     }

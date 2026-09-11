@@ -3,15 +3,31 @@ package com.eu.habbo.habbohotel.wired.arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 public final class WiredArrayEntry {
+    private static final AtomicLong NEXT_RUNTIME_ID = new AtomicLong(1);
+    private final long runtimeId;
     private final Map<Integer, Long> valuesByFieldId;
 
-    private WiredArrayEntry(Map<Integer, Long> valuesByFieldId) {
+    private WiredArrayEntry(long runtimeId, Map<Integer, Long> valuesByFieldId) {
+        this.runtimeId = runtimeId;
         this.valuesByFieldId = Collections.unmodifiableMap(valuesByFieldId);
     }
 
     public static WiredArrayEntry fromValues(WiredArrayDefinition definition, Map<Integer, Long> values) {
+        return create(definition, values, NEXT_RUNTIME_ID.getAndIncrement());
+    }
+
+    public WiredArrayEntry withValues(WiredArrayDefinition definition, Map<Integer, Long> values) {
+        return create(definition, values, this.runtimeId);
+    }
+
+    public long getRuntimeId() {
+        return this.runtimeId;
+    }
+
+    private static WiredArrayEntry create(WiredArrayDefinition definition, Map<Integer, Long> values, long runtimeId) {
         if (definition == null) {
             throw new IllegalArgumentException("Array definition is required.");
         }
@@ -28,7 +44,7 @@ public final class WiredArrayEntry {
                 }
             }
         }
-        return new WiredArrayEntry(normalized);
+        return new WiredArrayEntry(runtimeId, normalized);
     }
 
     public long getValue(int fieldId) {

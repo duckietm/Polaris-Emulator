@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.wired;
 
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.wired.WiredVariableChangeOrigin;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.wired.WiredFurniRuntimeStateComposer;
 
@@ -31,7 +32,12 @@ public class WiredFurniRuntimeStateRequestEvent extends MessageHandler {
         if (action == WiredFurniRuntimeStatePolicy.ACTION_READ) {
             result = WiredFurniRuntimeStatePolicy.read(room, item, key);
         } else if (action == WiredFurniRuntimeStatePolicy.ACTION_WRITE && room.canModifyWired(this.client.getHabbo())) {
-            result = WiredFurniRuntimeStatePolicy.write(room, item, key, requestedValue);
+            int previousOrigin = WiredVariableChangeOrigin.enter(WiredVariableChangeOrigin.CREATOR_TOOLS);
+            try {
+                result = WiredFurniRuntimeStatePolicy.write(room, item, key, requestedValue);
+            } finally {
+                WiredVariableChangeOrigin.exit(previousOrigin);
+            }
         } else {
             result = WiredFurniRuntimeStatePolicy.read(room, item, key);
             result = new WiredFurniRuntimeStatePolicy.Result(result.value(), result.supported(), false);

@@ -19,6 +19,7 @@ final class WiredInternalVariableRegistry {
         FURNI_REFERENCE,
         FURNI_DESTINATION,
         ROOM_REFERENCE,
+        ROOM_DESTINATION,
         CONTEXT_REFERENCE
     }
 
@@ -78,6 +79,7 @@ final class WiredInternalVariableRegistry {
                 "@is_frozen",
                 "@effect_id",
                 "@team_score",
+                "@player_score",
                 "@team_color",
                 "@team_type",
                 "@sign",
@@ -95,7 +97,16 @@ final class WiredInternalVariableRegistry {
                 "@bot_id",
                 "@pet_id",
                 "@pet_owner_id");
-        builder.register(Capability.USER_DESTINATION, "@position_x", "@position_y", "@direction");
+        builder.register(
+                Capability.USER_DESTINATION,
+                "@position_x",
+                "@position_y",
+                "@direction",
+                "@altitude",
+                "@handitem_id",
+                "@effect_id",
+                "@team_score",
+                "@player_score");
         builder.register(
                 Capability.FURNI_REFERENCE,
                 "~teleport.target_id",
@@ -152,6 +163,12 @@ final class WiredInternalVariableRegistry {
                 "@current_time.month_of_year",
                 "@current_time.year");
         builder.register(
+                Capability.ROOM_DESTINATION,
+                "@team_red_score",
+                "@team_green_score",
+                "@team_blue_score",
+                "@team_yellow_score");
+        builder.register(
                 Capability.CONTEXT_REFERENCE,
                 "@selector_furni_count",
                 "@selector_user_count",
@@ -168,12 +185,26 @@ final class WiredInternalVariableRegistry {
                 "@array.old_value",
                 "@array.new_value",
                 "@array.old_length",
-                "@array.new_length");
+                "@array.new_length",
+                "@event.variable_update.box_id",
+                "@event.variable_update.change_type",
+                "@event.variable_update.old_value",
+                "@event.variable_update.new_value",
+                "@event.variable_update.difference",
+                "@event.variable_update.change_origin");
 
         builder.alias("@position.x", "@position_x");
         builder.alias("@position.y", "@position_y");
         builder.alias("@effect", "@effect_id");
         builder.alias("@handitems", "@handitem_id");
+        builder.alias("@handitem", "@handitem_id");
+        builder.alias("@team.score", "@team_score");
+        builder.alias("@player.score", "@player_score");
+        builder.alias("@team.color", "@team_color");
+        builder.alias("@team.type", "@team_type");
+        builder.alias("@event.chat.type", "@chat_type");
+        builder.alias("@event.chat.style", "@chat_style");
+        builder.alias("@event.signal.antenna_id", "@antenna_id");
         builder.alias("@is_mute", "@is_muted");
         builder.alias("@teams.red.score", "@team_red_score");
         builder.alias("@teams.green.score", "@team_green_score");

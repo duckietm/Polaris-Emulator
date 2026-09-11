@@ -18,6 +18,7 @@ import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
+import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredTriggerSaveException;
@@ -33,6 +34,7 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
     public static final int TARGET_ROOM = 3;
 
     private static final String CUSTOM_TOKEN_PREFIX = "custom:";
+    private static final String INTERNAL_TOKEN_PREFIX = "internal:";
     private static final int ARRAY_CREATED = 1;
     private static final int ARRAY_CHANGED = 1 << 1;
     private static final int ARRAY_APPENDED = 1 << 2;
@@ -87,7 +89,16 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
             return false;
         }
 
-        if (event.getVariableTargetType() != this.targetType
+        if (event.getVariableTargetType() != this.targetType) {
+            return false;
+        }
+
+        if (this.variableToken.startsWith(INTERNAL_TOKEN_PREFIX)) {
+            if (!this.variableToken.substring(INTERNAL_TOKEN_PREFIX.length()).equals(event.getInternalVariableKey())) {
+                return false;
+            }
+        } else if (this.variableItemId <= 0
+                || !event.getInternalVariableKey().isEmpty()
                 || event.getVariableDefinitionItemId() != this.variableItemId) {
             return false;
         }
@@ -185,7 +196,7 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
         this.arrayFieldId = Math.max(0, arrayData.fieldId);
         this.normalizeOptions();
 
-        if (this.variableItemId <= 0) {
+        if (this.variableToken.isEmpty()) {
             throw new WiredTriggerSaveException("wiredfurni.params.variables.validation.missing_variable");
         }
 
@@ -293,7 +304,7 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
             this.unchangedEnabled = false;
         }
 
-        if (this.targetType == TARGET_ROOM) {
+        if (this.targetType == TARGET_ROOM || this.variableToken.startsWith(INTERNAL_TOKEN_PREFIX)) {
             this.createdEnabled = false;
             this.deletedEnabled = false;
         }
@@ -307,6 +318,17 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
     }
 
     private boolean isValidDefinition(Room room) {
+        if (this.variableToken.startsWith(INTERNAL_TOKEN_PREFIX)) {
+            String key = this.variableToken.substring(INTERNAL_TOKEN_PREFIX.length());
+            return switch (this.targetType) {
+                case TARGET_FURNI -> WiredInternalVariableSupport.canUseFurniDestination(key);
+                case TARGET_ROOM -> WiredInternalVariableSupport.canUseRoomDestination(key);
+                case TARGET_USER ->
+                    WiredInternalVariableSupport.canUseUserDestination(key) || "@has_rights".equals(key);
+                default -> false;
+            };
+        }
+
         WiredVariableDefinitionInfo definitionInfo =
                 switch (this.targetType) {
                     case TARGET_FURNI -> room.getFurniVariableManager().getDefinitionInfo(this.variableItemId);
@@ -388,6 +410,12 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
 
         if (normalized.startsWith(CUSTOM_TOKEN_PREFIX)) {
             return normalized;
+        }
+
+        if (normalized.startsWith(INTERNAL_TOKEN_PREFIX)) {
+            String key =
+                    WiredInternalVariableSupport.normalizeKey(normalized.substring(INTERNAL_TOKEN_PREFIX.length()));
+            return key.isEmpty() ? "" : INTERNAL_TOKEN_PREFIX + key;
         }
 
         try {

@@ -243,9 +243,27 @@ Array rules:
 - user, furni, room, and context definition boxes can define a scalar, simple array, or record array
 - arrays use `list` or sparse `slots` indexing and support up to eight stable-ID record fields
 - permanent arrays use optimistic versioning and delta persistence; context arrays remain execution-scoped
-- captured entries expose read-only `alias.field` context values plus `@array.alias.found` and
-  `@array.alias.index` metadata throughout ordinary variable reference pickers
+- captured entries expose live `alias.field` context values that Change Variable Value can write;
+  they follow the same entry through insert, move, swap, and shuffle, and become unavailable after
+  removal or replacement. Metadata includes `@array.alias.found`, `@array.alias.index`, and `alias.index`
+- built-in values can be watched by Variable Changed, including change origin and exact old/new metadata;
+  Give supports effects, hand items, and room rights, and Remove can revoke room rights
+- `@player.score` is an individual player score; the existing `@team.score` remains the team total
+- array operands and indexes accept built-in variables as well as custom scalar variables;
+  field operands remain signed 64-bit, while writes into scalar variables reject values outside signed 32-bit range
 - the configured entry, populated-cell, and owner limits are enforced on both save and execution paths
+- temporary user arrays are removed when the user leaves; permanent arrays survive and reload from storage
+- shared references stop reading a source that is removed, unshared, or given a different schema
+- each owner can hold at most 128 array assignments and 16,384 total stored field cells in a room;
+  a room can hold at most 4,096 assignments and 262,144 cells, including empty assignments in the count
+- permanent array caches are also bounded by assignment count and cell weight; evicted values reload
+  from storage, while temporary values remain until their normal cleanup
+- one Modify Array action batches its successful permanent owner updates into a single transaction;
+  each owner still uses its own evaluated operands
+
+Clear existing entries before shrinking an array, removing fields, changing its shape, or changing
+persistence. Adding fields is rejected if any cached or stored owner would exceed the per-array cell
+limit, and rejected schema saves leave the existing definition and values intact.
 
 ### 2.12 Useful global config keys
 
@@ -1411,8 +1429,11 @@ Common patterns:
 - **Class:** `WiredExtraArrayCaptureVariable`
 - **Behavior:** captures an entry by index or by first/last/random criteria match for the current execution.
 - **Main settings:** array definition, owner source, context alias variable, capture mode, direction, and criteria.
-- **Notes:** publishes read-only field projections as `alias.field`; metadata is available through
-  `@array.alias.found` and `@array.alias.index`. Duplicate aliases in one stack are rejected.
+- **Notes:** publishes live field projections as `alias.field`, writable through Change Variable Value
+  when the source array allows writes. The capture follows the entry identity, including in copied
+  contexts and shared-room references; replacing or deleting that entry invalidates field access.
+  `@array.alias.found` records whether capture succeeded; `@array.alias.index` follows the entry and
+  retains the captured index once removed. Duplicate aliases in one stack are rejected.
 
 ---
 

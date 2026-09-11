@@ -8,6 +8,7 @@ public final class WiredArrayAddress {
     public long value;
     public int variableType = WiredArrayVariableType.ROOM.code();
     public int variableItemId;
+    public String variableToken = "";
     public int variableSource;
     public String capturePath = "";
     public int fieldId = WiredArrayDefinition.SIMPLE_VALUE_FIELD_ID;

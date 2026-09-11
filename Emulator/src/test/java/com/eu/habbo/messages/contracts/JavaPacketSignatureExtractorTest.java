@@ -38,6 +38,26 @@ class JavaPacketSignatureExtractorTest {
     }
 
     @Test
+    void extractsOnlyAGuardedTrailingIncomingScalarAsOptional() throws Exception {
+        ExtractionResult result =
+                extractor.extract(fixture("OptionalIncomingFixture.java"), JavaPacketSide.INCOMING, "handle");
+        assertFalse(result.unsupportedReason().isPresent());
+        assertEquals(
+                List.of(
+                        new ScalarSchema("int", "id"),
+                        new OptionalSchema("token", List.of(new ScalarSchema("string", "token")))),
+                result.fields());
+        assertTrue(extractor
+                .extract(fixture("OptionalIncomingFixture.java"), JavaPacketSide.INCOMING, "nonTrailing")
+                .unsupportedReason()
+                .isPresent());
+        assertTrue(extractor
+                .extract(fixture("OptionalIncomingFixture.java"), JavaPacketSide.INCOMING, "conditional")
+                .unsupportedReason()
+                .isPresent());
+    }
+
+    @Test
     void extractsIncomingReadsAndExpandsLocalHelpersInCallOrder() throws Exception {
         ExtractionResult result = extractor.extract(fixture("IncomingFixture.java"), JavaPacketSide.INCOMING, "handle");
 

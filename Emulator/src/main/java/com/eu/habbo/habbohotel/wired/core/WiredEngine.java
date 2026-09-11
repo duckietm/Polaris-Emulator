@@ -1188,6 +1188,11 @@ public final class WiredEngine {
         debug(room, "RECURSION LIMIT REACHED - aborting to prevent crash");
     }
 
+    boolean tryConsumeArrayWork(Room room, int cost, int sourceId) {
+        return getDiagnostics(room.getId())
+                .tryConsumeExecutionBudget(cost, System.currentTimeMillis(), "array", sourceId, "array work budget");
+    }
+
     private WiredRoomDiagnostics getDiagnostics(int roomId) {
         return this.executionGuard.diagnostics(roomId);
     }

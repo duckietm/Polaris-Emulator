@@ -778,7 +778,12 @@ public class RoomVariableManager {
             return;
         }
 
-        WiredManager.triggerRoomVariableChanged(this.room, definitionItemId, changeKind);
+        WiredManager.triggerRoomVariableChanged(
+                this.room,
+                definitionItemId,
+                changeKind,
+                previousValue == null ? 0L : previousValue,
+                currentValue == null ? 0L : currentValue);
     }
 
     private static WiredEvent.VariableChangeKind resolveVariableChangeKind(

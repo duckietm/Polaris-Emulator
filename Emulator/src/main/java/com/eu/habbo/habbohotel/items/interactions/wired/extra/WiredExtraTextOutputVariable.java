@@ -135,7 +135,7 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
         this.arrayAddress = nextArrayData.address;
         this.arrayAddressConfigured = arrayDefinition != null;
 
-        if (!canUseTextualDisplay(room, this.targetType, this.variableToken)) {
+        if (!canUseTextualDisplay(room, this.targetType, this.variableToken, this.arrayAddress.fieldId)) {
             this.displayType = DISPLAY_NUMERIC;
         }
 
@@ -235,7 +235,9 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
                     }
                 }
 
-                if (room == null || !canUseTextualDisplay(room, this.targetType, this.variableToken)) {
+                if (room == null
+                        || !canUseTextualDisplay(
+                                room, this.targetType, this.variableToken, this.arrayAddress.fieldId)) {
                     this.displayType = DISPLAY_NUMERIC;
                 }
             }
@@ -287,7 +289,8 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
     }
 
     public int getDisplayType(Room room) {
-        return (this.displayType == DISPLAY_TEXTUAL && canUseTextualDisplay(room, this.targetType, this.variableToken))
+        return (this.displayType == DISPLAY_TEXTUAL
+                        && canUseTextualDisplay(room, this.targetType, this.variableToken, this.arrayAddress.fieldId))
                 ? DISPLAY_TEXTUAL
                 : DISPLAY_NUMERIC;
     }
@@ -476,7 +479,7 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
         this.variableItemId = getCustomItemId(this.variableToken);
     }
 
-    private static boolean canUseTextualDisplay(Room room, int targetType, String variableToken) {
+    private static boolean canUseTextualDisplay(Room room, int targetType, String variableToken, int fieldId) {
         if (room == null || !isCustomVariableToken(variableToken)) {
             return false;
         }
@@ -484,6 +487,14 @@ public class WiredExtraTextOutputVariable extends InteractionWiredExtra {
         int itemId = getCustomItemId(variableToken);
         if (itemId <= 0) {
             return false;
+        }
+
+        var extra = room.getRoomSpecialTypes().getExtra(itemId);
+        if (extra instanceof WiredArrayVariableDefinition array && array.isArray()) {
+            return array.getArrayDefinition().getField(fieldId) != null
+                    && com.eu.habbo.habbohotel.wired.core.WiredVariableTextConnectorSupport.getConnector(
+                                    room, itemId, fieldId)
+                            != null;
         }
 
         return switch (targetType) {

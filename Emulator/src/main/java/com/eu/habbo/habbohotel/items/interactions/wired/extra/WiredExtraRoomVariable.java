@@ -71,21 +71,27 @@ public class WiredExtraRoomVariable extends InteractionWiredExtra
         try {
             nextArrayDefinition =
                     WiredArrayDefinitionSupport.parseArrayDefinition(definitionData, this.array.definition());
-            room.getArrayVariableManager()
-                    .validateDefinitionChange(
-                            this,
-                            nextArrayDefinition,
-                            nextAvailability == AVAILABILITY_PERMANENT || nextAvailability == AVAILABILITY_SHARED);
+
         } catch (IllegalArgumentException exception) {
             throw new WiredSaveException(exception.getMessage());
         }
 
-        this.variableName = normalizedName;
-        this.array.assign(nextArrayDefinition);
-        this.availability = nextAvailability;
+        try {
+            room.getArrayVariableManager()
+                    .updateDefinition(
+                            this,
+                            nextArrayDefinition,
+                            nextAvailability == AVAILABILITY_PERMANENT || nextAvailability == AVAILABILITY_SHARED,
+                            () -> {
+                                this.variableName = normalizedName;
+                                this.array.assign(nextArrayDefinition);
+                                this.availability = nextAvailability;
 
-        room.getRoomVariableManager().handleDefinitionUpdated(this);
-        room.getArrayVariableManager().handleDefinitionUpdated(this);
+                                room.getRoomVariableManager().handleDefinitionUpdated(this);
+                            });
+        } catch (IllegalArgumentException exception) {
+            throw new WiredSaveException(exception.getMessage());
+        }
         return true;
     }
 

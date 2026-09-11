@@ -8,6 +8,7 @@ public final class WiredArrayReference {
     public String value = "0";
     public int variableType = WiredArrayVariableType.ROOM.code();
     public int variableItemId;
+    public String variableToken = "";
     public int variableSource;
     public String capturePath = "";
     public WiredArrayAddress address = new WiredArrayAddress();

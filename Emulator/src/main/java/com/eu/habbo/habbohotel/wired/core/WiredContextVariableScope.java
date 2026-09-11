@@ -125,6 +125,14 @@ public final class WiredContextVariableScope {
     }
 
     public synchronized Long readArrayCapture(String path) {
+        return this.readArrayCapture(path, null);
+    }
+
+    public synchronized WiredArrayCaptureSnapshot getArrayCapture(String alias) {
+        return alias == null ? null : this.arrayCaptures.get(alias.toLowerCase(Locale.ROOT));
+    }
+
+    public synchronized Long readArrayCapture(String path, WiredContext ctx) {
         if (!WiredArrayRuntimeSupport.isValidCaptureProjectionPath(path)) {
             return null;
         }
@@ -133,8 +141,21 @@ public final class WiredContextVariableScope {
         String[] parts = normalized.split("\\.", 2);
         if (parts.length != 2 || parts[0].isBlank() || parts[1].isBlank()) return null;
         WiredArrayCaptureSnapshot capture = this.arrayCaptures.get(parts[0].toLowerCase(Locale.ROOT));
-        return capture == null ? null : capture.read(parts[1]);
+        return capture == null ? null : capture.read(parts[1], ctx);
     }
+
+    public synchronized CapturedFieldMutation mutateCapturedField(
+            int definitionItemId, long runtimeId, int fieldId, WiredArrayNumericOperation operation, long reference) {
+        WiredArrayValue value = this.arrays.get(definitionItemId);
+        int index = value == null ? -1 : value.findEntryIndex(runtimeId);
+        if (index < 0)
+            return new CapturedFieldMutation(
+                    -1, new WiredArrayValue.FieldMutation(WiredArrayMutationResult.MISSING_ENTRY, 0, 0, false));
+        return new CapturedFieldMutation(
+                index, this.mutateArrayField(definitionItemId, index, fieldId, operation, reference));
+    }
+
+    public record CapturedFieldMutation(int index, WiredArrayValue.FieldMutation mutation) {}
 
     public synchronized boolean hasVariable(int definitionItemId) {
         return definitionItemId > 0 && this.assignments.containsKey(definitionItemId);

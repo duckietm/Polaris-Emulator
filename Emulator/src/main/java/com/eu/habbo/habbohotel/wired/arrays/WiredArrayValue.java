@@ -181,7 +181,7 @@ public final class WiredArrayValue implements WiredArrayView {
 
         Map<Integer, Long> values = new LinkedHashMap<>(entry.valuesByFieldId());
         values.put(fieldId, next);
-        this.entries.put(index, WiredArrayEntry.fromValues(this.definition, values));
+        this.entries.put(index, entry.withValues(this.definition, values));
         if (created && this.definition.getMode() == WiredArrayMode.LIST) this.logicalLength++;
         return new FieldMutation(WiredArrayMutationResult.SUCCESS, previous, next, created);
     }
@@ -207,11 +207,17 @@ public final class WiredArrayValue implements WiredArrayView {
                 || replacement.getMaxEntries() < this.definition.getMaxEntries()) {
             throw new IllegalArgumentException("Array value cannot be reshaped in place.");
         }
-        Map<Integer, Map<Integer, Long>> retained = new LinkedHashMap<>();
+        WiredArrayValue retained =
+                new WiredArrayValue(replacement, this.getLogicalLength(), this.populatedCellLimit, false);
         for (Map.Entry<Integer, WiredArrayEntry> entry : this.entries.entrySet()) {
-            retained.put(entry.getKey(), entry.getValue().valuesByFieldId());
+            Map<Integer, Long> fields = new LinkedHashMap<>();
+            for (WiredArrayFieldDefinition field : replacement.getFields()) {
+                fields.put(field.getId(), entry.getValue().valuesByFieldId().getOrDefault(field.getId(), 0L));
+            }
+            retained.entries.put(entry.getKey(), entry.getValue().withValues(replacement, fields));
         }
-        return loaded(replacement, this.getLogicalLength(), this.populatedCellLimit, retained);
+        retained.validateCellLimit(retained.entries.size());
+        return retained;
     }
 
     private WiredArrayMutationResult applyList(
@@ -283,7 +289,11 @@ public final class WiredArrayValue implements WiredArrayView {
                 for (int remaining = shuffled.size(); remaining > 1; remaining--) {
                     Collections.swap(shuffled, remaining - 1, random.nextInt(remaining));
                 }
-                if (shuffled.equals(original)) return WiredArrayMutationResult.NO_CHANGE;
+                if (java.util.stream.IntStream.range(0, original.size())
+                        .allMatch(index -> shuffled.get(index).getRuntimeId()
+                                == original.get(index).getRuntimeId())) {
+                    return WiredArrayMutationResult.NO_CHANGE;
+                }
                 for (int index = 0; index < shuffled.size(); index++) {
                     this.entries.put(index, shuffled.get(index));
                 }

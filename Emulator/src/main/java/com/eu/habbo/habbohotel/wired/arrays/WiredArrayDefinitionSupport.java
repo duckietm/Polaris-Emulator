@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.wired.arrays;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredVariableTextConnectorSupport;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -53,13 +54,15 @@ public final class WiredArrayDefinitionSupport {
             if (!(extra instanceof WiredArrayVariableDefinition definition)) continue;
             if (definition.getVariableName() == null
                     || definition.getVariableName().isBlank()) continue;
-            result.add(EditorDefinition.from(definition));
+            result.add(EditorDefinition.from(room, definition));
         }
         result.sort(Comparator.comparingInt(EditorDefinition::variableType)
                 .thenComparing(EditorDefinition::name, String.CASE_INSENSITIVE_ORDER)
                 .thenComparingInt(EditorDefinition::itemId));
         return result;
     }
+
+    public record EditorField(int id, String name, int order, boolean textConnected) {}
 
     public record EditorDefinition(
             int itemId,
@@ -69,10 +72,11 @@ public final class WiredArrayDefinitionSupport {
             String arrayFormat,
             String arrayMode,
             int maxEntries,
-            List<WiredArrayFieldDefinition> fields,
+            List<EditorField> fields,
             boolean permanent,
+            boolean writable,
             boolean hasValue) {
-        static EditorDefinition from(WiredArrayVariableDefinition definition) {
+        static EditorDefinition from(Room room, WiredArrayVariableDefinition definition) {
             WiredArrayDefinition array = definition.getArrayDefinition();
             return new EditorDefinition(
                     definition.getId(),
@@ -86,8 +90,19 @@ public final class WiredArrayDefinitionSupport {
                             ? WiredArrayMode.LIST.wireName()
                             : array.getMode().wireName(),
                     array == null ? 0 : array.getMaxEntries(),
-                    array == null ? List.of() : array.getFields(),
+                    array == null
+                            ? List.of()
+                            : array.getFields().stream()
+                                    .map(field -> new EditorField(
+                                            field.getId(),
+                                            field.getName(),
+                                            field.getOrder(),
+                                            WiredVariableTextConnectorSupport.getConnector(
+                                                            room, definition.getId(), field.getId())
+                                                    != null))
+                                    .toList(),
                     definition.isArrayPermanent(),
+                    definition.isArrayWritable(),
                     definition.hasValue());
         }
     }

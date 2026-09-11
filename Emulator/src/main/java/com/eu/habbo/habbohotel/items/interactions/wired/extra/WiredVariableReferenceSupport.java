@@ -463,6 +463,22 @@ public final class WiredVariableReferenceSupport {
             return false;
         }
 
+        Room sourceRoom = reference.loadedSourceRoom();
+        if (sourceRoom != null) {
+            var source = sourceRoom.getRoomSpecialTypes().getExtra(reference.getSourceVariableItemId());
+            if (source instanceof WiredExtraUserVariable variable && reference.isUserReference()) {
+                return variable.isSharedAvailability()
+                        && !variable.isArrayUnavailable()
+                        && sameArrayDefinition(variable.getArrayDefinition(), reference.getArrayDefinition());
+            }
+            if (source instanceof WiredExtraRoomVariable variable && reference.isRoomReference()) {
+                return variable.isSharedAvailability()
+                        && !variable.isArrayUnavailable()
+                        && sameArrayDefinition(variable.getArrayDefinition(), reference.getArrayDefinition());
+            }
+            return false;
+        }
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement =
                         connection.prepareStatement("SELECT items.wired_data, items_base.interaction_type "
@@ -500,7 +516,7 @@ public final class WiredVariableReferenceSupport {
     private static WiredArrayDefinition parseArrayDefinition(WiredVariableDefinitionData data) {
         if (data == null || !data.isArray()) return null;
         try {
-            return WiredArrayDefinitionSupport.parseArrayDefinition(data);
+            return WiredArrayDefinitionSupport.parseStoredArrayDefinition(data);
         } catch (IllegalArgumentException exception) {
             return null;
         }

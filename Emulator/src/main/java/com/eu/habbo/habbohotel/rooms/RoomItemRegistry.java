@@ -148,8 +148,8 @@ final class RoomItemRegistry {
             specialTypes.removeCondition(condition);
             wiredItem = true;
         } else if (item instanceof InteractionWiredExtra extra) {
-            boolean broadcastDefinitions = this.removeExtraDefinitions(item);
             specialTypes.removeExtra(extra);
+            boolean broadcastDefinitions = this.removeExtraDefinitions(item);
             if (broadcastDefinitions) {
                 WiredContextVariableSupport.broadcastDefinitions(this.room);
             }

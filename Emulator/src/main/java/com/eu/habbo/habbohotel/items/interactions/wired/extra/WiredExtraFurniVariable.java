@@ -72,19 +72,24 @@ public class WiredExtraFurniVariable extends InteractionWiredExtra
         try {
             nextArrayDefinition =
                     WiredArrayDefinitionSupport.parseArrayDefinition(definitionData, this.array.definition());
-            room.getArrayVariableManager()
-                    .validateDefinitionChange(this, nextArrayDefinition, nextAvailability == AVAILABILITY_PERMANENT);
+
         } catch (IllegalArgumentException exception) {
             throw new WiredSaveException(exception.getMessage());
         }
 
-        this.variableName = normalizedName;
-        this.array.assign(nextArrayDefinition);
-        this.hasValue = this.array.isArray() || ((intParams.length > 0) && (intParams[0] == 1));
-        this.availability = nextAvailability;
+        try {
+            room.getArrayVariableManager()
+                    .updateDefinition(this, nextArrayDefinition, nextAvailability == AVAILABILITY_PERMANENT, () -> {
+                        this.variableName = normalizedName;
+                        this.array.assign(nextArrayDefinition);
+                        this.hasValue = this.array.isArray() || ((intParams.length > 0) && (intParams[0] == 1));
+                        this.availability = nextAvailability;
 
-        room.getFurniVariableManager().handleDefinitionUpdated(this);
-        room.getArrayVariableManager().handleDefinitionUpdated(this);
+                        room.getFurniVariableManager().handleDefinitionUpdated(this);
+                    });
+        } catch (IllegalArgumentException exception) {
+            throw new WiredSaveException(exception.getMessage());
+        }
         return true;
     }
 

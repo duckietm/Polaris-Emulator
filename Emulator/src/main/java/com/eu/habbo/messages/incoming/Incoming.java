@@ -407,6 +407,7 @@ public class Incoming {
     public static final int GameCenterRequestAccountStatusEvent = 3171;
     public static final int GameCenterRequestGameStatusEvent = 11;
     public static final int CameraPublishToWebEvent = 2068;
+    public static final int PhotoCompetitionEvent = 3959;
 
     public static final int GameCenterJoinGameEvent = 1458;
     public static final int GameCenterLoadGameEvent = 1054;

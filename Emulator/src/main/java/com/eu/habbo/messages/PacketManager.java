@@ -13,6 +13,7 @@ import com.eu.habbo.messages.incoming.camera.CameraPublishToWebEvent;
 import com.eu.habbo.messages.incoming.camera.CameraPurchaseEvent;
 import com.eu.habbo.messages.incoming.camera.CameraRoomPictureEvent;
 import com.eu.habbo.messages.incoming.camera.CameraRoomThumbnailEvent;
+import com.eu.habbo.messages.incoming.camera.PhotoCompetitionEvent;
 import com.eu.habbo.messages.incoming.camera.RequestCameraConfigurationEvent;
 import com.eu.habbo.messages.incoming.catalog.BuildersClubPlaceRoomItemEvent;
 import com.eu.habbo.messages.incoming.catalog.BuildersClubPlaceWallItemEvent;
@@ -1382,6 +1383,7 @@ public class PacketManager {
         this.registerHandler(Incoming.CameraPurchaseEvent, CameraPurchaseEvent.class);
         this.registerHandler(Incoming.CameraRoomThumbnailEvent, CameraRoomThumbnailEvent.class);
         this.registerHandler(Incoming.CameraPublishToWebEvent, CameraPublishToWebEvent.class);
+        this.registerHandler(Incoming.PhotoCompetitionEvent, PhotoCompetitionEvent.class);
     }
 
     void registerSnowWar() throws Exception {

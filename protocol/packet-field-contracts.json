@@ -20188,6 +20188,22 @@
           "name": "requestCode"
         }
       ]
+    },
+    {
+      "name": "PHOTO_COMPETITION",
+      "direction": "client_to_server",
+      "header": 3959,
+      "java": {
+        "symbol": "PhotoCompetitionEvent",
+        "className": "PhotoCompetitionEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/camera/PhotoCompetitionEvent.java"
+      },
+      "typescript": {
+        "symbol": "PHOTO_COMPETITION",
+        "className": "PhotoCompetitionMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/camera/PhotoCompetitionMessageComposer.ts"
+      },
+      "fields": []
     }
   ],
   "unpaired": [
@@ -20837,14 +20853,6 @@
       "header": 3900,
       "symbol": "GET_FORUM_THREAD",
       "path": "packages/communication/src/messages/outgoing/groupforums/GetThreadMessageComposer.ts",
-      "reason": "Header is registered only by the Octane Renderer packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "typescript",
-      "header": 3959,
-      "symbol": "PHOTO_COMPETITION",
-      "path": "packages/communication/src/messages/outgoing/camera/PhotoCompetitionMessageComposer.ts",
       "reason": "Header is registered only by the Octane Renderer packet registry"
     },
     {

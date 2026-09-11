@@ -13,6 +13,7 @@
     "calendar_campaigns": ["enabled", "id", "image", "lock_expired", "name", "start_timestamp", "total_days"],
     "calendar_rewards": ["badge", "campaign_id", "credits", "custom_image", "id", "item_id", "pixels", "points", "points_type", "product_name", "subscription_days", "subscription_type"],
     "calendar_rewards_claimed": ["campaign_id", "day", "reward_id", "timestamp", "user_id"],
+    "camera_competition_entries": ["id", "room_id", "submitted_at", "url", "user_id"],
     "camera_web": ["id", "room_id", "timestamp", "url", "user_id"],
     "catalog_clothing": ["id", "name", "setid"],
     "catalog_club_offers": ["credits", "days", "deal", "enabled", "giftable", "id", "name", "points", "points_type", "type"],

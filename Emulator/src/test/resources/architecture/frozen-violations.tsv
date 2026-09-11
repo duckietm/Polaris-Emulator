@@ -99,6 +99,9 @@ U|com/eu/habbo/habbohotel/bots/VisitorBot.java|CALL|getConfig|1
 U|com/eu/habbo/habbohotel/bots/VisitorBot.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/bots/VisitorBot.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/habbohotel/bots/VisitorBot.java|CALL|getTexts|6
+U|com/eu/habbo/habbohotel/camera/CameraCompetitionManager.java|CALL|getConfig|1
+U|com/eu/habbo/habbohotel/camera/CameraCompetitionManager.java|CALL|getDatabase|2
+U|com/eu/habbo/habbohotel/camera/CameraCompetitionManager.java|CALL|getIntUnixTimestamp|2
 U|com/eu/habbo/habbohotel/campaign/calendar/CalendarManager.java|CALL|getConfig|1
 U|com/eu/habbo/habbohotel/campaign/calendar/CalendarManager.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/campaign/calendar/CalendarManager.java|CALL|getIntUnixTimestamp|1

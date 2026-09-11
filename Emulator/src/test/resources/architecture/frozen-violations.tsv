@@ -67,7 +67,7 @@ U|com/eu/habbo/database/compat/LegacySqlBridge.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/database/compat/LegacyTableRenameTranslator.java|CALL|getConfig|1
 U|com/eu/habbo/gui/EmulatorDashboard.java|FIELD|version|1
 U|com/eu/habbo/habbohotel/GameEnvironment.java|CALL|getThreading|5
-U|com/eu/habbo/habbohotel/MaintenanceMode.java|CALL|getConfig|4
+U|com/eu/habbo/habbohotel/MaintenanceMode.java|CALL|getConfig|7
 U|com/eu/habbo/habbohotel/achievements/AchievementManager.java|CALL|getDatabase|5
 U|com/eu/habbo/habbohotel/achievements/AchievementManager.java|CALL|getGameEnvironment|5
 U|com/eu/habbo/habbohotel/achievements/AchievementManager.java|CALL|getPluginManager|4
@@ -237,7 +237,8 @@ U|com/eu/habbo/habbohotel/commands/ListPrefixesCommand.java|CALL|getGameEnvironm
 U|com/eu/habbo/habbohotel/commands/ListPrefixesCommand.java|CALL|getTexts|5
 U|com/eu/habbo/habbohotel/commands/MachineBanCommand.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/habbohotel/commands/MachineBanCommand.java|CALL|getTexts|5
-U|com/eu/habbo/habbohotel/commands/MaintenanceCommand.java|CALL|getTexts|6
+U|com/eu/habbo/habbohotel/commands/MaintenanceCommand.java|CALL|getGameServer|2
+U|com/eu/habbo/habbohotel/commands/MaintenanceCommand.java|CALL|getTexts|9
 U|com/eu/habbo/habbohotel/commands/MassBadgeCommand.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/commands/MassBadgeCommand.java|CALL|getTexts|3
 U|com/eu/habbo/habbohotel/commands/MassCreditsCommand.java|CALL|getGameEnvironment|1

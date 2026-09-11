@@ -27,6 +27,7 @@ import com.eu.habbo.messages.outgoing.commands.AvailableCommandsComposer;
 import com.eu.habbo.messages.outgoing.gamecenter.GameCenterAccountInfoComposer;
 import com.eu.habbo.messages.outgoing.gamecenter.GameCenterGameListComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.GenericAlertComposer;
+import com.eu.habbo.messages.outgoing.generic.alerts.HotelClosedAndOpensComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.MessagesForYouComposer;
 import com.eu.habbo.messages.outgoing.habboway.nux.NewUserExperienceNotCompleteComposer;
 import com.eu.habbo.messages.outgoing.habboway.nux.NewUserIdentityComposer;
@@ -197,6 +198,7 @@ public class SecureLoginEvent extends MessageHandler {
                             "[Maintenance] Rejected resumed session for user id={} (rank below hotel.maintenance.min_rank)",
                             habbo.getHabboInfo().getId());
                     this.client.sendResponse(new GenericAlertComposer(MaintenanceMode.getMessage()));
+                    sendReopenNotice(this.client);
                     Emulator.getGameServer().getGameClientManager().forceDisposeClient(this.client);
                     return;
                 }
@@ -254,6 +256,7 @@ public class SecureLoginEvent extends MessageHandler {
                                     "[Maintenance] Rejected login for user id={} (rank below hotel.maintenance.min_rank)",
                                     this.client.getHabbo().getHabboInfo().getId());
                             this.client.sendResponse(new GenericAlertComposer(MaintenanceMode.getMessage()));
+                            sendReopenNotice(this.client);
                             Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
                             return;
                         }
@@ -554,5 +557,16 @@ public class SecureLoginEvent extends MessageHandler {
         } else {
             Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
         }
+    }
+
+    /**
+     * Turned away by maintenance. The message says why; this says when to come back, and the client
+     * has a window for exactly that. Without a time configured there is nothing honest to add.
+     */
+    private static void sendReopenNotice(com.eu.habbo.habbohotel.gameclients.GameClient client) {
+        if (!MaintenanceMode.hasReopenTime()) return;
+
+        client.sendResponse(
+                new HotelClosedAndOpensComposer(MaintenanceMode.getReopenHour(), MaintenanceMode.getReopenMinute()));
     }
 }

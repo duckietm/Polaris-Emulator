@@ -18,6 +18,10 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.rooms.RoomUnitType;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayRuntimeSupport;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableDefinition;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayVariableType;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayView;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -300,6 +304,8 @@ public final class WiredTextPlaceholderUtil {
     }
 
     private static String buildVariableReplacement(WiredContext ctx, WiredExtraTextOutputVariable extra) {
+        WiredArrayVariableDefinition arrayDefinition = extra.getArrayDefinition(ctx.room());
+        if (arrayDefinition != null) return buildArrayReplacement(ctx, extra, arrayDefinition);
         List<String> values =
                 switch (extra.getTargetType()) {
                     case WiredExtraTextOutputVariable.TARGET_FURNI -> collectFurniVariableValues(ctx, extra);
@@ -317,6 +323,31 @@ public final class WiredTextPlaceholderUtil {
         }
 
         return values.get(0);
+    }
+
+    private static String buildArrayReplacement(
+            WiredContext ctx, WiredExtraTextOutputVariable extra, WiredArrayVariableDefinition definition) {
+        int source = definition.getArrayVariableType() == WiredArrayVariableType.FURNI
+                ? extra.getFurniSource()
+                : extra.getUserSource();
+        List<WiredArrayRuntimeSupport.Owner> owners =
+                WiredArrayRuntimeSupport.resolveOwners(ctx, extra.getItems(), definition, source);
+        List<String> values = new ArrayList<>();
+        for (WiredArrayRuntimeSupport.Owner owner : owners) {
+            Integer index = WiredArrayRuntimeSupport.resolveIndex(
+                    ctx, extra.getItems(), extra.getArrayAddress(), definition, owner);
+            WiredArrayView value = WiredArrayRuntimeSupport.getValue(ctx, definition, owner);
+            Long fieldValue =
+                    index == null || value == null ? null : value.readField(index, extra.getArrayAddress().fieldId);
+            if (fieldValue != null) {
+                values.add(WiredVariableTextConnectorSupport.toArrayText(
+                        ctx.room(), definition.getId(), extra.getArrayAddress().fieldId, fieldValue));
+            }
+        }
+        if (values.isEmpty()) return "";
+        return extra.getPlaceholderType() == WiredExtraTextOutputVariable.TYPE_MULTIPLE
+                ? String.join(extra.getDelimiter(), values)
+                : values.get(0);
     }
 
     private static List<String> collectUserVariableValues(WiredContext ctx, WiredExtraTextOutputVariable extra) {
@@ -470,7 +501,7 @@ public final class WiredTextPlaceholderUtil {
         }
 
         if (WiredExtraTextOutputVariable.isInternalVariableToken(extra.getVariableToken())) {
-            Integer value = WiredInternalVariableSupport.readContextValue(
+            Long value = WiredInternalVariableSupport.readContextLongValue(
                     ctx, WiredExtraTextOutputVariable.getInternalVariableKey(extra.getVariableToken()));
             return value != null ? String.valueOf(value) : null;
         }

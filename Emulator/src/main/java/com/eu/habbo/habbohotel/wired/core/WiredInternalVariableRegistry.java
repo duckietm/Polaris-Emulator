@@ -159,7 +159,16 @@ final class WiredInternalVariableRegistry {
                 "@signal_user_count",
                 "@antenna_id",
                 "@chat_type",
-                "@chat_style");
+                "@chat_style",
+                "@array.change_type",
+                "@array.index",
+                "@array.source_index",
+                "@array.destination_index",
+                "@array.field_index",
+                "@array.old_value",
+                "@array.new_value",
+                "@array.old_length",
+                "@array.new_length");
 
         builder.alias("@position.x", "@position_x");
         builder.alias("@position.y", "@position_y");

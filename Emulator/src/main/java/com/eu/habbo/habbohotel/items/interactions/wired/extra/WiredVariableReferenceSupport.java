@@ -2,6 +2,10 @@ package com.eu.habbo.habbohotel.items.interactions.wired.extra;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinition;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayDefinitionSupport;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayFieldDefinition;
+import com.eu.habbo.habbohotel.wired.arrays.WiredVariableDefinitionData;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -399,7 +403,16 @@ public final class WiredVariableReferenceSupport {
                 return null;
             }
 
-            return new SharedDefinitionOption(roomId, roomName, itemId, data.variableName, TARGET_USER, data.hasValue);
+            WiredArrayDefinition arrayDefinition = parseArrayDefinition(data.definition);
+            if (data.definition != null && data.definition.isArray() && arrayDefinition == null) return null;
+            return new SharedDefinitionOption(
+                    roomId,
+                    roomName,
+                    itemId,
+                    data.variableName,
+                    TARGET_USER,
+                    data.hasValue || arrayDefinition != null,
+                    arrayDefinition);
         }
 
         if ("wf_var_room".equals(interactionType)) {
@@ -408,7 +421,10 @@ public final class WiredVariableReferenceSupport {
                 return null;
             }
 
-            return new SharedDefinitionOption(roomId, roomName, itemId, data.variableName, TARGET_ROOM, true);
+            WiredArrayDefinition arrayDefinition = parseArrayDefinition(data.definition);
+            if (data.definition != null && data.definition.isArray() && arrayDefinition == null) return null;
+            return new SharedDefinitionOption(
+                    roomId, roomName, itemId, data.variableName, TARGET_ROOM, true, arrayDefinition);
         }
 
         return null;
@@ -442,7 +458,7 @@ public final class WiredVariableReferenceSupport {
         return data;
     }
 
-    private static boolean isSharedSourceStillAvailable(WiredExtraVariableReference reference) {
+    public static boolean isSharedSourceStillAvailable(WiredExtraVariableReference reference) {
         if (reference == null || reference.getSourceRoomId() <= 0 || reference.getSourceVariableItemId() <= 0) {
             return false;
         }
@@ -467,7 +483,9 @@ public final class WiredVariableReferenceSupport {
                         reference.getSourceRoomId(),
                         "");
 
-                return definition != null && definition.getTargetType() == reference.getSourceTargetType();
+                return definition != null
+                        && definition.getTargetType() == reference.getSourceTargetType()
+                        && sameArrayDefinition(definition.getArrayDefinition(), reference.getArrayDefinition());
             }
         } catch (SQLException e) {
             LOGGER.error(
@@ -477,6 +495,31 @@ public final class WiredVariableReferenceSupport {
                     e);
             return false;
         }
+    }
+
+    private static WiredArrayDefinition parseArrayDefinition(WiredVariableDefinitionData data) {
+        if (data == null || !data.isArray()) return null;
+        try {
+            return WiredArrayDefinitionSupport.parseArrayDefinition(data);
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
+    }
+
+    private static boolean sameArrayDefinition(WiredArrayDefinition first, WiredArrayDefinition second) {
+        if (first == null || second == null) return first == second;
+        if (first.getFormat() != second.getFormat()
+                || first.getMode() != second.getMode()
+                || first.getMaxEntries() != second.getMaxEntries()
+                || first.getFields().size() != second.getFields().size()) return false;
+        for (int index = 0; index < first.getFields().size(); index++) {
+            WiredArrayFieldDefinition left = first.getFields().get(index);
+            WiredArrayFieldDefinition right = second.getFields().get(index);
+            if (left.getId() != right.getId()
+                    || left.getOrder() != right.getOrder()
+                    || !Objects.equals(left.getName(), right.getName())) return false;
+        }
+        return true;
     }
 
     private static void upsertSharedUserAssignment(
@@ -624,15 +667,28 @@ public final class WiredVariableReferenceSupport {
         private final String name;
         private final int targetType;
         private final boolean hasValue;
+        private final WiredArrayDefinition arrayDefinition;
 
         public SharedDefinitionOption(
                 int roomId, String roomName, int itemId, String name, int targetType, boolean hasValue) {
+            this(roomId, roomName, itemId, name, targetType, hasValue, null);
+        }
+
+        public SharedDefinitionOption(
+                int roomId,
+                String roomName,
+                int itemId,
+                String name,
+                int targetType,
+                boolean hasValue,
+                WiredArrayDefinition arrayDefinition) {
             this.roomId = roomId;
             this.roomName = roomName;
             this.itemId = itemId;
             this.name = name;
             this.targetType = targetType;
             this.hasValue = hasValue;
+            this.arrayDefinition = arrayDefinition;
         }
 
         public int getRoomId() {
@@ -657,6 +713,10 @@ public final class WiredVariableReferenceSupport {
 
         public boolean hasValue() {
             return this.hasValue;
+        }
+
+        public WiredArrayDefinition getArrayDefinition() {
+            return this.arrayDefinition;
         }
     }
 
@@ -750,10 +810,12 @@ public final class WiredVariableReferenceSupport {
         String variableName;
         boolean hasValue;
         int availability;
+        WiredVariableDefinitionData definition;
     }
 
     private static class RoomDefinitionData {
         String variableName;
         int availability;
+        WiredVariableDefinitionData definition;
     }
 }

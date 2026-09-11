@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredTriggerType;
 import com.eu.habbo.habbohotel.wired.WiredVariableChangeOrigin;
+import com.eu.habbo.habbohotel.wired.arrays.WiredArrayChange;
 import java.util.Optional;
 
 /**
@@ -205,6 +206,7 @@ public final class WiredEvent {
     private final boolean variableDeleted;
     private final VariableChangeKind variableChangeKind;
     private final int variableChangeOrigin;
+    private final WiredArrayChange arrayChange;
     private final WiredContextVariableScope contextVariableScope;
     private final long createdAtMs;
 
@@ -234,6 +236,7 @@ public final class WiredEvent {
         this.variableDeleted = builder.variableDeleted;
         this.variableChangeKind = builder.variableChangeKind;
         this.variableChangeOrigin = builder.variableChangeOrigin;
+        this.arrayChange = builder.arrayChange;
         this.contextVariableScope = builder.contextVariableScope;
         this.createdAtMs = builder.createdAtMs;
     }
@@ -397,6 +400,10 @@ public final class WiredEvent {
         return this.variableChangeOrigin;
     }
 
+    public WiredArrayChange getArrayChange() {
+        return this.arrayChange;
+    }
+
     public WiredContextVariableScope getContextVariableScope() {
         return contextVariableScope;
     }
@@ -469,6 +476,7 @@ public final class WiredEvent {
         private VariableChangeKind variableChangeKind = VariableChangeKind.NONE;
         // Read when the builder is made, on the thread that performed the write.
         private int variableChangeOrigin = WiredVariableChangeOrigin.current();
+        private WiredArrayChange arrayChange;
         private WiredContextVariableScope contextVariableScope;
         private long createdAtMs = System.currentTimeMillis();
 
@@ -636,6 +644,11 @@ public final class WiredEvent {
 
         public Builder variableChangeOrigin(int variableChangeOrigin) {
             this.variableChangeOrigin = WiredVariableChangeOrigin.normalize(variableChangeOrigin);
+            return this;
+        }
+
+        public Builder arrayChange(WiredArrayChange arrayChange) {
+            this.arrayChange = arrayChange;
             return this;
         }
 

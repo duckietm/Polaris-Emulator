@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.wired.core;
 
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraArrayCaptureVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextVariable;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
@@ -8,7 +9,9 @@ import com.eu.habbo.messages.outgoing.wired.WiredUserVariablesDataComposer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public final class WiredContextVariableSupport {
     private WiredContextVariableSupport() {}
@@ -50,10 +53,25 @@ public final class WiredContextVariableSupport {
             definitions.add(new WiredVariableDefinitionInfo(
                     definition.getId(),
                     definition.getVariableName(),
-                    definition.hasValue(),
+                    definition.hasValue() && !definition.isArray(),
                     0,
                     WiredVariableTextConnectorSupport.isTextConnected(room, definition.getId()),
-                    false));
+                    false,
+                    definition.isArray()));
+        }
+
+        if (room != null && room.getRoomSpecialTypes() != null) {
+            Set<String> projections = new LinkedHashSet<>();
+            for (InteractionWiredExtra extra : room.getRoomSpecialTypes().getExtras()) {
+                if (extra instanceof WiredExtraArrayCaptureVariable capture) {
+                    projections.addAll(capture.getCaptureProjectionNames(room));
+                }
+            }
+            int virtualItemId = -1;
+            for (String projection : projections) {
+                definitions.add(
+                        new WiredVariableDefinitionInfo(virtualItemId--, projection, true, 0, false, true, false));
+            }
         }
 
         return definitions;
@@ -79,10 +97,11 @@ public final class WiredContextVariableSupport {
         return new WiredVariableDefinitionInfo(
                 definition.getId(),
                 definition.getVariableName(),
-                definition.hasValue(),
+                definition.hasValue() && !definition.isArray(),
                 0,
                 WiredVariableTextConnectorSupport.isTextConnected(room, definition.getId()),
-                false);
+                false,
+                definition.isArray());
     }
 
     public static boolean hasDefinition(Room room, int definitionItemId) {
@@ -92,7 +111,7 @@ public final class WiredContextVariableSupport {
     public static boolean assignVariable(
             WiredContext ctx, Room room, int definitionItemId, Integer value, boolean overrideExisting) {
         WiredExtraContextVariable definition = getDefinition(room, definitionItemId);
-        if (ctx == null || definition == null) {
+        if (ctx == null || definition == null || definition.isArray()) {
             return false;
         }
 
@@ -106,7 +125,7 @@ public final class WiredContextVariableSupport {
 
     public static boolean updateVariableValue(WiredContext ctx, Room room, int definitionItemId, Integer value) {
         WiredExtraContextVariable definition = getDefinition(room, definitionItemId);
-        if (ctx == null || definition == null || !definition.hasValue()) {
+        if (ctx == null || definition == null || definition.isArray() || !definition.hasValue()) {
             return false;
         }
 

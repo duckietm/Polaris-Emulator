@@ -116,7 +116,8 @@ public enum WiredEffectType {
     ALL_USERS_LEAVE_TEAM(124),
     // The official OVERRIDE_HEIGHT: a two-way choice and a 0..8000 thousandths slider. Its dialog is
     // its own, so it takes the next free code rather than borrowing one.
-    OVERRIDE_HEIGHT(125);
+    OVERRIDE_HEIGHT(125),
+    MODIFY_ARRAY(126);
 
     public final int code;
 

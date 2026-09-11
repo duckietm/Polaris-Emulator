@@ -90,5 +90,17 @@ final class RoomUserVariableRepository {
         }
     }
 
+    boolean hasDefinition(int roomId, int definitionItemId) throws SQLException {
+        try (Connection connection = dataSource.get().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT 1 FROM room_user_wired_variables WHERE room_id = ? AND variable_item_id = ? LIMIT 1")) {
+            statement.setInt(1, roomId);
+            statement.setInt(2, definitionItemId);
+            try (ResultSet set = statement.executeQuery()) {
+                return set.next();
+            }
+        }
+    }
+
     record StoredAssignment(int definitionItemId, Integer value, int createdAt, int updatedAt) {}
 }

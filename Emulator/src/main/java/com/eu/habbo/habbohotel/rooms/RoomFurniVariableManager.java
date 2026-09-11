@@ -545,6 +545,11 @@ public class RoomFurniVariableManager {
             return;
         }
 
+        if (definition.isArrayDeclared()) {
+            this.removeDefinition(definition.getId());
+            return;
+        }
+
         this.ensurePermanentAssignmentsLoaded();
 
         if (!definition.isPermanentAvailability()) {
@@ -561,6 +566,15 @@ public class RoomFurniVariableManager {
         }
 
         this.broadcastSnapshot();
+    }
+
+    public boolean hasAssignmentsForDefinition(int definitionItemId) {
+        if (definitionItemId <= 0) return false;
+        this.ensurePermanentAssignmentsLoaded();
+        for (ConcurrentHashMap<Integer, VariableAssignment> assignments : this.activeAssignmentsByFurniId.values()) {
+            if (assignments.containsKey(definitionItemId)) return true;
+        }
+        return false;
     }
 
     public Snapshot createSnapshot() {
@@ -741,10 +755,11 @@ public class RoomFurniVariableManager {
             baseDefinitions.add(new WiredVariableDefinitionInfo(
                     definition.getId(),
                     definition.getVariableName(),
-                    definition.hasValue(),
+                    definition.hasValue() && !definition.isArray(),
                     definition.getAvailability(),
                     WiredVariableTextConnectorSupport.isTextConnected(this.room, definition),
-                    false));
+                    false,
+                    definition.isArray()));
         }
 
         for (WiredExtraVariableEcho echo : this.getFurniEchoes()) {
@@ -783,10 +798,11 @@ public class RoomFurniVariableManager {
             return new WiredVariableDefinitionInfo(
                     definition.getId(),
                     definition.getVariableName(),
-                    definition.hasValue(),
+                    definition.hasValue() && !definition.isArray(),
                     definition.getAvailability(),
                     WiredVariableTextConnectorSupport.isTextConnected(this.room, definition),
-                    false);
+                    false,
+                    definition.isArray());
         }
 
         if (extra instanceof WiredExtraVariableEcho && ((WiredExtraVariableEcho) extra).isFurniEcho()) {

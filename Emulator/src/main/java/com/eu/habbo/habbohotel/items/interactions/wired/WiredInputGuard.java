@@ -29,12 +29,20 @@ public final class WiredInputGuard {
     }
 
     public static String readStringParam(ClientMessage packet) {
+        return readStringParam(packet, MAX_STRING_PARAM_LENGTH);
+    }
+
+    public static String readStringParam(ClientMessage packet, int maximumLength) {
         String value = packet.readString();
         if (value == null || value.isEmpty()) {
             return "";
         }
 
-        return value.length() > MAX_STRING_PARAM_LENGTH ? value.substring(0, MAX_STRING_PARAM_LENGTH) : value;
+        int boundedMaximum = Math.max(1, Math.min(WiredLargePayload.MAX_STRING_PARAM_LENGTH, maximumLength));
+        if (value.length() > boundedMaximum) {
+            throw new IllegalArgumentException("Wired string parameter exceeds the allowed length");
+        }
+        return value;
     }
 
     public static int[] readFurniIds(ClientMessage packet) {

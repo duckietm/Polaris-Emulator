@@ -99,7 +99,6 @@ public class CatalogLimitedConfiguration implements Runnable {
         // Intentionally a no-op: the sold-out redirect is handled at serialization time.
     }
 
-
     public void generateNumbers(int starting, int amount) {
         synchronized (this.limitedNumbers) {
             LinkedList<Integer> generatedNumbers = new LinkedList<>();

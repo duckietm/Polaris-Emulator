@@ -25,11 +25,9 @@ public class SetBuildUnderpassEvent extends MessageHandler {
 
         Room room = this.currentRoom();
 
-        if (room == null)
-            return;
+        if (room == null) return;
 
-        if (this.client.getHabbo().getRoomUnit() == null)
-            return;
+        if (this.client.getHabbo().getRoomUnit() == null) return;
 
         this.client.getHabbo().getRoomUnit().setBuildUnderpass(enabled);
     }

@@ -17,12 +17,12 @@ public class RoomRemoveBackgroundEvent extends MessageHandler {
     public void handle() throws Exception {
         Room room = this.currentRoom();
 
-        if (room == null)
-            return;
+        if (room == null) return;
 
-        if (room.getOwnerId() == this.client.getHabbo().getHabboInfo().getId() || room.hasRights(this.client.getHabbo()) || this.client.getHabbo().hasPermission(Permission.ACC_PLACEFURNI)) {
-            if (DEFAULT_BACKGROUND.equals(room.getBackgroundPaint()))
-                return;
+        if (room.getOwnerId() == this.client.getHabbo().getHabboInfo().getId()
+                || room.hasRights(this.client.getHabbo())
+                || this.client.getHabbo().hasPermission(Permission.ACC_PLACEFURNI)) {
+            if (DEFAULT_BACKGROUND.equals(room.getBackgroundPaint())) return;
 
             room.setBackgroundPaint(DEFAULT_BACKGROUND);
             room.setNeedsUpdate(true);

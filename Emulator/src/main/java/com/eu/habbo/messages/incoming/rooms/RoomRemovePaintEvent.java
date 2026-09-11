@@ -25,23 +25,21 @@ public class RoomRemovePaintEvent extends MessageHandler {
 
         Room room = this.currentRoom();
 
-        if (room == null)
-            return;
+        if (room == null) return;
 
-        if (room.getOwnerId() != this.client.getHabbo().getHabboInfo().getId() && !room.hasRights(this.client.getHabbo()) && !this.client.getHabbo().hasPermission(Permission.ACC_PLACEFURNI))
-            return;
+        if (room.getOwnerId() != this.client.getHabbo().getHabboInfo().getId()
+                && !room.hasRights(this.client.getHabbo())
+                && !this.client.getHabbo().hasPermission(Permission.ACC_PLACEFURNI)) return;
 
         String clientPaint;
 
         if ("floor".equals(paintType)) {
-            if (DEFAULT_PAINT.equals(room.getFloorPaint()))
-                return;
+            if (DEFAULT_PAINT.equals(room.getFloorPaint())) return;
 
             room.setFloorPaint(DEFAULT_PAINT);
             clientPaint = CLIENT_DEFAULT_FLOOR;
         } else if ("wallpaper".equals(paintType)) {
-            if (DEFAULT_PAINT.equals(room.getWallPaint()))
-                return;
+            if (DEFAULT_PAINT.equals(room.getWallPaint())) return;
 
             room.setWallPaint(DEFAULT_PAINT);
             clientPaint = CLIENT_DEFAULT_WALL;

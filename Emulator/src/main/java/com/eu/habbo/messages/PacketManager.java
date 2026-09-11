@@ -450,6 +450,8 @@ import com.eu.habbo.messages.incoming.rooms.pets.ToggleMonsterplantBreedableEven
 import com.eu.habbo.messages.incoming.rooms.promotions.BuyRoomPromotionEvent;
 import com.eu.habbo.messages.incoming.rooms.promotions.RequestPromotionRoomsEvent;
 import com.eu.habbo.messages.incoming.rooms.promotions.UpdateRoomPromotionEvent;
+import com.eu.habbo.messages.incoming.rooms.raidprotection.RaidProtectionSettingsRequestEvent;
+import com.eu.habbo.messages.incoming.rooms.raidprotection.RaidProtectionSettingsSaveEvent;
 import com.eu.habbo.messages.incoming.rooms.users.ClickUserEvent;
 import com.eu.habbo.messages.incoming.rooms.users.IgnoreRoomUserEvent;
 import com.eu.habbo.messages.incoming.rooms.users.IgnoreUserIdEvent;
@@ -543,8 +545,6 @@ import com.eu.habbo.messages.incoming.wired.WiredFeatureCapabilitiesEvent;
 import com.eu.habbo.messages.incoming.wired.WiredFurniRuntimeStateRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredMenuPermissionsSaveEvent;
 import com.eu.habbo.messages.incoming.wired.WiredMonitorRequestEvent;
-import com.eu.habbo.messages.incoming.rooms.raidprotection.RaidProtectionSettingsRequestEvent;
-import com.eu.habbo.messages.incoming.rooms.raidprotection.RaidProtectionSettingsSaveEvent;
 import com.eu.habbo.messages.incoming.wired.WiredRoomLogsPageEvent;
 import com.eu.habbo.messages.incoming.wired.WiredRoomSettingsRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredRoomSettingsSaveEvent;
@@ -1322,8 +1322,7 @@ public class PacketManager {
         this.registerHandler(Incoming.WiredMenuPermissionsSaveEvent, WiredMenuPermissionsSaveEvent.class);
         this.registerHandler(Incoming.WiredRoomStateActionEvent, WiredRoomStateActionEvent.class);
         this.registerHandler(Incoming.WiredRoomLogsPageEvent, WiredRoomLogsPageEvent.class);
-        this.registerHandler(
-                Incoming.RaidProtectionSettingsRequestEvent, RaidProtectionSettingsRequestEvent.class);
+        this.registerHandler(Incoming.RaidProtectionSettingsRequestEvent, RaidProtectionSettingsRequestEvent.class);
         this.registerHandler(Incoming.RaidProtectionSettingsSaveEvent, RaidProtectionSettingsSaveEvent.class);
         this.registerHandler(Incoming.WiredVariableHoldersPageEvent, WiredVariableHoldersPageEvent.class);
         this.registerHandler(Incoming.WiredVariableHoldersRequestEvent, WiredVariableHoldersRequestEvent.class);

@@ -20231,38 +20231,6 @@
           "name": "pageIndex"
         }
       ]
-    },
-    {
-      "name": "COMPETITION_ROOMS_DATA",
-      "direction": "server_to_client",
-      "header": 3954,
-      "java": {
-        "symbol": "CompetitionRoomsDataComposer",
-        "className": "CompetitionRoomsDataComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/competition/CompetitionRoomsDataComposer.java"
-      },
-      "typescript": {
-        "symbol": "COMPETITION_ROOMS_DATA",
-        "className": "CompetitionRoomsDataMessageParser",
-        "path": "packages/communication/src/messages/parser/navigator/CompetitionRoomsDataMessageParser.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "goalId"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "pageIndex"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "pageCount"
-        }
-      ]
     }
   ],
   "unpaired": [
@@ -27571,6 +27539,22 @@
         "path": "packages/communication/src/messages/parser/roomevents/WiredAllVariablesDiffParser.ts"
       },
       "reason": "Java analyzer: delegated writer appendVariable inside two ForStmt loops in composeInternal; TypeScript analyzer: delegated reader parseWiredVariableData inside loops"
+    },
+    {
+      "name": "COMPETITION_ROOMS_DATA",
+      "direction": "server_to_client",
+      "header": 3954,
+      "java": {
+        "symbol": "CompetitionRoomsDataComposer",
+        "className": "CompetitionRoomsDataComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/competition/CompetitionRoomsDataComposer.java"
+      },
+      "typescript": {
+        "symbol": "COMPETITION_ROOMS_DATA",
+        "className": "CompetitionRoomsDataMessageParser",
+        "path": "packages/communication/src/messages/parser/navigator/CompetitionRoomsDataMessageParser.ts"
+      },
+      "reason": "TypeScript analyzer: Packet fields delegated to external constructor CompetitionRoomsData inside parse"
     }
   ]
 }

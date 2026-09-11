@@ -20144,6 +20144,50 @@
           "name": "itemId"
         }
       ]
+    },
+    {
+      "name": "REQUESTABADGE",
+      "direction": "client_to_server",
+      "header": 3077,
+      "java": {
+        "symbol": "HotelViewClaimBadgeEvent",
+        "className": "HotelViewClaimBadgeEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/HotelViewClaimBadgeEvent.java"
+      },
+      "typescript": {
+        "symbol": "REQUESTABADGE",
+        "className": "RequestABadgeComposer",
+        "path": "packages/communication/src/messages/outgoing/inventory/badges/RequestABadgeComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "requestCode"
+        }
+      ]
+    },
+    {
+      "name": "GETISBADGEREQUESTFULFILLED",
+      "direction": "client_to_server",
+      "header": 1364,
+      "java": {
+        "symbol": "GetIsBadgeRequestFulfilledEvent",
+        "className": "GetIsBadgeRequestFulfilledEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/hotelview/GetIsBadgeRequestFulfilledEvent.java"
+      },
+      "typescript": {
+        "symbol": "GETISBADGEREQUESTFULFILLED",
+        "className": "GetIsBadgeRequestFulfilledComposer",
+        "path": "packages/communication/src/messages/outgoing/inventory/badges/GetIsBadgeRequestFulfilledComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "requestCode"
+        }
+      ]
     }
   ],
   "unpaired": [
@@ -20438,14 +20482,6 @@
     {
       "direction": "client_to_server",
       "side": "typescript",
-      "header": 1364,
-      "symbol": "GETISBADGEREQUESTFULFILLED",
-      "path": "packages/communication/src/messages/outgoing/inventory/badges/GetIsBadgeRequestFulfilledComposer.ts",
-      "reason": "Header is registered only by the Octane Renderer packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "typescript",
       "header": 1379,
       "symbol": "SET_PHONE_NUMBER_VERIFICATION_STATUS",
       "path": "packages/communication/src/messages/outgoing/gifts/SetPhoneNumberVerificationStatusMessageComposer.ts",
@@ -20713,14 +20749,6 @@
       "header": 2930,
       "symbol": "GUILD_BASE_SEARCH",
       "path": "packages/communication/src/messages/outgoing/navigator/GuildBaseSearchMessageComposer.ts",
-      "reason": "Header is registered only by the Octane Renderer packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "typescript",
-      "header": 3077,
-      "symbol": "REQUESTABADGE",
-      "path": "packages/communication/src/messages/outgoing/inventory/badges/RequestABadgeComposer.ts",
       "reason": "Header is registered only by the Octane Renderer packet registry"
     },
     {

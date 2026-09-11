@@ -355,6 +355,7 @@ public class Incoming {
     public static final int CameraRoomThumbnailEvent = 1982;
     public static final int SavePostItStickyPoleEvent = 3283;
     public static final int HotelViewClaimBadgeEvent = 3077;
+    public static final int GetIsBadgeRequestFulfilledEvent = 1364;
     public static final int HotelViewRequestCommunityGoalEvent = 1145;
     public static final int HotelViewRequestConcurrentUsersEvent = 1343;
     public static final int HotelViewConcurrentUsersButtonEvent = 3872;

@@ -204,6 +204,8 @@ import com.eu.habbo.messages.incoming.helper.AppealReportEvent;
 import com.eu.habbo.messages.incoming.helper.GetMyReportsStatusEvent;
 import com.eu.habbo.messages.incoming.helper.MySanctionStatusEvent;
 import com.eu.habbo.messages.incoming.helper.RequestTalentTrackEvent;
+import com.eu.habbo.messages.incoming.hotelview.GetIsBadgeRequestFulfilledEvent;
+import com.eu.habbo.messages.incoming.hotelview.HotelViewClaimBadgeEvent;
 import com.eu.habbo.messages.incoming.hotelview.HotelViewClaimBadgeRewardEvent;
 import com.eu.habbo.messages.incoming.hotelview.HotelViewDataEvent;
 import com.eu.habbo.messages.incoming.hotelview.HotelViewEvent;
@@ -979,6 +981,8 @@ public class PacketManager {
         this.registerHandler(Incoming.RequestNewsListEvent, RequestNewsListEvent.class);
         this.registerHandler(Incoming.HotelViewDataEvent, HotelViewDataEvent.class);
         this.registerHandler(Incoming.HotelViewRequestBadgeRewardEvent, HotelViewRequestBadgeRewardEvent.class);
+        this.registerHandler(Incoming.HotelViewClaimBadgeEvent, HotelViewClaimBadgeEvent.class);
+        this.registerHandler(Incoming.GetIsBadgeRequestFulfilledEvent, GetIsBadgeRequestFulfilledEvent.class);
         this.registerHandler(UnsupportedIncoming.HotelViewClaimBadgeRewardEvent, HotelViewClaimBadgeRewardEvent.class);
         this.registerHandler(Incoming.HotelViewRequestLTDAvailabilityEvent, HotelViewRequestLTDAvailabilityEvent.class);
         this.registerHandler(Incoming.HotelViewRequestSecondsUntilEvent, HotelViewRequestSecondsUntilEvent.class);

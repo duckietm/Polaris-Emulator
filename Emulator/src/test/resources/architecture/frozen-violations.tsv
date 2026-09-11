@@ -1331,6 +1331,8 @@ U|com/eu/habbo/messages/incoming/helper/AppealReportEvent.java|CALL|getGameEnvir
 U|com/eu/habbo/messages/incoming/helper/AppealReportEvent.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/messages/incoming/helper/AppealReportEvent.java|CALL|getTexts|1
 U|com/eu/habbo/messages/incoming/helper/RequestTalentTrackEvent.java|CALL|getConfig|1
+U|com/eu/habbo/messages/incoming/hotelview/GetIsBadgeRequestFulfilledEvent.java|CALL|getConfig|1
+U|com/eu/habbo/messages/incoming/hotelview/HotelViewClaimBadgeEvent.java|CALL|getConfig|2
 U|com/eu/habbo/messages/incoming/hotelview/HotelViewClaimBadgeRewardEvent.java|CALL|getConfig|2
 U|com/eu/habbo/messages/incoming/hotelview/HotelViewEvent.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/messages/incoming/hotelview/HotelViewLandingRequestEvent.java|CALL|getGameEnvironment|2

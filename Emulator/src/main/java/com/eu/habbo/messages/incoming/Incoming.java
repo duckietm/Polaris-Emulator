@@ -100,7 +100,15 @@ public class Incoming {
     public static final int RequestPetTrainingPanelEvent = 2161;
     public static final int RoomBackgroundEvent = 2880;
     public static final int RequestNewsListEvent = 1827;
-    public static final int RequestPromotedRoomsEvent = 2908;
+    public static final int GetUnreadForumsCountEvent = 2908;
+
+    /**
+     * @deprecated 2908 is the header the client uses to ask for the unread forums count; the promoted
+     *     rooms already travel inside the official rooms packet. Kept for plugins that reference it.
+     */
+    @Deprecated
+    public static final int RequestPromotedRoomsEvent = GetUnreadForumsCountEvent;
+
     public static final int GuildSetAdminEvent = 2894;
     public static final int GetClubDataEvent = 3285;
     public static final int RequestClubCenterEvent = 869;

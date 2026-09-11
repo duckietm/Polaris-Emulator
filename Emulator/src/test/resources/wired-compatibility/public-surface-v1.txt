@@ -6553,6 +6553,11 @@ CONSTRUCTOR public com.eu.habbo.messages.incoming.wired.WiredMonitorRequestEvent
 METHOD public com.eu.habbo.messages.incoming.wired.WiredMonitorRequestEvent#getRatelimit(-):int throws -
 METHOD public com.eu.habbo.messages.incoming.wired.WiredMonitorRequestEvent#handle(-):void throws java.lang.Exception
 
+TYPE public com.eu.habbo.messages.incoming.wired.WiredOpenEvent extends com.eu.habbo.messages.incoming.MessageHandler
+CONSTRUCTOR public com.eu.habbo.messages.incoming.wired.WiredOpenEvent(-) throws -
+METHOD public com.eu.habbo.messages.incoming.wired.WiredOpenEvent#getRatelimit(-):int throws -
+METHOD public com.eu.habbo.messages.incoming.wired.WiredOpenEvent#handle(-):void throws java.lang.Exception
+
 TYPE public com.eu.habbo.messages.incoming.wired.WiredRoomLogsPageEvent extends com.eu.habbo.messages.incoming.MessageHandler
 CONSTRUCTOR public com.eu.habbo.messages.incoming.wired.WiredRoomLogsPageEvent(-) throws -
 METHOD public com.eu.habbo.messages.incoming.wired.WiredRoomLogsPageEvent#getRatelimit(-):int throws -

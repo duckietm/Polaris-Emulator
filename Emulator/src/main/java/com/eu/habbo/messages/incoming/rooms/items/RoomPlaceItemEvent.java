@@ -26,6 +26,7 @@ import com.eu.habbo.messages.outgoing.catalog.BuildersClubSubscriptionStatusComp
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemComposer;
+import com.eu.habbo.messages.outgoing.wired.WiredOpenComposer;
 
 public class RoomPlaceItemEvent extends MessageHandler {
     @Override
@@ -158,6 +159,12 @@ public class RoomPlaceItemEvent extends MessageHandler {
                 this.client.sendResponse(
                         new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, error.errorCode));
                 return;
+            }
+
+            // A wired box you just put down is a box you are about to configure: the official client
+            // opens its window straight away rather than making you click what you just placed.
+            if (item instanceof InteractionWired && room.canInspectWired(this.client.getHabbo())) {
+                this.client.sendResponse(new WiredOpenComposer(item));
             }
         } else {
             if (values.length < 4) return;

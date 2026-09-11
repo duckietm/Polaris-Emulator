@@ -13,10 +13,12 @@ import com.eu.habbo.messages.outgoing.catalog.RecyclerCompleteComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.HotelWillCloseInMinutesComposer;
 import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
-import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemComposer;
+import com.eu.habbo.messages.outgoing.inventory.RemoveHabboItemsComposer;
 import com.eu.habbo.threading.runnables.QueryDeleteHabboItem;
 import com.eu.habbo.threading.runnables.ShutdownEmulator;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class RecycleEvent extends MessageHandler {
@@ -87,9 +89,11 @@ public class RecycleEvent extends MessageHandler {
                 }
                 consumed = true;
 
+                List<Integer> removedItemIds = new ArrayList<>();
                 for (HabboItem item : items) {
-                    this.client.sendResponse(new RemoveHabboItemComposer(item.getGiftAdjustedId()));
+                    removedItemIds.add(item.getGiftAdjustedId());
                 }
+                this.client.sendResponse(new RemoveHabboItemsComposer(removedItemIds));
                 this.client.sendResponse(new AddHabboItemComposer(reward));
                 this.client.sendResponse(new RecyclerCompleteComposer(RecyclerCompleteComposer.RECYCLING_COMPLETE));
                 this.client.sendResponse(new InventoryRefreshComposer());

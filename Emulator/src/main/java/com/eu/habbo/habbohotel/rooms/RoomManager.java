@@ -36,8 +36,10 @@ import com.eu.habbo.messages.outgoing.hotelview.HotelViewComposer;
 import com.eu.habbo.messages.outgoing.polls.PollStartComposer;
 import com.eu.habbo.messages.outgoing.polls.infobus.SimplePollAnswersComposer;
 import com.eu.habbo.messages.outgoing.polls.infobus.SimplePollStartComposer;
+import com.eu.habbo.messages.outgoing.rooms.ConfigurationItemStatesComposer;
 import com.eu.habbo.messages.outgoing.rooms.DoorbellAddUserComposer;
 import com.eu.habbo.messages.outgoing.rooms.FloodCounterComposer;
+import com.eu.habbo.messages.outgoing.rooms.ForwardToRoomComposer;
 import com.eu.habbo.messages.outgoing.rooms.HideDoorbellComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomDataComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomEnterErrorComposer;
@@ -45,8 +47,10 @@ import com.eu.habbo.messages.outgoing.rooms.RoomModelComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomOpenComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomPaintComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomPaneComposer;
+import com.eu.habbo.messages.outgoing.rooms.RoomQueueStatusMessage;
 import com.eu.habbo.messages.outgoing.rooms.RoomScoreComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomThicknessComposer;
+import com.eu.habbo.messages.outgoing.rooms.YouAreNotSpectatorComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.ConfInvisStateComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.HanditemBlockStateComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.RoomFloorItemsComposer;
@@ -65,6 +69,7 @@ import com.eu.habbo.messages.outgoing.rooms.users.RoomUsersComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUsersGuildBadgesComposer;
 import com.eu.habbo.messages.outgoing.users.MutedWhisperComposer;
 import com.eu.habbo.messages.outgoing.users.UserBadgesComposer;
+import com.eu.habbo.messages.outgoing.wired.WiredEnvironmentComposer;
 import com.eu.habbo.plugin.events.navigator.NavigatorRoomCreatedEvent;
 import com.eu.habbo.plugin.events.rooms.RoomFloorItemsLoadEvent;
 import com.eu.habbo.plugin.events.rooms.RoomUncachedEvent;
@@ -498,7 +503,8 @@ public class RoomManager {
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "INSERT INTO rooms (owner_id, owner_name, name, description, model, users_max, category, trade_mode) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                        "INSERT INTO rooms (owner_id, owner_name, name, description, model, users_max, category, trade_mode,"
+                                + " date_created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         Statement.RETURN_GENERATED_KEYS)) {
             statement.setInt(1, ownerId);
             statement.setString(2, ownerName);
@@ -508,6 +514,9 @@ public class RoomManager {
             statement.setInt(6, usersMax);
             statement.setInt(7, categoryId);
             statement.setInt(8, tradeType);
+            // Recorded from now on; rooms made before this column existed keep the zero it
+            // defaults to, which the room competition reads as "age unknown".
+            statement.setInt(9, Emulator.getIntUnixTimestamp());
             statement.execute();
             try (ResultSet set = statement.getGeneratedKeys()) {
                 if (set.next()) room = this.loadRoom(set.getInt(1));
@@ -743,8 +752,11 @@ public class RoomManager {
         if (room.getUserCount() >= room.getUsersMax()
                 && !habbo.hasPermission(Permission.ACC_FULLROOMS)
                 && !room.hasRights(habbo)) {
-            habbo.getClient()
-                    .sendResponse(new RoomEnterErrorComposer(RoomEnterErrorComposer.ROOM_ERROR_GUESTROOM_FULL));
+            // AIR 13: a full room queues the visitor (RoomQueueStatus, our 2208)
+            // instead of bouncing it with CantConnect(REASON_FULL).
+            RoomVisitorQueueSupport.enqueue(room, habbo);
+            habbo.getHabboInfo().setLoadingRoom(0);
+            habbo.getClient().sendResponse(new HotelViewComposer());
             return;
         }
 
@@ -964,6 +976,12 @@ public class RoomManager {
         habbo.getClient().sendResponse(new ConfInvisStateComposer(room).compose());
         RoomAreaHideSupport.sendState(room, habbo.getClient());
         habbo.getClient().sendResponse(new HanditemBlockStateComposer(room).compose());
+        // AIR 13 ConfigurationItemStates (1508): two of the four flags are per
+        // viewer, so it is sent per client on entry rather than broadcast.
+        habbo.getClient().sendResponse(new ConfigurationItemStatesComposer(room, habbo).compose());
+        // AIR 13 WiredEnvironment (347): tells the client whether avatar clicks go through the
+        // server and which achievements this room's wired can hand out.
+        habbo.getClient().sendResponse(new WiredEnvironmentComposer(room).compose());
 
         if (!room.getCurrentPets().isEmpty()) {
             habbo.getClient()
@@ -1147,6 +1165,7 @@ public class RoomManager {
             ChestAutoLock.onOwnerLeftRoom(room, habbo);
             room.removeHabbo(habbo, true);
             BuildersClubRoomSupport.sendCurrentRoomPlacementStatus(room);
+            this.admitNextQueuedHabbo(room);
 
             if (redirectToHotelView) {
                 habbo.getClient().sendResponse(new HotelViewComposer());
@@ -1164,6 +1183,34 @@ public class RoomManager {
 
             habbo.getMessenger().connectionChanged(habbo, habbo.isOnline(), false);
         }
+    }
+
+    /**
+     * A slot freed up: forward the habbo at the front of the room queue into
+     * the room and refresh the position of everybody still waiting.
+     */
+    public void admitNextQueuedHabbo(Room room) {
+        if (room == null || room.getUserCount() >= room.getUsersMax()) {
+            return;
+        }
+
+        int[] nextQueued = RoomVisitorQueueSupport.pollNextQueued(room);
+        while (nextQueued != null) {
+            Habbo next = Emulator.getGameEnvironment().getHabboManager().getHabbo(nextQueued[0]);
+            if (next != null && next.getClient() != null) {
+                next.getHabboInfo().setRoomQueueId(0);
+                if (nextQueued[1] == RoomQueueStatusMessage.TARGET_SPECTATOR) {
+                    // Leaving the spectator queue for a real slot: the official
+                    // client drops spectator mode on YouAreNotSpectator (3242).
+                    next.getClient().sendResponse(new YouAreNotSpectatorComposer(room.getId()));
+                }
+                next.getClient().sendResponse(new ForwardToRoomComposer(room.getId()));
+                break;
+            }
+            nextQueued = RoomVisitorQueueSupport.pollNextQueued(room);
+        }
+
+        RoomVisitorQueueSupport.broadcastStatus(room);
     }
 
     public void logExit(Habbo habbo) {

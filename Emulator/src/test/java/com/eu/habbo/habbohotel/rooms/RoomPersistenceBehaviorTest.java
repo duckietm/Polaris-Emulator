@@ -31,7 +31,7 @@ class RoomPersistenceBehaviorTest {
     void wiredReadsUseTheEstablishedQueryAndCacheResults() throws Exception {
         RoomJdbcTestSupport.RecordingDataSource dataSource = new RoomJdbcTestSupport.RecordingDataSource();
         dataSource.rows(sql -> {
-            if (sql.startsWith("SELECT inspect_mask, modify_mask FROM room_wired_settings")) {
+            if (sql.startsWith("SELECT inspect_mask, modify_mask, timezone FROM room_wired_settings")) {
                 return List.of(Map.of(
                         "inspect_mask", 5,
                         "modify_mask", 4));
@@ -48,7 +48,7 @@ class RoomPersistenceBehaviorTest {
 
         assertEquals(1, dataSource.calls().size());
         assertEquals(
-                "SELECT inspect_mask, modify_mask FROM room_wired_settings " + "WHERE room_id = ? LIMIT 1",
+                "SELECT inspect_mask, modify_mask, timezone FROM room_wired_settings " + "WHERE room_id = ? LIMIT 1",
                 dataSource.calls().get(0).sql());
         assertEquals(Map.of(1, 41), dataSource.calls().get(0).parameters());
     }

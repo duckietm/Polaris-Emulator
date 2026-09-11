@@ -7,6 +7,7 @@ import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.resolveClient
 import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.sendCors;
 import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.sendJson;
 
+import com.eu.habbo.habbohotel.MaintenanceMode;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.netty.channel.ChannelHandlerContext;
@@ -28,11 +29,6 @@ import org.slf4j.LoggerFactory;
 public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthHttpHandler.class);
-
-    // Dedicated, bounded pool for the auth endpoints. Their work blocks on
-    // BCrypt, JDBC, the Turnstile HTTPS round-trip and SMTP — running that on the
-    // Netty event loop stalls every client on the same worker. A SEPARATE pool
-    // (not the shared game ThreadPooling) also keeps it from starving room cycles.
     private static final int AUTH_POOL_MAX = authPoolMax();
     private static final ThreadPoolExecutor AUTH_EXECUTOR = createAuthExecutor(AUTH_POOL_MAX);
 
@@ -70,8 +66,6 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    // Max threads for the auth pool. Defaults to 16; set the optional
-    // `auth.http.pool.size` config key to override.
     private static int authPoolMax() {
         int fallback = 16;
         if (com.eu.habbo.Emulator.getConfig() == null) {
@@ -97,6 +91,7 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
     static final String CHANGE_EMAIL_PATH = "/api/auth/change-email";
     static final String CHANGE_USERNAME_PATH = "/api/auth/change-username";
     static final String HEALTH_PATH = "/api/health";
+    static final String MAINTENANCE_PATH = "/api/maintenance";
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -112,9 +107,6 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
-        // Offload the (potentially blocking) auth work off the event loop. Netty
-        // writes are thread-safe, so the endpoints' sendJson/writeAndFlush calls
-        // are fine from the worker; the request is released once the work ends.
         if (!submitTask(() -> {
             try {
                 handle(ctx, req, path);
@@ -123,7 +115,6 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
                 try {
                     sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Internal error."));
                 } catch (Throwable ignored) {
-                    // response may already be partially written — nothing else to do
                 }
             } finally {
                 ReferenceCountUtil.release(req);
@@ -157,7 +148,8 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
                 || path.equals(CHANGE_PASSWORD_PATH)
                 || path.equals(CHANGE_EMAIL_PATH)
                 || path.equals(CHANGE_USERNAME_PATH)
-                || path.equals(HEALTH_PATH);
+                || path.equals(HEALTH_PATH)
+                || path.equals(MAINTENANCE_PATH);
     }
 
     private void handle(ChannelHandlerContext ctx, FullHttpRequest req, String path) {
@@ -174,6 +166,18 @@ public class AuthHttpHandler extends ChannelInboundHandlerAdapter {
             JsonObject ok = new JsonObject();
             ok.addProperty("status", "ok");
             sendJson(ctx, req, HttpResponseStatus.OK, ok);
+            return;
+        }
+
+        if (path.equals(MAINTENANCE_PATH)) {
+            if (!isGetOrHead(req)) {
+                sendJson(ctx, req, HttpResponseStatus.METHOD_NOT_ALLOWED, errorPayload("Use GET."));
+                return;
+            }
+            JsonObject status = new JsonObject();
+            status.addProperty("enabled", MaintenanceMode.isEnabled());
+            status.addProperty("message", MaintenanceMode.getMessage());
+            sendJson(ctx, req, HttpResponseStatus.OK, status);
             return;
         }
 

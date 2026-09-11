@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.games.snowwar.SnowWarConstants;
 import com.eu.habbo.habbohotel.games.snowwar.SnowWarManager;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.messages.outgoing.gamecenter.Game2GameNotFoundComposer;
 import com.eu.habbo.messages.outgoing.gamecenter.GameCenterAchievementsConfigurationComposer;
 import com.eu.habbo.messages.outgoing.gamecenter.basejump.BaseJumpJoinQueueComposer;
 import com.eu.habbo.messages.outgoing.gamecenter.basejump.BaseJumpLoadGameComposer;
@@ -30,6 +31,10 @@ public class GameCenterJoinGameEvent extends MessageHandler {
         } else if (gameId == 4) {
             this.client.sendResponse(new BaseJumpJoinQueueComposer(4));
             this.client.sendResponse(new BaseJumpLoadGameURLComposer());
+        } else {
+            // AIR Game2GameNotFound (444): nothing is hosted under this game
+            // type, so the hub stops waiting instead of hanging on "joining".
+            this.client.sendResponse(new Game2GameNotFoundComposer());
         }
     }
 }

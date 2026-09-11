@@ -1,6 +1,8 @@
 package com.eu.habbo.messages.incoming.handshake;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.MaintenanceMode;
+import com.eu.habbo.habbohotel.achievements.TalentTrackType;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.gameclients.GameClientManager;
 import com.eu.habbo.habbohotel.gameclients.SessionResumeManager;
@@ -26,20 +28,25 @@ import com.eu.habbo.messages.outgoing.gamecenter.GameCenterAccountInfoComposer;
 import com.eu.habbo.messages.outgoing.gamecenter.GameCenterGameListComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.GenericAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.MessagesForYouComposer;
+import com.eu.habbo.messages.outgoing.habboway.nux.NewUserExperienceNotCompleteComposer;
 import com.eu.habbo.messages.outgoing.habboway.nux.NewUserIdentityComposer;
 import com.eu.habbo.messages.outgoing.handshake.AvailabilityStatusMessageComposer;
 import com.eu.habbo.messages.outgoing.handshake.EnableNotificationsComposer;
 import com.eu.habbo.messages.outgoing.handshake.PingComposer;
 import com.eu.habbo.messages.outgoing.handshake.SecureLoginOKComposer;
+import com.eu.habbo.messages.outgoing.inventory.AvatarEffectSelectedComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryAchievementsComposer;
 import com.eu.habbo.messages.outgoing.inventory.UserEffectsListComposer;
 import com.eu.habbo.messages.outgoing.modtool.CfhTopicsMessageComposer;
 import com.eu.habbo.messages.outgoing.modtool.ModToolComposer;
+import com.eu.habbo.messages.outgoing.modtool.ModToolIssueHandlerDimensionsComposer;
 import com.eu.habbo.messages.outgoing.modtool.ModToolSanctionInfoComposer;
 import com.eu.habbo.messages.outgoing.mysterybox.MysteryBoxKeysComposer;
 import com.eu.habbo.messages.outgoing.navigator.NewNavigatorSavedSearchesComposer;
+import com.eu.habbo.messages.outgoing.unknown.UnknownStatusComposer;
 import com.eu.habbo.messages.outgoing.users.FavoriteRoomsCountComposer;
 import com.eu.habbo.messages.outgoing.users.UserAchievementScoreComposer;
+import com.eu.habbo.messages.outgoing.users.UserCitizinShipComposer;
 import com.eu.habbo.messages.outgoing.users.UserClothesComposer;
 import com.eu.habbo.messages.outgoing.users.UserClubComposer;
 import com.eu.habbo.messages.outgoing.users.UserHomeRoomComposer;
@@ -58,10 +65,23 @@ import org.slf4j.LoggerFactory;
 public class SecureLoginEvent extends MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(SecureLoginEvent.class);
     private static final int MAX_SSO_TICKET_LENGTH = 128;
+    /** AccountSafetyLockStatusChange: 0 locks the account, 1 releases it. */
+    private static final int SAFETY_LOCK_LOCKED = 0;
+
+    private static final int SAFETY_LOCK_UNLOCKED = 1;
 
     @Override
     public int getRatelimit() {
         return 500;
+    }
+
+    private static int rankIdOf(Habbo habbo) {
+        if (habbo == null
+                || habbo.getHabboInfo() == null
+                || habbo.getHabboInfo().getRank() == null) {
+            return Integer.MIN_VALUE;
+        }
+        return habbo.getHabboInfo().getRank().getId();
     }
 
     @Override
@@ -123,11 +143,6 @@ public class SecureLoginEvent extends MessageHandler {
             // Store SSO ticket on client for grace period tracking
             this.client.setSsoTicket(sso);
 
-            // Race condition fix: if the old WebSocket connection is still alive on the
-            // server when the client reconnects, the SSO ticket won't be in the DB yet
-            // (it was cleared on first login, and parkHabbo hasn't run because the old
-            // channel hasn't closed). Find the old client by SSO ticket and force-dispose
-            // it, which parks the habbo and restores the ticket to the DB.
             GameClient existingClient =
                     Emulator.getGameServer().getGameClientManager().findClientBySsoTicket(sso);
             if (existingClient != null && existingClient != this.client) {
@@ -136,11 +151,6 @@ public class SecureLoginEvent extends MessageHandler {
                 Emulator.getGameServer().getGameClientManager().disposeClient(existingClient);
             }
 
-            // First, look up the user ID to check for ghost sessions. Neither this
-            // lookup nor loadHabbo() enforces auth_ticket_expires_at: tickets are
-            // single-use (consumed right after login), so replay is bounded by
-            // consumption, and a parked (ghost) session's real time bound is the
-            // reconnect grace window.
             int lookupUserId = 0;
             try (java.sql.Connection conn =
                             Emulator.getDatabase().getDataSource().getConnection();
@@ -156,7 +166,6 @@ public class SecureLoginEvent extends MessageHandler {
                 LOGGER.error("Caught exception looking up user for session resume", e);
             }
 
-            // Check if this user has a ghost session (disconnected within grace period)
             Habbo habbo = null;
             boolean isSessionResume = false;
 
@@ -165,7 +174,6 @@ public class SecureLoginEvent extends MessageHandler {
             }
 
             if (habbo != null) {
-                // Session resume — reattach the existing Habbo to the new client
                 isSessionResume = true;
                 LOGGER.info(
                         "[SessionResume] Resuming session for {} (id={})",
@@ -184,16 +192,19 @@ public class SecureLoginEvent extends MessageHandler {
                     return;
                 }
 
-                // The parking flow restored this ticket to the DB for the grace
-                // window; the resume consumed it, so clear it again (single-use).
-                // The next disposal parks the habbo and restores it once more, so
-                // mid-session reconnect chains keep working. debug_sso = 1 skips
-                // the clearing (handled inside consumeSsoTicket).
+                if (!MaintenanceMode.canLogin(rankIdOf(habbo))) {
+                    LOGGER.info(
+                            "[Maintenance] Rejected resumed session for user id={} (rank below hotel.maintenance.min_rank)",
+                            habbo.getHabboInfo().getId());
+                    this.client.sendResponse(new GenericAlertComposer(MaintenanceMode.getMessage()));
+                    Emulator.getGameServer().getGameClientManager().forceDisposeClient(this.client);
+                    return;
+                }
+
                 Emulator.getGameEnvironment()
                         .getHabboManager()
                         .consumeSsoTicket(habbo.getHabboInfo().getId());
             } else {
-                // Normal login — load from database
                 HabboManager habboManager = Emulator.getGameEnvironment().getHabboManager();
                 habbo = habboManager.loadHabbo(sso);
                 if (habbo == null && !recoveryToken.isEmpty()) {
@@ -233,6 +244,18 @@ public class SecureLoginEvent extends MessageHandler {
                         if (this.client.getHabbo().getHabboInfo().getRank() == null) {
                             throw new NullPointerException(
                                     habbo.getHabboInfo().getUsername() + " has a NON EXISTING RANK!");
+                        }
+
+                        // Maintenance mode: only hotel.maintenance.min_rank and above may
+                        // log in. The HTTP auth API refuses earlier, but the socket login
+                        // is a separate door (SSO ticket, recovery token), so gate here too.
+                        if (!MaintenanceMode.canLogin(rankIdOf(this.client.getHabbo()))) {
+                            LOGGER.info(
+                                    "[Maintenance] Rejected login for user id={} (rank below hotel.maintenance.min_rank)",
+                                    this.client.getHabbo().getHabboInfo().getId());
+                            this.client.sendResponse(new GenericAlertComposer(MaintenanceMode.getMessage()));
+                            Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
+                            return;
                         }
 
                         // If the machine fingerprint already arrived (UniqueID before login),
@@ -302,7 +325,19 @@ public class SecureLoginEvent extends MessageHandler {
                                         .values())
                         .compose());
                 messages.add(new UserClothesComposer(this.client.getHabbo()).compose());
+
+                // Which effect is on: without it the window forgets the choice at every reconnect.
+                messages.add(new AvatarEffectSelectedComposer(
+                                this.client.getHabbo().getInventory().getEffectsComponent().activatedEffect)
+                        .compose());
                 messages.add(new NewUserIdentityComposer(habbo).compose());
+
+                // The gift offer of the first days: the client shows it only once it is told the
+                // new user experience has not been finished.
+                if (!this.client.getHabbo().getHabboStats().nuxReward
+                        && Emulator.getConfig().getBoolean("hotel.nux.gifts.enabled")) {
+                    messages.add(new NewUserExperienceNotCompleteComposer().compose());
+                }
                 messages.add(new UserPermissionsComposer(this.client.getHabbo()).compose());
                 messages.add(new AvailableCommandsComposer(Emulator.getGameEnvironment()
                                 .getCommandHandler()
@@ -374,6 +409,29 @@ public class SecureLoginEvent extends MessageHandler {
                 // Hardcoded
                 // this.client.sendResponse(new ForumsTestComposer());
                 this.client.sendResponse(new InventoryAchievementsComposer());
+
+                // Official TalentTrackLevel (1203): TalentPromoCtrl needs the level pair of both
+                // tracks before the hotel view decides whether to promote them.
+                if (Emulator.getConfig().getBoolean("hotel.talenttrack.enabled")) {
+                    for (TalentTrackType talentTrackType : TalentTrackType.values()) {
+                        this.client.sendResponse(UserCitizinShipComposer.forHabbo(habbo, talentTrackType));
+                    }
+                }
+
+                // Official AccountSafetyLockStatusChange (1243): the toolbar badge stays up for as
+                // long as the account is locked, so replay the stored status on every login.
+                this.client.sendResponse(new UnknownStatusComposer(
+                        habbo.getHabboStats().safetyLocked ? SAFETY_LOCK_LOCKED : SAFETY_LOCK_UNLOCKED));
+
+                // Official ModToolPreferences (31) round trip: replay where the moderator left the
+                // issue handler window.
+                if (habbo.hasPermission(Permission.ACC_SUPPORTTOOL) && habbo.getHabboStats().modToolWindowWidth > 0) {
+                    this.client.sendResponse(new ModToolIssueHandlerDimensionsComposer(
+                            habbo.getHabboStats().modToolWindowX,
+                            habbo.getHabboStats().modToolWindowY,
+                            habbo.getHabboStats().modToolWindowWidth,
+                            habbo.getHabboStats().modToolWindowHeight));
+                }
 
                 ModToolSanctions modToolSanctions =
                         Emulator.getGameEnvironment().getModToolSanctions();

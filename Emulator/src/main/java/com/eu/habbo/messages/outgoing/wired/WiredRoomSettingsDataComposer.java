@@ -32,6 +32,8 @@ public class WiredRoomSettingsDataComposer extends MessageComposer {
         this.response.appendBoolean(canInspect);
         this.response.appendBoolean(canModify);
         this.response.appendBoolean(canManageSettings);
+        // AIR 13 wired settings tab also restores the room's timezone picker.
+        this.response.appendString((this.room != null) ? this.room.getWiredTimezone() : "");
 
         return this.response;
     }

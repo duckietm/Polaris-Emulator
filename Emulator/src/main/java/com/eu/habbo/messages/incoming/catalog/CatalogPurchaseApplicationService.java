@@ -13,6 +13,7 @@ import com.eu.habbo.habbohotel.catalog.CatalogPageAccessPolicy;
 import com.eu.habbo.habbohotel.catalog.CatalogPaymentService;
 import com.eu.habbo.habbohotel.catalog.CatalogPurchaseMath;
 import com.eu.habbo.habbohotel.catalog.ClubOffer;
+import com.eu.habbo.habbohotel.catalog.LtdRaffleManager;
 import com.eu.habbo.habbohotel.catalog.layouts.BuildersClubAddonsLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.BuildersClubFrontPageLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.BuildersClubLoyaltyLayout;
@@ -349,6 +350,14 @@ final class CatalogPurchaseApplicationService {
                     || (!StringUtils.isAlphanumeric(check[0]))) {
                 return;
             }
+        }
+
+        // AIR 13 does not sell a limited-edition item to whoever clicked first: the buyers
+        // of the same offer are collected for a few seconds and then drawn for the copies
+        // that are left. When the raffle takes this purchase it also completes it, so
+        // there is nothing more to do here.
+        if (LtdRaffleManager.enter(this.environment.getCatalogManager(), page, item, this.client.getHabbo())) {
+            return;
         }
 
         this.environment.getCatalogManager().purchaseItem(page, item, this.client.getHabbo(), count, extraData, false);

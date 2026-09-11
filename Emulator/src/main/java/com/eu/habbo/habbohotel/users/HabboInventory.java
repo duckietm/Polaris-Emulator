@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.users.inventory.ItemsComponent;
 import com.eu.habbo.habbohotel.users.inventory.NickIconsComponent;
 import com.eu.habbo.habbohotel.users.inventory.PetsComponent;
 import com.eu.habbo.habbohotel.users.inventory.PrefixesComponent;
+import com.eu.habbo.habbohotel.users.inventory.UnseenItemsComponent;
 import com.eu.habbo.habbohotel.users.inventory.UserVisualSettingsComponent;
 import com.eu.habbo.habbohotel.users.inventory.WardrobeComponent;
 import java.util.Set;
@@ -33,6 +34,7 @@ public class HabboInventory {
     private PrefixesComponent prefixesComponent;
     private NickIconsComponent nickIconsComponent;
     private UserVisualSettingsComponent userVisualSettingsComponent;
+    private final UnseenItemsComponent unseenItemsComponent = new UnseenItemsComponent();
 
     public HabboInventory(Habbo habbo) {
         this.habbo = habbo;
@@ -159,6 +161,11 @@ public class HabboInventory {
 
     public UserVisualSettingsComponent getUserVisualSettingsComponent() {
         return this.userVisualSettingsComponent;
+    }
+
+    /** Official unseen-item tracker state: what the inventory badge still counts as new. */
+    public UnseenItemsComponent getUnseenItemsComponent() {
+        return this.unseenItemsComponent;
     }
 
     public void setUserVisualSettingsComponent(UserVisualSettingsComponent userVisualSettingsComponent) {

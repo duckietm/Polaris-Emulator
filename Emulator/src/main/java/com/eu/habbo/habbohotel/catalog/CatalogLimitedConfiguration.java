@@ -95,7 +95,9 @@ public class CatalogLimitedConfiguration implements Runnable {
     }
 
     @Deprecated
-    public void markSoldOutIfEmpty() {}
+    public void markSoldOutIfEmpty() {
+        // Intentionally a no-op: the sold-out redirect is handled at serialization time.
+    }
 
     public void generateNumbers(int starting, int amount) {
         synchronized (this.limitedNumbers) {

@@ -46,7 +46,12 @@ class WiredHandlerAuthorizationTest {
             "WiredFurniRuntimeStatePolicy.java",
             "WiredUserInspectMovePolicy.java",
             "WiredSaveException.java",
-            "WiredTriggerSaveException.java");
+            "WiredTriggerSaveException.java",
+            // Gameplay trigger, not a configuration change: any visitor may click another
+            // visitor, exactly as the official client does. It reads no wired configuration
+            // and writes nothing; being in the room is the only authorization, enforced by
+            // currentRoom() plus the clicking user's own room unit, and it is rate limited.
+            "WiredUserSelectedEvent.java");
 
     @Test
     void everyWiredHandlerReachesAnAuthorizationGate() throws Exception {

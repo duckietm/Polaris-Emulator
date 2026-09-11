@@ -272,6 +272,7 @@ public class CommandHandler {
         addCommand(new IPBanCommand());
         addCommand(new LayCommand());
         addCommand(new MachineBanCommand());
+        addCommand(new MaintenanceCommand());
         addCommand(new MassBadgeCommand());
         addCommand(new RoomBadgeCommand());
         addCommand(new MassCreditsCommand());
@@ -300,6 +301,7 @@ public class CommandHandler {
         addCommand(new RoomCreditsCommand());
         addCommand(new RoomDanceCommand());
         addCommand(new RoomEffectCommand());
+        addCommand(new RoomSpecialEffectCommand());
         addCommand(new RoomItemCommand());
         addCommand(new RoomKickCommand());
         addCommand(new RoomMuteCommand());

@@ -125,6 +125,112 @@ public final class SnowWarLeaderboardRepository {
                 GAME_TYPE_ID);
     }
 
+    /**
+     * AIR's group tables (Game2GetTotalGroupLeaderboard / WeeklyGroup) rank
+     * guilds instead of users: every player's score counts for the guild they
+     * marked as favourite, the row carries the guild id in {@code userId}, its
+     * badge code in {@code figure} and the gender marker {@code g}, and the
+     * page is delivered with the viewer's own favourite guild so the list can
+     * highlight it.
+     */
+    public GroupPage loadGroups(int viewerUserId, boolean weekly, int weekOffset, int startRank, int limit) {
+        int maxOffset = this.maxWeekOffset();
+        int safeOffset = Math.max(0, Math.min(weekOffset, maxOffset));
+        int safeRank = Math.max(1, startRank);
+        int safeLimit = Math.max(1, Math.min(limit, 50));
+        LocalDate selectedWeek = weekStart(safeOffset);
+
+        Page page = new Page(
+                selectedWeek.get(WeekFields.ISO.weekBasedYear()),
+                selectedWeek.get(WeekFields.ISO.weekOfWeekBasedYear()),
+                maxOffset,
+                safeOffset,
+                minutesUntilReset(),
+                this.loadGroupEntries(weekly, selectedWeek, safeRank, safeLimit),
+                this.countGroupEntries(weekly, selectedWeek),
+                GAME_TYPE_ID);
+        return new GroupPage(page, this.favouriteGuild(viewerUserId));
+    }
+
+    public record GroupPage(Page page, int favouriteGroupId) {}
+
+    private List<Entry> loadGroupEntries(boolean weekly, LocalDate selectedWeek, int startRank, int limit) {
+        String scores = weekly
+                ? "SELECT user_id, score FROM snowwar_scores WHERE week_start = ?"
+                : "SELECT user_id, SUM(score) score FROM snowwar_scores GROUP BY user_id";
+        String sql = "WITH scores AS (" + scores + "), grouped AS ("
+                + "SELECT users_settings.guild_id guild_id, SUM(scores.score) score FROM scores "
+                + "INNER JOIN users_settings ON users_settings.user_id = scores.user_id "
+                + "WHERE scores.score > 0 AND users_settings.guild_id > 0 GROUP BY users_settings.guild_id), ranked AS ("
+                + "SELECT guild_id, score, RANK() OVER (ORDER BY score DESC) position FROM grouped) "
+                + "SELECT ranked.guild_id, ranked.score, ranked.position, guilds.name, guilds.badge "
+                + "FROM ranked INNER JOIN guilds ON guilds.id = ranked.guild_id "
+                + "WHERE ranked.position >= ? ORDER BY ranked.position, ranked.guild_id LIMIT ?";
+
+        List<Entry> entries = new ArrayList<>();
+        try (Connection connection = this.connections.openConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            int index = 1;
+            if (weekly) {
+                statement.setDate(index++, Date.valueOf(selectedWeek));
+            }
+            statement.setInt(index++, startRank);
+            statement.setInt(index, limit);
+
+            try (ResultSet result = statement.executeQuery()) {
+                while (result.next()) {
+                    String badge = result.getString("badge");
+                    entries.add(new Entry(
+                            result.getInt("guild_id"),
+                            clampScore(result.getLong("score")),
+                            result.getInt("position"),
+                            result.getString("name"),
+                            badge == null ? "" : badge,
+                            "g"));
+                }
+            }
+        } catch (SQLException exception) {
+            LOGGER.error("Unable to load the SnowWar group leaderboard", exception);
+        }
+        return entries;
+    }
+
+    private int countGroupEntries(boolean weekly, LocalDate selectedWeek) {
+        String scores = weekly
+                ? "SELECT user_id, score FROM snowwar_scores WHERE week_start = ?"
+                : "SELECT user_id, SUM(score) score FROM snowwar_scores GROUP BY user_id";
+        String sql = "WITH scores AS (" + scores + ") "
+                + "SELECT COUNT(DISTINCT users_settings.guild_id) FROM scores "
+                + "INNER JOIN users_settings ON users_settings.user_id = scores.user_id "
+                + "WHERE scores.score > 0 AND users_settings.guild_id > 0";
+        try (Connection connection = this.connections.openConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            if (weekly) {
+                statement.setDate(1, Date.valueOf(selectedWeek));
+            }
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next() ? result.getInt(1) : 0;
+            }
+        } catch (SQLException exception) {
+            LOGGER.error("Unable to count the SnowWar group leaderboard entries", exception);
+            return 0;
+        }
+    }
+
+    private int favouriteGuild(int userId) {
+        try (Connection connection = this.connections.openConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT guild_id FROM users_settings WHERE user_id = ? LIMIT 1")) {
+            statement.setInt(1, userId);
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next() ? result.getInt(1) : 0;
+            }
+        } catch (SQLException exception) {
+            LOGGER.error("Unable to load the favourite guild for the SnowWar group leaderboard", exception);
+            return 0;
+        }
+    }
+
     private List<Entry> loadEntries(
             int viewerUserId,
             boolean weekly,

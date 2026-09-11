@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.messenger.MessengerBuddy;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.messages.outgoing.rooms.BuildHeightAvailableComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomAddRightsListComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomOwnerComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomRemoveRightsListComposer;
@@ -305,6 +306,13 @@ public class RoomRightsManager {
         }
 
         habbo.getClient().sendResponse(new RoomRightsComposer(flatCtrl));
+        // The build height widget is hidden until the hotel says it may be used here, so the answer
+        // travels with the rights; losing rights also drops a height the user had picked.
+        boolean mayBuild = !flatCtrl.equals(RoomRightLevels.NONE);
+        habbo.getClient().sendResponse(new BuildHeightAvailableComposer(mayBuild));
+        if (!mayBuild) {
+            habbo.getRoomUnit().setBuildHeight(false, 0.0D);
+        }
         habbo.getRoomUnit().setStatus(RoomUnitStatus.FLAT_CONTROL, flatCtrl.level + "");
         habbo.getRoomUnit().setRightsLevel(flatCtrl);
         habbo.getRoomUnit().statusUpdate(true);

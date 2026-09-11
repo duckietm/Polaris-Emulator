@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.users.inventory;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInventory;
@@ -77,6 +78,15 @@ public class ItemsComponent {
         synchronized (this.items) {
             this.items.put(event.item.getId(), event.item);
         }
+
+        this.inventory.getUnseenItemsComponent().markUnseen(unseenCategory(event.item), event.item.getId());
+    }
+
+    /** Official unseen categories: 1 for floor furni, 2 for wall furni. */
+    private static int unseenCategory(HabboItem item) {
+        return item.getBaseItem() != null && item.getBaseItem().getType() == FurnitureType.WALL
+                ? UnseenItemsComponent.CATEGORY_WALL_ITEM
+                : UnseenItemsComponent.CATEGORY_FLOOR_ITEM;
     }
 
     public void addItems(Collection<HabboItem> items) {

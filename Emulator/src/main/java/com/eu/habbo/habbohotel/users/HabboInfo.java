@@ -35,6 +35,7 @@ public class HabboInfo implements Runnable {
     private String look;
     private HabboGender gender;
     private String mail;
+    private boolean mailVerified;
     private String sso;
     private String ipRegister;
     private String ipLogin;
@@ -80,6 +81,7 @@ public class HabboInfo implements Runnable {
             this.look = set.getString("look");
             this.gender = HabboGender.valueOf(set.getString("gender"));
             this.mail = set.getString("mail");
+            this.mailVerified = set.getBoolean("mail_verified");
             this.sso = set.getString("auth_ticket");
             this.ipRegister = set.getString("ip_register");
             this.ipLogin = set.getString("ip_current");
@@ -467,6 +469,15 @@ public class HabboInfo implements Runnable {
 
     public void setMail(String mail) {
         this.mail = mail;
+    }
+
+    /** Official EmailStatus.isVerified (612). */
+    public boolean isMailVerified() {
+        return this.mailVerified;
+    }
+
+    public void setMailVerified(boolean mailVerified) {
+        this.mailVerified = mailVerified;
     }
 
     public String getSso() {

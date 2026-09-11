@@ -88,6 +88,21 @@ class WiredPacketGoldenCompatibilityTest {
                                 new WiredOpacityState(0x01020305, true, 90, false)),
                         3,
                         1500)));
+        // AIR 13 wired leftovers.
+        lines.add(packet("environment-empty", new WiredEnvironmentComposer(null)));
+        lines.add(packet("click-user-response", new WiredClickUserResponseComposer(0x01020304, true)));
+        lines.add(packet(
+                "click-settings",
+                new WiredClickSettingsComposer(
+                        WiredClickSettingsComposer.CLICK_USER_PASS_THROUGH,
+                        WiredClickSettingsComposer.CLICK_FURNI_PASS_THROUGH)));
+        lines.add(packet("all-variables-hash", new WiredAllVariablesHashComposer(0x01020304)));
+        lines.add(packet(
+                "all-variables-diff-empty", new WiredAllVariablesDiffComposer(0x01020304, true, List.of(), List.of())));
+        lines.add(packet("room-log-page-empty", new WiredRoomLogPageComposer(0, 1, 50, List.of(), -1, -1, "")));
+        lines.add(packet(
+                "variable-holders-page-empty",
+                new WiredVariableHoldersPageComposer("user:42", 0, 1, 50, List.of(), 0, -1)));
         return lines;
     }
 

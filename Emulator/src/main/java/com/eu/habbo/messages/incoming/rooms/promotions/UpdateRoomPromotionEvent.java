@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomPromotion;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.incoming.rooms.items.RoomItemInputGuard;
+import com.eu.habbo.messages.outgoing.navigator.CanCreateEventComposer;
 import com.eu.habbo.messages.outgoing.rooms.promotions.RoomPromotionMessageComposer;
 
 public class UpdateRoomPromotionEvent extends MessageHandler {
@@ -20,9 +21,15 @@ public class UpdateRoomPromotionEvent extends MessageHandler {
                 this.packet.readString(), RoomItemInputGuard.MAX_PROMOTION_DESCRIPTION_LENGTH);
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(id);
 
-        if (room == null
-                || (room.getOwnerId() != this.client.getHabbo().getHabboInfo().getId()
-                        && !this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER))) {
+        // A refusal used to be silence. The client has a sentence for each of these.
+        if (room == null) {
+            this.client.sendResponse(new CanCreateEventComposer(CanCreateEventComposer.ERROR_NOT_IN_GUEST_ROOM));
+            return;
+        }
+
+        if (room.getOwnerId() != this.client.getHabbo().getHabboInfo().getId()
+                && !this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)) {
+            this.client.sendResponse(new CanCreateEventComposer(CanCreateEventComposer.ERROR_NOT_THE_OWNER));
             return;
         }
 

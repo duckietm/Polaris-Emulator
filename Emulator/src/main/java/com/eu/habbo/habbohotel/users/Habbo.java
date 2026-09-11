@@ -9,6 +9,7 @@ import com.eu.habbo.habbohotel.economy.EconomyOperation;
 import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.messenger.Messenger;
+import com.eu.habbo.habbohotel.modtool.ModToolBan;
 import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessage;
@@ -16,6 +17,7 @@ import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.rooms.RoomUnitType;
 import com.eu.habbo.habbohotel.rooms.RoomUserAction;
+import com.eu.habbo.habbohotel.rooms.RoomVisitorQueueSupport;
 import com.eu.habbo.habbohotel.users.inventory.BadgesComponent;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
@@ -39,6 +41,7 @@ import com.eu.habbo.messages.outgoing.rooms.users.RoomUserShoutComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserTalkComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserWhisperComposer;
 import com.eu.habbo.messages.outgoing.users.AddUserBadgeComposer;
+import com.eu.habbo.messages.outgoing.users.BanInfoComposer;
 import com.eu.habbo.messages.outgoing.users.MutedWhisperComposer;
 import com.eu.habbo.messages.outgoing.users.UserCreditsComposer;
 import com.eu.habbo.messages.outgoing.users.UserCurrencyComposer;
@@ -209,7 +212,17 @@ public class Habbo implements Runnable {
             this.habboInfo.setIpLogin(ip);
         }
 
-        if (Emulator.getGameEnvironment().getModToolManager().checkForBan(this.habboInfo.getId()) != null) {
+        ModToolBan accountBan =
+                Emulator.getGameEnvironment().getModToolManager().checkForBan(this.habboInfo.getId());
+
+        if (accountBan != null) {
+            // Official class_2799 BanInfo: the client turns it into the ban alert with the expiry
+            // (HabboAlertDialogManager.handleBanInfoMessage) before the connection goes away.
+            this.client.sendResponse(new BanInfoComposer(
+                    this.habboInfo.getId(),
+                    accountBan.reason,
+                    Math.max(-1, accountBan.expireDate - Emulator.getIntUnixTimestamp()),
+                    ""));
             return new ConnectionSecurityResult(false, proxyInfo);
         }
 
@@ -285,6 +298,8 @@ public class Habbo implements Runnable {
                         room.removeFromQueue(this);
                     }
                 }
+                // AIR 13 room queue: a logout leaves every full-room queue.
+                RoomVisitorQueueSupport.removeEverywhere(this);
             } catch (Exception e) {
                 LOGGER.error("Caught exception", e);
             }

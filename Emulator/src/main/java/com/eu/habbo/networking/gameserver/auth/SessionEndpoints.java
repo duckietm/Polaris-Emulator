@@ -16,6 +16,7 @@ import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.readString;
 import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.sendJson;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.MaintenanceMode;
 import com.google.gson.JsonObject;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -98,6 +99,13 @@ final class SessionEndpoints {
         }
 
         try (Connection conn = Emulator.getDatabase().getDataSource().getConnection()) {
+            int peekedUserId = RememberJwtService.peekUserId(jwt);
+            if (peekedUserId > 0
+                    && !passesMaintenanceGate(
+                            ctx, req, lookupRank(conn, peekedUserId), "auth/remember", peekedUserId)) {
+                return;
+            }
+
             RememberJwtService.RotationResult rot = RememberJwtService.rotate(conn, jwt, ip);
             if (rot == null) {
                 sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("Remember token invalid or expired."));
@@ -152,11 +160,6 @@ final class SessionEndpoints {
                     userId = rs.getInt("id");
                     username = rs.getString("username");
                 } else {
-                    // The game login consumes the SSO ticket (single-use) and the
-                    // client requests this token in parallel with the WebSocket
-                    // login, so the row may already be cleared. A live
-                    // authenticated game session still holding the same ticket is
-                    // the same proof of possession, so accept it.
                     com.eu.habbo.habbohotel.gameclients.GameClient online =
                             Emulator.getGameServer().getGameClientManager().findClientBySsoTicket(ssoTicket);
                     if (online != null && online.getHabbo() != null) {
@@ -168,6 +171,10 @@ final class SessionEndpoints {
                 if (userId <= 0 || username == null) {
                     AuthRateLimiter.recordFailure(ip);
                     sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("SSO ticket not recognised."));
+                    return;
+                }
+
+                if (!passesMaintenanceGate(ctx, req, lookupRank(conn, userId), "auth/sso-token", userId)) {
                     return;
                 }
 
@@ -194,6 +201,12 @@ final class SessionEndpoints {
         }
 
         try (Connection conn = Emulator.getDatabase().getDataSource().getConnection()) {
+            int peekedUserId = RememberJwtService.peekUserId(jwt);
+            if (peekedUserId > 0
+                    && !passesMaintenanceGate(ctx, req, lookupRank(conn, peekedUserId), "auth/refresh", peekedUserId)) {
+                return;
+            }
+
             RememberJwtService.RotationResult rot = RememberJwtService.rotate(conn, jwt, ip);
             if (rot == null) {
                 sendJson(ctx, req, HttpResponseStatus.UNAUTHORIZED, errorPayload("Remember token invalid or expired."));
@@ -211,6 +224,35 @@ final class SessionEndpoints {
             LOGGER.error("Refresh failed", e);
             sendJson(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR, errorPayload("Server error."));
         }
+    }
+
+    private static JsonObject maintenancePayload() {
+        JsonObject obj = errorPayload(MaintenanceMode.getMessage());
+        obj.addProperty("maintenance", true);
+        obj.addProperty("code", "maintenance");
+        return obj;
+    }
+
+    private static int lookupRank(Connection conn, int userId) throws SQLException {
+        try (PreparedStatement stmt = conn.prepareStatement("SELECT `rank` FROM users WHERE id = ? LIMIT 1")) {
+            stmt.setInt(1, userId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next() ? rs.getInt("rank") : Integer.MIN_VALUE;
+            }
+        }
+    }
+
+    private static boolean passesMaintenanceGate(
+            ChannelHandlerContext ctx, FullHttpRequest req, int rankId, String route, int userId) {
+        if (MaintenanceMode.canLogin(rankId)) return true;
+        LOGGER.info(
+                "[{}] refused by maintenance mode userId={} rank={} minRank={}",
+                route,
+                userId,
+                rankId,
+                MaintenanceMode.getMinRank());
+        sendJson(ctx, req, HttpResponseStatus.SERVICE_UNAVAILABLE, maintenancePayload());
+        return false;
     }
 
     static void handleLogin(ChannelHandlerContext ctx, FullHttpRequest req, JsonObject body, String ip) {
@@ -233,8 +275,8 @@ final class SessionEndpoints {
                 }
             }
 
-            try (PreparedStatement stmt =
-                    conn.prepareStatement("SELECT id, username, password FROM users WHERE username = ? LIMIT 1")) {
+            try (PreparedStatement stmt = conn.prepareStatement(
+                    "SELECT id, username, password, `rank` FROM users WHERE username = ? LIMIT 1")) {
                 stmt.setString(1, username);
                 try (ResultSet rs = stmt.executeQuery()) {
                     if (!rs.next()) {
@@ -281,6 +323,11 @@ final class SessionEndpoints {
                                 accountBan.expiresAt);
                         AuthRateLimiter.recordSuccess(ip);
                         sendJson(ctx, req, HttpResponseStatus.FORBIDDEN, bannedPayload(accountBan));
+                        return;
+                    }
+
+                    if (!passesMaintenanceGate(ctx, req, rs.getInt("rank"), "auth/login", userId)) {
+                        AuthRateLimiter.recordSuccess(ip);
                         return;
                     }
 

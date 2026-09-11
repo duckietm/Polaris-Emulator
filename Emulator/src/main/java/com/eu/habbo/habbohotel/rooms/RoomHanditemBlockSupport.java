@@ -1,15 +1,16 @@
 package com.eu.habbo.habbohotel.rooms;
 
-import com.eu.habbo.habbohotel.items.interactions.InteractionHanditemBlockControl;
-import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.items.interactions.InteractionHanditemBlockControl;
+import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.messages.outgoing.rooms.ConfigurationItemStatesComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.HanditemBlockStateComposer;
 
 public final class RoomHanditemBlockSupport {
     private static final String CONTROLLER_INTERACTION = "wf_conf_handitem_block";
 
-    private RoomHanditemBlockSupport() {
-    }
+    private RoomHanditemBlockSupport() {}
 
     public static boolean isHanditemBlocked(Room room) {
         if (room == null) {
@@ -53,6 +54,23 @@ public final class RoomHanditemBlockSupport {
         }
 
         room.sendComposer(new HanditemBlockStateComposer(room).compose());
+        broadcastConfigurationItemStates(room);
+    }
+
+    /**
+     * AIR 13 {@code ConfigurationItemStates} (1508) carries per-viewer flags, so
+     * a room-wide refresh sends one packet per habbo.
+     */
+    static void broadcastConfigurationItemStates(Room room) {
+        if (room == null) {
+            return;
+        }
+
+        for (Habbo habbo : room.getHabbos()) {
+            if (habbo.getClient() != null) {
+                habbo.getClient().sendResponse(new ConfigurationItemStatesComposer(room, habbo).compose());
+            }
+        }
     }
 
     public static void sendState(Room room, GameClient client) {

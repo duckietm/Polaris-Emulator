@@ -480,7 +480,8 @@ public class RoomChatManager {
 
         for (Habbo h : this.room.getHabbos()) {
             if (h == roomChatMessage.getTargetHabbo() || h == habbo) {
-                if (!h.getHabboStats().userIgnored(habbo.getHabboInfo().getId())) {
+                if (!h.getHabboStats().userIgnored(habbo.getHabboInfo().getId())
+                        && !h.getHabboStats().userBlocked(habbo.getHabboInfo().getId())) {
                     if (prefixMessage != null) {
                         h.getClient().sendResponse(prefixMessage);
                     }
@@ -525,7 +526,8 @@ public class RoomChatManager {
                     && (tentRectangle == null
                             || RoomLayout.tileInSquare(
                                     tentRectangle, h.getRoomUnit().getCurrentLocation()))) {
-                if (!h.getHabboStats().userIgnored(habbo.getHabboInfo().getId())) {
+                if (!h.getHabboStats().userIgnored(habbo.getHabboInfo().getId())
+                        && !h.getHabboStats().userBlocked(habbo.getHabboInfo().getId())) {
                     if (prefixMessage != null && !h.getHabboStats().preferOldChat) {
                         h.getClient().sendResponse(prefixMessage);
                     }
@@ -592,6 +594,7 @@ public class RoomChatManager {
 
         for (Habbo h : this.room.getHabbos()) {
             if (!h.getHabboStats().userIgnored(habbo.getHabboInfo().getId())
+                    && !h.getHabboStats().userBlocked(habbo.getHabboInfo().getId())
                     && (tentRectangle == null
                             || RoomLayout.tileInSquare(
                                     tentRectangle, h.getRoomUnit().getCurrentLocation()))) {

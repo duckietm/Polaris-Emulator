@@ -9,7 +9,7 @@ import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.modtool.ModToolIssueHandledComposer;
-
+import com.eu.habbo.messages.outgoing.modtool.ModeratorActionResultComposer;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
@@ -26,7 +26,9 @@ public class ModToolSanctionMuteEvent extends MessageHandler {
         String message = ModToolInputGuard.normalize(this.packet.readString());
         int cfhTopic = this.packet.readInt();
 
-        if (!ModToolTicketGuard.isPositiveId(userId) || !ModToolTicketGuard.isPositiveId(cfhTopic) || !ModToolInputGuard.isSafeMessage(message)) {
+        if (!ModToolTicketGuard.isPositiveId(userId)
+                || !ModToolTicketGuard.isPositiveId(cfhTopic)
+                || !ModToolInputGuard.isSafeMessage(message)) {
             return;
         }
 
@@ -38,27 +40,56 @@ public class ModToolSanctionMuteEvent extends MessageHandler {
                     return;
                 }
 
-                ModToolSanctions modToolSanctions = Emulator.getGameEnvironment().getModToolSanctions();
+                ModToolSanctions modToolSanctions =
+                        Emulator.getGameEnvironment().getModToolSanctions();
 
                 if (Emulator.getConfig().getBoolean("hotel.sanctions.enabled")) {
-                    Map<Integer, ArrayList<ModToolSanctionItem>> modToolSanctionItemsHashMap = Emulator.getGameEnvironment().getModToolSanctions().getSanctions(habbo.getHabboInfo().getId());
-                    ArrayList<ModToolSanctionItem> modToolSanctionItems = modToolSanctionItemsHashMap.get(habbo.getHabboInfo().getId());
+                    Map<Integer, ArrayList<ModToolSanctionItem>> modToolSanctionItemsHashMap =
+                            Emulator.getGameEnvironment()
+                                    .getModToolSanctions()
+                                    .getSanctions(habbo.getHabboInfo().getId());
+                    ArrayList<ModToolSanctionItem> modToolSanctionItems =
+                            modToolSanctionItemsHashMap.get(habbo.getHabboInfo().getId());
 
                     if (modToolSanctionItems != null && !modToolSanctionItemsHashMap.isEmpty()) {
                         ModToolSanctionItem item = modToolSanctionItems.get(modToolSanctionItems.size() - 1);
 
                         if (item.probationTimestamp > 0 && item.probationTimestamp >= Emulator.getIntUnixTimestamp()) {
-                            ModToolSanctionLevelItem modToolSanctionLevelItem = modToolSanctions.getSanctionLevelItem(item.sanctionLevel);
+                            ModToolSanctionLevelItem modToolSanctionLevelItem =
+                                    modToolSanctions.getSanctionLevelItem(item.sanctionLevel);
 
-                            int muteDurationTimestamp = Math.toIntExact(new Date( System.currentTimeMillis() + ((long) modToolSanctionLevelItem.sanctionHourLength * 60 * 60)).getTime() / 1000);
+                            int muteDurationTimestamp = Math.toIntExact(new Date(System.currentTimeMillis()
+                                                    + ((long) modToolSanctionLevelItem.sanctionHourLength * 60 * 60))
+                                            .getTime()
+                                    / 1000);
 
-                            modToolSanctions.run(userId, this.client.getHabbo(), item.sanctionLevel, cfhTopic, message, 0, true, muteDurationTimestamp);
+                            modToolSanctions.run(
+                                    userId,
+                                    this.client.getHabbo(),
+                                    item.sanctionLevel,
+                                    cfhTopic,
+                                    message,
+                                    0,
+                                    true,
+                                    muteDurationTimestamp);
                         } else {
-                            ModToolSanctionLevelItem modToolSanctionLevelItem = modToolSanctions.getSanctionLevelItem(item.sanctionLevel);
+                            ModToolSanctionLevelItem modToolSanctionLevelItem =
+                                    modToolSanctions.getSanctionLevelItem(item.sanctionLevel);
 
-                            int muteDurationTimestamp = Math.toIntExact(new Date( System.currentTimeMillis() + ((long) modToolSanctionLevelItem.sanctionHourLength * 60 * 60)).getTime() / 1000);
+                            int muteDurationTimestamp = Math.toIntExact(new Date(System.currentTimeMillis()
+                                                    + ((long) modToolSanctionLevelItem.sanctionHourLength * 60 * 60))
+                                            .getTime()
+                                    / 1000);
 
-                            modToolSanctions.run(userId, this.client.getHabbo(), item.sanctionLevel, cfhTopic, message, 0, true, muteDurationTimestamp);
+                            modToolSanctions.run(
+                                    userId,
+                                    this.client.getHabbo(),
+                                    item.sanctionLevel,
+                                    cfhTopic,
+                                    message,
+                                    0,
+                                    true,
+                                    muteDurationTimestamp);
                         }
                     } else {
                         modToolSanctions.run(userId, this.client.getHabbo(), 0, cfhTopic, message, 0, false, 0);
@@ -66,12 +97,20 @@ public class ModToolSanctionMuteEvent extends MessageHandler {
                 } else {
                     habbo.mute(60 * 60, false);
                     habbo.alert(message);
-                    this.client.getHabbo().whisper(Emulator.getTexts().getValue("commands.succes.cmd_mute.muted").replace("%user%", habbo.getHabboInfo().getUsername()));
+                    this.client
+                            .getHabbo()
+                            .whisper(Emulator.getTexts()
+                                    .getValue("commands.succes.cmd_mute.muted")
+                                    .replace("%user%", habbo.getHabboInfo().getUsername()));
                 }
 
                 ModToolManager.bumpUserSettingCounter(userId, "cfh_warnings");
+                this.client.sendResponse(new ModeratorActionResultComposer(userId, true));
             } else {
-                this.client.sendResponse(new ModToolIssueHandledComposer(Emulator.getTexts().getValue("generic.user.not_found").replace("%user%", Emulator.getConfig().getValue("hotel.player.name"))));
+                this.client.sendResponse(new ModeratorActionResultComposer(userId, false));
+                this.client.sendResponse(new ModToolIssueHandledComposer(Emulator.getTexts()
+                        .getValue("generic.user.not_found")
+                        .replace("%user%", Emulator.getConfig().getValue("hotel.player.name"))));
             }
         }
     }

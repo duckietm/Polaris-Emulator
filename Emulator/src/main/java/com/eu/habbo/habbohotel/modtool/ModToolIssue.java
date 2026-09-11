@@ -30,6 +30,19 @@ public class ModToolIssue implements ISerialize {
     public int commentId = -1;
     public HabboItem photoItem = null;
 
+    /**
+     * What the reporter's own "my reports" window shows (AIR 13 `MyReportStatus`): when
+     * the report was decided, whether the decision carried a sanction, and where the
+     * appeal stands. {@code closedTimestamp} stays 0 while the ticket is still open.
+     */
+    public volatile int closedTimestamp = 0;
+
+    public volatile boolean sanctioned = false;
+    public volatile boolean sanctionGivenByAutoModeration = false;
+    public volatile int appealState = MyReportStatus.APPEAL_NONE;
+    public volatile int appealTimestamp = 0;
+    public volatile int appealResolvedTimestamp = 0;
+
     public ModToolIssue(ResultSet set) throws SQLException {
         this.id = set.getInt("id");
         this.state = ModToolTicketState.getState(set.getInt("state"));
@@ -47,6 +60,12 @@ public class ModToolIssue implements ISerialize {
         this.groupId = set.getInt("group_id");
         this.threadId = set.getInt("thread_id");
         this.commentId = set.getInt("comment_id");
+        this.closedTimestamp = set.getInt("closed_timestamp");
+        this.sanctioned = set.getInt("sanctioned") == 1;
+        this.sanctionGivenByAutoModeration = set.getInt("sanction_auto") == 1;
+        this.appealState = set.getInt("appeal_state");
+        this.appealTimestamp = set.getInt("appeal_timestamp");
+        this.appealResolvedTimestamp = set.getInt("appeal_resolved_timestamp");
 
         int photoItemId = set.getInt("photo_item_id");
 

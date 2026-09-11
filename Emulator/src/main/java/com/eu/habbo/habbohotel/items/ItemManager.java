@@ -129,6 +129,8 @@ import com.eu.habbo.habbohotel.items.interactions.games.tag.bunnyrun.Interaction
 import com.eu.habbo.habbohotel.items.interactions.games.tag.icetag.InteractionIceTagField;
 import com.eu.habbo.habbohotel.items.interactions.games.tag.icetag.InteractionIceTagPole;
 import com.eu.habbo.habbohotel.items.interactions.games.tag.rollerskate.InteractionRollerskateField;
+import com.eu.habbo.habbohotel.items.interactions.mysterybox.InteractionMysteryBox;
+import com.eu.habbo.habbohotel.items.interactions.mysterybox.InteractionMysteryBoxKey;
 import com.eu.habbo.habbohotel.items.interactions.pets.InteractionMonsterPlantSeed;
 import com.eu.habbo.habbohotel.items.interactions.pets.InteractionNest;
 import com.eu.habbo.habbohotel.items.interactions.pets.InteractionPetBreedingNest;
@@ -525,6 +527,8 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("obstacle", InteractionObstacle.class));
         this.interactionsList.add(new ItemInteraction("monsterplant_seed", InteractionMonsterPlantSeed.class));
         this.interactionsList.add(new ItemInteraction("gift", InteractionGift.class));
+        this.interactionsList.add(new ItemInteraction("mystery_box", InteractionMysteryBox.class));
+        this.interactionsList.add(new ItemInteraction("mystery_key", InteractionMysteryBoxKey.class));
         this.interactionsList.add(new ItemInteraction("stack_helper", InteractionStackHelper.class));
         this.interactionsList.add(new ItemInteraction("stack_walk_helper", InteractionStackWalkHelper.class));
         this.interactionsList.add(new ItemInteraction("puzzle_box", InteractionPuzzleBox.class));

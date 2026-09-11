@@ -39,7 +39,7 @@ class WiredArrayMigrationIT {
             assertEquals(3, integer(dataSource, """
                     SELECT COUNT(*)
                     FROM catalog_items catalog
-                    JOIN items_base base ON catalog.item_ids = CAST(base.id AS CHAR)
+                    JOIN items_base base ON CAST(catalog.item_ids AS BINARY) = CAST(base.id AS BINARY)
                     JOIN catalog_pages page ON page.id = catalog.page_id
                     WHERE (base.item_name = 'wf_act_modify_array' AND page.caption_save = 'effects')
                        OR (base.item_name = 'wf_cnd_check_array' AND page.caption_save = 'conditions')

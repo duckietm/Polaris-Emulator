@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "source": "Flyway migrated schema",
   "tables": {
+    "achievement_resolutions": ["achievement_id", "badge_code", "completed_at", "ends_at", "item_id", "started_at", "target_level", "user_id"],
     "achievements": ["category", "id", "level", "name", "points", "progress_needed", "reward_amount", "reward_type"],
     "achievements_talents": ["achievement_ids", "achievement_levels", "id", "level", "reward_badges", "reward_furni", "reward_perks", "type"],
     "bans": ["ban_expire", "ban_reason", "cfh_topic", "id", "ip", "machine_id", "timestamp", "type", "user_id", "user_staff_id"],

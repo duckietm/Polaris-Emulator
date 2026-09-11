@@ -200,6 +200,7 @@ public class Incoming {
     public static final int RequestPublicRoomsEvent = 1229;
     public static final int ConvertGlobalRoomIdEvent = 314;
     public static final int RequestResolutionEvent = 359;
+    public static final int ResetResolutionAchievementEvent = 3144;
     public static final int RequestInventoryItemsEvent = 3150;
     public static final int ModToolRoomAlertEvent = 3842;
     public static final int WiredEffectSaveDataEvent = 2281;

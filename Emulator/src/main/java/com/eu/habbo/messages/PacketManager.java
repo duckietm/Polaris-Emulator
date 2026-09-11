@@ -485,6 +485,7 @@ import com.eu.habbo.messages.incoming.trading.TradeUnAcceptEvent;
 import com.eu.habbo.messages.incoming.translation.TranslationLanguagesRequestEvent;
 import com.eu.habbo.messages.incoming.translation.TranslationTextRequestEvent;
 import com.eu.habbo.messages.incoming.unknown.RequestResolutionEvent;
+import com.eu.habbo.messages.incoming.unknown.ResetResolutionAchievementEvent;
 import com.eu.habbo.messages.incoming.unknown.UnknownEvent1;
 import com.eu.habbo.messages.incoming.users.ActivateEffectEvent;
 import com.eu.habbo.messages.incoming.users.AddCustomWordFilterWordEvent;
@@ -1323,6 +1324,7 @@ public class PacketManager {
 
     void registerUnknown() throws Exception {
         this.registerHandler(Incoming.RequestResolutionEvent, RequestResolutionEvent.class);
+        this.registerHandler(Incoming.ResetResolutionAchievementEvent, ResetResolutionAchievementEvent.class);
         this.registerHandler(Incoming.RequestTalenTrackEvent, RequestTalentTrackEvent.class);
         this.registerHandler(Incoming.UnknownEvent1, UnknownEvent1.class);
         this.registerHandler(Incoming.MySanctionStatusEvent, MySanctionStatusEvent.class);

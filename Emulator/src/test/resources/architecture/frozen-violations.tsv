@@ -72,6 +72,10 @@ U|com/eu/habbo/habbohotel/achievements/AchievementManager.java|CALL|getGameEnvir
 U|com/eu/habbo/habbohotel/achievements/AchievementManager.java|CALL|getPluginManager|4
 U|com/eu/habbo/habbohotel/achievements/AchievementManager.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/achievements/TalentTrackLevel.java|CALL|getGameEnvironment|2
+U|com/eu/habbo/habbohotel/achievements/resolution/AchievementResolutionManager.java|CALL|getConfig|1
+U|com/eu/habbo/habbohotel/achievements/resolution/AchievementResolutionManager.java|CALL|getDatabase|5
+U|com/eu/habbo/habbohotel/achievements/resolution/AchievementResolutionManager.java|CALL|getGameEnvironment|3
+U|com/eu/habbo/habbohotel/achievements/resolution/AchievementResolutionManager.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/habbohotel/bots/Bot.java|CALL|getDatabase|2
 U|com/eu/habbo/habbohotel/bots/Bot.java|CALL|getIntUnixTimestamp|10
 U|com/eu/habbo/habbohotel/bots/Bot.java|CALL|getPluginManager|3
@@ -1646,6 +1650,7 @@ U|com/eu/habbo/messages/incoming/traxeditor/TraxEditorBuySongEvent.java|CALL|get
 U|com/eu/habbo/messages/incoming/traxeditor/TraxEditorDeleteSongEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/traxeditor/TraxEditorRequestSongsEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/traxeditor/TraxEditorSaveSongEvent.java|CALL|getGameEnvironment|1
+U|com/eu/habbo/messages/incoming/unknown/RequestResolutionEvent.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/messages/incoming/users/ActivateEffectEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/users/ChangeChatBubbleEvent.java|CALL|getConfig|1
 U|com/eu/habbo/messages/incoming/users/ChangeEmailEvent.java|CALL|getConfig|1

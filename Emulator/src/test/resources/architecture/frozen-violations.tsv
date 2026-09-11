@@ -67,6 +67,7 @@ U|com/eu/habbo/database/compat/LegacySqlBridge.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/database/compat/LegacyTableRenameTranslator.java|CALL|getConfig|1
 U|com/eu/habbo/gui/EmulatorDashboard.java|FIELD|version|1
 U|com/eu/habbo/habbohotel/GameEnvironment.java|CALL|getThreading|5
+U|com/eu/habbo/habbohotel/MaintenanceMode.java|CALL|getConfig|4
 U|com/eu/habbo/habbohotel/achievements/AchievementManager.java|CALL|getDatabase|5
 U|com/eu/habbo/habbohotel/achievements/AchievementManager.java|CALL|getGameEnvironment|5
 U|com/eu/habbo/habbohotel/achievements/AchievementManager.java|CALL|getPluginManager|4
@@ -104,13 +105,11 @@ U|com/eu/habbo/habbohotel/campaign/calendar/CalendarRewardObject.java|CALL|getGa
 U|com/eu/habbo/habbohotel/catalog/CatalogAdminCacheSync.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/catalog/CatalogAdminCacheSync.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/catalog/CatalogFeaturedPage.java|CALL|getIntUnixTimestamp|1
-U|com/eu/habbo/habbohotel/catalog/CatalogItem.java|CALL|getConfig|1
 U|com/eu/habbo/habbohotel/catalog/CatalogItem.java|CALL|getDatabase|1
-U|com/eu/habbo/habbohotel/catalog/CatalogItem.java|CALL|getGameEnvironment|4
+U|com/eu/habbo/habbohotel/catalog/CatalogItem.java|CALL|getGameEnvironment|3
 U|com/eu/habbo/habbohotel/catalog/CatalogItem.java|CALL|getThreading|1
-U|com/eu/habbo/habbohotel/catalog/CatalogLimitedConfiguration.java|CALL|getConfig|3
+U|com/eu/habbo/habbohotel/catalog/CatalogLimitedConfiguration.java|CALL|getConfig|2
 U|com/eu/habbo/habbohotel/catalog/CatalogLimitedConfiguration.java|CALL|getDatabase|4
-U|com/eu/habbo/habbohotel/catalog/CatalogLimitedConfiguration.java|CALL|getGameEnvironment|4
 U|com/eu/habbo/habbohotel/catalog/CatalogLimitedConfiguration.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/habbohotel/catalog/CatalogManager.java|CALL|getConfig|18
 U|com/eu/habbo/habbohotel/catalog/CatalogManager.java|CALL|getDatabase|14
@@ -229,6 +228,7 @@ U|com/eu/habbo/habbohotel/commands/ListPrefixesCommand.java|CALL|getGameEnvironm
 U|com/eu/habbo/habbohotel/commands/ListPrefixesCommand.java|CALL|getTexts|5
 U|com/eu/habbo/habbohotel/commands/MachineBanCommand.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/habbohotel/commands/MachineBanCommand.java|CALL|getTexts|5
+U|com/eu/habbo/habbohotel/commands/MaintenanceCommand.java|CALL|getTexts|6
 U|com/eu/habbo/habbohotel/commands/MassBadgeCommand.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/commands/MassBadgeCommand.java|CALL|getTexts|3
 U|com/eu/habbo/habbohotel/commands/MassCreditsCommand.java|CALL|getGameEnvironment|1
@@ -693,7 +693,6 @@ U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectMoveRotate
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectMoveRotateFurni.java|CALL|getRandom|5
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectMoveRotateUser.java|CALL|getConfig|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectMoveUserTiles.java|CALL|getConfig|1
-U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectMuteHabbo.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectOverrideHeight.java|CALL|getConfig|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectOverrideHeight.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/items/interactions/wired/effects/WiredEffectPlaceFurni.java|CALL|getConfig|2
@@ -1288,7 +1287,7 @@ U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getCrypto|
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getDatabase|1
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getDate|1
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getGameEnvironment|6
-U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getGameServer|15
+U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getGameServer|17
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getIntUnixTimestamp|6
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getPluginManager|1
 U|com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java|CALL|getThreading|3
@@ -1806,7 +1805,7 @@ U|com/eu/habbo/networking/gameserver/auth/NitroSecureApiHandler.java|CALL|getCon
 U|com/eu/habbo/networking/gameserver/auth/NitroSecureAssetHandler.java|CALL|getConfig|4
 U|com/eu/habbo/networking/gameserver/auth/RememberJwtService.java|CALL|getConfig|4
 U|com/eu/habbo/networking/gameserver/auth/RememberJwtService.java|CALL|getDatabase|1
-U|com/eu/habbo/networking/gameserver/auth/RememberJwtService.java|CALL|getIntUnixTimestamp|2
+U|com/eu/habbo/networking/gameserver/auth/RememberJwtService.java|CALL|getIntUnixTimestamp|3
 U|com/eu/habbo/networking/gameserver/auth/SessionEndpoints.java|CALL|getConfig|9
 U|com/eu/habbo/networking/gameserver/auth/SessionEndpoints.java|CALL|getDatabase|7
 U|com/eu/habbo/networking/gameserver/auth/SessionEndpoints.java|CALL|getGameServer|5

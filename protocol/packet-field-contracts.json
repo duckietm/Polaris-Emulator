@@ -17898,6 +17898,197 @@
           "name": "points"
         }
       ]
+    },
+    {
+      "name": "GET_HABBICON_INFO",
+      "direction": "client_to_server",
+      "header": 9461,
+      "java": {
+        "symbol": "GetHabbiconInfoEvent",
+        "className": "HabbiconRequestEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/habbicons/HabbiconRequestEvent.java"
+      },
+      "typescript": {
+        "symbol": "GET_HABBICON_INFO",
+        "className": "GetHabbiconInfoComposer",
+        "path": "packages/communication/src/messages/outgoing/habbicons/GetHabbiconInfoComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "id"
+        }
+      ]
+    },
+    {
+      "name": "BUY_HABBICON",
+      "direction": "client_to_server",
+      "header": 9462,
+      "java": {
+        "symbol": "BuyHabbiconEvent",
+        "className": "HabbiconRequestEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/habbicons/HabbiconRequestEvent.java"
+      },
+      "typescript": {
+        "symbol": "BUY_HABBICON",
+        "className": "BuyHabbiconComposer",
+        "path": "packages/communication/src/messages/outgoing/habbicons/BuyHabbiconComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "id"
+        }
+      ]
+    },
+    {
+      "name": "BUY_HABBICON_COLLECTION",
+      "direction": "client_to_server",
+      "header": 9463,
+      "java": {
+        "symbol": "BuyHabbiconCollectionEvent",
+        "className": "HabbiconRequestEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/habbicons/HabbiconRequestEvent.java"
+      },
+      "typescript": {
+        "symbol": "BUY_HABBICON_COLLECTION",
+        "className": "BuyHabbiconCollectionComposer",
+        "path": "packages/communication/src/messages/outgoing/habbicons/BuyHabbiconCollectionComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "id"
+        }
+      ]
+    },
+    {
+      "name": "CLAIM_HABBICON",
+      "direction": "client_to_server",
+      "header": 9464,
+      "java": {
+        "symbol": "ClaimHabbiconEvent",
+        "className": "HabbiconRequestEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/habbicons/HabbiconRequestEvent.java"
+      },
+      "typescript": {
+        "symbol": "CLAIM_HABBICON",
+        "className": "ClaimHabbiconComposer",
+        "path": "packages/communication/src/messages/outgoing/habbicons/ClaimHabbiconComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "id"
+        }
+      ]
+    },
+    {
+      "name": "FAVORITE_HABBICON",
+      "direction": "client_to_server",
+      "header": 9465,
+      "java": {
+        "symbol": "FavoriteHabbiconEvent",
+        "className": "HabbiconRequestEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/habbicons/HabbiconRequestEvent.java"
+      },
+      "typescript": {
+        "symbol": "FAVORITE_HABBICON",
+        "className": "FavoriteHabbiconComposer",
+        "path": "packages/communication/src/messages/outgoing/habbicons/FavoriteHabbiconComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "id"
+        }
+      ]
+    },
+    {
+      "name": "UNFAVORITE_HABBICON",
+      "direction": "client_to_server",
+      "header": 9466,
+      "java": {
+        "symbol": "UnfavoriteHabbiconEvent",
+        "className": "HabbiconRequestEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/habbicons/HabbiconRequestEvent.java"
+      },
+      "typescript": {
+        "symbol": "UNFAVORITE_HABBICON",
+        "className": "UnfavoriteHabbiconComposer",
+        "path": "packages/communication/src/messages/outgoing/habbicons/UnfavoriteHabbiconComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "id"
+        }
+      ]
+    },
+    {
+      "name": "USER_HABBICON_STATUS_CHANGED",
+      "direction": "server_to_client",
+      "header": 9461,
+      "java": {
+        "symbol": "HabbiconStatusComposer",
+        "className": "HabbiconStatusComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/habbicons/HabbiconStatusComposer.java"
+      },
+      "typescript": {
+        "symbol": "USER_HABBICON_STATUS_CHANGED",
+        "className": "UserHabbiconStatusChangedParser",
+        "path": "packages/communication/src/messages/parser/habbicons/UserHabbiconStatusChangedParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "HABBICON_ACTION_RESULT",
+      "direction": "server_to_client",
+      "header": 9464,
+      "java": {
+        "symbol": "HabbiconResultComposer",
+        "className": "HabbiconResultComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/habbicons/HabbiconResultComposer.java"
+      },
+      "typescript": {
+        "symbol": "HABBICON_ACTION_RESULT",
+        "className": "HabbiconActionResultParser",
+        "path": "packages/communication/src/messages/parser/habbicons/HabbiconActionResultParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
     }
   ],
   "unpaired": [
@@ -18448,14 +18639,6 @@
     {
       "direction": "client_to_server",
       "side": "typescript",
-      "header": 2343,
-      "symbol": "UNSEEN_RESET_ITEMS",
-      "path": "packages/communication/src/messages/outgoing/inventory/unseen/UnseenResetItemsComposer.ts",
-      "reason": "Header is registered only by the Octane Renderer packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "typescript",
       "header": 2384,
       "symbol": "LEAVEQUEUEMESSAGE",
       "path": "packages/communication/src/messages/outgoing/game/lobby/LeaveQueueMessageComposer.ts",
@@ -18755,14 +18938,6 @@
       "header": 3483,
       "symbol": "SHOP_TARGETED_OFFER_VIEWED",
       "path": "packages/communication/src/messages/outgoing/catalog/ShopTargetedOfferViewedComposer.ts",
-      "reason": "Header is registered only by the Octane Renderer packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "typescript",
-      "header": 3493,
-      "symbol": "UNSEEN_RESET_CATEGORY",
-      "path": "packages/communication/src/messages/outgoing/inventory/unseen/UnseenResetCategoryComposer.ts",
       "reason": "Header is registered only by the Octane Renderer packet registry"
     },
     {
@@ -19581,7 +19756,7 @@
         "className": "RoomUnitChatWhisperComposer",
         "path": "packages/communication/src/messages/outgoing/room/unit/chat/RoomUnitChatWhisperComposer.ts"
       },
-      "reason": "Java analyzer: Packet fields delegated to external constructor RoomChatMessage inside handle; TypeScript analyzer: Outgoing value recipientName + \u0027 \u0027 + message has no statically resolvable wire type"
+      "reason": "Java analyzer: Packet fields delegated to external constructor RoomChatMessage inside handle; TypeScript analyzer: Outgoing value recipientName + ' ' + message has no statically resolvable wire type"
     },
     {
       "name": "RELEASE_ISSUES",
@@ -20525,7 +20700,7 @@
         "className": "ClientHelloMessageComposer",
         "path": "packages/communication/src/messages/outgoing/handshake/ClientHelloMessageComposer.ts"
       },
-      "reason": "TypeScript analyzer: Outgoing value `NITRO-${OctaneVersion.RENDERER_VERSION.replaceAll(\u0027.\u0027, \u0027-\u0027)}` has no statically resolvable wire type"
+      "reason": "TypeScript analyzer: Outgoing value `NITRO-${OctaneVersion.RENDERER_VERSION.replaceAll('.', '-')}` has no statically resolvable wire type"
     },
     {
       "name": "SNOWWAR_LOAD_STAGE_READY",
@@ -25166,6 +25341,102 @@
         "path": "packages/communication/src/messages/parser/quest/RewardTracksMessageParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
+      "name": "UNSEEN_RESET_ITEMS",
+      "direction": "client_to_server",
+      "header": 2343,
+      "java": {
+        "symbol": "UnseenResetItemsEvent",
+        "className": "ResetHabbiconUnseenEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/habbicons/ResetHabbiconUnseenEvent.java"
+      },
+      "typescript": {
+        "symbol": "UNSEEN_RESET_ITEMS",
+        "className": "UnseenResetItemsComposer",
+        "path": "packages/communication/src/messages/outgoing/inventory/unseen/UnseenResetItemsComposer.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle; TypeScript analyzer: Outgoing value itemIds.length has no statically resolvable wire type; HabbiconRequestTest verifies category 8 reset and bounded item list decoding."
+    },
+    {
+      "name": "UNSEEN_RESET_CATEGORY",
+      "direction": "client_to_server",
+      "header": 3493,
+      "java": {
+        "symbol": "UnseenResetCategoryEvent",
+        "className": "ResetHabbiconUnseenEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/habbicons/ResetHabbiconUnseenEvent.java"
+      },
+      "typescript": {
+        "symbol": "UNSEEN_RESET_CATEGORY",
+        "className": "UnseenResetCategoryComposer",
+        "path": "packages/communication/src/messages/outgoing/inventory/unseen/UnseenResetCategoryComposer.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle; HabbiconRequestTest verifies category 8 reset and bounded item list decoding."
+    },
+    {
+      "name": "GET_HABBICON_SHOP_DATA",
+      "direction": "client_to_server",
+      "header": 9460,
+      "java": {
+        "symbol": "GetHabbiconShopDataEvent",
+        "className": "HabbiconRequestEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/habbicons/HabbiconRequestEvent.java"
+      },
+      "typescript": {
+        "symbol": "GET_HABBICON_SHOP_DATA",
+        "className": "GetHabbiconShopDataComposer",
+        "path": "packages/communication/src/messages/outgoing/habbicons/GetHabbiconShopDataComposer.ts"
+      },
+      "reason": "The shared handler reads an id only for other headers; this request has no payload. HabbiconRequestTest verifies the header-dispatched request contract."
+    },
+    {
+      "name": "USER_HABBICONS",
+      "direction": "server_to_client",
+      "header": 9460,
+      "java": {
+        "symbol": "UserHabbiconsComposer",
+        "className": "UserHabbiconsComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/habbicons/UserHabbiconsComposer.java"
+      },
+      "typescript": {
+        "symbol": "USER_HABBICONS",
+        "className": "UserHabbiconsParser",
+        "path": "packages/communication/src/messages/parser/habbicons/UserHabbiconsParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse; HabbiconPacketContractTest verifies complete multi-record bytes."
+    },
+    {
+      "name": "HABBICON_SHOP_DATA",
+      "direction": "server_to_client",
+      "header": 9462,
+      "java": {
+        "symbol": "HabbiconShopComposer",
+        "className": "HabbiconShopComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/habbicons/HabbiconShopComposer.java"
+      },
+      "typescript": {
+        "symbol": "HABBICON_SHOP_DATA",
+        "className": "HabbiconShopDataParser",
+        "path": "packages/communication/src/messages/parser/habbicons/HabbiconShopDataParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse; HabbiconPacketContractTest verifies complete multi-record bytes."
+    },
+    {
+      "name": "HABBICON_INFO",
+      "direction": "server_to_client",
+      "header": 9463,
+      "java": {
+        "symbol": "HabbiconInfoComposer",
+        "className": "HabbiconInfoComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/habbicons/HabbiconInfoComposer.java"
+      },
+      "typescript": {
+        "symbol": "HABBICON_INFO",
+        "className": "HabbiconInfoParser",
+        "path": "packages/communication/src/messages/parser/habbicons/HabbiconInfoParser.ts"
+      },
+      "reason": "Shared Habbicon item serializers are outside both static extractors. HabbiconPacketContractTest verifies the complete id, name, collection, state and three price fields."
     }
   ]
 }

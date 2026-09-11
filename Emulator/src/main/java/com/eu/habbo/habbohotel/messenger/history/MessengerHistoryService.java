@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 public final class MessengerHistoryService {
+    public static final int HABBICON_MESSAGE = 4;
     public static final int DEFAULT_RETENTION_DAYS = 30;
     public static final int DEFAULT_MAX_MESSAGES = 500;
     public static final int DEFAULT_PAGE_SIZE = 500;
@@ -52,10 +53,14 @@ public final class MessengerHistoryService {
     public MessengerStoredMessage sendMessage(
             long conversationId, int senderId, int recipientId, int type, String message, String metadata) {
         if (senderId <= 0) throw new IllegalArgumentException("senderId must be positive");
-        if (type < 0 || type > 3) throw new IllegalArgumentException("unsupported message type");
+        if (type < 0 || type > HABBICON_MESSAGE) throw new IllegalArgumentException("unsupported message type");
         String normalized = message == null ? "" : message.strip();
         if (normalized.isEmpty() || normalized.length() > 255)
             throw new IllegalArgumentException("message length must be 1..255");
+        if (type == HABBICON_MESSAGE
+                && (!normalized.matches("[1-9][0-9]{0,8}") || metadata != null && !metadata.isEmpty())) {
+            throw new IllegalArgumentException("invalid Habbicon message");
+        }
         if (metadata != null && metadata.length() > 1024) throw new IllegalArgumentException("metadata is too long");
         if (conversationId > 0) {
             if (!repository.isActiveMember(conversationId, senderId))

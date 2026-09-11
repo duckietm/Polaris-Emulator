@@ -15,6 +15,7 @@ import com.eu.habbo.database.integrity.IntegrityAuditOptions;
 import com.eu.habbo.database.migration.MigrationOptions;
 import com.eu.habbo.database.migration.MigrationRunner;
 import com.eu.habbo.habbohotel.GameEnvironment;
+import com.eu.habbo.habbohotel.habbicons.HabbiconService;
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioRuntime;
 import com.eu.habbo.messages.outgoing.catalog.CatalogUpdatedComposer;
 import com.eu.habbo.networking.gameserver.GameServer;
@@ -182,7 +183,9 @@ final class PolarisBootstrap {
 
     private boolean initializeHotel() throws Exception {
         new CleanerThread();
-        GameEnvironment environment = new GameEnvironment(runtime.persistenceExecutor()::execute);
+        GameEnvironment environment = new GameEnvironment(
+                runtime.persistenceExecutor()::execute,
+                new HabbiconService(runtime.database().getDataSource()));
         runtime.installGameEnvironment(environment);
         Emulator.synchronizeLegacyFacade(runtime);
         environment.load();

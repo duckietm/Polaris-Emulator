@@ -234,7 +234,8 @@ public final class CatalogAdminCacheSync {
                     return true;
                 }
 
-                if ("0".equals(set.getString("item_ids"))) {
+                if ("0".equals(set.getString("item_ids"))
+                        && (pageType == CatalogPageType.BUILDER || set.getInt("habbicon_id") <= 0)) {
                     return false;
                 }
 

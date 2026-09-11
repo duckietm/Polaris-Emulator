@@ -97,7 +97,7 @@ class MysteryBoxContractTest {
     @Test
     void theTableTheMigrationCreatesIsTheOneTheContractDeclares() throws Exception {
         String migration =
-                Files.readString(Path.of("src/main/resources/db/migration/V20260911120000__mystery_box.sql"));
+                Files.readString(Path.of("src/main/resources/db/migration/V20260911123000__mystery_box.sql"));
         String contract = Files.readString(Path.of("src/main/resources/db/runtime-schema-contract.json"));
 
         assertTrue(migration.contains("CREATE TABLE IF NOT EXISTS `mystery_box_prizes`"));

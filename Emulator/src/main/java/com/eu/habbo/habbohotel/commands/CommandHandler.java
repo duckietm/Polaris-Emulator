@@ -272,6 +272,7 @@ public class CommandHandler {
         addCommand(new IPBanCommand());
         addCommand(new LayCommand());
         addCommand(new MachineBanCommand());
+        addCommand(new MaintenanceCommand());
         addCommand(new MassBadgeCommand());
         addCommand(new RoomBadgeCommand());
         addCommand(new MassCreditsCommand());

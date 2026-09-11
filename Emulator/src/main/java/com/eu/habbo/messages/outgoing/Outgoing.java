@@ -306,7 +306,15 @@ public class Outgoing {
 
     public static final int TalentTrackEmailVerifiedComposer = 612; // PRODUCTION-201611291003-338511768
     public static final int TalentTrackEmailFailedComposer = 1815; // PRODUCTION-201611291003-338511768
-    public static final int UnknownAvatarEditorComposer = 3473; // PRODUCTION-201611291003-338511768
+    public static final int AvatarEffectSelectedComposer = 3473;
+
+    /**
+     * @deprecated 3473 tells a client which effect is on. Use {@link
+     *     com.eu.habbo.messages.outgoing.inventory.AvatarEffectSelectedComposer}.
+     */
+    @Deprecated
+    public static final int UnknownAvatarEditorComposer =
+            AvatarEffectSelectedComposer; // PRODUCTION-201611291003-338511768
 
     public static final int GuildMembershipRequestedComposer = 1180; // PRODUCTION-201611291003-338511768
 

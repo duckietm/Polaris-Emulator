@@ -33,6 +33,7 @@ import com.eu.habbo.messages.outgoing.handshake.AvailabilityStatusMessageCompose
 import com.eu.habbo.messages.outgoing.handshake.EnableNotificationsComposer;
 import com.eu.habbo.messages.outgoing.handshake.PingComposer;
 import com.eu.habbo.messages.outgoing.handshake.SecureLoginOKComposer;
+import com.eu.habbo.messages.outgoing.inventory.AvatarEffectSelectedComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryAchievementsComposer;
 import com.eu.habbo.messages.outgoing.inventory.UserEffectsListComposer;
 import com.eu.habbo.messages.outgoing.modtool.CfhTopicsMessageComposer;
@@ -311,6 +312,11 @@ public class SecureLoginEvent extends MessageHandler {
                                         .values())
                         .compose());
                 messages.add(new UserClothesComposer(this.client.getHabbo()).compose());
+
+                // Which effect is on: without it the window forgets the choice at every reconnect.
+                messages.add(new AvatarEffectSelectedComposer(
+                                this.client.getHabbo().getInventory().getEffectsComponent().activatedEffect)
+                        .compose());
                 messages.add(new NewUserIdentityComposer(habbo).compose());
 
                 // The gift offer of the first days: the client shows it only once it is told the

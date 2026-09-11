@@ -11,6 +11,8 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.messages.ClientMessage;
+import com.eu.habbo.messages.outgoing.generic.alerts.StaffAlertAndOpenHabboWayComposer;
+import com.eu.habbo.messages.outgoing.generic.alerts.StaffAlertWIthLinkAndOpenHabboWayComposer;
 import com.eu.habbo.messages.outgoing.modtool.IssueDeletedComposer;
 import com.eu.habbo.messages.outgoing.modtool.ModToolIssueHandledComposer;
 import com.eu.habbo.messages.outgoing.modtool.ModToolIssueInfoComposer;
@@ -485,6 +487,21 @@ public class ModToolManager {
         SupportUserAlertedEvent alertedEvent = new SupportUserAlertedEvent(moderator, target, message, reason);
 
         if (Emulator.getPluginManager().fireEvent(alertedEvent).isCancelled()) return;
+
+        // A caution is not a message like any other: the client shows it as a warning and puts the
+        // rules one click away.
+        if (reason == SupportUserAlertedReason.CAUTION) {
+            String link = Emulator.getConfig().getValue("hotel.habboway.url", "");
+
+            alertedEvent
+                    .target
+                    .getClient()
+                    .sendResponse(
+                            link.isEmpty()
+                                    ? new StaffAlertAndOpenHabboWayComposer(alertedEvent.message)
+                                    : new StaffAlertWIthLinkAndOpenHabboWayComposer(alertedEvent.message, link));
+            return;
+        }
 
         alertedEvent.target.getClient().sendResponse(new ModToolIssueHandledComposer(alertedEvent.message));
     }

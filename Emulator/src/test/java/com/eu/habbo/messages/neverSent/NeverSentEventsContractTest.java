@@ -112,6 +112,44 @@ class NeverSentEventsContractTest {
     }
 
     @Test
+    void anInvitationNobodyReceivedIsReportedBackWithTheNames() throws Exception {
+        String invite = source("com/eu/habbo/messages/incoming/friends/InviteFriendsEvent.java");
+
+        assertTrue(invite.contains("if (habbo == null || habbo.getHabboStats().blockRoomInvites) {"));
+        assertTrue(invite.contains("missed.add(buddy)"));
+        assertTrue(invite.contains("new RoomInviteErrorComposer("));
+        assertTrue(invite.contains("RoomInviteErrorComposer.ERROR_RECIPIENT_UNAVAILABLE, missed)"));
+    }
+
+    @Test
+    void aGroupThatWasDissolvedIsTakenOffItsRoom() throws Exception {
+        String delete = source("com/eu/habbo/messages/incoming/guilds/GuildDeleteEvent.java");
+
+        assertTrue(delete.contains("new RemoveGuildFromRoomComposer(guild.getId())"));
+        assertTrue(delete.indexOf("new RemoveGuildFromRoomComposer(guild.getId())")
+                < delete.indexOf("new RoomDataComposer(guildRoom, habbo, true, false)"));
+    }
+
+    @Test
+    void theEffectYouAreWearingSurvivesAReconnect() throws Exception {
+        String login = source("com/eu/habbo/messages/incoming/handshake/SecureLoginEvent.java");
+
+        assertTrue(login.contains("new AvatarEffectSelectedComposer("));
+        assertTrue(login.contains("getEffectsComponent()"));
+    }
+
+    @Test
+    void aCautionLooksLikeACautionAndLinksTheRules() throws Exception {
+        String manager = source("com/eu/habbo/habbohotel/modtool/ModToolManager.java");
+
+        assertTrue(manager.contains("if (reason == SupportUserAlertedReason.CAUTION)"));
+        assertTrue(manager.contains("new StaffAlertWIthLinkAndOpenHabboWayComposer(alertedEvent.message, link)"));
+        assertTrue(manager.contains("new StaffAlertAndOpenHabboWayComposer(alertedEvent.message)"));
+        // Every other moderator message is untouched.
+        assertTrue(manager.contains("new ModToolIssueHandledComposer(alertedEvent.message)"));
+    }
+
+    @Test
     void theRoomEffectsTheClientCanPlayHaveACommand() throws Exception {
         String command = source("com/eu/habbo/habbohotel/commands/RoomSpecialEffectCommand.java");
         String handler = source("com/eu/habbo/habbohotel/commands/CommandHandler.java");

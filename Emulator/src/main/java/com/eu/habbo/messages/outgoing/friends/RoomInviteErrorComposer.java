@@ -4,10 +4,13 @@ import com.eu.habbo.habbohotel.messenger.MessengerBuddy;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-
 import java.util.Collection;
 
 public class RoomInviteErrorComposer extends MessageComposer {
+
+    /** The friends named here did not get the invitation: they are away, or they do not take any. */
+    public static final int ERROR_RECIPIENT_UNAVAILABLE = 0;
+
     private final int errorCode;
     private final Collection<MessengerBuddy> buddies;
 

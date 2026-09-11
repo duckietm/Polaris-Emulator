@@ -821,6 +821,7 @@ U|com/eu/habbo/habbohotel/modtool/ModToolBan.java|CALL|getIntUnixTimestamp|2
 U|com/eu/habbo/habbohotel/modtool/ModToolIssue.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/modtool/ModToolIssue.java|CALL|getIntUnixTimestamp|2
 U|com/eu/habbo/habbohotel/modtool/ModToolIssue.java|CALL|getThreading|1
+U|com/eu/habbo/habbohotel/modtool/ModToolManager.java|CALL|getConfig|1
 U|com/eu/habbo/habbohotel/modtool/ModToolManager.java|CALL|getDatabase|15
 U|com/eu/habbo/habbohotel/modtool/ModToolManager.java|CALL|getGameEnvironment|11
 U|com/eu/habbo/habbohotel/modtool/ModToolManager.java|CALL|getGameServer|5

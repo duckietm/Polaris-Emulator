@@ -785,6 +785,7 @@ public class RoomManager {
         room.refreshRightsForHabbo(habbo);
 
         habbo.getClient().sendResponse(new RoomScoreComposer(room.getScore(), !this.hasVotedForRoom(habbo, room)));
+        habbo.getClient().sendResponse(new com.eu.habbo.messages.outgoing.wired.WiredEnvironmentComposer(room));
 
         habbo.getRoomUnit()
                 .setFastWalk(

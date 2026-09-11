@@ -2,15 +2,14 @@ package com.eu.habbo.habbohotel.achievements;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.Item;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TalentTrackLevel {
     private static final Logger LOGGER = LoggerFactory.getLogger(TalentTrackLevel.class);
@@ -21,10 +20,16 @@ public class TalentTrackLevel {
     public Set<Item> items;
     public String[] perks;
     public String[] badges;
+    public int hcDays;
 
     public TalentTrackLevel(ResultSet set) throws SQLException {
         this.type = TalentTrackType.valueOf(set.getString("type").toUpperCase());
         this.level = set.getInt("level");
+        try {
+            this.hcDays = set.getInt("reward_hc_days");
+        } catch (SQLException missingMetadata) {
+            this.hcDays = 0;
+        }
         this.achievements = new HashMap<>();
         this.items = new HashSet<>();
 
@@ -32,21 +37,27 @@ public class TalentTrackLevel {
         String[] achievementLevels = set.getString("achievement_levels").split(",");
         if (achievementLevels.length == achievements.length) {
             for (int i = 0; i < achievements.length; i++) {
-                if (achievements[i].isEmpty() || achievementLevels[i].isEmpty())
-                    continue;
+                if (achievements[i].isEmpty() || achievementLevels[i].isEmpty()) continue;
 
-                Achievement achievement = Emulator.getGameEnvironment().getAchievementManager().getAchievement(Integer.parseInt(achievements[i]));
+                Achievement achievement = Emulator.getGameEnvironment()
+                        .getAchievementManager()
+                        .getAchievement(Integer.parseInt(achievements[i]));
 
                 if (achievement != null) {
                     this.achievements.put(achievement, Integer.parseInt(achievementLevels[i]));
                 } else {
-                    LOGGER.error("Could not find achievement with ID {} for talenttrack level {} of type {}", achievements[i], this.level, this.type);
+                    LOGGER.error(
+                            "Could not find achievement with ID {} for talenttrack level {} of type {}",
+                            achievements[i],
+                            this.level,
+                            this.type);
                 }
             }
         }
 
         for (String s : set.getString("reward_furni").split(",")) {
-            Item item = Emulator.getGameEnvironment().getItemManager().getItem(Integer.parseInt(s));
+            if (s.isBlank()) continue;
+            Item item = Emulator.getGameEnvironment().getItemManager().getItem(Integer.parseInt(s.trim()));
 
             if (item != null) {
                 this.items.add(item);

@@ -1,13 +1,17 @@
 package com.eu.habbo.messages.rcon;
 
-import org.junit.jupiter.api.Test;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.eu.habbo.habbohotel.users.HabboInfo;
+import com.eu.habbo.habbohotel.users.HabboStats;
+import com.eu.habbo.habbohotel.users.subscriptions.Subscription;
+import org.junit.jupiter.api.Test;
 
 class ModifyUserSubscriptionGuardTest {
     @Test
@@ -21,18 +25,28 @@ class ModifyUserSubscriptionGuardTest {
 
     @Test
     void parsesInvalidDurationCeilingsAsDefault() {
-        assertEquals(ModifyUserSubscription.DEFAULT_MAX_DURATION_SECONDS, ModifyUserSubscription.parseMaxDuration(null));
+        assertEquals(
+                ModifyUserSubscription.DEFAULT_MAX_DURATION_SECONDS, ModifyUserSubscription.parseMaxDuration(null));
         assertEquals(ModifyUserSubscription.DEFAULT_MAX_DURATION_SECONDS, ModifyUserSubscription.parseMaxDuration("0"));
         assertEquals(60, ModifyUserSubscription.parseMaxDuration("60"));
     }
 
     @Test
     void clampsPartialRemovalToRemainingSubscriptionTime() throws Exception {
-        String source = Files.readString(Path.of("src/main/java/com/eu/habbo/messages/rcon/ModifyUserSubscription.java"));
+        var constructor = HabboInfo.class.getDeclaredConstructor(int.class, int.class);
+        constructor.setAccessible(true);
+        HabboInfo info = constructor.newInstance(42, 0);
+        HabboStats stats = mock(HabboStats.class, CALLS_REAL_METHODS);
+        var owner = HabboStats.class.getDeclaredField("habboInfo");
+        owner.setAccessible(true);
+        owner.set(stats, info);
+        Subscription subscription = mock(Subscription.class);
+        stats.subscriptions = java.util.Set.of(subscription);
+        when(subscription.getSubscriptionType()).thenReturn(Subscription.HABBO_CLUB);
+        when(subscription.isActive()).thenReturn(true);
+        when(subscription.getRemaining()).thenReturn(5);
 
-        assertTrue(source.contains("Math.min(json.duration, s.getRemaining())"),
-                "Partial subscription removal must not drive duration below the remaining time");
-        assertTrue(source.contains("rcon.subscription.max_duration_seconds"),
-                "RCON subscription duration ceiling must be configurable");
+        assertEquals(subscription, stats.removeSubscription(Subscription.HABBO_CLUB, 86400));
+        verify(subscription).addDuration(-5);
     }
 }

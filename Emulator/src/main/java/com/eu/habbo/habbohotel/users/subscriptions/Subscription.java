@@ -1,7 +1,6 @@
 package com.eu.habbo.habbohotel.users.subscriptions;
 
 import com.eu.habbo.Emulator;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -29,7 +28,13 @@ public class Subscription {
      * @param duration Length of subscription in seconds
      * @param active Boolean indicating if subscription is active
      */
-    public Subscription(Integer id, Integer userId, String subscriptionType, Integer timestampStart, Integer duration, Boolean active) {
+    public Subscription(
+            Integer id,
+            Integer userId,
+            String subscriptionType,
+            Integer timestampStart,
+            Integer duration,
+            Boolean active) {
         this.id = id;
         this.userId = userId;
         this.subscriptionType = subscriptionType;
@@ -66,15 +71,21 @@ public class Subscription {
         return duration;
     }
 
+    /** Publishes a duration already committed by a reward transaction. */
+    public void applyPersistedDuration(int duration) {
+        this.duration = duration;
+    }
+
     /**
-     * Updates the Subscription record with new duration
+     * Updates the Subscription record with new duration.
      * @param amount Length of time to add in seconds
      */
     public void addDuration(int amount) {
         this.duration += amount;
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-            try (PreparedStatement statement = connection.prepareStatement("UPDATE `users_subscriptions` SET `duration` = ? WHERE `id` = ? LIMIT 1")) {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "UPDATE `users_subscriptions` SET `duration` = ? WHERE `id` = ? LIMIT 1")) {
                 statement.setInt(1, this.duration);
                 statement.setInt(2, this.id);
                 statement.executeUpdate();
@@ -92,7 +103,8 @@ public class Subscription {
         this.active = active;
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-            try (PreparedStatement statement = connection.prepareStatement("UPDATE `users_subscriptions` SET `active` = ? WHERE `id` = ? LIMIT 1")) {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "UPDATE `users_subscriptions` SET `active` = ? WHERE `id` = ? LIMIT 1")) {
                 statement.setInt(1, this.active ? 1 : 0);
                 statement.setInt(2, this.id);
                 statement.executeUpdate();
@@ -133,16 +145,16 @@ public class Subscription {
     /**
      * Called when the subscription is first created
      */
-    public void onCreated() { }
+    public void onCreated() {}
 
     /**
      * Called when the subscription is extended or bought again when already exists
      * @param duration Extended duration time in seconds
      */
-    public void onExtended(int duration) { }
+    public void onExtended(int duration) {}
 
     /**
      * Called by SubscriptionScheduler when isActive() && getRemaining() < 0
      */
-    public void onExpired() { }
+    public void onExpired() {}
 }

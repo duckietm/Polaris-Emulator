@@ -48,6 +48,8 @@ public class HabboStats implements Runnable {
     public final ArrayList<CalendarRewardClaimed> calendarRewardsClaimed;
     public final Int2ObjectMap<HabboOfferPurchase> offerCache = new Int2ObjectOpenHashMap<>();
     private final AtomicInteger lastOnlineTime = new AtomicInteger(Emulator.getIntUnixTimestamp());
+    private final int sessionStartedAt = this.lastOnlineTime.get();
+    private final int previousOnlineTime;
     private final Map<Achievement, Integer> achievementProgress;
     private final Map<Achievement, Integer> achievementCache;
     private static final int RECENT_PURCHASES_LIMIT = 50; // Here you can set the limit of recent items bought
@@ -142,6 +144,7 @@ public class HabboStats implements Runnable {
 
         this.habboInfo = habboInfo;
 
+        this.previousOnlineTime = set.getInt("online_time");
         this.achievementScore = set.getInt("achievement_score");
         this.respectPointsReceived = set.getInt("respects_received");
         this.respectPointsGiven = set.getInt("respects_given");
@@ -416,14 +419,13 @@ public class HabboStats implements Runnable {
     }
 
     @Override
-    public void run() {
-        // Find difference between last sync and update with a new timestamp.
-        int onlineTimeLast = this.lastOnlineTime.getAndUpdate(operand -> Emulator.getIntUnixTimestamp());
-        int onlineTime = Emulator.getIntUnixTimestamp() - onlineTimeLast;
+    public synchronized void run() {
+        int timestamp = Emulator.getIntUnixTimestamp();
+        int onlineTime = Math.max(0, timestamp - this.lastOnlineTime.get());
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement(
-                    "UPDATE users_settings SET achievement_score = ?, respects_received = ?, respects_given = ?, daily_respect_points = ?, block_following = ?, block_friendrequests = ?, online_time = online_time + ?, guild_id = ?, daily_pet_respect_points = ?, club_expire_timestamp = ?, login_streak = ?, rent_space_id = ?, rent_space_endtime = ?, volume_system = ?, volume_furni = ?, volume_trax = ?, block_roominvites = ?, old_chat = ?, block_camera_follow = ?, chat_color = ?, hof_points = ?, block_alerts = ?, talent_track_citizenship_level = ?, talent_track_helpers_level = ?, ignore_bots = ?, ignore_pets = ?, nux = ?, mute_end_timestamp = ?, allow_name_change = ?, perk_trade = ?, can_trade = ?, `forums_post_count` = ?, ui_flags = ?, has_gotten_default_saved_searches = ?, max_friends = ?, max_rooms = ?, last_hc_payday = ?, hc_gifts_claimed = ?, builders_club_bonus_furni = ?, hide_online = ?, volume_soundboard = ? WHERE user_id = ? LIMIT 1")) {
+                    "UPDATE users_settings SET achievement_score = GREATEST(achievement_score, ?), respects_received = ?, respects_given = ?, daily_respect_points = ?, block_following = ?, block_friendrequests = ?, online_time = online_time + ?, guild_id = ?, daily_pet_respect_points = ?, club_expire_timestamp = ?, login_streak = ?, rent_space_id = ?, rent_space_endtime = ?, volume_system = ?, volume_furni = ?, volume_trax = ?, block_roominvites = ?, old_chat = ?, block_camera_follow = ?, chat_color = ?, hof_points = ?, block_alerts = ?, talent_track_citizenship_level = GREATEST(talent_track_citizenship_level, ?), talent_track_helpers_level = GREATEST(talent_track_helpers_level, ?), ignore_bots = ?, ignore_pets = ?, nux = ?, mute_end_timestamp = ?, allow_name_change = ?, perk_trade = ?, can_trade = ?, `forums_post_count` = ?, ui_flags = ?, has_gotten_default_saved_searches = ?, max_friends = ?, max_rooms = ?, last_hc_payday = ?, hc_gifts_claimed = ?, builders_club_bonus_furni = ?, hide_online = ?, volume_soundboard = ? WHERE user_id = ? LIMIT 1")) {
                 statement.setInt(1, this.achievementScore);
                 statement.setInt(2, this.respectPointsReceived);
                 statement.setInt(3, this.respectPointsGiven);
@@ -468,6 +470,7 @@ public class HabboStats implements Runnable {
                 statement.setInt(42, this.habboInfo.getId());
 
                 statement.executeUpdate();
+                this.lastOnlineTime.set(timestamp);
             }
 
             try (PreparedStatement statement = connection.prepareStatement(
@@ -527,11 +530,17 @@ public class HabboStats implements Runnable {
         return false;
     }
 
-    public int getAchievementScore() {
+    public int getOnlineMinutes(int timestamp) {
+        return (int) Math.min(
+                Integer.MAX_VALUE,
+                ((long) this.previousOnlineTime + Math.max(0, timestamp - this.sessionStartedAt)) / 60);
+    }
+
+    public synchronized int getAchievementScore() {
         return this.achievementScore;
     }
 
-    public void addAchievementScore(int achievementScore) {
+    public synchronized void addAchievementScore(int achievementScore) {
         this.achievementScore += achievementScore;
     }
 
@@ -616,6 +625,28 @@ public class HabboStats implements Runnable {
     }
 
     public Subscription createSubscription(String subscriptionType, int duration) {
+        synchronized (this.habboInfo.ledgerMutationLock()) {
+            synchronized (this) {
+                return createSubscriptionWhileCoordinated(subscriptionType, duration);
+            }
+        }
+    }
+
+    public Subscription removeSubscription(String subscriptionType, int duration) {
+        if (duration != -1 && duration <= 0) throw new IllegalArgumentException("Duration must be positive or -1");
+        synchronized (this.habboInfo.ledgerMutationLock()) {
+            synchronized (this) {
+                Subscription subscription = getSubscription(subscriptionType);
+                if (subscription != null) {
+                    int remaining = Math.max(0, subscription.getRemaining());
+                    subscription.addDuration(-(duration == -1 ? remaining : Math.min(duration, remaining)));
+                }
+                return subscription;
+            }
+        }
+    }
+
+    private Subscription createSubscriptionWhileCoordinated(String subscriptionType, int duration) {
         Subscription subscription = getSubscription(subscriptionType);
 
         if (subscription != null) {

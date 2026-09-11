@@ -2369,10 +2369,13 @@ CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.effects.Wire
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveAchievement#execute(com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.Room,java.lang.Object[]):boolean throws -
 METHOD-ANNOTATION com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveAchievement#execute(com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.Room,java.lang.Object[]):boolean throws - java.lang.Deprecated[forRemoval=false, since=]
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveAchievement#execute(com.eu.habbo.habbohotel.wired.core.WiredContext):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveAchievement#getAchievementCode(-):java.lang.String throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveAchievement#getType(-):com.eu.habbo.habbohotel.wired.WiredEffectType throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveAchievement#getWiredData(-):java.lang.String throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveAchievement#loadWiredData(java.sql.ResultSet,com.eu.habbo.habbohotel.rooms.Room):void throws java.sql.SQLException
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveAchievement#onPickUp(-):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveAchievement#onPickUp(com.eu.habbo.habbohotel.rooms.Room):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveAchievement#onPlace(com.eu.habbo.habbohotel.rooms.Room):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveAchievement#requiresTriggeringUser(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveAchievement#saveData(com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings,com.eu.habbo.habbohotel.gameclients.GameClient):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveAchievement#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
@@ -6621,6 +6624,10 @@ CONSTRUCTOR public com.eu.habbo.messages.outgoing.wired.WiredEffectDataComposer(
 METHOD protected com.eu.habbo.messages.outgoing.wired.WiredEffectDataComposer#composeInternal(-):com.eu.habbo.messages.ServerMessage throws -
 METHOD public com.eu.habbo.messages.outgoing.wired.WiredEffectDataComposer#getEffect(-):com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect throws -
 METHOD public com.eu.habbo.messages.outgoing.wired.WiredEffectDataComposer#getRoom(-):com.eu.habbo.habbohotel.rooms.Room throws -
+
+TYPE public final com.eu.habbo.messages.outgoing.wired.WiredEnvironmentComposer extends com.eu.habbo.messages.outgoing.MessageComposer
+CONSTRUCTOR public com.eu.habbo.messages.outgoing.wired.WiredEnvironmentComposer(com.eu.habbo.habbohotel.rooms.Room) throws -
+METHOD protected com.eu.habbo.messages.outgoing.wired.WiredEnvironmentComposer#composeInternal(-):com.eu.habbo.messages.ServerMessage throws -
 
 TYPE public com.eu.habbo.messages.outgoing.wired.WiredExtraDataComposer extends com.eu.habbo.messages.outgoing.MessageComposer
 CONSTRUCTOR public com.eu.habbo.messages.outgoing.wired.WiredExtraDataComposer(com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra,com.eu.habbo.habbohotel.rooms.Room) throws -

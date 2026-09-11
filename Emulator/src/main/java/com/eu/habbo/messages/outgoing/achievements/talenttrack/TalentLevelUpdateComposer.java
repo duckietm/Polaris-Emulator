@@ -19,7 +19,7 @@ public class TalentLevelUpdateComposer extends MessageComposer {
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.TalentLevelUpdateComposer);
-        this.response.appendString(this.talentTrackType.name());
+        this.response.appendString(this.talentTrackType.name().toLowerCase(java.util.Locale.ROOT));
         this.response.appendInt(this.talentTrackLevel.level);
 
         if (this.talentTrackLevel.perks != null) {
@@ -31,10 +31,14 @@ public class TalentLevelUpdateComposer extends MessageComposer {
             this.response.appendInt(0);
         }
 
-        this.response.appendInt(this.talentTrackLevel.items.size());
+        this.response.appendInt(this.talentTrackLevel.items.size() + (this.talentTrackLevel.hcDays > 0 ? 1 : 0));
         for (Item item : this.talentTrackLevel.items) {
             this.response.appendString(item.getName());
-            this.response.appendInt(item.getSpriteId());
+            this.response.appendInt(0);
+        }
+        if (this.talentTrackLevel.hcDays > 0) {
+            this.response.appendString("HABBO_CLUB");
+            this.response.appendInt(this.talentTrackLevel.hcDays);
         }
         return this.response;
     }

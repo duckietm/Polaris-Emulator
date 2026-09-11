@@ -4,7 +4,6 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.achievements.Achievement;
 import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.users.Habbo;
-
 import java.util.Map;
 
 public class AchievementUpdater implements Runnable {
@@ -18,16 +17,18 @@ public class AchievementUpdater implements Runnable {
         }
 
         if (Emulator.isReady) {
-            Achievement onlineTime = Emulator.getGameEnvironment().getAchievementManager().getAchievement("AllTimeHotelPresence");
+            Achievement onlineTime =
+                    Emulator.getGameEnvironment().getAchievementManager().getAchievement("AllTimeHotelPresence");
 
             int timestamp = Emulator.getIntUnixTimestamp();
-            for (Map.Entry<Integer, Habbo> set : Emulator.getGameEnvironment().getHabboManager().getOnlineHabbos().entrySet()) {
-                int timeOnlineSinceLastInterval = INTERVAL;
+            for (Map.Entry<Integer, Habbo> set : Emulator.getGameEnvironment()
+                    .getHabboManager()
+                    .getOnlineHabbos()
+                    .entrySet()) {
                 Habbo habbo = set.getValue();
-                if (habbo.getHabboInfo().getLastOnline() > this.lastExecutionTimestamp) {
-                    timeOnlineSinceLastInterval = timestamp - habbo.getHabboInfo().getLastOnline();
-                }
-                AchievementManager.progressAchievement(habbo, onlineTime, (int) Math.floor((timeOnlineSinceLastInterval) / 60));
+                int minutes = habbo.getHabboStats().getOnlineMinutes(timestamp);
+                int progress = Math.max(0, habbo.getHabboStats().getAchievementProgress(onlineTime));
+                if (minutes > progress) AchievementManager.progressAchievement(habbo, onlineTime, minutes - progress);
             }
 
             this.lastExecutionTimestamp = timestamp;

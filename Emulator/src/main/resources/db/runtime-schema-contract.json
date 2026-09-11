@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "source": "Flyway migrated schema",
   "tables": {
-    "achievements": ["category", "id", "level", "name", "points", "progress_needed", "reward_amount", "reward_type"],
-    "achievements_talents": ["achievement_ids", "achievement_levels", "id", "level", "reward_badges", "reward_furni", "reward_perks", "type"],
+    "achievements": ["category", "display_method", "id", "level", "name", "points", "progress_needed", "reward_amount", "reward_type", "state", "subcategory"],
+    "achievements_talents": ["achievement_ids", "achievement_levels", "id", "level", "reward_badges", "reward_furni", "reward_hc_days", "reward_perks", "type"],
     "bans": ["ban_expire", "ban_reason", "cfh_topic", "id", "ip", "machine_id", "timestamp", "type", "user_id", "user_staff_id"],
     "bot_chat_responses": ["bot_type", "id", "keys", "responses"],
     "bot_serves": ["id", "item", "keys"],

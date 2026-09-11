@@ -1,11 +1,15 @@
 package com.eu.habbo.habbohotel.achievements;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.catalog.CatalogPurchaseMath;
+import com.eu.habbo.habbohotel.economy.EconomyLedger;
+import com.eu.habbo.habbohotel.economy.EconomyOperation;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboBadge;
 import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.habbohotel.users.LedgerWalletMutation;
 import com.eu.habbo.habbohotel.users.inventory.BadgesComponent;
+import com.eu.habbo.habbohotel.users.subscriptions.Subscription;
 import com.eu.habbo.messages.outgoing.achievements.AchievementProgressComposer;
 import com.eu.habbo.messages.outgoing.achievements.AchievementUnlockedComposer;
 import com.eu.habbo.messages.outgoing.achievements.talenttrack.TalentLevelUpdateComposer;
@@ -13,10 +17,18 @@ import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
 import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserDataComposer;
 import com.eu.habbo.messages.outgoing.users.AddUserBadgeComposer;
+import com.eu.habbo.messages.outgoing.users.UserAchievementScoreComposer;
 import com.eu.habbo.messages.outgoing.users.UserBadgesComposer;
+import com.eu.habbo.messages.outgoing.users.UserCreditsComposer;
+import com.eu.habbo.messages.outgoing.users.UserCurrencyComposer;
+import com.eu.habbo.messages.outgoing.users.UserPointsComposer;
 import com.eu.habbo.plugin.Event;
+import com.eu.habbo.plugin.events.users.UserCreditsEvent;
+import com.eu.habbo.plugin.events.users.UserPointsEvent;
 import com.eu.habbo.plugin.events.users.achievements.UserAchievementLeveledEvent;
 import com.eu.habbo.plugin.events.users.achievements.UserAchievementProgressEvent;
+import com.eu.habbo.plugin.events.users.subscriptions.UserSubscriptionCreatedEvent;
+import com.eu.habbo.plugin.events.users.subscriptions.UserSubscriptionExtendedEvent;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -24,6 +36,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,17 +59,16 @@ public class AchievementManager {
     }
 
     public static void progressAchievement(int habboId, Achievement achievement, int amount) {
-        if (achievement != null) {
+        if (achievement != null && amount > 0 && habboId > 0) {
             Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(habboId);
 
             if (habbo != null) {
                 progressAchievement(habbo, achievement, amount);
             } else {
-                try (Connection connection =
-                                Emulator.getDatabase().getDataSource().getConnection();
+                try (Connection connection = openConnection();
                         PreparedStatement statement = connection.prepareStatement(""
                                 + "INSERT INTO users_achievements_queue (user_id, achievement_id, amount) VALUES (?, ?, ?) "
-                                + "ON DUPLICATE KEY UPDATE amount = amount + ?")) {
+                                + "ON DUPLICATE KEY UPDATE amount = LEAST(2147483647, CAST(amount AS SIGNED) + ?)")) {
                     statement.setInt(1, habboId);
                     statement.setInt(2, achievement.id);
                     statement.setInt(3, amount);
@@ -74,146 +86,212 @@ public class AchievementManager {
     }
 
     public static void progressAchievement(Habbo habbo, Achievement achievement, int amount) {
-        if (achievement == null) return;
+        if (achievement == null || habbo == null || !habbo.isOnline() || amount <= 0) return;
 
-        if (habbo == null) return;
+        try {
+            LedgerWalletMutation.coordinated(habbo, () -> {
+                progressWhileCoordinated(habbo, achievement, amount, 0);
+                return null;
+            });
+        } catch (SQLException | RuntimeException exception) {
+            LOGGER.error(
+                    "Unable to progress achievement {} for user {}",
+                    achievement.name,
+                    habbo.getHabboInfo().getId(),
+                    exception);
+        }
+    }
 
-        if (!habbo.isOnline()) return;
+    private static void progressWhileCoordinated(Habbo habbo, Achievement achievement, int amount, int queuedAmount)
+            throws SQLException {
+        int currentProgress = Math.max(0, habbo.getHabboStats().getAchievementProgress(achievement));
+        int newProgress = (int) Math.min(Integer.MAX_VALUE, (long) currentProgress + amount);
+        AchievementLevel oldLevel = achievement.getLevelForProgress(currentProgress);
 
-        if (habbo.getHabboStats().initAchievementProgressIfAbsent(achievement)) {
-            createUserEntry(habbo, achievement);
+        if (achievement.state == 0 || achievement.state == 2 || achievement.state == 3) return;
+        if (hasAchieved(habbo, achievement) || currentProgress == newProgress) {
+            if (queuedAmount > 0) {
+                try (Connection connection = openConnection()) {
+                    AchievementRewards.persist(
+                            connection,
+                            habbo.getHabboInfo().getId(),
+                            achievement,
+                            currentProgress,
+                            currentProgress,
+                            List.of(),
+                            List.of(),
+                            queuedAmount,
+                            habbo.getHabboStats().getAchievementScore());
+                }
+            }
+            return;
         }
 
-        int currentProgress = habbo.getHabboStats().getAchievementProgress(achievement);
+        var plugins = Emulator.getPluginManager();
+        if (plugins.isRegistered(UserAchievementProgressEvent.class, true)
+                && plugins.fireEvent(new UserAchievementProgressEvent(habbo, achievement, amount))
+                        .isCancelled()) return;
 
-        if (Emulator.getPluginManager().isRegistered(UserAchievementProgressEvent.class, true)) {
-            Event userAchievementProgressedEvent = new UserAchievementProgressEvent(habbo, achievement, amount);
-            Emulator.getPluginManager().fireEvent(userAchievementProgressedEvent);
-
-            if (userAchievementProgressedEvent.isCancelled()) return;
-        }
-
-        AchievementLevel currentLevel = achievement.getLevelForProgress(currentProgress);
-
-        if (currentLevel != null
-                && (currentLevel.level == achievement.levels.size()
-                        && currentProgress >= currentLevel.progress)) // Maximum achievement gotten.
-        return;
-
-        int newProgress = habbo.getHabboStats().incrementProgress(achievement, amount);
-
-        AchievementLevel oldLevel = achievement.getLevelForProgress(newProgress - amount);
         AchievementLevel newLevel = achievement.getLevelForProgress(newProgress);
+        List<AchievementLevel> earnedLevels = achievement.levels.values().stream()
+                .filter(level -> (oldLevel == null || level.level > oldLevel.level)
+                        && newLevel != null
+                        && level.level <= newLevel.level)
+                .sorted(java.util.Comparator.comparingInt(level -> level.level))
+                .toList();
 
-        if (AchievementManager.TALENTTRACK_ENABLED) {
-            for (TalentTrackType type : TalentTrackType.values()) {
-                if (Emulator.getGameEnvironment()
-                        .getAchievementManager()
-                        .talentTrackLevels
-                        .containsKey(type)) {
-                    for (Map.Entry<Integer, TalentTrackLevel> entry : Emulator.getGameEnvironment()
-                            .getAchievementManager()
-                            .talentTrackLevels
-                            .get(type)
-                            .entrySet()) {
-                        if (entry.getValue().achievements.containsKey(achievement)) {
-                            Emulator.getGameEnvironment()
-                                    .getAchievementManager()
-                                    .handleTalentTrackAchievement(habbo, type, achievement);
-                            break;
-                        }
-                    }
-                }
+        if (!earnedLevels.isEmpty()
+                && plugins.isRegistered(UserAchievementLeveledEvent.class, true)
+                && plugins.fireEvent(new UserAchievementLeveledEvent(habbo, achievement, oldLevel, newLevel))
+                        .isCancelled()) return;
+
+        int userId = habbo.getHabboInfo().getId();
+        List<EconomyOperation> rewards = new java.util.ArrayList<>();
+        for (AchievementLevel level : earnedLevels) {
+            if (level.rewardAmount <= 0) continue;
+
+            int currency = level.rewardType;
+            int reward;
+            if (currency == EconomyLedger.CREDITS) {
+                UserCreditsEvent event = new UserCreditsEvent(habbo, level.rewardAmount);
+                if (plugins.fireEvent(event).isCancelled()) continue;
+                reward = event.credits;
+            } else {
+                UserPointsEvent event = new UserPointsEvent(habbo, level.rewardAmount, currency);
+                if (plugins.fireEvent(event).isCancelled()) continue;
+                reward = event.points;
+                currency = event.type;
             }
+            if (reward == 0) continue;
+
+            rewards.add(new EconomyOperation(
+                    "achievement:" + userId + ":" + achievement.id + ":" + level.level,
+                    userId,
+                    userId,
+                    "achievement_reward",
+                    "achievement.level",
+                    currency,
+                    reward,
+                    null,
+                    achievement.name));
         }
 
-        if (newLevel == null
-                || (oldLevel != null
-                        && (oldLevel.level == newLevel.level && newLevel.level < achievement.levels.size()))) {
-            habbo.getClient().sendResponse(new AchievementProgressComposer(habbo, achievement));
-        } else {
-            if (Emulator.getPluginManager().isRegistered(UserAchievementLeveledEvent.class, true)) {
-                Event userAchievementLeveledEvent =
-                        new UserAchievementLeveledEvent(habbo, achievement, oldLevel, newLevel);
-                Emulator.getPluginManager().fireEvent(userAchievementLeveledEvent);
-
-                if (userAchievementLeveledEvent.isCancelled()) return;
+        AchievementRewards.Result result;
+        synchronized (habbo.getHabboStats()) {
+            try (Connection connection = openConnection()) {
+                result = AchievementRewards.persist(
+                        connection,
+                        userId,
+                        achievement,
+                        currentProgress,
+                        newProgress,
+                        earnedLevels,
+                        rewards,
+                        queuedAmount,
+                        habbo.getHabboStats().getAchievementScore());
             }
+            if (result.badge() != null) habbo.getHabboStats().achievementScore = result.score();
+        }
 
-            habbo.getClient().sendResponse(new AchievementProgressComposer(habbo, achievement));
-            habbo.getClient().sendResponse(new AchievementUnlockedComposer(habbo, achievement));
+        habbo.getHabboStats().setProgress(achievement, newProgress);
+        for (int index = 0; index < rewards.size(); index++) {
+            LedgerWalletMutation.applyCommitted(
+                    habbo,
+                    rewards.get(index).currencyType(),
+                    result.balances().get(index).balanceAfter());
+        }
+        for (EconomyOperation reward : rewards) {
+            if (reward.currencyType() == EconomyLedger.CREDITS)
+                habbo.getClient().sendResponse(new UserCreditsComposer(habbo));
+            else if (reward.currencyType() == 0) habbo.getClient().sendResponse(new UserCurrencyComposer(habbo));
+            else
+                habbo.getClient()
+                        .sendResponse(new UserPointsComposer(
+                                habbo.getHabboInfo().getCurrencyAmount(reward.currencyType()),
+                                reward.delta(),
+                                reward.currencyType()));
+        }
 
-            String newBadgeCode = "ACH_" + achievement.name + newLevel.level;
-
+        if (result.badge() != null) {
+            BadgesComponent badges = habbo.getInventory().getBadgesComponent();
             HabboBadge badge = null;
-
-            try {
-                BadgesComponent badgesComponent = habbo.getInventory().getBadgesComponent();
-
-                for (HabboBadge owned : badgesComponent.getBadgesSnapshot()) {
-                    if (!isAchievementBadge(owned.getCode(), achievement.name)) continue;
-
-                    if (badge == null) {
-                        badge = owned;
-                        continue;
-                    }
-
-                    if (badge.getSlot() == 0 && owned.getSlot() > 0) {
-                        badge.setSlot(owned.getSlot());
-                    }
-
-                    badgesComponent.removeBadge(owned);
-
-                    if (!owned.getCode().equalsIgnoreCase(badge.getCode())) {
-                        BadgesComponent.deleteBadge(habbo.getHabboInfo().getId(), owned.getCode());
-                    }
-                }
-            } catch (Exception e) {
-                LOGGER.error("Caught exception", e);
-                return;
+            for (HabboBadge owned : badges.getBadgesSnapshot()) {
+                if (!isAchievementBadge(owned.getCode(), achievement.name)) continue;
+                if (owned.getId() == result.badge().id()) badge = owned;
+                else badges.removeBadge(owned);
             }
-
-            if (badge != null) {
-                badge.setCode(newBadgeCode);
-                badge.needsInsert(false);
-                badge.needsUpdate(true);
-            } else {
-                badge = new HabboBadge(0, newBadgeCode, 0, habbo);
-                habbo.getClient().sendResponse(new AddUserBadgeComposer(badge));
-                badge.needsInsert(true);
-                badge.needsUpdate(true);
-                habbo.getInventory().getBadgesComponent().addBadge(badge);
+            if (badge == null) {
+                badge = new HabboBadge(
+                        result.badge().id(),
+                        result.badge().code(),
+                        result.badge().slot(),
+                        habbo);
+                badges.addBadge(badge);
             }
-
-            badge.run();
-
-            if (badge.getSlot() > 0) {
-                if (habbo.getHabboInfo().getCurrentRoom() != null) {
-                    habbo.getHabboInfo()
-                            .getCurrentRoom()
-                            .sendComposer(new UserBadgesComposer(
-                                            habbo.getInventory()
-                                                    .getBadgesComponent()
-                                                    .getWearingBadges(),
-                                            habbo.getHabboInfo().getId())
-                                    .compose());
-                }
-            }
-
+            badge.setCode(result.badge().code());
+            badge.setSlot(result.badge().slot());
+            badge.needsInsert(false);
+            badge.needsUpdate(false);
+            habbo.getClient().sendResponse(new AddUserBadgeComposer(badge));
             habbo.getClient()
                     .sendResponse(
                             new AddHabboItemComposer(badge.getId(), AddHabboItemComposer.AddHabboItemCategory.BADGE));
-
-            habbo.getHabboStats().addAchievementScore(newLevel.points);
-
-            if (newLevel.rewardAmount > 0) {
-                habbo.givePoints(newLevel.rewardType, newLevel.rewardAmount);
+            habbo.getClient().sendResponse(new UserAchievementScoreComposer(habbo));
+            for (AchievementLevel level : earnedLevels) {
+                habbo.getClient()
+                        .sendResponse(new AchievementUnlockedComposer(habbo, achievement, level, badge.getId()));
             }
 
             if (habbo.getHabboInfo().getCurrentRoom() != null) {
+                if (badge.getSlot() > 0) {
+                    habbo.getHabboInfo()
+                            .getCurrentRoom()
+                            .sendComposer(new UserBadgesComposer(badges.getWearingBadges(), userId).compose());
+                }
                 habbo.getHabboInfo().getCurrentRoom().sendComposer(new RoomUserDataComposer(habbo).compose());
             }
         }
+
+        habbo.getClient().sendResponse(new AchievementProgressComposer(habbo, achievement));
+        if (TALENTTRACK_ENABLED) {
+            AchievementManager manager = Emulator.getGameEnvironment().getAchievementManager();
+            for (TalentTrackType type : TalentTrackType.values()) {
+                if (manager.talentTrackLevels.containsKey(type))
+                    manager.handleTalentTrackAchievement(habbo, type, achievement);
+            }
+        }
+    }
+
+    public static void processQueuedAchievements(Habbo habbo) {
+        try {
+            LedgerWalletMutation.coordinated(habbo, () -> {
+                Map<Integer, Integer> queued = new LinkedHashMap<>();
+                try (Connection connection = openConnection();
+                        PreparedStatement statement = connection.prepareStatement(
+                                "SELECT achievement_id, amount FROM users_achievements_queue WHERE user_id = ? AND amount > 0")) {
+                    statement.setInt(1, habbo.getHabboInfo().getId());
+                    try (ResultSet result = statement.executeQuery()) {
+                        while (result.next()) queued.put(result.getInt("achievement_id"), result.getInt("amount"));
+                    }
+                }
+                AchievementManager manager = Emulator.getGameEnvironment().getAchievementManager();
+                for (Map.Entry<Integer, Integer> entry : queued.entrySet()) {
+                    Achievement achievement = manager.getAchievement(entry.getKey());
+                    if (achievement != null)
+                        progressWhileCoordinated(habbo, achievement, entry.getValue(), entry.getValue());
+                }
+                return null;
+            });
+        } catch (SQLException | RuntimeException exception) {
+            LOGGER.error(
+                    "Unable to apply queued achievements for user {}",
+                    habbo.getHabboInfo().getId(),
+                    exception);
+        }
+    }
+
+    private static Connection openConnection() throws SQLException {
+        return Emulator.getDatabase().getDataSource().getConnection();
     }
 
     /**
@@ -255,12 +333,12 @@ public class AchievementManager {
     }
 
     public static void createUserEntry(Habbo habbo, Achievement achievement) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection connection = openConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "INSERT INTO users_achievements (user_id, achievement_name, progress) VALUES (?, ?, ?)")) {
             statement.setInt(1, habbo.getHabboInfo().getId());
             statement.setString(2, achievement.name);
-            statement.setInt(3, 1);
+            statement.setInt(3, 0);
             statement.execute();
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
@@ -268,9 +346,9 @@ public class AchievementManager {
     }
 
     public static void saveAchievements(Habbo habbo) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection connection = openConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE users_achievements SET progress = ? WHERE achievement_name = ? AND user_id = ? LIMIT 1")) {
+                        "UPDATE users_achievements SET progress = GREATEST(progress, ?) WHERE achievement_name = ? AND user_id = ? LIMIT 1")) {
             statement.setInt(3, habbo.getHabboInfo().getId());
             for (Map.Entry<Achievement, Integer> map :
                     habbo.getHabboStats().getAchievementProgress().entrySet()) {
@@ -289,7 +367,7 @@ public class AchievementManager {
             return 0;
         }
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+        try (Connection connection = openConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "SELECT progress FROM users_achievements WHERE user_id = ? AND achievement_name = ? LIMIT 1")) {
             statement.setInt(1, userId);
@@ -313,14 +391,15 @@ public class AchievementManager {
                 achievement.clearLevels();
             }
 
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            try (Connection connection = openConnection()) {
                 try (Statement statement = connection.createStatement();
-                        ResultSet set = statement.executeQuery("SELECT * FROM achievements")) {
+                        ResultSet set = statement.executeQuery("SELECT * FROM achievements ORDER BY name, level")) {
                     while (set.next()) {
                         if (!this.achievements.containsKey(set.getString("name"))) {
                             this.achievements.put(set.getString("name"), new Achievement(set));
                         } else {
                             this.achievements.get(set.getString("name")).addLevel(new AchievementLevel(set));
+                            this.achievements.get(set.getString("name")).loadMetadata(set);
                         }
                     }
                 } catch (SQLException e) {
@@ -388,8 +467,11 @@ public class AchievementManager {
             final boolean[] allCompleted = {true};
             for (Map.Entry<Achievement, Integer> achievementEntry :
                     entry.getValue().achievements.entrySet()) {
-                if (habbo.getHabboStats().getAchievementProgress(achievementEntry.getKey())
-                        < achievementEntry.getValue()) {
+                AchievementLevel requiredLevel =
+                        achievementEntry.getKey().levels.get(achievementEntry.getValue());
+                if (requiredLevel == null
+                        || habbo.getHabboStats().getAchievementProgress(achievementEntry.getKey())
+                                < requiredLevel.progress) {
                     allCompleted[0] = false;
                     break;
                 }
@@ -408,55 +490,79 @@ public class AchievementManager {
     }
 
     public void handleTalentTrackAchievement(Habbo habbo, TalentTrackType type, Achievement achievement) {
-        TalentTrackLevel currentLevel = this.calculateTalenTrackLevel(habbo, type);
+        try {
+            LedgerWalletMutation.coordinated(habbo, () -> {
+                synchronized (habbo.getHabboStats()) {
+                    TalentTrackLevel currentLevel = this.calculateTalenTrackLevel(habbo, type);
+                    int previousLevel = habbo.getHabboStats().talentTrackLevel(type);
+                    if (currentLevel == null || currentLevel.level <= previousLevel) return null;
 
-        if (currentLevel != null) {
-            if (currentLevel.level > habbo.getHabboStats().talentTrackLevel(type)) {
-                for (int i = habbo.getHabboStats().talentTrackLevel(type); i <= currentLevel.level; i++) {
-                    TalentTrackLevel level = this.getTalentTrackLevel(type, i);
-
-                    if (level != null) {
-                        if (level.items != null && !level.items.isEmpty()) {
-                            for (Item item : level.items) {
-                                HabboItem rewardItem = Emulator.getGameEnvironment()
-                                        .getItemManager()
-                                        .createItem(habbo.getHabboInfo().getId(), item, 0, 0, "");
-                                habbo.getInventory().getItemsComponent().addItem(rewardItem);
-                                habbo.getClient().sendResponse(new AddHabboItemComposer(rewardItem));
-                                habbo.getClient().sendResponse(new InventoryRefreshComposer());
-                            }
-                        }
-
-                        if (level.badges != null && level.badges.length > 0) {
-                            for (String badge : level.badges) {
-                                if (!badge.isEmpty()) {
-                                    if (!habbo.getInventory()
-                                            .getBadgesComponent()
-                                            .hasBadge(badge)) {
-                                        HabboBadge b = new HabboBadge(0, badge, 0, habbo);
-                                        Emulator.getThreading().run(b);
-                                        habbo.getInventory()
-                                                .getBadgesComponent()
-                                                .addBadge(b);
-                                        habbo.getClient().sendResponse(new AddUserBadgeComposer(b));
-                                    }
-                                }
-                            }
-                        }
-
-                        if (level.perks != null && level.perks.length > 0) {
-                            for (String perk : level.perks) {
-                                if (perk.equalsIgnoreCase("TRADE")) {
-                                    habbo.getHabboStats().perkTrade = true;
-                                }
-                            }
-                        }
-                        habbo.getClient().sendResponse(new TalentLevelUpdateComposer(type, level));
+                    List<TalentTrackLevel> earnedLevels = this.talentTrackLevels.get(type).values().stream()
+                            .filter(level -> level.level > previousLevel && level.level <= currentLevel.level)
+                            .sorted(java.util.Comparator.comparingInt(level -> level.level))
+                            .toList();
+                    int clubSeconds = CatalogPurchaseMath.checkedSubscriptionSeconds(earnedLevels.stream()
+                            .mapToInt(level -> level.hcDays)
+                            .reduce(0, Math::addExact));
+                    if (clubSeconds > 0) {
+                        Subscription subscription = habbo.getHabboStats().getSubscription(Subscription.HABBO_CLUB);
+                        Event event = subscription == null
+                                ? new UserSubscriptionCreatedEvent(
+                                        habbo.getHabboInfo().getId(), Subscription.HABBO_CLUB, clubSeconds)
+                                : new UserSubscriptionExtendedEvent(
+                                        habbo.getHabboInfo().getId(), subscription, clubSeconds);
+                        if (Emulator.getPluginManager().fireEvent(event).isCancelled()) return null;
                     }
+                    var environment = Emulator.getGameEnvironment();
+                    TalentTrackRewards.Result result;
+                    try (Connection connection = openConnection()) {
+                        result = TalentTrackRewards.persist(
+                                connection,
+                                habbo,
+                                environment.getItemManager(),
+                                environment.getSubscriptionManager(),
+                                type,
+                                previousLevel,
+                                currentLevel.level,
+                                earnedLevels,
+                                Math.toIntExact(java.time.Instant.now().getEpochSecond()));
+                    }
+                    habbo.getHabboStats().setTalentLevel(type, currentLevel.level);
+                    if (result.trade()) habbo.getHabboStats().perkTrade = true;
+                    if (result.subscription() != null) {
+                        Subscription subscription = habbo.getHabboStats().subscriptions.stream()
+                                .filter(owned -> owned.getSubscriptionId()
+                                        == result.subscription().getSubscriptionId())
+                                .findFirst()
+                                .orElse(null);
+                        if (subscription != null) {
+                            subscription.applyPersistedDuration(
+                                    result.subscription().getDuration());
+                            subscription.onExtended(result.clubSeconds());
+                        } else {
+                            habbo.getHabboStats().subscriptions.add(result.subscription());
+                            result.subscription().onCreated();
+                        }
+                    }
+                    for (HabboItem item : result.items()) {
+                        habbo.getInventory().getItemsComponent().addItem(item);
+                        habbo.getClient().sendResponse(new AddHabboItemComposer(item));
+                    }
+                    if (!result.items().isEmpty()) habbo.getClient().sendResponse(new InventoryRefreshComposer());
+                    for (HabboBadge badge : result.badges()) {
+                        habbo.getInventory().getBadgesComponent().addBadge(badge);
+                        habbo.getClient().sendResponse(new AddUserBadgeComposer(badge));
+                    }
+                    for (TalentTrackLevel level : earnedLevels)
+                        habbo.getClient().sendResponse(new TalentLevelUpdateComposer(type, level));
                 }
-            }
-
-            habbo.getHabboStats().setTalentLevel(type, currentLevel.level);
+                return null;
+            });
+        } catch (SQLException | RuntimeException exception) {
+            LOGGER.error(
+                    "Unable to grant talent rewards for user {}",
+                    habbo.getHabboInfo().getId(),
+                    exception);
         }
     }
 

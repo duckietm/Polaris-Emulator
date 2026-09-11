@@ -9,15 +9,14 @@ public class Achievement {
 
     public final int id;
 
-
     public final String name;
 
-
     public final AchievementCategories category;
-
+    public volatile short state = 1;
+    public volatile int displayMethod;
+    public volatile String subcategory = "";
 
     public final Map<Integer, AchievementLevel> levels;
-
 
     public Achievement(ResultSet set) throws SQLException {
         this.levels = new HashMap<>();
@@ -26,16 +25,27 @@ public class Achievement {
         this.name = set.getString("name");
         this.category = AchievementCategories.valueOf(set.getString("category").toUpperCase());
 
+        this.loadMetadata(set);
+
         this.addLevel(new AchievementLevel(set));
     }
 
+    void loadMetadata(ResultSet set) throws SQLException {
+        try {
+            set.findColumn("state");
+        } catch (SQLException missingMetadata) {
+            return; // Legacy plugins may construct achievements from their original column projection.
+        }
+        this.state = set.getShort("state");
+        this.displayMethod = set.getInt("display_method");
+        this.subcategory = set.getString("subcategory");
+    }
 
     public void addLevel(AchievementLevel level) {
         synchronized (this.levels) {
             this.levels.put(level.level, level);
         }
     }
-
 
     public AchievementLevel getLevelForProgress(int progress) {
         AchievementLevel l = null;
@@ -55,12 +65,10 @@ public class Achievement {
         return l;
     }
 
-
     public AchievementLevel getNextLevel(int currentLevel) {
 
         for (AchievementLevel level : this.levels.values()) {
-            if (level.level == (currentLevel + 1))
-                return level;
+            if (level.level == (currentLevel + 1)) return level;
         }
 
         return null;

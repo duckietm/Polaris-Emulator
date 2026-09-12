@@ -126,6 +126,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     private final RoomPersistence persistence;
     private final RoomRepository repository;
     private final RoomWiredAccessService wiredAccess;
+    private final RoomRaidProtectionService raidProtection;
     private final RoomWiredVisibilityService wiredVisibility = new RoomWiredVisibilityService(this);
     private final RoomWiredRuntime wiredRuntime = new RoomWiredRuntime(this);
     private final RoomUserCountPersistence userCountPersistence;
@@ -257,6 +258,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         this.persistence = new RoomPersistence(this.dependencies.database());
         this.repository = new RoomRepository(this.dependencies.database());
         this.wiredAccess = new RoomWiredAccessService(this, this.repository);
+        this.raidProtection = new RoomRaidProtectionService(this, this.repository, this.dependencies.unixTime());
         this.id = id;
         this.ownerId = ownerId;
         this.userCountPersistence = this.createUserCountPersistence();
@@ -281,6 +283,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         this.persistence = new RoomPersistence(this.dependencies.database());
         this.repository = new RoomRepository(this.dependencies.database());
         this.wiredAccess = new RoomWiredAccessService(this, this.repository);
+        this.raidProtection = new RoomRaidProtectionService(this, this.repository, this.dependencies.unixTime());
         RoomSnapshot.Initial initial = RoomSnapshot.readInitial(set);
         this.id = initial.id();
         this.ownerId = initial.ownerId();
@@ -1519,6 +1522,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
     public void addHabbo(Habbo habbo) {
         this.unitManager.addHabbo(habbo);
+        this.raidProtection.onArrival(habbo);
     }
 
     public void kickHabbo(Habbo habbo, boolean alert) {
@@ -1671,11 +1675,13 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
     public void talk(Habbo habbo, RoomChatMessage roomChatMessage, RoomChatType chatType) {
         this.chatManager.talk(habbo, roomChatMessage, chatType);
+        this.raidProtection.onTalk(habbo, roomChatMessage);
     }
 
     public void talk(
             final Habbo habbo, final RoomChatMessage roomChatMessage, RoomChatType chatType, boolean ignoreWired) {
         this.chatManager.talk(habbo, roomChatMessage, chatType, ignoreWired);
+        this.raidProtection.onTalk(habbo, roomChatMessage);
     }
 
     public Set<RoomTile> getLockedTiles() {
@@ -1871,6 +1877,10 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
     public boolean saveWiredSettings(int inspectMask, int modifyMask, String timezone) {
         return this.wiredAccess.save(inspectMask, modifyMask, timezone);
+    }
+
+    public RoomRaidProtectionService getRaidProtection() {
+        return this.raidProtection;
     }
 
     public void giveRights(Habbo habbo) {

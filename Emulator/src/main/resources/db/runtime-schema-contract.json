@@ -127,6 +127,7 @@
     "room_models_custom": ["door_dir", "door_x", "door_y", "heightmap", "id", "name"],
     "room_mutes": ["ends", "room_id", "user_id"],
     "room_promotions": ["category", "description", "end_timestamp", "room_id", "start_timestamp", "title"],
+    "room_raid_protection": ["action_type", "ban_duration_seconds", "detection_sensitivity", "enabled", "guard_duration_seconds", "guard_enabled", "guard_sensitivity", "last_raid_at", "room_id"],
     "room_rights": ["room_id", "user_id"],
     "room_templates": ["category", "description", "door_dir", "door_x", "door_y", "enabled", "heightmap", "model", "moodlight_data", "name", "override_model", "paper_floor", "paper_landscape", "paper_wall", "password", "room_description", "sort_order", "state", "template_id", "thickness_floor", "thickness_wall", "thumbnail", "title", "trade_mode", "users_max"],
     "room_templates_items": ["extra_data", "id", "item_id", "rot", "template_id", "wall_pos", "wired_data", "x", "y", "z"],

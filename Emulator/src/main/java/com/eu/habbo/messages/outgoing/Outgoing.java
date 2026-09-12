@@ -814,4 +814,8 @@ public class Outgoing {
     public static final int TreasureHuntUpdateComposer = 3368;
     // AIR 13 self donation tool result: the official id is free on our outgoing table.
     public static final int SelfDonationResultComposer = 2920;
+    // AIR 15 raid protection: all three official ids are free on our outgoing table.
+    public static final int RaidProtectionCapabilityComposer = 734;
+    public static final int RaidProtectionSettingsComposer = 3553;
+    public static final int RaidProtectionSaveResultComposer = 3620;
 }

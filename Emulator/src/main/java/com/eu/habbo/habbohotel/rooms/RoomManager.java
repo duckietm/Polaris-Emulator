@@ -57,6 +57,7 @@ import com.eu.habbo.messages.outgoing.rooms.items.RoomFloorItemsComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.RoomWallItemsComposer;
 import com.eu.habbo.messages.outgoing.rooms.pets.RoomPetComposer;
 import com.eu.habbo.messages.outgoing.rooms.promotions.RoomPromotionMessageComposer;
+import com.eu.habbo.messages.outgoing.rooms.raidprotection.RaidProtectionCapabilityComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUnitIdleComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserDanceComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserEffectComposer;
@@ -936,6 +937,11 @@ public class RoomManager {
 
         habbo.getClient().sendResponse(new RoomPaneComposer(room, room.isOwner(habbo)));
 
+        // AIR 15 raid protection: the capability is per room, and the client discards it on leaving.
+        habbo.getClient()
+                .sendResponse(new RaidProtectionCapabilityComposer(
+                        room.getId(), room.getRaidProtection().canManage(habbo)));
+
         habbo.getClient().sendResponse(new RoomThicknessComposer(room));
 
         habbo.getClient()
@@ -1661,6 +1667,11 @@ public class RoomManager {
 
     public void banUserFromRoom(Habbo rights, int userId, int roomId, RoomBanTypes length) {
         this.roomModerationService.banUser(rights, userId, roomId, length);
+    }
+
+    /** Bans for an arbitrary number of seconds, for callers whose duration is not a preset. */
+    public void banUserFromRoom(Habbo rights, int userId, int roomId, int durationSeconds) {
+        this.roomModerationService.banUser(rights, userId, roomId, durationSeconds);
     }
 
     public void registerGameType(Class<? extends Game> gameClass) {

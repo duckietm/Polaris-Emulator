@@ -30,6 +30,14 @@ final class RoomModerationService {
     }
 
     void banUser(Habbo rights, int userId, int roomId, RoomManager.RoomBanTypes length) {
+        this.banUser(rights, userId, roomId, length.duration);
+    }
+
+    /**
+     * Bans for an arbitrary number of seconds. Raid protection needs this: the client offers ten ban
+     * lengths, and only two of them line up with {@link RoomManager.RoomBanTypes}.
+     */
+    void banUser(Habbo rights, int userId, int roomId, int durationSeconds) {
         Room room = this.rooms.apply(roomId);
         if (room == null) {
             return;
@@ -47,7 +55,7 @@ final class RoomModerationService {
             return;
         }
 
-        RoomBan roomBan = new RoomBan(roomId, userId, name, this.unixTime.getAsInt() + length.duration);
+        RoomBan roomBan = new RoomBan(roomId, userId, name, this.unixTime.getAsInt() + durationSeconds);
         this.banStore.accept(roomBan);
         room.addRoomBan(roomBan);
 

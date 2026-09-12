@@ -505,6 +505,8 @@ public class Incoming {
     public static final int WiredUserInspectMoveEvent = 10027;
     public static final int WiredFurniRuntimeStateRequestEvent = 10028;
     public static final int WiredFeatureCapabilitiesEvent = 10029;
+
+    public static final int WiredOpenEvent = 768;
     // AIR 13 wired leftovers, all on their official ids.
     public static final int WiredUserSelectedEvent = 3122;
     public static final int WiredMenuPermissionsSaveEvent = 1936;

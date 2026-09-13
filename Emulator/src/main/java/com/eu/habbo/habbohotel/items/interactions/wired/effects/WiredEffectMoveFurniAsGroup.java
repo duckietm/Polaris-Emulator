@@ -24,8 +24,9 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Move-furni-as-group effect (furni classname {@code wf_act_move_furni_as_group}). Shifts the
- * selected furni one tile in a configured direction by the same vector. Unlike
+ * Move-furni-as-group effect (furni classname {@code wf_act_move_furni_as_group}). Shifts every
+ * selected furni by the same vector: either one tile along a chosen direction, or by an arbitrary
+ * X/Y offset, which is what the official box offers. Unlike
  * {@link WiredEffectMoveFurniTo} (which moves the triggering item toward selected targets), this
  * moves the selected items themselves.
  *
@@ -38,11 +39,23 @@ import java.util.List;
  * abort packed groups, whose members' destinations are each other's still-occupied tiles.)</p>
  */
 public class WiredEffectMoveFurniAsGroup extends InteractionWiredEffect {
+    /** Shift the group one tile along {@link #direction}. */
+    private static final int MODE_DIRECTION = 0;
+
+    /** Shift the group by {@link #offsetX} / {@link #offsetY}, as the official box does. */
+    private static final int MODE_OFFSET = 1;
+
+    /** Bound of the official {@code wiredfurni.params.place_furni.offsets.x} / {@code .y} inputs. */
+    private static final int MAXIMUM_OFFSET = 64;
+
     public static final WiredEffectType type = WiredEffectType.MOVE_FURNI_AS_GROUP;
 
     private final List<HabboItem> items = new ArrayList<>();
     private int direction;
     private int furniSource = WiredSourceUtil.SOURCE_TRIGGER;
+    private int mode = MODE_DIRECTION;
+    private int offsetX;
+    private int offsetY;
 
     public WiredEffectMoveFurniAsGroup(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -64,6 +77,17 @@ public class WiredEffectMoveFurniAsGroup extends InteractionWiredEffect {
 
         this.direction = ((settings.getIntParams()[0] % 8) + 8) % 8;
         this.furniSource = settings.getIntParams()[1];
+
+        // Older clients save two params; those boxes keep shifting one tile along the direction.
+        if (settings.getIntParams().length > 4) {
+            this.mode = (settings.getIntParams()[2] == MODE_OFFSET) ? MODE_OFFSET : MODE_DIRECTION;
+            this.offsetX = clampOffset(settings.getIntParams()[3]);
+            this.offsetY = clampOffset(settings.getIntParams()[4]);
+        } else {
+            this.mode = MODE_DIRECTION;
+            this.offsetX = 0;
+            this.offsetY = 0;
+        }
 
         int count = settings.getFurniIds().length;
 
@@ -108,9 +132,13 @@ public class WiredEffectMoveFurniAsGroup extends InteractionWiredEffect {
 
         if (effectiveItems.isEmpty()) return;
 
+        int dx = this.moveDeltaX();
+        int dy = this.moveDeltaY();
+
+        // An offset of zero asks for no movement at all.
+        if (dx == 0 && dy == 0) return;
+
         // Move the leading edge first so members don't collide with un-moved members.
-        int dx = directionDeltaX(this.direction);
-        int dy = directionDeltaY(this.direction);
         effectiveItems.sort(Comparator.comparingInt((HabboItem i) -> i.getX() * dx + i.getY() * dy)
                 .reversed());
 
@@ -118,7 +146,9 @@ public class WiredEffectMoveFurniAsGroup extends InteractionWiredEffect {
             RoomTile current = room.getLayout().getTile(item.getX(), item.getY());
             if (current == null) continue;
 
-            RoomTile target = room.getLayout().getTileInFront(current, this.direction, 1);
+            RoomTile target = (this.mode == MODE_OFFSET)
+                    ? room.getLayout().getTile((short) (item.getX() + dx), (short) (item.getY() + dy))
+                    : room.getLayout().getTileInFront(current, this.direction, 1);
             if (target == null || !target.getAllowStack()) continue;
 
             WiredMoveCarryHelper.moveFurni(room, this, item, target, item.getRotation(), null, false, ctx);
@@ -138,7 +168,15 @@ public class WiredEffectMoveFurniAsGroup extends InteractionWiredEffect {
                 .map(HabboItem::getId)
                 .toList();
 
-        return WiredManager.getGson().toJson(new JsonData(this.direction, this.getDelay(), validIds, this.furniSource));
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.direction,
+                        this.getDelay(),
+                        validIds,
+                        this.furniSource,
+                        this.mode,
+                        this.offsetX,
+                        this.offsetY));
     }
 
     @Override
@@ -154,9 +192,12 @@ public class WiredEffectMoveFurniAsGroup extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(2);
+        message.appendInt(5);
         message.appendInt(this.direction);
         message.appendInt(this.furniSource);
+        message.appendInt(this.mode);
+        message.appendInt(this.offsetX);
+        message.appendInt(this.offsetY);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -176,6 +217,9 @@ public class WiredEffectMoveFurniAsGroup extends InteractionWiredEffect {
         this.direction = ((data.direction % 8) + 8) % 8;
         this.setDelay(data.delay);
         this.furniSource = data.furniSource;
+        this.mode = (data.mode == MODE_OFFSET) ? MODE_OFFSET : MODE_DIRECTION;
+        this.offsetX = clampOffset(data.offsetX);
+        this.offsetY = clampOffset(data.offsetY);
 
         if (data.itemIds != null) {
             for (Integer id : data.itemIds) {
@@ -197,11 +241,27 @@ public class WiredEffectMoveFurniAsGroup extends InteractionWiredEffect {
         this.items.clear();
         this.direction = 0;
         this.furniSource = WiredSourceUtil.SOURCE_TRIGGER;
+        this.mode = MODE_DIRECTION;
+        this.offsetX = 0;
+        this.offsetY = 0;
     }
 
     @Override
     protected long requiredCooldown() {
         return COOLDOWN_MOVEMENT;
+    }
+
+    private static int clampOffset(int value) {
+        return Math.max(-MAXIMUM_OFFSET, Math.min(MAXIMUM_OFFSET, value));
+    }
+
+    /** The vector every group member is shifted by, whichever mode configured it. */
+    private int moveDeltaX() {
+        return (this.mode == MODE_OFFSET) ? this.offsetX : directionDeltaX(this.direction);
+    }
+
+    private int moveDeltaY() {
+        return (this.mode == MODE_OFFSET) ? this.offsetY : directionDeltaY(this.direction);
     }
 
     private static int directionDeltaX(int direction) {
@@ -225,12 +285,19 @@ public class WiredEffectMoveFurniAsGroup extends InteractionWiredEffect {
         int delay;
         List<Integer> itemIds;
         int furniSource;
+        int mode;
+        int offsetX;
+        int offsetY;
 
-        public JsonData(int direction, int delay, List<Integer> itemIds, int furniSource) {
+        public JsonData(
+                int direction, int delay, List<Integer> itemIds, int furniSource, int mode, int offsetX, int offsetY) {
             this.direction = direction;
             this.delay = delay;
             this.itemIds = itemIds;
             this.furniSource = furniSource;
+            this.mode = mode;
+            this.offsetX = offsetX;
+            this.offsetY = offsetY;
         }
     }
 }

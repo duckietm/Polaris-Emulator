@@ -136,9 +136,12 @@ public class WiredTriggerRepeaterLong extends InteractionWiredTrigger implements
         // Use global tick counter - all repeaters with same interval fire together
         // This ensures perfect synchronization regardless of when they were registered
         long elapsedMs = tickCount * tickIntervalMs;
+        long previousMs = (tickCount - 1) * tickIntervalMs;
 
-        // Fire when elapsed time is a multiple of repeat time
-        if (elapsedMs % this.repeatTime == 0) {
+        // Fire on the tick that crosses the next period boundary. A modulo only fires when the
+        // tick interval divides the period exactly, so an operator-configured interval could
+        // silently stretch or skip a repeater's period.
+        if (elapsedMs / this.repeatTime != previousMs / this.repeatTime) {
             long currentTime = System.currentTimeMillis();
             if (this.getRoomId() != 0
                     && room.isLoaded()

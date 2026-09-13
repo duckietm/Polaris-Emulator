@@ -104,7 +104,7 @@ public class InteractionGameUpCounter extends InteractionGameTimer {
     }
 
     public long getNextTickDelayMs() {
-        return (this.subSecondOffsetMs > 0) ? HALF_SECOND_MS : ONE_SECOND_MS;
+        return HALF_SECOND_MS;
     }
 
     public void setCurrentTimeInMs(int totalMs) {

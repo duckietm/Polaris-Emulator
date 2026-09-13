@@ -29,9 +29,7 @@ public class GameUpCounter implements Runnable {
 
         int tickDelayMs = (int) timer.getNextTickDelayMs();
         timer.advanceCounterInMs(tickDelayMs);
-        if (timer.getCurrentTimeInMs() % 1000 == 0) {
-            WiredManager.triggerClockCounter(room, timer);
-        }
+        WiredManager.triggerClockCounter(room, timer);
 
         if (timer.getCurrentTimeInMs() < timer.getMaximumTimeInMs()) {
             if (timer.tryActivateTimerThread()) {
@@ -43,6 +41,8 @@ public class GameUpCounter implements Runnable {
             WiredManager.triggerGameEnds(room);
         }
 
-        room.updateItem(timer);
+        if (timer.getCurrentTimeInMs() % 1000 == 0) {
+            room.updateItem(timer);
+        }
     }
 }

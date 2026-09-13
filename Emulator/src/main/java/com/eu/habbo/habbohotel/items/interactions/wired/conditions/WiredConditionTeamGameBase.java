@@ -155,6 +155,29 @@ abstract class WiredConditionTeamGameBase extends InteractionWiredCondition {
         return new UserGameContext(habbo, game, team);
     }
 
+    /**
+     * The team itself, with no user involved. The official boxes ask about a named team's state,
+     * so they must answer even when nobody in the room is on it.
+     */
+    protected GameTeam resolveRoomTeam(Room room, GameTeamColors teamColor) {
+        if (room == null || teamColor == GameTeamColors.NONE) {
+            return null;
+        }
+
+        for (Game game : room.getGames()) {
+            if (!this.isSupportedGame(game)) {
+                continue;
+            }
+
+            GameTeam team = game.getTeam(teamColor);
+            if (team != null) {
+                return team;
+            }
+        }
+
+        return null;
+    }
+
     protected int getTeamRank(Game game, GameTeam team) {
         if (game == null || team == null) {
             return Integer.MAX_VALUE;
@@ -173,7 +196,7 @@ abstract class WiredConditionTeamGameBase extends InteractionWiredCondition {
         return rank;
     }
 
-    private boolean isSupportedGame(Game game) {
+    protected boolean isSupportedGame(Game game) {
         return game != null
                 && game.getState() != GameState.IDLE
                 && (game instanceof FreezeGame || game instanceof BattleBanzaiGame);

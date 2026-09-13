@@ -35,9 +35,35 @@ public class WiredConditionTeamHasRank extends WiredConditionTeamGameBase {
     @Override
     public boolean evaluate(WiredContext ctx) {
         Room room = ctx.room();
+
+        // A named team is a question about the standings, not about who triggered, so it must
+        // answer with nobody on that team present. Only "the triggerer's team" needs a user.
+        if (this.teamType != TEAM_TRIGGERER) {
+            return this.namedTeamHasPlacement(room, this.resolveConfiguredTeamColor(this.teamType));
+        }
+
         List<RoomUnit> users = this.resolveUsers(ctx, this.userSource);
 
         return this.matchesQuantifier(users, this.quantifier, roomUnit -> this.matchesUser(ctx, room, roomUnit));
+    }
+
+    private boolean namedTeamHasPlacement(Room room, GameTeamColors teamColor) {
+        if (room == null || teamColor == GameTeamColors.NONE) {
+            return false;
+        }
+
+        for (com.eu.habbo.habbohotel.games.Game game : room.getGames()) {
+            if (!this.isSupportedGame(game)) {
+                continue;
+            }
+
+            GameTeam team = game.getTeam(teamColor);
+            if (team != null && this.getTeamRank(game, team) == this.placement) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Deprecated

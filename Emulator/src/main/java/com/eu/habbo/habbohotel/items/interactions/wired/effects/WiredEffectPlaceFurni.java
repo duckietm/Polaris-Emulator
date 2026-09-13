@@ -24,11 +24,14 @@ import java.sql.SQLException;
 /**
  * Spawns ("builds") a fresh floor furni into the room when the stack fires — the in-room analogue of
  * {@link WiredEffectGiveOrTakeFurni} (which mints into a user's inventory). The furni is a freshly minted,
- * persisted item owned by the ROOM OWNER, placed either on this effect furni's own tile or at a stored x/y.
+ * persisted item owned by the ROOM OWNER, placed on this effect furni's own tile, at a stored x/y, or at an offset
+ * from this furni's own tile — the last of those is what the official box offers, and it keeps working when the box
+ * itself is moved, which absolute coordinates do not.
  *
- * <p>Carries six ints — {@code [baseItemId, quantity, placementMode, storedX, storedY, rotation]} — and so needs the
- * matching Nitro {@code WiredActionLayoutCode.PLACE_FURNI} (106) dialog. Each fire is capped (quantity 1..10) and the
- * room's furniture ceiling is honoured so a repeater trigger + place loop cannot flood/OOM the room.</p>
+ * <p>Carries eight ints — {@code [baseItemId, quantity, placementMode, storedX, storedY, rotation, offsetX, offsetY]}
+ * — and so needs the matching Nitro {@code WiredActionLayoutCode.PLACE_FURNI} (106) dialog. Each fire is capped
+ * (quantity 1..10) and the room's furniture ceiling is honoured so a repeater trigger + place loop cannot flood/OOM
+ * the room.</p>
  */
 public class WiredEffectPlaceFurni extends InteractionWiredEffect {
     public static final WiredEffectType type = WiredEffectType.PLACE_FURNI;
@@ -36,9 +39,18 @@ public class WiredEffectPlaceFurni extends InteractionWiredEffect {
     public static final int MODE_THIS_TILE = 0;
     public static final int MODE_STORED_XY = 1;
 
+    /**
+     * Place at an offset from this furni's own tile, as the official box does. Kept package-private:
+     * nothing outside this class needs it, and the plugin-visible surface stays as it was.
+     */
+    private static final int MODE_OFFSET = 2;
+
     private static final int MIN_QUANTITY = 1;
     private static final int MAX_QUANTITY = 10;
     private static final int DEFAULT_QUANTITY = 1;
+
+    /** Bound of the official {@code wiredfurni.params.place_furni.offsets.x} / {@code .y} inputs. */
+    private static final int MAXIMUM_OFFSET = 64;
 
     private int baseItemId = 0;
     private int quantity = DEFAULT_QUANTITY;
@@ -46,6 +58,8 @@ public class WiredEffectPlaceFurni extends InteractionWiredEffect {
     private int storedX = 0;
     private int storedY = 0;
     private int rotation = 0;
+    private int offsetX = 0;
+    private int offsetY = 0;
 
     public WiredEffectPlaceFurni(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -63,9 +77,14 @@ public class WiredEffectPlaceFurni extends InteractionWiredEffect {
         Item baseItem = Emulator.getGameEnvironment().getItemManager().getItem(this.baseItemId);
         if (baseItem == null || baseItem.getType() != FurnitureType.FLOOR) return;
 
-        RoomTile tile = (this.placementMode == MODE_STORED_XY)
-                ? room.getLayout().getTile((short) this.storedX, (short) this.storedY)
-                : room.getLayout().getTile(this.getX(), this.getY());
+        RoomTile tile =
+                switch (this.placementMode) {
+                    case MODE_STORED_XY -> room.getLayout().getTile((short) this.storedX, (short) this.storedY);
+                    case MODE_OFFSET ->
+                        room.getLayout()
+                                .getTile((short) (this.getX() + this.offsetX), (short) (this.getY() + this.offsetY));
+                    default -> room.getLayout().getTile(this.getX(), this.getY());
+                };
 
         if (tile == null) return;
 
@@ -102,13 +121,15 @@ public class WiredEffectPlaceFurni extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(6);
+        message.appendInt(8);
         message.appendInt(this.baseItemId);
         message.appendInt(this.quantity);
         message.appendInt(this.placementMode);
         message.appendInt(this.storedX);
         message.appendInt(this.storedY);
         message.appendInt(this.rotation);
+        message.appendInt(this.offsetX);
+        message.appendInt(this.offsetY);
         message.appendInt(0);
         message.appendInt(type.code);
         message.appendInt(this.getDelay());
@@ -140,10 +161,15 @@ public class WiredEffectPlaceFurni extends InteractionWiredEffect {
 
         this.baseItemId = nextBaseItemId;
         this.quantity = clampQuantity(params[1]);
-        this.placementMode = (params[2] == MODE_STORED_XY) ? MODE_STORED_XY : MODE_THIS_TILE;
+        this.placementMode = normalizeMode(params[2]);
         this.storedX = Math.max(0, params[3]);
         this.storedY = Math.max(0, params[4]);
         this.rotation = ((params[5] % 8) + 8) % 8;
+
+        // Older clients save six params; those boxes have no offset and keep their placement mode.
+        this.offsetX = (params.length > 6) ? clampOffset(params[6]) : 0;
+        this.offsetY = (params.length > 7) ? clampOffset(params[7]) : 0;
+
         this.setDelay(delay);
 
         return true;
@@ -151,6 +177,18 @@ public class WiredEffectPlaceFurni extends InteractionWiredEffect {
 
     private static int clampQuantity(int value) {
         return Math.max(MIN_QUANTITY, Math.min(MAX_QUANTITY, value));
+    }
+
+    private static int clampOffset(int value) {
+        return Math.max(-MAXIMUM_OFFSET, Math.min(MAXIMUM_OFFSET, value));
+    }
+
+    private static int normalizeMode(int value) {
+        return switch (value) {
+            case MODE_STORED_XY -> MODE_STORED_XY;
+            case MODE_OFFSET -> MODE_OFFSET;
+            default -> MODE_THIS_TILE;
+        };
     }
 
     @Override
@@ -163,7 +201,9 @@ public class WiredEffectPlaceFurni extends InteractionWiredEffect {
                         this.storedX,
                         this.storedY,
                         this.rotation,
-                        this.getDelay()));
+                        this.getDelay(),
+                        this.offsetX,
+                        this.offsetY));
     }
 
     @Override
@@ -174,10 +214,12 @@ public class WiredEffectPlaceFurni extends InteractionWiredEffect {
             JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
             this.baseItemId = data.baseItemId;
             this.quantity = clampQuantity(data.quantity);
-            this.placementMode = (data.placementMode == MODE_STORED_XY) ? MODE_STORED_XY : MODE_THIS_TILE;
+            this.placementMode = normalizeMode(data.placementMode);
             this.storedX = Math.max(0, data.storedX);
             this.storedY = Math.max(0, data.storedY);
             this.rotation = ((data.rotation % 8) + 8) % 8;
+            this.offsetX = clampOffset(data.offsetX);
+            this.offsetY = clampOffset(data.offsetY);
             this.setDelay(data.delay);
         } else {
             this.baseItemId = 0;
@@ -186,6 +228,8 @@ public class WiredEffectPlaceFurni extends InteractionWiredEffect {
             this.storedX = 0;
             this.storedY = 0;
             this.rotation = 0;
+            this.offsetX = 0;
+            this.offsetY = 0;
             this.setDelay(0);
         }
     }
@@ -198,6 +242,8 @@ public class WiredEffectPlaceFurni extends InteractionWiredEffect {
         this.storedX = 0;
         this.storedY = 0;
         this.rotation = 0;
+        this.offsetX = 0;
+        this.offsetY = 0;
         this.setDelay(0);
     }
 
@@ -214,9 +260,19 @@ public class WiredEffectPlaceFurni extends InteractionWiredEffect {
         int storedY;
         int rotation;
         int delay;
+        int offsetX;
+        int offsetY;
 
         public JsonData(
-                int baseItemId, int quantity, int placementMode, int storedX, int storedY, int rotation, int delay) {
+                int baseItemId,
+                int quantity,
+                int placementMode,
+                int storedX,
+                int storedY,
+                int rotation,
+                int delay,
+                int offsetX,
+                int offsetY) {
             this.baseItemId = baseItemId;
             this.quantity = quantity;
             this.placementMode = placementMode;
@@ -224,6 +280,8 @@ public class WiredEffectPlaceFurni extends InteractionWiredEffect {
             this.storedY = storedY;
             this.rotation = rotation;
             this.delay = delay;
+            this.offsetX = offsetX;
+            this.offsetY = offsetY;
         }
     }
 }

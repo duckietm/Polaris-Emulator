@@ -164,6 +164,10 @@ public class Outgoing {
     public static final int WiredClickUserResponseComposer = 9460; // CUSTOM
     public static final int WiredVariableHoldersPageComposer = 9461; // CUSTOM
     public static final int WiredVariableHoldersComposer = 9462; // CUSTOM
+    public static final int VariableFxConfigUpdateComposer = 267;
+    public static final int VariableFxStatusUpdateComposer = 3889;
+    public static final int VariableFxConfigRemoveComposer = 9490; // CUSTOM, official 1200 is taken
+    public static final int VariableFxStatusRemoveComposer = 9491; // CUSTOM, official 3388 is taken
     public static final int ConfInvisStateComposer = 5104; // CUSTOM
     public static final int TranslationLanguagesComposer = 5106; // CUSTOM
     public static final int TranslationResultComposer = 5107; // CUSTOM

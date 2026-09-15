@@ -29,7 +29,12 @@ public class WiredExtraOrEval extends InteractionWiredExtra {
     public static final int MODE_EXACTLY = 5;
     public static final int MODE_MORE_THAN = 6;
     public static final int MIN_COMPARE_VALUE = 0;
-    public static final int MAX_COMPARE_VALUE = 100;
+    /**
+     * Matches the dialog and the official box, whose comparison input is NumberInputParam(0, 0, 1000).
+     * This was 100 while the dialog offered 1000, so anything above a hundred was silently clamped on
+     * save with nothing shown to the builder.
+     */
+    public static final int MAX_COMPARE_VALUE = 1000;
 
     private final Set<HabboItem> items;
     private int evaluationMode = MODE_ALL;

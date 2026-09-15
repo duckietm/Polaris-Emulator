@@ -19,16 +19,40 @@ import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class WiredEffectGiveScore extends InteractionWiredEffect {
     private static final int OPERATION_ADD = 0;
     private static final int OPERATION_REMOVE = 1;
+
+    /** Upper bound of the {@code wiredfurni.params.setpoints2} slider the client renders. */
+    private static final int MAXIMUM_SCORE = 1000;
+
+    /**
+     * Upper bound of the {@code wiredfurni.params.settimesingame} slider. The slider carries one
+     * position above this one, which is stored as {@link #UNLIMITED_TIMES_IN_GAME}.
+     */
+    private static final int MAXIMUM_TIMES_IN_GAME = 10;
+
+    /** A per-game limit of zero lets the effect award score as often as it is triggered. */
+    private static final int UNLIMITED_TIMES_IN_GAME = 0;
+
     public static final WiredEffectType type = WiredEffectType.GIVE_SCORE;
 
     private int score;
     private int operation = OPERATION_ADD;
     private int userSource = WiredSourceUtil.SOURCE_TRIGGER;
+    private int timesInGame = UNLIMITED_TIMES_IN_GAME;
+
+    /**
+     * How often this effect has already awarded each player during the game identified by
+     * {@link #countedGameStartTime}. Runtime state: never persisted, never sent to the client.
+     */
+    private final Map<Integer, Integer> awardsThisGame = new HashMap<>();
+
+    private int countedGameStartTime = -1;
 
     public WiredEffectGiveScore(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -50,9 +74,14 @@ public class WiredEffectGiveScore extends InteractionWiredEffect {
 
             if (game == null) continue;
 
-            if (habbo.getHabboInfo().getGamePlayer() != null) {
-                habbo.getHabboInfo().getGamePlayer().addScore(this.getAppliedAmount(), true);
-            }
+            if (habbo.getHabboInfo().getGamePlayer() == null) continue;
+
+            this.forgetAwardsOfEarlierGames(game);
+
+            if (this.hasReachedLimit(habbo)) continue;
+
+            habbo.getHabboInfo().getGamePlayer().addScore(this.getAppliedAmount(), true);
+            this.countAward(habbo);
         }
     }
 
@@ -65,7 +94,7 @@ public class WiredEffectGiveScore extends InteractionWiredEffect {
     @Override
     public String getWiredData() {
         return WiredManager.getGson()
-                .toJson(new JsonData(this.score, this.operation, this.getDelay(), this.userSource));
+                .toJson(new JsonData(this.score, this.operation, this.getDelay(), this.userSource, this.timesInGame));
     }
 
     @Override
@@ -78,6 +107,7 @@ public class WiredEffectGiveScore extends InteractionWiredEffect {
             this.operation = this.normalizeOperation(data.operation);
             this.setDelay(data.delay);
             this.userSource = data.userSource;
+            this.timesInGame = this.normalizeTimesInGame(data.timesInGame);
         } else {
             String[] data = wiredData.split(";");
 
@@ -98,6 +128,9 @@ public class WiredEffectGiveScore extends InteractionWiredEffect {
         this.operation = OPERATION_ADD;
         this.setDelay(0);
         this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
+        this.timesInGame = UNLIMITED_TIMES_IN_GAME;
+        this.awardsThisGame.clear();
+        this.countedGameStartTime = -1;
     }
 
     @Override
@@ -113,10 +146,11 @@ public class WiredEffectGiveScore extends InteractionWiredEffect {
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
         message.appendString("");
-        message.appendInt(3);
+        message.appendInt(4);
         message.appendInt(this.score);
         message.appendInt(this.operation);
         message.appendInt(this.userSource);
+        message.appendInt(this.timesInGame);
         message.appendInt(0);
         message.appendInt(this.getType().code);
         message.appendInt(this.getDelay());
@@ -143,11 +177,17 @@ public class WiredEffectGiveScore extends InteractionWiredEffect {
 
         int score = settings.getIntParams()[0];
 
-        if (score < 1 || score > 100) throw new WiredSaveException("Score is invalid");
+        if (score < 1 || score > MAXIMUM_SCORE) throw new WiredSaveException("Score is invalid");
 
         int operation = this.normalizeOperation(settings.getIntParams()[1]);
 
         this.userSource = settings.getIntParams()[2];
+
+        // Older clients save three params; those boxes keep awarding score without a per-game limit.
+        int timesInGame = settings.getIntParams().length > 3
+                ? this.normalizeTimesInGame(settings.getIntParams()[3])
+                : UNLIMITED_TIMES_IN_GAME;
+
         int delay = settings.getDelay();
 
         if (delay > Emulator.getConfig().getInt("hotel.wired.max_delay", 20))
@@ -155,6 +195,12 @@ public class WiredEffectGiveScore extends InteractionWiredEffect {
 
         this.score = score;
         this.operation = operation;
+
+        if (timesInGame != this.timesInGame) {
+            this.awardsThisGame.clear();
+        }
+
+        this.timesInGame = timesInGame;
         this.setDelay(delay);
 
         return true;
@@ -169,6 +215,32 @@ public class WiredEffectGiveScore extends InteractionWiredEffect {
         return (value == OPERATION_REMOVE) ? OPERATION_REMOVE : OPERATION_ADD;
     }
 
+    private int normalizeTimesInGame(int value) {
+        if (value <= UNLIMITED_TIMES_IN_GAME) return UNLIMITED_TIMES_IN_GAME;
+
+        return Math.min(value, MAXIMUM_TIMES_IN_GAME);
+    }
+
+    /** The counters belong to one game; a later game start makes the previous tally irrelevant. */
+    private void forgetAwardsOfEarlierGames(Game game) {
+        if (game.getStartTime() == this.countedGameStartTime) return;
+
+        this.countedGameStartTime = game.getStartTime();
+        this.awardsThisGame.clear();
+    }
+
+    private boolean hasReachedLimit(Habbo habbo) {
+        if (this.timesInGame == UNLIMITED_TIMES_IN_GAME) return false;
+
+        return this.awardsThisGame.getOrDefault(habbo.getHabboInfo().getId(), 0) >= this.timesInGame;
+    }
+
+    private void countAward(Habbo habbo) {
+        if (this.timesInGame == UNLIMITED_TIMES_IN_GAME) return;
+
+        this.awardsThisGame.merge(habbo.getHabboInfo().getId(), 1, Integer::sum);
+    }
+
     private int getAppliedAmount() {
         return (this.operation == OPERATION_REMOVE) ? -this.score : this.score;
     }
@@ -178,12 +250,14 @@ public class WiredEffectGiveScore extends InteractionWiredEffect {
         int operation;
         int delay;
         int userSource;
+        int timesInGame;
 
-        public JsonData(int score, int operation, int delay, int userSource) {
+        public JsonData(int score, int operation, int delay, int userSource, int timesInGame) {
             this.score = score;
             this.operation = operation;
             this.delay = delay;
             this.userSource = userSource;
+            this.timesInGame = timesInGame;
         }
     }
 }

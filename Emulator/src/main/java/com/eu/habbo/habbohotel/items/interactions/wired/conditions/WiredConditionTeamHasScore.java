@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.conditions;
 
+import com.eu.habbo.habbohotel.games.GameTeam;
 import com.eu.habbo.habbohotel.games.GameTeamColors;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
@@ -35,6 +36,15 @@ public class WiredConditionTeamHasScore extends WiredConditionTeamGameBase {
     @Override
     public boolean evaluate(WiredContext ctx) {
         Room room = ctx.room();
+
+        // A named team is a question about the team, not about who triggered: it has to answer
+        // even when nobody in the room is on it. Only "the triggerer's team" needs a user.
+        if (this.teamType != TEAM_TRIGGERER) {
+            GameTeam team = this.resolveRoomTeam(room, this.resolveConfiguredTeamColor(this.teamType));
+
+            return team != null && this.compareValue(team.getTotalScore(), this.score, this.comparison);
+        }
+
         List<RoomUnit> users = this.resolveUsers(ctx, this.userSource);
 
         return this.matchesQuantifier(users, this.quantifier, roomUnit -> this.matchesUser(room, roomUnit));
@@ -72,7 +82,7 @@ public class WiredConditionTeamHasScore extends WiredConditionTeamGameBase {
             return;
         }
 
-        this.teamType = this.normalizeExplicitTeamType(data.teamType);
+        this.teamType = this.normalizeRankTeamType(data.teamType);
         this.comparison = this.normalizeComparison(data.comparison);
         this.score = this.normalizeScore(data.score);
         this.userSource = this.normalizeUserSource(data.userSource);
@@ -114,7 +124,7 @@ public class WiredConditionTeamHasScore extends WiredConditionTeamGameBase {
         int[] params = settings.getIntParams();
         this.resetSettings();
 
-        if (params.length > 0) this.teamType = this.normalizeExplicitTeamType(params[0]);
+        if (params.length > 0) this.teamType = this.normalizeRankTeamType(params[0]);
         if (params.length > 1) this.comparison = this.normalizeComparison(params[1]);
         if (params.length > 2) this.score = this.normalizeScore(params[2]);
         if (params.length > 3) this.userSource = this.normalizeUserSource(params[3]);
@@ -125,16 +135,8 @@ public class WiredConditionTeamHasScore extends WiredConditionTeamGameBase {
 
     private boolean matchesUser(Room room, RoomUnit roomUnit) {
         UserGameContext context = this.resolveUserGameContext(room, roomUnit);
-        if (context == null) {
-            return false;
-        }
 
-        GameTeamColors requiredTeam = this.resolveConfiguredTeamColor(this.teamType);
-        if (context.team.teamColor != requiredTeam) {
-            return false;
-        }
-
-        return this.compareValue(context.team.getTotalScore(), this.score, this.comparison);
+        return context != null && this.compareValue(context.team.getTotalScore(), this.score, this.comparison);
     }
 
     private void resetSettings() {

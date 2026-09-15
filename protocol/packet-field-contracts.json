@@ -9835,6 +9835,17 @@
           "kind": "scalar",
           "type": "int",
           "name": "value"
+        },
+        {
+          "kind": "optional",
+          "controller": "variableToken",
+          "fields": [
+            {
+              "kind": "scalar",
+              "type": "string",
+              "name": "variableToken"
+            }
+          ]
         }
       ]
     },
@@ -21413,6 +21424,30 @@
       "symbol": "PetSupplementOfficialEvent",
       "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/pets/PetSupplementEvent.java",
       "reason": "Header is registered only by the Polaris Emulator packet registry"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "typescript",
+      "header": 10034,
+      "symbol": "WIRED_ARRAY_INSPECTION_REQUEST",
+      "path": "packages/communication/src/messages/outgoing/roomevents/WiredArrayInspectionRequestComposer.ts",
+      "reason": "Header is registered only by the Octane Renderer packet registry"
+    },
+    {
+      "direction": "client_to_server",
+      "side": "typescript",
+      "header": 10035,
+      "symbol": "WIRED_ARRAY_INSPECTION_UPDATE",
+      "path": "packages/communication/src/messages/outgoing/roomevents/WiredArrayInspectionUpdateComposer.ts",
+      "reason": "Header is registered only by the Octane Renderer packet registry"
+    },
+    {
+      "direction": "server_to_client",
+      "side": "typescript",
+      "header": 5111,
+      "symbol": "WIRED_ARRAY_INSPECTION_DATA",
+      "path": "packages/communication/src/messages/parser/roomevents/WiredArrayInspectionDataParser.ts",
+      "reason": "Header is registered only by the Octane Renderer packet registry"
     }
   ],
   "exemptions": [

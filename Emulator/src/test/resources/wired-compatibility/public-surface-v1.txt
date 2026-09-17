@@ -6518,6 +6518,90 @@ METHOD public com.eu.habbo.habbohotel.wired.tick.WiredTickable#onUnregistered(co
 METHOD public abstract com.eu.habbo.habbohotel.wired.tick.WiredTickable#onWiredTick(com.eu.habbo.habbohotel.rooms.Room,long,int):void throws -
 METHOD public abstract com.eu.habbo.habbohotel.wired.tick.WiredTickable#resetTimer(-):void throws -
 
+TYPE public final com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings extends java.lang.Record
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings sourceType:int
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings visibility:int
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings showMode:int
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings showTriggerMask:int
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings showOnMouseHover:boolean
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings showDuration:int
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings styleId:int
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings colorId:int
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings widthId:int
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings rendererId:int
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings defaultMinValue:long
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings defaultMaxValue:long
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings overrideMinEnabled:boolean
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings overrideMaxEnabled:boolean
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings overrideMinTarget:int
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings overrideMaxTarget:int
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings audienceVariableValue:long
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings segments:int
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings overrideMinVariableId:java.lang.String
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings overrideMaxVariableId:java.lang.String
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings audienceVariableId:java.lang.String
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings icon:java.lang.String
+FIELD public static final com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#SOURCE_FURNI:int
+FIELD public static final com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#SOURCE_GLOBAL:int
+FIELD public static final com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#SOURCE_USER:int
+CONSTRUCTOR public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings(int,int,int,int,boolean,int,int,int,int,int,long,long,boolean,boolean,int,int,long,int,java.lang.String,java.lang.String,java.lang.String,java.lang.String) throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#audienceVariableId(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#audienceVariableValue(-):long throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#colorId(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#defaultMaxValue(-):long throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#defaultMinValue(-):long throws -
+METHOD public final com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#equals(java.lang.Object):boolean throws -
+METHOD public final com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#hashCode(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#icon(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#isUserFx(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#overrideMaxEnabled(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#overrideMaxTarget(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#overrideMaxVariableId(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#overrideMinEnabled(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#overrideMinTarget(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#overrideMinVariableId(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#rendererId(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#segments(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#showDuration(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#showMode(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#showOnMouseHover(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#showTriggerMask(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#sourceType(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#styleId(-):int throws -
+METHOD public final com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#toString(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#visibility(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings#widthId(-):int throws -
+
+TYPE public final com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettingsCodec extends java.lang.Object
+FIELD public static final com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettingsCodec#INT_PARAM_COUNT:int
+METHOD public static com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettingsCodec#read(int[],java.lang.String[],java.lang.String):com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings throws -
+METHOD public static com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettingsCodec#write(com.eu.habbo.habbohotel.wired.variablefx.VariableFxSettings):int[] throws -
+
+TYPE public final com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus extends java.lang.Record
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus statusKey:java.lang.String
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus isInitialize:boolean
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus isUserEntity:boolean
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus entityId:int
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus value:long
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus hasOverrides:boolean
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus overrideMinValue:long
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus overrideMaxValue:long
+RECORD com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus extras:java.util.Map<java.lang.String, java.lang.String>
+CONSTRUCTOR public com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus(java.lang.String,boolean,boolean,int,long,boolean,long,long,java.util.Map<java.lang.String, java.lang.String>) throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus#entityId(-):int throws -
+METHOD public final com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus#equals(java.lang.Object):boolean throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus#extras(-):java.util.Map<java.lang.String, java.lang.String> throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus#hasOverrides(-):boolean throws -
+METHOD public final com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus#hashCode(-):int throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus#isInitialize(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus#isUserEntity(-):boolean throws -
+METHOD public static com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus#key(int,java.lang.String):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus#overrideMaxValue(-):long throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus#overrideMinValue(-):long throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus#statusKey(-):java.lang.String throws -
+METHOD public final com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus#toString(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.wired.variablefx.VariableFxStatus#value(-):long throws -
+
 TYPE public com.eu.habbo.messages.incoming.wired.WiredAllVariablesRequestEvent extends com.eu.habbo.messages.incoming.MessageHandler
 CONSTRUCTOR public com.eu.habbo.messages.incoming.wired.WiredAllVariablesRequestEvent(-) throws -
 METHOD public com.eu.habbo.messages.incoming.wired.WiredAllVariablesRequestEvent#getRatelimit(-):int throws -

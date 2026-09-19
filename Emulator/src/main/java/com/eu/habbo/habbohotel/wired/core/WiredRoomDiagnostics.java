@@ -521,7 +521,19 @@ public final class WiredRoomDiagnostics {
             synchronized (this) {
                 startedAt = this.windowStartedAt.get();
                 if ((now - startedAt) >= this.usageWindowMs) {
-                    while ((now - startedAt) >= this.usageWindowMs) {
+                    // Only the first elapsed window carries samples; the ones after it are
+                    // empty and their evaluation reaches a fixed point once the consecutive
+                    // window thresholds are passed. Evaluate that many and then skip the rest
+                    // of the gap, so an idle room is never walked window by window.
+                    long elapsedWindows = (now - startedAt) / this.usageWindowMs;
+                    long windowsToEvaluate = Math.min(
+                            elapsedWindows,
+                            1L
+                                    + Math.max(
+                                            this.heavyConsecutiveWindowsThreshold,
+                                            this.overloadConsecutiveWindowsThreshold));
+                    long skipped = elapsedWindows - windowsToEvaluate;
+                    for (long window = 0; window < windowsToEvaluate; window++) {
                         evaluateWindow(startedAt + this.usageWindowMs);
                         startedAt += this.usageWindowMs;
 
@@ -534,6 +546,7 @@ public final class WiredRoomDiagnostics {
                         this.peakExecutionSourceId = 0;
                         this.peakExecutionReason = null;
                     }
+                    startedAt += skipped * this.usageWindowMs;
                     this.windowStartedAt.set(startedAt);
                 }
             }

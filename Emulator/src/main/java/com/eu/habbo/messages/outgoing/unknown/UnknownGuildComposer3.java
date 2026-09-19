@@ -4,6 +4,8 @@ import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
 
+// The header alias is deprecated in Outgoing; the composer stays for plugin compatibility.
+@SuppressWarnings("deprecation")
 public class UnknownGuildComposer3 extends MessageComposer {
     private final int userId;
 

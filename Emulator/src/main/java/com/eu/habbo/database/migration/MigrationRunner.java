@@ -245,6 +245,10 @@ public final class MigrationRunner {
                 .baselineDescription("Existing Arcturus/Polaris installation")
                 .validateOnMigrate(true)
                 .outOfOrder(true)
+                // Additive migrations rely on IF [NOT] EXISTS, which MariaDB reports as a
+                // Note per skipped statement; Flyway would log each Note as a warning.
+                // Real warnings (data truncation, ignored rows) are still reported.
+                .initSql("SET SESSION sql_notes = 0")
                 // Reference data contains literal ${...} client template strings.
                 .placeholderReplacement(false)
                 .load();

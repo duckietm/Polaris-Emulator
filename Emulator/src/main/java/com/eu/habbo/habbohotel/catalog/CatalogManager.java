@@ -443,7 +443,10 @@ public class CatalogManager {
         for (Map.Entry<Integer, LinkedList<Integer>> set : limiteds.entrySet()) {
             this.limitedNumbers.put(
                     set.getKey(),
-                    new CatalogLimitedConfiguration(set.getKey(), set.getValue(), totals.get(set.getKey())));
+                    new CatalogLimitedConfiguration(
+                            set.getKey(),
+                            set.getValue(),
+                            totals.get(set.getKey().intValue())));
         }
     }
 
@@ -637,7 +640,7 @@ public class CatalogManager {
 
         for (CatalogPage page : this.catalogPages.values()) {
             for (Integer id : page.getIncluded()) {
-                CatalogPage p = this.catalogPages.get(id);
+                CatalogPage p = this.catalogPages.get(id.intValue());
 
                 if (p != null) {
                     page.getCatalogItems().putAll(p.getCatalogItems());
@@ -685,7 +688,7 @@ public class CatalogManager {
 
         for (CatalogPage page : this.buildersClubCatalogPages.values()) {
             for (Integer id : page.getIncluded()) {
-                CatalogPage includedPage = this.buildersClubCatalogPages.get(id);
+                CatalogPage includedPage = this.buildersClubCatalogPages.get(id.intValue());
 
                 if (includedPage != null) {
                     page.getCatalogItems().putAll(includedPage.getCatalogItems());

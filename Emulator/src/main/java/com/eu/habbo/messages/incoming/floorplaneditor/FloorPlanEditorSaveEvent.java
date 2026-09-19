@@ -216,7 +216,7 @@ public class FloorPlanEditorSaveEvent extends MessageHandler {
             if (!locked_tileList.isEmpty()) {
                 if (autoPickup) {
                     for (RoomTile lt : locked_tileList) {
-                        Set<HabboItem> here = room.getItemsAt(lt.x, lt.y);
+                        Set<HabboItem> here = room.getItemsAt(lt);
                         if (here != null) itemsToPickup.addAll(here);
                     }
                 } else {

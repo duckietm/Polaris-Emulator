@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -307,7 +307,7 @@ public class Messenger {
         Set<MessengerBuddy> users = new HashSet<>();
 
         for (Map.Entry<Integer, MessengerBuddy> map : this.friends.entrySet()) {
-            if (StringUtils.containsIgnoreCase(map.getValue().getUsername(), username)) {
+            if (Strings.CI.contains(map.getValue().getUsername(), username)) {
                 users.add(map.getValue());
             }
         }
@@ -489,19 +489,18 @@ public class Messenger {
             Message message = messages.get(index);
 
             if (this.friends.containsKey(message.getFromId())) {
-                recipient.getClient().sendResponse(new FriendChatMessageComposer(
-                        message,
-                        message.getFromId(),
-                        message.getFromId(),
-                        "offline"));
+                recipient
+                        .getClient()
+                        .sendResponse(new FriendChatMessageComposer(
+                                message, message.getFromId(), message.getFromId(), "offline"));
             }
 
             deliveredIds.add(messageIds.get(index));
         }
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "DELETE FROM messenger_offline WHERE id = ? AND user_id = ?")) {
+                PreparedStatement statement =
+                        connection.prepareStatement("DELETE FROM messenger_offline WHERE id = ? AND user_id = ?")) {
             for (int messageId : deliveredIds) {
                 statement.setInt(1, messageId);
                 statement.setInt(2, recipient.getHabboInfo().getId());

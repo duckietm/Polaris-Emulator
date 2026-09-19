@@ -241,7 +241,7 @@ public class GuildManager {
             }
         }
 
-        for (Integer i : toRemove) {
+        for (int i : toRemove) {
             this.guilds.remove(i);
         }
     }

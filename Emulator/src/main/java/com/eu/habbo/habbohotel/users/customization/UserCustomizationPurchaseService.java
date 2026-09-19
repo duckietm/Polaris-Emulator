@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -280,7 +280,7 @@ public final class UserCustomizationPurchaseService {
 
     private boolean containsFilteredWord(String text) {
         for (WordFilterWord word : this.filteredWords) {
-            if (word.key != null && !word.key.isEmpty() && StringUtils.containsIgnoreCase(text, word.key)) {
+            if (word.key != null && !word.key.isEmpty() && Strings.CI.contains(text, word.key)) {
                 return true;
             }
         }

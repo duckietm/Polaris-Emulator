@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -166,7 +167,7 @@ public class WordFilter {
         for (WordFilterWord word : this.words) {
             if (word.prefixOnly) continue;
 
-            if (StringUtils.containsIgnoreCase(filteredMessage, word.key)) {
+            if (Strings.CI.contains(filteredMessage, word.key)) {
                 if (habbo != null) {
                     if (Emulator.getPluginManager()
                             .fireEvent(new UserTriggerWordFilterEvent(habbo, word))
@@ -198,7 +199,7 @@ public class WordFilter {
         for (WordFilterWord word : this.words) {
             if (word.prefixOnly) continue;
 
-            if (StringUtils.containsIgnoreCase(message, word.key)) {
+            if (Strings.CI.contains(message, word.key)) {
                 if (habbo != null) {
                     if (Emulator.getPluginManager()
                             .fireEvent(new UserTriggerWordFilterEvent(habbo, word))

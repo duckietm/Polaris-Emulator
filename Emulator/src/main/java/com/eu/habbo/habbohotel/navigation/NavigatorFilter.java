@@ -3,11 +3,10 @@ package com.eu.habbo.habbohotel.navigation;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
-import org.apache.commons.lang3.StringUtils;
-
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.commons.lang3.Strings;
 
 public abstract class NavigatorFilter {
     public final String viewName;
@@ -55,7 +54,9 @@ public abstract class NavigatorFilter {
                 Object o = method.invoke(room);
                 if (o.getClass() == value.getClass()) {
                     if (o instanceof String) {
-                        NavigatorFilterComparator comparator = Emulator.getGameEnvironment().getNavigatorManager().comperatorForField(method);
+                        NavigatorFilterComparator comparator = Emulator.getGameEnvironment()
+                                .getNavigatorManager()
+                                .comperatorForField(method);
 
                         if (comparator != null) {
                             if (!this.applies(comparator, (String) o, (String) value)) {
@@ -66,7 +67,9 @@ public abstract class NavigatorFilter {
                         }
                     } else if (o instanceof String[]) {
                         for (String s : (String[]) o) {
-                            NavigatorFilterComparator comparator = Emulator.getGameEnvironment().getNavigatorManager().comperatorForField(method);
+                            NavigatorFilterComparator comparator = Emulator.getGameEnvironment()
+                                    .getNavigatorManager()
+                                    .comperatorForField(method);
 
                             if (comparator != null) {
                                 if (!this.applies(comparator, s, (String) value)) {
@@ -90,15 +93,15 @@ public abstract class NavigatorFilter {
 
     public abstract List<SearchResultList> getResult(Habbo habbo);
 
-    public List<SearchResultList> getResult(Habbo habbo, NavigatorFilterField filterField, String value, int roomCategory) {
+    public List<SearchResultList> getResult(
+            Habbo habbo, NavigatorFilterField filterField, String value, int roomCategory) {
         return this.getResult(habbo);
     }
 
     private boolean applies(NavigatorFilterComparator comparator, String o, String value) {
         switch (comparator) {
             case CONTAINS:
-                if (StringUtils.containsIgnoreCase(o,
-                        value)) {
+                if (Strings.CI.contains(o, value)) {
                     return true;
                 }
                 break;

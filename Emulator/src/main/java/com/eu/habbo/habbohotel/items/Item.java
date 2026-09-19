@@ -256,7 +256,7 @@ public class Item implements ISerialize {
             return 0;
         }
 
-        return this.vendingItems.get(Emulator.getRandom().nextInt(this.vendingItems.size()));
+        return this.vendingItems.getInt(Emulator.getRandom().nextInt(this.vendingItems.size()));
     }
 
     public double[] getMultiHeights() {

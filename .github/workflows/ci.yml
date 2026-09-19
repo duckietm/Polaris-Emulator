@@ -37,24 +37,40 @@ jobs:
           java-version: "25"
           cache: maven
 
-      # Keep this test independent of suite order: CatalogManager must be
-      # mockable before any other test has installed global configuration.
-      - name: Verify lifecycle test isolation
-        run: ./mvnw -B -Dtest=GameEnvironmentDisposalTest test
-
-      # `verify` runs the unit tests (Surefire) and the *IT integration tests
-      # (Failsafe), which build the schema by running the real timestamped migrations
-      # against a Testcontainers MariaDB. A broken migration fails the build.
+      # `verify` runs the unit tests (Surefire, including the isolated lifecycle fork)
+      # and the *IT integration tests (Failsafe), which build the schema by running
+      # the real timestamped migrations against a Testcontainers MariaDB. A broken
+      # migration fails the build. Two Surefire forks share the runner's cores;
+      # Spotless and SpotBugs run in the static-analysis job alongside this one.
       - name: Build and test
-        run: ./mvnw -B -Pcoverage verify -Dspotless.ratchetFrom="${{ github.event.pull_request.base.sha || github.event.before }}"
+        run: ./mvnw -B -Pcoverage verify -DforkCount=2 -Dspotless.check.skip=true -Dspotbugs.skip=true
 
-      - name: Upload furni consistency fixture report
-        if: always()
-        uses: actions/upload-artifact@v7
+  static-analysis:
+    name: Spotless + SpotBugs
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: Emulator
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
         with:
-          name: furni-consistency-fixture-report
-          path: Emulator/target/furni-consistency-fixture.json
-          if-no-files-found: error
+          fetch-depth: 0
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
+      # Formatting is ratcheted from the PR base; SpotBugs analyses the compiled
+      # main classes at maximum effort, which is the slowest single step of the
+      # build and does not need the test results.
+      - name: Check formatting and static analysis
+        run: ./mvnw -B compile spotless:check spotbugs:check -Dspotless.ratchetFrom="${{ github.event.pull_request.base.sha || github.event.before }}"
 
   jdk26-package:
     name: JDK 26 package compatibility

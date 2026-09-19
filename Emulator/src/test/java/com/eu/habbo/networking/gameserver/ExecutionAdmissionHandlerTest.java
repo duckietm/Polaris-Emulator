@@ -57,7 +57,7 @@ class ExecutionAdmissionHandlerTest {
         } finally {
             releaseFirst.countDown();
             channel.finishAndReleaseAll();
-            workers.shutdownGracefully().syncUninterruptibly();
+            workers.shutdownGracefully(0, 0, TimeUnit.SECONDS).syncUninterruptibly();
         }
     }
 
@@ -85,7 +85,7 @@ class ExecutionAdmissionHandlerTest {
         } finally {
             releaseFirst.countDown();
             channel.finishAndReleaseAll();
-            workers.shutdownGracefully().syncUninterruptibly();
+            workers.shutdownGracefully(0, 0, TimeUnit.SECONDS).syncUninterruptibly();
         }
     }
 
@@ -115,7 +115,7 @@ class ExecutionAdmissionHandlerTest {
         } finally {
             releaseFirst.countDown();
             channel.finishAndReleaseAll();
-            workers.shutdownGracefully().syncUninterruptibly();
+            workers.shutdownGracefully(0, 0, TimeUnit.SECONDS).syncUninterruptibly();
         }
     }
 
@@ -144,7 +144,7 @@ class ExecutionAdmissionHandlerTest {
         } finally {
             releaseFirst.countDown();
             channel.finishAndReleaseAll();
-            workers.shutdownGracefully().syncUninterruptibly();
+            workers.shutdownGracefully(0, 0, TimeUnit.SECONDS).syncUninterruptibly();
         }
     }
 
@@ -195,7 +195,7 @@ class ExecutionAdmissionHandlerTest {
         } finally {
             releaseFirst.countDown();
             channel.finishAndReleaseAll();
-            workers.shutdownGracefully().syncUninterruptibly();
+            workers.shutdownGracefully(0, 0, TimeUnit.SECONDS).syncUninterruptibly();
         }
     }
 
@@ -226,7 +226,7 @@ class ExecutionAdmissionHandlerTest {
             releaseFirst.countDown();
             first.finishAndReleaseAll();
             second.finishAndReleaseAll();
-            workers.shutdownGracefully().syncUninterruptibly();
+            workers.shutdownGracefully(0, 0, TimeUnit.SECONDS).syncUninterruptibly();
         }
     }
 
@@ -258,7 +258,7 @@ class ExecutionAdmissionHandlerTest {
         } finally {
             releaseFirst.countDown();
             channel.finishAndReleaseAll();
-            workers.shutdownGracefully().syncUninterruptibly();
+            workers.shutdownGracefully(0, 0, TimeUnit.SECONDS).syncUninterruptibly();
         }
     }
 

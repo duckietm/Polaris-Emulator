@@ -63,7 +63,7 @@ class PluginAbiCompatibilityTest {
             "Arcturus Morningstar 3.5.5",
             Path.of("abi-baseline", "arcturus-morningstar-3.5.5-api.jar"),
             Path.of("abi-baseline", "accepted-divergence-morningstar.txt"),
-            "19125f6ffb02db1aff6516d72d5527b36b09557462ab0df3bda16e5f3f563236",
+            "8d5f655074a1a90bbfbb3260920e329eebce0cb17c86135d6b1dde94c3879795",
             List.of(
                     "# Binary-incompatible divergence from the Arcturus Morningstar 3.5.5 plugin ABI",
                     "# that has already shipped in Polaris and is accepted. One token per line.",

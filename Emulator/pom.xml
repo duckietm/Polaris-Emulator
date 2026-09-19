@@ -26,6 +26,7 @@
         <gson.version>2.14.0</gson.version>
         <mariadb.version>3.5.10</mariadb.version>
         <hikaricp.version>7.1.0</hikaricp.version>
+        <dropwizard-metrics.version>4.2.40</dropwizard-metrics.version>
         <caffeine.version>3.2.4</caffeine.version>
         <resilience4j.version>2.4.0</resilience4j.version>
         <hibernate-validator.version>9.1.3.Final</hibernate-validator.version>
@@ -67,6 +68,9 @@
         <palantir-java-format.version>2.96.0</palantir-java-format.version>
         <spotbugs-maven-plugin.version>4.10.4.1</spotbugs-maven-plugin.version>
         <spotless.ratchetFrom>HEAD^</spotless.ratchetFrom>
+        <!-- Surefire/Failsafe read this late (@{argLine}) so the coverage profile can
+             prepend the JaCoCo agent without losing the flags below. -->
+        <argLine></argLine>
     </properties>
 
     <build>
@@ -183,11 +187,25 @@
                                         <exclude>META-INF/*.SF</exclude>
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
+                                        <!-- Per-dependency licence texts and module descriptors
+                                             collide in the fat jar and carry nothing at runtime. -->
+                                        <exclude>META-INF/LICENSE*</exclude>
+                                        <exclude>META-INF/license*</exclude>
+                                        <exclude>META-INF/NOTICE*</exclude>
+                                        <exclude>META-INF/DEPENDENCIES</exclude>
+                                        <exclude>META-INF/versions/*/module-info.class</exclude>
+                                        <exclude>module-info.class</exclude>
+                                        <exclude>COPYRIGHT.txt</exclude>
+                                        <exclude>LICENSE.txt</exclude>
                                     </excludes>
                                 </filter>
                             </filters>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <!-- Every Netty module ships its own version entries; keep them all. -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>META-INF/io.netty.versions.properties</resource>
+                                </transformer>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>com.eu.habbo.Emulator</mainClass>
                                     <manifestEntries>
@@ -232,16 +250,49 @@
                 </executions>
             </plugin>
 
+            <!-- Exposes ${org.mockito:mockito-core:jar} for the test agent flags. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>dependency-paths</id>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-surefire-plugin.version}</version>
                 <configuration>
+                    <!-- Mockito attaches as an explicit agent (JDK self-attach is being
+                         phased out); JNA needs native access for Testcontainers;
+                         -Xshare:off silences the CDS notice the agent triggers. -->
+                    <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar} -Xshare:off --enable-native-access=ALL-UNNAMED</argLine>
                     <!-- Unit tests only; integration tests (*IT) run under Failsafe. -->
                     <excludes>
                         <exclude>**/*IT.java</exclude>
                     </excludes>
                 </configuration>
+                <executions>
+                    <!-- Keep this test independent of suite order: CatalogManager must be
+                         mockable before any other test has installed global configuration,
+                         so it also runs alone in its own fork. -->
+                    <execution>
+                        <id>lifecycle-isolation</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <test>GameEnvironmentDisposalTest</test>
+                            <reportsDirectory>${project.build.directory}/surefire-reports/lifecycle-isolation</reportsDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- Failsafe runs integration tests (*IT) in the verify phase, so the
@@ -251,6 +302,7 @@
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>${maven-failsafe-plugin.version}</version>
                 <configuration>
+                    <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar} -Xshare:off --enable-native-access=ALL-UNNAMED</argLine>
                     <forkedProcessTimeoutInSeconds>600</forkedProcessTimeoutInSeconds>
                     <includes>
                         <include>**/*IT.java</include>
@@ -511,6 +563,21 @@
             <artifactId>HikariCP</artifactId>
             <version>${hikaricp.version}</version>
             <scope>compile</scope>
+        </dependency>
+
+        <!-- HikariCP's optional Dropwizard health-check hook. Compile-time only, so
+             SpotBugs can resolve HealthCheckRegistry instead of reporting it missing. -->
+        <dependency>
+            <groupId>io.dropwizard.metrics</groupId>
+            <artifactId>metrics-healthchecks</artifactId>
+            <version>${dropwizard-metrics.version}</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Caffeine cache - high-performance local caching for hot emulator lookups -->

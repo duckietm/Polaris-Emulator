@@ -377,10 +377,8 @@ method com.eu.habbo.messages.outgoing.guilds.GuildBuyRoomsComposer#getRooms() ME
 method com.eu.habbo.messages.outgoing.guilds.GuildListComposer#getGuilds() METHOD_RETURN_TYPE_CHANGED
 method com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer#getItemsList() METHOD_RETURN_TYPE_CHANGED
 method com.eu.habbo.messages.outgoing.inventory.InventoryItemsComposer#execute(int,com.eu.habbo.habbohotel.users.HabboItem) METHOD_REMOVED
-method com.eu.habbo.messages.outgoing.inventory.InventoryItemsComposer#execute(int,java.lang.Object) METHOD_REMOVED
 method com.eu.habbo.messages.outgoing.inventory.InventoryItemsComposer#getItems() METHOD_RETURN_TYPE_CHANGED
 method com.eu.habbo.messages.outgoing.modtool.ModToolComposer#execute(com.eu.habbo.habbohotel.modtool.ModToolCategory) METHOD_REMOVED
-method com.eu.habbo.messages.outgoing.modtool.ModToolComposer#execute(java.lang.Object) METHOD_REMOVED
 method com.eu.habbo.messages.outgoing.modtool.ModToolUserRoomVisitsComposer#getRoomVisits() METHOD_RETURN_TYPE_CHANGED
 method com.eu.habbo.messages.outgoing.rooms.UpdateStackHeightComposer#getUpdateTiles() METHOD_RETURN_TYPE_CHANGED
 method com.eu.habbo.messages.outgoing.rooms.items.MoodLightDataComposer#getMoodLightData() METHOD_RETURN_TYPE_CHANGED
@@ -388,7 +386,6 @@ method com.eu.habbo.messages.outgoing.rooms.items.RoomFloorItemsComposer#getFurn
 method com.eu.habbo.messages.outgoing.rooms.items.RoomFloorItemsComposer#getItems() METHOD_RETURN_TYPE_CHANGED
 method com.eu.habbo.messages.outgoing.rooms.items.jukebox.JukeBoxPlayListUpdatedComposer#getTracks() METHOD_RETURN_TYPE_CHANGED
 method com.eu.habbo.messages.outgoing.rooms.pets.RoomPetComposer#execute(int,com.eu.habbo.habbohotel.pets.Pet) METHOD_REMOVED
-method com.eu.habbo.messages.outgoing.rooms.pets.RoomPetComposer#execute(int,java.lang.Object) METHOD_REMOVED
 method com.eu.habbo.messages.outgoing.rooms.pets.RoomPetComposer#getPets() METHOD_REMOVED
 method com.eu.habbo.messages.outgoing.rooms.pets.breeding.PetBreedingCompleted#getRace() METHOD_REMOVED
 method com.eu.habbo.messages.outgoing.rooms.pets.breeding.PetBreedingCompleted#getType() METHOD_REMOVED

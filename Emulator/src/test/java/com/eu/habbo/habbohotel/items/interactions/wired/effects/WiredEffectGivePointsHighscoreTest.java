@@ -247,7 +247,7 @@ class WiredEffectGivePointsHighscoreTest {
 
             verify(manager, never()).addHighscoreData(any());
 
-            ArgumentCaptor<List<WiredHighscoreDataEntry>> saved = ArgumentCaptor.forClass(List.class);
+            ArgumentCaptor<List<WiredHighscoreDataEntry>> saved = ArgumentCaptor.captor();
             verify(manager).setEntriesForItemId(org.mockito.ArgumentMatchers.eq(101), saved.capture());
 
             assertEquals(1, saved.getValue().size(), "the board keeps one row for this person");

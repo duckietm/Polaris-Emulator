@@ -325,6 +325,13 @@ import com.eu.habbo.messages.incoming.quests.OpenQuestTrackerEvent;
 import com.eu.habbo.messages.incoming.quests.PurchaseRewardTrackPremiumEvent;
 import com.eu.habbo.messages.incoming.quests.RejectQuestEvent;
 import com.eu.habbo.messages.incoming.quests.StartCampaignEvent;
+import com.eu.habbo.messages.incoming.quests.admin.DeleteRewardTrackEntityEvent;
+import com.eu.habbo.messages.incoming.quests.admin.GetRewardTrackAdminDataEvent;
+import com.eu.habbo.messages.incoming.quests.admin.SaveRewardTrackEvent;
+import com.eu.habbo.messages.incoming.quests.admin.SaveRewardTrackPrizeEvent;
+import com.eu.habbo.messages.incoming.quests.admin.SaveRewardTrackTaskEvent;
+import com.eu.habbo.messages.incoming.quests.admin.SaveRewardTrackTextsEvent;
+import com.eu.habbo.messages.incoming.quests.admin.SearchRewardTrackFurniEvent;
 import com.eu.habbo.messages.incoming.rooms.ChangeQueueEvent;
 import com.eu.habbo.messages.incoming.rooms.HandleDoorbellEvent;
 import com.eu.habbo.messages.incoming.rooms.RequestRoomDataEvent;
@@ -1633,5 +1640,12 @@ public class PacketManager {
         this.registerHandler(Incoming.GetRewardTracksEvent, GetRewardTracksEvent.class);
         this.registerHandler(Incoming.ClaimRewardTrackPrizeEvent, ClaimRewardTrackPrizeEvent.class);
         this.registerHandler(Incoming.PurchaseRewardTrackPremiumEvent, PurchaseRewardTrackPremiumEvent.class);
+        this.registerHandler(Incoming.GetRewardTrackAdminDataEvent, GetRewardTrackAdminDataEvent.class);
+        this.registerHandler(Incoming.SaveRewardTrackEvent, SaveRewardTrackEvent.class);
+        this.registerHandler(Incoming.SaveRewardTrackTaskEvent, SaveRewardTrackTaskEvent.class);
+        this.registerHandler(Incoming.SaveRewardTrackPrizeEvent, SaveRewardTrackPrizeEvent.class);
+        this.registerHandler(Incoming.DeleteRewardTrackEntityEvent, DeleteRewardTrackEntityEvent.class);
+        this.registerHandler(Incoming.SearchRewardTrackFurniEvent, SearchRewardTrackFurniEvent.class);
+        this.registerHandler(Incoming.SaveRewardTrackTextsEvent, SaveRewardTrackTextsEvent.class);
     }
 }

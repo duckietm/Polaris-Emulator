@@ -690,6 +690,14 @@ public class Incoming {
     public static final int ClaimRewardTrackPrizeEvent = 1111;
     public static final int PurchaseRewardTrackPremiumEvent = 3022;
     public static final int GetRewardTracksEvent = 9450;
+    // Reward track staff editor (Octane, 10100-10199).
+    public static final int GetRewardTrackAdminDataEvent = 10100;
+    public static final int SaveRewardTrackEvent = 10101;
+    public static final int SaveRewardTrackTaskEvent = 10102;
+    public static final int SaveRewardTrackPrizeEvent = 10103;
+    public static final int DeleteRewardTrackEntityEvent = 10104;
+    public static final int SearchRewardTrackFurniEvent = 10106;
+    public static final int SaveRewardTrackTextsEvent = 10108;
     public static final int GetHabbiconShopDataEvent = 9460;
     public static final int GetHabbiconInfoEvent = 9461;
     public static final int BuyHabbiconEvent = 9462;

@@ -117,6 +117,7 @@
     "reward_track_prizes": ["extra_params", "id", "premium", "product_item_type_id", "required_points", "reward_amount", "reward_type", "sort_order", "track_id"],
     "reward_track_task_levels": ["level", "points_reward", "premium", "required_count", "task_id", "track_id"],
     "reward_track_tasks": ["action_type", "id", "parameter", "premium", "sort_order", "track_id"],
+    "reward_track_texts": ["text_key", "track_id", "value"],
     "reward_tracks": ["enabled", "ends_at", "has_premium", "id", "premium_cost_credits", "premium_cost_diamonds", "premium_instant_points", "premium_task_points_boost", "sort_order", "starts_at", "theme"],
     "room_bans": ["ends", "room_id", "user_id"],
     "room_competition_entries": ["competition_id", "id", "room_id", "submitted_at", "user_id", "votes"],

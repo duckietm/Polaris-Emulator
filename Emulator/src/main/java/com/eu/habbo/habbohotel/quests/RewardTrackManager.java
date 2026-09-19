@@ -1,10 +1,13 @@
 package com.eu.habbo.habbohotel.quests;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.quests.RewardTrackClaimResultComposer;
 import com.eu.habbo.messages.outgoing.quests.RewardTrackPremiumPurchaseResultComposer;
 import com.eu.habbo.messages.outgoing.quests.RewardTrackProgressComposer;
+import com.eu.habbo.messages.outgoing.quests.RewardTrackTextsComposer;
 import com.eu.habbo.messages.outgoing.quests.RewardTracksComposer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -39,6 +42,10 @@ public class RewardTrackManager {
 
     private final Map<String, RewardTrack> tracks = new LinkedHashMap<>();
     private final Map<Integer, Map<String, UserRewardTrackState>> users = new ConcurrentHashMap<>();
+
+    /** The localization texts of every track, by track id then key suffix, read with the tracks. */
+    private final Map<String, Map<String, String>> texts = new ConcurrentHashMap<>();
+
     private final boolean persistent;
 
     public RewardTrackManager() {
@@ -50,14 +57,50 @@ public class RewardTrackManager {
         this.persistent = persistent;
     }
 
+    /**
+     * Reads the tracks again and drops every cached user state, so the next request loads it from the
+     * database: every change to a state is written through, nothing in the cache is newer than the rows.
+     */
     public synchronized void reload() {
         this.tracks.clear();
+        this.users.clear();
+        this.texts.clear();
+        if (!this.persistent) {
+            return;
+        }
+        for (LoadedTrack loaded : loadFromDatabase(true)) {
+            this.register(loaded.track());
+        }
+        this.texts.putAll(RewardTrackAdmin.loadTexts());
+        LOGGER.info("Reward Track Manager -> Loaded! ({} tracks)", this.tracks.size());
+    }
+
+    /** Reloads the tracks and sends the fresh list to every client with a logged-in user. */
+    public void reloadAndBroadcast() {
+        this.reload();
+        for (GameClient client :
+                Emulator.getGameServer().getGameClientManager().getSessions().values()) {
+            if (client.getHabbo() != null) {
+                this.sendRewardTracks(client.getHabbo(), true);
+            }
+        }
+    }
+
+    /** A track row as stored, with the flag the running hotel filters on. */
+    public record LoadedTrack(RewardTrack track, boolean enabled) {}
+
+    /**
+     * Reads the tracks with their tasks, levels and prizes. The hotel loads only the enabled ones;
+     * the staff editor reads them all.
+     */
+    public static List<LoadedTrack> loadFromDatabase(boolean onlyEnabled) {
+        Map<String, LoadedTrack> loaded = new LinkedHashMap<>();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
-            try (PreparedStatement statement = connection.prepareStatement(
-                            "SELECT * FROM reward_tracks WHERE enabled = 1 ORDER BY sort_order, id");
+            try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM reward_tracks"
+                            + (onlyEnabled ? " WHERE enabled = 1" : "") + " ORDER BY sort_order, id");
                     ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
-                    this.register(new RewardTrack(
+                    RewardTrack track = new RewardTrack(
                             set.getString("id"),
                             set.getString("theme"),
                             set.getInt("sort_order"),
@@ -67,14 +110,15 @@ public class RewardTrackManager {
                             set.getDouble("premium_task_points_boost"),
                             set.getInt("premium_instant_points"),
                             set.getInt("premium_cost_diamonds"),
-                            set.getInt("premium_cost_credits")));
+                            set.getInt("premium_cost_credits"));
+                    loaded.put(track.getId(), new LoadedTrack(track, set.getBoolean("enabled")));
                 }
             }
             try (PreparedStatement statement =
                             connection.prepareStatement("SELECT * FROM reward_track_tasks ORDER BY sort_order, id");
                     ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
-                    RewardTrack track = this.tracks.get(set.getString("track_id"));
+                    LoadedTrack track = loaded.get(set.getString("track_id"));
                     if (track == null) {
                         continue;
                     }
@@ -87,19 +131,19 @@ public class RewardTrackManager {
                     if (task.getGoalType() == null) {
                         LOGGER.warn(
                                 "Reward track task {}/{} has an unknown action type, skipped",
-                                track.getId(),
+                                track.track().getId(),
                                 task.getId());
                         continue;
                     }
-                    track.addTask(task);
+                    track.track().addTask(task);
                 }
             }
             try (PreparedStatement statement = connection.prepareStatement(
                             "SELECT * FROM reward_track_task_levels ORDER BY track_id, task_id, level");
                     ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
-                    RewardTrack track = this.tracks.get(set.getString("track_id"));
-                    RewardTrack.Task task = track == null ? null : track.getTask(set.getString("task_id"));
+                    LoadedTrack track = loaded.get(set.getString("track_id"));
+                    RewardTrack.Task task = track == null ? null : track.track().getTask(set.getString("task_id"));
                     if (task != null) {
                         task.addLevel(new RewardTrack.Level(
                                 set.getInt("required_count"), set.getInt("points_reward"), set.getBoolean("premium")));
@@ -110,24 +154,25 @@ public class RewardTrackManager {
                             "SELECT * FROM reward_track_prizes ORDER BY required_points, sort_order, id");
                     ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
-                    RewardTrack track = this.tracks.get(set.getString("track_id"));
+                    LoadedTrack track = loaded.get(set.getString("track_id"));
                     if (track != null) {
-                        track.addPrize(new RewardTrack.Prize(
-                                set.getString("id"),
-                                set.getInt("required_points"),
-                                set.getInt("product_item_type_id"),
-                                set.getString("reward_type"),
-                                set.getString("extra_params"),
-                                set.getInt("reward_amount"),
-                                set.getBoolean("premium"),
-                                set.getInt("sort_order")));
+                        track.track()
+                                .addPrize(new RewardTrack.Prize(
+                                        set.getString("id"),
+                                        set.getInt("required_points"),
+                                        set.getInt("product_item_type_id"),
+                                        set.getString("reward_type"),
+                                        set.getString("extra_params"),
+                                        set.getInt("reward_amount"),
+                                        set.getBoolean("premium"),
+                                        set.getInt("sort_order")));
                     }
                 }
             }
         } catch (SQLException exception) {
             LOGGER.error("Could not load the reward tracks", exception);
         }
-        LOGGER.info("Reward Track Manager -> Loaded! ({} tracks)", this.tracks.size());
+        return new ArrayList<>(loaded.values());
     }
 
     public synchronized void register(RewardTrack track) {
@@ -300,12 +345,23 @@ public class RewardTrackManager {
                     complete = false;
                 }
             }
+            // A furni prize travels with its sprite id and "<s|i>:<name>", what the client needs to draw it.
+            int productItemTypeId = prize.getProductItemTypeId();
+            String extraParams = prize.getExtraParams();
+            if (QuestRewards.TYPE_FURNI.equalsIgnoreCase(prize.getRewardType())
+                    && Emulator.getGameEnvironment() != null) {
+                Item item = Emulator.getGameEnvironment().getItemManager().getItem(prize.getExtraParams());
+                if (item != null) {
+                    productItemTypeId = item.getSpriteId();
+                    extraParams = item.getType().code.toLowerCase() + ":" + item.getName();
+                }
+            }
             prizes.add(new RewardTracksComposer.Prize(
                     prize.getId(),
                     prize.getRequiredPoints(),
-                    prize.getProductItemTypeId(),
+                    productItemTypeId,
                     prize.getRewardType(),
-                    prize.getExtraParams(),
+                    extraParams,
                     prize.getRewardAmount(),
                     prize.isPremium(),
                     state.isPrizeAvailable(prize),
@@ -336,10 +392,37 @@ public class RewardTrackManager {
     }
 
     public void sendRewardTracks(Habbo habbo, boolean reload) {
+        habbo.getClient().sendResponse(new RewardTrackTextsComposer(this.activeTexts()));
         habbo.getClient().sendResponse(this.rewardTracks(habbo, reload));
     }
 
+    /** The texts of the active tracks as full localization keys, "reward_track.&lt;track&gt;.&lt;key&gt;". */
+    public Map<String, String> activeTexts() {
+        Map<String, String> full = new LinkedHashMap<>();
+        for (RewardTrack track : this.activeTracks()) {
+            for (Map.Entry<String, String> entry :
+                    this.texts.getOrDefault(track.getId(), Map.of()).entrySet()) {
+                full.put("reward_track." + track.getId() + "." + entry.getKey(), entry.getValue());
+            }
+        }
+        return full;
+    }
+
     // ------------------------------------------------------------------ actions
+
+    /**
+     * Staff hand: adds (or, negative, removes) points on a track; the total never goes below zero.
+     * Returns the points the user has afterwards. The user's window follows when they are online.
+     */
+    public int adjustPoints(Habbo habbo, RewardTrack track, int delta) {
+        UserRewardTrackState state = this.stateFor(habbo, track);
+        state.addPoints(delta);
+        this.saveTrack(habbo.getHabboInfo().getId(), state);
+        if (habbo.getClient() != null) {
+            this.sendRewardTracks(habbo, false);
+        }
+        return state.getPoints();
+    }
 
     public void progress(Habbo habbo, QuestGoalType goalType, int amount) {
         if (habbo == null || goalType == null || amount < 1 || this.tracks.isEmpty()) {

@@ -280,6 +280,8 @@ U|com/eu/habbo/habbohotel/commands/ReloadRoomCommand.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/commands/RemovePrefixCommand.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/commands/RemovePrefixCommand.java|CALL|getTexts|8
 U|com/eu/habbo/habbohotel/commands/RemovePrefixCommand.java|CALL|getThreading|2
+U|com/eu/habbo/habbohotel/commands/RewardTrackPointsCommand.java|CALL|getGameEnvironment|2
+U|com/eu/habbo/habbohotel/commands/RewardTrackPointsCommand.java|CALL|getTexts|5
 U|com/eu/habbo/habbohotel/commands/RoomAlertCommand.java|CALL|getTexts|2
 U|com/eu/habbo/habbohotel/commands/RoomBadgeCommand.java|CALL|getTexts|3
 U|com/eu/habbo/habbohotel/commands/RoomBundleCommand.java|CALL|getDatabase|1
@@ -385,6 +387,8 @@ U|com/eu/habbo/habbohotel/commands/UpdatePluginsCommand.java|CALL|getPluginManag
 U|com/eu/habbo/habbohotel/commands/UpdatePluginsCommand.java|CALL|getTexts|2
 U|com/eu/habbo/habbohotel/commands/UpdatePollsCommand.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/commands/UpdatePollsCommand.java|CALL|getTexts|2
+U|com/eu/habbo/habbohotel/commands/UpdateRewardTracksCommand.java|CALL|getGameEnvironment|1
+U|com/eu/habbo/habbohotel/commands/UpdateRewardTracksCommand.java|CALL|getTexts|2
 U|com/eu/habbo/habbohotel/commands/UpdateTextsCommand.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/commands/UpdateTextsCommand.java|CALL|getTexts|4
 U|com/eu/habbo/habbohotel/commands/UpdateWordFilterCommand.java|CALL|getGameEnvironment|1
@@ -924,7 +928,12 @@ U|com/eu/habbo/habbohotel/quests/QuestManager.java|CALL|getDatabase|3
 U|com/eu/habbo/habbohotel/quests/QuestManager.java|CALL|getIntUnixTimestamp|4
 U|com/eu/habbo/habbohotel/quests/QuestManager.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/quests/QuestProgressEvents.java|CALL|getGameEnvironment|4
+U|com/eu/habbo/habbohotel/quests/QuestRewards.java|CALL|getGameEnvironment|2
+U|com/eu/habbo/habbohotel/quests/RewardTrackAdmin.java|CALL|getDatabase|7
+U|com/eu/habbo/habbohotel/quests/RewardTrackAdmin.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/quests/RewardTrackManager.java|CALL|getDatabase|5
+U|com/eu/habbo/habbohotel/quests/RewardTrackManager.java|CALL|getGameEnvironment|2
+U|com/eu/habbo/habbohotel/quests/RewardTrackManager.java|CALL|getGameServer|1
 U|com/eu/habbo/habbohotel/quests/RewardTrackManager.java|CALL|getIntUnixTimestamp|2
 U|com/eu/habbo/habbohotel/quests/RewardTrackManager.java|CALL|getThreading|3
 U|com/eu/habbo/habbohotel/rooms/BuildersClubRoomSupport.java|CALL|getDatabase|10
@@ -1518,6 +1527,8 @@ U|com/eu/habbo/messages/incoming/quests/OpenQuestTrackerEvent.java|CALL|getGameE
 U|com/eu/habbo/messages/incoming/quests/PurchaseRewardTrackPremiumEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/quests/RejectQuestEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/quests/StartCampaignEvent.java|CALL|getGameEnvironment|1
+U|com/eu/habbo/messages/incoming/quests/admin/RewardTrackAdminEvent.java|CALL|getGameEnvironment|1
+U|com/eu/habbo/messages/incoming/quests/admin/SaveRewardTrackPrizeEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/rarevalues/RequestRareValuesEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/rooms/ChangeQueueEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/rooms/HandleDoorbellEvent.java|CALL|getGameEnvironment|1

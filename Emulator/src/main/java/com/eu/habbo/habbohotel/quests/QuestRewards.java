@@ -1,12 +1,17 @@
 package com.eu.habbo.habbohotel.quests;
 
+import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboBadge;
+import com.eu.habbo.habbohotel.users.HabboItem;
+import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
+import com.eu.habbo.messages.outgoing.inventory.InventoryRefreshComposer;
 import com.eu.habbo.messages.outgoing.users.AddUserBadgeComposer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Hands out the currency and badge rewards of quests, daily tasks and reward-track prizes. */
+/** Hands out the currency, badge and furni rewards of quests, daily tasks and reward-track prizes. */
 public final class QuestRewards {
     private static final Logger LOGGER = LoggerFactory.getLogger(QuestRewards.class);
 
@@ -14,6 +19,12 @@ public final class QuestRewards {
     public static final String TYPE_DUCKETS = "duckets";
     public static final String TYPE_DIAMONDS = "diamonds";
     public static final String TYPE_BADGE = "badge";
+
+    /** A furni: the extra parameter is the items_base name, the amount is how many. */
+    public static final String TYPE_FURNI = "furni";
+
+    /** How many copies one prize may hand out at once. */
+    public static final int MAX_FURNI_PER_PRIZE = 10;
 
     public static final int DIAMONDS_POINT_TYPE = 5;
 
@@ -49,8 +60,33 @@ public final class QuestRewards {
             case TYPE_DUCKETS -> grantActivityPoints(habbo, Quest.REWARD_DUCKETS, amount);
             case TYPE_DIAMONDS -> grantActivityPoints(habbo, DIAMONDS_POINT_TYPE, amount);
             case TYPE_BADGE -> grantBadge(habbo, extra);
+            case TYPE_FURNI -> grantFurni(habbo, extra, amount);
             default -> LOGGER.warn("Unknown quest reward type {}", rewardType);
         }
+    }
+
+    /** Puts {@code amount} copies of the furni named {@code itemName} in the user's hand. */
+    public static void grantFurni(Habbo habbo, String itemName, int amount) {
+        if (habbo == null || habbo.getClient() == null) {
+            return;
+        }
+        Item item = Emulator.getGameEnvironment().getItemManager().getItem(itemName);
+        if (item == null) {
+            LOGGER.warn("Quest reward furni {} does not exist", itemName);
+            return;
+        }
+        int copies = Math.max(1, Math.min(amount, MAX_FURNI_PER_PRIZE));
+        for (int i = 0; i < copies; i++) {
+            HabboItem habboItem = Emulator.getGameEnvironment()
+                    .getItemManager()
+                    .createItem(habbo.getHabboInfo().getId(), item, 0, 0, "");
+            if (habboItem == null) {
+                continue;
+            }
+            habbo.getInventory().getItemsComponent().addItem(habboItem);
+            habbo.getClient().sendResponse(new AddHabboItemComposer(habboItem));
+        }
+        habbo.getClient().sendResponse(new InventoryRefreshComposer());
     }
 
     /** Maps the string reward type to the client activityPointType, -2 when it is not a currency. */

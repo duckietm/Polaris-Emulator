@@ -183,6 +183,14 @@ public final class RewardTrack {
         return this.sortOrder;
     }
 
+    public int getStartsAt() {
+        return this.startsAt;
+    }
+
+    public int getEndsAt() {
+        return this.endsAt;
+    }
+
     public boolean isActive(int now) {
         return (this.startsAt <= 0 || this.startsAt <= now) && (this.endsAt <= 0 || now < this.endsAt);
     }

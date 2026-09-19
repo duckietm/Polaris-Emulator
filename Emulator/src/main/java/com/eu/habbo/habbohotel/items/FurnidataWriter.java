@@ -59,6 +59,28 @@ public class FurnidataWriter {
         return true;
     }
 
+    /**
+     * Rewrite structural fields (xdim, ydim, height, canstandon, ...) of an existing entry.
+     * Values are raw JSON literals (numbers, booleans) and go in unquoted; a field the entry
+     * does not carry is left alone rather than added, so a wall entry never grows an xdim.
+     *
+     * @return true if the entry was found and at least one field changed.
+     */
+    public boolean writeStructure(String classname, java.util.Map<String, String> rawValues) throws IOException {
+        String cn = classname == null ? "" : classname.trim().toLowerCase(java.util.Locale.ROOT);
+        if (cn.isEmpty() || rawValues == null || rawValues.isEmpty()) return false;
+
+        Path target = locateFile(cn);
+        if (target == null) return false;
+
+        String raw = Files.readString(target, StandardCharsets.UTF_8);
+        String edited = replaceEntryRawFields(raw, cn, rawValues);
+        if (edited == null || edited.equals(raw)) return false;
+        backup(target);
+        atomicWrite(target, edited);
+        return true;
+    }
+
     /** Outcome of a {@link #create} attempt. */
     public enum CreateResult {
         CREATED,
@@ -212,6 +234,41 @@ public class FurnidataWriter {
         String newObj = replaceField(obj, "name", name);
         newObj = replaceField(newObj, "description", description);
         return raw.substring(0, objStart) + newObj + raw.substring(objEnd + 1);
+    }
+
+    static String replaceEntryRawFields(String raw, String cn, java.util.Map<String, String> rawValues) {
+        int[] bounds = entryBounds(raw, cn);
+        if (bounds == null) return null;
+        String obj = raw.substring(bounds[0], bounds[1] + 1);
+        String newObj = obj;
+        for (java.util.Map.Entry<String, String> field : rawValues.entrySet()) {
+            newObj = replaceRawField(newObj, field.getKey(), field.getValue());
+        }
+        return raw.substring(0, bounds[0]) + newObj + raw.substring(bounds[1] + 1);
+    }
+
+    /** Start and end offset of the {@code { ... }} object whose classname is {@code cn}, or null. */
+    private static int[] entryBounds(String raw, String cn) {
+        Pattern classProp =
+                Pattern.compile("\"classname\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*+)\"", Pattern.CASE_INSENSITIVE);
+        Matcher m = classProp.matcher(raw);
+        while (m.find()) {
+            String val = m.group(1).trim().toLowerCase(java.util.Locale.ROOT);
+            if (!val.equals(cn)) continue;
+            int objStart = lastUnbalancedBrace(raw, m.start());
+            int objEnd = objStart < 0 ? -1 : matchingClose(raw, objStart);
+            return objStart < 0 || objEnd < 0 ? null : new int[] {objStart, objEnd};
+        }
+        return null;
+    }
+
+    /** Replace a number, boolean or null literal in place; the value goes in unquoted. */
+    private static String replaceRawField(String obj, String field, String rawValue) {
+        Pattern p = Pattern.compile(
+                "(\"" + Pattern.quote(field) + "\"\\s*:\\s*)(true|false|null|-?\\d+(?:\\.\\d+)?)(?=\\s*[,}])");
+        Matcher m = p.matcher(obj);
+        if (!m.find()) return obj;
+        return obj.substring(0, m.start()) + m.group(1) + rawValue + obj.substring(m.end());
     }
 
     private static String replaceField(String obj, String field, String value) {

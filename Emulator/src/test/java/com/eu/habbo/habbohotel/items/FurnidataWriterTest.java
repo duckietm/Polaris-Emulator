@@ -210,4 +210,41 @@ class FurnidataWriterTest {
         assertTrue(writer.revertLastBackup());
         assertEquals(SINGLE, Files.readString(file));
     }
+
+    private static final String STRUCTURED = "{ \"roomitemtypes\": { \"furnitype\": [\n"
+            + "  { \"id\": 7, \"classname\": \"throne\", \"xdim\": 1, \"ydim\": 1, \"height\": 1, \"canstandon\": false, \"cansiton\": true, \"name\": \"Throne\", \"description\": \"d\" }\n"
+            + "] }, \"wallitemtypes\": { \"furnitype\": [\n"
+            + "  { \"id\": 1, \"classname\": \"post.it\", \"name\": \"Post-it\", \"description\": \"d\" }\n"
+            + "] } }";
+
+    @Test
+    void writesStructuralFieldsAsRawLiterals(@TempDir Path dir) throws Exception {
+        Path file = dir.resolve("FurnitureData.json");
+        Files.writeString(file, STRUCTURED);
+        FurnidataWriter writer = new FurnidataWriter(file, false, 64L * 1024 * 1024, 10);
+
+        assertTrue(writer.writeStructure(
+                "throne",
+                new java.util.LinkedHashMap<>(java.util.Map.of("xdim", "2", "height", "1.5", "canstandon", "true"))));
+
+        String after = Files.readString(file);
+        assertTrue(after.contains("\"xdim\": 2,"));
+        assertTrue(after.contains("\"height\": 1.5,"));
+        assertTrue(after.contains("\"canstandon\": true,"));
+        assertTrue(after.contains("\"ydim\": 1,"));
+        assertTrue(after.contains("\"name\": \"Throne\""));
+        assertTrue(after.contains("\"id\": 7,"));
+    }
+
+    @Test
+    void leavesFieldsTheEntryDoesNotCarryAlone(@TempDir Path dir) throws Exception {
+        Path file = dir.resolve("FurnitureData.json");
+        Files.writeString(file, STRUCTURED);
+        FurnidataWriter writer = new FurnidataWriter(file, false, 64L * 1024 * 1024, 10);
+
+        assertFalse(writer.writeStructure("post.it", java.util.Map.of("xdim", "3")));
+        assertFalse(writer.writeStructure("throne", java.util.Map.of("xdim", "1")));
+        assertFalse(writer.writeStructure("missing", java.util.Map.of("xdim", "3")));
+        assertEquals(STRUCTURED, Files.readString(file));
+    }
 }

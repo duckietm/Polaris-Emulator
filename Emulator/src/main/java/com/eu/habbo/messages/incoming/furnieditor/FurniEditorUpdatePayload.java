@@ -3,10 +3,11 @@ package com.eu.habbo.messages.incoming.furnieditor;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.function.Predicate;
 
 public class FurniEditorUpdatePayload {
     public final String setClauses;
@@ -19,7 +20,21 @@ public class FurniEditorUpdatePayload {
         this.error = error;
     }
 
+    /**
+     * Validates an editor update. {@code knownInteraction} answers whether a lowercase
+     * interaction type has a class registered in the item manager: a type without one
+     * would silently fall back to the default behaviour once loaded, so it is refused
+     * here instead of saved. An empty type is accepted and means that default.
+     */
+    /**
+     * Kept for binary compatibility with plugins compiled against the released jar:
+     * validates without the interaction registry check. New callers pass the registry.
+     */
     public static FurniEditorUpdatePayload validate(JsonObject json) {
+        return validate(json, type -> true);
+    }
+
+    public static FurniEditorUpdatePayload validate(JsonObject json, Predicate<String> knownInteraction) {
         if (json == null || json.size() == 0) {
             return invalid("No fields to update");
         }
@@ -36,6 +51,14 @@ public class FurniEditorUpdatePayload {
             Object value = validateValue(dbColumn, entry.getValue());
             if (value == null) {
                 return invalid("Invalid value for " + entry.getKey());
+            }
+
+            if ("interaction_type".equals(dbColumn)) {
+                String type = ((String) value).trim().toLowerCase(Locale.ROOT);
+                if (!type.isEmpty() && !knownInteraction.test(type)) {
+                    return invalid("Unknown interaction type: " + value + " (no class is registered for it)");
+                }
+                value = type;
             }
 
             if (setClauses.length() > 0) setClauses.append(", ");
@@ -69,8 +92,15 @@ public class FurniEditorUpdatePayload {
             case "type" -> itemType(primitive);
             case "width", "length" -> boundedInt(primitive, 0, 64);
             case "stack_height" -> boundedDouble(primitive, 0.0D, 99.99D);
-            case "allow_stack", "allow_walk", "allow_sit", "allow_lay", "allow_gift",
-                 "allow_trade", "allow_recycle", "allow_marketplace_sell", "allow_inventory_stack" -> booleanFlag(primitive);
+            case "allow_stack",
+                    "allow_walk",
+                    "allow_sit",
+                    "allow_lay",
+                    "allow_gift",
+                    "allow_trade",
+                    "allow_recycle",
+                    "allow_marketplace_sell",
+                    "allow_inventory_stack" -> booleanFlag(primitive);
             case "interaction_type" -> boundedString(primitive, 0, 500);
             case "interaction_modes_count" -> boundedInt(primitive, 0, 100);
             case "vending_ids", "clothing_on_walk" -> boundedString(primitive, 0, 255);

@@ -76,8 +76,19 @@ public class FurniEditorUpdateFurnidataEvent extends MessageHandler {
         String name = json.has("name") ? json.get("name").getAsString() : null;
         String description = json.has("description") ? json.get("description").getAsString() : null;
 
-        if (name == null && description == null) {
-            this.client.sendResponse(new FurniEditorResultComposer(false, "No name or description provided"));
+        // Optional structural block: xdim, ydim, height, canstandon, cansiton,
+        // canlayon. Lets the editor push items_base values into the furnidata
+        // when the DB is the side that is right. Edit-only: never creates.
+        FurnidataStructurePayload structure = FurnidataStructurePayload.parse(json);
+        if (!structure.valid()) {
+            this.client.sendResponse(new FurniEditorResultComposer(false, structure.error));
+            return;
+        }
+
+        boolean textEdit = name != null || description != null;
+        if (!textEdit && structure.isEmpty()) {
+            this.client.sendResponse(
+                    new FurniEditorResultComposer(false, "No name, description or structure provided"));
             return;
         }
 
@@ -108,14 +119,15 @@ public class FurniEditorUpdateFurnidataEvent extends MessageHandler {
 
         boolean written;
         boolean created = false;
+        boolean structureWritten = false;
         List<FurnidataEntry> delta;
 
         FurnidataLock.LOCK.lock();
         try {
             FurnidataWriter writer = new FurnidataWriter(
                     provider.getSource(), provider.isSourceDirectory(), provider.getMaxBytes(), 3 /* backupKeep */);
-            written = writer.write(classname, safeName, safeDesc);
-            if (!written) {
+            written = textEdit && writer.write(classname, safeName, safeDesc);
+            if (textEdit && !written) {
                 // Upsert: no furnidata entry for this classname yet → create a
                 // complete one seeded from items_base (id = sprite id).
                 Item item = Emulator.getGameEnvironment().getItemManager().getItem(itemId);
@@ -149,9 +161,23 @@ public class FurniEditorUpdateFurnidataEvent extends MessageHandler {
                 }
             }
 
+            if (!structure.isEmpty()) {
+                structureWritten = writer.writeStructure(classname, structure.rawValues);
+                if (!structureWritten && !textEdit) {
+                    this.client.sendResponse(new FurniEditorResultComposer(
+                            false, "No furnidata entry carries those fields, or nothing changed"));
+                    return;
+                }
+            }
+
             delta = provider.reindexFromSource();
 
-            if (!delta.isEmpty()) {
+            // Names travel as a delta. Structural fields do not: clients only
+            // pick them up by reloading the furnidata, so hint that instead.
+            if (structureWritten) {
+                broadcastToAll(
+                        new FurnitureDataReloadComposer(FurnitureDataReloadComposer.MODE_RELOAD_HINT, List.of()));
+            } else if (!delta.isEmpty()) {
                 int deltaCap = Integer.parseInt(Emulator.getConfig().getValue("items.furnidata.delta.cap", "500"));
                 FurnitureDataReloadComposer composer = (delta.size() > deltaCap)
                         ? new FurnitureDataReloadComposer(FurnitureDataReloadComposer.MODE_RELOAD_HINT, List.of())
@@ -178,23 +204,27 @@ public class FurniEditorUpdateFurnidataEvent extends MessageHandler {
             }
         }
 
-        // 6. Audit log (outside lock — DB write, not latency-sensitive)
-        FurnidataAuditLog.record(
-                adminId,
-                classname,
-                created ? "create" : "edit",
-                oldName != null ? oldName : "",
-                FurnitureTextProvider.sanitize(safeName),
-                oldDesc,
-                FurnitureTextProvider.sanitize(safeDesc));
+        // 6. Audit log (outside lock — DB write, not latency-sensitive). The
+        //    table records texts only; a structural write is logged below.
+        if (textEdit) {
+            FurnidataAuditLog.record(
+                    adminId,
+                    classname,
+                    created ? "create" : "edit",
+                    oldName != null ? oldName : "",
+                    FurnitureTextProvider.sanitize(safeName),
+                    oldDesc,
+                    FurnitureTextProvider.sanitize(safeDesc));
+        }
 
         // 7. Respond success
         this.client.sendResponse(new FurniEditorResultComposer(true, "Furnidata updated", itemId));
         LOGGER.info(
-                "FurniEditorUpdateFurnidataEvent: admin {} updated furnidata for classname '{}' (item {})",
+                "FurniEditorUpdateFurnidataEvent: admin {} updated furnidata for classname '{}' (item {}){}",
                 adminId,
                 classname,
-                itemId);
+                itemId,
+                structureWritten ? " structure " + structure.rawValues : "");
     }
 
     /**

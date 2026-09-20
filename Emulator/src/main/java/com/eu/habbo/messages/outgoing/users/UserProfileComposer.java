@@ -6,13 +6,11 @@ import com.eu.habbo.habbohotel.guilds.Guild;
 import com.eu.habbo.habbohotel.messenger.Messenger;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
+import com.eu.habbo.habbohotel.users.ProfileLevel;
 import com.eu.habbo.habbohotel.users.UserCustomizationData;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -21,6 +19,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UserProfileComposer extends MessageComposer {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserProfileComposer.class);
@@ -42,8 +42,7 @@ public class UserProfileComposer extends MessageComposer {
 
     @Override
     protected ServerMessage composeInternal() {
-        if (this.habboInfo == null)
-            return null;
+        if (this.habboInfo == null) return null;
 
         this.response.init(Outgoing.UserProfileComposer);
 
@@ -51,13 +50,16 @@ public class UserProfileComposer extends MessageComposer {
         this.response.appendString(this.habboInfo.getUsername());
         this.response.appendString(this.habboInfo.getLook());
         this.response.appendString(this.habboInfo.getMotto());
-        this.response.appendString(new SimpleDateFormat("dd-MM-yyyy").format(new Date(this.habboInfo.getAccountCreated() * 1000L)));
+        this.response.appendString(
+                new SimpleDateFormat("dd-MM-yyyy").format(new Date(this.habboInfo.getAccountCreated() * 1000L)));
 
         int achievementScore = 0;
         if (this.habbo != null) {
             achievementScore = this.habbo.getHabboStats().getAchievementScore();
         } else {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT achievement_score FROM users_settings WHERE user_id = ? LIMIT 1")) {
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                    PreparedStatement statement = connection.prepareStatement(
+                            "SELECT achievement_score FROM users_settings WHERE user_id = ? LIMIT 1")) {
                 statement.setInt(1, this.habboInfo.getId());
                 try (ResultSet set = statement.executeQuery()) {
                     if (set.next()) {
@@ -70,17 +72,19 @@ public class UserProfileComposer extends MessageComposer {
         }
         this.response.appendInt(achievementScore);
         this.response.appendInt(Messenger.getFriendCount(this.habboInfo.getId()));
-        this.response.appendBoolean(this.viewer.getHabbo().getMessenger().getFriends().containsKey(this.habboInfo.getId())); //Friend
-        this.response.appendBoolean(Messenger.friendRequested(this.viewer.getHabbo().getHabboInfo().getId(), this.habboInfo.getId())); //Friend Request Send
-        this.response.appendBoolean(this.habboInfo.isOnline() && (this.habbo == null || !this.habbo.getHabboStats().hideOnline));
+        this.response.appendBoolean(
+                this.viewer.getHabbo().getMessenger().getFriends().containsKey(this.habboInfo.getId())); // Friend
+        this.response.appendBoolean(Messenger.friendRequested(
+                this.viewer.getHabbo().getHabboInfo().getId(), this.habboInfo.getId())); // Friend Request Send
+        this.response.appendBoolean(
+                this.habboInfo.isOnline() && (this.habbo == null || !this.habbo.getHabboStats().hideOnline));
 
         List<Guild> guilds = new ArrayList<>();
         if (this.habbo != null) {
             List<Integer> toRemove = new ArrayList<>();
             for (int index = this.habbo.getHabboStats().guilds.size(); index > 0; index--) {
                 int i = this.habbo.getHabboStats().guilds.get(index - 1);
-                if (i == 0)
-                    continue;
+                if (i == 0) continue;
 
                 Guild guild = Emulator.getGameEnvironment().getGuildManager().getGuild(i);
 
@@ -103,21 +107,25 @@ public class UserProfileComposer extends MessageComposer {
             this.response.appendInt(guild.getId());
             this.response.appendString(guild.getName());
             this.response.appendString(guild.getBadge());
-            this.response.appendString(Emulator.getGameEnvironment().getGuildManager().getSymbolColor(guild.getColorOne()).valueA);
-            this.response.appendString(Emulator.getGameEnvironment().getGuildManager().getSymbolColor(guild.getColorTwo()).valueA);
+            this.response.appendString(
+                    Emulator.getGameEnvironment().getGuildManager().getSymbolColor(guild.getColorOne()).valueA);
+            this.response.appendString(
+                    Emulator.getGameEnvironment().getGuildManager().getSymbolColor(guild.getColorTwo()).valueA);
             this.response.appendBoolean(this.habbo != null && guild.getId() == this.habbo.getHabboStats().guild);
             this.response.appendInt(guild.getOwnerId());
             this.response.appendBoolean(guild.getOwnerId() == this.habboInfo.getId());
         }
 
-        this.response.appendInt(Emulator.getIntUnixTimestamp() - this.habboInfo.getLastOnline()); //Secs ago.
+        this.response.appendInt(Emulator.getIntUnixTimestamp() - this.habboInfo.getLastOnline()); // Secs ago.
         this.response.appendBoolean(true);
 
         this.response.appendInt(this.habboInfo.getInfostandBg());
         this.response.appendInt(this.habboInfo.getInfostandStand());
         this.response.appendInt(this.habboInfo.getInfostandOverlay());
         this.response.appendInt(this.habboInfo.getInfostandCardBg());
-        UserCustomizationData customizationData = (this.habbo != null) ? UserCustomizationData.fromHabbo(this.habbo) : UserCustomizationData.fromUserId(this.habboInfo.getId());
+        UserCustomizationData customizationData = (this.habbo != null)
+                ? UserCustomizationData.fromHabbo(this.habbo)
+                : UserCustomizationData.fromUserId(this.habboInfo.getId());
         this.response.appendString(customizationData.nickIcon);
         this.response.appendString(customizationData.prefixText);
         this.response.appendString(customizationData.prefixColor);
@@ -127,12 +135,31 @@ public class UserProfileComposer extends MessageComposer {
         this.response.appendString(customizationData.displayOrder);
         this.response.appendInt(this.getTotalBadges());
 
+        // Presence block: a three-way online status like the official profile (0 offline,
+        // 1 online, 2 hidden - hidden only tells the user themself) and the level derived
+        // from the achievement score.
+        boolean viewerIsSelf = this.viewer.getHabbo() != null
+                && this.viewer.getHabbo().getHabboInfo().getId() == this.habboInfo.getId();
+        boolean hidesOnline = this.habbo != null && this.habbo.getHabboStats().hideOnline;
+        int onlineStatus = 0;
+        if (this.habboInfo.isOnline()) {
+            if (!hidesOnline) onlineStatus = 1;
+            else if (viewerIsSelf) onlineStatus = 2;
+        }
+        this.response.appendByte(onlineStatus);
+
+        ProfileLevel level = ProfileLevel.forScore(achievementScore);
+        this.response.appendInt(level.getLevel());
+        this.response.appendInt(level.getLevelStart());
+        this.response.appendInt(level.getNextLevelStart());
+
         return this.response;
     }
 
     private int getTotalBadges() {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT COUNT(DISTINCT badge_code) AS total_badges FROM users_badges WHERE user_id = ?")) {
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT COUNT(DISTINCT badge_code) AS total_badges FROM users_badges WHERE user_id = ?")) {
             statement.setInt(1, this.habboInfo.getId());
 
             try (ResultSet set = statement.executeQuery()) {

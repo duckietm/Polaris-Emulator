@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.messages.ServerMessage;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
@@ -15,6 +16,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -138,6 +140,96 @@ class CatalogReadIndexTest {
             CatalogManager.SORT_USING_ORDERNUM = previousSort;
             configField.set(null, previousConfig);
         }
+    }
+
+    @Test
+    void refreshesItemsOnReadControlsGetCatalogItemsCalls() throws Exception {
+        Field configField = Emulator.class.getDeclaredField("config");
+        configField.setAccessible(true);
+        Object previousConfig = configField.get(null);
+        try {
+            configField.set(
+                    null,
+                    new ConfigurationManager(Path.of("..", "config example", "config.ini.example")
+                            .toString()));
+
+            CatalogManager manager = CatalogReadFixture.manager();
+            CatalogReadFixture.TestPage root =
+                    CatalogReadFixture.page(-1, -2, 0, true, true, false, 0, null, null, CatalogPageType.NORMAL);
+            CatalogReadFixture.attach(manager, CatalogPageType.NORMAL, root);
+
+            AtomicInteger refreshingCalls = new AtomicInteger();
+            RefreshingPage refreshingPage = new RefreshingPage(10, -1, refreshingCalls);
+            manager.getCatalogPagesMap(CatalogPageType.NORMAL).put(refreshingPage.getId(), refreshingPage);
+            root.addChildPage(refreshingPage);
+
+            AtomicInteger plainCalls = new AtomicInteger();
+            CountingPlainPage plainPage = new CountingPlainPage(20, -1, plainCalls);
+            manager.getCatalogPagesMap(CatalogPageType.NORMAL).put(plainPage.getId(), plainPage);
+            root.addChildPage(plainPage);
+
+            manager.markCatalogChanged();
+
+            manager.getEffectivePageItems(refreshingPage);
+            assertEquals(1, refreshingCalls.get(), "refreshesItemsOnRead() == true must call getCatalogItems()");
+
+            manager.getEffectivePageItems(refreshingPage);
+            assertEquals(2, refreshingCalls.get(), "every call to getEffectivePageItems must refresh again");
+
+            manager.getEffectivePageItems(plainPage);
+            assertEquals(0, plainCalls.get(), "a plain page (refreshesItemsOnRead() == false) must never refresh");
+        } finally {
+            configField.set(null, previousConfig);
+        }
+    }
+
+    /** A page that opts into the room-bundle-style refresh-on-read behaviour. */
+    private static final class RefreshingPage extends CatalogPage {
+        private final AtomicInteger calls;
+
+        RefreshingPage(int id, int parentId, AtomicInteger calls) {
+            this.id = id;
+            this.parentId = parentId;
+            this.visible = true;
+            this.enabled = true;
+            this.calls = calls;
+        }
+
+        @Override
+        protected boolean refreshesItemsOnRead() {
+            return true;
+        }
+
+        @Override
+        public Int2ObjectMap<CatalogItem> getCatalogItems() {
+            this.calls.incrementAndGet();
+            return super.getCatalogItems();
+        }
+
+        @Override
+        public void serialize(ServerMessage message) {}
+    }
+
+    /** A plain page (default {@code refreshesItemsOnRead() == false}) that counts calls too. */
+    private static final class CountingPlainPage extends CatalogPage {
+        private final AtomicInteger calls;
+
+        CountingPlainPage(int id, int parentId, AtomicInteger calls) {
+            this.id = id;
+            this.parentId = parentId;
+            this.visible = true;
+            this.enabled = true;
+            this.calls = calls;
+        }
+
+        @Override
+        public Int2ObjectMap<CatalogItem> getCatalogItems() {
+            this.calls.incrementAndGet();
+            return super.getCatalogItems();
+        }
+
+        @Override
+        public void serialize(ServerMessage message) {}
     }
 
     // ----------------------------------------------------------------------------------------

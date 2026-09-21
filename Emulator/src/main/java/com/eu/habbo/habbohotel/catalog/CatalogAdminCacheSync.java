@@ -32,19 +32,20 @@ public final class CatalogAdminCacheSync {
     }
 
     public static void attachCreatedPage(CatalogPage page, int parentId, int orderNum, CatalogPageType pageType) {
+        CatalogManager manager = currentCatalogManager();
         try {
             if (page == null) return;
             reparentPage(page, parentId, orderNum, pageType);
         } finally {
-            currentCatalogManager().markCatalogChanged();
+            if (manager != null) manager.markCatalogChanged();
         }
     }
 
     public static void reparentPage(CatalogPage page, int newParentId, int newOrderNum, CatalogPageType pageType) {
+        CatalogManager catalogManager = currentCatalogManager();
         try {
             if (page == null) return;
 
-            CatalogManager catalogManager = currentCatalogManager();
             int oldParentId = page.getParentId();
 
             if (oldParentId != newParentId) {
@@ -63,13 +64,13 @@ public final class CatalogAdminCacheSync {
 
             page.setOrderNum(newOrderNum);
         } finally {
-            currentCatalogManager().markCatalogChanged();
+            if (catalogManager != null) catalogManager.markCatalogChanged();
         }
     }
 
     public static void refreshPageFlagsFromDb(int pageId, CatalogPageType pageType) {
+        CatalogManager catalogManager = currentCatalogManager();
         try {
-            CatalogManager catalogManager = currentCatalogManager();
             CatalogPage page = catalogManager.getCatalogPage(pageId, pageType);
             if (page == null) return;
 
@@ -90,7 +91,7 @@ public final class CatalogAdminCacheSync {
                 LOGGER.error("Failed to refresh catalog page flags for page {}", pageId, e);
             }
         } finally {
-            currentCatalogManager().markCatalogChanged();
+            if (catalogManager != null) catalogManager.markCatalogChanged();
         }
     }
 
@@ -111,6 +112,7 @@ public final class CatalogAdminCacheSync {
             String textOne,
             CatalogPageType catalogMode,
             CatalogPageType pageType) {
+        CatalogManager manager = currentCatalogManager();
         try {
             if (page == null) return;
             applyPageSave(
@@ -139,7 +141,7 @@ public final class CatalogAdminCacheSync {
                     catalogMode,
                     pageType);
         } finally {
-            currentCatalogManager().markCatalogChanged();
+            if (manager != null) manager.markCatalogChanged();
         }
     }
 
@@ -168,6 +170,7 @@ public final class CatalogAdminCacheSync {
             String includes,
             CatalogPageType catalogMode,
             CatalogPageType pageType) {
+        CatalogManager manager = currentCatalogManager();
         try {
             if (page == null) return;
 
@@ -201,15 +204,15 @@ public final class CatalogAdminCacheSync {
                 page.setCatalogPageType(catalogMode);
             }
         } finally {
-            currentCatalogManager().markCatalogChanged();
+            if (manager != null) manager.markCatalogChanged();
         }
     }
 
     public static void detachDeletedPage(CatalogPage page, CatalogPageType pageType) {
+        CatalogManager catalogManager = currentCatalogManager();
         try {
             if (page == null) return;
 
-            CatalogManager catalogManager = currentCatalogManager();
             CatalogPage parent = catalogManager.getCatalogPage(page.getParentId(), pageType);
 
             if (parent != null) {
@@ -218,13 +221,13 @@ public final class CatalogAdminCacheSync {
 
             catalogManager.getCatalogPagesMap(pageType).remove(page.getId());
         } finally {
-            currentCatalogManager().markCatalogChanged();
+            if (catalogManager != null) catalogManager.markCatalogChanged();
         }
     }
 
     public static boolean reloadCatalogItem(int offerId, CatalogPageType pageType) {
+        CatalogManager catalogManager = currentCatalogManager();
         try {
-            CatalogManager catalogManager = currentCatalogManager();
             CatalogItem existing = catalogManager.getCatalogItem(offerId, pageType);
             int previousPageId = existing != null ? existing.getPageId() : -1;
 
@@ -275,7 +278,7 @@ public final class CatalogAdminCacheSync {
                 return false;
             }
         } finally {
-            currentCatalogManager().markCatalogChanged();
+            if (catalogManager != null) catalogManager.markCatalogChanged();
         }
     }
 
@@ -286,8 +289,8 @@ public final class CatalogAdminCacheSync {
     }
 
     public static void removeCatalogItem(int offerId, CatalogPageType pageType, int pageIdHint) {
+        CatalogManager catalogManager = currentCatalogManager();
         try {
-            CatalogManager catalogManager = currentCatalogManager();
             CatalogItem item = catalogManager.getCatalogItem(offerId, pageType);
 
             if (item != null) {
@@ -308,7 +311,7 @@ public final class CatalogAdminCacheSync {
                 }
             }
         } finally {
-            currentCatalogManager().markCatalogChanged();
+            if (catalogManager != null) catalogManager.markCatalogChanged();
         }
     }
 

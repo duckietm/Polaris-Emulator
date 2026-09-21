@@ -16,12 +16,15 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.database.Database;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.zaxxer.hikari.HikariDataSource;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -174,6 +177,59 @@ class CatalogReadIndexInvalidationTest {
     }
 
     @Test
+    void voucherDeletionInvalidates() throws Exception {
+        CatalogManager manager = CatalogReadFixture.manager();
+        Voucher voucher = CatalogReadFixture.voucher("DEL");
+        addVoucher(manager, voucher);
+        manager.markCatalogChanged();
+
+        assertSame(voucher, manager.readIndex().voucher("DEL"));
+        long versionBefore = manager.catalogVersion();
+
+        // Exercises the in-memory half of CatalogManager#deleteVoucher without a live connection:
+        // this is the call that was missing markCatalogChanged(), leaving getVoucher(code) still
+        // returning a deleted voucher.
+        manager.forgetVoucher(voucher);
+
+        assertTrue(manager.catalogVersion() > versionBefore);
+        assertNull(manager.readIndex().voucher("DEL"));
+    }
+
+    @Test
+    void clothingMutationInvalidates() throws Exception {
+        CatalogManager manager = CatalogReadFixture.manager();
+        ClothItem hat = CatalogReadFixture.cloth(1, "hat");
+        manager.clothing.put(1, hat);
+        manager.markCatalogChanged();
+
+        assertSame(hat, manager.readIndex().clothing("hat"));
+        assertNull(manager.readIndex().clothing("cap"));
+
+        ClothItem cap = CatalogReadFixture.cloth(2, "cap");
+        Map<Integer, ClothItem> updated = new HashMap<>(manager.clothing);
+        updated.put(2, cap);
+        CatalogManager.replaceContents(manager.clothing, updated);
+        manager.markCatalogChanged();
+
+        assertSame(cap, manager.readIndex().clothing("cap"));
+    }
+
+    @Test
+    void clubItemsMutationInvalidates() throws Exception {
+        CatalogManager manager = CatalogReadFixture.manager();
+        CatalogItem item = CatalogReadFixture.item(500, 10, 0);
+
+        assertNull(manager.readIndex().clubItem(500));
+
+        synchronized (manager.clubItems) {
+            manager.clubItems.add(item);
+        }
+        manager.markCatalogChanged();
+
+        assertSame(item, manager.readIndex().clubItem(500));
+    }
+
+    @Test
     void sortFlagChangesSortedItems() throws Exception {
         boolean previousSort = CatalogManager.SORT_USING_ORDERNUM;
         try {
@@ -223,7 +279,17 @@ class CatalogReadIndexInvalidationTest {
         }
 
         assertTrue(seen.containsAll(coveredByCases));
-        assertTrue(seen.stream().anyMatch(needsDatabase::contains));
+        // containsAll, not anyMatch: anyMatch is satisfied by a single needsDatabase method and
+        // silently stops covering the others (or a newly added one) as the set grows.
+        assertTrue(seen.containsAll(needsDatabase));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void addVoucher(CatalogManager manager, Voucher voucher) throws Exception {
+        Field vouchersField = CatalogManager.class.getDeclaredField("vouchers");
+        vouchersField.setAccessible(true);
+        List<Voucher> vouchers = (List<Voucher>) vouchersField.get(manager);
+        vouchers.add(voucher);
     }
 
     private interface Mutation {

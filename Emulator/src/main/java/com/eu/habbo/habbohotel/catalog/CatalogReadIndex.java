@@ -14,7 +14,10 @@ import java.util.Map;
 /**
  * A point-in-time, read-only snapshot of the catalog's lookup structures. Built once per {@link
  * CatalogManager#catalogVersion()} value and served from {@link CatalogManager#readIndex()};
- * never mutated after construction, so it can be read without holding any lock.
+ * never mutated after construction, so it can be read without holding any lock. Because it is a
+ * snapshot, an entry removed from the catalog after this instance was built (a deleted page,
+ * item, voucher, cloth item or club item) stays reachable through it until the next {@link
+ * CatalogManager#markCatalogChanged()} forces a rebuild.
  */
 final class CatalogReadIndex {
 
@@ -78,7 +81,11 @@ final class CatalogReadIndex {
                 for (CatalogPage page : pages.values()) {
                     if (page == null) continue;
 
-                    Int2ObjectMap<CatalogItem> pageItems = page.getCatalogItems();
+                    // catalogItemsView(), not the overridable getCatalogItems(): RoomBundleLayout
+                    // overrides getCatalogItems() to recompute the bundle from the room (DB I/O)
+                    // as a side effect, which must not run for every bundle page on every build
+                    // while this loop holds `pages` and the manager's readIndexLock.
+                    Int2ObjectMap<CatalogItem> pageItems = page.catalogItemsView();
                     List<CatalogItem> pageItemList;
                     synchronized (pageItems) {
                         for (Int2ObjectMap.Entry<CatalogItem> entry : pageItems.int2ObjectEntrySet()) {
@@ -87,14 +94,22 @@ final class CatalogReadIndex {
                         pageItemList = new ArrayList<>(pageItems.values());
                     }
                     Collections.sort(pageItemList);
+                    // Keyed by page.getId(), which equals the map key it was stored under by
+                    // construction (loadCatalogPages/loadBuildersClubCatalogPages,
+                    // createCatalogPage and CatalogRootLayout all insert a page under its own id).
                     sortedItems.put(page.getId(), Collections.unmodifiableList(pageItemList));
 
                     List<CatalogPage> pageChildren =
                             new ArrayList<>(page.getChildPages().values());
                     Collections.sort(pageChildren);
+                    // Same invariant as sortedItems above: keyed by page.getId().
                     children.put(page.getId(), Collections.unmodifiableList(pageChildren));
 
                     if (type == CatalogPageType.NORMAL) {
+                        // Keys are lower-cased with toLowerCase(Locale.ROOT) rather than compared
+                        // with equalsIgnoreCase at lookup time: the snapshot is built once and
+                        // read many times, so paying the normalisation cost here, on a HashMap
+                        // key, is cheaper than a per-lookup case-insensitive scan.
                         if (page.getPageName() != null) {
                             pagesByCaptionSafe.putIfAbsent(page.getPageName().toLowerCase(Locale.ROOT), page);
                         }

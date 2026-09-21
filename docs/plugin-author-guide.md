@@ -38,6 +38,18 @@ older table shapes, but unsafe translations deliberately pass through.
 Plugin-owned tables and columns are allowed. Do not edit Polaris migrations;
 ship separate idempotent setup owned by the plugin.
 
+## Game managers and live collections
+
+Several game managers keep an in-memory collection of loaded state alive for
+the lifetime of the hotel. `CatalogManager` is one of them: its public catalog
+pages and items stay mutable in place, so existing code that walks or edits
+them directly keeps working. Internally, lookups are now served from a
+snapshot that is rebuilt only when `catalogVersion()` moves. A plugin that
+adds, removes, or moves catalog pages or items directly - rather than going
+through `CatalogAdminCacheSync` or a full catalog reload, both of which already
+call it - must call `CatalogManager.markCatalogChanged()` afterwards so the
+snapshot picks up the edit.
+
 ## Bundled dependency policy
 
 The assembled jar currently keeps `netty-all` on the plugin-visible classpath.

@@ -32,53 +32,65 @@ public final class CatalogAdminCacheSync {
     }
 
     public static void attachCreatedPage(CatalogPage page, int parentId, int orderNum, CatalogPageType pageType) {
-        if (page == null) return;
-        reparentPage(page, parentId, orderNum, pageType);
+        try {
+            if (page == null) return;
+            reparentPage(page, parentId, orderNum, pageType);
+        } finally {
+            currentCatalogManager().markCatalogChanged();
+        }
     }
 
     public static void reparentPage(CatalogPage page, int newParentId, int newOrderNum, CatalogPageType pageType) {
-        if (page == null) return;
+        try {
+            if (page == null) return;
 
-        CatalogManager catalogManager = currentCatalogManager();
-        int oldParentId = page.getParentId();
+            CatalogManager catalogManager = currentCatalogManager();
+            int oldParentId = page.getParentId();
 
-        if (oldParentId != newParentId) {
-            CatalogPage oldParent = catalogManager.getCatalogPage(oldParentId, pageType);
-            if (oldParent != null) {
-                oldParent.getChildPages().remove(page.getId());
+            if (oldParentId != newParentId) {
+                CatalogPage oldParent = catalogManager.getCatalogPage(oldParentId, pageType);
+                if (oldParent != null) {
+                    oldParent.getChildPages().remove(page.getId());
+                }
+
+                CatalogPage newParent = catalogManager.getCatalogPage(newParentId, pageType);
+                if (newParent != null) {
+                    newParent.addChildPage(page);
+                }
+
+                page.setParentId(newParentId);
             }
 
-            CatalogPage newParent = catalogManager.getCatalogPage(newParentId, pageType);
-            if (newParent != null) {
-                newParent.addChildPage(page);
-            }
-
-            page.setParentId(newParentId);
+            page.setOrderNum(newOrderNum);
+        } finally {
+            currentCatalogManager().markCatalogChanged();
         }
-
-        page.setOrderNum(newOrderNum);
     }
 
     public static void refreshPageFlagsFromDb(int pageId, CatalogPageType pageType) {
-        CatalogManager catalogManager = currentCatalogManager();
-        CatalogPage page = catalogManager.getCatalogPage(pageId, pageType);
-        if (page == null) return;
+        try {
+            CatalogManager catalogManager = currentCatalogManager();
+            CatalogPage page = catalogManager.getCatalogPage(pageId, pageType);
+            if (page == null) return;
 
-        String tableName = (pageType == CatalogPageType.BUILDER) ? "catalog_pages_bc" : "catalog_pages";
-        String sql = "SELECT visible, enabled FROM " + tableName + " WHERE id = ? LIMIT 1";
+            String tableName = (pageType == CatalogPageType.BUILDER) ? "catalog_pages_bc" : "catalog_pages";
+            String sql = "SELECT visible, enabled FROM " + tableName + " WHERE id = ? LIMIT 1";
 
-        try (Connection connection = openCatalogConnection();
-                PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, pageId);
+            try (Connection connection = openCatalogConnection();
+                    PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setInt(1, pageId);
 
-            try (ResultSet set = statement.executeQuery()) {
-                if (!set.next()) return;
+                try (ResultSet set = statement.executeQuery()) {
+                    if (!set.next()) return;
 
-                page.setVisible("1".equals(set.getString("visible")) || set.getBoolean("visible"));
-                page.setEnabled("1".equals(set.getString("enabled")) || set.getBoolean("enabled"));
+                    page.setVisible("1".equals(set.getString("visible")) || set.getBoolean("visible"));
+                    page.setEnabled("1".equals(set.getString("enabled")) || set.getBoolean("enabled"));
+                }
+            } catch (SQLException e) {
+                LOGGER.error("Failed to refresh catalog page flags for page {}", pageId, e);
             }
-        } catch (SQLException e) {
-            LOGGER.error("Failed to refresh catalog page flags for page {}", pageId, e);
+        } finally {
+            currentCatalogManager().markCatalogChanged();
         }
     }
 
@@ -99,32 +111,36 @@ public final class CatalogAdminCacheSync {
             String textOne,
             CatalogPageType catalogMode,
             CatalogPageType pageType) {
-        if (page == null) return;
-        applyPageSave(
-                page,
-                caption,
-                captionSave,
-                layout,
-                iconImage,
-                page.getIconColor(),
-                minRank,
-                visible,
-                enabled,
-                page.isClubOnly(),
-                page.isVipOnly(),
-                orderNum,
-                parentId,
-                headline,
-                teaser,
-                page.getSpecialImage(),
-                textDetails,
-                textOne,
-                page.getTextTwo(),
-                page.getTextTeaser(),
-                page.getRoomId(),
-                page.getIncluded().stream().map(String::valueOf).collect(Collectors.joining(";")),
-                catalogMode,
-                pageType);
+        try {
+            if (page == null) return;
+            applyPageSave(
+                    page,
+                    caption,
+                    captionSave,
+                    layout,
+                    iconImage,
+                    page.getIconColor(),
+                    minRank,
+                    visible,
+                    enabled,
+                    page.isClubOnly(),
+                    page.isVipOnly(),
+                    orderNum,
+                    parentId,
+                    headline,
+                    teaser,
+                    page.getSpecialImage(),
+                    textDetails,
+                    textOne,
+                    page.getTextTwo(),
+                    page.getTextTeaser(),
+                    page.getRoomId(),
+                    page.getIncluded().stream().map(String::valueOf).collect(Collectors.joining(";")),
+                    catalogMode,
+                    pageType);
+        } finally {
+            currentCatalogManager().markCatalogChanged();
+        }
     }
 
     public static void applyPageSave(
@@ -152,102 +168,114 @@ public final class CatalogAdminCacheSync {
             String includes,
             CatalogPageType catalogMode,
             CatalogPageType pageType) {
-        if (page == null) return;
+        try {
+            if (page == null) return;
 
-        if (page.getParentId() != parentId) {
-            reparentPage(page, parentId, orderNum, pageType);
-        } else {
-            page.setOrderNum(orderNum);
-        }
+            if (page.getParentId() != parentId) {
+                reparentPage(page, parentId, orderNum, pageType);
+            } else {
+                page.setOrderNum(orderNum);
+            }
 
-        page.setCaption(caption);
-        page.setPageName(captionSave);
-        page.setLayout(layout);
-        page.setIconImage(iconImage);
-        page.setIconColor(iconColor);
-        page.setRank(minRank);
-        page.setVisible(visible);
-        page.setEnabled(enabled);
-        page.setClubOnly(clubOnly);
-        page.setVipOnly(vipOnly);
-        page.setHeaderImage(headline);
-        page.setTeaserImage(teaser);
-        page.setSpecialImage(special);
-        page.setTextDetails(textDetails);
-        page.setTextOne(textOne);
-        page.setTextTwo(textTwo);
-        page.setTextTeaser(textTeaser);
-        page.setRoomId(roomId);
-        page.setIncluded(includes);
+            page.setCaption(caption);
+            page.setPageName(captionSave);
+            page.setLayout(layout);
+            page.setIconImage(iconImage);
+            page.setIconColor(iconColor);
+            page.setRank(minRank);
+            page.setVisible(visible);
+            page.setEnabled(enabled);
+            page.setClubOnly(clubOnly);
+            page.setVipOnly(vipOnly);
+            page.setHeaderImage(headline);
+            page.setTeaserImage(teaser);
+            page.setSpecialImage(special);
+            page.setTextDetails(textDetails);
+            page.setTextOne(textOne);
+            page.setTextTwo(textTwo);
+            page.setTextTeaser(textTeaser);
+            page.setRoomId(roomId);
+            page.setIncluded(includes);
 
-        if (pageType != CatalogPageType.BUILDER) {
-            page.setCatalogPageType(catalogMode);
+            if (pageType != CatalogPageType.BUILDER) {
+                page.setCatalogPageType(catalogMode);
+            }
+        } finally {
+            currentCatalogManager().markCatalogChanged();
         }
     }
 
     public static void detachDeletedPage(CatalogPage page, CatalogPageType pageType) {
-        if (page == null) return;
+        try {
+            if (page == null) return;
 
-        CatalogManager catalogManager = currentCatalogManager();
-        CatalogPage parent = catalogManager.getCatalogPage(page.getParentId(), pageType);
+            CatalogManager catalogManager = currentCatalogManager();
+            CatalogPage parent = catalogManager.getCatalogPage(page.getParentId(), pageType);
 
-        if (parent != null) {
-            parent.getChildPages().remove(page.getId());
+            if (parent != null) {
+                parent.getChildPages().remove(page.getId());
+            }
+
+            catalogManager.getCatalogPagesMap(pageType).remove(page.getId());
+        } finally {
+            currentCatalogManager().markCatalogChanged();
         }
-
-        catalogManager.getCatalogPagesMap(pageType).remove(page.getId());
     }
 
     public static boolean reloadCatalogItem(int offerId, CatalogPageType pageType) {
-        CatalogManager catalogManager = currentCatalogManager();
-        CatalogItem existing = catalogManager.getCatalogItem(offerId, pageType);
-        int previousPageId = existing != null ? existing.getPageId() : -1;
+        try {
+            CatalogManager catalogManager = currentCatalogManager();
+            CatalogItem existing = catalogManager.getCatalogItem(offerId, pageType);
+            int previousPageId = existing != null ? existing.getPageId() : -1;
 
-        String sql = (pageType == CatalogPageType.BUILDER)
-                ? BC_ITEM_SELECT
-                : "SELECT * FROM catalog_items WHERE id = ? LIMIT 1";
+            String sql = (pageType == CatalogPageType.BUILDER)
+                    ? BC_ITEM_SELECT
+                    : "SELECT * FROM catalog_items WHERE id = ? LIMIT 1";
 
-        try (Connection connection = openCatalogConnection();
-                PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, offerId);
+            try (Connection connection = openCatalogConnection();
+                    PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setInt(1, offerId);
 
-            try (ResultSet set = statement.executeQuery()) {
-                if (!set.next()) {
-                    removeCatalogItem(offerId, pageType, previousPageId);
-                    return false;
-                }
-
-                if (existing != null) {
-                    unregisterOfferSearchIndex(existing, pageType);
-
-                    if (previousPageId != set.getInt("page_id")) {
-                        CatalogPage oldPage = catalogManager.getCatalogPage(previousPageId, pageType);
-                        if (oldPage != null) {
-                            oldPage.getCatalogItems().remove(offerId);
-                        }
+                try (ResultSet set = statement.executeQuery()) {
+                    if (!set.next()) {
+                        removeCatalogItem(offerId, pageType, previousPageId);
+                        return false;
                     }
 
-                    existing.update(set);
-                    attachItemToPage(existing, pageType);
-                    registerOfferSearchIndex(existing, pageType);
-                    syncLimitedConfiguration(existing, pageType, catalogManager);
+                    if (existing != null) {
+                        unregisterOfferSearchIndex(existing, pageType);
+
+                        if (previousPageId != set.getInt("page_id")) {
+                            CatalogPage oldPage = catalogManager.getCatalogPage(previousPageId, pageType);
+                            if (oldPage != null) {
+                                oldPage.getCatalogItems().remove(offerId);
+                            }
+                        }
+
+                        existing.update(set);
+                        attachItemToPage(existing, pageType);
+                        registerOfferSearchIndex(existing, pageType);
+                        syncLimitedConfiguration(existing, pageType, catalogManager);
+                        return true;
+                    }
+
+                    if ("0".equals(set.getString("item_ids"))
+                            && (pageType == CatalogPageType.BUILDER || set.getInt("habbicon_id") <= 0)) {
+                        return false;
+                    }
+
+                    CatalogItem created = new CatalogItem(set);
+                    attachItemToPage(created, pageType);
+                    registerOfferSearchIndex(created, pageType);
+                    syncLimitedConfiguration(created, pageType, catalogManager);
                     return true;
                 }
-
-                if ("0".equals(set.getString("item_ids"))
-                        && (pageType == CatalogPageType.BUILDER || set.getInt("habbicon_id") <= 0)) {
-                    return false;
-                }
-
-                CatalogItem created = new CatalogItem(set);
-                attachItemToPage(created, pageType);
-                registerOfferSearchIndex(created, pageType);
-                syncLimitedConfiguration(created, pageType, catalogManager);
-                return true;
+            } catch (SQLException e) {
+                LOGGER.error("Failed to reload catalog item {}", offerId, e);
+                return false;
             }
-        } catch (SQLException e) {
-            LOGGER.error("Failed to reload catalog item {}", offerId, e);
-            return false;
+        } finally {
+            currentCatalogManager().markCatalogChanged();
         }
     }
 
@@ -258,25 +286,29 @@ public final class CatalogAdminCacheSync {
     }
 
     public static void removeCatalogItem(int offerId, CatalogPageType pageType, int pageIdHint) {
-        CatalogManager catalogManager = currentCatalogManager();
-        CatalogItem item = catalogManager.getCatalogItem(offerId, pageType);
+        try {
+            CatalogManager catalogManager = currentCatalogManager();
+            CatalogItem item = catalogManager.getCatalogItem(offerId, pageType);
 
-        if (item != null) {
-            unregisterOfferSearchIndex(item, pageType);
-            if (pageType != CatalogPageType.BUILDER) {
-                synchronized (catalogManager.limitedNumbers) {
-                    catalogManager.limitedNumbers.remove(offerId);
+            if (item != null) {
+                unregisterOfferSearchIndex(item, pageType);
+                if (pageType != CatalogPageType.BUILDER) {
+                    synchronized (catalogManager.limitedNumbers) {
+                        catalogManager.limitedNumbers.remove(offerId);
+                    }
                 }
             }
-        }
 
-        int pageId = item != null ? item.getPageId() : pageIdHint;
+            int pageId = item != null ? item.getPageId() : pageIdHint;
 
-        if (pageId > -1) {
-            CatalogPage page = catalogManager.getCatalogPage(pageId, pageType);
-            if (page != null) {
-                page.getCatalogItems().remove(offerId);
+            if (pageId > -1) {
+                CatalogPage page = catalogManager.getCatalogPage(pageId, pageType);
+                if (page != null) {
+                    page.getCatalogItems().remove(offerId);
+                }
             }
+        } finally {
+            currentCatalogManager().markCatalogChanged();
         }
     }
 

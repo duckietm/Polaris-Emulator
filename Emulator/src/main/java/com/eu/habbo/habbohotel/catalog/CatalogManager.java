@@ -116,6 +116,7 @@ import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -300,6 +301,9 @@ public class CatalogManager {
     private final List<Voucher> vouchers;
     public final Int2ObjectMap<int[]> furnitureValues;
     private volatile byte[] rareValuesPayloadCache;
+    private final AtomicLong catalogVersion = new AtomicLong();
+    private volatile CatalogReadIndex readIndex;
+    private final Object readIndexLock = new Object();
 
     public CatalogManager() {
         this(true);
@@ -349,6 +353,46 @@ public class CatalogManager {
         this.loadRecycler();
         this.loadGiftWrappers();
         this.loadFurnitureValues();
+        this.markCatalogChanged();
+    }
+
+    /** Monotonic counter of catalog mutations; the read index is rebuilt when it moves. */
+    public long catalogVersion() {
+        return this.catalogVersion.get();
+    }
+
+    /**
+     * Signals that a catalog collection was mutated in place. Reloads and the admin studio call
+     * this; a plugin that edits catalogPages or a page's items directly must call it too, or
+     * lookups keep serving the previous snapshot.
+     */
+    public void markCatalogChanged() {
+        this.catalogVersion.incrementAndGet();
+    }
+
+    CatalogReadIndex readIndex() {
+        CatalogReadIndex current = this.readIndex;
+        long version = this.catalogVersion.get();
+        if (isCurrent(current, version)) return current;
+
+        synchronized (this.readIndexLock) {
+            current = this.readIndex;
+            version = this.catalogVersion.get();
+            if (isCurrent(current, version)) return current;
+
+            CatalogReadIndex built = CatalogReadIndex.build(this, version);
+            this.readIndex = built;
+            return built;
+        }
+    }
+
+    private static boolean isCurrent(CatalogReadIndex index, long version) {
+        return index != null && index.version() == version && index.sortUsingOrderNum() == SORT_USING_ORDERNUM;
+    }
+
+    /** Package-private accessor for {@link CatalogReadIndex#build} to iterate the live vouchers. */
+    List<Voucher> vouchersView() {
+        return this.vouchers;
     }
 
     private synchronized void loadFurnitureValues() {
@@ -1089,6 +1133,7 @@ public class CatalogManager {
         item.setNeedsUpdate(true);
 
         item.run();
+        this.markCatalogChanged();
         return true;
     }
 

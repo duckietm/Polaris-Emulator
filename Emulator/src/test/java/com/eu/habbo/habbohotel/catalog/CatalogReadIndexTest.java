@@ -11,8 +11,10 @@ import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -128,10 +130,10 @@ class CatalogReadIndexTest {
             CatalogPage page10 = manager.getCatalogPage(10, CatalogPageType.NORMAL);
 
             CatalogManager.SORT_USING_ORDERNUM = false;
-            assertEquals(scanEffectivePageItems(manager, page10), manager.getEffectivePageItems(page10));
+            assertEffectivePageItemsMatchAsSet(manager, page10);
 
             CatalogManager.SORT_USING_ORDERNUM = true;
-            assertEquals(scanEffectivePageItems(manager, page10), manager.getEffectivePageItems(page10));
+            assertEffectivePageItemsMatchAsSet(manager, page10);
         } finally {
             CatalogManager.SORT_USING_ORDERNUM = previousSort;
             configField.set(null, previousConfig);
@@ -347,5 +349,24 @@ class CatalogReadIndexTest {
         }
 
         return items;
+    }
+
+    /**
+     * The reference scan returns items in an unspecified order while the read-index-backed method
+     * returns them sorted; the contract is the set of items, not their order. Also asserts the
+     * indexed result is actually sorted by {@link CatalogItem#compareTo}.
+     */
+    private static void assertEffectivePageItemsMatchAsSet(CatalogManager manager, CatalogPage page) {
+        List<CatalogItem> expected = scanEffectivePageItems(manager, page);
+        List<CatalogItem> actual = manager.getEffectivePageItems(page);
+
+        Set<CatalogItem> expectedSet = new HashSet<>(expected);
+        Set<CatalogItem> actualSet = new HashSet<>(actual);
+        assertEquals(expectedSet, actualSet);
+        assertEquals(expected.size(), actual.size());
+
+        List<CatalogItem> sorted = new ArrayList<>(actual);
+        Collections.sort(sorted);
+        assertEquals(sorted, actual, "getEffectivePageItems should return items sorted");
     }
 }

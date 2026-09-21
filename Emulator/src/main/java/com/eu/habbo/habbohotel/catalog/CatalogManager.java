@@ -106,7 +106,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -870,26 +869,11 @@ public class CatalogManager {
     }
 
     public ClothItem getClothing(String name) {
-        synchronized (this.clothing) {
-            for (ClothItem item : this.clothing.values()) {
-                if (item.name.equalsIgnoreCase(name)) {
-                    return item;
-                }
-            }
-        }
-
-        return null;
+        return this.readIndex().clothing(name);
     }
 
     public Voucher getVoucher(String code) {
-        synchronized (this.vouchers) {
-            for (Voucher voucher : this.vouchers) {
-                if (voucher.code.equals(code)) {
-                    return voucher;
-                }
-            }
-        }
-        return null;
+        return this.readIndex().voucher(code);
     }
 
     public void redeemVoucher(GameClient client, String voucherCode) {
@@ -967,23 +951,11 @@ public class CatalogManager {
     }
 
     public CatalogPage getCatalogPage(String captionSafe) {
-        return this.catalogPages.values().stream()
-                .filter(p ->
-                        p != null && p.getPageName() != null && p.getPageName().equalsIgnoreCase(captionSafe))
-                .findAny()
-                .orElse(null);
+        return this.readIndex().pageByCaption(captionSafe);
     }
 
     public CatalogPage getCatalogPageByLayout(String layoutName) {
-        return this.catalogPages.values().stream()
-                .filter(p -> p != null
-                        && p.isVisible()
-                        && p.isEnabled()
-                        && p.getRank() < 2
-                        && p.getLayout() != null
-                        && p.getLayout().equalsIgnoreCase(layoutName))
-                .findAny()
-                .orElse(null);
+        return this.readIndex().pageByLayout(layoutName);
     }
 
     public CatalogItem getCatalogItem(int id) {
@@ -991,19 +963,8 @@ public class CatalogManager {
     }
 
     public CatalogItem getCatalogItem(int id, CatalogPageType pageType) {
-        final CatalogItem[] item = {null};
-        final Int2ObjectMap<CatalogPage> pagesMap = this.getCatalogPagesMap(pageType);
-
-        synchronized (pagesMap) {
-            for (CatalogPage object : pagesMap.values()) {
-                item[0] = object.getCatalogItem(id);
-                if (item[0] != null) {
-                    break;
-                }
-            }
-        }
-
-        return item[0];
+        return this.readIndex()
+                .item(pageType == CatalogPageType.BUILDER ? CatalogPageType.BUILDER : CatalogPageType.NORMAL, id);
     }
 
     public void loadRecentPurchases(Habbo habbo) {
@@ -1041,19 +1002,15 @@ public class CatalogManager {
 
     public List<CatalogPage> getCatalogPages(int parentId, final Habbo habbo, final CatalogPageType pageType) {
         final List<CatalogPage> pages = new ArrayList<>();
-        final Int2ObjectMap<CatalogPage> pagesMap = this.getCatalogPagesMap(pageType);
-        CatalogPage parentPage = pagesMap.get(parentId);
+        CatalogPageType mapType =
+                pageType == CatalogPageType.BUILDER ? CatalogPageType.BUILDER : CatalogPageType.NORMAL;
+        int userRank = habbo.getHabboInfo().getRank().getId();
+        boolean hasActiveClub = habbo.getHabboInfo().getHabboStats().hasActiveClub();
 
-        if (parentPage == null) {
-            return pages;
-        }
-
-        for (CatalogPage object : parentPage.childPages.values()) {
+        for (CatalogPage object : this.readIndex().children(mapType, parentId)) {
             boolean isVisiblePage = object.visible;
-            boolean hasRightRank =
-                    object.getRank() <= habbo.getHabboInfo().getRank().getId();
-            boolean clubRightsOkay =
-                    !object.isClubOnly() || habbo.getHabboInfo().getHabboStats().hasActiveClub();
+            boolean hasRightRank = object.getRank() <= userRank;
+            boolean clubRightsOkay = !object.isClubOnly() || hasActiveClub;
             boolean pageTypeMatches = (pageType == CatalogPageType.BUILDER)
                     || object.getCatalogPageType().matches(pageType);
 
@@ -1061,7 +1018,6 @@ public class CatalogManager {
                 pages.add(object);
             }
         }
-        Collections.sort(pages);
 
         return pages;
     }
@@ -1107,13 +1063,7 @@ public class CatalogManager {
     }
 
     public CatalogItem getClubItem(int itemId) {
-        synchronized (this.clubItems) {
-            for (CatalogItem item : this.clubItems) {
-                if (item.getId() == itemId) return item;
-            }
-        }
-
-        return null;
+        return this.readIndex().clubItem(itemId);
     }
 
     public boolean moveCatalogItem(CatalogItem item, int pageId) {
@@ -1349,7 +1299,13 @@ public class CatalogManager {
     }
 
     public List<CatalogItem> getEffectivePageItems(CatalogPage page) {
-        List<CatalogItem> items = new ArrayList<>(page.getCatalogItems().values());
+        CatalogPageType mapType =
+                page.getCatalogPageType() == CatalogPageType.BUILDER ? CatalogPageType.BUILDER : CatalogPageType.NORMAL;
+        List<CatalogItem> sorted = this.readIndex().sortedItems(mapType, page.getId());
+        List<CatalogItem> items =
+                sorted != null && this.getCatalogPagesMap(mapType).get(page.getId()) == page
+                        ? new ArrayList<>(sorted)
+                        : new ArrayList<>(page.getCatalogItems().values());
 
         int soldOutPageId = Emulator.getConfig().getInt("catalog.ltd.page.soldout");
         if (soldOutPageId <= 0) {

@@ -70,6 +70,20 @@ class InteractionWiredRoomLinkerTest {
         assertFalse(source.contains("== InteractionTeleport.class"), "no exact-class pairing left");
     }
 
+    @Test
+    void theRoomSendsALinkerAsAFurniNobodyUses() throws Exception {
+        String added = Files.readString(
+                Path.of("src/main/java/com/eu/habbo/messages/outgoing/rooms/items/AddFloorItemComposer.java"));
+        String listed = Files.readString(
+                Path.of("src/main/java/com/eu/habbo/messages/outgoing/rooms/items/RoomFloorItemsComposer.java"));
+
+        // Teleporters are sent as usable by everyone; the linker falls through to isUsable(), which is false.
+        assertTrue(added.contains(
+                "(this.item instanceof InteractionTeleport && !(this.item instanceof InteractionWiredRoomLinker))"));
+        assertTrue(listed.contains(
+                "(item instanceof InteractionTeleport && !(item instanceof InteractionWiredRoomLinker))"));
+    }
+
     private static final class TestItemManager extends ItemManager {
         private void loadDefaults() {
             loadItemInteractions();

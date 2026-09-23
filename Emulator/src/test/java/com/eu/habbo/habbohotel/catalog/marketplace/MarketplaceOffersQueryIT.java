@@ -1,12 +1,15 @@
 package com.eu.habbo.habbohotel.catalog.marketplace;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import com.eu.habbo.database.TestDatabase;
 import com.eu.habbo.database.migration.MigrationRunner;
 import com.zaxxer.hikari.HikariDataSource;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -17,6 +20,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -36,6 +40,9 @@ class MarketplaceOffersQueryIT {
 
     private static final int OPEN = 1;
     private static final int SOLD = 2;
+
+    private static final Path INDEX_MIGRATION =
+            Path.of("src/main/resources/db/migration/V20260923200000__marketplace_query_indexes.sql");
 
     private HikariDataSource dataSource;
     private int now;
@@ -140,6 +147,26 @@ class MarketplaceOffersQueryIT {
                 List.of(listingId(2), listingId(11), listingId(12)), ids(offers(-1, -1, "", 3, false)), "sold desc");
         assertEquals(
                 List.of(listingId(11), listingId(12), listingId(2)), ids(offers(-1, -1, "", 4, false)), "sold asc");
+    }
+
+    @Test
+    void theMigrationIndexesTheSearchOnceAndReusesAnEquivalentIndex() throws Exception {
+        try (Connection connection = this.dataSource.getConnection()) {
+            assertTrue(indexExists(connection, "marketplace_items", "idx_marketplace_items_state_timestamp_price"));
+            assertTrue(indexExists(connection, "marketplace_items", "idx_marketplace_items_state_sold_timestamp"));
+            assertTrue(indexExists(connection, "items_base", "idx_items_base_sprite_id"));
+
+            int indexes = indexCount(connection);
+            runIndexMigration(connection);
+            assertEquals(indexes, indexCount(connection), "applying the migration again adds nothing");
+
+            execute(connection, "ALTER TABLE items_base DROP INDEX idx_items_base_sprite_id");
+            execute(connection, "ALTER TABLE items_base ADD INDEX custom_sprite_lookup (sprite_id, id)");
+            runIndexMigration(connection);
+            assertFalse(
+                    indexExists(connection, "items_base", "idx_items_base_sprite_id"),
+                    "an index with the same leading columns is reused, not duplicated");
+        }
     }
 
     @Test
@@ -310,6 +337,42 @@ class MarketplaceOffersQueryIT {
                 listedAt,
                 soldAt,
                 state);
+    }
+
+    private static void runIndexMigration(Connection connection) throws Exception {
+        String executable = Files.readString(INDEX_MIGRATION)
+                .lines()
+                .filter(line -> !line.stripLeading().startsWith("--"))
+                .collect(Collectors.joining("\n"));
+        try (Statement statement = connection.createStatement()) {
+            for (String sql : executable.split(";\\s*")) {
+                if (!sql.isBlank()) {
+                    statement.execute(sql);
+                }
+            }
+        }
+    }
+
+    private static boolean indexExists(Connection connection, String table, String index) throws Exception {
+        try (PreparedStatement statement =
+                connection.prepareStatement("SELECT COUNT(*) FROM information_schema.STATISTICS"
+                        + " WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?")) {
+            statement.setString(1, table);
+            statement.setString(2, index);
+            try (ResultSet rows = statement.executeQuery()) {
+                return rows.next() && rows.getInt(1) > 0;
+            }
+        }
+    }
+
+    private static int indexCount(Connection connection) throws Exception {
+        try (Statement statement = connection.createStatement();
+                ResultSet rows = statement.executeQuery("SELECT COUNT(DISTINCT TABLE_NAME, INDEX_NAME)"
+                        + " FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE()"
+                        + " AND TABLE_NAME IN ('marketplace_items', 'items_base')")) {
+            rows.next();
+            return rows.getInt(1);
+        }
     }
 
     private static void execute(Connection connection, String sql, Object... values) throws Exception {

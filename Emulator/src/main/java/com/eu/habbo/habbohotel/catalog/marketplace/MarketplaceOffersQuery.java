@@ -50,9 +50,10 @@ final class MarketplaceOffersQuery {
                 .append(" g.avg, g.minPrice, g.maxPrice, g.number,")
                 .append(" COALESCE(s.sold_today, 0) AS sold_count_today\n");
 
-        // Every active listing of a furni, in the listing window and the price band.
+        // Every active listing of a furni, in the listing window and the price band. The average is
+        // whole credits, the unit the offer reads it in.
         sql.append("FROM (\n")
-                .append("    SELECT li.item_id AS base_item_id, AVG(l.price) AS avg, MIN(l.price) AS minPrice,")
+                .append("    SELECT li.item_id AS base_item_id, FLOOR(AVG(l.price)) AS avg, MIN(l.price) AS minPrice,")
                 .append(" MAX(l.price) AS maxPrice, COUNT(*) AS number,\n")
                 .append("        CAST(SUBSTRING_INDEX(GROUP_CONCAT(l.id ORDER BY l.price ASC, l.id ASC SEPARATOR ','),")
                 .append(" ',', 1) AS UNSIGNED) AS cheapest_id\n")
@@ -81,7 +82,7 @@ final class MarketplaceOffersQuery {
         }
         sql.append("\n")
                 .append("    FROM catalog_items ci\n")
-                .append("    GROUP BY base_item_id\n")
+                .append("    GROUP BY (ci.item_ids + 0)\n")
                 .append(") cat ON cat.base_item_id = g.base_item_id\n");
 
         // The cheapest listing represents the furni.

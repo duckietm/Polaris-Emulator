@@ -48,7 +48,7 @@ class MarketplaceOffersQueryIT {
     private int now;
     private int startOfDay;
 
-    private record Offer(int id, int furni, String ltdData, int minPrice, int number, double average, int soldToday) {}
+    private record Offer(int id, int furni, String ltdData, int minPrice, int number, int average, int soldToday) {}
 
     private static void requireDocker() {
         try {
@@ -89,7 +89,7 @@ class MarketplaceOffersQueryIT {
         assertEquals("0:0", sofa.ltdData());
         assertEquals(30, sofa.minPrice(), "the expired listing at 5 is not offered");
         assertEquals(3, sofa.number(), "three active listings, not multiplied by the two catalog rows");
-        assertEquals(110 / 3.0, sofa.average(), 0.001);
+        assertEquals(36, sofa.average(), "110 / 3 in whole credits");
         assertEquals(1, sofa.soldToday(), "yesterday's sale is not counted");
 
         Offer secondSerial = offers.get(1);
@@ -113,7 +113,7 @@ class MarketplaceOffersQueryIT {
         assertEquals("2:5", throne.ltdData(), "the cheapest serial represents the furni");
         assertEquals(400, throne.minPrice());
         assertEquals(2, throne.number());
-        assertEquals(450.0, throne.average(), 0.001);
+        assertEquals(450, throne.average());
     }
 
     @Test
@@ -128,7 +128,7 @@ class MarketplaceOffersQueryIT {
 
     @Test
     void searchesTheFurniNameAndTheCatalogNamesLiterally() throws Exception {
-        assertEquals(List.of(listingId(2)), ids(offers(-1, -1, "sofa", 2, false)), "furni name");
+        assertEquals(List.of(listingId(2)), ids(offers(-1, -1, "Test Sofa", 2, false)), "furni name only");
         assertEquals(
                 List.of(listingId(12), listingId(11)), ids(offers(-1, -1, "throne_page", 2, false)), "catalog name");
         assertEquals(List.of(), ids(offers(-1, -1, "lamp", 2, false)), "furni the catalog does not sell");
@@ -220,7 +220,7 @@ class MarketplaceOffersQueryIT {
                             rows.getString("ltd_data"),
                             rows.getInt("minPrice"),
                             rows.getInt("number"),
-                            rows.getDouble("avg"),
+                            rows.getInt("avg"),
                             rows.getInt("sold_count_today")));
                 }
             }
@@ -256,8 +256,8 @@ class MarketplaceOffersQueryIT {
 
         int listedAt = this.now - 100;
         listing(connection, 1, SOFA, "0:0", 50, OPEN, listedAt, 0);
-        listing(connection, 2, SOFA, "0:0", 30, OPEN, listedAt, 0);
         listing(connection, 3, SOFA, "0:0", 30, OPEN, listedAt, 0);
+        listing(connection, 2, SOFA, "0:0", 30, OPEN, listedAt, 0);
         listing(connection, 4, SOFA, "0:0", 45, SOLD, listedAt, this.startOfDay + 60);
         listing(connection, 5, SOFA, "0:0", 45, SOLD, listedAt, this.startOfDay - 3600);
         listing(connection, 6, SOFA, "0:0", 5, OPEN, this.now - 200_000, 0);

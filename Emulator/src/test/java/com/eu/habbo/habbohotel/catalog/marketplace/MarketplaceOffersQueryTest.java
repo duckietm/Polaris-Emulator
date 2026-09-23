@@ -39,6 +39,7 @@ class MarketplaceOffersQueryTest {
         assertTrue(sql.contains("INNER JOIN marketplace_items m ON m.id = g.cheapest_id"), sql);
         assertFalse(sql.contains("MIN(e.price)"), "no correlated minimum-price subquery");
         assertFalse(sql.contains("marketplace_items a"), "no self-join around the result");
+        assertTrue(sql.contains("FLOOR(AVG(l.price)) AS avg"), "the average is whole credits");
         assertTrue(sql.endsWith("LIMIT 250"), sql);
     }
 
@@ -100,7 +101,7 @@ class MarketplaceOffersQueryTest {
         String sql = MarketplaceOffersQuery.sql(plain(1, false));
 
         assertTrue(sql.contains("SELECT (ci.item_ids + 0) AS base_item_id"), sql);
-        assertTrue(sql.contains("GROUP BY base_item_id\n) cat ON cat.base_item_id = g.base_item_id"), sql);
+        assertTrue(sql.contains("GROUP BY (ci.item_ids + 0)\n) cat ON cat.base_item_id = g.base_item_id"), sql);
         assertFalse(sql.contains("LIKE"), sql);
     }
 

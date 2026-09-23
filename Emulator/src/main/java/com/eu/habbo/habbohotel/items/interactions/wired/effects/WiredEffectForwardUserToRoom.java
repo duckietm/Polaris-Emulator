@@ -21,6 +21,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
+import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import com.eu.habbo.messages.outgoing.rooms.ForwardToRoomComposer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -30,15 +31,16 @@ import java.util.List;
 /**
  * Habbo's "teleport to room" ({@code wf_act_teleport_to_room}, also {@code wf_act_forward_user_to_room}
  * and {@code wf_act_tele_room}): sends the selected users to another room. The room is the one a
- * furni of the furni source leads to - a room link names it, a teleporter leads to wherever its pair
- * stands and they arrive on that pair - and otherwise the typed room id.
+ * furni of the furni source leads to - a room link names it, a room linker or a teleporter leads to
+ * wherever its pair stands and they arrive on that pair - and otherwise the typed room id.
  *
  * <p>Users are only forwarded: their client asks to enter like any navigator visit, so the doorbell,
  * the password, bans and the room's own limits still decide. Each user is forwarded at most once per
  * {@link #FORWARD_INTERVAL_MS}.
  *
  * <p>Int params {@code [user source, furni source]}; string param the room id, which may be empty
- * when furni are picked; stuff ids the picked room links or teleporters.
+ * when furni are picked; stuff ids the picked room linkers, room links or teleporters. Any other pick
+ * is refused with the room-linker error the client shows.
  */
 public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
     public static final WiredEffectType type = WiredEffectType.TELEPORT_TO_ROOM;
@@ -107,7 +109,7 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
     }
 
     @Override
-    public boolean saveData(WiredSettings settings, GameClient gameClient) {
+    public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
         String text =
                 (settings.getStringParam() != null) ? settings.getStringParam().trim() : "";
         if (!text.isEmpty() && parseRoomId(text) <= 0) {
@@ -134,8 +136,12 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
             }
             for (int itemId : furniIds) {
                 HabboItem item = room.getHabboItem(itemId);
-                if (item == null || (!isRoomLink(item) && !(item instanceof InteractionTeleport))) {
+                if (item == null) {
                     return false;
+                }
+                // Room linkers are teleporters, so they pass here with plain teleporters and room links.
+                if (!isRoomLink(item) && !(item instanceof InteractionTeleport)) {
+                    throw new WiredSaveException("wiredfurni.error.require_room_linker");
                 }
                 if (!picked.contains(item)) {
                     picked.add(item);

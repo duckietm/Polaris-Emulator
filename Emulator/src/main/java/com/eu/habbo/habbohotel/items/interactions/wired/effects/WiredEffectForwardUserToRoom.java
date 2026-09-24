@@ -21,7 +21,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import com.eu.habbo.messages.outgoing.rooms.ForwardToRoomComposer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -39,8 +38,7 @@ import java.util.List;
  * {@link #FORWARD_INTERVAL_MS}.
  *
  * <p>Int params {@code [user source, furni source]}; string param the room id, which may be empty
- * when furni are picked; stuff ids the picked room linkers, room links or teleporters. Any other pick
- * is refused with the room-linker error the client shows.
+ * when furni are picked; stuff ids the picked room linkers, room links or teleporters.
  */
 public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
     public static final WiredEffectType type = WiredEffectType.TELEPORT_TO_ROOM;
@@ -109,7 +107,7 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
     }
 
     @Override
-    public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
+    public boolean saveData(WiredSettings settings, GameClient gameClient) {
         String text =
                 (settings.getStringParam() != null) ? settings.getStringParam().trim() : "";
         if (!text.isEmpty() && parseRoomId(text) <= 0) {
@@ -140,8 +138,10 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
                     return false;
                 }
                 // Room linkers are teleporters, so they pass here with plain teleporters and room links.
+                // The client refuses any other pick with the room-linker text before it is sent; this
+                // save keeps its published signature, so a forged pick is refused without a message.
                 if (!isRoomLink(item) && !(item instanceof InteractionTeleport)) {
-                    throw new WiredSaveException("wiredfurni.error.require_room_linker");
+                    return false;
                 }
                 if (!picked.contains(item)) {
                     picked.add(item);

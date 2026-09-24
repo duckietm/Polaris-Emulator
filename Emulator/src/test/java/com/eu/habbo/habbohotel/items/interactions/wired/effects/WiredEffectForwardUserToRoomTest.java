@@ -7,7 +7,6 @@ import static com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffe
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -39,7 +38,6 @@ import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
-import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import com.eu.habbo.messages.outgoing.rooms.ForwardToRoomComposer;
 import java.util.HashMap;
 import java.util.Map;
@@ -176,10 +174,7 @@ class WiredEffectForwardUserToRoomTest {
         when(this.room.getHabboItem(8)).thenReturn(linker);
         WiredEffectForwardUserToRoom box = box();
 
-        WiredSaveException refused = assertThrows(
-                WiredSaveException.class,
-                () -> box.saveData(settings("", new int[] {5}, 0, WiredSourceUtil.SOURCE_SELECTED), null));
-        assertEquals("wiredfurni.error.require_room_linker", refused.getMessage());
+        assertFalse(box.saveData(settings("", new int[] {5}, 0, WiredSourceUtil.SOURCE_SELECTED), null));
         assertTrue(box.saveData(settings("", new int[] {6}, 0, WiredSourceUtil.SOURCE_SELECTED), null));
         assertEquals(6, json(box).getAsJsonArray("itemIds").get(0).getAsInt());
         assertTrue(box.saveData(settings("", new int[] {8}, 0, WiredSourceUtil.SOURCE_SELECTED), null));

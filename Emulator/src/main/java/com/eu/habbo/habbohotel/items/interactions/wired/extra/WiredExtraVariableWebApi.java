@@ -1,57 +1,49 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.extra;
 
-import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
-import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
-import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
+import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+import com.eu.habbo.threading.ThreadPooling;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Base64;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 /**
- * Exposes one room variable to an outside caller over HTTP.
+ * The Variables Web API add-on. It holds a read key and a write key for the room it stands in and
+ * the bulk-delete permission; the HTTP API itself lives in {@code networking.gameserver.wired}.
  *
- * <p>The keys are minted here and never read from the save, because a key the client chooses is not
- * a credential: a room owner could set a value they already know from somewhere else, or two rooms
- * could end up sharing one. The client is told what the keys are; it does not get to pick them.
- * Asking for a fresh pair is the only say the client has over them.
- *
- * <p>Reading is on as soon as a variable is bound. Writing stays off until the room owner turns it
- * on, so a key that leaks can at worst be used to watch a counter rather than to drive the room.
+ * <p>Keys are minted here, one at a time, when the owner asks for one (packet 2819). A save can only
+ * keep a key or clear it. The stored keys are bound to this item id and to the owner who made
+ * them, so a copied row or a box that changed owner by any route has no keys.
  */
 public class WiredExtraVariableWebApi extends InteractionWiredExtra {
     public static final int CODE = 128;
-    public static final int KEY_BYTES = 24;
+    public static final int KEY_BYTES = 32;
+    public static final int KEY_LENGTH = 43;
+    public static final long GENERATE_COOLDOWN_MILLIS = 2000L;
+    public static final String INTERACTION_TYPE = "wf_xtra_var_web_api";
 
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final Base64.Encoder KEY_ENCODER = Base64.getUrlEncoder().withoutPadding();
+    private static final Pattern KEY_PATTERN = Pattern.compile("[A-Za-z0-9_-]{" + KEY_LENGTH + "}");
     private static final char FIELD_SEPARATOR = '\t';
+    private static final KeyState EMPTY = new KeyState("", "", null, null, false);
 
-    /**
-     * Every live key, so an HTTP caller is resolved without walking the hotel. Entries are put back
-     * on load and on save and dropped on pick-up, but the map is still treated as a hint rather than
-     * the truth: {@link #resolve} re-reads the box it lands on and evicts the entry when the key has
-     * since been rotated away or the box has gone. That keeps a rotation from leaving the old key
-     * working, which a registry trusted blindly would do.
-     */
-    private static final Map<String, WiredExtraVariableWebApi> KEYS = new ConcurrentHashMap<>();
-
-    private String variableToken = "";
-    private int variableItemId = 0;
-    private String readKey = "";
-    private String writeKey = "";
-    private boolean writeEnabled = false;
+    private volatile Held held = new Held(EMPTY, 0);
+    private long lastGenerateMillis = Long.MIN_VALUE;
 
     public WiredExtraVariableWebApi(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -68,115 +60,209 @@ public class WiredExtraVariableWebApi extends InteractionWiredExtra {
         return KEY_ENCODER.encodeToString(material);
     }
 
+    /** SHA-256 of the key, or null for anything that cannot be a key. */
+    public static byte[] hashKey(String key) {
+        if (!isWellFormedKey(key)) {
+            return null;
+        }
+        try {
+            return MessageDigest.getInstance("SHA-256").digest(key.getBytes(StandardCharsets.US_ASCII));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 unavailable", e);
+        }
+    }
+
+    public static boolean isWellFormedKey(String key) {
+        return key != null
+                && key.length() == KEY_LENGTH
+                && KEY_PATTERN.matcher(key).matches();
+    }
+
     @Override
     public boolean execute(RoomUnit roomUnit, Room room, Object[] stuff) {
         return true;
     }
 
+    /**
+     * Only the owner changes anything: a key survives when sent back unchanged, is cleared when sent
+     * empty, and anything else is ignored. Saves by other users leave the box as it is, because they
+     * are shown empty keys and would otherwise wipe them.
+     */
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) throws WiredSaveException {
-        Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
-        if (room == null) {
-            throw new WiredSaveException("Room not found");
+        Habbo habbo = gameClient == null ? null : gameClient.getHabbo();
+        if (habbo == null
+                || habbo.getHabboInfo() == null
+                || habbo.getHabboInfo().getId() != this.getUserId()) {
+            return true;
         }
 
+        String stringParam = settings.getStringParam() == null ? "" : settings.getStringParam();
+        int separator = stringParam.indexOf(FIELD_SEPARATOR);
+        String sentRead = separator < 0 ? stringParam : stringParam.substring(0, separator);
+        String sentWrite = separator < 0 ? "" : stringParam.substring(separator + 1);
         int[] intParams = settings.getIntParams();
-        String nextVariableToken = normalizeVariableToken(firstField(settings.getStringParam()));
-        int nextVariableItemId = getCustomItemId(nextVariableToken);
+        boolean bulk = intParams != null && intParams.length > 0 && intParams[0] == 1;
 
-        if (nextVariableItemId <= 0) {
-            throw new WiredSaveException("wiredfurni.params.variables.validation.missing_variable");
+        synchronized (this) {
+            KeyState current = this.keys();
+            String read = keepOrClear(current.readKey(), sentRead);
+            String write = keepOrClear(current.writeKey(), sentWrite);
+            this.hold(KeyState.of(read, write, bulk));
         }
-
-        WiredVariableDefinitionInfo definitionInfo =
-                WiredContextVariableSupport.getDefinitionInfo(room, nextVariableItemId);
-        if (definitionInfo == null || !definitionInfo.hasValue()) {
-            throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
-        }
-
-        this.variableToken = nextVariableToken;
-        this.variableItemId = nextVariableItemId;
-        this.writeEnabled = intParams.length > 0 && intParams[0] == 1;
-
-        // A pair that does not exist yet is minted, and the room owner can ask for a fresh one. Both
-        // keys turn over together: keeping the read key alive across a rotation would leave a leaked
-        // pair half usable, which is the state a rotation exists to end.
-        boolean rotate = intParams.length > 1 && intParams[1] == 1;
-        if (rotate || this.readKey.isEmpty() || this.writeKey.isEmpty()) {
-            forget();
-            this.readKey = mintKey();
-            this.writeKey = mintKey();
-        }
-        remember();
 
         this.setExtradata("");
         this.needsUpdate(true);
         return true;
     }
 
-    @Override
-    public String getWiredData() {
-        return WiredManager.getGson()
-                .toJson(new JsonData(
-                        this.variableToken, this.variableItemId, this.readKey, this.writeKey, this.writeEnabled));
+    private static String keepOrClear(String held, String sent) {
+        return sent.isEmpty() ? "" : held;
+    }
+
+    /**
+     * Mints a new read or write key for the owner and stores it at once. Null when the requester is
+     * not the owner, the box does not stand in a room the owner owns, or the last key was minted less
+     * than {@link #GENERATE_COOLDOWN_MILLIS} ago.
+     */
+    public String generateKey(Habbo requester, Room room, boolean readKey, long nowMillis) {
+        if (requester == null
+                || requester.getHabboInfo() == null
+                || requester.getHabboInfo().getId() != this.getUserId()
+                || !this.isUsableIn(room)) {
+            return null;
+        }
+
+        String key;
+        synchronized (this) {
+            if (this.lastGenerateMillis != Long.MIN_VALUE
+                    && nowMillis - this.lastGenerateMillis < GENERATE_COOLDOWN_MILLIS) {
+                return null;
+            }
+            this.lastGenerateMillis = nowMillis;
+            key = mintKey();
+            KeyState current = this.keys();
+            this.hold(
+                    readKey
+                            ? KeyState.of(key, current.writeKey(), current.bulkDelete())
+                            : KeyState.of(current.readKey(), key, current.bulkDelete()));
+        }
+
+        this.needsUpdate(true);
+        ThreadPooling threading = WiredPlatform.threading();
+        if (threading != null) {
+            threading.run(this);
+        }
+        return key;
+    }
+
+    /** True while the box stands in {@code room} and that room belongs to the box owner. */
+    public boolean isUsableIn(Room room) {
+        return room != null
+                && this.getRoomId() > 0
+                && room.getId() == this.getRoomId()
+                && room.getOwnerId() == this.getUserId();
+    }
+
+    /** What a presented key hash opens on this box, or null. Both hashes are always compared. */
+    public Access authenticate(byte[] presentedHash) {
+        return this.keys().authenticate(presentedHash);
+    }
+
+    public boolean isBulkDeleteAllowed() {
+        return this.keys().bulkDelete();
+    }
+
+    /** The keys, empty once the box belongs to someone other than who made them. */
+    private KeyState keys() {
+        Held current = this.held;
+        return current.ownerId() > 0 && current.ownerId() == this.getUserId() ? current.keys() : EMPTY;
+    }
+
+    private void hold(KeyState state) {
+        this.held = new Held(state, this.getUserId());
     }
 
     @Override
+    public String getWiredData() {
+        KeyState state = this.keys();
+        return WiredManager.getGson()
+                .toJson(new JsonData(
+                        this.getId(), this.getUserId(), state.readKey(), state.writeKey(), state.bulkDelete()));
+    }
+
+    /** Settings as anyone but the owner sees them: no keys. */
+    @Override
     public void serializeWiredData(ServerMessage message, Room room) {
+        this.serialize(message, "", "", this.keys().bulkDelete());
+    }
+
+    @Override
+    public void serializeWiredDataFor(ServerMessage message, Room room, Habbo viewer) {
+        KeyState state = this.keys();
+        if (viewer != null
+                && viewer.getHabboInfo() != null
+                && viewer.getHabboInfo().getId() == this.getUserId()) {
+            this.serialize(message, state.readKey(), state.writeKey(), state.bulkDelete());
+        } else {
+            this.serialize(message, "", "", state.bulkDelete());
+        }
+    }
+
+    private void serialize(ServerMessage message, String read, String write, boolean bulk) {
         message.appendBoolean(false);
         message.appendInt(0);
         message.appendInt(0);
         message.appendInt(this.getBaseItem().getSpriteId());
         message.appendInt(this.getId());
-        message.appendString(this.variableToken + FIELD_SEPARATOR + this.readKey + FIELD_SEPARATOR + this.writeKey);
+        message.appendString(read + FIELD_SEPARATOR + write);
         message.appendInt(1);
-        message.appendInt(this.writeEnabled ? 1 : 0);
+        message.appendInt(bulk ? 1 : 0);
         message.appendInt(0);
         message.appendInt(CODE);
         message.appendInt(0);
         message.appendInt(0);
     }
 
+    /**
+     * Rows without the item and owner binding (the first design, or rows saved before the owner was
+     * recorded) load without keys and the owner generates new ones.
+     */
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
-        // Reset before reading, so a row the guard rejects leaves a box that exposes nothing
-        // rather than whatever it held before.
-        this.onPickUp();
         this.setExtradata("");
+        this.hold(parseStored(set.getString("wired_data"), this.getId(), this.getUserId()));
+    }
 
-        String wiredData = set.getString("wired_data");
-        if (wiredData == null || wiredData.isEmpty()) {
-            return;
+    /** The keys a stored row holds for the given item id, ignoring who owns it. */
+    public static KeyState parseStored(String wiredData, int itemId) {
+        JsonData data = parseRow(wiredData, itemId);
+        return data == null ? EMPTY : keysOf(data);
+    }
+
+    /** The keys a stored row holds for this item and owner, empty when either does not match. */
+    public static KeyState parseStored(String wiredData, int itemId, int ownerId) {
+        JsonData data = parseRow(wiredData, itemId);
+        return data == null || ownerId <= 0 || data.ownerId != ownerId ? EMPTY : keysOf(data);
+    }
+
+    private static JsonData parseRow(String wiredData, int itemId) {
+        if (wiredData == null || !wiredData.startsWith("{")) {
+            return null;
         }
+        JsonData data = WiredExtraPayloadGuard.fromJson(wiredData, JsonData.class);
+        return data == null || data.itemId <= 0 || data.itemId != itemId ? null : data;
+    }
 
-        if (wiredData.startsWith("{")) {
-            JsonData data = WiredExtraPayloadGuard.fromJson(wiredData, JsonData.class);
-            if (data != null) {
-                this.variableToken = normalizeVariableToken(data.variableToken);
-                this.variableItemId =
-                        data.variableItemId > 0 ? data.variableItemId : getCustomItemId(this.variableToken);
-                this.readKey = data.readKey == null ? "" : data.readKey;
-                this.writeKey = data.writeKey == null ? "" : data.writeKey;
-                this.writeEnabled = data.writeEnabled;
-                remember();
-            }
-            return;
-        }
-
-        this.variableToken = normalizeVariableToken(firstField(wiredData));
-        this.variableItemId = getCustomItemId(this.variableToken);
+    private static KeyState keysOf(JsonData data) {
+        String read = isWellFormedKey(data.readKey) ? data.readKey : "";
+        String write = isWellFormedKey(data.writeKey) ? data.writeKey : "";
+        return KeyState.of(read, write, data.bulkDelete);
     }
 
     @Override
     public void onPickUp() {
-        // Picking the box up ends the exposure: the keys go with it, so a caller holding the old
-        // pair cannot reach the variable again if the box is put back down.
-        forget();
-        this.variableToken = "";
-        this.variableItemId = 0;
-        this.readKey = "";
-        this.writeKey = "";
-        this.writeEnabled = false;
+        this.held = new Held(EMPTY, 0);
     }
 
     @Override
@@ -184,67 +270,37 @@ public class WiredExtraVariableWebApi extends InteractionWiredExtra {
         return true;
     }
 
-    public String getVariableToken() {
-        return this.variableToken;
-    }
-
-    public int getVariableItemId() {
-        return this.variableItemId;
-    }
-
+    /** Only the owner may see this; it is here for the settings packet and persistence. */
     public String getReadKey() {
-        return this.readKey;
+        return this.keys().readKey();
     }
 
+    /** Only the owner may see this; it is here for the settings packet and persistence. */
     public String getWriteKey() {
-        return this.writeKey;
+        return this.keys().writeKey();
     }
 
+    /** @deprecated the box no longer binds a variable. */
+    @Deprecated
+    public String getVariableToken() {
+        return "";
+    }
+
+    /** @deprecated the box no longer binds a variable. */
+    @Deprecated
+    public int getVariableItemId() {
+        return 0;
+    }
+
+    /** @deprecated whether a write key exists. */
+    @Deprecated
     public boolean isWriteEnabled() {
-        return this.writeEnabled;
+        return !this.keys().writeKey().isEmpty();
     }
 
-    private void remember() {
-        if (!this.readKey.isEmpty()) {
-            KEYS.put(this.readKey, this);
-        }
-        if (!this.writeKey.isEmpty()) {
-            KEYS.put(this.writeKey, this);
-        }
-    }
-
-    private void forget() {
-        // Removing by key and value, so a box cannot evict a key another box has since minted.
-        if (!this.readKey.isEmpty()) {
-            KEYS.remove(this.readKey, this);
-        }
-        if (!this.writeKey.isEmpty()) {
-            KEYS.remove(this.writeKey, this);
-        }
-    }
-
-    /**
-     * The box a key currently opens, and what it opens it for, or null when the key opens nothing.
-     * A key that the registry still holds but the box no longer recognises has been rotated away, so
-     * it is dropped here rather than answered.
-     */
+    /** @deprecated keys are only checked against the box of the requested room; this finds nothing. */
+    @Deprecated
     public static Lookup resolve(String key) {
-        if (key == null || key.isEmpty()) {
-            return null;
-        }
-
-        WiredExtraVariableWebApi addon = KEYS.get(key);
-        if (addon == null) {
-            return null;
-        }
-        if (key.equals(addon.readKey)) {
-            return new Lookup(addon, Access.READ);
-        }
-        if (key.equals(addon.writeKey)) {
-            return new Lookup(addon, Access.WRITE);
-        }
-
-        KEYS.remove(key, addon);
         return null;
     }
 
@@ -255,43 +311,51 @@ public class WiredExtraVariableWebApi extends InteractionWiredExtra {
 
     public record Lookup(WiredExtraVariableWebApi addon, Access access) {}
 
-    static String firstField(String stringParam) {
-        if (stringParam == null) {
-            return "";
+    /** The keys of one box with their hashes. The plain keys are only for the owner and storage. */
+    public record KeyState(String readKey, String writeKey, byte[] readHash, byte[] writeHash, boolean bulkDelete) {
+        static KeyState of(String readKey, String writeKey, boolean bulkDelete) {
+            String read = readKey == null ? "" : readKey;
+            String write = writeKey == null ? "" : writeKey;
+            return new KeyState(read, write, hashKey(read), hashKey(write), bulkDelete && !write.isEmpty());
         }
-        int separator = stringParam.indexOf(FIELD_SEPARATOR);
-        return separator < 0 ? stringParam : stringParam.substring(0, separator);
+
+        public boolean hasKeys() {
+            return this.readHash != null || this.writeHash != null;
+        }
+
+        public Access authenticate(byte[] presentedHash) {
+            if (presentedHash == null) {
+                return null;
+            }
+            boolean write = this.writeHash != null && MessageDigest.isEqual(this.writeHash, presentedHash);
+            boolean read = this.readHash != null && MessageDigest.isEqual(this.readHash, presentedHash);
+            if (write) {
+                return Access.WRITE;
+            }
+            return read ? Access.READ : null;
+        }
+
+        @Override
+        public String toString() {
+            return "KeyState[bulkDelete=" + this.bulkDelete + "]";
+        }
     }
 
-    static String normalizeVariableToken(String token) {
-        return token == null ? "" : token.trim();
-    }
-
-    static int getCustomItemId(String token) {
-        String digits = token == null ? "" : token.trim();
-        if (digits.isEmpty()) {
-            return 0;
-        }
-        try {
-            return Integer.parseInt(digits);
-        } catch (NumberFormatException e) {
-            return 0;
-        }
-    }
+    private record Held(KeyState keys, int ownerId) {}
 
     static class JsonData {
-        String variableToken;
-        int variableItemId;
+        int itemId;
+        int ownerId;
         String readKey;
         String writeKey;
-        boolean writeEnabled;
+        boolean bulkDelete;
 
-        JsonData(String variableToken, int variableItemId, String readKey, String writeKey, boolean writeEnabled) {
-            this.variableToken = variableToken;
-            this.variableItemId = variableItemId;
+        JsonData(int itemId, int ownerId, String readKey, String writeKey, boolean bulkDelete) {
+            this.itemId = itemId;
+            this.ownerId = ownerId;
             this.readKey = readKey;
             this.writeKey = writeKey;
-            this.writeEnabled = writeEnabled;
+            this.bulkDelete = bulkDelete;
         }
     }
 }

@@ -169,14 +169,32 @@ public final class RoomWiredVariableCatalog {
         private final int value;
         private final long createdAt;
         private final long updatedAt;
+        private final boolean hasValue;
 
         Holder(int entityType, int entityId, String entityName, int value, long createdAt, long updatedAt) {
+            this(entityType, entityId, entityName, value, createdAt, updatedAt, true);
+        }
+
+        Holder(
+                int entityType,
+                int entityId,
+                String entityName,
+                int value,
+                long createdAt,
+                long updatedAt,
+                boolean hasValue) {
             this.entityType = entityType;
             this.entityId = entityId;
             this.entityName = entityName;
             this.value = value;
             this.createdAt = createdAt;
             this.updatedAt = updatedAt;
+            this.hasValue = hasValue;
+        }
+
+        /** False for a holder of a variable without a value; {@link #getValue()} is then 0. */
+        public boolean hasValue() {
+            return this.hasValue;
         }
 
         public int getEntityType() {
@@ -309,6 +327,14 @@ public final class RoomWiredVariableCatalog {
 
     /** Every entity that currently holds a value for the given variable. */
     public static List<Holder> holders(Room room, String variableId) {
+        return holders(room, variableId, false);
+    }
+
+    /**
+     * Every entity that currently holds the given variable; with {@code includeValueless} also the
+     * holders of a variable that has no value.
+     */
+    public static List<Holder> holders(Room room, String variableId, boolean includeValueless) {
         List<Holder> holders = new ArrayList<>();
 
         if (room == null || variableId == null) {
@@ -327,7 +353,8 @@ public final class RoomWiredVariableCatalog {
                     room.getUserVariableManager().createSnapshot();
             for (RoomUserVariableManager.UserAssignmentsEntry user : snapshot.getUsers()) {
                 for (RoomUserVariableManager.AssignmentEntry assignment : user.getAssignments()) {
-                    if (assignment.getVariableItemId() != definitionItemId || !assignment.hasValue()) {
+                    if (assignment.getVariableItemId() != definitionItemId
+                            || (!assignment.hasValue() && !includeValueless)) {
                         continue;
                     }
 
@@ -335,9 +362,10 @@ public final class RoomWiredVariableCatalog {
                             TARGET_USER,
                             user.getUserId(),
                             userName(room, user.getUserId()),
-                            assignment.getValue(),
+                            assignment.hasValue() ? assignment.getValue() : 0,
                             toMillis(assignment.getCreatedAt()),
-                            toMillis(assignment.getUpdatedAt())));
+                            toMillis(assignment.getUpdatedAt()),
+                            assignment.hasValue()));
                 }
             }
         } else if (target == TARGET_FURNI) {
@@ -345,7 +373,8 @@ public final class RoomWiredVariableCatalog {
                     room.getFurniVariableManager().createSnapshot();
             for (RoomFurniVariableManager.FurniAssignmentsEntry furni : snapshot.getFurnis()) {
                 for (RoomFurniVariableManager.AssignmentEntry assignment : furni.getAssignments()) {
-                    if (assignment.getVariableItemId() != definitionItemId || !assignment.hasValue()) {
+                    if (assignment.getVariableItemId() != definitionItemId
+                            || (!assignment.hasValue() && !includeValueless)) {
                         continue;
                     }
 
@@ -353,9 +382,10 @@ public final class RoomWiredVariableCatalog {
                             TARGET_FURNI,
                             furni.getFurniId(),
                             furniName(room, furni.getFurniId()),
-                            assignment.getValue(),
+                            assignment.hasValue() ? assignment.getValue() : 0,
                             toMillis(assignment.getCreatedAt()),
-                            toMillis(assignment.getUpdatedAt())));
+                            toMillis(assignment.getUpdatedAt()),
+                            assignment.hasValue()));
                 }
             }
         } else if (target == TARGET_ROOM) {

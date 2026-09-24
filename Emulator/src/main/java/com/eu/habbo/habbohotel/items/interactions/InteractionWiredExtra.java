@@ -5,6 +5,8 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import com.eu.habbo.messages.outgoing.wired.WiredExtraDataComposer;
 import java.sql.ResultSet;
@@ -25,7 +27,7 @@ public abstract class InteractionWiredExtra extends InteractionWired {
         if (client != null) {
             if (room.canInspectWired(client.getHabbo())) {
                 if (this.hasConfiguration()) {
-                    client.sendResponse(new WiredExtraDataComposer(this, room));
+                    client.sendResponse(new WiredExtraDataComposer(this, room, client.getHabbo()));
                 }
                 this.activateBox(room);
             }
@@ -48,5 +50,10 @@ public abstract class InteractionWiredExtra extends InteractionWired {
 
     public boolean hasConfiguration() {
         return false;
+    }
+
+    /** Settings as the given viewer may see them; boxes holding secrets override this. */
+    public void serializeWiredDataFor(ServerMessage message, Room room, Habbo viewer) {
+        this.serializeWiredData(message, room);
     }
 }

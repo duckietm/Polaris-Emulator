@@ -370,6 +370,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariable
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableReference;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableTextConnector;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership;
 import com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniAltitude;
 import com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniArea;
 import com.eu.habbo.habbohotel.items.interactions.wired.selector.WiredEffectFurniByType;
@@ -1370,6 +1371,11 @@ public class ItemManager {
             Connection connection, int habboId, Item item, int limitedStack, int limitedSells, String extraData)
             throws SQLException {
         if (habboId <= 0 || item == null) {
+            return null;
+        }
+
+        // Every reward, gift and wired path ends here, so a second web-api box cannot be made anywhere.
+        if (WiredWebApiOwnership.isWebApiItem(item) && !WiredWebApiOwnership.canOwnMore(habboId, 1)) {
             return null;
         }
 

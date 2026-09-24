@@ -58,6 +58,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionHopper;
 import com.eu.habbo.habbohotel.items.interactions.InteractionMusicDisc;
 import com.eu.habbo.habbohotel.items.interactions.InteractionTeleport;
 import com.eu.habbo.habbohotel.items.interactions.InteractionTrophy;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership;
 import com.eu.habbo.habbohotel.items.rentable.RentableFurniture;
 import com.eu.habbo.habbohotel.items.rentable.RentableFurnitureManager;
 import com.eu.habbo.habbohotel.modtool.ScripterManager;
@@ -1411,6 +1412,15 @@ public class CatalogManager {
             }
 
             if (amount <= 0) {
+                habbo.getClient()
+                        .sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+                return;
+            }
+
+            String ownershipRefusal = WiredWebApiOwnership.purchaseRefusal(
+                    item, amount, habbo.getHabboInfo().getId());
+            if (ownershipRefusal != null) {
+                habbo.getClient().sendResponse(new BubbleAlertComposer(ownershipRefusal));
                 habbo.getClient()
                         .sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
                 return;

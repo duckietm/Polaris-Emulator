@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -30,6 +31,7 @@ public final class ChestFurniDepositHelper {
 
         Item baseItem = inventoryItem.getBaseItem();
         if (baseItem == null || baseItem.getType() != FurnitureType.FLOOR) return false;
+        if (WiredWebApiOwnership.isWebApiItem(baseItem)) return false;
 
         HabboItem removed = habbo.getInventory().getItemsComponent().getHabboItem(inventoryItem.getId());
         if (removed == null) return false;

@@ -13,6 +13,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionRoomAds;
 import com.eu.habbo.habbohotel.items.interactions.InteractionStackHelper;
 import com.eu.habbo.habbohotel.items.interactions.InteractionStackWalkHelper;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership;
 import com.eu.habbo.habbohotel.modtool.ScripterManager;
 import com.eu.habbo.habbohotel.rooms.BuildersClubRoomSupport;
 import com.eu.habbo.habbohotel.rooms.FurnitureMovementError;
@@ -81,6 +82,13 @@ public class RoomPlaceItemEvent extends MessageHandler {
                         .isEmpty()) {
             this.client.sendResponse(new BubbleAlertComposer(
                     BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.MAX_SOUNDFURNI.errorCode));
+            return;
+        }
+
+        String webApiRefusal = WiredWebApiOwnership.placementRefusal(room, item);
+        if (webApiRefusal != null) {
+            this.client.sendResponse(
+                    new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, "${" + webApiRefusal + "}"));
             return;
         }
 

@@ -500,9 +500,6 @@ final class WiredApiEndpoints {
         }
 
         Entry apply(VariableRoom room, Variable variable) {
-            if (this.kind == TargetKind.PETS || this.kind == TargetKind.BOTS) {
-                throw unsupportedHolders();
-            }
             switch (this.op) {
                 case "set" -> {
                     checkValueShape(variable, this.value != null);
@@ -567,10 +564,6 @@ final class WiredApiEndpoints {
         if (call.request().body() != null && call.request().body().length > 0) {
             throw WiredApiException.badRequest("This endpoint takes no body.");
         }
-    }
-
-    static WiredApiException unsupportedHolders() {
-        return WiredApiException.badRequest("User variables are not held by pets or bots on this server.");
     }
 
     private static WiredApiException notHeld() {

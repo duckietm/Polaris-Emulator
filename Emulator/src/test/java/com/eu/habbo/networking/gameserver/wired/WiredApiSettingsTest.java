@@ -9,14 +9,14 @@ import org.junit.jupiter.api.Test;
 class WiredApiSettingsTest {
     @Test
     void originsMatchWithOrWithoutSchemeAndSlash() {
-        WiredApiSettings settings = withOrigins(WiredApiSettings.origins("example.com, https://www.example.com/"));
+        WiredApiSettings settings = withOrigins(WiredApiSettings.origins("habbo.com, https://www.habbo.com/"));
 
-        assertEquals("https://example.com", settings.allowedOrigin("https://example.com"));
-        assertEquals("http://example.com", settings.allowedOrigin("http://example.com"));
-        assertEquals("https://www.example.com", settings.allowedOrigin("https://www.example.com"));
-        assertNull(settings.allowedOrigin("http://www.example.com"));
-        assertNull(settings.allowedOrigin("https://ws.example.com"));
-        assertNull(settings.allowedOrigin("https://example.com.evil.test"));
+        assertEquals("https://habbo.com", settings.allowedOrigin("https://habbo.com"));
+        assertEquals("http://habbo.com", settings.allowedOrigin("http://habbo.com"));
+        assertEquals("https://www.habbo.com", settings.allowedOrigin("https://www.habbo.com"));
+        assertNull(settings.allowedOrigin("http://www.habbo.com"));
+        assertNull(settings.allowedOrigin("https://ws.habbo.com"));
+        assertNull(settings.allowedOrigin("https://habbo.com.evil.test"));
         assertNull(settings.allowedOrigin("null"));
         assertNull(settings.allowedOrigin(null));
     }

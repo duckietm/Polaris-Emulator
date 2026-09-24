@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -54,38 +55,88 @@ public class RoomUserVariableManager {
     }
 
     public void restorePermanentAssignments(Habbo habbo) {
-        if (habbo == null) {
+        if (habbo == null || habbo.getHabboInfo() == null) {
             return;
         }
 
-        int userId = habbo.getHabboInfo().getId();
-        ConcurrentHashMap<Integer, VariableAssignment> restoredAssignments = new ConcurrentHashMap<>();
-        List<Integer> staleDefinitionIds = new ArrayList<>();
+        this.restorePermanentAssignments(habbo.getHabboInfo().getId());
+    }
 
-        try {
-            for (RoomUserVariableRepository.StoredAssignment stored :
-                    this.repository.findByUser(this.room.getId(), userId)) {
-                int definitionItemId = stored.definitionItemId();
-                WiredExtraUserVariable definition = this.getDefinition(definitionItemId);
-
-                if (definition == null || !definition.isPermanentAvailability()) {
-                    staleDefinitionIds.add(definitionItemId);
-                    continue;
-                }
-
-                int createdAt = normalizeTimestamp(stored.createdAt(), 0);
-                int updatedAt = normalizeTimestamp(stored.updatedAt(), createdAt);
-                restoredAssignments.put(definitionItemId, new VariableAssignment(stored.value(), createdAt, updatedAt));
+    /**
+     * Restores the permanent variables of the pets and bots in the room with one query; run once its
+     * wired has loaded.
+     */
+    public void restoreUnitHolders() {
+        Set<Integer> present = new LinkedHashSet<>();
+        if (this.room.getCurrentPets() != null) {
+            for (com.eu.habbo.habbohotel.pets.Pet pet :
+                    this.room.getCurrentPets().values()) {
+                if (pet != null) present.add(UserVariableHolders.ofPet(pet.getId()));
             }
+        }
+        if (this.room.getCurrentBots() != null) {
+            for (com.eu.habbo.habbohotel.bots.Bot bot :
+                    this.room.getCurrentBots().values()) {
+                if (bot != null) present.add(UserVariableHolders.ofBot(bot.getId()));
+            }
+        }
+        present.remove(0);
+        if (present.isEmpty()) {
+            return;
+        }
+
+        Map<Integer, List<RoomUserVariableRepository.StoredAssignment>> stored;
+        try {
+            stored = this.repository.findUnitHolders(this.room.getId());
+        } catch (SQLException e) {
+            LOGGER.error("Failed to restore pet and bot wired variables for room {}", this.room.getId(), e);
+            return;
+        }
+
+        for (Integer holder : present) {
+            this.applyRestored(holder, stored.getOrDefault(holder, List.of()));
+        }
+        this.broadcastSnapshot();
+    }
+
+    /** Restores the permanent variables of one holder (see {@link UserVariableHolders}). */
+    public void restorePermanentAssignments(int userId) {
+        if (!UserVariableHolders.isValid(userId)) {
+            return;
+        }
+
+        List<RoomUserVariableRepository.StoredAssignment> stored = List.of();
+        try {
+            stored = this.repository.findByUser(this.room.getId(), userId);
         } catch (SQLException e) {
             LOGGER.error(
                     "Failed to restore wired user variables for room {} and user {}", this.room.getId(), userId, e);
         }
 
-        if (!staleDefinitionIds.isEmpty()) {
-            for (Integer definitionItemId : staleDefinitionIds) {
-                this.deletePersistentAssignment(userId, definitionItemId);
+        this.applyRestored(userId, stored);
+        this.broadcastSnapshot();
+    }
+
+    private void applyRestored(int userId, List<RoomUserVariableRepository.StoredAssignment> rows) {
+        ConcurrentHashMap<Integer, VariableAssignment> restoredAssignments = new ConcurrentHashMap<>();
+        List<Integer> staleDefinitionIds = new ArrayList<>();
+
+        for (RoomUserVariableRepository.StoredAssignment stored : rows) {
+            int definitionItemId = stored.definitionItemId();
+            WiredExtraUserVariable definition = this.getDefinition(definitionItemId);
+
+            if (definition == null || !definition.isPermanentAvailability()) {
+                staleDefinitionIds.add(definitionItemId);
+                continue;
             }
+
+            int createdAt = normalizeTimestamp(stored.createdAt(), 0);
+            int updatedAt = normalizeTimestamp(stored.updatedAt(), createdAt);
+            restoredAssignments.put(definitionItemId, new VariableAssignment(stored.value(), createdAt, updatedAt));
+        }
+
+        for (Integer definitionItemId : staleDefinitionIds) {
+            this.deletePersistentAssignment(userId, definitionItemId);
         }
 
         if (restoredAssignments.isEmpty()) {
@@ -93,8 +144,6 @@ public class RoomUserVariableManager {
         } else {
             this.activeAssignmentsByUserId.put(userId, restoredAssignments);
         }
-
-        this.broadcastSnapshot();
     }
 
     public boolean assignVariable(
@@ -103,7 +152,16 @@ public class RoomUserVariableManager {
     }
 
     public boolean assignVariable(Habbo habbo, int definitionItemId, Integer value, boolean overrideExisting) {
-        if (habbo == null || definitionItemId <= 0) {
+        if (habbo == null || habbo.getHabboInfo() == null) {
+            return false;
+        }
+
+        return this.assignVariable(habbo.getHabboInfo().getId(), definitionItemId, value, overrideExisting);
+    }
+
+    /** Gives the variable to a holder (see {@link UserVariableHolders}). */
+    public boolean assignVariable(int userId, int definitionItemId, Integer value, boolean overrideExisting) {
+        if (!UserVariableHolders.isValid(userId) || definitionItemId <= 0) {
             return false;
         }
 
@@ -114,7 +172,6 @@ public class RoomUserVariableManager {
             return false;
         }
 
-        int userId = habbo.getHabboInfo().getId();
         Integer normalizedValue = definitionInfo.hasValue() ? value : null;
         boolean hadBefore = this.hasVariable(userId, definitionItemId);
         Integer previousValue =
@@ -233,7 +290,7 @@ public class RoomUserVariableManager {
     }
 
     public boolean updateVariableValue(int userId, int definitionItemId, Integer value) {
-        if (userId <= 0 || definitionItemId <= 0) {
+        if (!UserVariableHolders.isValid(userId) || definitionItemId <= 0) {
             return false;
         }
 
@@ -328,7 +385,7 @@ public class RoomUserVariableManager {
     }
 
     public int getCurrentValue(int userId, int definitionItemId) {
-        if (userId <= 0 || definitionItemId <= 0) {
+        if (!UserVariableHolders.isValid(userId) || definitionItemId <= 0) {
             return 0;
         }
 
@@ -362,7 +419,7 @@ public class RoomUserVariableManager {
     }
 
     public int getCreatedAt(int userId, int definitionItemId) {
-        if (userId <= 0 || definitionItemId <= 0) {
+        if (!UserVariableHolders.isValid(userId) || definitionItemId <= 0) {
             return 0;
         }
 
@@ -396,7 +453,7 @@ public class RoomUserVariableManager {
     }
 
     public int getUpdatedAt(int userId, int definitionItemId) {
-        if (userId <= 0 || definitionItemId <= 0) {
+        if (!UserVariableHolders.isValid(userId) || definitionItemId <= 0) {
             return 0;
         }
 
@@ -430,7 +487,7 @@ public class RoomUserVariableManager {
     }
 
     public boolean hasVariable(int userId, int definitionItemId) {
-        if (userId <= 0 || definitionItemId <= 0) {
+        if (!UserVariableHolders.isValid(userId) || definitionItemId <= 0) {
             return false;
         }
 
@@ -457,7 +514,7 @@ public class RoomUserVariableManager {
     }
 
     public boolean removeVariable(int userId, int definitionItemId) {
-        if (userId <= 0 || definitionItemId <= 0) {
+        if (!UserVariableHolders.isValid(userId) || definitionItemId <= 0) {
             return false;
         }
 
@@ -532,7 +589,7 @@ public class RoomUserVariableManager {
     }
 
     public void clearAssignmentsForUser(int userId) {
-        if (userId <= 0) {
+        if (!UserVariableHolders.isValid(userId)) {
             return;
         }
 
@@ -801,16 +858,19 @@ public class RoomUserVariableManager {
     }
 
     public void requestBroadcast() {
+        com.eu.habbo.threading.ThreadPooling threading = Emulator.getThreading();
+        if (threading == null) {
+            return;
+        }
         if (this.broadcastRequested.compareAndSet(false, true)) {
-            Emulator.getThreading()
-                    .run(
-                            () -> {
-                                this.broadcastRequested.set(false);
-                                if (this.room.isLoaded()) {
-                                    this.broadcastSnapshotRaw();
-                                }
-                            },
-                            50);
+            threading.run(
+                    () -> {
+                        this.broadcastRequested.set(false);
+                        if (this.room.isLoaded()) {
+                            this.broadcastSnapshotRaw();
+                        }
+                    },
+                    50);
         }
     }
 
@@ -1030,7 +1090,7 @@ public class RoomUserVariableManager {
     }
 
     private VariableAssignment getRawAssignment(int userId, int definitionItemId) {
-        if (userId <= 0 || definitionItemId <= 0) {
+        if (!UserVariableHolders.isValid(userId) || definitionItemId <= 0) {
             return null;
         }
 

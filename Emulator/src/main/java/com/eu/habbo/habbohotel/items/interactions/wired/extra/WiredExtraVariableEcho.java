@@ -16,6 +16,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomTileState;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.UserVariableHolders;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboGender;
@@ -296,8 +297,7 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
                             .updateVariableValue(this.sourceVariableItemId, (value != null) ? value : 0);
                 default ->
                     room.getUserVariableManager()
-                            .assignVariable(
-                                    room.getHabbo(entityId), this.sourceVariableItemId, value, overrideExisting);
+                            .assignVariable(entityId, this.sourceVariableItemId, value, overrideExisting);
             };
         }
 
@@ -375,10 +375,7 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
         return switch (this.sourceTargetType) {
             case TARGET_FURNI -> this.readFurniInternalValue(room, room.getHabboItem(entityId), key);
             case TARGET_ROOM -> this.readRoomInternalValue(room, key);
-            default -> {
-                Habbo habbo = room.getHabbo(entityId);
-                yield this.readUserInternalValue(room, (habbo != null) ? habbo.getRoomUnit() : null, key);
-            }
+            default -> this.readUserInternalValue(room, UserVariableHolders.unitOf(room, entityId), key);
         };
     }
 
@@ -395,10 +392,7 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
         return switch (this.sourceTargetType) {
             case TARGET_FURNI -> this.writeFurniInternalValue(room, room.getHabboItem(entityId), key, value);
             case TARGET_ROOM -> false;
-            default -> {
-                Habbo habbo = room.getHabbo(entityId);
-                yield this.writeUserInternalValue(room, (habbo != null) ? habbo.getRoomUnit() : null, key, value);
-            }
+            default -> this.writeUserInternalValue(room, UserVariableHolders.unitOf(room, entityId), key, value);
         };
     }
 

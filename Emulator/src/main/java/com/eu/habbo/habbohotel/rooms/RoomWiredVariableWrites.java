@@ -1,7 +1,6 @@
 package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveVariable;
-import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 
 /**
@@ -27,8 +26,8 @@ public final class RoomWiredVariableWrites {
         if (targetType == TARGET_ROOM) {
             return room.getRoomVariableManager().updateVariableValue(definitionItemId, value);
         }
-        Habbo habbo = room.getHabbo(targetId);
-        return habbo != null && room.getUserVariableManager().assignVariable(habbo, definitionItemId, value, true);
+        return UserVariableHolders.isInRoom(room, targetId)
+                && room.getUserVariableManager().assignVariable(targetId, definitionItemId, value, true);
     }
 
     /** Changes the value of a variable the holder already has. */

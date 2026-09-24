@@ -423,9 +423,6 @@ final class WiredApiRouter {
                                 ? "'targetKind' must be users, pets or bots."
                                 : "'targetKind' must be floor or wall.");
             }
-            if (kind == TargetKind.PETS || kind == TargetKind.BOTS) {
-                throw WiredApiEndpoints.unsupportedHolders();
-            }
         }
         return params;
     }

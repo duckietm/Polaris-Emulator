@@ -10,8 +10,8 @@ import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.UserVariableHolders;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
-import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
@@ -105,10 +105,9 @@ public class WiredConditionChestHasItems extends InteractionWiredCondition {
         }
 
         for (RoomUnit roomUnit : WiredSourceUtil.resolveUsers(ctx, WiredSourceUtil.SOURCE_TRIGGER)) {
-            Habbo habbo = (roomUnit != null) ? room.getHabbo(roomUnit) : null;
-            if (habbo != null) {
-                Integer value = room.getUserVariableManager()
-                        .getCurrentValue(habbo.getHabboInfo().getId(), variableItemId);
+            int holder = UserVariableHolders.of(room, roomUnit);
+            if (holder != 0) {
+                Integer value = room.getUserVariableManager().getCurrentValue(holder, variableItemId);
                 if (value != null) {
                     return value;
                 }

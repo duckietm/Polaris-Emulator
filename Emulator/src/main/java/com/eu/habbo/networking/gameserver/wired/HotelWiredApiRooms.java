@@ -16,6 +16,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUserVariableManager;
 import com.eu.habbo.habbohotel.rooms.RoomVariableManager;
 import com.eu.habbo.habbohotel.rooms.RoomWiredVariableCatalog;
 import com.eu.habbo.habbohotel.rooms.RoomWiredVariableWrites;
+import com.eu.habbo.habbohotel.rooms.UserVariableHolders;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredVariableChangeOrigin;
@@ -203,12 +204,38 @@ final class HotelWiredApiRooms implements WiredApiRooms {
             return RoomWiredVariableCatalog.variableId(target, variable.definitionItemId());
         }
 
+        /** The user-variable key of a user, pet or bot (see {@link UserVariableHolders}), 0 for furni. */
+        private static int userKey(TargetKind kind, int entityId) {
+            return switch (kind) {
+                case USERS -> UserVariableHolders.ofUser(entityId);
+                case PETS -> UserVariableHolders.ofPet(entityId);
+                case BOTS -> UserVariableHolders.ofBot(entityId);
+                default -> 0;
+            };
+        }
+
+        private static TargetKind kindOf(int key) {
+            UserVariableHolders.Kind kind = UserVariableHolders.kindOf(key);
+            if (kind == null) {
+                return null;
+            }
+            return switch (kind) {
+                case USER -> TargetKind.USERS;
+                case PET -> TargetKind.PETS;
+                case BOT -> TargetKind.BOTS;
+            };
+        }
+
+        /** The id the variable managers use for this holder. */
+        private static int holderId(Variable variable, TargetKind kind, int entityId) {
+            return variable.scope() == Scope.USER ? userKey(kind, entityId) : entityId;
+        }
+
         @Override
         public boolean holderExists(TargetKind kind, int entityId) {
             return switch (kind) {
-                case USERS -> this.room.getHabbo(entityId) != null;
+                case USERS, PETS, BOTS -> UserVariableHolders.isInRoom(this.room, userKey(kind, entityId));
                 case FLOOR, WALL -> this.furni(kind, entityId) != null;
-                default -> false;
             };
         }
 
@@ -223,11 +250,9 @@ final class HotelWiredApiRooms implements WiredApiRooms {
 
         @Override
         public String holderName(TargetKind kind, int entityId) {
-            if (kind == TargetKind.USERS) {
-                Habbo habbo = this.room.getHabbo(entityId);
-                return habbo != null && habbo.getHabboInfo() != null
-                        ? habbo.getHabboInfo().getUsername()
-                        : null;
+            if (kind.scope() == Scope.USER) {
+                String name = UserVariableHolders.nameOf(this.room, userKey(kind, entityId));
+                return name.isEmpty() ? null : name;
             }
             HabboItem item = this.furni(kind, entityId);
             return item != null ? item.getBaseItem().getName() : null;
@@ -246,14 +271,15 @@ final class HotelWiredApiRooms implements WiredApiRooms {
             int definition = variable.definitionItemId();
             if (variable.scope() == Scope.USER) {
                 RoomUserVariableManager users = this.room.getUserVariableManager();
-                if (kind != TargetKind.USERS || !users.hasVariable(entityId, definition)) {
+                int key = userKey(kind, entityId);
+                if (key == 0 || !users.hasVariable(key, definition)) {
                     return null;
                 }
                 return new Entry(
                         entityId,
-                        variable.hasValue() ? users.getCurrentValue(entityId, definition) : null,
-                        users.getCreatedAt(entityId, definition),
-                        users.getUpdatedAt(entityId, definition));
+                        variable.hasValue() ? users.getCurrentValue(key, definition) : null,
+                        users.getCreatedAt(key, definition),
+                        users.getUpdatedAt(key, definition));
             }
             RoomFurniVariableManager furni = this.room.getFurniVariableManager();
             if (this.furni(kind, entityId) == null || !furni.hasVariable(entityId, definition)) {
@@ -274,8 +300,13 @@ final class HotelWiredApiRooms implements WiredApiRooms {
                 if (variable.scope() == Scope.FURNI && this.furni(kind, holder.getEntityId()) == null) {
                     continue;
                 }
+                if (variable.scope() == Scope.USER && kindOf(holder.getEntityId()) != kind) {
+                    continue;
+                }
                 entries.add(new Entry(
-                        holder.getEntityId(),
+                        variable.scope() == Scope.USER
+                                ? UserVariableHolders.idOf(holder.getEntityId())
+                                : holder.getEntityId(),
                         variable.hasValue() && holder.hasValue() ? holder.getValue() : null,
                         holder.getCreatedAt() / 1000L,
                         holder.getUpdatedAt() / 1000L));
@@ -301,7 +332,11 @@ final class HotelWiredApiRooms implements WiredApiRooms {
             return WiredVariableChangeOrigin.call(
                     WiredVariableChangeOrigin.WEB_API,
                     () -> RoomWiredVariableWrites.assign(
-                            this.room, target, entityId, variable.definitionItemId(), written));
+                            this.room,
+                            target,
+                            holderId(variable, kind, entityId),
+                            variable.definitionItemId(),
+                            written));
         }
 
         @Override
@@ -310,7 +345,7 @@ final class HotelWiredApiRooms implements WiredApiRooms {
             return WiredVariableChangeOrigin.call(
                     WiredVariableChangeOrigin.WEB_API,
                     () -> RoomWiredVariableWrites.update(
-                            this.room, target, entityId, variable.definitionItemId(), value));
+                            this.room, target, holderId(variable, kind, entityId), variable.definitionItemId(), value));
         }
 
         @Override
@@ -318,7 +353,8 @@ final class HotelWiredApiRooms implements WiredApiRooms {
             int target = writeTarget(variable.scope());
             return WiredVariableChangeOrigin.call(
                     WiredVariableChangeOrigin.WEB_API,
-                    () -> RoomWiredVariableWrites.remove(this.room, target, entityId, variable.definitionItemId()));
+                    () -> RoomWiredVariableWrites.remove(
+                            this.room, target, holderId(variable, kind, entityId), variable.definitionItemId()));
         }
 
         @Override

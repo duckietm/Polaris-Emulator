@@ -617,14 +617,47 @@ class WiredApiRouterTest {
     }
 
     @Test
-    void petsAndBotsDoNotHoldUserVariables() {
-        WiredApiResponse pets = this.send("GET", BASE + "/variables/user/points/pets/1", READ, null);
-        assertEquals(400, pets.status());
-        assertTrue(
-                json(pets).getAsJsonObject("error").get("message").getAsString().contains("pets or bots"));
+    void petsAndBotsHoldUserVariablesApartFromUsersWithTheSameId() {
+        this.room.pet(1, "DragonDog").bot(1, "Frank");
+
+        assertEquals(
+                404,
+                this.send("GET", BASE + "/variables/user/points/pets/1", READ, null)
+                        .status());
+        assertEquals(
+                200,
+                this.send("PUT", BASE + "/variables/user/points/pets/1", WRITE, "{\"value\":7}")
+                        .status());
+        assertEquals(
+                200,
+                this.send("PUT", BASE + "/variables/user/points/bots/1", WRITE, "{\"value\":9}")
+                        .status());
+
+        assertEquals(
+                7,
+                json(this.send("GET", BASE + "/variables/user/points/pets/1", READ, null))
+                        .get("value")
+                        .getAsInt());
+        assertEquals(
+                9,
+                json(this.send("GET", BASE + "/variables/user/points/bots/1", READ, null))
+                        .get("value")
+                        .getAsInt());
+        assertEquals(
+                1,
+                json(this.send("GET", BASE + "/variables/user/points/pets", READ, null))
+                        .getAsJsonArray("entries")
+                        .size());
+
+        JsonObject profile = json(this.send("GET", BASE + "/variables_profile/user/pets/1", READ, null));
+        assertEquals("DragonDog", profile.get("name").getAsString());
+        assertEquals(
+                404,
+                this.send("GET", BASE + "/variables/user/points/pets/2", READ, null)
+                        .status());
         assertEquals(
                 400,
-                this.send("GET", BASE + "/variables_profile/user/bots/1", READ, null)
+                this.send("GET", BASE + "/variables/user/points/cats/1", READ, null)
                         .status());
     }
 

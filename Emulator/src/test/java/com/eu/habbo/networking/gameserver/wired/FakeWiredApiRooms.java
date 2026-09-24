@@ -1,6 +1,7 @@
 package com.eu.habbo.networking.gameserver.wired;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi;
+import com.eu.habbo.habbohotel.rooms.UserVariableHolders;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -49,6 +50,8 @@ final class FakeWiredApiRooms implements WiredApiRooms {
         boolean bulk;
         final List<Variable> variables = new ArrayList<>();
         final Map<Integer, String> users = new LinkedHashMap<>();
+        final Map<Integer, String> pets = new LinkedHashMap<>();
+        final Map<Integer, String> bots = new LinkedHashMap<>();
         final Map<Integer, Boolean> furni = new LinkedHashMap<>();
         final Map<String, Map<Integer, Entry>> values = new HashMap<>();
         final Map<String, Integer> globals = new HashMap<>();
@@ -75,6 +78,32 @@ final class FakeWiredApiRooms implements WiredApiRooms {
         FakeRoom user(int id, String name) {
             this.users.put(id, name);
             return this;
+        }
+
+        FakeRoom pet(int id, String name) {
+            this.pets.put(id, name);
+            return this;
+        }
+
+        FakeRoom bot(int id, String name) {
+            this.bots.put(id, name);
+            return this;
+        }
+
+        /** Values are stored under the server's holder key, so a pet and a user with the same id differ. */
+        static int storeKey(TargetKind kind, int entityId) {
+            return switch (kind) {
+                case USERS -> UserVariableHolders.ofUser(entityId);
+                case PETS -> UserVariableHolders.ofPet(entityId);
+                case BOTS -> UserVariableHolders.ofBot(entityId);
+                default -> entityId;
+            };
+        }
+
+        void holdAs(TargetKind kind, String name, int entityId, Integer value) {
+            this.values
+                    .computeIfAbsent(name, key -> new LinkedHashMap<>())
+                    .put(storeKey(kind, entityId), new Entry(entityId, value, this.now, this.now));
         }
 
         FakeRoom floor(int id) {
@@ -122,15 +151,21 @@ final class FakeWiredApiRooms implements WiredApiRooms {
         public boolean holderExists(TargetKind kind, int entityId) {
             return switch (kind) {
                 case USERS -> this.users.containsKey(entityId);
+                case PETS -> this.pets.containsKey(entityId);
+                case BOTS -> this.bots.containsKey(entityId);
                 case FLOOR -> Boolean.TRUE.equals(this.furni.get(entityId));
                 case WALL -> Boolean.FALSE.equals(this.furni.get(entityId));
-                default -> false;
             };
         }
 
         @Override
         public String holderName(TargetKind kind, int entityId) {
-            return kind == TargetKind.USERS ? this.users.get(entityId) : null;
+            return switch (kind) {
+                case USERS -> this.users.get(entityId);
+                case PETS -> this.pets.get(entityId);
+                case BOTS -> this.bots.get(entityId);
+                default -> null;
+            };
         }
 
         @Override
@@ -149,15 +184,16 @@ final class FakeWiredApiRooms implements WiredApiRooms {
                 return null;
             }
             Map<Integer, Entry> held = this.values.get(variable.name());
-            return held == null ? null : held.get(entityId);
+            return held == null ? null : held.get(storeKey(kind, entityId));
         }
 
         @Override
         public List<Entry> holders(Variable variable, TargetKind kind) {
             List<Entry> entries = new ArrayList<>();
-            for (Entry entry :
-                    this.values.getOrDefault(variable.name(), Map.of()).values()) {
-                if (this.holderExists(kind, entry.entityId())) {
+            for (Map.Entry<Integer, Entry> stored :
+                    this.values.getOrDefault(variable.name(), Map.of()).entrySet()) {
+                Entry entry = stored.getValue();
+                if (storeKey(kind, entry.entityId()) == stored.getKey() && this.holderExists(kind, entry.entityId())) {
                     entries.add(entry);
                 }
             }
@@ -175,7 +211,7 @@ final class FakeWiredApiRooms implements WiredApiRooms {
             if (!this.holderExists(kind, entityId)) {
                 return false;
             }
-            this.hold(variable.name(), entityId, variable.hasValue() ? value : null);
+            this.holdAs(kind, variable.name(), entityId, variable.hasValue() ? value : null);
             return true;
         }
 
@@ -186,7 +222,9 @@ final class FakeWiredApiRooms implements WiredApiRooms {
             if (entry == null) {
                 return false;
             }
-            this.values.get(variable.name()).put(entityId, new Entry(entityId, value, entry.createdAt(), this.now));
+            this.values
+                    .get(variable.name())
+                    .put(storeKey(kind, entityId), new Entry(entityId, value, entry.createdAt(), this.now));
             return true;
         }
 
@@ -194,7 +232,7 @@ final class FakeWiredApiRooms implements WiredApiRooms {
         public boolean remove(Variable variable, TargetKind kind, int entityId) {
             this.writes++;
             Map<Integer, Entry> held = this.values.get(variable.name());
-            return held != null && held.remove(entityId) != null;
+            return held != null && held.remove(storeKey(kind, entityId)) != null;
         }
 
         @Override

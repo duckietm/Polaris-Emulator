@@ -2,8 +2,8 @@ package com.eu.habbo.habbohotel.wired.core;
 
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.UserVariableHolders;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
-import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import java.util.Collection;
 
@@ -137,10 +137,9 @@ public final class WiredVariableOperand {
         }
 
         WiredVariableDefinitionInfo definition = room.getUserVariableManager().getDefinitionInfo(itemId);
-        Habbo habbo = room.getHabbo(unit);
-        if (definition == null || !definition.hasValue() || habbo == null) return null;
+        int userId = UserVariableHolders.of(room, unit);
+        if (definition == null || !definition.hasValue() || userId == 0) return null;
 
-        int userId = habbo.getHabboInfo().getId();
         return room.getUserVariableManager().hasVariable(userId, itemId)
                 ? room.getUserVariableManager().getCurrentValue(userId, itemId)
                 : null;

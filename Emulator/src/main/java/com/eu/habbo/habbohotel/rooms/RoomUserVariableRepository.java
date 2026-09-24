@@ -6,7 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 import javax.sql.DataSource;
@@ -16,6 +18,11 @@ final class RoomUserVariableRepository {
             SELECT variable_item_id, value, created_at, updated_at
             FROM room_user_wired_variables
             WHERE room_id = ? AND user_id = ?
+            """;
+    private static final String FIND_UNIT_HOLDERS_SQL = """
+            SELECT user_id, variable_item_id, value, created_at, updated_at
+            FROM room_user_wired_variables
+            WHERE room_id = ? AND user_id < 0
             """;
     private static final String UPSERT_SQL =
             "INSERT INTO room_user_wired_variables (room_id, user_id, variable_item_id, value, created_at, updated_at) "
@@ -49,6 +56,29 @@ final class RoomUserVariableRepository {
             }
         }
         return assignments;
+    }
+
+    /** Every stored row of the room's pets and bots, by holder key, in one query. */
+    Map<Integer, List<StoredAssignment>> findUnitHolders(int roomId) throws SQLException {
+        Map<Integer, List<StoredAssignment>> holders = new HashMap<>();
+        try (Connection connection = dataSource.get().getConnection();
+                PreparedStatement statement = connection.prepareStatement(FIND_UNIT_HOLDERS_SQL)) {
+            statement.setInt(1, roomId);
+
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    int rawValue = set.getInt("value");
+                    Integer value = set.wasNull() ? null : rawValue;
+                    holders.computeIfAbsent(set.getInt("user_id"), key -> new ArrayList<>())
+                            .add(new StoredAssignment(
+                                    set.getInt("variable_item_id"),
+                                    value,
+                                    set.getInt("created_at"),
+                                    set.getInt("updated_at")));
+                }
+            }
+        }
+        return holders;
     }
 
     void upsert(int roomId, int userId, int definitionItemId, Integer value, int createdAt, int updatedAt)

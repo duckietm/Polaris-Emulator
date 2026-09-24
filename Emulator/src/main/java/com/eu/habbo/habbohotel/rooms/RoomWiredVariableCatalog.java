@@ -1,6 +1,5 @@
 package com.eu.habbo.habbohotel.rooms;
 
-import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableTextConnectorSupport;
@@ -416,7 +415,7 @@ public final class RoomWiredVariableCatalog {
         for (Holder holder : holders) {
             if (userTypeFilter == USER_FILTER_IN_ROOM
                     && holder.getEntityType() == TARGET_USER
-                    && (room == null || room.getHabbo(holder.getEntityId()) == null)) {
+                    && !UserVariableHolders.isInRoom(room, holder.getEntityId())) {
                 continue;
             }
 
@@ -494,10 +493,8 @@ public final class RoomWiredVariableCatalog {
     }
 
     private static String userName(Room room, int userId) {
-        Habbo habbo = (room != null) ? room.getHabbo(userId) : null;
-        return (habbo != null && habbo.getHabboInfo() != null)
-                ? habbo.getHabboInfo().getUsername()
-                : String.valueOf(userId);
+        String name = UserVariableHolders.nameOf(room, userId);
+        return !name.isEmpty() ? name : String.valueOf(UserVariableHolders.idOf(userId));
     }
 
     private static String furniName(Room room, int furniId) {

@@ -168,6 +168,8 @@ final class RoomLoadOperations implements RoomLoader.Operations {
             this.room.updateItem(item);
         }
 
+        this.restoreUnitVariables();
+
         synchronized (this.room) {
             try {
                 if (this.room.publishLoadTransition(
@@ -185,6 +187,18 @@ final class RoomLoadOperations implements RoomLoader.Operations {
             }
         }
         return false;
+    }
+
+    /** Pets and bots load before the wired, so their permanent user variables come back here. */
+    private void restoreUnitVariables() {
+        try {
+            RoomUserVariableManager variables = this.room.getUserVariableManager();
+            if (variables != null) {
+                variables.restoreUnitHolders();
+            }
+        } catch (RuntimeException exception) {
+            LOGGER.error("Caught exception restoring pet and bot variables", exception);
+        }
     }
 
     @Override

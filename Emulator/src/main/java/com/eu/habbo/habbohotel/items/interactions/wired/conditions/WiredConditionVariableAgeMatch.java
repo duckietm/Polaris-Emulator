@@ -5,8 +5,8 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.UserVariableHolders;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
-import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
@@ -289,16 +289,12 @@ public class WiredConditionVariableAgeMatch extends WiredConditionHasVariable {
     private Long readUserAgeMs(Room room, RoomUnit roomUnit) {
         if (room == null || roomUnit == null) return null;
 
-        Habbo habbo = room.getHabbo(roomUnit);
-        if (habbo == null
-                || !room.getUserVariableManager()
-                        .hasVariable(habbo.getHabboInfo().getId(), this.variableItemId)) return null;
+        int holder = UserVariableHolders.of(room, roomUnit);
+        if (holder == 0 || !room.getUserVariableManager().hasVariable(holder, this.variableItemId)) return null;
 
         int timestamp = (this.compareValue == COMPARE_VALUE_UPDATED)
-                ? room.getUserVariableManager()
-                        .getUpdatedAt(habbo.getHabboInfo().getId(), this.variableItemId)
-                : room.getUserVariableManager()
-                        .getCreatedAt(habbo.getHabboInfo().getId(), this.variableItemId);
+                ? room.getUserVariableManager().getUpdatedAt(holder, this.variableItemId)
+                : room.getUserVariableManager().getCreatedAt(holder, this.variableItemId);
 
         return timestampToAgeMs(timestamp);
     }

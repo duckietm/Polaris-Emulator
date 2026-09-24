@@ -88,7 +88,11 @@ record WiredApiSettings(
         return origins.isEmpty() ? List.of() : List.copyOf(origins);
     }
 
-    /** The value for Access-Control-Allow-Origin, or null when the origin is not allowed. */
+    /**
+     * The value for Access-Control-Allow-Origin, or null when the origin is not allowed. An entry
+     * without a scheme ({@code camwijs.eu}) allows that host over http and https; a trailing slash is
+     * ignored.
+     */
     String allowedOrigin(String origin) {
         if (this.corsOrigins.contains("*")) {
             return "*";
@@ -96,11 +100,27 @@ record WiredApiSettings(
         if (origin == null) {
             return null;
         }
+        String presented = stripSlash(origin);
+        String host = presented.contains("://") ? presented.substring(presented.indexOf("://") + 3) : null;
         for (String allowed : this.corsOrigins) {
-            if (allowed.equalsIgnoreCase(origin)) {
+            String entry = stripSlash(allowed);
+            boolean match = entry.contains("://")
+                    ? entry.equalsIgnoreCase(presented)
+                    : host != null && entry.equalsIgnoreCase(host) && isWebScheme(presented);
+            if (match) {
                 return origin;
             }
         }
         return null;
+    }
+
+    private static String stripSlash(String value) {
+        String trimmed = value.trim();
+        return trimmed.endsWith("/") ? trimmed.substring(0, trimmed.length() - 1) : trimmed;
+    }
+
+    private static boolean isWebScheme(String origin) {
+        String lower = origin.toLowerCase(java.util.Locale.ROOT);
+        return lower.startsWith("https://") || lower.startsWith("http://");
     }
 }

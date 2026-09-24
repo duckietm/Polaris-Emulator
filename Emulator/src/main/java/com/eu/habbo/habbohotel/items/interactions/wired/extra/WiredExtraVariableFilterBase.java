@@ -14,6 +14,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.UserVariableHolders;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -338,10 +339,9 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
                 room.getUserVariableManager().getDefinitionInfo(this.referenceVariableItemId);
         if (definition == null || !definition.hasValue()) return null;
 
-        Habbo habbo = room.getHabbo(roomUnit);
-        return (habbo != null)
-                ? room.getUserVariableManager()
-                        .getCurrentValue(habbo.getHabboInfo().getId(), this.referenceVariableItemId)
+        int holder = UserVariableHolders.of(room, roomUnit);
+        return (holder != 0)
+                ? room.getUserVariableManager().getCurrentValue(holder, this.referenceVariableItemId)
                 : null;
     }
 
@@ -402,18 +402,15 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
         }
 
         WiredVariableDefinitionInfo definition = room.getUserVariableManager().getDefinitionInfo(this.variableItemId);
-        Habbo habbo = room.getHabbo(roomUnit);
-        if (definition == null || habbo == null) return null;
-        if (!room.getUserVariableManager().hasVariable(habbo.getHabboInfo().getId(), this.variableItemId)) return null;
+        int holder = UserVariableHolders.of(room, roomUnit);
+        if (definition == null || holder == 0) return null;
+        if (!room.getUserVariableManager().hasVariable(holder, this.variableItemId)) return null;
 
         return new MetricSnapshot(
                 roomUnit.getId(),
-                definition.hasValue()
-                        ? room.getUserVariableManager()
-                                .getCurrentValue(habbo.getHabboInfo().getId(), this.variableItemId)
-                        : 0,
-                room.getUserVariableManager().getCreatedAt(habbo.getHabboInfo().getId(), this.variableItemId),
-                room.getUserVariableManager().getUpdatedAt(habbo.getHabboInfo().getId(), this.variableItemId));
+                definition.hasValue() ? room.getUserVariableManager().getCurrentValue(holder, this.variableItemId) : 0,
+                room.getUserVariableManager().getCreatedAt(holder, this.variableItemId),
+                room.getUserVariableManager().getUpdatedAt(holder, this.variableItemId));
     }
 
     private MetricSnapshot resolveFurniMetric(Room room, HabboItem item) {

@@ -322,11 +322,17 @@ Value-or-variable settings:
 | `wired.gravity.retry_delay_ms` | Gravity retry delay (default `50`) |
 | `wired.opacity.max_states_per_room` | Max furni opacity states per room |
 | `wired.opacity.max_updates_per_packet` | Max opacity updates per packet |
-| `wired.api.enabled` | Enable the wired HTTP API boxes (default off) |
-| `wired.api.max_payload_bytes` | Max wired API payload size |
-| `wired.api.rate_limit.enabled` | Rate limit the wired API (default on) |
-| `wired.api.rate_limit.limit_for_period` | Wired API calls per period (default `60`) |
-| `wired.api.rate_limit.refresh_period_ms` | Wired API rate-limit period (default `1000`) |
+| `wired.api.enabled` | Serve the Variables Web API under `/api/public` (default off; every path answers 404 while off) |
+| `wired.api.max_payload_bytes` | Largest request body in bytes (default `16384`) |
+| `wired.api.rate_limit.enabled` | Rate limit the Variables Web API (default on) |
+| `wired.api.rate_limit.per_ip` / `.per_ip.window_ms` | Requests per client address before authentication (default `120` per `10000` ms) |
+| `wired.api.rate_limit.per_key` / `.per_key.window_ms` | Requests per key (default `60` per `10000` ms) |
+| `wired.api.rate_limit.room_writes` / `.room_writes.window_ms` | Variable writes per room across all keys (default `200` per `10000` ms) |
+| `wired.api.auth_fail.max` / `.window_ms` / `.block_ms` | Failed authentications per address before a block, and the block length (default `10` per `60000` ms, blocked `300000` ms) |
+| `wired.api.batch.max` | Operations per batch and variables per profile update (default `100`) |
+| `wired.api.bulk_delete.max` | Names per bulk delete (default `20`) |
+| `wired.api.page_size.max` | Largest holder page (default `100`) |
+| `wired.api.cors.origins` | Browser origins allowed to call the API, comma separated (default `*`; auth is header-only) |
 | `hotel.wired.achievements.enabled` | Let `wf_act_progress_achievement` progress achievements (default off) |
 | `hotel.wired.achievements.allowed` | Achievement names wired may progress, comma separated (default empty: none) |
 | `hotel.wired.achievements.max_per_window` | Progress one user may get per achievement per window, across all rooms (default `50`) |
@@ -2750,10 +2756,9 @@ Conventions used in the entries below:
 ### `wf_xtra_var_web_api`
 
 - **Class:** `WiredExtraVariableWebApi`
-- **Behavior:** exposes one variable over HTTP. `GET /api/wired/variable?key=<read key>` returns the value. `POST /api/wired/variable {"key": <write key>, "value": <int>}` sets it when writing is enabled. The server creates the keys (24 random bytes each); the client cannot choose them.
-- **Main settings:** int params `[writeEnabled, rotateKeys]`. `1` in the second param creates a fresh read/write pair. The string param is the variable id as a plain number, before any tab.
-- **Notes:** the API is off unless `wired.api.enabled` is set, and is rate-limited (`wired.api.rate_limit.*`). Picking the box up revokes its keys. On save, the id must resolve to a `wf_var_context` definition with a value, but the HTTP handler reads and writes the id through the room variable manager, so the two do not match in the current code.
-
+- **Behavior:** the Variables Web API add-on (code 128). It holds a read key and a write key for the room's HTTP API (`/api/public/rooms/{roomId}/...`, contract in `docs/wired/web-api.md`, OpenAPI at `GET /api/public/api-docs`). The API reads and writes the room's permanent custom user, furni and global variables through the same code as the `:wired` creator tools, with change origin "Variable Web API".
+- **Main settings:** string param `readKey \t writeKey`, int params `[bulkDelete]`. The owner asks for a key with packet 2819 (`int itemId, boolean isReadKey`); the server mints 32 random bytes (base64url, 43 chars), stores it at once and answers with packet 59 to the owner only. On save a key is kept when sent back and cleared when sent empty; anything else is ignored. Bulk delete needs a write key. Saves by anyone but the owner change nothing.
+- **Notes:** only the box owner sees the keys; everyone else, staff included, gets empty keys, and keys appear in no other packet (debug packet logging prints no body for them). Keys are compared as SHA-256 hashes and never logged. A key only opens the room its box stands in, and only while that room belongs to the box owner. One generate request per box per 2 s. Picking the box up clears both keys and the permission. Stored keys are bound to the item id, so rows copied by room bundles, templates or the marketplace load without keys. Rows saved by the first design (`variableToken`, `writeEnabled`) load without keys; the owner generates new ones. The box cannot be traded, sold, gifted, recycled, put in a chest or wired trade, or given by gift commands; a user owns at most one (catalog purchases and housekeeping grants that would break this are refused) and a room holds at most one. Room bundles and room templates leave it out.
 ### `wf_xtra_rotate_to_dir`
 
 - **Class:** `WiredExtraProjectile`

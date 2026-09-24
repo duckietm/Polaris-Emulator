@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.catalog.CatalogPage;
 import com.eu.habbo.habbohotel.catalog.CatalogPageType;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership;
 import com.eu.habbo.habbohotel.rooms.BuildersClubRoomSupport;
 import com.eu.habbo.habbohotel.rooms.FurnitureMovementError;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -14,7 +15,6 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
-
 import java.util.Iterator;
 
 public class BuildersClubPlaceRoomItemEvent extends MessageHandler {
@@ -31,32 +31,38 @@ public class BuildersClubPlaceRoomItemEvent extends MessageHandler {
         int placementUserId = BuildersClubRoomSupport.getPlacementPoolUserId(this.client.getHabbo());
 
         if (room == null || !this.client.getHabbo().getRoomUnit().isInRoom()) {
-            this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.NO_RIGHTS.errorCode));
+            this.client.sendResponse(new BubbleAlertComposer(
+                    BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.NO_RIGHTS.errorCode));
             return;
         }
 
         if (!BuildersClubRoomSupport.canPlaceInCurrentRoom(this.client.getHabbo())) {
-            this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, "builder.placement_widget.error.not_group_admin"));
+            this.client.sendResponse(new BubbleAlertComposer(
+                    BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, "builder.placement_widget.error.not_group_admin"));
             BuildersClubRoomSupport.sendPlacementStatus(this.client.getHabbo());
             return;
         }
 
         if (placementUserId <= 0) {
-            this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.NO_RIGHTS.errorCode));
+            this.client.sendResponse(new BubbleAlertComposer(
+                    BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.NO_RIGHTS.errorCode));
             return;
         }
 
-        if (!BuildersClubRoomSupport.hasActiveMembership(this.client.getHabbo().getHabboInfo().getId())) {
+        if (!BuildersClubRoomSupport.hasActiveMembership(
+                this.client.getHabbo().getHabboInfo().getId())) {
             int trackedFurniCount = BuildersClubRoomSupport.getTrackedFurniCount(placementUserId);
 
             if (trackedFurniCount >= BuildersClubRoomSupport.getFurniLimit(placementUserId)) {
-                this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, "room.error.max_furniture"));
+                this.client.sendResponse(new BubbleAlertComposer(
+                        BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, "room.error.max_furniture"));
                 BuildersClubRoomSupport.sendPlacementStatus(this.client.getHabbo());
                 return;
             }
 
             if (BuildersClubRoomSupport.hasPlacementVisitors(room, this.client.getHabbo())) {
-                this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, "builder.placement_widget.error.visitors"));
+                this.client.sendResponse(new BubbleAlertComposer(
+                        BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, "builder.placement_widget.error.visitors"));
                 return;
             }
         }
@@ -64,22 +70,32 @@ public class BuildersClubPlaceRoomItemEvent extends MessageHandler {
         CatalogItem catalogItem = resolveCatalogItem(pageId, offerId);
         Item baseItem = resolveBaseItem(catalogItem, FurnitureType.FLOOR);
 
-        if (catalogItem == null || baseItem == null) {
-            this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.INVALID_MOVE.errorCode));
+        if (catalogItem == null || baseItem == null || WiredWebApiOwnership.isWebApiItem(baseItem)) {
+            this.client.sendResponse(new BubbleAlertComposer(
+                    BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.INVALID_MOVE.errorCode));
             return;
         }
 
         RoomTile tile = room.getLayout().getTile(x, y);
 
         if (tile == null) {
-            this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.INVALID_MOVE.errorCode));
+            this.client.sendResponse(new BubbleAlertComposer(
+                    BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.INVALID_MOVE.errorCode));
             return;
         }
 
-        HabboItem item = Emulator.getGameEnvironment().getItemManager().createItem(placementUserId, baseItem, 0, 0, (extraData != null && !extraData.isEmpty()) ? extraData : catalogItem.getExtradata());
+        HabboItem item = Emulator.getGameEnvironment()
+                .getItemManager()
+                .createItem(
+                        placementUserId,
+                        baseItem,
+                        0,
+                        0,
+                        (extraData != null && !extraData.isEmpty()) ? extraData : catalogItem.getExtradata());
 
         if (item == null) {
-            this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.INVALID_MOVE.errorCode));
+            this.client.sendResponse(new BubbleAlertComposer(
+                    BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.INVALID_MOVE.errorCode));
             return;
         }
 
@@ -89,7 +105,8 @@ public class BuildersClubPlaceRoomItemEvent extends MessageHandler {
 
         if (!error.equals(FurnitureMovementError.NONE)) {
             Emulator.getGameEnvironment().getItemManager().deleteItem(item);
-            this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, error.errorCode));
+            this.client.sendResponse(
+                    new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, error.errorCode));
             return;
         }
 
@@ -97,7 +114,8 @@ public class BuildersClubPlaceRoomItemEvent extends MessageHandler {
 
         if (!error.equals(FurnitureMovementError.NONE)) {
             Emulator.getGameEnvironment().getItemManager().deleteItem(item);
-            this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, error.errorCode));
+            this.client.sendResponse(
+                    new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, error.errorCode));
             return;
         }
 
@@ -111,19 +129,22 @@ public class BuildersClubPlaceRoomItemEvent extends MessageHandler {
     }
 
     private CatalogItem resolveCatalogItem(int pageId, int offerId) {
-        CatalogItem buildersClubItem = Emulator.getGameEnvironment().getCatalogManager().getCatalogItem(offerId, CatalogPageType.BUILDER);
+        CatalogItem buildersClubItem =
+                Emulator.getGameEnvironment().getCatalogManager().getCatalogItem(offerId, CatalogPageType.BUILDER);
 
         if (buildersClubItem != null) {
             return buildersClubItem;
         }
 
-        int catalogItemId = Emulator.getGameEnvironment().getCatalogManager().offerDefs.get(offerId);
+        int catalogItemId =
+                Emulator.getGameEnvironment().getCatalogManager().offerDefs.get(offerId);
 
         if (catalogItemId > 0) {
             return Emulator.getGameEnvironment().getCatalogManager().getCatalogItem(catalogItemId);
         }
 
-        CatalogPage page = Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(pageId, CatalogPageType.BUILDER);
+        CatalogPage page =
+                Emulator.getGameEnvironment().getCatalogManager().getCatalogPage(pageId, CatalogPageType.BUILDER);
 
         if (page == null) {
             return null;
@@ -139,7 +160,9 @@ public class BuildersClubPlaceRoomItemEvent extends MessageHandler {
     }
 
     private Item resolveBaseItem(CatalogItem catalogItem, FurnitureType expectedType) {
-        if (catalogItem == null || catalogItem.getAmount() != 1 || catalogItem.getBaseItems().size() != 1) {
+        if (catalogItem == null
+                || catalogItem.getAmount() != 1
+                || catalogItem.getBaseItems().size() != 1) {
             return null;
         }
 

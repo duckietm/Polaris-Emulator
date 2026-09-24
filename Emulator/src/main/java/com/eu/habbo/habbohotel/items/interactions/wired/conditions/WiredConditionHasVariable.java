@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.UserVariableHolders;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
@@ -373,11 +374,9 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
         }
 
         if (isCustomVariableToken(this.variableToken)) {
-            Habbo habbo = room.getHabbo(roomUnit);
+            int holder = UserVariableHolders.of(room, roomUnit);
 
-            return habbo != null
-                    && room.getUserVariableManager()
-                            .hasVariable(habbo.getHabboInfo().getId(), this.variableItemId);
+            return holder != 0 && room.getUserVariableManager().hasVariable(holder, this.variableItemId);
         }
 
         if (isInternalVariableToken(this.variableToken)) {

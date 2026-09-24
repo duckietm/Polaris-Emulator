@@ -33,6 +33,7 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
     private static final String ENABLED_CONFIG = "nitro.secure.api.enabled";
     private static final String MAX_PAYLOAD_CONFIG = "nitro.secure.api.max_payload_bytes";
     private static final String API_PREFIX = "/api/";
+    private static final String PUBLIC_API_PREFIX = "/api/public/";
     private static final int DEFAULT_MAX_PAYLOAD_BYTES = 64 * 1024;
     private static final AttributeKey<Deque<SecureApiContext>> SECURE_CONTEXTS =
             AttributeKey.valueOf("nitroSecureApiContexts");
@@ -54,7 +55,7 @@ public class NitroSecureApiHandler extends ChannelDuplexHandler {
             return;
         }
 
-        if (!path.startsWith(API_PREFIX)) {
+        if (!path.startsWith(API_PREFIX) || path.startsWith(PUBLIC_API_PREFIX)) {
             super.channelRead(ctx, msg);
             return;
         }

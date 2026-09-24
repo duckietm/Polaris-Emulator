@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
 import com.eu.habbo.habbohotel.items.interactions.InteractionPostIt;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -30,7 +31,8 @@ public class RoomPickupChooserEvent extends MessageHandler {
                     room.pickUpItem(item, this.client.getHabbo());
                 } else {
                     if (room.hasRights(this.client.getHabbo())) {
-                        if (this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)) {
+                        if (this.client.getHabbo().hasPermission(Permission.ACC_ANYROOMOWNER)
+                                && !WiredWebApiOwnership.isWebApiItem(item)) {
                             item.setUserId(this.client.getHabbo().getHabboInfo().getId());
                         } else if (this.client.getHabbo().getHabboInfo().getId() != room.getOwnerId()
                                 && item.getUserId() == room.getOwnerId()) {

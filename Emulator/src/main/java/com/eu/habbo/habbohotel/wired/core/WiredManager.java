@@ -644,8 +644,7 @@ public final class WiredManager {
             return false;
         }
 
-        Habbo habbo = room.getHabbo(userId);
-        RoomUnit roomUnit = (habbo != null) ? habbo.getRoomUnit() : null;
+        RoomUnit roomUnit = com.eu.habbo.habbohotel.rooms.UserVariableHolders.unitOf(room, userId);
         WiredEvent event = WiredEvents.userVariableChanged(
                 room, roomUnit, definitionItemId, created, deleted, changeKind, previousValue, currentValue);
         return handleEvent(event);

@@ -107,7 +107,6 @@ public class FurniEditorUpdatePayload {
             case "customparams" -> boundedString(primitive, 0, 256);
             case "multiheight" -> boundedString(primitive, 0, 50);
             case "effect_id_male", "effect_id_female", "sprite_id" -> boundedInt(primitive, 0, Integer.MAX_VALUE);
-            case "description" -> boundedString(primitive, 0, 500);
             default -> null;
         };
     }

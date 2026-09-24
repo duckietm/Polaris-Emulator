@@ -62,6 +62,18 @@ class FurniEditorUpdatePayloadTest {
     }
 
     @Test
+    void neverWritesADescriptionIntoItemsBase() {
+        FurniEditorUpdatePayload payload = FurniEditorUpdatePayload.validate(
+                JsonParser.parseString("{\"description\":\"Royal seat\",\"width\":2}")
+                        .getAsJsonObject(),
+                ANY_INTERACTION);
+
+        assertTrue(payload.valid());
+        assertEquals("`width` = ?", payload.setClauses);
+        assertEquals(1, payload.values.size());
+    }
+
+    @Test
     void rejectsAnInteractionTypeNoClassIsRegisteredFor() {
         FurniEditorUpdatePayload payload = FurniEditorUpdatePayload.validate(
                 JsonParser.parseString("{\"interactionType\":\"wf_trg_typo\"}").getAsJsonObject(), REGISTERED);

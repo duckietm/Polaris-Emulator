@@ -1,10 +1,12 @@
 package com.eu.habbo.habbohotel.rooms;
 
+import com.eu.habbo.threading.ThreadPooling;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 final class RoomPersistence {
 
@@ -28,9 +30,36 @@ final class RoomPersistence {
             + "idle_sleep_timeout_seconds = ?, idle_autokick_enabled = ?, "
             + "idle_autokick_timeout_seconds = ? WHERE id = ?";
     private final RoomDependencies.ConnectionProvider database;
+    private final AtomicBoolean savePending = new AtomicBoolean();
 
     RoomPersistence(RoomDependencies.ConnectionProvider database) {
         this.database = Objects.requireNonNull(database, "database");
+    }
+
+    /**
+     * Runs the room's save on the persistence executor, so a slow database does not stall the room
+     * cycle. At most one save waits at a time; a rejected task saves right away.
+     */
+    void saveLater(ThreadPooling threading, Runnable save) {
+        if (threading == null) {
+            save.run();
+            return;
+        }
+        if (!this.savePending.compareAndSet(false, true)) {
+            return;
+        }
+        try {
+            threading.runPersistence(() -> {
+                try {
+                    save.run();
+                } finally {
+                    this.savePending.set(false);
+                }
+            });
+        } catch (RuntimeException rejected) {
+            this.savePending.set(false);
+            save.run();
+        }
     }
 
     void save(State state) throws SQLException {

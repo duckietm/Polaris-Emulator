@@ -694,6 +694,8 @@ Generic room chat and promotion behaviour.
 | `room.chat.delay` | `0` | `boolean` | Extra room chat delay applied before users can speak again. |
 | `room.chat.mutearea.allow_whisper` | `1` | `boolean` | Allow whispering while a user stands inside a mute area. |
 | `room.chat.prefix.format` | `[<font color=\"%color%\">%prefix%</font>] ` | `string` | HTML or text format used for room chat prefixes. |
+| `room.cycle.slow_ms` | `250` | `integer` | A room cycle slower than this many milliseconds is logged as a warning (at most once per 30 s per room). |
+| `room.cycle.workers` | `0` | `integer` | Worker threads for room cycles; each room always runs on the same worker, so one lagging room only holds up the rooms on its worker. `0` = one per processor (2 to 16). Needs a restart. |
 | `room.promotion.badge` | `RADZZ` | `string` | Badge code displayed on promoted rooms. |
 
 ## `rosie`

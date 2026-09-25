@@ -771,7 +771,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
                 }
             }
 
-            this.save();
+            if (this.needsUpdate) this.persistence.saveLater(this.threading(), this::save);
         }
     }
 

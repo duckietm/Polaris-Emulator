@@ -7867,6 +7867,7 @@ METHOD public static com.eu.habbo.habbohotel.wired.migrate.WiredEvents#userWalks
 TYPE public final com.eu.habbo.habbohotel.wired.tick.WiredTickService extends java.lang.Object
 FIELD public static final com.eu.habbo.habbohotel.wired.tick.WiredTickService#DEFAULT_TICK_INTERVAL_MS:int
 FIELD public static final com.eu.habbo.habbohotel.wired.tick.WiredTickService#DEFAULT_WORKER_COUNT:int
+FIELD public static final com.eu.habbo.habbohotel.wired.tick.WiredTickService#MAX_PENDING_ROOM_TASKS:int
 FIELD public static final com.eu.habbo.habbohotel.wired.tick.WiredTickService#MAX_TICK_INTERVAL_MS:int
 FIELD public static final com.eu.habbo.habbohotel.wired.tick.WiredTickService#MAX_WORKER_COUNT:int
 FIELD public static final com.eu.habbo.habbohotel.wired.tick.WiredTickService#MIN_TICK_INTERVAL_MS:int
@@ -7874,6 +7875,7 @@ FIELD public static final com.eu.habbo.habbohotel.wired.tick.WiredTickService#MI
 FIELD public static final com.eu.habbo.habbohotel.wired.tick.WiredTickService#SLOW_ROOM_THRESHOLD_MS:long
 FIELD public static final com.eu.habbo.habbohotel.wired.tick.WiredTickService#SLOW_SHARD_THRESHOLD_MS:long
 FIELD public static final com.eu.habbo.habbohotel.wired.tick.WiredTickService#SLOW_TICKABLE_THRESHOLD_MS:long
+METHOD public com.eu.habbo.habbohotel.wired.tick.WiredTickService#executeForRoom(int,java.lang.Runnable):boolean throws -
 METHOD public com.eu.habbo.habbohotel.wired.tick.WiredTickService#getActiveRoomCount(-):int throws -
 METHOD public static com.eu.habbo.habbohotel.wired.tick.WiredTickService#getInstance(-):com.eu.habbo.habbohotel.wired.tick.WiredTickService throws -
 METHOD public com.eu.habbo.habbohotel.wired.tick.WiredTickService#getTickCount(-):long throws -
@@ -7882,6 +7884,7 @@ METHOD public com.eu.habbo.habbohotel.wired.tick.WiredTickService#getTickableCou
 METHOD public com.eu.habbo.habbohotel.wired.tick.WiredTickService#getTotalTickableCount(-):int throws -
 METHOD public com.eu.habbo.habbohotel.wired.tick.WiredTickService#getWorkerCount(-):int throws -
 METHOD public com.eu.habbo.habbohotel.wired.tick.WiredTickService#isDebugEnabled(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.wired.tick.WiredTickService#isOnRoomWorker(int):boolean throws -
 METHOD public com.eu.habbo.habbohotel.wired.tick.WiredTickService#isRunning(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.wired.tick.WiredTickService#register(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.wired.tick.WiredTickable):void throws -
 METHOD public com.eu.habbo.habbohotel.wired.tick.WiredTickService#resetRoomTimers(com.eu.habbo.habbohotel.rooms.Room):void throws -

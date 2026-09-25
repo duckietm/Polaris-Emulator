@@ -6,7 +6,7 @@
 
     <groupId>com.eu.habbo</groupId>
     <artifactId>Polaris</artifactId>
-    <version>4.2.99</version>
+    <version>4.2.95</version>
     <name>Polaris</name>
     <licenses>
         <license>
@@ -18,7 +18,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.build.outputTimestamp>2026-09-24T14:41:54Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2026-09-22T10:42:18Z</project.build.outputTimestamp>
         <maven.compiler.release>25</maven.compiler.release>
         <maven.build.java.version>[25,27)</maven.build.java.version>
 
@@ -41,7 +41,7 @@
         <jakarta-mail.version>2.0.5</jakarta-mail.version>
         <junit.version>6.1.3</junit.version>
         <javaparser.version>3.28.2</javaparser.version>
-        <flyway.version>13.6.0</flyway.version>
+        <flyway.version>13.7.0</flyway.version>
         <testcontainers.version>2.0.5</testcontainers.version>
         <mockito.version>5.23.0</mockito.version>
         <trove4j.reference.version>3.0.3</trove4j.reference.version>

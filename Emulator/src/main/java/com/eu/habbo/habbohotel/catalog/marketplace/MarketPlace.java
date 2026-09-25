@@ -243,68 +243,13 @@ public class MarketPlace {
     public static List<MarketPlaceOffer> getOffers(
             int minPrice, int maxPrice, String search, int sort, boolean combineUniques) {
         List<MarketPlaceOffer> offers = new ArrayList<>(10);
-        String query =
-                "SELECT B.* FROM marketplace_items a INNER JOIN (SELECT b.item_id AS base_item_id, b.limited_data AS ltd_data, marketplace_items.*, AVG(price) as avg, MIN(marketplace_items.price) as minPrice, MAX(marketplace_items.price) as maxPrice, COUNT(*) as number, (SELECT COUNT(*) FROM marketplace_items c INNER JOIN items as items_b ON c.item_id = items_b.id WHERE state = 2 AND items_b.item_id = base_item_id AND DATE(from_unixtime(sold_timestamp)) = CURDATE()) as sold_count_today FROM marketplace_items INNER JOIN items b ON marketplace_items.item_id = b.id INNER JOIN items_base bi ON b.item_id = bi.id INNER JOIN catalog_items ci ON bi.id = ci.item_ids WHERE price = (SELECT MIN(e.price) FROM marketplace_items e, items d WHERE e.item_id = d.id AND d.item_id = b.item_id AND e.state = 1 AND e.timestamp > ? AND e.price BETWEEN ? AND ? GROUP BY d.item_id) AND state = 1 AND timestamp > ? AND marketplace_items.price BETWEEN ? AND ?";
-        if (minPrice > 0) {
-            query += " AND CEIL(price + (price / 100)) >= ?";
-        }
-        if (maxPrice > 0 && maxPrice > minPrice) {
-            query += " AND CEIL(price + (price / 100)) <= ?";
-        }
-        if (!search.isEmpty()) {
-            query += " AND ( bi.public_name LIKE ? OR ci.catalog_name LIKE ? ) ";
-        }
-
-        query += combineUniques ? " GROUP BY base_item_id" : " GROUP BY base_item_id, ltd_data";
-
-        switch (sort) {
-            case 6:
-                query += " ORDER BY number ASC";
-                break;
-            case 5:
-                query += " ORDER BY number DESC";
-                break;
-            case 4:
-                query += " ORDER BY sold_count_today ASC";
-                break;
-            case 3:
-                query += " ORDER BY sold_count_today DESC";
-                break;
-            case 2:
-                query += " ORDER BY minPrice ASC";
-                break;
-            default:
-            case 1:
-                query += " ORDER BY minPrice DESC";
-                break;
-        }
-
-        query += ")";
-
-        query += " AS B ON a.id = B.id";
-
-        query += " LIMIT 250";
+        MarketplaceOffersQuery.Request request =
+                new MarketplaceOffersQuery.Request(minPrice, maxPrice, search, sort, combineUniques);
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement = connection.prepareStatement(query)) {
-            int paramIndex = 1;
-            statement.setInt(paramIndex++, Emulator.getIntUnixTimestamp() - 172800);
-            statement.setInt(paramIndex++, MINIMUM_LISTING_PRICE);
-            statement.setInt(paramIndex++, MAXIMUM_LISTING_PRICE);
-            statement.setInt(paramIndex++, Emulator.getIntUnixTimestamp() - 172800);
-            statement.setInt(paramIndex++, MINIMUM_LISTING_PRICE);
-            statement.setInt(paramIndex++, MAXIMUM_LISTING_PRICE);
-            if (minPrice > 0) {
-                statement.setInt(paramIndex++, minPrice);
-            }
-            if (maxPrice > 0 && maxPrice > minPrice) {
-                statement.setInt(paramIndex++, maxPrice);
-            }
-            if (!search.isEmpty()) {
-                String likeSearch = "%" + com.eu.habbo.util.SqlLikeEscaper.escape(search) + "%";
-                statement.setString(paramIndex++, likeSearch);
-                statement.setString(paramIndex++, likeSearch);
-            }
+                PreparedStatement statement = connection.prepareStatement(MarketplaceOffersQuery.sql(request))) {
+            MarketplaceOffersQuery.bind(
+                    statement, request, Emulator.getIntUnixTimestamp(), MINIMUM_LISTING_PRICE, MAXIMUM_LISTING_PRICE);
 
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {

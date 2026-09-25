@@ -138,9 +138,7 @@ public class UserProfileComposer extends MessageComposer {
         // Presence: 1 online, 0 offline; 2 when the user hides their status and looks at their own
         // profile. Anybody else sees a hidden user as offline, as the boolean above already says.
         this.response.appendInt(this.onlineStatus());
-        UserProfileLevel level = UserProfileLevel.of(
-                achievementScore,
-                Emulator.getConfig().getValue(UserProfileLevel.THRESHOLDS_KEY, UserProfileLevel.DEFAULT_THRESHOLDS));
+        UserProfileLevel level = UserProfileLevel.of(achievementScore, UserProfileLevel.DEFAULT_THRESHOLDS);
         this.response.appendInt(level.level());
         this.response.appendInt(level.nextLevelStart());
 

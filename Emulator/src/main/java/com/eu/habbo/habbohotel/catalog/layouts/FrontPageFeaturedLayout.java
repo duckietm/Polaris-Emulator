@@ -13,6 +13,20 @@ public class FrontPageFeaturedLayout extends CatalogPage {
         super(set);
     }
 
+    /**
+     * Writes the featured-page block that follows the page on the wire. The page composer sends this
+     * block itself; the method stays on the plugin surface and writes the same content.
+     */
+    public void serializeExtra(ServerMessage message) {
+        List<CatalogFeaturedPage> featuredPages =
+                Emulator.getGameEnvironment().getCatalogManager().getCatalogFeaturedPagesSnapshot();
+        message.appendInt(featuredPages.size());
+
+        for (CatalogFeaturedPage page : featuredPages) {
+            page.serialize(message);
+        }
+    }
+
     @Override
     public void serialize(ServerMessage message) {
         message.appendString("frontpage_featured");
@@ -32,46 +46,5 @@ public class FrontPageFeaturedLayout extends CatalogPage {
         message.appendString(super.getTextOne());
         message.appendString(super.getTextDetails());
         message.appendString(super.getTextTeaser());
-    }
-
-    public void serializeExtra(ServerMessage message) {
-
-        List<CatalogFeaturedPage> featuredPages =
-                Emulator.getGameEnvironment().getCatalogManager().getCatalogFeaturedPagesSnapshot();
-        message.appendInt(featuredPages.size());
-
-        for (CatalogFeaturedPage page : featuredPages) {
-            page.serialize(message);
-        }
-        message.appendInt(1); // Position
-        message.appendString("NUOVO: Affare Stanza di Rilassamento");
-        message.appendString("catalogue/feature_cata_vert_oly16bundle4.png");
-        message.appendInt(0); // Type
-        // 0 : String //Page Name
-        // 1 : Int //Page ID
-        // 2 : String //Productdata
-        message.appendString("");
-        message.appendInt(-1);
-
-        message.appendInt(2);
-        message.appendString("Il RITORNO di Habburgers! (TUTTI furni nuovi)");
-        message.appendString("catalogue/feature_cata_hort_habbergerbundle.png");
-        message.appendInt(0);
-        message.appendString("");
-        message.appendInt(-1);
-
-        message.appendInt(3);
-        message.appendString("Habbolympics");
-        message.appendString("catalogue/feature_cata_hort_olympic16.png");
-        message.appendInt(0);
-        message.appendString("");
-        message.appendInt(-1);
-
-        message.appendInt(4);
-        message.appendString("Diventa un Membro HC");
-        message.appendString("catalogue/feature_cata_hort_HC_b.png");
-        message.appendInt(0);
-        message.appendString("habbo_club");
-        message.appendInt(-1);
     }
 }

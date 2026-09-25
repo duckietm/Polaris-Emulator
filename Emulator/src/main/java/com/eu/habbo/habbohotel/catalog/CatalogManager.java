@@ -32,6 +32,7 @@ import com.eu.habbo.habbohotel.catalog.layouts.PetCustomizationLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.Pets2Layout;
 import com.eu.habbo.habbohotel.catalog.layouts.Pets3Layout;
 import com.eu.habbo.habbohotel.catalog.layouts.PetsLayout;
+import com.eu.habbo.habbohotel.catalog.layouts.ProductPage1Layout;
 import com.eu.habbo.habbohotel.catalog.layouts.RecentPurchasesLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.RecyclerInfoLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.RecyclerLayout;
@@ -246,8 +247,11 @@ public class CatalogManager {
                             case custom_prefix:
                                 // Retained in the public enum for plugin ABI compatibility only.
                                 break;
-                            case root:
                             case productpage1:
+                                this.put(layout.name().toLowerCase(), ProductPage1Layout.class);
+                                break;
+                            case plasto:
+                            case root:
                             case collectibles:
                                 this.put(layout.name().toLowerCase(), Default_3x3Layout.class);
                                 break;

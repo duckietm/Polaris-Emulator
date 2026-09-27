@@ -27624,6 +27624,22 @@
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },
     {
+      "name": "HOUSEKEEPING_SAVE_ROOM_SETTINGS",
+      "direction": "client_to_server",
+      "header": 9124,
+      "java": {
+        "symbol": "HousekeepingSaveRoomSettingsEvent",
+        "className": "HousekeepingSaveRoomSettingsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingSaveRoomSettingsEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_SAVE_ROOM_SETTINGS",
+        "className": "HousekeepingSaveRoomSettingsComposer",
+        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingSaveRoomSettingsComposer.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForStmt inside handle; TypeScript analyzer: Outgoing message array _data is mutated with push"
+    },
+    {
       "name": "HOUSEKEEPING_USER_DETAIL",
       "direction": "server_to_client",
       "header": 9200,

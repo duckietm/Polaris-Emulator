@@ -1389,6 +1389,7 @@ U|com/eu/habbo/messages/incoming/housekeeping/HousekeepingMuteRoomEvent.java|CAL
 U|com/eu/habbo/messages/incoming/housekeeping/HousekeepingMuteUserEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/housekeeping/HousekeepingResetUserPasswordEvent.java|CALL|getDatabase|1
 U|com/eu/habbo/messages/incoming/housekeeping/HousekeepingRoomStateEvent.java|CALL|getGameEnvironment|1
+U|com/eu/habbo/messages/incoming/housekeeping/HousekeepingSaveRoomSettingsEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/housekeeping/HousekeepingSearchRoomsEvent.java|CALL|getDatabase|1
 U|com/eu/habbo/messages/incoming/housekeeping/HousekeepingSearchRoomsEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/housekeeping/HousekeepingSendHotelAlertEvent.java|CALL|getGameEnvironment|1
@@ -1761,6 +1762,7 @@ U|com/eu/habbo/messages/outgoing/guilds/forums/GuildForumDataComposer.java|CALL|
 U|com/eu/habbo/messages/outgoing/guilds/forums/GuildForumDataComposer.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/messages/outgoing/hotelview/BonusRareComposer.java|CALL|getConfig|4
 U|com/eu/habbo/messages/outgoing/hotelview/NewsListComposer.java|CALL|getGameEnvironment|1
+U|com/eu/habbo/messages/outgoing/housekeeping/HousekeepingUserDetailComposer.java|CALL|getDatabase|1
 U|com/eu/habbo/messages/outgoing/housekeeping/HousekeepingUserDetailComposer.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/outgoing/inventory/InventoryAchievementsComposer.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/messages/outgoing/inventory/UserEffectsListComposer.java|CALL|getIntUnixTimestamp|1

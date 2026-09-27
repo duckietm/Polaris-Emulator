@@ -116,7 +116,7 @@ public class RoomManager {
                    allow_underpass, mute_all_pets, leave_on_door_tile,
                    idle_sleep_enabled, idle_sleep_timeout_seconds,
                    idle_autokick_enabled, idle_autokick_timeout_seconds,
-                   moodlight_data
+                   moodlight_data, date_created
             FROM rooms
             WHERE is_public = ? OR is_staff_picked = ? ORDER BY id DESC
             """;
@@ -140,7 +140,7 @@ public class RoomManager {
                    allow_underpass, mute_all_pets, leave_on_door_tile,
                    idle_sleep_enabled, idle_sleep_timeout_seconds,
                    idle_autokick_enabled, idle_autokick_timeout_seconds,
-                   moodlight_data
+                   moodlight_data, date_created
             FROM rooms
             WHERE owner_id = ?
             """;

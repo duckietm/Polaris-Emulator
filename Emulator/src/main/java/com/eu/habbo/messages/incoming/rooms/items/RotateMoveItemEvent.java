@@ -30,15 +30,29 @@ public class RotateMoveItemEvent extends MessageHandler {
 
         FurnitureMovementError error = room.canPlaceFurnitureAt(item, this.client.getHabbo(), tile, rotation);
         if (error != FurnitureMovementError.NONE) {
-            this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, error.errorCode));
+            this.client.sendResponse(
+                    new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, error.errorCode));
             this.client.sendResponse(new FloorItemUpdateComposer(item));
             return;
         }
 
+        boolean moved = item.getX() != tile.x || item.getY() != tile.y;
+        boolean rotated = item.getRotation() != rotation;
         error = room.moveFurniTo(item, tile, rotation, this.client.getHabbo());
         if (error != FurnitureMovementError.NONE) {
-            this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, error.errorCode));
+            this.client.sendResponse(
+                    new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, error.errorCode));
             this.client.sendResponse(new FloorItemUpdateComposer(item));
+            return;
+        }
+
+        if (moved) {
+            com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                    this.client.getHabbo(), com.eu.habbo.habbohotel.quests.QuestGoalType.MOVE_FURNI, 1);
+        }
+        if (rotated) {
+            com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                    this.client.getHabbo(), com.eu.habbo.habbohotel.quests.QuestGoalType.ROTATE_FURNI, 1);
         }
     }
 }

@@ -39,6 +39,8 @@ public class TriggerHabbiconEvent extends MessageHandler {
         }
 
         room.sendComposer(new RoomUseHabbiconComposer(habbo.getRoomUnit(), habbiconId).compose());
+        com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                habbo, com.eu.habbo.habbohotel.quests.QuestGoalType.USE_HABBICON, 1);
         this.client.sendResponse(
                 new UserHabbiconsComposer(habbicons.load(habbo.getHabboInfo().getId())));
     }

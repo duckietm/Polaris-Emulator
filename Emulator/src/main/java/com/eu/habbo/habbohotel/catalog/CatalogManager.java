@@ -2104,6 +2104,7 @@ public class CatalogManager {
                 habbo.getClient().sendResponse(new AddHabboItemComposer(unseenItems));
 
                 habbo.getClient().sendResponse(new PurchaseOKComposer(purchasedEvent.catalogItem));
+                progressFurniturePurchase(habbo, purchasedEvent.catalogItem);
                 ChatStyleRepository.grantForPurchase(habbo, purchasedEvent.catalogItem);
                 habbo.getClient().sendResponse(new InventoryRefreshComposer());
 
@@ -2683,6 +2684,17 @@ public class CatalogManager {
         }
     }
 
+    /** Reward-track "buy from catalogue": the purchase delivered at least one floor or wall furni. */
+    private static void progressFurniturePurchase(Habbo habbo, CatalogItem item) {
+        if (item != null
+                && item.getBaseItems().stream()
+                        .anyMatch(base ->
+                                base.getType() == FurnitureType.FLOOR || base.getType() == FurnitureType.WALL)) {
+            com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                    habbo, com.eu.habbo.habbohotel.quests.QuestGoalType.BUY_CATALOG_FURNI, 1);
+        }
+    }
+
     private void publishAtomicFurniturePurchase(Habbo habbo, AtomicFurniturePurchase purchase) {
         this.publishCommittedCharges(habbo, purchase.credits(), purchase.points(), purchase.pointsType());
 
@@ -2711,6 +2723,7 @@ public class CatalogManager {
         }
         habbo.getClient().sendResponse(new AddHabboItemComposer(unseenItems));
         habbo.getClient().sendResponse(new PurchaseOKComposer(purchase.event().catalogItem));
+        progressFurniturePurchase(habbo, purchase.event().catalogItem);
         ChatStyleRepository.grantForPurchase(habbo, purchase.event().catalogItem);
         habbo.getClient().sendResponse(new InventoryRefreshComposer());
     }

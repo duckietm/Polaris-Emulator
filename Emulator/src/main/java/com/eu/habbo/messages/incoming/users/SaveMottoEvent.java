@@ -19,8 +19,13 @@ public class SaveMottoEvent extends MessageHandler {
 
         if (motto.length() > Emulator.getConfig().getInt("motto.max_length", 38)) return;
 
+        boolean changed = !motto.equals(this.client.getHabbo().getHabboInfo().getMotto());
         this.client.getHabbo().getHabboInfo().setMotto(motto);
         this.client.getHabbo().getHabboInfo().run();
+        if (changed) {
+            com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                    this.client.getHabbo(), com.eu.habbo.habbohotel.quests.QuestGoalType.CHANGE_MOTTO, 1);
+        }
 
         if (this.client.getHabbo().getHabboInfo().getCurrentRoom() != null) {
             this.client

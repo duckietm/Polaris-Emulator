@@ -1,11 +1,10 @@
 package com.eu.habbo.messages.incoming.friends;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class FriendBatchGuardContractTest {
     private static String source(String name) throws Exception {
@@ -21,7 +20,8 @@ class FriendBatchGuardContractTest {
         int loop = source.indexOf("for (int i = 0; i < count; i++)", count);
         int delete = source.indexOf("deleteFriendRequests", loop);
 
-        assertTrue(source.contains("MAX_BATCH_SIZE = 100"),
+        assertTrue(
+                source.contains("MAX_BATCH_SIZE = 100"),
                 "Friend request decline batches should have a conservative cap");
         assertTrue(count > -1, "DeclineFriendRequestEvent must read the client supplied count");
         assertTrue(guard > count, "DeclineFriendRequestEvent must validate the count after reading it");
@@ -39,12 +39,12 @@ class FriendBatchGuardContractTest {
         int idGuard = source.indexOf("habboId <= 0", loop);
         int unfriend = source.indexOf("Messenger.unfriend", loop);
 
-        assertTrue(source.contains("MAX_BATCH_SIZE = 100"),
-                "Friend removal batches should have a conservative cap");
+        assertTrue(source.contains("MAX_BATCH_SIZE = 100"), "Friend removal batches should have a conservative cap");
         assertTrue(count > -1, "RemoveFriendEvent must read the client supplied count");
         assertTrue(guard > count, "RemoveFriendEvent must validate the count after reading it");
         assertTrue(guard < loop, "RemoveFriendEvent must validate the count before looping");
-        assertTrue(idGuard > loop && idGuard < unfriend,
+        assertTrue(
+                idGuard > loop && idGuard < unfriend,
                 "RemoveFriendEvent must skip invalid ids before mutating friendships");
     }
 
@@ -59,9 +59,9 @@ class FriendBatchGuardContractTest {
         int loadTarget = source.indexOf("getHabbo(userId)", loop);
 
         assertTrue(count > -1, "AcceptFriendRequestEvent must read the client supplied count");
-        assertTrue(guard > count && guard < loop,
-                "AcceptFriendRequestEvent must validate the count before looping");
-        assertTrue(idGuard > loop && idGuard < loadTarget,
+        assertTrue(guard > count && guard < loop, "AcceptFriendRequestEvent must validate the count before looping");
+        assertTrue(
+                idGuard > loop && idGuard < loadTarget,
                 "AcceptFriendRequestEvent must skip invalid ids before loading targets");
     }
 
@@ -72,19 +72,27 @@ class FriendBatchGuardContractTest {
         String privateMessage = source("FriendPrivateMessageEvent");
         String invite = source("InviteFriendsEvent");
 
-        assertTrue(guard.contains("MAX_USERNAME_LENGTH = 15"),
+        assertTrue(
+                guard.contains("MAX_USERNAME_LENGTH = 15"),
                 "Friend request usernames should keep the Habbo username length bound");
-        assertTrue(guard.contains("MAX_MESSAGE_LENGTH = 255"),
+        assertTrue(
+                guard.contains("MAX_MESSAGE_LENGTH = 255"),
                 "Messenger payloads should keep the client message length bound");
-        assertTrue(request.contains("FriendInputGuard.normalizeUsername"),
+        assertTrue(
+                request.contains("FriendInputGuard.normalizeUsername"),
                 "Friend requests should normalize usernames before lookup");
-        assertTrue(request.contains("FriendInputGuard.isValidUsername"),
+        assertTrue(
+                request.contains("FriendInputGuard.isValidUsername"),
                 "Friend requests should reject empty or oversized usernames before DB lookup");
-        assertTrue(request.contains("Messenger.friendRequested(targetId, this.client.getHabbo().getHabboInfo().getId())"),
+        assertTrue(
+                request.replaceAll("\\s+", "")
+                        .contains("Messenger.friendRequested(targetId,this.client.getHabbo().getHabboInfo().getId())"),
                 "Friend requests should reject duplicate outgoing requests");
-        assertTrue(privateMessage.contains("FriendInputGuard.normalizeMessage"),
+        assertTrue(
+                privateMessage.contains("FriendInputGuard.normalizeMessage"),
                 "Private messages should be normalized and capped before plugin dispatch");
-        assertTrue(invite.contains("FriendInputGuard.normalizeMessage"),
+        assertTrue(
+                invite.contains("FriendInputGuard.normalizeMessage"),
                 "Room invites should be normalized and capped before fan-out");
     }
 
@@ -97,11 +105,14 @@ class FriendBatchGuardContractTest {
         int pluginGuard = source.indexOf("FriendInputGuard.isValidRelation(event.relationShip)", fire);
         int setRelation = source.indexOf("buddy.setRelation(event.relationShip)", pluginGuard);
 
-        assertTrue(source.contains("FriendInputGuard.isValidRelation(relationId)"),
+        assertTrue(
+                source.contains("FriendInputGuard.isValidRelation(relationId)"),
                 "Relationship changes should reject invalid client relation ids");
-        assertTrue(event > -1 && fire > event,
+        assertTrue(
+                event > -1 && fire > event,
                 "Relationship changes should dispatch the plugin event before applying changes");
-        assertTrue(pluginGuard > fire && pluginGuard < setRelation,
+        assertTrue(
+                pluginGuard > fire && pluginGuard < setRelation,
                 "Relationship changes should reject invalid plugin-mutated relation ids");
     }
 }

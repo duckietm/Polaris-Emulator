@@ -11092,9 +11092,15 @@
           "name": "blockFriendRequests"
         },
         {
-          "kind": "scalar",
-          "type": "boolean",
-          "name": "hideProfile"
+          "kind": "optional",
+          "controller": "profileVisible",
+          "fields": [
+            {
+              "kind": "scalar",
+              "type": "boolean",
+              "name": "profileVisible"
+            }
+          ]
         }
       ]
     },

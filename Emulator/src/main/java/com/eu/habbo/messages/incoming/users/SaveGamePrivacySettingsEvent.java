@@ -18,7 +18,8 @@ public class SaveGamePrivacySettingsEvent extends MessageHandler {
 
         // Optional fourth flag, profile visible to others: older clients stop after three.
         if (this.packet.bytesAvailable() > 0) {
-            habbo.getHabboStats().setProfileHidden(!this.packet.readBoolean());
+            boolean profileVisible = this.packet.readBoolean();
+            habbo.getHabboStats().setProfileHidden(!profileVisible);
         }
 
         habbo.getMessenger()

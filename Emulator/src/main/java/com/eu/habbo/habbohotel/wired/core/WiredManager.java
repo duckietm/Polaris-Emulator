@@ -370,19 +370,7 @@ public final class WiredManager {
             }
 
             if (nextDepth == 1) {
-                ArrayDeque<DeferredEffectEvent> deferredEvents = DEFERRED_EFFECT_EVENTS.get();
-
-                while (deferredEvents != null && !deferredEvents.isEmpty()) {
-                    DeferredEffectEvent deferredEvent = deferredEvents.pollFirst();
-
-                    if (deferredEvent == null
-                            || deferredEvent.event == null
-                            || RoomWiredDisableSupport.isWiredDisabled(deferredEvent.event.getRoom())) {
-                        continue;
-                    }
-
-                    handled = engine.handleEvent(deferredEvent.event, deferredEvent.negateConditions) || handled;
-                }
+                handled = drainDeferredEvents() || handled;
             }
 
             return handled;
@@ -393,6 +381,72 @@ public final class WiredManager {
             } else {
                 EVENT_HANDLING_DEPTH.set(previousDepth);
             }
+        }
+    }
+
+    /** Works off the events the handled event queued; signals go to their room's own worker. */
+    private static boolean drainDeferredEvents() {
+        boolean handled = false;
+        ArrayDeque<DeferredEffectEvent> deferredEvents = DEFERRED_EFFECT_EVENTS.get();
+
+        while (deferredEvents != null && !deferredEvents.isEmpty()) {
+            DeferredEffectEvent deferredEvent = deferredEvents.pollFirst();
+
+            if (deferredEvent == null
+                    || deferredEvent.event == null
+                    || RoomWiredDisableSupport.isWiredDisabled(deferredEvent.event.getRoom())) {
+                continue;
+            }
+
+            if (handOffToRoomWorker(deferredEvent)) {
+                handled = true;
+                continue;
+            }
+
+            handled = engine.handleEvent(deferredEvent.event, deferredEvent.negateConditions) || handled;
+        }
+
+        return handled;
+    }
+
+    /**
+     * A signal chain runs on its room's wired worker, like that room's timers, instead of on the
+     * thread that fired it (a packet thread shared with other rooms). A lagging chain then only
+     * holds up the rooms on the same worker. On that worker already, or without a running tick
+     * service, it runs here as before.
+     */
+    private static boolean handOffToRoomWorker(DeferredEffectEvent deferredEvent) {
+        Room room = deferredEvent.event.getRoom();
+        if (deferredEvent.event.getType() != WiredEvent.Type.SIGNAL_RECEIVED || room == null) {
+            return false;
+        }
+
+        WiredTickService workers = WiredTickService.getInstance();
+        if (workers == null || workers.isOnRoomWorker(room.getId())) {
+            return false;
+        }
+
+        return workers.executeForRoom(room.getId(), () -> runOnRoomWorker(deferredEvent));
+    }
+
+    private static void runOnRoomWorker(DeferredEffectEvent deferredEvent) {
+        Room room = deferredEvent.event.getRoom();
+        if (!isEnabled()
+                || engine == null
+                || room == null
+                || !room.isLoaded()
+                || RoomWiredDisableSupport.isWiredDisabled(room)) {
+            return;
+        }
+
+        EVENT_HANDLING_DEPTH.set(1);
+        DEFERRED_EFFECT_EVENTS.set(new ArrayDeque<>());
+        try {
+            engine.handleEvent(deferredEvent.event, deferredEvent.negateConditions);
+            drainDeferredEvents();
+        } finally {
+            EVENT_HANDLING_DEPTH.remove();
+            DEFERRED_EFFECT_EVENTS.remove();
         }
     }
 

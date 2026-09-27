@@ -52,6 +52,11 @@ public class RoomBundleLayout extends SingleBundle {
     }
 
     @Override
+    protected boolean refreshesItemsOnRead() {
+        return true;
+    }
+
+    @Override
     public Int2ObjectMap<CatalogItem> getCatalogItems() {
         if (Emulator.getIntUnixTimestamp() - this.lastUpdate < 120) {
             this.lastUpdate = Emulator.getIntUnixTimestamp();

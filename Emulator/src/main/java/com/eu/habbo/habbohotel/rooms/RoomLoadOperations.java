@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.rooms;
 
+import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.items.interactions.InteractionFireworks;
 import com.eu.habbo.habbohotel.items.interactions.InteractionJukeBox;
@@ -12,6 +13,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -172,12 +174,7 @@ final class RoomLoadOperations implements RoomLoader.Operations {
 
         synchronized (this.room) {
             try {
-                if (this.room.publishLoadTransition(
-                        generation,
-                        () -> this.room
-                                .threading()
-                                .getService()
-                                .scheduleAtFixedRate(this.room, 500, 500, TimeUnit.MILLISECONDS))) {
+                if (this.room.publishLoadTransition(generation, this::scheduleCycle)) {
                     this.room.pluginManager().fireEvent(new RoomLoadedEvent(this.room));
                     return true;
                 }
@@ -187,6 +184,16 @@ final class RoomLoadOperations implements RoomLoader.Operations {
             }
         }
         return false;
+    }
+
+    /** On the room cycle workers; the shared pool only when they are not there (tests, early startup). */
+    private ScheduledFuture<?> scheduleCycle() {
+        GameEnvironment environment = this.room.gameEnvironment();
+        RoomCycleService cycles = environment == null ? null : environment.getRoomCycleService();
+        if (cycles != null) {
+            return cycles.schedule(this.room);
+        }
+        return this.room.threading().getService().scheduleAtFixedRate(this.room, 500, 500, TimeUnit.MILLISECONDS);
     }
 
     /** Pets and bots load before the wired, so their permanent user variables come back here. */

@@ -292,6 +292,28 @@ public abstract class CatalogPage implements Comparable<CatalogPage>, ISerialize
         return this.catalogItems;
     }
 
+    /**
+     * Package-private, non-overridable view of the backing item map for {@link
+     * CatalogReadIndex#build}. Unlike {@link #getCatalogItems()} - which {@code
+     * RoomBundleLayout} overrides to run room-loading DB I/O as a side effect - this is {@code
+     * final}, so a read-index rebuild can walk every page's items without triggering that work
+     * while holding the manager's read-index lock.
+     */
+    final Int2ObjectMap<CatalogItem> catalogItemsView() {
+        return this.catalogItems;
+    }
+
+    /**
+     * Whether {@link #getCatalogItems()} must be called for its side effect before this page's
+     * cached, read-index-backed item list is served. {@code RoomBundleLayout} overrides {@link
+     * #getCatalogItems()} to recompute the bundle contents from the live room and needs that
+     * refresh on every open; a plain page's items only change through explicit mutation plus
+     * {@link CatalogManager#markCatalogChanged()}, so the default is false.
+     */
+    protected boolean refreshesItemsOnRead() {
+        return false;
+    }
+
     public CatalogItem getCatalogItem(int id) {
         return this.catalogItems.get(id);
     }

@@ -34,5 +34,7 @@ public class ReplenishRespectEvent extends MessageHandler {
         }
 
         this.client.sendResponse(new UserDataComposer(habbo));
+        com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                habbo, com.eu.habbo.habbohotel.quests.QuestGoalType.REPLENISH_RESPECT, 1);
     }
 }

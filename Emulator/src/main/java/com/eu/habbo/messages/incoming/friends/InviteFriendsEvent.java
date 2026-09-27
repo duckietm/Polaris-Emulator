@@ -39,6 +39,7 @@ public class InviteFriendsEvent extends MessageHandler {
             // Friends who did not get it: offline, or they have room invites switched off. The
             // sender used to be told nothing at all and had no way of knowing.
             List<MessengerBuddy> missed = new ArrayList<>();
+            boolean delivered = false;
 
             for (int i : userIds) {
                 if (!FriendInputGuard.isPositiveId(i)) continue;
@@ -58,6 +59,12 @@ public class InviteFriendsEvent extends MessageHandler {
                 habbo.getClient()
                         .sendResponse(new RoomInviteComposer(
                                 this.client.getHabbo().getHabboInfo().getId(), message));
+                delivered = true;
+            }
+
+            if (delivered) {
+                com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                        this.client.getHabbo(), com.eu.habbo.habbohotel.quests.QuestGoalType.SEND_MESSENGER_INVITE, 1);
             }
 
             if (!missed.isEmpty()) {

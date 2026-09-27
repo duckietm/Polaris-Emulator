@@ -14,22 +14,18 @@ public class LoveLockStartConfirmEvent extends MessageHandler {
     public void handle() throws Exception {
         int itemId = this.packet.readInt();
 
-        if (!RoomItemInputGuard.isPositiveId(itemId))
-            return;
+        if (!RoomItemInputGuard.isPositiveId(itemId)) return;
 
         boolean confirmed = this.packet.readBoolean();
 
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
-        if (room == null)
-            return;
+        if (room == null) return;
 
         HabboItem item = room.getHabboItem(itemId);
-        if (!(item instanceof InteractionLoveLock loveLock))
-            return;
+        if (!(item instanceof InteractionLoveLock loveLock)) return;
 
         Habbo self = this.client.getHabbo();
-        if (self == null)
-            return;
+        if (self == null) return;
 
         if (!confirmed) {
             loveLock.cancel(self);
@@ -49,12 +45,10 @@ public class LoveLockStartConfirmEvent extends MessageHandler {
             return;
         }
 
-        if (partnerId <= 0)
-            return;
+        if (partnerId <= 0) return;
 
         Habbo partner = room.getHabbo(partnerId);
-        if (partner == null || partner.getClient() == null)
-            return;
+        if (partner == null || partner.getClient() == null) return;
 
         if (loveLock.userOneConfirmed && loveLock.userTwoConfirmed) {
             Habbo userOne = room.getHabbo(loveLock.userOneId);
@@ -63,6 +57,10 @@ public class LoveLockStartConfirmEvent extends MessageHandler {
             if (userOne != null && userTwo != null && loveLock.lock(userOne, userTwo, room)) {
                 userOne.getClient().sendResponse(new LoveLockFurniFinishedComposer(loveLock));
                 userTwo.getClient().sendResponse(new LoveLockFurniFinishedComposer(loveLock));
+                com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                        userOne, com.eu.habbo.habbohotel.quests.QuestGoalType.CLOSE_LOVE_LOCK, 1);
+                com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                        userTwo, com.eu.habbo.habbohotel.quests.QuestGoalType.CLOSE_LOVE_LOCK, 1);
             }
 
             loveLock.resetSession();

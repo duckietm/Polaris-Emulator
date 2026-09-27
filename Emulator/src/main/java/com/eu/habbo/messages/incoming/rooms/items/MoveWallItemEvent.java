@@ -14,27 +14,34 @@ public class MoveWallItemEvent extends MessageHandler {
     public void handle() throws Exception {
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
-        if (room == null)
-            return;
+        if (room == null) return;
 
-        if (!room.hasRights(this.client.getHabbo()) && !this.client.getHabbo().hasPermission(Permission.ACC_PLACEFURNI) && !(room.getGuildId() > 0 && room.getGuildRightLevel(this.client.getHabbo()).isEqualOrGreaterThan(RoomRightLevels.GUILD_RIGHTS))) {
-            this.client.sendResponse(new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.NO_RIGHTS.errorCode));
+        if (!room.hasRights(this.client.getHabbo())
+                && !this.client.getHabbo().hasPermission(Permission.ACC_PLACEFURNI)
+                && !(room.getGuildId() > 0
+                        && room.getGuildRightLevel(this.client.getHabbo())
+                                .isEqualOrGreaterThan(RoomRightLevels.GUILD_RIGHTS))) {
+            this.client.sendResponse(new BubbleAlertComposer(
+                    BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.NO_RIGHTS.errorCode));
             return;
         }
 
         int itemId = this.packet.readInt();
         String wallPosition = this.packet.readString();
 
-        if (!RoomItemInputGuard.isPositiveId(itemId) || !RoomItemInputGuard.isValidWallPosition(wallPosition))
-            return;
+        if (!RoomItemInputGuard.isPositiveId(itemId) || !RoomItemInputGuard.isValidWallPosition(wallPosition)) return;
 
         HabboItem item = room.getHabboItem(itemId);
 
-        if (item == null)
-            return;
+        if (item == null) return;
 
+        boolean moved = !wallPosition.equals(item.getWallPosition());
         item.setWallPosition(wallPosition);
         item.needsUpdate(true);
         room.updateItem(item);
+        if (moved) {
+            com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                    this.client.getHabbo(), com.eu.habbo.habbohotel.quests.QuestGoalType.MOVE_FURNI, 1);
+        }
     }
 }

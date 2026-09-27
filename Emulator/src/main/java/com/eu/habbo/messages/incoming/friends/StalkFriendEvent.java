@@ -44,10 +44,20 @@ public class StalkFriendEvent extends MessageHandler {
             return;
         }
 
-        if (habbo.getHabboInfo().getCurrentRoom() != this.client.getHabbo().getHabboInfo().getCurrentRoom()) {
-            this.client.sendResponse(new ForwardToRoomComposer(habbo.getHabboInfo().getCurrentRoom().getId()));
+        if (habbo.getHabboInfo().getCurrentRoom()
+                != this.client.getHabbo().getHabboInfo().getCurrentRoom()) {
+            this.client.sendResponse(new ForwardToRoomComposer(
+                    habbo.getHabboInfo().getCurrentRoom().getId()));
+            com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                    this.client.getHabbo(), com.eu.habbo.habbohotel.quests.QuestGoalType.FOLLOW_FRIEND, 1);
         } else {
-            this.client.sendResponse(new RoomUserWhisperComposer(new RoomChatMessage(Emulator.getTexts().getValue("stalk.failed.same.room").replace("%user%", habbo.getHabboInfo().getUsername()), this.client.getHabbo(), this.client.getHabbo(), RoomChatMessageBubbles.ALERT)));
+            this.client.sendResponse(new RoomUserWhisperComposer(new RoomChatMessage(
+                    Emulator.getTexts()
+                            .getValue("stalk.failed.same.room")
+                            .replace("%user%", habbo.getHabboInfo().getUsername()),
+                    this.client.getHabbo(),
+                    this.client.getHabbo(),
+                    RoomChatMessageBubbles.ALERT)));
         }
     }
 }

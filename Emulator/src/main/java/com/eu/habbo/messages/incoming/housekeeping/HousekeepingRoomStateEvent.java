@@ -30,29 +30,36 @@ public class HousekeepingRoomStateEvent extends MessageHandler {
         String actionKey = open ? "room.open" : "room.close";
 
         if (roomId <= 0) {
-            this.client.sendResponse(new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.invalid_input"));
+            this.client.sendResponse(
+                    new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.invalid_input"));
             return;
         }
 
         Room room = Emulator.getGameEnvironment().getRoomManager().loadRoom(roomId, false);
 
         if (room == null) {
-            this.client.sendResponse(new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.room_not_found"));
+            this.client.sendResponse(
+                    new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.room_not_found"));
             return;
         }
 
         if (!HousekeepingRoomGuard.canManageRoom(this.client.getHabbo(), room)) {
-            this.client.sendResponse(new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.rank_too_high"));
+            this.client.sendResponse(
+                    new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.rank_too_high"));
             return;
         }
 
         room.setState(open ? RoomState.OPEN : RoomState.LOCKED);
+        // Room.save() only writes a room flagged as changed, and setState does not flag it.
+        room.setNeedsUpdate(true);
         room.save();
 
         com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
                 this.client.getHabbo().getHabboInfo().getId(),
                 this.client.getHabbo().getHabboInfo().getUsername(),
-                actionKey, 0, "roomId=" + roomId + " open=" + open,
+                actionKey,
+                0,
+                "roomId=" + roomId + " open=" + open,
                 this.client.getHabbo().getHabboInfo().getIpLogin());
         this.client.sendResponse(new HousekeepingActionResultComposer(actionKey, true, roomId, ""));
     }

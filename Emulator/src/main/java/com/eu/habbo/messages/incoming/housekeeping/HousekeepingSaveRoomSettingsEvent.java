@@ -2,7 +2,6 @@ package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog;
-import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomManager;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -26,7 +25,7 @@ public class HousekeepingSaveRoomSettingsEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!this.client.getHabbo().hasPermission(Permission.ACC_HOUSEKEEPING)) {
+        if (!HousekeepingAccess.check(this.client)) {
             return;
         }
 
@@ -95,7 +94,9 @@ public class HousekeepingSaveRoomSettingsEvent extends MessageHandler {
                 this.client.getHabbo().getHabboInfo().getId(),
                 this.client.getHabbo().getHabboInfo().getUsername(),
                 ACTION_KEY,
-                0,
+                HousekeepingAuditLog.TARGET_ROOM,
+                roomId,
+                name,
                 "roomId=" + roomId + " name=" + HousekeepingInputGuard.auditValue(name) + " usersMax=" + usersMax
                         + " category=" + categoryId + " tradeMode=" + tradeMode,
                 this.client.getHabbo().getHabboInfo().getIpLogin());

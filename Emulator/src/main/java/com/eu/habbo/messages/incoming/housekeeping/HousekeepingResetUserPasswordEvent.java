@@ -1,12 +1,10 @@
 package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 import com.eu.habbo.networking.gameserver.auth.PasswordHasher;
 import com.eu.habbo.networking.gameserver.auth.RememberJwtService;
-
 import java.security.SecureRandom;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -36,19 +34,21 @@ public class HousekeepingResetUserPasswordEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!this.client.getHabbo().hasPermission(Permission.ACC_HOUSEKEEPING)) {
+        if (!HousekeepingAccess.check(this.client)) {
             return;
         }
 
         int userId = this.packet.readInt();
 
         if (userId <= 0) {
-            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.invalid_input"));
+            this.client.sendResponse(
+                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.invalid_input"));
             return;
         }
 
         if (!HousekeepingTargetRankGuard.canTargetUser(this.client.getHabbo(), userId)) {
-            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
+            this.client.sendResponse(
+                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
             return;
         }
 
@@ -58,25 +58,28 @@ public class HousekeepingResetUserPasswordEvent extends MessageHandler {
         try {
             hash = PasswordHasher.hash(plain, BCRYPT_COST);
         } catch (IllegalArgumentException e) {
-            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.hash_failed"));
+            this.client.sendResponse(
+                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.hash_failed"));
             return;
         }
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "UPDATE users SET password = ?, auth_ticket = '', "
-                             + "access_token_version = access_token_version + 1 WHERE id = ? LIMIT 1")) {
+                PreparedStatement statement =
+                        connection.prepareStatement("UPDATE users SET password = ?, auth_ticket = '', "
+                                + "access_token_version = access_token_version + 1 WHERE id = ? LIMIT 1")) {
             statement.setString(1, hash);
             statement.setInt(2, userId);
             int rows = statement.executeUpdate();
 
             if (rows == 0) {
-                this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.user_not_found"));
+                this.client.sendResponse(new HousekeepingActionResultComposer(
+                        ACTION_KEY, false, 0, "housekeeping.error.user_not_found"));
                 return;
             }
             RememberJwtService.revokeAllForUser(connection, userId);
         } catch (SQLException e) {
-            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.db_failed"));
+            this.client.sendResponse(
+                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.db_failed"));
             return;
         }
 
@@ -86,7 +89,9 @@ public class HousekeepingResetUserPasswordEvent extends MessageHandler {
         com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
                 this.client.getHabbo().getHabboInfo().getId(),
                 this.client.getHabbo().getHabboInfo().getUsername(),
-                ACTION_KEY, userId, "password_reset=1",
+                ACTION_KEY,
+                userId,
+                "password_reset=1",
                 this.client.getHabbo().getHabboInfo().getIpLogin());
         this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, userId, plain));
     }

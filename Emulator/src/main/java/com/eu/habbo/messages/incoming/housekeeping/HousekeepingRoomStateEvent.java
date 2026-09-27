@@ -1,7 +1,6 @@
 package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomState;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -21,7 +20,7 @@ public class HousekeepingRoomStateEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!this.client.getHabbo().hasPermission(Permission.ACC_HOUSEKEEPING)) {
+        if (!HousekeepingAccess.check(this.client)) {
             return;
         }
 
@@ -58,7 +57,9 @@ public class HousekeepingRoomStateEvent extends MessageHandler {
                 this.client.getHabbo().getHabboInfo().getId(),
                 this.client.getHabbo().getHabboInfo().getUsername(),
                 actionKey,
-                0,
+                com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.TARGET_ROOM,
+                roomId,
+                room.getName(),
                 "roomId=" + roomId + " open=" + open,
                 this.client.getHabbo().getHabboInfo().getIpLogin());
         this.client.sendResponse(new HousekeepingActionResultComposer(actionKey, true, roomId, ""));

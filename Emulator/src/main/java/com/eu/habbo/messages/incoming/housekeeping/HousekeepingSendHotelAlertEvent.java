@@ -1,13 +1,11 @@
 package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.StaffAlertWithLinkComposer;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
-
 import java.util.Map;
 
 /**
@@ -27,19 +25,21 @@ public class HousekeepingSendHotelAlertEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!this.client.getHabbo().hasPermission(Permission.ACC_HOUSEKEEPING)) {
+        if (!HousekeepingAccess.check(this.client)) {
             return;
         }
 
         String message = HousekeepingInputGuard.normalize(this.packet.readString());
 
         if (message.isEmpty()) {
-            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.alert_empty"));
+            this.client.sendResponse(
+                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.alert_empty"));
             return;
         }
 
         if (!HousekeepingInputGuard.isWithinLimit(message, HousekeepingInputGuard.MAX_ALERT_LENGTH)) {
-            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.input_too_long"));
+            this.client.sendResponse(
+                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.input_too_long"));
             return;
         }
 
@@ -48,7 +48,10 @@ public class HousekeepingSendHotelAlertEvent extends MessageHandler {
 
         int reached = 0;
 
-        for (Map.Entry<Integer, Habbo> entry : Emulator.getGameEnvironment().getHabboManager().getOnlineHabbos().entrySet()) {
+        for (Map.Entry<Integer, Habbo> entry : Emulator.getGameEnvironment()
+                .getHabboManager()
+                .getOnlineHabbos()
+                .entrySet()) {
             Habbo habbo = entry.getValue();
 
             if (habbo == null || habbo.getClient() == null) continue;
@@ -61,7 +64,11 @@ public class HousekeepingSendHotelAlertEvent extends MessageHandler {
         com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
                 this.client.getHabbo().getHabboInfo().getId(),
                 this.client.getHabbo().getHabboInfo().getUsername(),
-                ACTION_KEY, 0, "reached=" + reached + " message=" + HousekeepingInputGuard.auditValue(message),
+                ACTION_KEY,
+                com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.TARGET_HOTEL,
+                0,
+                "",
+                "reached=" + reached + " message=" + HousekeepingInputGuard.auditValue(message),
                 this.client.getHabbo().getHabboInfo().getIpLogin());
         this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, reached, ""));
     }

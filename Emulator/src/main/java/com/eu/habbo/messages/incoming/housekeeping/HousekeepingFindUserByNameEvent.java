@@ -1,7 +1,6 @@
 package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboManager;
@@ -16,13 +15,14 @@ public class HousekeepingFindUserByNameEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!this.client.getHabbo().hasPermission(Permission.ACC_HOUSEKEEPING)) {
+        if (!HousekeepingAccess.check(this.client)) {
             return;
         }
 
         String username = HousekeepingInputGuard.normalize(this.packet.readString());
 
-        if (username.isEmpty() || !HousekeepingInputGuard.isWithinLimit(username, HousekeepingInputGuard.MAX_LOOKUP_LENGTH)) {
+        if (username.isEmpty()
+                || !HousekeepingInputGuard.isWithinLimit(username, HousekeepingInputGuard.MAX_LOOKUP_LENGTH)) {
             this.client.sendResponse(new HousekeepingUserDetailComposer(null));
             return;
         }

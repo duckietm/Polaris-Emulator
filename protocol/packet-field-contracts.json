@@ -11090,6 +11090,11 @@
           "kind": "scalar",
           "type": "boolean",
           "name": "blockFriendRequests"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "hideProfile"
         }
       ]
     },
@@ -13268,6 +13273,11 @@
         {
           "kind": "scalar",
           "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
           "name": ""
         }
       ]

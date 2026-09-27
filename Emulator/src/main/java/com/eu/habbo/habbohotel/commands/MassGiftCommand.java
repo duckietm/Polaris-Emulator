@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.commands;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -55,6 +56,11 @@ public class MassGiftCommand extends Command {
                                         .getValue("commands.error.cmd_gift.not_found")
                                         .replace("%itemid%", itemId + ""),
                                 RoomChatMessageBubbles.ALERT);
+                return true;
+            }
+
+            if (WiredWebApiOwnership.isWebApiItem(baseItem)) {
+                gameClient.sendResponse(new BubbleAlertComposer(WiredWebApiOwnership.NOT_TRANSFERABLE_KEY));
                 return true;
             }
 

@@ -14,6 +14,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.UserVariableHolders;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -349,10 +350,8 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
         if (room == null || roomUnit == null) return false;
 
         if (isCustomVariableToken(this.variableToken)) {
-            Habbo habbo = room.getHabbo(roomUnit);
-            return habbo != null
-                    && room.getUserVariableManager()
-                            .hasVariable(habbo.getHabboInfo().getId(), this.variableItemId);
+            int holder = UserVariableHolders.of(room, roomUnit);
+            return holder != 0 && room.getUserVariableManager().hasVariable(holder, this.variableItemId);
         }
 
         return isInternalVariableToken(this.variableToken)
@@ -412,12 +411,11 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
         for (RoomUnit roomUnit : WiredSourceUtil.resolveUsers(ctx, this.referenceUserSource)) {
             if (roomUnit == null) continue;
 
-            Habbo habbo = room.getHabbo(roomUnit);
-            if (habbo != null)
+            int holder = UserVariableHolders.of(room, roomUnit);
+            if (holder != 0)
                 snapshot.add(
                         roomUnit.getId(),
-                        room.getUserVariableManager()
-                                .getCurrentValue(habbo.getHabboInfo().getId(), this.referenceVariableItemId));
+                        room.getUserVariableManager().getCurrentValue(holder, this.referenceVariableItemId));
         }
 
         return snapshot.isEmpty() ? null : snapshot;
@@ -594,11 +592,8 @@ public abstract class WiredEffectVariableSelectorBase extends InteractionWiredEf
         WiredVariableDefinitionInfo definition = room.getUserVariableManager().getDefinitionInfo(this.variableItemId);
         if (definition == null || !definition.hasValue()) return null;
 
-        Habbo habbo = room.getHabbo(roomUnit);
-        return (habbo != null)
-                ? room.getUserVariableManager()
-                        .getCurrentValue(habbo.getHabboInfo().getId(), this.variableItemId)
-                : null;
+        int holder = UserVariableHolders.of(room, roomUnit);
+        return (holder != 0) ? room.getUserVariableManager().getCurrentValue(holder, this.variableItemId) : null;
     }
 
     private Integer readFurniValue(Room room, HabboItem item) {

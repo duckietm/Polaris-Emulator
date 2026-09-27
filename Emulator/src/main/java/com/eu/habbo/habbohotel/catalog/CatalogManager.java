@@ -32,6 +32,7 @@ import com.eu.habbo.habbohotel.catalog.layouts.PetCustomizationLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.Pets2Layout;
 import com.eu.habbo.habbohotel.catalog.layouts.Pets3Layout;
 import com.eu.habbo.habbohotel.catalog.layouts.PetsLayout;
+import com.eu.habbo.habbohotel.catalog.layouts.ProductPage1Layout;
 import com.eu.habbo.habbohotel.catalog.layouts.RecentPurchasesLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.RecyclerInfoLayout;
 import com.eu.habbo.habbohotel.catalog.layouts.RecyclerLayout;
@@ -58,6 +59,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionHopper;
 import com.eu.habbo.habbohotel.items.interactions.InteractionMusicDisc;
 import com.eu.habbo.habbohotel.items.interactions.InteractionTeleport;
 import com.eu.habbo.habbohotel.items.interactions.InteractionTrophy;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership;
 import com.eu.habbo.habbohotel.items.rentable.RentableFurniture;
 import com.eu.habbo.habbohotel.items.rentable.RentableFurnitureManager;
 import com.eu.habbo.habbohotel.modtool.ScripterManager;
@@ -106,8 +108,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Comparator;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -116,6 +118,7 @@ import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -245,8 +248,11 @@ public class CatalogManager {
                             case custom_prefix:
                                 // Retained in the public enum for plugin ABI compatibility only.
                                 break;
-                            case root:
                             case productpage1:
+                                this.put(layout.name().toLowerCase(), ProductPage1Layout.class);
+                                break;
+                            case plasto:
+                            case root:
                             case collectibles:
                                 this.put(layout.name().toLowerCase(), Default_3x3Layout.class);
                                 break;
@@ -300,6 +306,9 @@ public class CatalogManager {
     private final List<Voucher> vouchers;
     public final Int2ObjectMap<int[]> furnitureValues;
     private volatile byte[] rareValuesPayloadCache;
+    private final AtomicLong catalogVersion = new AtomicLong();
+    private volatile CatalogReadIndex readIndex;
+    private final Object readIndexLock = new Object();
 
     public CatalogManager() {
         this(true);
@@ -349,6 +358,62 @@ public class CatalogManager {
         this.loadRecycler();
         this.loadGiftWrappers();
         this.loadFurnitureValues();
+        this.markCatalogChanged();
+    }
+
+    /** Monotonic counter of catalog mutations; the read index is rebuilt when it moves. */
+    public long catalogVersion() {
+        return this.catalogVersion.get();
+    }
+
+    /**
+     * Signals that a catalog collection was mutated in place. Reloads and the admin studio call
+     * this; a plugin that edits catalogPages or a page's items directly must call it too, or
+     * lookups keep serving the previous snapshot.
+     */
+    public void markCatalogChanged() {
+        this.catalogVersion.incrementAndGet();
+    }
+
+    CatalogReadIndex readIndex() {
+        CatalogReadIndex current = this.readIndex;
+        long version = this.catalogVersion.get();
+        if (isCurrent(current, version)) return current;
+
+        synchronized (this.readIndexLock) {
+            current = this.readIndex;
+            version = this.catalogVersion.get();
+            if (isCurrent(current, version)) return current;
+
+            // CatalogPage.getChildPages() is a plain HashMap, mutated without a monitor by
+            // CatalogAdminCacheSync.reparentPage/detachDeletedPage. A build that races one of
+            // those admin edits can throw ConcurrentModificationException while iterating and
+            // sorting a page's children. Retry a few times against the latest version instead of
+            // surfacing a transient admin-edit race to whichever reader happened to trigger the
+            // rebuild; if it keeps failing, something is genuinely wrong and the last exception
+            // is rethrown.
+            ConcurrentModificationException lastFailure = null;
+            for (int attempt = 0; attempt < 3; attempt++) {
+                version = this.catalogVersion.get();
+                try {
+                    CatalogReadIndex built = CatalogReadIndex.build(this, version);
+                    this.readIndex = built;
+                    return built;
+                } catch (ConcurrentModificationException e) {
+                    lastFailure = e;
+                }
+            }
+            throw lastFailure;
+        }
+    }
+
+    private static boolean isCurrent(CatalogReadIndex index, long version) {
+        return index != null && index.version() == version && index.sortUsingOrderNum() == SORT_USING_ORDERNUM;
+    }
+
+    /** Package-private accessor for {@link CatalogReadIndex#build} to iterate the live vouchers. */
+    List<Voucher> vouchersView() {
+        return this.vouchers;
     }
 
     private synchronized void loadFurnitureValues() {
@@ -826,26 +891,11 @@ public class CatalogManager {
     }
 
     public ClothItem getClothing(String name) {
-        synchronized (this.clothing) {
-            for (ClothItem item : this.clothing.values()) {
-                if (item.name.equalsIgnoreCase(name)) {
-                    return item;
-                }
-            }
-        }
-
-        return null;
+        return this.readIndex().clothing(name);
     }
 
     public Voucher getVoucher(String code) {
-        synchronized (this.vouchers) {
-            for (Voucher voucher : this.vouchers) {
-                if (voucher.code.equals(code)) {
-                    return voucher;
-                }
-            }
-        }
-        return null;
+        return this.readIndex().voucher(code);
     }
 
     public void redeemVoucher(GameClient client, String voucherCode) {
@@ -902,9 +952,7 @@ public class CatalogManager {
                 PreparedStatement statement = connection.prepareStatement("DELETE FROM vouchers WHERE code = ?")) {
             statement.setString(1, voucher.code);
 
-            synchronized (this.vouchers) {
-                this.vouchers.remove(voucher);
-            }
+            this.forgetVoucher(voucher);
 
             return statement.executeUpdate() >= 1;
         } catch (SQLException e) {
@@ -912,6 +960,19 @@ public class CatalogManager {
         }
 
         return false;
+    }
+
+    /**
+     * Removes {@code voucher} from the live list and bumps the catalog version, without touching
+     * the database. Split out of {@link #deleteVoucher} so the in-memory half - the part that was
+     * missing the {@link #markCatalogChanged()} call and left the read index serving a deleted
+     * voucher - can be exercised without a live connection.
+     */
+    void forgetVoucher(Voucher voucher) {
+        synchronized (this.vouchers) {
+            this.vouchers.remove(voucher);
+        }
+        this.markCatalogChanged();
     }
 
     public CatalogPage getCatalogPage(int pageId) {
@@ -923,23 +984,11 @@ public class CatalogManager {
     }
 
     public CatalogPage getCatalogPage(String captionSafe) {
-        return this.catalogPages.values().stream()
-                .filter(p ->
-                        p != null && p.getPageName() != null && p.getPageName().equalsIgnoreCase(captionSafe))
-                .findAny()
-                .orElse(null);
+        return this.readIndex().pageByCaption(captionSafe);
     }
 
     public CatalogPage getCatalogPageByLayout(String layoutName) {
-        return this.catalogPages.values().stream()
-                .filter(p -> p != null
-                        && p.isVisible()
-                        && p.isEnabled()
-                        && p.getRank() < 2
-                        && p.getLayout() != null
-                        && p.getLayout().equalsIgnoreCase(layoutName))
-                .findAny()
-                .orElse(null);
+        return this.readIndex().pageByLayout(layoutName);
     }
 
     public CatalogItem getCatalogItem(int id) {
@@ -947,19 +996,8 @@ public class CatalogManager {
     }
 
     public CatalogItem getCatalogItem(int id, CatalogPageType pageType) {
-        final CatalogItem[] item = {null};
-        final Int2ObjectMap<CatalogPage> pagesMap = this.getCatalogPagesMap(pageType);
-
-        synchronized (pagesMap) {
-            for (CatalogPage object : pagesMap.values()) {
-                item[0] = object.getCatalogItem(id);
-                if (item[0] != null) {
-                    break;
-                }
-            }
-        }
-
-        return item[0];
+        return this.readIndex()
+                .item(pageType == CatalogPageType.BUILDER ? CatalogPageType.BUILDER : CatalogPageType.NORMAL, id);
     }
 
     public void loadRecentPurchases(Habbo habbo) {
@@ -997,19 +1035,17 @@ public class CatalogManager {
 
     public List<CatalogPage> getCatalogPages(int parentId, final Habbo habbo, final CatalogPageType pageType) {
         final List<CatalogPage> pages = new ArrayList<>();
-        final Int2ObjectMap<CatalogPage> pagesMap = this.getCatalogPagesMap(pageType);
-        CatalogPage parentPage = pagesMap.get(parentId);
+        if (habbo == null) return pages;
 
-        if (parentPage == null) {
-            return pages;
-        }
+        CatalogPageType mapType =
+                pageType == CatalogPageType.BUILDER ? CatalogPageType.BUILDER : CatalogPageType.NORMAL;
+        int userRank = habbo.getHabboInfo().getRank().getId();
+        boolean hasActiveClub = habbo.getHabboInfo().getHabboStats().hasActiveClub();
 
-        for (CatalogPage object : parentPage.childPages.values()) {
+        for (CatalogPage object : this.readIndex().children(mapType, parentId)) {
             boolean isVisiblePage = object.visible;
-            boolean hasRightRank =
-                    object.getRank() <= habbo.getHabboInfo().getRank().getId();
-            boolean clubRightsOkay =
-                    !object.isClubOnly() || habbo.getHabboInfo().getHabboStats().hasActiveClub();
+            boolean hasRightRank = object.getRank() <= userRank;
+            boolean clubRightsOkay = !object.isClubOnly() || hasActiveClub;
             boolean pageTypeMatches = (pageType == CatalogPageType.BUILDER)
                     || object.getCatalogPageType().matches(pageType);
 
@@ -1017,7 +1053,6 @@ public class CatalogManager {
                 pages.add(object);
             }
         }
-        Collections.sort(pages);
 
         return pages;
     }
@@ -1063,13 +1098,7 @@ public class CatalogManager {
     }
 
     public CatalogItem getClubItem(int itemId) {
-        synchronized (this.clubItems) {
-            for (CatalogItem item : this.clubItems) {
-                if (item.getId() == itemId) return item;
-            }
-        }
-
-        return null;
+        return this.readIndex().clubItem(itemId);
     }
 
     public boolean moveCatalogItem(CatalogItem item, int pageId) {
@@ -1089,6 +1118,7 @@ public class CatalogManager {
         item.setNeedsUpdate(true);
 
         item.run();
+        this.markCatalogChanged();
         return true;
     }
 
@@ -1304,7 +1334,26 @@ public class CatalogManager {
     }
 
     public List<CatalogItem> getEffectivePageItems(CatalogPage page) {
-        List<CatalogItem> items = new ArrayList<>(page.getCatalogItems().values());
+        if (page.refreshesItemsOnRead()) {
+            // RoomBundleLayout: recomputes the bundle from the live room as a side effect on
+            // CatalogItem, mutating it in place. The result is discarded here - the read index's
+            // cached, sorted list below stays valid because the mutation happened on the same
+            // CatalogItem instance it holds a reference to.
+            page.getCatalogItems();
+        }
+
+        // Which map actually owns this page - not page.getCatalogPageType(), which is a data
+        // field on the page and can disagree with where the page is actually stored (e.g. a
+        // BOTH-mode page reachable only from the NORMAL map). The identity check just below
+        // depends on asking the right map in the first place.
+        CatalogPageType mapType = this.buildersClubCatalogPages.get(page.getId()) == page
+                ? CatalogPageType.BUILDER
+                : CatalogPageType.NORMAL;
+        List<CatalogItem> sorted = this.readIndex().sortedItems(mapType, page.getId());
+        List<CatalogItem> items =
+                sorted != null && this.getCatalogPagesMap(mapType).get(page.getId()) == page
+                        ? new ArrayList<>(sorted)
+                        : new ArrayList<>(page.getCatalogItems().values());
 
         int soldOutPageId = Emulator.getConfig().getInt("catalog.ltd.page.soldout");
         if (soldOutPageId <= 0) {
@@ -1411,6 +1460,15 @@ public class CatalogManager {
             }
 
             if (amount <= 0) {
+                habbo.getClient()
+                        .sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+                return;
+            }
+
+            String ownershipRefusal = WiredWebApiOwnership.purchaseRefusal(
+                    item, amount, habbo.getHabboInfo().getId());
+            if (ownershipRefusal != null) {
+                habbo.getClient().sendResponse(new BubbleAlertComposer(ownershipRefusal));
                 habbo.getClient()
                         .sendResponse(new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
                 return;

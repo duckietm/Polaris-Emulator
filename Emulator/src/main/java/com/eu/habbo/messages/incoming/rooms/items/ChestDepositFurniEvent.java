@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniStoredIt
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -55,6 +56,7 @@ public class ChestDepositFurniEvent extends MessageHandler {
 
         Item baseItem = Emulator.getGameEnvironment().getItemManager().getItem(baseItemId);
         if (baseItem == null || baseItem.getType() != FurnitureType.FLOOR) return;
+        if (WiredWebApiOwnership.isWebApiItem(baseItem)) return;
 
         int availableInInventory = countInInventory(habbo, baseItemId);
         if (availableInInventory <= 0) return;

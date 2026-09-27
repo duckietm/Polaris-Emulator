@@ -52,6 +52,11 @@ public class RoomBundleLayout extends SingleBundle {
     }
 
     @Override
+    protected boolean refreshesItemsOnRead() {
+        return true;
+    }
+
+    @Override
     public Int2ObjectMap<CatalogItem> getCatalogItems() {
         if (Emulator.getIntUnixTimestamp() - this.lastUpdate < 120) {
             this.lastUpdate = Emulator.getIntUnixTimestamp();
@@ -200,7 +205,8 @@ public class RoomBundleLayout extends SingleBundle {
             if (roomId == 0) return;
 
             try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, limited_data, guild_id, allow_underpass) (SELECT ?, ?, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, ?, ?, allow_underpass FROM items WHERE room_id = ?)",
+                    "INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, limited_data, guild_id, allow_underpass) (SELECT ?, ?, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, ?, ?, allow_underpass FROM items WHERE room_id = ?"
+                            + " AND item_id NOT IN (SELECT id FROM items_base WHERE interaction_type = 'wf_xtra_var_web_api'))",
                     Statement.RETURN_GENERATED_KEYS)) {
                 statement.setInt(1, userId);
                 statement.setInt(2, roomId);

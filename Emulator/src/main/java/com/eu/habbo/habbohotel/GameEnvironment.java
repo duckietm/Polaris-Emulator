@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.core.CreditsScheduler;
 import com.eu.habbo.core.GotwPointsScheduler;
 import com.eu.habbo.core.PixelScheduler;
@@ -29,6 +30,7 @@ import com.eu.habbo.habbohotel.permissions.PermissionsManager;
 import com.eu.habbo.habbohotel.pets.PetManager;
 import com.eu.habbo.habbohotel.polls.PollManager;
 import com.eu.habbo.habbohotel.rooms.RoomChatBubbleManager;
+import com.eu.habbo.habbohotel.rooms.RoomCycleService;
 import com.eu.habbo.habbohotel.rooms.RoomManager;
 import com.eu.habbo.habbohotel.soundboard.SoundboardManager;
 import com.eu.habbo.habbohotel.translations.GoogleTranslateManager;
@@ -69,6 +71,7 @@ public class GameEnvironment {
     private CommunityGoalManager communityGoalManager;
     private TreasureHuntManager treasureHuntManager;
     private RoomManager roomManager;
+    private RoomCycleService roomCycleService;
     private CommandHandler commandHandler;
     private PermissionsManager permissionsManager;
     private BotManager botManager;
@@ -132,6 +135,10 @@ public class GameEnvironment {
         this.petManager = this.services.create("pet manager", PetManager::new);
         this.guildManager = this.services.create("guild manager", GuildManager::new, GuildManager::dispose);
         this.catalogManager = this.services.create("catalog manager", CatalogManager::new, CatalogManager::dispose);
+        this.roomCycleService = this.services.create(
+                "room cycle workers",
+                () -> RoomCycleService.fromConfig(WiredPlatform.configuration()),
+                RoomCycleService::dispose);
         this.roomManager = this.services.create(
                 "room manager", () -> new RoomManager(this.persistenceExecutor), RoomManager::dispose);
         this.services.beforeDispose("room cycles", () -> this.roomManager.quiesceRoomCycles());
@@ -279,6 +286,7 @@ public class GameEnvironment {
         steps.put(
                 "Google Translate cache",
                 this.googleTranslateManager == null ? null : () -> this.googleTranslateManager.clearCache());
+        steps.put("room cycle workers", this.roomCycleService == null ? null : () -> this.roomCycleService.dispose());
 
         disposeAll(steps);
         LOGGER.info("GameEnvironment -> Disposed!");
@@ -352,6 +360,11 @@ public class GameEnvironment {
 
     public RoomManager getRoomManager() {
         return this.roomManager;
+    }
+
+    /** The room cycle workers, or null before load and in tests. */
+    public RoomCycleService getRoomCycleService() {
+        return this.roomCycleService;
     }
 
     public CommandHandler getCommandHandler() {

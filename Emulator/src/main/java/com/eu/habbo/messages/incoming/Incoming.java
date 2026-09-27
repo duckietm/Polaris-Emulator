@@ -517,6 +517,7 @@ public class Incoming {
     public static final int WiredVariableHoldersPageEvent = 975;
     public static final int WiredVariableHoldersRequestEvent = 2973;
     public static final int WiredVariableHashesEvent = 1497;
+    public static final int WiredGenerateWebApiKeyEvent = 2819;
     public static final int WiredAllVariablesRequestEvent = 1735;
     public static final int TranslationLanguagesRequestEvent = 10032;
     public static final int TranslationTextRequestEvent = 10033;

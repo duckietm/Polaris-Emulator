@@ -17,6 +17,7 @@ import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.rooms.RoomUnitType;
+import com.eu.habbo.habbohotel.rooms.UserVariableHolders;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayRuntimeSupport;
@@ -473,15 +474,12 @@ public final class WiredTextPlaceholderUtil {
             return value != null ? String.valueOf(value) : null;
         }
 
-        Habbo habbo = room.getHabbo(roomUnit);
-        if (habbo == null
-                || !room.getUserVariableManager()
-                        .hasVariable(habbo.getHabboInfo().getId(), extra.getVariableItemId())) {
+        int holder = UserVariableHolders.of(room, roomUnit);
+        if (holder == 0 || !room.getUserVariableManager().hasVariable(holder, extra.getVariableItemId())) {
             return null;
         }
 
-        Integer value = room.getUserVariableManager()
-                .getCurrentValue(habbo.getHabboInfo().getId(), extra.getVariableItemId());
+        Integer value = room.getUserVariableManager().getCurrentValue(holder, extra.getVariableItemId());
         if (extra.getDisplayType(room) == WiredExtraTextOutputVariable.DISPLAY_TEXTUAL) {
             return WiredVariableTextConnectorSupport.toText(room, extra.getVariableItemId(), value);
         }

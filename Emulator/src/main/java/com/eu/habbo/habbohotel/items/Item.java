@@ -2,12 +2,14 @@ package com.eu.habbo.habbohotel.items;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.interactions.InteractionMultiHeight;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ISerialize;
 import com.eu.habbo.messages.ServerMessage;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import org.slf4j.LoggerFactory;
 
 public class Item implements ISerialize {
 
@@ -117,6 +119,21 @@ public class Item implements ISerialize {
             if ((fallbackInteraction != null) && !"default".equalsIgnoreCase(fallbackInteraction.getName())) {
                 this.interactionType = fallbackInteraction;
             }
+        }
+
+        if (WiredWebApiOwnership.isWebApiItem(this)) {
+            if (this.allowTrade || this.allowMarketplace || this.allowGift || this.allowRecyle) {
+                LoggerFactory.getLogger(Item.class)
+                        .warn(
+                                "items_base {} ({}) allows trade/marketplace/gift/recycle; ignored, the Variables Web API add-on never changes hands",
+                                this.id,
+                                this.name);
+            }
+            this.allowTrade = false;
+            this.allowMarketplace = false;
+            this.allowGift = false;
+            this.allowRecyle = false;
+            this.allowInventoryStack = false;
         }
 
         this.stateCount = set.getShort("interaction_modes_count");

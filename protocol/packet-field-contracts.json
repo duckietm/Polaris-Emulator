@@ -5787,6 +5787,33 @@
       "fields": []
     },
     {
+      "name": "WIRED_GENERATE_WEB_API_KEY",
+      "direction": "client_to_server",
+      "header": 2819,
+      "java": {
+        "symbol": "WiredGenerateWebApiKeyEvent",
+        "className": "WiredGenerateWebApiKeyEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredGenerateWebApiKeyEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_GENERATE_WEB_API_KEY",
+        "className": "WiredGenerateWebApiKeyComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredGenerateWebApiKeyComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "itemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "isReadKey"
+        }
+      ]
+    },
+    {
       "name": "MANNEQUIN_SAVE_NAME",
       "direction": "client_to_server",
       "header": 2850,
@@ -12474,6 +12501,38 @@
         {
           "kind": "scalar",
           "type": "string",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "WIRED_WEB_API_KEY_RESULT",
+      "direction": "server_to_client",
+      "header": 59,
+      "java": {
+        "symbol": "WiredWebApiKeyResultComposer",
+        "className": "WiredWebApiKeyResultComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredWebApiKeyResultComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_WEB_API_KEY_RESULT",
+        "className": "WiredWebApiKeyResultParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredWebApiKeyResultParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
           "name": ""
         },
         {

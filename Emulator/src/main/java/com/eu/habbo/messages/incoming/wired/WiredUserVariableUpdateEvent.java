@@ -2,13 +2,14 @@ package com.eu.habbo.messages.incoming.wired;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveVariable;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomWiredVariableWrites;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.wired.WiredVariableChangeOrigin;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.messages.incoming.MessageHandler;
 
 public class WiredUserVariableUpdateEvent extends MessageHandler {
-    private static final int TARGET_ROOM = 3;
+    private static final int TARGET_ROOM = RoomWiredVariableWrites.TARGET_ROOM;
 
     @Override
     public void handle() throws Exception {
@@ -66,20 +67,14 @@ public class WiredUserVariableUpdateEvent extends MessageHandler {
                 return;
             }
 
+            RoomWiredVariableWrites.update(room, targetType, targetId, definitionItemId, value);
             if (targetType == WiredEffectGiveVariable.TARGET_FURNI) {
-                room.getFurniVariableManager().updateVariableValue(targetId, definitionItemId, value);
                 room.getFurniVariableManager().sendSnapshot(this.client.getHabbo());
-                return;
-            }
-
-            if (targetType == TARGET_ROOM) {
-                room.getRoomVariableManager().updateVariableValue(definitionItemId, value);
+            } else if (targetType == TARGET_ROOM) {
                 room.getRoomVariableManager().sendSnapshot(this.client.getHabbo());
-                return;
+            } else {
+                room.getUserVariableManager().sendSnapshot(this.client.getHabbo());
             }
-
-            room.getUserVariableManager().updateVariableValue(targetId, definitionItemId, value);
-            room.getUserVariableManager().sendSnapshot(this.client.getHabbo());
         } finally {
             WiredVariableChangeOrigin.exit(previousOrigin);
         }

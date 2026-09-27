@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.outgoing.inventory.AddHabboItemComposer;
@@ -108,7 +109,8 @@ public final class ChestWiredFurniUtil {
             if (taken.size() >= amount) {
                 break;
             }
-            if (!matchesFurniType(item, wallItem, baseItemId, legacyPosterId)) {
+            if (!matchesFurniType(item, wallItem, baseItemId, legacyPosterId)
+                    || WiredWebApiOwnership.isWebApiItem(item)) {
                 continue;
             }
             HabboItem removed = habbo.getInventory().getItemsComponent().getHabboItem(item.getId());

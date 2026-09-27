@@ -46,6 +46,15 @@ public final class WiredTickService {
 
     private static volatile WiredTickService instance;
 
+    /** At most this many room tasks (signal chains) wait per room; more are dropped. */
+    public static final int MAX_PENDING_ROOM_TASKS = 2_000;
+
+    /** The shard the current thread works for, so a room's own worker runs its tasks inline. */
+    private static final ThreadLocal<Integer> CURRENT_SHARD = new ThreadLocal<>();
+
+    private final ConcurrentHashMap<Integer, java.util.concurrent.atomic.AtomicInteger> pendingRoomTasks =
+            new ConcurrentHashMap<>();
+
     private int tickIntervalMs = DEFAULT_TICK_INTERVAL_MS;
     private boolean debugEnabled = false;
     private int threadPriority = Thread.NORM_PRIORITY + 1;
@@ -71,6 +80,7 @@ public final class WiredTickService {
 
     private final ConcurrentHashMap<Integer, Set<WiredTickable>>[] shardRoomTickables;
     private final AtomicBoolean running;
+    private boolean fixedConfiguration;
 
     @SuppressWarnings("unchecked")
     private WiredTickService() {
@@ -79,6 +89,14 @@ public final class WiredTickService {
             this.shardRoomTickables[i] = new ConcurrentHashMap<>();
         }
         this.running = new AtomicBoolean(false);
+    }
+
+    /** For tests: fixed settings, no hotel configuration read on start. */
+    WiredTickService(int workerCount, int tickIntervalMs) {
+        this();
+        this.workerCount = Math.max(MIN_WORKER_COUNT, Math.min(MAX_WORKER_COUNT, workerCount));
+        this.tickIntervalMs = Math.max(MIN_TICK_INTERVAL_MS, Math.min(MAX_TICK_INTERVAL_MS, tickIntervalMs));
+        this.fixedConfiguration = true;
     }
 
     private void loadConfiguration() {
@@ -141,7 +159,9 @@ public final class WiredTickService {
             return;
         }
 
-        loadConfiguration();
+        if (!this.fixedConfiguration) {
+            loadConfiguration();
+        }
 
         LOGGER.info(
                 "Starting WiredTickService with {}ms tick interval (workers={}, debug={}, priority={})...",
@@ -316,6 +336,7 @@ public final class WiredTickService {
         int roomId = room.getId();
         int shardIndex = getShardIndex(roomId);
         Set<WiredTickable> tickables = shardRoomTickables[shardIndex].remove(roomId);
+        this.pendingRoomTasks.remove(roomId);
 
         if (tickables != null) {
             for (WiredTickable tickable : tickables) {
@@ -410,7 +431,65 @@ public final class WiredTickService {
         }
     }
 
+    /** Whether the current thread is the wired worker of this room. */
+    public boolean isOnRoomWorker(int roomId) {
+        Integer shard = CURRENT_SHARD.get();
+        return shard != null && this.running.get() && this.shardExecutors != null && shard == getShardIndex(roomId);
+    }
+
+    /**
+     * Runs a task on the room's own wired worker, so its cost only delays the rooms on that worker.
+     * Answers false when the service is not running (the caller then runs it itself). A room with
+     * {@link #MAX_PENDING_ROOM_TASKS} tasks waiting drops the task and answers true.
+     */
+    public boolean executeForRoom(int roomId, Runnable task) {
+        ExecutorService[] executors = this.shardExecutors;
+        if (!this.running.get() || executors == null || task == null) {
+            return false;
+        }
+
+        java.util.concurrent.atomic.AtomicInteger pending =
+                this.pendingRoomTasks.computeIfAbsent(roomId, key -> new java.util.concurrent.atomic.AtomicInteger());
+        if (pending.incrementAndGet() > MAX_PENDING_ROOM_TASKS) {
+            pending.decrementAndGet();
+            if (shouldWarnSlow(roomId)) {
+                LOGGER.warn("Room {} has {} wired tasks waiting; new ones are dropped", roomId, MAX_PENDING_ROOM_TASKS);
+            }
+            return true;
+        }
+
+        int shardIndex = getShardIndex(roomId);
+        try {
+            executors[shardIndex].execute(() -> {
+                Integer previous = CURRENT_SHARD.get();
+                CURRENT_SHARD.set(shardIndex);
+                long started = System.currentTimeMillis();
+                try {
+                    task.run();
+                } catch (Throwable t) {
+                    LOGGER.error("Error in wired task for room {}", roomId, t);
+                } finally {
+                    pending.decrementAndGet();
+                    if (previous == null) {
+                        CURRENT_SHARD.remove();
+                    } else {
+                        CURRENT_SHARD.set(previous);
+                    }
+                    long took = System.currentTimeMillis() - started;
+                    if (took > SLOW_ROOM_THRESHOLD_MS && shouldWarnSlow(roomId)) {
+                        LOGGER.warn("Slow wired task: shard={}, room={}, took={}ms", shardIndex, roomId, took);
+                    }
+                }
+            });
+            return true;
+        } catch (java.util.concurrent.RejectedExecutionException rejected) {
+            pending.decrementAndGet();
+            return false;
+        }
+    }
+
     private void runShardLoop(int shardIndex) {
+        CURRENT_SHARD.set(shardIndex);
         try {
             while (running.get() && !Emulator.isShuttingDown) {
                 long nextTick = shardProcessedTicks[shardIndex].get() + 1L;
@@ -432,6 +511,7 @@ public final class WiredTickService {
         } catch (Throwable t) {
             LOGGER.error("Fatal error in WiredTick shard {}", shardIndex, t);
         } finally {
+            CURRENT_SHARD.remove();
             shardScheduled[shardIndex].set(false);
             if (running.get() && shardProcessedTicks[shardIndex].get() < shardRequestedTicks[shardIndex].get()) {
                 scheduleShardIfNeeded(shardIndex);

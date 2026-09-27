@@ -18,6 +18,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomTileState;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.UserVariableHolders;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -260,17 +261,16 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
         for (RoomUnit roomUnit : WiredSourceUtil.resolveUsers(ctx, this.destinationUserSource)) {
             if (roomUnit == null) continue;
 
-            Habbo habbo = room.getHabbo(roomUnit);
-            if (habbo == null) continue;
+            int holder = UserVariableHolders.of(room, roomUnit);
+            if (holder == 0) continue;
 
             Integer referenceValue = this.referenceFor(references, roomUnit.getId(), TARGET_USER, index++);
             if (!this.isUnaryOperation() && referenceValue == null) continue;
 
-            int currentValue = room.getUserVariableManager()
-                    .getCurrentValue(habbo.getHabboInfo().getId(), this.destinationVariableItemId);
+            int currentValue = room.getUserVariableManager().getCurrentValue(holder, this.destinationVariableItemId);
             room.getUserVariableManager()
                     .updateVariableValue(
-                            habbo.getHabboInfo().getId(),
+                            holder,
                             this.destinationVariableItemId,
                             applyOperation(this.operation, currentValue, referenceValue));
         }
@@ -704,12 +704,11 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
         for (RoomUnit roomUnit : WiredSourceUtil.resolveUsers(ctx, this.referenceUserSource)) {
             if (roomUnit == null) continue;
 
-            Habbo habbo = room.getHabbo(roomUnit);
-            if (habbo != null)
+            int holder = UserVariableHolders.of(room, roomUnit);
+            if (holder != 0)
                 snapshot.add(
                         roomUnit.getId(),
-                        room.getUserVariableManager()
-                                .getCurrentValue(habbo.getHabboInfo().getId(), this.referenceVariableItemId));
+                        room.getUserVariableManager().getCurrentValue(holder, this.referenceVariableItemId));
         }
 
         return snapshot.isEmpty() ? null : snapshot;

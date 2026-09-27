@@ -7,7 +7,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableLevelUpSystem;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
-import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.rooms.UserVariableHolders;
 import com.eu.habbo.habbohotel.wired.WiredConditionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
@@ -106,13 +106,12 @@ public class WiredConditionUserLevel extends InteractionWiredCondition {
     }
 
     private Integer levelOf(Room room, RoomUnit target) {
-        Habbo habbo = target == null ? null : room.getHabbo(target);
-        if (habbo == null || habbo.getHabboInfo() == null) {
+        int holder = UserVariableHolders.of(room, target);
+        if (holder == 0) {
             return null;
         }
         if (room.getUserVariableManager() == null
-                || !room.getUserVariableManager()
-                        .hasVariable(habbo.getHabboInfo().getId(), this.variableItemId)) {
+                || !room.getUserVariableManager().hasVariable(holder, this.variableItemId)) {
             return null;
         }
 
@@ -122,8 +121,7 @@ public class WiredConditionUserLevel extends InteractionWiredCondition {
             return null;
         }
 
-        int experience = room.getUserVariableManager()
-                .getCurrentValue(habbo.getHabboInfo().getId(), this.variableItemId);
+        int experience = room.getUserVariableManager().getCurrentValue(holder, this.variableItemId);
         return WiredVariableLevelSystemSupport.getDerivedValue(
                 levelSystem, WiredExtraVariableLevelUpSystem.SUB_CURRENT_LEVEL, experience);
     }

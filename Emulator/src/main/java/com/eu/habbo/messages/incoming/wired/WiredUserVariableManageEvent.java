@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.wired;
 
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomWiredVariableWrites;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredVariableChangeOrigin;
@@ -17,7 +18,7 @@ public class WiredUserVariableManageEvent extends MessageHandler {
     private static final int ACTION_ASSIGN = 0;
     private static final int ACTION_REMOVE = 1;
     private static final int ACTION_CLEAR_ALL = 2;
-    private static final int TARGET_ROOM = 3;
+    private static final int TARGET_ROOM = RoomWiredVariableWrites.TARGET_ROOM;
 
     @Override
     public void handle() throws Exception {
@@ -50,13 +51,7 @@ public class WiredUserVariableManageEvent extends MessageHandler {
             if (action == ACTION_CLEAR_ALL) {
                 // Reaches holders who are not in the room, so the policy is stricter than wired rights.
                 if (WiredVariableClearPolicy.canClear(room, this.client.getHabbo(), definitionItemId)) {
-                    if (targetType
-                            == com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveVariable
-                                    .TARGET_FURNI) {
-                        room.getFurniVariableManager().clearAllAssignments(definitionItemId);
-                    } else if (targetType != TARGET_ROOM) {
-                        room.getUserVariableManager().clearAllAssignments(definitionItemId);
-                    }
+                    RoomWiredVariableWrites.clearAll(room, targetType, definitionItemId);
                 }
                 room.getRoomVariableManager().sendSnapshot(this.client.getHabbo());
                 return;
@@ -67,34 +62,10 @@ public class WiredUserVariableManageEvent extends MessageHandler {
                 return;
             }
 
-            switch (targetType) {
-                case com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveVariable.TARGET_FURNI:
-                    if (action == ACTION_REMOVE) {
-                        room.getFurniVariableManager().removeVariable(targetId, definitionItemId);
-                    } else {
-                        HabboItem furni = room.getHabboItem(targetId);
-                        if (furni != null) {
-                            room.getFurniVariableManager().assignVariable(furni, definitionItemId, value, true);
-                        }
-                    }
-                    break;
-                case TARGET_ROOM:
-                    if (action == ACTION_REMOVE) {
-                        room.getRoomVariableManager().removeVariable(definitionItemId);
-                    } else {
-                        room.getRoomVariableManager().updateVariableValue(definitionItemId, value);
-                    }
-                    break;
-                default:
-                    if (action == ACTION_REMOVE) {
-                        room.getUserVariableManager().removeVariable(targetId, definitionItemId);
-                    } else {
-                        Habbo habbo = room.getHabbo(targetId);
-                        if (habbo != null) {
-                            room.getUserVariableManager().assignVariable(habbo, definitionItemId, value, true);
-                        }
-                    }
-                    break;
+            if (action == ACTION_REMOVE) {
+                RoomWiredVariableWrites.remove(room, targetType, targetId, definitionItemId);
+            } else {
+                RoomWiredVariableWrites.assign(room, targetType, targetId, definitionItemId, value);
             }
 
             room.getRoomVariableManager().sendSnapshot(this.client.getHabbo());

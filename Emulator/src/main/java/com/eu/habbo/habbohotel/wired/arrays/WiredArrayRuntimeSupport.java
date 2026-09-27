@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.wired.arrays;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomArrayVariableManager;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.UserVariableHolders;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
@@ -414,12 +415,10 @@ public final class WiredArrayRuntimeSupport {
         }
         List<RoomUnit> units = WiredSourceUtil.resolveUsers(ctx, normalizeSource(WiredArrayVariableType.USER, source));
         if (units.isEmpty()) return null;
-        Habbo habbo = ctx.room().getHabbo(units.get(0));
-        return habbo == null
+        int holder = UserVariableHolders.of(ctx.room(), units.get(0));
+        return holder == 0
                 ? null
-                : (long) ctx.room()
-                        .getUserVariableManager()
-                        .getCurrentValue(habbo.getHabboInfo().getId(), definitionItemId);
+                : (long) ctx.room().getUserVariableManager().getCurrentValue(holder, definitionItemId);
     }
 
     private static Long resolveFurniScalar(

@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.UserVariableHolders;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -119,13 +120,13 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect {
                 continue;
             }
 
-            Habbo habbo = room.getHabbo(roomUnit);
+            int holder = UserVariableHolders.of(room, roomUnit);
 
-            if (habbo == null) {
+            if (holder == 0) {
                 continue;
             }
 
-            room.getUserVariableManager().removeVariable(habbo.getHabboInfo().getId(), this.variableItemId);
+            room.getUserVariableManager().removeVariable(holder, this.variableItemId);
         }
     }
 

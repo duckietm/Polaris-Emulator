@@ -88,45 +88,61 @@ public class FurniEditorHelper {
 
     /**
      * Whitelist of allowed field names for update operations.
-     * Prevents SQL injection via arbitrary column names.
+     * Prevents SQL injection via arbitrary column names. {@code description} is
+     * absent on purpose: items_base has no such column, and the description
+     * players read lives in the furnidata.
      */
     public static final java.util.Set<String> ALLOWED_UPDATE_FIELDS = java.util.Set.of(
-        "public_name", "sprite_id", "type", "width", "length",
-        "stack_height", "allow_stack", "allow_walk", "allow_sit", "allow_lay",
-        "allow_gift", "allow_trade", "allow_recycle", "allow_marketplace_sell",
-        "allow_inventory_stack", "interaction_type", "interaction_modes_count",
-        "vending_ids", "customparams", "effect_id_male", "effect_id_female",
-        "clothing_on_walk", "multiheight", "description"
-    );
+            "public_name",
+            "sprite_id",
+            "type",
+            "width",
+            "length",
+            "stack_height",
+            "allow_stack",
+            "allow_walk",
+            "allow_sit",
+            "allow_lay",
+            "allow_gift",
+            "allow_trade",
+            "allow_recycle",
+            "allow_marketplace_sell",
+            "allow_inventory_stack",
+            "interaction_type",
+            "interaction_modes_count",
+            "vending_ids",
+            "customparams",
+            "effect_id_male",
+            "effect_id_female",
+            "clothing_on_walk",
+            "multiheight");
 
     /**
      * Map camelCase JS field names to DB column names.
      */
     public static final Map<String, String> FIELD_MAP = Map.ofEntries(
-        Map.entry("itemName", "item_name"),
-        Map.entry("publicName", "public_name"),
-        Map.entry("spriteId", "sprite_id"),
-        Map.entry("type", "type"),
-        Map.entry("width", "width"),
-        Map.entry("length", "length"),
-        Map.entry("stackHeight", "stack_height"),
-        Map.entry("allowStack", "allow_stack"),
-        Map.entry("allowWalk", "allow_walk"),
-        Map.entry("allowSit", "allow_sit"),
-        Map.entry("allowLay", "allow_lay"),
-        Map.entry("allowGift", "allow_gift"),
-        Map.entry("allowTrade", "allow_trade"),
-        Map.entry("allowRecycle", "allow_recycle"),
-        Map.entry("allowMarketplaceSell", "allow_marketplace_sell"),
-        Map.entry("allowInventoryStack", "allow_inventory_stack"),
-        Map.entry("interactionType", "interaction_type"),
-        Map.entry("interactionModesCount", "interaction_modes_count"),
-        Map.entry("vendingIds", "vending_ids"),
-        Map.entry("customparams", "customparams"),
-        Map.entry("effectIdMale", "effect_id_male"),
-        Map.entry("effectIdFemale", "effect_id_female"),
-        Map.entry("clothingOnWalk", "clothing_on_walk"),
-        Map.entry("multiheight", "multiheight"),
-        Map.entry("description", "description")
-    );
+            Map.entry("itemName", "item_name"),
+            Map.entry("publicName", "public_name"),
+            Map.entry("spriteId", "sprite_id"),
+            Map.entry("type", "type"),
+            Map.entry("width", "width"),
+            Map.entry("length", "length"),
+            Map.entry("stackHeight", "stack_height"),
+            Map.entry("allowStack", "allow_stack"),
+            Map.entry("allowWalk", "allow_walk"),
+            Map.entry("allowSit", "allow_sit"),
+            Map.entry("allowLay", "allow_lay"),
+            Map.entry("allowGift", "allow_gift"),
+            Map.entry("allowTrade", "allow_trade"),
+            Map.entry("allowRecycle", "allow_recycle"),
+            Map.entry("allowMarketplaceSell", "allow_marketplace_sell"),
+            Map.entry("allowInventoryStack", "allow_inventory_stack"),
+            Map.entry("interactionType", "interaction_type"),
+            Map.entry("interactionModesCount", "interaction_modes_count"),
+            Map.entry("vendingIds", "vending_ids"),
+            Map.entry("customparams", "customparams"),
+            Map.entry("effectIdMale", "effect_id_male"),
+            Map.entry("effectIdFemale", "effect_id_female"),
+            Map.entry("clothingOnWalk", "clothing_on_walk"),
+            Map.entry("multiheight", "multiheight"));
 }

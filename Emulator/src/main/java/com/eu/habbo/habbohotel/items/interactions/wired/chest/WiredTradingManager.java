@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator.Match;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator.OfferedItem;
 import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract.Term;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -396,7 +397,7 @@ public class WiredTradingManager {
             if (this.held.containsKey(itemId)) return false;
 
             HabboItem item = this.habbo.getInventory().getItemsComponent().getHabboItem(itemId);
-            if (item == null) return false;
+            if (item == null || WiredWebApiOwnership.isWebApiItem(item)) return false;
             if (!this.habbo.getInventory().getItemsComponent().takeHabboItemsAtomically(List.of(item))) return false;
 
             this.held.put(itemId, item);

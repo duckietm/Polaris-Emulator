@@ -526,6 +526,22 @@ public class RoomUnitManager {
             this.currentBots.put(bot.getId(), bot);
             this.index.incrementUnitId();
         }
+        this.restoreUnitVariables(UserVariableHolders.ofBot(bot.getId()));
+    }
+
+    /** A pet or bot placed in a loaded room gets its permanent user variables back. */
+    private void restoreUnitVariables(int holderKey) {
+        RoomUserVariableManager variables = this.room.isLoaded() ? this.room.getUserVariableManager() : null;
+        if (variables != null) {
+            variables.restorePermanentAssignments(holderKey);
+        }
+    }
+
+    private void forgetUnitVariables(int holderKey) {
+        RoomUserVariableManager variables = this.room.getUserVariableManager();
+        if (variables != null) {
+            variables.clearAssignmentsForUser(holderKey);
+        }
     }
 
     public boolean removeBot(Bot bot) {
@@ -540,6 +556,7 @@ public class RoomUnitManager {
                 }
 
                 this.currentBots.remove(bot.getId());
+                this.forgetUnitVariables(UserVariableHolders.ofBot(bot.getId()));
                 if (bot.getRoomUnit() != null) {
                     bot.getRoomUnit().setInRoom(false);
                 }
@@ -715,10 +732,14 @@ public class RoomUnitManager {
                                 this.getHabbo(pet.getUserId()).getHabboInfo().getUsername());
             }
         }
+        this.restoreUnitVariables(UserVariableHolders.ofPet(pet.getId()));
     }
 
     public Pet removePet(int petId) {
         Pet pet = this.currentPets.remove(petId);
+        if (pet != null) {
+            this.forgetUnitVariables(UserVariableHolders.ofPet(pet.getId()));
+        }
         if (pet != null && pet.getRoomUnit() != null) {
             WiredMoveCarryHelper.cleanupRoomUnit(pet.getRoomUnit());
             WiredUserMovementHelper.cleanupRoomUnit(pet.getRoomUnit());

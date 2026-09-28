@@ -10032,6 +10032,28 @@
       ]
     },
     {
+      "name": "HOUSEKEEPING_RELOAD",
+      "direction": "client_to_server",
+      "header": 9126,
+      "java": {
+        "symbol": "HousekeepingReloadEvent",
+        "className": "HousekeepingReloadEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingReloadEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_RELOAD",
+        "className": "HousekeepingReloadComposer",
+        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingReloadComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "target"
+        }
+      ]
+    },
+    {
       "name": "REQUEST_RARE_VALUES",
       "direction": "client_to_server",
       "header": 9300,

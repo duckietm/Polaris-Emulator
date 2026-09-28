@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.GameEnvironment;
+import com.eu.habbo.habbohotel.modtool.ModToolBanList;
 import com.eu.habbo.habbohotel.modtool.ModToolChatLog;
 import com.eu.habbo.habbohotel.modtool.ModToolRoomVisit;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctionItem;
@@ -29,10 +30,13 @@ public class HousekeepingRequestListEvent extends MessageHandler {
     static final String USER_SANCTIONS = "user.sanctions";
     static final String ROOM_CHATLOG = "room.chatlog";
     static final String ROOM_VISITS = "room.visits";
+    /** Hotel-wide lists take no target; the client sends 0. */
+    static final String HOTEL_BANS = "hotel.bans";
 
     private static final int CLONE_LIMIT = 50;
     private static final int NAME_LIMIT = 50;
     private static final int VISIT_LIMIT = 100;
+    private static final int BAN_LIMIT = 200;
 
     @Override
     public int getRatelimit() {
@@ -47,6 +51,11 @@ public class HousekeepingRequestListEvent extends MessageHandler {
 
         String listKey = HousekeepingInputGuard.normalize(this.packet.readString());
         int targetId = this.packet.readInt();
+
+        if (HOTEL_BANS.equals(listKey)) {
+            this.client.sendResponse(bans(listKey));
+            return;
+        }
 
         if (targetId <= 0) {
             this.client.sendResponse(
@@ -87,6 +96,25 @@ public class HousekeepingRequestListEvent extends MessageHandler {
                 };
 
         this.client.sendResponse(answer);
+    }
+
+    private static HousekeepingListComposer bans(String listKey) {
+        List<List<String>> rows = new ArrayList<>();
+
+        for (ModToolBanList.Entry ban : ModToolBanList.active((int) (System.currentTimeMillis() / 1000L), BAN_LIMIT)) {
+            rows.add(List.of(
+                    String.valueOf(ban.userId()),
+                    ban.username(),
+                    ban.type(),
+                    ban.reason(),
+                    String.valueOf(ban.expires()),
+                    ban.staffName(),
+                    String.valueOf(ban.timestamp()),
+                    ban.ip()));
+        }
+
+        return new HousekeepingListComposer(
+                listKey, 0, true, "", List.of("id", "user", "type", "reason", "expires", "staff", "time", "ip"), rows);
     }
 
     private static HousekeepingListComposer chatlog(

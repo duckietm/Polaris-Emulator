@@ -1586,6 +1586,9 @@ public class PacketManager {
         this.registerHandler(
                 Incoming.HousekeepingReloadEvent,
                 com.eu.habbo.messages.incoming.housekeeping.HousekeepingReloadEvent.class);
+        this.registerHandler(
+                Incoming.HousekeepingRevokeBanEvent,
+                com.eu.habbo.messages.incoming.housekeeping.HousekeepingRevokeBanEvent.class);
 
         this.registerHandler(
                 Incoming.RequestRareValuesEvent,

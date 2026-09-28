@@ -10054,6 +10054,28 @@
       ]
     },
     {
+      "name": "HOUSEKEEPING_REVOKE_BAN",
+      "direction": "client_to_server",
+      "header": 9127,
+      "java": {
+        "symbol": "HousekeepingRevokeBanEvent",
+        "className": "HousekeepingRevokeBanEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingRevokeBanEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_REVOKE_BAN",
+        "className": "HousekeepingRevokeBanComposer",
+        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingRevokeBanComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "banId"
+        }
+      ]
+    },
+    {
       "name": "REQUEST_RARE_VALUES",
       "direction": "client_to_server",
       "header": 9300,

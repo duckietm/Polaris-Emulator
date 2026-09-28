@@ -110,11 +110,17 @@ public class HousekeepingRequestListEvent extends MessageHandler {
                     String.valueOf(ban.expires()),
                     ban.staffName(),
                     String.valueOf(ban.timestamp()),
-                    ban.ip()));
+                    ban.ip(),
+                    String.valueOf(ban.banId())));
         }
 
         return new HousekeepingListComposer(
-                listKey, 0, true, "", List.of("id", "user", "type", "reason", "expires", "staff", "time", "ip"), rows);
+                listKey,
+                0,
+                true,
+                "",
+                List.of("id", "user", "type", "reason", "expires", "staff", "time", "ip", "ban_id"),
+                rows);
     }
 
     private static HousekeepingListComposer chatlog(

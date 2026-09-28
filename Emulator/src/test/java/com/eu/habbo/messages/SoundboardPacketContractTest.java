@@ -101,6 +101,8 @@ class SoundboardPacketContractTest {
         assertEquals(0, packet.readInt());
         assertEquals(0, packet.readInt());
         assertEquals(0, packet.readInt());
+        // Extended profile visibility, appended after the AIR 13 tail.
+        assertTrue(packet.readBoolean());
         assertFalse(packet.isReadable());
     }
 

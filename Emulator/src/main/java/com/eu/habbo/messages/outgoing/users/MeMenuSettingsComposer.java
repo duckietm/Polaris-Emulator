@@ -36,6 +36,9 @@ public class MeMenuSettingsComposer extends MessageComposer {
         this.response.appendInt(this.habbo.getHabboStats().chatBubbleWidth);
         this.response.appendInt(this.habbo.getHabboStats().chatScrollSpeed);
         this.response.appendInt(this.habbo.getHabboStats().onlineIndicatorPreference);
+        // Appended last so older clients, which stop reading earlier, are unaffected: whether the
+        // extended profile is visible to others, in the same positive form as the flags above.
+        this.response.appendBoolean(!this.habbo.getHabboStats().hideProfile);
         return this.response;
     }
 

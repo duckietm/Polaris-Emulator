@@ -26,6 +26,7 @@ import com.eu.habbo.habbohotel.items.ItemManager;
 import com.eu.habbo.habbohotel.items.interactions.InteractionDefault;
 import com.eu.habbo.habbohotel.items.interactions.InteractionInformationTerminal;
 import com.eu.habbo.habbohotel.items.interactions.InteractionTeleport;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWiredRoomLinker;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.PendingRoomEntry;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -152,7 +153,7 @@ class WiredEffectForwardUserToRoomTest {
     }
 
     @Test
-    void savesATypedRoomAndRefusesWhatIsNoRoom() {
+    void savesATypedRoomAndRefusesWhatIsNoRoom() throws Exception {
         WiredEffectForwardUserToRoom box = box();
 
         assertTrue(box.saveData(settings(" 42 ", new int[0], 0), null));
@@ -164,16 +165,39 @@ class WiredEffectForwardUserToRoomTest {
     }
 
     @Test
-    void onlyRoomLinksAndTeleportersCanBePicked() {
+    void onlyRoomLinkersRoomLinksAndTeleportersCanBePicked() throws Exception {
         HabboItem chair = new InteractionDefault(5, 1, base(), "", 0, 0);
         InteractionTeleport teleport = new InteractionTeleport(6, 1, base(), "", 0, 0);
+        InteractionWiredRoomLinker linker = new InteractionWiredRoomLinker(8, 1, base(), "", 0, 0);
         when(this.room.getHabboItem(5)).thenReturn(chair);
         when(this.room.getHabboItem(6)).thenReturn(teleport);
+        when(this.room.getHabboItem(8)).thenReturn(linker);
         WiredEffectForwardUserToRoom box = box();
 
         assertFalse(box.saveData(settings("", new int[] {5}, 0, WiredSourceUtil.SOURCE_SELECTED), null));
         assertTrue(box.saveData(settings("", new int[] {6}, 0, WiredSourceUtil.SOURCE_SELECTED), null));
         assertEquals(6, json(box).getAsJsonArray("itemIds").get(0).getAsInt());
+        assertTrue(box.saveData(settings("", new int[] {8}, 0, WiredSourceUtil.SOURCE_SELECTED), null));
+        assertEquals(8, json(box).getAsJsonArray("itemIds").get(0).getAsInt());
+    }
+
+    @Test
+    void aPickedRoomLinkerSendsToTheRoomOfItsPairToArriveOnThePair() throws Exception {
+        InteractionWiredRoomLinker linker = new InteractionWiredRoomLinker(12, 1, base(), "", 0, 0);
+        when(this.room.getHabboItem(12)).thenReturn(linker);
+        when(this.itemManager.getTargetTeleportRoomId(linker)).thenReturn(new int[] {88, 702});
+        target(88, RoomState.OPEN);
+        WiredEffectForwardUserToRoom box = box();
+        box.loadWiredData(row("{\"roomIdText\":\"\",\"delay\":0,\"userSource\":0,\"itemIds\":[12]}"), this.room);
+        RoomUnit unit = mock(RoomUnit.class);
+        Habbo habbo = visitor(unit);
+
+        box.execute(context(this.room, unit));
+
+        assertEquals(88, forwardedRoom(habbo));
+        PendingRoomEntry entry = pendingEntry(habbo);
+        assertEquals(PendingRoomEntry.METHOD_TELEPORT, entry.method());
+        assertEquals(702, entry.teleportItemId());
     }
 
     @Test

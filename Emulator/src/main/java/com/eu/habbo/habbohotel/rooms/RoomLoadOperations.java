@@ -4,6 +4,7 @@ import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.items.interactions.InteractionFireworks;
 import com.eu.habbo.habbohotel.items.interactions.InteractionJukeBox;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWater;
 import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.pets.PetManager;
 import com.eu.habbo.habbohotel.users.DanceType;
@@ -171,6 +172,7 @@ final class RoomLoadOperations implements RoomLoader.Operations {
         }
 
         this.restoreUnitVariables();
+        this.refreshWaterMasks(specialTypes);
 
         synchronized (this.room) {
             try {
@@ -194,6 +196,20 @@ final class RoomLoadOperations implements RoomLoader.Operations {
             return cycles.schedule(this.room);
         }
         return this.room.threading().getService().scheduleAtFixedRate(this.room, 500, 500, TimeUnit.MILLISECONDS);
+    }
+
+    /** Water saved before its kind joined (val13 and stackable water) gets its pool edges once here. */
+    private void refreshWaterMasks(RoomSpecialTypes specialTypes) {
+        if (specialTypes == null) {
+            return;
+        }
+        try {
+            for (HabboItem item : specialTypes.getItemsOfType(InteractionWater.class)) {
+                ((InteractionWater) item).refreshMask(this.room);
+            }
+        } catch (RuntimeException exception) {
+            LOGGER.error("Caught exception refreshing water masks", exception);
+        }
     }
 
     /** Pets and bots load before the wired, so their permanent user variables come back here. */

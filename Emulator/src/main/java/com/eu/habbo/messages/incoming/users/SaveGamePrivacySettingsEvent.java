@@ -16,10 +16,14 @@ public class SaveGamePrivacySettingsEvent extends MessageHandler {
 
         habbo.getHabboStats().setGamePrivacy(hideOnline, blockFollowing, blockFriendRequests);
 
-        habbo.getMessenger().connectionChanged(
-                habbo,
-                habbo.isOnline(),
-                habbo.getHabboInfo().getCurrentRoom() != null);
+        // Optional fourth flag, profile visible to others: older clients stop after three.
+        if (this.packet.bytesAvailable() > 0) {
+            boolean profileVisible = this.packet.readBoolean();
+            habbo.getHabboStats().setProfileHidden(!profileVisible);
+        }
+
+        habbo.getMessenger()
+                .connectionChanged(habbo, habbo.isOnline(), habbo.getHabboInfo().getCurrentRoom() != null);
 
         Emulator.getPluginManager().fireEvent(new UserSavedSettingsEvent(habbo));
     }

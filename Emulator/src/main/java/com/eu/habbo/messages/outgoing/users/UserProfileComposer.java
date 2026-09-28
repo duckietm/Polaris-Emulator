@@ -53,16 +53,19 @@ public class UserProfileComposer extends MessageComposer {
                 new SimpleDateFormat("dd-MM-yyyy").format(new Date(this.habboInfo.getAccountCreated() * 1000L)));
 
         int achievementScore = 0;
+        boolean profileHidden = false;
         if (this.habbo != null) {
             achievementScore = this.habbo.getHabboStats().getAchievementScore();
+            profileHidden = this.habbo.getHabboStats().hideProfile;
         } else {
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                     PreparedStatement statement = connection.prepareStatement(
-                            "SELECT achievement_score FROM users_settings WHERE user_id = ? LIMIT 1")) {
+                            "SELECT achievement_score, hide_profile FROM users_settings WHERE user_id = ? LIMIT 1")) {
                 statement.setInt(1, this.habboInfo.getId());
                 try (ResultSet set = statement.executeQuery()) {
                     if (set.next()) {
                         achievementScore = set.getInt("achievement_score");
+                        profileHidden = "1".equals(set.getString("hide_profile"));
                     }
                 }
             } catch (SQLException e) {
@@ -141,6 +144,9 @@ public class UserProfileComposer extends MessageComposer {
         UserProfileLevel level = UserProfileLevel.of(achievementScore, UserProfileLevel.DEFAULT_THRESHOLDS);
         this.response.appendInt(level.level());
         this.response.appendInt(level.nextLevelStart());
+        // Official isHidden: the owner hides the profile from everybody else. The client decides
+        // what to hide, as the official one does, so the owner still sees it all.
+        this.response.appendBoolean(profileHidden);
 
         return this.response;
     }

@@ -74,6 +74,7 @@ public class HabboStats implements Runnable {
     public boolean blockFollowing;
     public boolean blockFriendRequests;
     public boolean hideOnline;
+    public boolean hideProfile;
     public boolean blockRoomInvites;
     public boolean blockStaffAlerts;
     public boolean preferOldChat;
@@ -170,6 +171,7 @@ public class HabboStats implements Runnable {
         this.blockFollowing = set.getString("block_following").equals("1");
         this.blockFriendRequests = set.getString("block_friendrequests").equals("1");
         this.hideOnline = "1".equals(safeColumnString(set, "hide_online", "0"));
+        this.hideProfile = "1".equals(safeColumnString(set, "hide_profile", "0"));
         this.blockRoomInvites = set.getString("block_roominvites").equals("1");
         this.preferOldChat = set.getString("old_chat").equals("1");
         this.blockCameraFollow = set.getString("block_camera_follow").equals("1");
@@ -1246,6 +1248,12 @@ public class HabboStats implements Runnable {
         return this.massMentionsEnabled;
     }
 
+    /** Hides the extended profile from everybody but its owner (the official isHidden flag). */
+    public void setProfileHidden(boolean hidden) {
+        this.hideProfile = hidden;
+        persistFlag("hide_profile", hidden);
+    }
+
     public void setMentionsEnabled(boolean enabled) {
         this.mentionsEnabled = enabled;
         persistFlag("mentions_enabled", enabled);
@@ -1274,8 +1282,8 @@ public class HabboStats implements Runnable {
         }
     }
 
-    private static final Set<String> PERSIST_FLAG_COLUMNS =
-            Set.of("mentions_enabled", "mass_mentions_enabled", "wired_whisper_disabled", "safety_locked");
+    private static final Set<String> PERSIST_FLAG_COLUMNS = Set.of(
+            "mentions_enabled", "mass_mentions_enabled", "wired_whisper_disabled", "safety_locked", "hide_profile");
 
     private void persistFlag(String column, boolean enabled) {
         if (!PERSIST_FLAG_COLUMNS.contains(column)) {

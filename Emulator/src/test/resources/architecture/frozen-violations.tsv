@@ -1387,6 +1387,7 @@ U|com/eu/habbo/messages/incoming/housekeeping/HousekeepingMutationGuard.java|CAL
 U|com/eu/habbo/messages/incoming/housekeeping/HousekeepingMutationGuard.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/messages/incoming/housekeeping/HousekeepingMuteRoomEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/housekeeping/HousekeepingMuteUserEvent.java|CALL|getGameEnvironment|1
+U|com/eu/habbo/messages/incoming/housekeeping/HousekeepingRequestListEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/housekeeping/HousekeepingResetUserPasswordEvent.java|CALL|getDatabase|1
 U|com/eu/habbo/messages/incoming/housekeeping/HousekeepingRoomStateEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/housekeeping/HousekeepingSaveRoomSettingsEvent.java|CALL|getGameEnvironment|1

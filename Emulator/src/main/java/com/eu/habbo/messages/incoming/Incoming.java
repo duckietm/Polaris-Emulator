@@ -626,6 +626,7 @@ public class Incoming {
     public static final int HousekeepingGetDashboardEvent = 9122;
     public static final int HousekeepingListActionLogEvent = 9123;
     public static final int HousekeepingSaveRoomSettingsEvent = 9124;
+    public static final int HousekeepingRequestListEvent = 9125;
 
     // Custom features — IDs 9300+ reserved
     public static final int RequestRareValuesEvent = 9300;

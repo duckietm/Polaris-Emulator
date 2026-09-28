@@ -300,13 +300,18 @@ public class HabboManager {
     }
 
     public List<HabboInfo> getCloneAccounts(Habbo habbo, int limit) {
+        return this.getCloneAccounts(habbo.getHabboInfo(), limit);
+    }
+
+    /** Accounts registered from or last seen on the same IP as this one, online or not. */
+    public List<HabboInfo> getCloneAccounts(HabboInfo info, int limit) {
         try {
             return SqlQueries.query(
                     "SELECT * FROM users WHERE (ip_register = ? OR ip_current = ?) AND id != ? ORDER BY id DESC LIMIT ?",
                     HabboInfo::new,
-                    habbo.getHabboInfo().getIpRegister(),
-                    habbo.getHabboInfo().getIpLogin(),
-                    habbo.getHabboInfo().getId(),
+                    info.getIpRegister(),
+                    info.getIpLogin(),
+                    info.getId(),
                     limit);
         } catch (SqlQueries.DataAccessException e) {
             LOGGER.error("Caught SQL exception", e);

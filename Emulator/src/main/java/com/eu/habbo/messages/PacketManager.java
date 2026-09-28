@@ -1580,6 +1580,9 @@ public class PacketManager {
         this.registerHandler(
                 Incoming.HousekeepingSaveRoomSettingsEvent,
                 com.eu.habbo.messages.incoming.housekeeping.HousekeepingSaveRoomSettingsEvent.class);
+        this.registerHandler(
+                Incoming.HousekeepingRequestListEvent,
+                com.eu.habbo.messages.incoming.housekeeping.HousekeepingRequestListEvent.class);
 
         this.registerHandler(
                 Incoming.RequestRareValuesEvent,

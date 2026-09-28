@@ -73,7 +73,11 @@ public class HousekeepingUserDetailComposer extends MessageComposer {
         this.response.appendString(safe(this.info.getIpLogin()));
         this.response.appendBoolean(ban != null);
         this.response.appendBoolean(muteEnd > now);
-        this.response.appendBoolean(stored.tradeLockedUntil() > now);
+        // A trade lock is the can_trade flag, set from the latest sanction's trade_locked_until.
+        boolean tradeLocked = online != null
+                ? !online.getHabboStats().allowTrade()
+                : !stored.canTrade() || stored.tradeLockedUntil() > now;
+        this.response.appendBoolean(tradeLocked);
 
         // Profile block, read by the renderer as optional trailing fields.
         this.response.appendInt(this.info.getAccountCreated());
@@ -101,8 +105,10 @@ public class HousekeepingUserDetailComposer extends MessageComposer {
      */
     private static StoredSettings readStoredSettings(int userId) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement = connection.prepareStatement(
-                        "SELECT achievement_score, mute_end_timestamp, trade_locked_until FROM users_settings WHERE user_id = ? LIMIT 1")) {
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT us.achievement_score, us.mute_end_timestamp, us.can_trade, "
+                                + "COALESCE((SELECT MAX(s.trade_locked_until) FROM sanctions s WHERE s.habbo_id = us.user_id), 0) "
+                                + "AS trade_locked_until FROM users_settings us WHERE us.user_id = ? LIMIT 1")) {
             statement.setInt(1, userId);
 
             try (ResultSet set = statement.executeQuery()) {
@@ -110,6 +116,7 @@ public class HousekeepingUserDetailComposer extends MessageComposer {
                     return new StoredSettings(
                             set.getInt("achievement_score"),
                             set.getInt("mute_end_timestamp"),
+                            !"0".equals(set.getString("can_trade")),
                             set.getInt("trade_locked_until"));
                 }
             }
@@ -117,10 +124,10 @@ public class HousekeepingUserDetailComposer extends MessageComposer {
             LOGGER.error("Caught SQL exception", e);
         }
 
-        return new StoredSettings(0, 0, 0);
+        return new StoredSettings(0, 0, true, 0);
     }
 
-    private record StoredSettings(int achievementScore, int muteEnd, int tradeLockedUntil) {}
+    private record StoredSettings(int achievementScore, int muteEnd, boolean canTrade, int tradeLockedUntil) {}
 
     private static String safe(String value) {
         return value != null ? value : "";

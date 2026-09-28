@@ -48,13 +48,16 @@ public class HousekeepingSetHcSubscriptionEvent extends MessageHandler {
 
         Habbo online = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
 
+        int extension = (int) Math.min((long) days * SECONDS_IN_DAY, Integer.MAX_VALUE);
+
         if (days == 0) {
             newExpire = now;
         } else if (online != null) {
             int current = online.getHabboStats().getClubExpireTimestamp();
-            newExpire = (current > now ? current : now) + (days * SECONDS_IN_DAY);
+            newExpire = HousekeepingSanctionDuration.unixUntil(current > now ? current : now, extension);
         } else {
-            newExpire = now + (days * SECONDS_IN_DAY); // best-effort offline; can't read previous expiry cheaply
+            newExpire = HousekeepingSanctionDuration.unixUntil(
+                    now, extension); // best-effort offline; can't read previous expiry cheaply
         }
 
         if (online != null) {

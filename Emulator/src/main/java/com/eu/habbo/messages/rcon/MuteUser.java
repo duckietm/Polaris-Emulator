@@ -5,12 +5,11 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.google.gson.Gson;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MuteUser extends RCONMessage<MuteUser.JSON> {
     private static final Logger LOGGER = LoggerFactory.getLogger(MuteUser.class);
@@ -22,7 +21,8 @@ public class MuteUser extends RCONMessage<MuteUser.JSON> {
 
     @Override
     public void handle(Gson gson, JSON json) {
-        int maxDuration = parseMaxDuration(Emulator.getConfig().getValue("rcon.mute.max_duration_seconds", String.valueOf(DEFAULT_MAX_DURATION_SECONDS)));
+        int maxDuration = parseMaxDuration(Emulator.getConfig()
+                .getValue("rcon.mute.max_duration_seconds", String.valueOf(DEFAULT_MAX_DURATION_SECONDS)));
         if (json.duration < 0 || json.duration > maxDuration) {
             this.status = RCONMessage.STATUS_ERROR;
             this.message = "duration must be between 0 and " + maxDuration + " seconds";
@@ -38,8 +38,15 @@ public class MuteUser extends RCONMessage<MuteUser.JSON> {
                 habbo.mute(json.duration, false);
             }
         } else {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE users_settings SET mute_end_timestamp = ? WHERE user_id = ? LIMIT 1")) {
-                statement.setInt(1, json.duration == 0 ? 0 : Emulator.getIntUnixTimestamp() + json.duration);
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                    PreparedStatement statement = connection.prepareStatement(
+                            "UPDATE users_settings SET mute_end_timestamp = ? WHERE user_id = ? LIMIT 1")) {
+                statement.setInt(
+                        1,
+                        json.duration == 0
+                                ? 0
+                                : (int) Math.min(
+                                        (long) Emulator.getIntUnixTimestamp() + json.duration, Integer.MAX_VALUE));
                 statement.setInt(2, json.user_id);
                 if (statement.executeUpdate() == 0) {
                     this.status = HABBO_NOT_FOUND;

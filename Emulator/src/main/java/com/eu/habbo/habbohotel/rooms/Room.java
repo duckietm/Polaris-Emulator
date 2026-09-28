@@ -1033,7 +1033,6 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         this.tradeMode = tradeMode;
     }
 
-    /** Unix time the room was created, or 0 when the row predates the column. */
     public int getDateCreated() {
         return this.dateCreated;
     }

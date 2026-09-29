@@ -17,6 +17,7 @@ import com.eu.habbo.messages.outgoing.catalog.GiftConfigurationComposer;
 import com.eu.habbo.messages.outgoing.catalog.RecyclerLogicComposer;
 import com.eu.habbo.messages.outgoing.catalog.marketplace.MarketplaceConfigComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.GenericAlertComposer;
+import com.eu.habbo.messages.outgoing.handshake.DisconnectReasonComposer;
 import com.eu.habbo.messages.outgoing.modtool.ModToolComposer;
 import com.eu.habbo.messages.outgoing.users.UserPerksComposer;
 import com.eu.habbo.messages.outgoing.users.UserPermissionsComposer;
@@ -178,8 +179,9 @@ public class HabboManager {
 
         habbo = this.cloneCheck(userId);
         if (habbo != null) {
-            habbo.alert(Emulator.getTexts().getValue("loggedin.elsewhere"));
-            Emulator.getGameServer().getGameClientManager().forceDisposeClient(habbo.getClient());
+            Emulator.getGameServer()
+                    .getGameClientManager()
+                    .disconnectWithReason(habbo.getClient(), DisconnectReasonComposer.CONCURRENT_LOGIN);
             habbo = null;
         }
 

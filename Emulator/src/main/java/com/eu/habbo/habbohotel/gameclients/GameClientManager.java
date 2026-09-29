@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
+import com.eu.habbo.messages.outgoing.handshake.DisconnectReasonComposer;
 import com.eu.habbo.networking.gameserver.GameServerAttributes;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -50,6 +51,25 @@ public class GameClientManager {
         }
 
         this.disposeClient(client.getChannel(), true);
+    }
+
+    /**
+     * Tells the client why its session ends (DisconnectReason), then closes it without session resume.
+     * The packet is flushed first so it reaches the client before the close; the client then shows the
+     * reason and does not reconnect.
+     */
+    public void disconnectWithReason(GameClient client, int reason) {
+        if (client == null) {
+            return;
+        }
+
+        Channel channel = client.getChannel();
+        if (channel != null && channel.isActive()) {
+            client.sendResponse(new DisconnectReasonComposer(reason));
+            channel.flush();
+        }
+
+        this.forceDisposeClient(client);
     }
 
     public void forceDisposeClient(GameClient client) {

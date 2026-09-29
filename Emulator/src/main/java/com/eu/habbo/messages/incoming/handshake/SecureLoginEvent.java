@@ -33,6 +33,7 @@ import com.eu.habbo.messages.outgoing.habbicons.UserHabbiconsComposer;
 import com.eu.habbo.messages.outgoing.habboway.nux.NewUserExperienceNotCompleteComposer;
 import com.eu.habbo.messages.outgoing.habboway.nux.NewUserIdentityComposer;
 import com.eu.habbo.messages.outgoing.handshake.AvailabilityStatusMessageComposer;
+import com.eu.habbo.messages.outgoing.handshake.DisconnectReasonComposer;
 import com.eu.habbo.messages.outgoing.handshake.EnableNotificationsComposer;
 import com.eu.habbo.messages.outgoing.handshake.PingComposer;
 import com.eu.habbo.messages.outgoing.handshake.SecureLoginOKComposer;
@@ -227,7 +228,7 @@ public class SecureLoginEvent extends MessageHandler {
                     LOGGER.info(
                             "Replacing duplicate active session for user {}",
                             habbo.getHabboInfo().getId());
-                    clientManager.forceDisposeClient(previousClient);
+                    clientManager.disconnectWithReason(previousClient, DisconnectReasonComposer.CONCURRENT_LOGIN);
                 }
 
                 if (!isSessionResume) {

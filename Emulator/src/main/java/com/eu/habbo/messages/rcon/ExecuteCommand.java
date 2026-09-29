@@ -8,18 +8,18 @@ import com.google.gson.Gson;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ExecuteCommand extends RCONMessage<ExecuteCommand.JSONExecuteCommand> {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExecuteCommand.class);
     static final int DEFAULT_MAX_COMMAND_LENGTH = 256;
-    private static final String DEFAULT_DENIED_PERMISSIONS = String.join(";",
+    private static final String DEFAULT_DENIED_PERMISSIONS = String.join(
+            ";",
             "cmd_shutdown",
             "cmd_update_config",
             "cmd_update_permissions",
@@ -28,7 +28,7 @@ public class ExecuteCommand extends RCONMessage<ExecuteCommand.JSONExecuteComman
             "cmd_gift",
             "cmd_credits",
             "cmd_points",
-            "cmd_pixels",
+            "cmd_duckets",
             "cmd_massbadge",
             "cmd_masscredits",
             "cmd_massgift",
@@ -39,11 +39,10 @@ public class ExecuteCommand extends RCONMessage<ExecuteCommand.JSONExecuteComman
             "cmd_empty_pets",
             "cmd_unload",
             "cmd_ban",
-            "cmd_superban",
+            "cmd_super_ban",
             "cmd_ip_ban",
             "cmd_machine_ban",
             "cmd_disconnect");
-
 
     public ExecuteCommand() {
         super(JSONExecuteCommand.class);
@@ -53,7 +52,8 @@ public class ExecuteCommand extends RCONMessage<ExecuteCommand.JSONExecuteComman
     public void handle(Gson gson, JSONExecuteCommand json) {
         try {
             String commandLine = json.command.trim();
-            int maxLength = parseMaxCommandLength(Emulator.getConfig().getValue("rcon.execute_command.max_length", String.valueOf(DEFAULT_MAX_COMMAND_LENGTH)));
+            int maxLength = parseMaxCommandLength(Emulator.getConfig()
+                    .getValue("rcon.execute_command.max_length", String.valueOf(DEFAULT_MAX_COMMAND_LENGTH)));
 
             if (!commandLine.startsWith(":") || commandLine.length() > maxLength) {
                 this.status = STATUS_ERROR;
@@ -71,8 +71,10 @@ public class ExecuteCommand extends RCONMessage<ExecuteCommand.JSONExecuteComman
             Command command = CommandHandler.getCommand(commandKey);
             String commandPermission = command != null && command.permission != null ? command.permission : commandKey;
 
-            if (!isAllowed(commandPermission,
-                    Emulator.getConfig().getValue("rcon.execute_command.denied_permissions", DEFAULT_DENIED_PERMISSIONS),
+            if (!isAllowed(
+                    commandPermission,
+                    Emulator.getConfig()
+                            .getValue("rcon.execute_command.denied_permissions", DEFAULT_DENIED_PERMISSIONS),
                     Emulator.getConfig().getValue("rcon.execute_command.allowed_permissions", ""))) {
                 this.status = STATUS_ERROR;
                 this.message = "command not allowed";
@@ -85,7 +87,6 @@ public class ExecuteCommand extends RCONMessage<ExecuteCommand.JSONExecuteComman
                 this.status = HABBO_NOT_FOUND;
                 return;
             }
-
 
             if (!CommandHandler.handleCommand(habbo.getClient(), commandLine)) {
                 this.status = STATUS_ERROR;

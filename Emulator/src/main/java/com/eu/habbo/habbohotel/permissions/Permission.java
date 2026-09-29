@@ -31,6 +31,8 @@ public class Permission {
     public static String ACC_CHAT_NO_LIMIT = "acc_chat_no_limit";
     public static String ACC_CHAT_NO_FILTER = "acc_chat_no_filter";
     public static String ACC_NOMUTE = "acc_nomute";
+    public static final String ACC_UNLOAD_ANY_ROOM = "acc_unload_any_room";
+    public static final String ACC_HOTELVIEW_EDIT = "acc_hotelview_edit";
     public static String ACC_GUILD_ADMIN = "acc_guild_admin";
     public static String ACC_CATALOG_IDS = "acc_catalog_ids";
     public static String ACC_CATALOGFURNI = "acc_catalogfurni";

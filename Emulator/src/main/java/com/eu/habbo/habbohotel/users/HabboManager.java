@@ -336,6 +336,13 @@ public class HabboManager {
             throw new Exception("Rank ID (" + rankId + ") does not exist");
         }
         Rank newRank = Emulator.getGameEnvironment().getPermissionsManager().getRank(rankId);
+
+        try {
+            SqlQueries.update("UPDATE users SET `rank` = ? WHERE id = ? LIMIT 1", rankId, userId);
+        } catch (SqlQueries.DataAccessException e) {
+            LOGGER.error("Caught SQL exception", e);
+        }
+
         if (habbo != null && habbo.getHabboStats() != null) {
             Rank oldRank = habbo.getHabboInfo().getRank();
             if (!oldRank.getBadge().isEmpty()) {
@@ -374,12 +381,6 @@ public class HabboManager {
             habbo.alert(Emulator.getTexts()
                     .getValue("commands.generic.cmd_give_rank.new_rank")
                     .replace("id", newRank.getName()));
-        } else {
-            try {
-                SqlQueries.update("UPDATE users SET `rank` = ? WHERE id = ? LIMIT 1", rankId, userId);
-            } catch (SqlQueries.DataAccessException e) {
-                LOGGER.error("Caught SQL exception", e);
-            }
         }
 
         Emulator.getPluginManager().fireEvent(new UserRankChangedEvent(habbo));

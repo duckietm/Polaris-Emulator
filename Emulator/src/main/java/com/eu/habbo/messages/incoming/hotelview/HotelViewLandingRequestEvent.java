@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.hotelview;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.hotelview.HotelViewLandingComposer;
@@ -18,9 +19,10 @@ public class HotelViewLandingRequestEvent extends MessageHandler {
         if (habbo == null) return;
 
         this.client.sendResponse(new HotelViewLandingComposer(
-                habbo.getHabboInfo().getRank().getId() >= 7,
+                habbo.hasPermission(Permission.ACC_HOTELVIEW_EDIT),
                 Emulator.getGameEnvironment().getHotelViewManager().getScene(),
-                Emulator.getGameEnvironment().getHotelViewManager().getSlotsForUser(habbo.getHabboInfo().getId())
-        ));
+                Emulator.getGameEnvironment()
+                        .getHotelViewManager()
+                        .getSlotsForUser(habbo.getHabboInfo().getId())));
     }
 }

@@ -12,9 +12,9 @@ import java.util.Set;
 
 /**
  * The permission matrix: every permission_definitions row against every rank. The rank columns
- * are named "rank:&lt;id&gt;:&lt;editable 1|0&gt;:&lt;rank name&gt;" so a single list carries what the
- * panel needs to draw and lock the columns; editable follows the same rank policy as changing a
- * user's rank.
+ * are named "rank:&lt;id&gt;:&lt;editable 1|0&gt;:&lt;own 1|0&gt;:&lt;rank name&gt;" so a single list carries
+ * what the panel needs to draw, lock and warn: editable follows the same rank policy as changing
+ * a user's rank, own marks the operator's own rank.
  */
 final class HousekeepingPermissionMatrix {
     static final String RANKS_SQL = "SELECT id, rank_name FROM permission_ranks ORDER BY id";
@@ -36,10 +36,12 @@ final class HousekeepingPermissionMatrix {
                     SqlQueries.query(RANKS_SQL, set -> new RankColumn(set.getInt("id"), set.getString("rank_name")));
             List<String> columns = new ArrayList<>(List.of("permission", "comment", "max"));
 
+            int operatorRankId = operator.getHabboInfo().getRank().getId();
+
             for (RankColumn rank : ranks) {
                 boolean editable = HousekeepingTargetRankGuard.canTargetRank(operator, rank.id());
-                columns.add("rank:" + rank.id() + ":" + (editable ? 1 : 0) + ":"
-                        + (rank.name() == null ? "" : rank.name()));
+                columns.add("rank:" + rank.id() + ":" + (editable ? 1 : 0) + ":" + (rank.id() == operatorRankId ? 1 : 0)
+                        + ":" + (rank.name() == null ? "" : rank.name()));
             }
 
             List<List<String>> rows = SqlQueries.query(DEFINITIONS_SQL, set -> {

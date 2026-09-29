@@ -24,7 +24,10 @@ class HousekeepingRequestListContractTest {
                         "room.chatlog",
                         "room.visits",
                         "hotel.bans",
-                        "hotel.wordfilter"),
+                        "hotel.wordfilter",
+                        "hotel.online",
+                        "hotel.rooms",
+                        "hotel.stats"),
                 List.of(
                         HousekeepingRequestListEvent.USER_CHATLOG,
                         HousekeepingRequestListEvent.USER_VISITS,
@@ -34,7 +37,10 @@ class HousekeepingRequestListContractTest {
                         HousekeepingRequestListEvent.ROOM_CHATLOG,
                         HousekeepingRequestListEvent.ROOM_VISITS,
                         HousekeepingRequestListEvent.HOTEL_BANS,
-                        HousekeepingRequestListEvent.HOTEL_WORDFILTER));
+                        HousekeepingRequestListEvent.HOTEL_WORDFILTER,
+                        HousekeepingRequestListEvent.HOTEL_ONLINE,
+                        HousekeepingRequestListEvent.HOTEL_ROOMS,
+                        HousekeepingRequestListEvent.HOTEL_STATS));
     }
 
     @Test

@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.modtool.ModToolRoomVisit;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctionItem;
 import com.eu.habbo.habbohotel.modtool.WordFilterWord;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingListComposer;
@@ -21,7 +22,8 @@ import java.util.Map;
  * Read-only lists behind the user and room pages, each answered as a table:
  * chat, visits, accounts sharing an IP, past names and sanctions of a user,
  * and chat and visitors of a room. Every list reuses the query the mod tools
- * already run.
+ * already run. Hotel-wide lists: bans in force, the word filter, who is
+ * online, the rooms with people in them, and the dashboard chart series.
  */
 public class HousekeepingRequestListEvent extends MessageHandler {
     static final String USER_CHATLOG = "user.chatlog";
@@ -35,6 +37,9 @@ public class HousekeepingRequestListEvent extends MessageHandler {
     static final String HOTEL_BANS = "hotel.bans";
 
     static final String HOTEL_WORDFILTER = "hotel.wordfilter";
+    static final String HOTEL_ONLINE = "hotel.online";
+    static final String HOTEL_ROOMS = "hotel.rooms";
+    static final String HOTEL_STATS = "hotel.stats";
 
     private static final int CLONE_LIMIT = 50;
     private static final int NAME_LIMIT = 50;
@@ -60,11 +65,29 @@ public class HousekeepingRequestListEvent extends MessageHandler {
             return;
         }
 
+        if (HOTEL_STATS.equals(listKey)) {
+            this.client.sendResponse(new HousekeepingListComposer(
+                    listKey, 0, true, "", List.of("series", "bucket", "value"), HousekeepingHotelStats.rows((int)
+                            (System.currentTimeMillis() / 1000L))));
+            return;
+        }
+
         GameEnvironment environment = Emulator.getGameEnvironment();
 
         if (HOTEL_WORDFILTER.equals(listKey)) {
             this.client.sendResponse(
                     wordFilter(listKey, environment.getWordFilter().getWords()));
+            return;
+        }
+
+        if (HOTEL_ONLINE.equals(listKey)) {
+            this.client.sendResponse(online(
+                    listKey, environment.getHabboManager().getOnlineHabbos().values()));
+            return;
+        }
+
+        if (HOTEL_ROOMS.equals(listKey)) {
+            this.client.sendResponse(rooms(listKey, environment.getRoomManager().getActiveRooms()));
             return;
         }
 
@@ -106,6 +129,54 @@ public class HousekeepingRequestListEvent extends MessageHandler {
                 };
 
         this.client.sendResponse(answer);
+    }
+
+    /** Everyone online, by name, with rank, current room, login IP and since when they are on. */
+    private static HousekeepingListComposer online(String listKey, Collection<Habbo> habbos) {
+        List<List<String>> rows = new ArrayList<>();
+
+        for (Habbo habbo : habbos) {
+            if (habbo == null || habbo.getHabboInfo() == null) continue;
+
+            HabboInfo info = habbo.getHabboInfo();
+            Room room = info.getCurrentRoom();
+
+            rows.add(List.of(
+                    String.valueOf(info.getId()),
+                    info.getUsername(),
+                    info.getRank() == null ? "" : info.getRank().getName(),
+                    room == null ? "" : String.valueOf(room.getId()),
+                    room == null ? "" : room.getName(),
+                    info.getIpLogin() == null ? "" : info.getIpLogin(),
+                    String.valueOf(info.getLastOnline())));
+        }
+
+        rows.sort(Comparator.comparing(row -> row.get(1).toLowerCase()));
+
+        return new HousekeepingListComposer(
+                listKey, 0, true, "", List.of("id", "user", "rank", "room_id", "room", "ip", "since"), rows);
+    }
+
+    /** Loaded rooms with people in them, fullest first. */
+    private static HousekeepingListComposer rooms(String listKey, Collection<Room> rooms) {
+        List<Room> occupied = rooms.stream()
+                .filter(room -> room != null && room.getUserCount() > 0)
+                .sorted(Comparator.comparingInt(Room::getUserCount).reversed())
+                .toList();
+        List<List<String>> rows = new ArrayList<>();
+
+        for (Room room : occupied) {
+            rows.add(List.of(
+                    String.valueOf(room.getId()),
+                    room.getName(),
+                    room.getOwnerName() == null ? "" : room.getOwnerName(),
+                    String.valueOf(room.getUserCount()),
+                    String.valueOf(room.getUsersMax()),
+                    room.getState() == null ? "" : room.getState().name().toLowerCase()));
+        }
+
+        return new HousekeepingListComposer(
+                listKey, 0, true, "", List.of("room_id", "name", "owner", "users", "max", "state"), rows);
     }
 
     private static HousekeepingListComposer wordFilter(String listKey, Collection<WordFilterWord> words) {

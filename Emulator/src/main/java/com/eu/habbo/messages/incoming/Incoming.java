@@ -631,6 +631,8 @@ public class Incoming {
     public static final int HousekeepingRevokeBanEvent = 9127;
     public static final int HousekeepingMaintenanceEvent = 9128;
     public static final int HousekeepingWordFilterEvent = 9129;
+    public static final int HousekeepingSetPermissionEvent = 9130;
+    public static final int HousekeepingUserNoteEvent = 9131;
 
     // Custom features — IDs 9300+ reserved
     public static final int RequestRareValuesEvent = 9300;

@@ -21,26 +21,30 @@ class HousekeepingRequestListContractTest {
                         "user.clones",
                         "user.names",
                         "user.sanctions",
+                        "user.notes",
                         "room.chatlog",
                         "room.visits",
                         "hotel.bans",
                         "hotel.wordfilter",
                         "hotel.online",
                         "hotel.rooms",
-                        "hotel.stats"),
+                        "hotel.stats",
+                        "hotel.permissions"),
                 List.of(
                         HousekeepingRequestListEvent.USER_CHATLOG,
                         HousekeepingRequestListEvent.USER_VISITS,
                         HousekeepingRequestListEvent.USER_CLONES,
                         HousekeepingRequestListEvent.USER_NAMES,
                         HousekeepingRequestListEvent.USER_SANCTIONS,
+                        HousekeepingRequestListEvent.USER_NOTES,
                         HousekeepingRequestListEvent.ROOM_CHATLOG,
                         HousekeepingRequestListEvent.ROOM_VISITS,
                         HousekeepingRequestListEvent.HOTEL_BANS,
                         HousekeepingRequestListEvent.HOTEL_WORDFILTER,
                         HousekeepingRequestListEvent.HOTEL_ONLINE,
                         HousekeepingRequestListEvent.HOTEL_ROOMS,
-                        HousekeepingRequestListEvent.HOTEL_STATS));
+                        HousekeepingRequestListEvent.HOTEL_STATS,
+                        HousekeepingRequestListEvent.HOTEL_PERMISSIONS));
     }
 
     @Test

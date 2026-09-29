@@ -1595,6 +1595,12 @@ public class PacketManager {
         this.registerHandler(
                 Incoming.HousekeepingWordFilterEvent,
                 com.eu.habbo.messages.incoming.housekeeping.HousekeepingWordFilterEvent.class);
+        this.registerHandler(
+                Incoming.HousekeepingSetPermissionEvent,
+                com.eu.habbo.messages.incoming.housekeeping.HousekeepingSetPermissionEvent.class);
+        this.registerHandler(
+                Incoming.HousekeepingUserNoteEvent,
+                com.eu.habbo.messages.incoming.housekeeping.HousekeepingUserNoteEvent.class);
 
         this.registerHandler(
                 Incoming.RequestRareValuesEvent,

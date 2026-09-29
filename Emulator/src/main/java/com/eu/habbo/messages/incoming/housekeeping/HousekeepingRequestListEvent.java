@@ -31,6 +31,7 @@ public class HousekeepingRequestListEvent extends MessageHandler {
     static final String USER_CLONES = "user.clones";
     static final String USER_NAMES = "user.names";
     static final String USER_SANCTIONS = "user.sanctions";
+    static final String USER_NOTES = "user.notes";
     static final String ROOM_CHATLOG = "room.chatlog";
     static final String ROOM_VISITS = "room.visits";
     /** Hotel-wide lists take no target; the client sends 0. */
@@ -40,6 +41,7 @@ public class HousekeepingRequestListEvent extends MessageHandler {
     static final String HOTEL_ONLINE = "hotel.online";
     static final String HOTEL_ROOMS = "hotel.rooms";
     static final String HOTEL_STATS = "hotel.stats";
+    static final String HOTEL_PERMISSIONS = "hotel.permissions";
 
     private static final int CLONE_LIMIT = 50;
     private static final int NAME_LIMIT = 50;
@@ -62,6 +64,11 @@ public class HousekeepingRequestListEvent extends MessageHandler {
 
         if (HOTEL_BANS.equals(listKey)) {
             this.client.sendResponse(bans(listKey));
+            return;
+        }
+
+        if (HOTEL_PERMISSIONS.equals(listKey)) {
+            this.client.sendResponse(HousekeepingPermissionMatrix.list(listKey, this.client.getHabbo()));
             return;
         }
 
@@ -120,6 +127,7 @@ public class HousekeepingRequestListEvent extends MessageHandler {
                     case USER_CLONES -> this.clones(listKey, targetId, environment);
                     case USER_NAMES ->
                         names(listKey, targetId, environment.getHabboManager().getNameChanges(targetId, NAME_LIMIT));
+                    case USER_NOTES -> HousekeepingUserNotes.list(listKey, targetId);
                     case USER_SANCTIONS ->
                         sanctions(
                                 listKey,

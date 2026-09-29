@@ -10151,6 +10151,75 @@
       ]
     },
     {
+      "name": "HOUSEKEEPING_SET_PERMISSION",
+      "direction": "client_to_server",
+      "header": 9130,
+      "java": {
+        "symbol": "HousekeepingSetPermissionEvent",
+        "className": "HousekeepingSetPermissionEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingSetPermissionEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_SET_PERMISSION",
+        "className": "HousekeepingSetPermissionComposer",
+        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingSetPermissionComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "permissionKey"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "rankId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "value"
+        }
+      ]
+    },
+    {
+      "name": "HOUSEKEEPING_USER_NOTE",
+      "direction": "client_to_server",
+      "header": 9131,
+      "java": {
+        "symbol": "HousekeepingUserNoteEvent",
+        "className": "HousekeepingUserNoteEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingUserNoteEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_USER_NOTE",
+        "className": "HousekeepingUserNoteComposer",
+        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingUserNoteComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "action"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "userId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "noteId"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "note"
+        }
+      ]
+    },
+    {
       "name": "REQUEST_RARE_VALUES",
       "direction": "client_to_server",
       "header": 9300,

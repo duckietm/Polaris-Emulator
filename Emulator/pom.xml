@@ -43,7 +43,7 @@
         <javaparser.version>3.28.2</javaparser.version>
         <flyway.version>13.7.0</flyway.version>
         <testcontainers.version>2.0.5</testcontainers.version>
-        <mockito.version>5.23.0</mockito.version>
+        <mockito.version>5.24.0</mockito.version>
         <trove4j.reference.version>3.0.3</trove4j.reference.version>
 
         <maven-clean-plugin.version>3.5.0</maven-clean-plugin.version>

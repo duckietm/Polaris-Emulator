@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.habbicons.HabbiconService;
 import com.eu.habbo.habbohotel.modtool.ModToolBan;
 import com.eu.habbo.habbohotel.permissions.Permission;
+import com.eu.habbo.habbohotel.permissions.PermissionAuditLog;
 import com.eu.habbo.habbohotel.permissions.Rank;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.catalog.CatalogModeComposer;
@@ -330,12 +331,20 @@ public class HabboManager {
     }
 
     public void setRank(int userId, int rankId) throws Exception {
+        this.setRank(userId, rankId, PermissionAuditLog.SYSTEM, "system", "system");
+    }
+
+    /** Sets the rank and writes it to the permission audit with who did it and how ({@code via}). */
+    public void setRank(int userId, int rankId, int actorId, String actorName, String via) throws Exception {
         Habbo habbo = this.getHabbo(userId);
 
         if (!Emulator.getGameEnvironment().getPermissionsManager().rankExists(rankId)) {
             throw new Exception("Rank ID (" + rankId + ") does not exist");
         }
         Rank newRank = Emulator.getGameEnvironment().getPermissionsManager().getRank(rankId);
+        int oldRankId = habbo != null && habbo.getHabboInfo().getRank() != null
+                ? habbo.getHabboInfo().getRank().getId()
+                : storedRankId(userId);
 
         try {
             SqlQueries.update("UPDATE users SET `rank` = ? WHERE id = ? LIMIT 1", rankId, userId);
@@ -383,7 +392,19 @@ public class HabboManager {
                     .replace("id", newRank.getName()));
         }
 
+        PermissionAuditLog.rankSet(actorId, actorName, userId, oldRankId, rankId, via);
+
         Emulator.getPluginManager().fireEvent(new UserRankChangedEvent(habbo));
+    }
+
+    private static int storedRankId(int userId) {
+        try {
+            return SqlQueries.queryOne("SELECT `rank` FROM users WHERE id = ? LIMIT 1", rs -> rs.getInt(1), userId)
+                    .orElse(0);
+        } catch (SqlQueries.DataAccessException e) {
+            LOGGER.error("Caught SQL exception", e);
+            return 0;
+        }
     }
 
     public void giveCredits(int userId, int credits) {

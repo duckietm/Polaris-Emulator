@@ -42,7 +42,7 @@ public class SetRank extends RCONMessage<SetRank.JSONSetRank> {
                 : "?";
 
         try {
-            Emulator.getGameEnvironment().getHabboManager().setRank(object.user_id, object.rank);
+            Emulator.getGameEnvironment().getHabboManager().setRank(object.user_id, object.rank, 0, "rcon", "rcon");
         } catch (Exception e) {
             this.status = RCONMessage.SYSTEM_ERROR;
             this.message = "invalid rank";

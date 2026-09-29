@@ -78,7 +78,14 @@ public class GiveRankCommand extends Command {
 
                     int fromRankId = habbo.getRank() != null ? habbo.getRank().getId() : 0;
 
-                    Emulator.getGameEnvironment().getHabboManager().setRank(habbo.getId(), rank.getId());
+                    Emulator.getGameEnvironment()
+                            .getHabboManager()
+                            .setRank(
+                                    habbo.getId(),
+                                    rank.getId(),
+                                    gameClient.getHabbo().getHabboInfo().getId(),
+                                    gameClient.getHabbo().getHabboInfo().getUsername(),
+                                    "give_rank");
 
                     HousekeepingAuditLog.log(
                             gameClient.getHabbo().getHabboInfo().getId(),

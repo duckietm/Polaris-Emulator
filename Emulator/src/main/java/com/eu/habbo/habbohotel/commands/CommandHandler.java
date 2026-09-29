@@ -345,6 +345,7 @@ public class CommandHandler {
         addCommand(new UpdateItemsCommand());
         addCommand(new UpdateNavigatorCommand());
         addCommand(new UpdatePermissionsCommand());
+        addCommand(new PermissionCommand());
         addCommand(new UpdatePetDataCommand());
         addCommand(new UpdatePluginsCommand());
         addCommand(new UpdatePollsCommand());

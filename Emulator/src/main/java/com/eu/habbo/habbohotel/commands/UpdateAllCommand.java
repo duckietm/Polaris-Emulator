@@ -78,7 +78,11 @@ public class UpdateAllCommand extends Command {
         Emulator.getGameEnvironment().getRoomManager().loadPublicRooms();
 
         // Permissions
-        Emulator.getGameEnvironment().getPermissionsManager().reload();
+        com.eu.habbo.habbohotel.permissions.PermissionAuditLog.permissionChanges(
+                gameClient.getHabbo().getHabboInfo().getId(),
+                gameClient.getHabbo().getHabboInfo().getUsername(),
+                Emulator.getGameEnvironment().getPermissionsManager().reloadWithChanges(),
+                "update_all");
 
         // Pet Data
         Emulator.getGameEnvironment().getPetManager().reloadPetData();

@@ -44,12 +44,23 @@ public class PermissionsManager {
     }
 
     public void reload() {
+        this.reloadWithChanges();
+    }
+
+    /** Reloads, and returns what changed since the last load (for the permission audit). */
+    public List<PermissionChange> reloadWithChanges() {
+        Map<Integer, PermissionChange.RankState> before = PermissionChange.capture(this.ranks.values());
+
         if (Emulator.getDatabase() != null && Emulator.getDatabase().getLegacySqlBridge() != null) {
             Emulator.getDatabase().getLegacySqlBridge().invalidateCaches();
         }
 
         this.loadPermissions();
         this.loadEnables();
+
+        return before.isEmpty()
+                ? List.of()
+                : PermissionChange.diff(before, PermissionChange.capture(this.ranks.values()));
     }
 
     private void loadPermissions() {
@@ -324,6 +335,17 @@ public class PermissionsManager {
 
     public List<Rank> getAllRanks() {
         return new ArrayList<>(this.ranks.values());
+    }
+
+    /** Whether any loaded rank has a value for the key; a key no rank has is always denied. */
+    public boolean isDefinedByAnyRank(String key) {
+        for (Rank rank : this.ranks.values()) {
+            if (rank != null && rank.getPermissions().containsKey(key)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public boolean isNormalizedSchemaEnabled() {

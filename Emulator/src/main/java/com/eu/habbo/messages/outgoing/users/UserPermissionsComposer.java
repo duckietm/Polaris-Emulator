@@ -1,15 +1,16 @@
 package com.eu.habbo.messages.outgoing.users;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.permissions.PermissionSetting;
 import com.eu.habbo.habbohotel.permissions.Rank;
+import com.eu.habbo.habbohotel.permissions.UserPermissionOverrides;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
 import com.eu.habbo.plugin.HabboPlugin;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -105,6 +106,18 @@ public class UserPermissionsComposer extends MessageComposer {
                 resolved.put(key, 2);
             } else if (this.anyPluginGrants(key)) {
                 resolved.put(key, 1);
+            }
+        }
+
+        // The user's own values (timed sanctions or grants) come before the rank and plugins.
+        for (UserPermissionOverrides.UserOverride override : WiredPlatform.gameEnvironment()
+                .getPermissionsManager()
+                .getOverrides()
+                .active(this.habbo.getHabboInfo().getId())) {
+            if (override.setting() == PermissionSetting.DISALLOWED) {
+                resolved.remove(override.key());
+            } else {
+                resolved.put(override.key(), UserPermissionOverrides.valueOf(override.setting()));
             }
         }
 

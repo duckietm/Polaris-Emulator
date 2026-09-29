@@ -19,8 +19,31 @@ public final class PermissionExplanation {
 
     public static List<String> explain(
             String username, String key, Rank rank, boolean definedByAnyRank, PluginCheck plugin) {
+        return explain(username, key, rank, definedByAnyRank, plugin, null);
+    }
+
+    public static List<String> explain(
+            String username,
+            String key,
+            Rank rank,
+            boolean definedByAnyRank,
+            PluginCheck plugin,
+            UserPermissionOverrides.UserOverride override) {
         List<String> lines = new ArrayList<>();
         lines.add("Permission check: " + username + " / " + key);
+
+        if (override != null) {
+            lines.add("User override: " + describe(override.setting()) + ", " + until(override.expiresAt())
+                    + ", set by " + nameOr(override.createdByName())
+                    + (override.reason() == null || override.reason().isEmpty() ? "" : " (" + override.reason() + ")"));
+            lines.add("Result: "
+                    + switch (override.setting()) {
+                        case ALLOWED -> "ALLOWED (user override)";
+                        case ROOM_OWNER -> "ALLOWED only where the user has room rights (user override)";
+                        case DISALLOWED -> "DENIED (user override)";
+                    });
+            return lines;
+        }
 
         if (rank == null) {
             lines.add("Rank: none loaded (denied)");
@@ -72,6 +95,17 @@ public final class PermissionExplanation {
             case ROOM_OWNER -> "2 (only with room rights)";
             case DISALLOWED -> "0 (denied)";
         };
+    }
+
+    /** "until 06-10-2026 20:00", or "permanent". */
+    public static String until(int expiresAt) {
+        return expiresAt <= 0
+                ? "permanent"
+                : "until " + new SimpleDateFormat("dd-MM-yyyy HH:mm").format(new Date(expiresAt * 1000L));
+    }
+
+    private static String nameOr(String name) {
+        return name == null || name.isEmpty() ? "system" : name;
     }
 
     /** One audit row as a line: when, who, what, old -> new, how. */

@@ -18,6 +18,8 @@ public final class PermissionAuditLog {
 
     public static final String RANK_SET = "rank_set";
     public static final String PERMISSION_CHANGED = "permission_changed";
+    public static final String OVERRIDE_SET = "override_set";
+    public static final String OVERRIDE_REMOVED = "override_removed";
     public static final String TARGET_USER = "user";
     public static final String TARGET_RANK = "rank";
     /** The actor of a change nobody in the hotel made (startup, RCON, a plugin). */
@@ -53,6 +55,29 @@ public final class PermissionAuditLog {
                 "rank",
                 oldRankId > 0 ? String.valueOf(oldRankId) : PermissionChange.NONE,
                 String.valueOf(newRankId),
+                via)));
+    }
+
+    /** A user's own value for a key was set or removed ({@link UserPermissionOverrides}). */
+    public static void overrideChanged(
+            int actorId,
+            String actorName,
+            String action,
+            int userId,
+            String key,
+            String oldValue,
+            String newValue,
+            String via) {
+        write(List.of(new Entry(
+                WiredPlatform.unixTimestamp(),
+                actorId,
+                actorName,
+                action,
+                TARGET_USER,
+                userId,
+                key,
+                oldValue,
+                newValue,
                 via)));
     }
 

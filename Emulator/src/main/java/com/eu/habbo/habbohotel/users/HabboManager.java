@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.modtool.ModToolBan;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.permissions.PermissionAuditLog;
 import com.eu.habbo.habbohotel.permissions.Rank;
+import com.eu.habbo.habbohotel.permissions.TemporaryRanks;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.catalog.CatalogModeComposer;
 import com.eu.habbo.messages.outgoing.catalog.CatalogUpdatedComposer;
@@ -350,6 +351,11 @@ public class HabboManager {
             SqlQueries.update("UPDATE users SET `rank` = ? WHERE id = ? LIMIT 1", rankId, userId);
         } catch (SqlQueries.DataAccessException e) {
             LOGGER.error("Caught SQL exception", e);
+        }
+
+        // A rank given any other way ends a temporary rank, so it is not undone later.
+        if (!TemporaryRanks.keepsTimer(via)) {
+            TemporaryRanks.clear(userId);
         }
 
         if (habbo != null && habbo.getHabboStats() != null) {

@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.permissions;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.plugin.HabboPlugin;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
@@ -31,6 +32,8 @@ public class PermissionsManager {
     private volatile Int2IntMap enables;
     private volatile Map<String, List<Rank>> badges;
     private volatile boolean normalizedSchemaEnabled;
+    private final UserPermissionOverrides overrides = new UserPermissionOverrides();
+    private final TemporaryRanks temporaryRanks = new TemporaryRanks();
 
     public PermissionsManager() {
         long millis = System.currentTimeMillis();
@@ -39,6 +42,7 @@ public class PermissionsManager {
         this.badges = new HashMap<>();
 
         this.reload();
+        this.temporaryRanks.start(WiredPlatform.threading());
 
         LOGGER.info("Permissions Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
     }
@@ -304,6 +308,12 @@ public class PermissionsManager {
             return false;
         }
 
+        // A user's own value comes first: a timed denial holds against the rank and the plugins.
+        PermissionSetting override = this.overrides.find(habbo.getHabboInfo().getId(), permission);
+        if (override != null) {
+            return override == PermissionSetting.ALLOWED || override == PermissionSetting.ROOM_OWNER && withRoomRights;
+        }
+
         if (!this.hasPermission(habbo.getHabboInfo().getRank(), permission, withRoomRights)) {
             for (HabboPlugin plugin : Emulator.getPluginManager().getPlugins()) {
                 if (plugin.hasPermission(habbo, permission)) {
@@ -346,6 +356,10 @@ public class PermissionsManager {
         }
 
         return false;
+    }
+
+    public UserPermissionOverrides getOverrides() {
+        return this.overrides;
     }
 
     public boolean isNormalizedSchemaEnabled() {

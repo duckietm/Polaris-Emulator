@@ -2,6 +2,7 @@ package com.eu.habbo.messages.outgoing.users;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.permissions.Permission;
+import com.eu.habbo.habbohotel.permissions.PermissionSetting;
 import com.eu.habbo.habbohotel.permissions.PermissionsManager;
 import com.eu.habbo.habbohotel.permissions.Rank;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -77,6 +78,13 @@ public class UserPerksComposer extends MessageComposer {
     private boolean isAllowed(Perk perk, PermissionsManager permissions) {
         if (TRADE.equals(perk.code())) {
             return this.habbo.getHabboStats().allowTrade();
+        }
+
+        // A user's own value decides, also for a perk the rank does not define.
+        PermissionSetting override =
+                permissions.getOverrides().find(this.habbo.getHabboInfo().getId(), perk.permission());
+        if (override != null) {
+            return override != PermissionSetting.DISALLOWED;
         }
 
         return isAllowed(

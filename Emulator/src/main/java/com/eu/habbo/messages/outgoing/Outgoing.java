@@ -746,6 +746,7 @@ public class Outgoing {
     public static final int HousekeepingDashboardComposer = 9204;
     public static final int HousekeepingActionLogComposer = 9205;
     public static final int HousekeepingListComposer = 9206;
+    public static final int HousekeepingMaintenanceStatusComposer = 9207;
 
     // Custom features — IDs 9400+ reserved
     public static final int RareValuesComposer = 9400;

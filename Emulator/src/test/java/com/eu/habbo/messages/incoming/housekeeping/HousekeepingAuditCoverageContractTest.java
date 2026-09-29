@@ -29,6 +29,8 @@ class HousekeepingAuditCoverageContractTest {
             "HousekeepingSaveRoomSettingsEvent.java",
             "HousekeepingReloadEvent.java",
             "HousekeepingRevokeBanEvent.java",
+            "HousekeepingMaintenanceEvent.java",
+            "HousekeepingWordFilterEvent.java",
             "HousekeepingUnbanUserEvent.java");
 
     @Test

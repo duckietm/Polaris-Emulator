@@ -9963,6 +9963,17 @@
           "kind": "scalar",
           "type": "string",
           "name": "message"
+        },
+        {
+          "kind": "optional",
+          "controller": "recipient",
+          "fields": [
+            {
+              "kind": "scalar",
+              "type": "string",
+              "name": "recipient"
+            }
+          ]
         }
       ]
     },
@@ -10072,6 +10083,70 @@
           "kind": "scalar",
           "type": "int",
           "name": "banId"
+        }
+      ]
+    },
+    {
+      "name": "HOUSEKEEPING_MAINTENANCE",
+      "direction": "client_to_server",
+      "header": 9128,
+      "java": {
+        "symbol": "HousekeepingMaintenanceEvent",
+        "className": "HousekeepingMaintenanceEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingMaintenanceEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_MAINTENANCE",
+        "className": "HousekeepingMaintenanceComposer",
+        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingMaintenanceComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "action"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "message"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "minutes"
+        }
+      ]
+    },
+    {
+      "name": "HOUSEKEEPING_WORD_FILTER",
+      "direction": "client_to_server",
+      "header": 9129,
+      "java": {
+        "symbol": "HousekeepingWordFilterEvent",
+        "className": "HousekeepingWordFilterEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingWordFilterEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_WORD_FILTER",
+        "className": "HousekeepingWordFilterComposer",
+        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingWordFilterComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "action"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "word"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "replacement"
         }
       ]
     },
@@ -20087,6 +20162,43 @@
         {
           "kind": "scalar",
           "type": "string",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "HOUSEKEEPING_MAINTENANCE_STATUS",
+      "direction": "server_to_client",
+      "header": 9207,
+      "java": {
+        "symbol": "HousekeepingMaintenanceStatusComposer",
+        "className": "HousekeepingMaintenanceStatusComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/housekeeping/HousekeepingMaintenanceStatusComposer.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_MAINTENANCE_STATUS",
+        "className": "HousekeepingMaintenanceStatusParser",
+        "path": "packages/communication/src/messages/parser/housekeeping/HousekeepingMaintenanceStatusParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
           "name": ""
         }
       ]

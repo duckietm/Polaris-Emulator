@@ -23,7 +23,8 @@ class HousekeepingRequestListContractTest {
                         "user.sanctions",
                         "room.chatlog",
                         "room.visits",
-                        "hotel.bans"),
+                        "hotel.bans",
+                        "hotel.wordfilter"),
                 List.of(
                         HousekeepingRequestListEvent.USER_CHATLOG,
                         HousekeepingRequestListEvent.USER_VISITS,
@@ -32,7 +33,8 @@ class HousekeepingRequestListContractTest {
                         HousekeepingRequestListEvent.USER_SANCTIONS,
                         HousekeepingRequestListEvent.ROOM_CHATLOG,
                         HousekeepingRequestListEvent.ROOM_VISITS,
-                        HousekeepingRequestListEvent.HOTEL_BANS));
+                        HousekeepingRequestListEvent.HOTEL_BANS,
+                        HousekeepingRequestListEvent.HOTEL_WORDFILTER));
     }
 
     @Test

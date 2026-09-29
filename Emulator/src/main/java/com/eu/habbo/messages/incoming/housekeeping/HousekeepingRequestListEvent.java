@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.modtool.ModToolBanList;
 import com.eu.habbo.habbohotel.modtool.ModToolChatLog;
 import com.eu.habbo.habbohotel.modtool.ModToolRoomVisit;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctionItem;
+import com.eu.habbo.habbohotel.modtool.WordFilterWord;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -33,6 +34,8 @@ public class HousekeepingRequestListEvent extends MessageHandler {
     /** Hotel-wide lists take no target; the client sends 0. */
     static final String HOTEL_BANS = "hotel.bans";
 
+    static final String HOTEL_WORDFILTER = "hotel.wordfilter";
+
     private static final int CLONE_LIMIT = 50;
     private static final int NAME_LIMIT = 50;
     private static final int VISIT_LIMIT = 100;
@@ -57,13 +60,20 @@ public class HousekeepingRequestListEvent extends MessageHandler {
             return;
         }
 
+        GameEnvironment environment = Emulator.getGameEnvironment();
+
+        if (HOTEL_WORDFILTER.equals(listKey)) {
+            this.client.sendResponse(
+                    wordFilter(listKey, environment.getWordFilter().getWords()));
+            return;
+        }
+
         if (targetId <= 0) {
             this.client.sendResponse(
                     HousekeepingListComposer.failure(listKey, targetId, "housekeeping.error.invalid_input"));
             return;
         }
 
-        GameEnvironment environment = Emulator.getGameEnvironment();
         HousekeepingListComposer answer =
                 switch (listKey) {
                     case USER_CHATLOG ->
@@ -96,6 +106,24 @@ public class HousekeepingRequestListEvent extends MessageHandler {
                 };
 
         this.client.sendResponse(answer);
+    }
+
+    private static HousekeepingListComposer wordFilter(String listKey, Collection<WordFilterWord> words) {
+        List<List<String>> rows = new ArrayList<>();
+
+        for (WordFilterWord word :
+                words.stream().sorted(Comparator.comparing(entry -> entry.key)).toList()) {
+            rows.add(List.of(
+                    word.key,
+                    word.replacement,
+                    word.hideMessage ? "1" : "0",
+                    word.autoReport ? "1" : "0",
+                    String.valueOf(word.muteTime),
+                    word.prefixOnly ? "1" : "0"));
+        }
+
+        return new HousekeepingListComposer(
+                listKey, 0, true, "", List.of("word", "replacement", "hide", "report", "mute", "prefix"), rows);
     }
 
     private static HousekeepingListComposer bans(String listKey) {

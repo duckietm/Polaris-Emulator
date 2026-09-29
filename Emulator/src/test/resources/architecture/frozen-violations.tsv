@@ -67,6 +67,9 @@ U|com/eu/habbo/database/compat/LegacySqlBridge.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/database/compat/LegacyTableRenameTranslator.java|CALL|getConfig|1
 U|com/eu/habbo/gui/EmulatorDashboard.java|FIELD|version|1
 U|com/eu/habbo/habbohotel/GameEnvironment.java|CALL|getThreading|5
+U|com/eu/habbo/habbohotel/MaintenanceCountdown.java|CALL|getGameEnvironment|1
+U|com/eu/habbo/habbohotel/MaintenanceCountdown.java|CALL|getGameServer|1
+U|com/eu/habbo/habbohotel/MaintenanceCountdown.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/MaintenanceMode.java|CALL|getConfig|4
 U|com/eu/habbo/habbohotel/achievements/AchievementManager.java|CALL|getDatabase|5
 U|com/eu/habbo/habbohotel/achievements/AchievementManager.java|CALL|getGameEnvironment|5

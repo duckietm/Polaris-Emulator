@@ -14,7 +14,7 @@ public final class JdbcCatalogLiveSnapshotRepository implements CatalogLiveSnaps
             + "icon_color, icon_image, min_rank, order_num, visible, enabled, club_only, catalog_mode, vip_only, "
             + "page_headline, page_teaser, COALESCE(page_special, '') AS page_special, page_text1, page_text2, "
             + "page_text_details, page_text_teaser, COALESCE(room_id, 0) AS room_id, includes "
-            + "FROM catalog_pages ORDER BY id";
+            + "FROM catalog_pages WHERE id > 0 ORDER BY id";
     static final String NORMAL_OFFERS_SELECT = "SELECT id AS offer_id, item_ids, page_id, catalog_name, "
             + "cost_credits, cost_points, points_type, amount, limited_stack, order_number, offer_id AS offer_id_client, "
             + "song_id, extradata, have_offer, club_only FROM catalog_items";
@@ -23,7 +23,7 @@ public final class JdbcCatalogLiveSnapshotRepository implements CatalogLiveSnaps
             + "page_layout, icon_color, icon_image, 1 AS min_rank, order_num, visible, enabled, 0 AS club_only, "
             + "'BUILDER' AS catalog_mode, 0 AS vip_only, page_headline, page_teaser, "
             + "COALESCE(page_special, '') AS page_special, page_text1, page_text2, page_text_details, "
-            + "page_text_teaser, 0 AS room_id, '' AS includes FROM catalog_pages_bc ORDER BY id";
+            + "page_text_teaser, 0 AS room_id, '' AS includes FROM catalog_pages_bc WHERE id > 0 ORDER BY id";
     static final String BUILDER_OFFERS_SELECT = "SELECT id AS offer_id, item_ids, page_id, catalog_name, "
             + "0 AS cost_credits, 0 AS cost_points, 0 AS points_type, 1 AS amount, 0 AS limited_stack, order_number, "
             + "-1 AS offer_id_client, 0 AS song_id, extradata, 1 AS have_offer, 0 AS club_only "

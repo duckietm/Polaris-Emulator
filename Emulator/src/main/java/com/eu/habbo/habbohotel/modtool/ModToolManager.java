@@ -13,6 +13,7 @@ import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.messages.ClientMessage;
 import com.eu.habbo.messages.outgoing.generic.alerts.StaffAlertAndOpenHabboWayComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.StaffAlertWIthLinkAndOpenHabboWayComposer;
+import com.eu.habbo.messages.outgoing.handshake.DisconnectReasonComposer;
 import com.eu.habbo.messages.outgoing.modtool.IssueDeletedComposer;
 import com.eu.habbo.messages.outgoing.modtool.ModToolIssueHandledComposer;
 import com.eu.habbo.messages.outgoing.modtool.ModToolIssueInfoComposer;
@@ -572,7 +573,9 @@ public class ModToolManager {
                         .sendResponse(new BanInfoComposer(targetUserId, reason, duration < 0 ? -1 : duration, ""));
             }
 
-            Emulator.getGameServer().getGameClientManager().forceDisposeClient(target.getClient());
+            Emulator.getGameServer()
+                    .getGameClientManager()
+                    .disconnectWithReason(target.getClient(), DisconnectReasonComposer.JUST_BANNED);
         }
 
         // A parked/ghost session keeps the Habbo resumable during the reconnect
@@ -599,7 +602,9 @@ public class ModToolManager {
                 Emulator.getPluginManager().fireEvent(new SupportUserBannedEvent(moderator, h, ban));
                 Emulator.getThreading().run(ban);
                 bans.add(ban);
-                Emulator.getGameServer().getGameClientManager().forceDisposeClient(h.getClient());
+                Emulator.getGameServer()
+                        .getGameClientManager()
+                        .disconnectWithReason(h.getClient(), DisconnectReasonComposer.JUST_BANNED);
             }
         }
 
@@ -621,7 +626,9 @@ public class ModToolManager {
                 Emulator.getPluginManager().fireEvent(new SupportUserBannedEvent(moderator, h, ban));
                 Emulator.getThreading().run(ban);
                 bans.add(ban);
-                Emulator.getGameServer().getGameClientManager().forceDisposeClient(h.getClient());
+                Emulator.getGameServer()
+                        .getGameClientManager()
+                        .disconnectWithReason(h.getClient(), DisconnectReasonComposer.JUST_BANNED);
             }
         }
 

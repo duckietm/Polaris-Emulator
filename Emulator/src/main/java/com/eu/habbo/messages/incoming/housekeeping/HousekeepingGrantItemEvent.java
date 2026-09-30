@@ -18,6 +18,11 @@ import java.sql.SQLException;
  * (or after a relog).
  */
 public class HousekeepingGrantItemEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.ECONOMY;
+    }
+
     private static final String ACTION_KEY = "user.grant_item";
     private static final int MAX_QUANTITY_PER_CALL = 100;
 

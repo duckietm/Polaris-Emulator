@@ -22,6 +22,11 @@ import java.util.List;
  * O(N habbos) wire writes, not O(N) compose calls.
  */
 public class HousekeepingSendHotelAlertEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.HOTEL;
+    }
+
     private static final String ACTION_KEY = "hotel.alert";
 
     static final String SCOPE_HOTEL = "hotel";

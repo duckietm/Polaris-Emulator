@@ -20,6 +20,11 @@ import java.util.List;
  * boolean.
  */
 public class HousekeepingSearchRoomsEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.ROOMS;
+    }
+
     private static final int HARD_LIMIT = 50;
 
     @Override

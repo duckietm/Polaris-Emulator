@@ -13,6 +13,11 @@ import java.util.Optional;
  * changing a user's rank - so nobody widens their own rank or one above it.
  */
 public class HousekeepingSetPermissionEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.PERMISSIONS;
+    }
+
     static final String ACTION_KEY = "hotel.permission.set";
     static final String PERMISSION = "cmd_update_permissions";
 

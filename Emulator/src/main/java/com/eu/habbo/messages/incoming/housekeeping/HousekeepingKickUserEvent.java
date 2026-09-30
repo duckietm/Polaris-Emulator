@@ -13,6 +13,11 @@ import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultCompo
  * ACC_HOUSEKEEPING.
  */
 public class HousekeepingKickUserEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.USERS;
+    }
+
     private static final String ACTION_KEY = "user.kick";
 
     @Override

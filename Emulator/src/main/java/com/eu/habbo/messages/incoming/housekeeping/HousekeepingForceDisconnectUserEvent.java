@@ -10,6 +10,11 @@ import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultCompo
  * to /disconnect in command form but issued through the HK panel.
  */
 public class HousekeepingForceDisconnectUserEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.USERS;
+    }
+
     private static final String ACTION_KEY = "user.disconnect";
 
     @Override

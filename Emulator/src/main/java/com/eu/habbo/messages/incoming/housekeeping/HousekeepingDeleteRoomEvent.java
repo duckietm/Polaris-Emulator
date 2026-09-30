@@ -17,6 +17,11 @@ import java.sql.SQLException;
  * would be no items to give back.
  */
 public class HousekeepingDeleteRoomEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.ROOMS;
+    }
+
     private static final String ACTION_KEY = "room.delete";
 
     @Override

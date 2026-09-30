@@ -8,6 +8,11 @@ import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultCompo
  * only rank the lockdown lets in, so it can always switch it off again.
  */
 public class HousekeepingLockdownEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.HOTEL;
+    }
+
     static final String ACTION_KEY = "hotel.lockdown";
 
     @Override

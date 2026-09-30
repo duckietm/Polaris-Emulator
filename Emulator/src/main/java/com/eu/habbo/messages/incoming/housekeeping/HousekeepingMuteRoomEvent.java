@@ -13,6 +13,11 @@ import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultCompo
  * compat field on the wire.
  */
 public class HousekeepingMuteRoomEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.ROOMS;
+    }
+
     private static final String ACTION_KEY = "room.mute";
 
     @Override

@@ -9,6 +9,11 @@ import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultCompo
  * Lets an operator lift an account ban while an IP or machine ban stays.
  */
 public class HousekeepingRevokeBanEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.BANS;
+    }
+
     static final String ACTION_KEY = "ban.revoke";
 
     @Override

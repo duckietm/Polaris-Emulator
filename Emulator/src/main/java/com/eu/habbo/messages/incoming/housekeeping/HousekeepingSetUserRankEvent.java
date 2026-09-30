@@ -18,6 +18,11 @@ import java.sql.SQLException;
  * (TemporaryRanks). 0 or no duration is a lasting rank, which also ends a running timer.
  */
 public class HousekeepingSetUserRankEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.PERMISSIONS;
+    }
+
     private static final String ACTION_KEY = "user.set_rank";
 
     /** A temporary rank lasts at most a year; longer is a lasting rank. */

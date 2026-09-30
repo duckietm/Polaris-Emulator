@@ -8,6 +8,11 @@ import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingUserDetailCompose
 
 public class HousekeepingFindUserByNameEvent extends HousekeepingHandler {
     @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.USERS;
+    }
+
+    @Override
     public int getRatelimit() {
         return 500;
     }

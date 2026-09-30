@@ -5,6 +5,11 @@ import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 public class HousekeepingUnbanUserEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.BANS;
+    }
+
     private static final String ACTION_KEY = "user.unban";
 
     @Override

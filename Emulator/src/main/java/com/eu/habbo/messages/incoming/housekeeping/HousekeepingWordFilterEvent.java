@@ -13,6 +13,11 @@ import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultCompo
  * housekeeping list.
  */
 public class HousekeepingWordFilterEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.HOTEL;
+    }
+
     static final String ADD = "add";
     static final String REMOVE = "remove";
 

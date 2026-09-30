@@ -16,6 +16,11 @@ import java.sql.SQLException;
  * the room may not be loaded.
  */
 public class HousekeepingTransferRoomOwnershipEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.ROOMS;
+    }
+
     private static final String ACTION_KEY = "room.transfer";
 
     @Override

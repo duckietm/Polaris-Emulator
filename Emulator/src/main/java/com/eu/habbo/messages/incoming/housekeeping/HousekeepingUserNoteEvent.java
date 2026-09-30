@@ -9,6 +9,11 @@ import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultCompo
  * is the user.notes housekeeping list.
  */
 public class HousekeepingUserNoteEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.USERS;
+    }
+
     static final String ADD = "add";
     static final String DELETE = "delete";
     static final String ACTION_PREFIX = "user.note.";

@@ -19,6 +19,11 @@ import java.util.List;
  * holds that command's own permission.
  */
 public class HousekeepingReloadEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.HOTEL;
+    }
+
     static final String ACTION_PREFIX = "hotel.reload.";
 
     static final String CATALOG = "catalog";

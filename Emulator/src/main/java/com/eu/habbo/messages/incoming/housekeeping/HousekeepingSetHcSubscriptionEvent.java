@@ -13,6 +13,11 @@ import java.sql.SQLException;
  * means cancel the active subscription (timestamp clamped to `now`).
  */
 public class HousekeepingSetHcSubscriptionEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.ECONOMY;
+    }
+
     private static final String ACTION_KEY = "user.set_hc";
     private static final int SECONDS_IN_DAY = 24 * 3600;
 

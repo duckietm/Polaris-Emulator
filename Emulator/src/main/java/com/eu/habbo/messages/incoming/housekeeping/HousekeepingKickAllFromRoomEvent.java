@@ -5,6 +5,11 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 public class HousekeepingKickAllFromRoomEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.ROOMS;
+    }
+
     private static final String ACTION_KEY = "room.kick_all";
 
     @Override

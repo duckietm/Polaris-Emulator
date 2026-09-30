@@ -16,6 +16,11 @@ import java.sql.SQLException;
  * effect on the active session without waiting for a relog.
  */
 public class HousekeepingTradeLockUserEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.USERS;
+    }
+
     private static final String ACTION_KEY = "user.trade_lock";
 
     @Override

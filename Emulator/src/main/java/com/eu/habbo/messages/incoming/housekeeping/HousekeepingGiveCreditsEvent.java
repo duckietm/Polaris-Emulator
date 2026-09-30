@@ -8,6 +8,11 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 public class HousekeepingGiveCreditsEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.ECONOMY;
+    }
+
     private static final String ACTION_KEY = "user.give_credits";
 
     @Override

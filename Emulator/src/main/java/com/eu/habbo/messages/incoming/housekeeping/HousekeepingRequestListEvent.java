@@ -77,6 +77,14 @@ public class HousekeepingRequestListEvent extends HousekeepingHandler {
             reveal = this.packet.readInt();
         }
 
+        String area = HousekeepingAreas.forList(listKey);
+
+        if (area != null && !this.client.getHabbo().hasPermission(area)) {
+            this.client.sendResponse(
+                    HousekeepingListComposer.failure(listKey, targetId, HousekeepingAccess.DENIED_MESSAGE));
+            return;
+        }
+
         boolean wantsPrivate = reveal == 1 || USER_PRIVATE.equals(listKey);
 
         if (wantsPrivate && !this.client.getHabbo().hasPermission(HousekeepingPrivacy.PERMISSION)) {

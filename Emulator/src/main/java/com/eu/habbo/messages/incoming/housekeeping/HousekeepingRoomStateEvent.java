@@ -13,6 +13,11 @@ import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultCompo
  */
 public class HousekeepingRoomStateEvent extends HousekeepingHandler {
     @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.ROOMS;
+    }
+
+    @Override
     public int getRatelimit() {
         return 1000;
     }

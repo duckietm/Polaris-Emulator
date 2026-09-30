@@ -15,6 +15,11 @@ import java.util.List;
  * immediately, and anyone inside is told its settings changed.
  */
 public class HousekeepingSaveRoomSettingsEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.ROOMS;
+    }
+
     private static final String ACTION_KEY = "room.settings";
 
     @Override

@@ -19,6 +19,11 @@ import java.sql.SQLException;
  * in the action-result `message` so they can communicate it out-of-band.
  */
 public class HousekeepingResetUserPasswordEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.USERS;
+    }
+
     private static final String ACTION_KEY = "user.reset_password";
     private static final String PASSWORD_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
     private static final int PASSWORD_LENGTH = 12;

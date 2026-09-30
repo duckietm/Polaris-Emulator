@@ -13,6 +13,11 @@ import java.util.List;
  * Habbo-protocol banType buckets.
  */
 public class HousekeepingBanUserEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.BANS;
+    }
+
     private static final String ACTION_KEY = "user.ban";
 
     @Override

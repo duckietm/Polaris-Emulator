@@ -14,6 +14,11 @@ import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultCompo
  * a UserCurrencyComposer; offline goes straight to `users_currency`.
  */
 public class HousekeepingGiveCurrencyEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.ECONOMY;
+    }
+
     private static final int CURRENCY_DUCKETS = 0;
 
     @Override

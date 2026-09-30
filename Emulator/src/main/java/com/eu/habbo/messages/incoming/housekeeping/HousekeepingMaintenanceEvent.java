@@ -12,6 +12,11 @@ import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingMaintenanceStatus
  * state. Changing it needs the :maintenance command's own permission on top of panel access.
  */
 public class HousekeepingMaintenanceEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.HOTEL;
+    }
+
     static final String STATUS = "status";
     static final String START = "start";
     static final String CANCEL = "cancel";

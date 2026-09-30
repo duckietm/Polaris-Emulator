@@ -12,6 +12,11 @@ import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultCompo
  * UI can fall back to ModToolSanctionMute or surface a clear error.
  */
 public class HousekeepingMuteUserEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.USERS;
+    }
+
     private static final String ACTION_KEY = "user.mute";
 
     @Override

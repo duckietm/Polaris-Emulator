@@ -30,6 +30,10 @@ public class Rank {
     private int pixelsTimerAmount;
     private int gotwTimerAmount;
     private int soundboardCooldownSeconds;
+    // Limits this rank raises (0 = the hotel setting); see RankLimits.
+    private int maxRooms;
+    private int maxFriends;
+    private int maxFavouriteRooms;
 
     public Rank(ResultSet set) throws SQLException {
         this(set.getInt("id"));
@@ -101,6 +105,19 @@ public class Rank {
         int loadedSoundboardCooldown = set.getInt("soundboard_cooldown_seconds");
         this.soundboardCooldownSeconds = set.wasNull() || loadedSoundboardCooldown < 0 ? 60 : loadedSoundboardCooldown;
         this.hasPrefix = !this.prefix.isEmpty();
+        this.maxRooms = optionalInt(set, "max_rooms");
+        this.maxFriends = optionalInt(set, "max_friends");
+        this.maxFavouriteRooms = optionalInt(set, "max_favourite_rooms");
+    }
+
+    /** A limit column, or 0 when the table (an older schema, the legacy one) does not have it. */
+    private static int optionalInt(ResultSet set, String column) {
+        try {
+            set.findColumn(column);
+            return Math.max(0, set.getInt(column));
+        } catch (SQLException e) {
+            return 0;
+        }
     }
 
     private void storeMetadataVariables() {
@@ -198,6 +215,25 @@ public class Rank {
 
     public int getGotwTimerAmount() {
         return this.gotwTimerAmount;
+    }
+
+    public int getMaxRooms() {
+        return this.maxRooms;
+    }
+
+    public int getMaxFriends() {
+        return this.maxFriends;
+    }
+
+    public int getMaxFavouriteRooms() {
+        return this.maxFavouriteRooms;
+    }
+
+    /** For tests and plugins; a reload replaces them from permission_ranks. */
+    public void setLimits(int maxRooms, int maxFriends, int maxFavouriteRooms) {
+        this.maxRooms = Math.max(0, maxRooms);
+        this.maxFriends = Math.max(0, maxFriends);
+        this.maxFavouriteRooms = Math.max(0, maxFavouriteRooms);
     }
 
     public int getSoundboardCooldownSeconds() {

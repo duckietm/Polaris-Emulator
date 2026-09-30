@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.campaign.calendar.CalendarRewardClaimed;
 import com.eu.habbo.habbohotel.catalog.CatalogItem;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.permissions.Permission;
+import com.eu.habbo.habbohotel.permissions.RankLimits;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.rooms.RoomTrade;
 import com.eu.habbo.habbohotel.users.cache.HabboOfferPurchase;
@@ -894,7 +895,8 @@ public class HabboStats implements Runnable {
     public boolean addFavoriteRoom(int roomId) {
         if (this.favoriteRooms.contains(roomId)) return false;
 
-        if (Emulator.getConfig().getInt("hotel.rooms.max.favorite") <= this.favoriteRooms.size()) return false;
+        if (RankLimits.favouriteRooms(this.habboInfo != null ? this.habboInfo.getRank() : null)
+                <= this.favoriteRooms.size()) return false;
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(

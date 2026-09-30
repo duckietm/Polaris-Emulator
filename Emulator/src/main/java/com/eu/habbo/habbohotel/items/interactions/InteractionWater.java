@@ -17,6 +17,12 @@ import java.util.List;
 import java.util.Set;
 import org.apache.commons.math3.util.Pair;
 
+/**
+ * Water furni (bw_water_1/2, val13_water, stackable_water). Each piece stores a mask of which
+ * neighbouring tiles hold the same kind of water, so the client draws touching pieces as one pool.
+ * Different kinds keep their shore edge between them; shallow and deep bw water still join at the
+ * corners. Stackable water may also be placed on other furni.
+ */
 public class InteractionWater extends InteractionDefault {
 
     private static final String SHALLOW_WATER_NAME = "bw_water_1";

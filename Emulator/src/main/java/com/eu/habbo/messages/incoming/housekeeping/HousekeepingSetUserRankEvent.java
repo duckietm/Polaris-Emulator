@@ -90,7 +90,12 @@ public class HousekeepingSetUserRankEvent extends MessageHandler {
         // The same path as :give_rank and RCON: saves the rank and, for an online user, swaps the rank
         // badge and effect and resends permissions, perks and the mod tool, and tells plugins.
         try {
-            habboManager.setRank(userId, rank.getId());
+            habboManager.setRank(
+                    userId,
+                    rank.getId(),
+                    this.client.getHabbo().getHabboInfo().getId(),
+                    this.client.getHabbo().getHabboInfo().getUsername(),
+                    "housekeeping");
         } catch (Exception e) {
             this.client.sendResponse(
                     new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.db_failed"));

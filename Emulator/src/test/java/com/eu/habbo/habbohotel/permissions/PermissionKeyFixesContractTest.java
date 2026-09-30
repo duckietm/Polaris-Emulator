@@ -84,6 +84,6 @@ class PermissionKeyFixesContractTest {
         assertTrue(manager.indexOf("UPDATE users SET `rank` = ?", setRank) > setRank);
 
         assertTrue(source("messages/incoming/housekeeping/HousekeepingSetUserRankEvent.java")
-                .contains("habboManager.setRank(userId, rank.getId())"));
+                .contains("habboManager.setRank("));
     }
 }

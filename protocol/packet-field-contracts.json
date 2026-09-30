@@ -9590,6 +9590,17 @@
           "kind": "scalar",
           "type": "int",
           "name": "rankId"
+        },
+        {
+          "kind": "optional",
+          "controller": "durationSeconds",
+          "fields": [
+            {
+              "kind": "scalar",
+              "type": "int",
+              "name": "durationSeconds"
+            }
+          ]
         }
       ]
     },

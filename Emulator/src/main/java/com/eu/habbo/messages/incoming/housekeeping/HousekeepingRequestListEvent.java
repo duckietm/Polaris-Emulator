@@ -7,6 +7,8 @@ import com.eu.habbo.habbohotel.modtool.ModToolChatLog;
 import com.eu.habbo.habbohotel.modtool.ModToolRoomVisit;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctionItem;
 import com.eu.habbo.habbohotel.modtool.WordFilterWord;
+import com.eu.habbo.habbohotel.permissions.PermissionsManager;
+import com.eu.habbo.habbohotel.permissions.TemporaryRanks;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
@@ -32,6 +34,7 @@ public class HousekeepingRequestListEvent extends MessageHandler {
     static final String USER_NAMES = "user.names";
     static final String USER_SANCTIONS = "user.sanctions";
     static final String USER_NOTES = "user.notes";
+    static final String USER_TEMP_RANK = "user.temp_rank";
     static final String ROOM_CHATLOG = "room.chatlog";
     static final String ROOM_VISITS = "room.visits";
     /** Hotel-wide lists take no target; the client sends 0. */
@@ -128,6 +131,7 @@ public class HousekeepingRequestListEvent extends MessageHandler {
                     case USER_NAMES ->
                         names(listKey, targetId, environment.getHabboManager().getNameChanges(targetId, NAME_LIMIT));
                     case USER_NOTES -> HousekeepingUserNotes.list(listKey, targetId);
+                    case USER_TEMP_RANK -> temporaryRank(listKey, targetId, environment.getPermissionsManager());
                     case USER_SANCTIONS ->
                         sanctions(
                                 listKey,
@@ -137,6 +141,33 @@ public class HousekeepingRequestListEvent extends MessageHandler {
                 };
 
         this.client.sendResponse(answer);
+    }
+
+    /** The user's temporary rank, if one runs: the rank, the one they go back to, when, who and why. */
+    private static HousekeepingListComposer temporaryRank(String listKey, int userId, PermissionsManager permissions) {
+        List<List<String>> rows = new ArrayList<>();
+
+        TemporaryRanks.find(userId)
+                .ifPresent(row -> rows.add(List.of(
+                        String.valueOf(row.rankId()),
+                        rankName(permissions, row.rankId()),
+                        String.valueOf(row.previousRankId()),
+                        rankName(permissions, row.previousRankId()),
+                        String.valueOf(row.expiresAt()),
+                        row.setByName() == null ? "" : row.setByName(),
+                        row.reason() == null ? "" : row.reason())));
+
+        return new HousekeepingListComposer(
+                listKey,
+                userId,
+                true,
+                "",
+                List.of("rank", "rank_name", "previous_rank", "previous_rank_name", "expires", "staff", "reason"),
+                rows);
+    }
+
+    private static String rankName(PermissionsManager permissions, int rankId) {
+        return permissions.rankExists(rankId) ? permissions.getRank(rankId).getName() : "";
     }
 
     /** Everyone online, by name, with rank, current room, login IP and since when they are on. */

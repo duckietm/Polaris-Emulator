@@ -36,6 +36,22 @@ class HousekeepingStaffToolsContractTest {
     }
 
     @Test
+    void aTemporaryRankGoesThroughTemporaryRanksAndKeepsItsTimer() throws Exception {
+        String source = Files.readString(BASE.resolve("HousekeepingSetUserRankEvent.java"));
+
+        assertTrue(source.contains("TemporaryRanks.give("), "a temporary rank is recorded before the rank changes");
+        assertTrue(
+                source.contains("TemporaryRanks.VIA_PREFIX + \" housekeeping\""),
+                "the change keeps the timer, so the rank comes back when it runs out");
+        assertTrue(source.contains("if (temporary) TemporaryRanks.clear(userId);"), "a failed change leaves no timer");
+        assertTrue(
+                source.contains("HousekeepingTargetRankGuard.canAssignRank(")
+                        && source.contains("HousekeepingTargetRankGuard.canTargetRank("),
+                "the same rank policy as a lasting rank");
+        assertEquals(365 * 24 * 3600, HousekeepingSetUserRankEvent.MAX_TEMPORARY_SECONDS);
+    }
+
+    @Test
     void onlyTheAuthorDeletesANote() {
         assertEquals(
                 List.of("add", "delete"), List.of(HousekeepingUserNoteEvent.ADD, HousekeepingUserNoteEvent.DELETE));

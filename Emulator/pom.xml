@@ -29,7 +29,7 @@
         <dropwizard-metrics.version>4.2.40</dropwizard-metrics.version>
         <caffeine.version>3.2.4</caffeine.version>
         <resilience4j.version>2.4.0</resilience4j.version>
-        <hibernate-validator.version>9.1.3.Final</hibernate-validator.version>
+        <hibernate-validator.version>9.1.4.Final</hibernate-validator.version>
         <commons-lang3.version>3.21.0</commons-lang3.version>
         <commons-math3.version>3.6.1</commons-math3.version>
         <jsoup.version>1.23.2</jsoup.version>

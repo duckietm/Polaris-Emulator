@@ -11,6 +11,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionSwitchRemoteControl
 import com.eu.habbo.habbohotel.items.interactions.InteractionTeleport;
 import com.eu.habbo.habbohotel.items.interactions.InteractionTileWalkMagic;
 import com.eu.habbo.habbohotel.items.interactions.InteractionVendingMachine;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWiredRoomLinker;
 import com.eu.habbo.habbohotel.items.interactions.StackHelperExtradata;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
@@ -55,7 +56,7 @@ public class RoomFloorItemsComposer extends MessageComposer {
             item.serializeExtradata(this.response);
             this.response.appendInt(item.getSecondsToExpiration());
             this.response.appendInt(
-                    item instanceof InteractionTeleport
+                    (item instanceof InteractionTeleport && !(item instanceof InteractionWiredRoomLinker))
                                     || item instanceof InteractionSwitch
                                     || item instanceof InteractionSwitchRemoteControl
                                     || item instanceof InteractionVendingMachine

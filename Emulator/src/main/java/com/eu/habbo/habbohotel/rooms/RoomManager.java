@@ -547,6 +547,10 @@ public class RoomManager {
                 tradeType);
 
         Emulator.getPluginManager().fireEvent(new NavigatorRoomCreatedEvent(habbo, room));
+        if (room != null) {
+            com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                    habbo, com.eu.habbo.habbohotel.quests.QuestGoalType.CREATE_ROOM, 1);
+        }
 
         return room;
     }
@@ -1132,8 +1136,10 @@ public class RoomManager {
 
         WiredManager.triggerUserEntersRoom(room, habbo.getRoomUnit());
         room.habboEntered(habbo);
-        com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
-                habbo, com.eu.habbo.habbohotel.quests.QuestGoalType.VISIT_ROOMS, 1);
+        if (room.getOwnerId() != habbo.getHabboInfo().getId()) {
+            com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                    habbo, com.eu.habbo.habbohotel.quests.QuestGoalType.VISIT_ROOMS, 1);
+        }
 
         if (!habbo.getHabboStats().nux && (room.isOwner(habbo) || room.isPublicRoom())) {
             UserNuxEvent.handle(habbo);

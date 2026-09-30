@@ -17,6 +17,7 @@ import static com.eu.habbo.networking.gameserver.auth.AuthHttpUtil.sendJson;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.MaintenanceMode;
+import com.eu.habbo.messages.outgoing.handshake.DisconnectReasonComposer;
 import com.google.gson.JsonObject;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -80,7 +81,9 @@ final class SessionEndpoints {
                     com.eu.habbo.habbohotel.users.Habbo habbo =
                             Emulator.getGameServer().getGameClientManager().getHabbo(userId);
                     if (habbo != null && habbo.getClient() != null) {
-                        Emulator.getGameServer().getGameClientManager().forceDisposeClient(habbo.getClient());
+                        Emulator.getGameServer()
+                                .getGameClientManager()
+                                .disconnectWithReason(habbo.getClient(), DisconnectReasonComposer.LOGOUT);
                     }
                 }
             }

@@ -11,6 +11,7 @@ import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.habbicons.HabbiconService;
 import com.eu.habbo.habbohotel.messenger.Messenger;
 import com.eu.habbo.habbohotel.modtool.ModToolBan;
+import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessage;
@@ -719,7 +720,7 @@ public class Habbo implements Runnable {
             return;
         }
 
-        if (!this.hasPermission("acc_no_mute")) {
+        if (!this.hasPermission(Permission.ACC_NOMUTE)) {
             int remaining = this.habboStats.addMuteTime(seconds);
             this.client.sendResponse(new FloodCounterComposer(remaining));
             this.client.sendResponse(new MutedWhisperComposer(remaining));

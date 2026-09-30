@@ -1,10 +1,10 @@
 package com.eu.habbo.messages.rcon;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.google.gson.Gson;
 import jakarta.validation.constraints.Positive;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -17,8 +17,8 @@ public class SetRank extends RCONMessage<SetRank.JSONSetRank> {
 
     @Override
     public void handle(Gson gson, JSONSetRank object) {
-        int maxRank = SetRankRequestGuard.parseMaxRank(
-                Emulator.getConfig().getValue("rcon.setrank.max_rank", String.valueOf(SetRankRequestGuard.DEFAULT_MAX_RANK)));
+        int maxRank = SetRankRequestGuard.parseMaxRank(Emulator.getConfig()
+                .getValue("rcon.setrank.max_rank", String.valueOf(SetRankRequestGuard.DEFAULT_MAX_RANK)));
         String validationError = SetRankRequestGuard.validate(
                 object.user_id,
                 object.rank,
@@ -36,21 +36,28 @@ public class SetRank extends RCONMessage<SetRank.JSONSetRank> {
             return;
         }
 
+        Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(object.user_id);
+        String fromRank = habbo != null && habbo.getHabboInfo().getRank() != null
+                ? String.valueOf(habbo.getHabboInfo().getRank().getId())
+                : "?";
+
         try {
-            Emulator.getGameEnvironment().getHabboManager().setRank(object.user_id, object.rank);
+            Emulator.getGameEnvironment().getHabboManager().setRank(object.user_id, object.rank, 0, "rcon", "rcon");
         } catch (Exception e) {
             this.status = RCONMessage.SYSTEM_ERROR;
             this.message = "invalid rank";
             return;
         }
 
-        this.message = "updated offline user";
+        HousekeepingAuditLog.log(
+                0,
+                "rcon",
+                "user.set_rank",
+                object.user_id,
+                "fromRankId=" + fromRank + " rankId=" + object.rank + " via=rcon",
+                "");
 
-        Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(object.user_id);
-
-        if (habbo != null) {
-            this.message = "updated online user";
-        }
+        this.message = habbo != null ? "updated online user" : "updated offline user";
     }
 
     private static boolean userExists(int userId) {
@@ -60,7 +67,8 @@ public class SetRank extends RCONMessage<SetRank.JSONSetRank> {
         }
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT id FROM users WHERE id = ? LIMIT 1")) {
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT id FROM users WHERE id = ? LIMIT 1")) {
             statement.setInt(1, userId);
             try (ResultSet set = statement.executeQuery()) {
                 return set.next();
@@ -74,7 +82,6 @@ public class SetRank extends RCONMessage<SetRank.JSONSetRank> {
 
         @Positive(message = "invalid user")
         public int user_id;
-
 
         @Positive(message = "invalid rank")
         public int rank;

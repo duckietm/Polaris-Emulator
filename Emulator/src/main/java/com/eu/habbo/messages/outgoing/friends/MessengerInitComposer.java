@@ -1,12 +1,11 @@
 package com.eu.habbo.messages.outgoing.friends;
 
-import com.eu.habbo.habbohotel.messenger.Messenger;
 import com.eu.habbo.habbohotel.messenger.MessengerCategory;
+import com.eu.habbo.habbohotel.permissions.RankLimits;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-
 import java.util.List;
 
 public class MessengerInitComposer extends MessageComposer {
@@ -25,13 +24,14 @@ public class MessengerInitComposer extends MessageComposer {
             this.response.appendInt(1337);
             this.response.appendInt(Integer.MAX_VALUE);
         } else {
-            this.response.appendInt(Messenger.MAXIMUM_FRIENDS);
+            this.response.appendInt(RankLimits.friendsShown(this.habbo, false));
             this.response.appendInt(1337);
-            this.response.appendInt(Messenger.MAXIMUM_FRIENDS_HC);
+            this.response.appendInt(RankLimits.friendsShown(this.habbo, true));
         }
         if (!this.habbo.getHabboInfo().getMessengerCategories().isEmpty()) {
 
-            List<MessengerCategory> messengerCategories = this.habbo.getHabboInfo().getMessengerCategories();
+            List<MessengerCategory> messengerCategories =
+                    this.habbo.getHabboInfo().getMessengerCategories();
             this.response.appendInt(messengerCategories.size());
 
             for (MessengerCategory mc : messengerCategories) {
@@ -48,4 +48,3 @@ public class MessengerInitComposer extends MessageComposer {
         return habbo;
     }
 }
-

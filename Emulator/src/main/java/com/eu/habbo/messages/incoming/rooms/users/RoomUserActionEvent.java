@@ -18,7 +18,8 @@ public class RoomUserActionEvent extends MessageHandler {
             Habbo habbo = this.client.getHabbo();
 
             if (this.client.getHabbo().getRoomUnit().getCacheable().get("control") != null) {
-                habbo = (Habbo) this.client.getHabbo().getRoomUnit().getCacheable().get("control");
+                habbo = (Habbo)
+                        this.client.getHabbo().getRoomUnit().getCacheable().get("control");
 
                 if (habbo.getHabboInfo().getCurrentRoom() != room) {
                     habbo.getRoomUnit().getCacheable().remove("controller");
@@ -28,8 +29,7 @@ public class RoomUserActionEvent extends MessageHandler {
             }
 
             int action = this.packet.readInt();
-            if (!RoomUserInputGuard.isValidAction(action))
-                return;
+            if (!RoomUserInputGuard.isValidAction(action)) return;
 
             int wiredAction = 0;
 
@@ -55,10 +55,14 @@ public class RoomUserActionEvent extends MessageHandler {
                         room.unIdle(habbo);
                     }
                 }
-
             }
 
-            room.sendComposer(new RoomUserActionComposer(habbo.getRoomUnit(), RoomUserAction.fromValue(action)).compose());
+            room.sendComposer(
+                    new RoomUserActionComposer(habbo.getRoomUnit(), RoomUserAction.fromValue(action)).compose());
+            if (action == 1 && habbo == this.client.getHabbo()) {
+                com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                        habbo, com.eu.habbo.habbohotel.quests.QuestGoalType.WAVE, 1);
+            }
 
             if (wiredAction == 0) {
                 switch (action) {

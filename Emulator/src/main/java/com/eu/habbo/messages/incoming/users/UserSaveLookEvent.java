@@ -23,7 +23,10 @@ public class UserSaveLookEvent extends MessageHandler {
         try {
             gender = HabboGender.valueOf(genderCode);
         } catch (IllegalArgumentException e) {
-            String message = Emulator.getTexts().getValue("scripter.warning.look.gender").replace("%username%", this.client.getHabbo().getHabboInfo().getUsername()).replace("%gender%", genderCode);
+            String message = Emulator.getTexts()
+                    .getValue("scripter.warning.look.gender")
+                    .replace("%username%", this.client.getHabbo().getHabboInfo().getUsername())
+                    .replace("%gender%", genderCode);
             ScripterManager.scripterDetected(this.client, message);
             LOGGER.info(message);
             return;
@@ -33,22 +36,42 @@ public class UserSaveLookEvent extends MessageHandler {
 
         UserSavedLookEvent lookEvent = new UserSavedLookEvent(this.client.getHabbo(), gender, look);
         Emulator.getPluginManager().fireEvent(lookEvent);
-        if (lookEvent.isCancelled())
-            return;
+        if (lookEvent.isCancelled()) return;
 
-        this.client.getHabbo().getHabboInfo().setLook(ClothingValidationManager.VALIDATE_ON_CHANGE_LOOKS ? ClothingValidationManager.validateLook(this.client.getHabbo(), lookEvent.newLook, lookEvent.gender.name()) : lookEvent.newLook);
+        String previousLook = this.client.getHabbo().getHabboInfo().getLook();
+        this.client
+                .getHabbo()
+                .getHabboInfo()
+                .setLook(
+                        ClothingValidationManager.VALIDATE_ON_CHANGE_LOOKS
+                                ? ClothingValidationManager.validateLook(
+                                        this.client.getHabbo(), lookEvent.newLook, lookEvent.gender.name())
+                                : lookEvent.newLook);
         this.client.getHabbo().getHabboInfo().setGender(lookEvent.gender);
+        if (!java.util.Objects.equals(
+                previousLook, this.client.getHabbo().getHabboInfo().getLook())) {
+            com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                    this.client.getHabbo(), com.eu.habbo.habbohotel.quests.QuestGoalType.CHANGE_FIGURE, 1);
+        }
         Emulator.getThreading().run(this.client.getHabbo().getHabboInfo());
         this.client.sendResponse(new UpdateUserLookComposer(this.client.getHabbo()));
         if (this.client.getHabbo().getHabboInfo().getCurrentRoom() != null) {
-            this.client.getHabbo().getHabboInfo().getCurrentRoom().sendComposer(new RoomUserDataComposer(this.client.getHabbo()).compose());
+            this.client
+                    .getHabbo()
+                    .getHabboInfo()
+                    .getCurrentRoom()
+                    .sendComposer(new RoomUserDataComposer(this.client.getHabbo()).compose());
         }
-        this.client.getHabbo().getMessenger().connectionChanged(
-                this.client.getHabbo(),
-                this.client.getHabbo().isOnline(),
-                this.client.getHabbo().getHabboInfo().getCurrentRoom() != null
-        );
+        this.client
+                .getHabbo()
+                .getMessenger()
+                .connectionChanged(
+                        this.client.getHabbo(),
+                        this.client.getHabbo().isOnline(),
+                        this.client.getHabbo().getHabboInfo().getCurrentRoom() != null);
 
-        AchievementManager.progressAchievement(this.client.getHabbo(), Emulator.getGameEnvironment().getAchievementManager().getAchievement("AvatarLooks"));
+        AchievementManager.progressAchievement(
+                this.client.getHabbo(),
+                Emulator.getGameEnvironment().getAchievementManager().getAchievement("AvatarLooks"));
     }
 }

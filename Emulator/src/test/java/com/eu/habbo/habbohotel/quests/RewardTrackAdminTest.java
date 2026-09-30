@@ -46,7 +46,7 @@ class RewardTrackAdminTest {
                 List.of(new RewardTrack.Level(2, 10, false), new RewardTrack.Level(4, 20, false));
         assertNull(RewardTrackAdmin.validate(task("chat_with_someone", levels)));
         assertNull(RewardTrackAdmin.validate(task("TALK_IN_ROOM", levels)), "the enum name is accepted too");
-        assertNotNull(RewardTrackAdmin.validate(task("dance", levels)));
+        assertNotNull(RewardTrackAdmin.validate(task("juggle", levels)));
         assertNotNull(RewardTrackAdmin.validate(task("chat_with_someone", List.of())));
         assertNotNull(RewardTrackAdmin.validate(task(
                 "chat_with_someone",

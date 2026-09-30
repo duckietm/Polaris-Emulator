@@ -42,7 +42,7 @@ class AsyncDisconnectPersistenceContractTest {
         int load = source.indexOf("private Habbo loadHabbo(int userId", ticketQuery);
         int firstWait = source.indexOf("awaitDisconnectPersistence(userId)", load);
         int cloneCheck = source.indexOf("this.cloneCheck(userId)", firstWait);
-        int forceDispose = source.indexOf("forceDisposeClient(", cloneCheck);
+        int forceDispose = source.indexOf("disconnectWithReason(", cloneCheck);
         int secondWait = source.indexOf("awaitDisconnectPersistence(userId)", forceDispose);
         int reload = source.indexOf("binder.bind(statement)", secondWait);
 

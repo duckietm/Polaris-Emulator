@@ -16,17 +16,23 @@ public class ChangeRelationEvent extends MessageHandler {
             return;
         }
 
-        MessengerBuddy buddy = this.client.getHabbo().getMessenger().getFriends().get(userId);
+        MessengerBuddy buddy =
+                this.client.getHabbo().getMessenger().getFriends().get(userId);
         if (buddy != null && FriendInputGuard.isValidRelation(relationId)) {
             UserRelationShipEvent event = new UserRelationShipEvent(this.client.getHabbo(), buddy, relationId);
-            if (Emulator.getPluginManager().fireEvent(event).isCancelled())
-                return;
+            if (Emulator.getPluginManager().fireEvent(event).isCancelled()) return;
 
-            if (!FriendInputGuard.isValidRelation(event.relationShip))
-                return;
+            if (!FriendInputGuard.isValidRelation(event.relationShip)) return;
 
+            boolean changed = event.relationShip > 0 && event.relationShip != buddy.getRelation();
             buddy.setRelation(event.relationShip);
             this.client.sendResponse(new UpdateFriendComposer(this.client.getHabbo(), buddy, 0));
+            if (changed) {
+                com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                        this.client.getHabbo(),
+                        com.eu.habbo.habbohotel.quests.QuestGoalType.SET_RELATIONSHIP_STATUS,
+                        1);
+            }
         }
     }
 }

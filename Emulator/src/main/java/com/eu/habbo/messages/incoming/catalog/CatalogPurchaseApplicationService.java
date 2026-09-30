@@ -25,9 +25,9 @@ import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.permissions.Permission;
+import com.eu.habbo.habbohotel.permissions.RankLimits;
 import com.eu.habbo.habbohotel.pets.PetManager;
 import com.eu.habbo.habbohotel.rooms.BuildersClubRoomSupport;
-import com.eu.habbo.habbohotel.rooms.RoomManager;
 import com.eu.habbo.habbohotel.users.HabboBadge;
 import com.eu.habbo.habbohotel.users.HabboInventory;
 import com.eu.habbo.habbohotel.users.subscriptions.Subscription;
@@ -128,9 +128,7 @@ final class CatalogPurchaseApplicationService {
                         .getRoomManager()
                         .getRoomsForHabbo(this.client.getHabbo())
                         .size();
-                int maxRooms = this.client.getHabbo().getHabboStats().hasActiveClub()
-                        ? RoomManager.MAXIMUM_ROOMS_HC
-                        : RoomManager.MAXIMUM_ROOMS_USER;
+                int maxRooms = RankLimits.rooms(this.client.getHabbo());
 
                 if (roomCount >= maxRooms) { // checks if a user has the maximum rooms
                     this.client.sendResponse(

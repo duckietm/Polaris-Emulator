@@ -28,17 +28,21 @@ public class FriendPrivateMessageEvent extends MessageHandler {
         this.client.getHabbo().getHabboStats().lastChat = millis;
 
         MessengerBuddy buddy = this.client.getHabbo().getMessenger().getFriend(userId);
-        if (buddy == null)
-            return;
+        if (buddy == null) return;
 
         UserFriendChatEvent event = new UserFriendChatEvent(this.client.getHabbo(), buddy, message);
-        if (Emulator.getPluginManager().fireEvent(event).isCancelled())
-            return;
+        if (Emulator.getPluginManager().fireEvent(event).isCancelled()) return;
+
+        if (userId > 0) {
+            com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                    this.client.getHabbo(), com.eu.habbo.habbohotel.quests.QuestGoalType.SEND_MESSENGER_MESSAGE, 1);
+        }
 
         if (userId <= 0) {
             buddy.onMessageReceived(this.client.getHabbo(), message);
         } else if (buddy.onMessageReceivedWithDeliveryStatus(this.client.getHabbo(), message)) {
-            Message confirmation = new Message(userId, this.client.getHabbo().getHabboInfo().getId(), "");
+            Message confirmation =
+                    new Message(userId, this.client.getHabbo().getHabboInfo().getId(), "");
             this.client.sendResponse(new FriendChatMessageComposer(confirmation, userId, userId, "offline-sent"));
         }
     }

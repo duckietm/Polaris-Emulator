@@ -1,6 +1,6 @@
 package com.eu.habbo.messages.outgoing.users;
 
-import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.permissions.RankLimits;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -16,7 +16,8 @@ public class FavoriteRoomsCountComposer extends MessageComposer {
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.FavoriteRoomsCountComposer);
-        this.response.appendInt(Emulator.getConfig().getInt("hotel.rooms.max.favorite"));
+        this.response.appendInt(
+                RankLimits.favouriteRooms(this.habbo.getHabboInfo().getRank()));
         this.response.appendInt(this.habbo.getHabboStats().getFavoriteRooms().size());
         for (int roomId : this.habbo.getHabboStats().getFavoriteRooms()) {
             this.response.appendInt(roomId);

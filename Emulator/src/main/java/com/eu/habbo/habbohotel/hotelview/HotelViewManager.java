@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.hotelview;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.outgoing.hotelview.HotelViewLandingComposer;
@@ -329,7 +330,7 @@ public class HotelViewManager {
 
             habbo.getClient()
                     .sendResponse(new HotelViewLandingComposer(
-                            habbo.getHabboInfo().getRank().getId() >= 7,
+                            habbo.hasPermission(Permission.ACC_HOTELVIEW_EDIT),
                             this.scene,
                             applyUserVotes(votesByUser.get(habbo.getHabboInfo().getId()))));
         }

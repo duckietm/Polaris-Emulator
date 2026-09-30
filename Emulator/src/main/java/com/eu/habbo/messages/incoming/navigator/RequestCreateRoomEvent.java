@@ -1,9 +1,9 @@
 package com.eu.habbo.messages.incoming.navigator;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.permissions.RankLimits;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomCategory;
-import com.eu.habbo.habbohotel.rooms.RoomManager;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.navigator.CanCreateRoomComposer;
@@ -86,9 +86,7 @@ public class RequestCreateRoomEvent extends MessageHandler {
                 .getRoomManager()
                 .getRoomsForHabbo(this.client.getHabbo())
                 .size();
-        int max = this.client.getHabbo().getHabboStats().hasActiveClub()
-                ? RoomManager.MAXIMUM_ROOMS_HC
-                : RoomManager.MAXIMUM_ROOMS_USER;
+        int max = RankLimits.rooms(this.client.getHabbo());
 
         if (count >= max) {
             this.client.sendResponse(new CanCreateRoomComposer(count, max));

@@ -12,11 +12,20 @@ public final class UserRewardTrackState {
     private final Map<String, Integer> taskProgress = new ConcurrentHashMap<>();
     private final Map<String, Integer> taskPeaks = new ConcurrentHashMap<>();
     private final Set<String> claimedPrizes = ConcurrentHashMap.newKeySet();
+    private final Object persistenceLock = new Object();
 
     public UserRewardTrackState(String trackId, int points, boolean premium) {
         this.trackId = trackId;
         this.points = Math.max(0, points);
         this.premium = premium;
+    }
+
+    /**
+     * Held while a save reads this state and writes it, so the rows are always written in the order the
+     * state was read: a slow older save can never land after, and overwrite, a newer one.
+     */
+    Object persistenceLock() {
+        return this.persistenceLock;
     }
 
     public String getTrackId() {

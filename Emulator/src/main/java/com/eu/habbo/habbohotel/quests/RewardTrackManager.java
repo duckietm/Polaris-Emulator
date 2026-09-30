@@ -256,52 +256,81 @@ public class RewardTrackManager {
         return state;
     }
 
+    /**
+     * Writes the user's points and premium flag. The write runs later on a worker thread and reads the
+     * state then, not when it was scheduled: queued saves may run in any order, and each one writes the
+     * newest values, so a stale snapshot (an old premium save, say) can never overwrite newer points.
+     */
     protected void saveTrack(int userId, UserRewardTrackState state) {
         if (!this.persistent) {
             return;
         }
-        int points = state.getPoints();
-        boolean premium = state.isPremium();
-        Emulator.getThreading().run(() -> {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                    PreparedStatement statement = connection.prepareStatement(
-                            "INSERT INTO users_reward_tracks (user_id, track_id, points, premium) VALUES (?, ?, ?, ?)"
-                                    + " ON DUPLICATE KEY UPDATE points = VALUES(points), premium = VALUES(premium)")) {
-                statement.setInt(1, userId);
-                statement.setString(2, state.getTrackId());
-                statement.setInt(3, points);
-                statement.setBoolean(4, premium);
-                statement.execute();
-            } catch (SQLException exception) {
-                LOGGER.error("Could not save reward track {} of user {}", state.getTrackId(), userId, exception);
+        this.runPersistence(() -> {
+            synchronized (state.persistenceLock()) {
+                int points;
+                boolean premium;
+                synchronized (state) {
+                    points = state.getPoints();
+                    premium = state.isPremium();
+                }
+                this.writeTrack(userId, state.getTrackId(), points, premium);
             }
         });
     }
 
-    protected void saveTaskProgress(int userId, String trackId, String taskId, int count) {
-        this.saveTaskProgress(userId, trackId, taskId, count, count);
-    }
-
-    protected void saveTaskProgress(int userId, String trackId, String taskId, int count, int peak) {
+    /** Writes a task's progress, read from the state when the write runs, like {@link #saveTrack}. */
+    protected void saveTaskProgress(int userId, UserRewardTrackState state, String taskId) {
         if (!this.persistent) {
             return;
         }
-        Emulator.getThreading().run(() -> {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                    PreparedStatement statement = connection.prepareStatement(
-                            "INSERT INTO users_reward_track_tasks (user_id, track_id, task_id, progress_count, peak_count)"
-                                    + " VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE progress_count ="
-                                    + " VALUES(progress_count), peak_count = GREATEST(peak_count, VALUES(peak_count))")) {
-                statement.setInt(1, userId);
-                statement.setString(2, trackId);
-                statement.setString(3, taskId);
-                statement.setInt(4, count);
-                statement.setInt(5, Math.max(count, peak));
-                statement.execute();
-            } catch (SQLException exception) {
-                LOGGER.error("Could not save reward track task {}/{} of user {}", trackId, taskId, userId, exception);
+        this.runPersistence(() -> {
+            synchronized (state.persistenceLock()) {
+                int count;
+                int peak;
+                synchronized (state) {
+                    count = state.progressOf(taskId);
+                    peak = state.peakOf(taskId);
+                }
+                this.writeTaskProgress(userId, state.getTrackId(), taskId, count, peak);
             }
         });
+    }
+
+    /** Runs a database write off the game thread. */
+    protected void runPersistence(Runnable write) {
+        Emulator.getThreading().run(write);
+    }
+
+    protected void writeTrack(int userId, String trackId, int points, boolean premium) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO users_reward_tracks (user_id, track_id, points, premium) VALUES (?, ?, ?, ?)"
+                                + " ON DUPLICATE KEY UPDATE points = VALUES(points), premium = VALUES(premium)")) {
+            statement.setInt(1, userId);
+            statement.setString(2, trackId);
+            statement.setInt(3, points);
+            statement.setBoolean(4, premium);
+            statement.execute();
+        } catch (SQLException exception) {
+            LOGGER.error("Could not save reward track {} of user {}", trackId, userId, exception);
+        }
+    }
+
+    protected void writeTaskProgress(int userId, String trackId, String taskId, int count, int peak) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO users_reward_track_tasks (user_id, track_id, task_id, progress_count, peak_count)"
+                                + " VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE progress_count ="
+                                + " VALUES(progress_count), peak_count = GREATEST(peak_count, VALUES(peak_count))")) {
+            statement.setInt(1, userId);
+            statement.setString(2, trackId);
+            statement.setString(3, taskId);
+            statement.setInt(4, count);
+            statement.setInt(5, Math.max(count, peak));
+            statement.execute();
+        } catch (SQLException exception) {
+            LOGGER.error("Could not save reward track task {}/{} of user {}", trackId, taskId, userId, exception);
+        }
     }
 
     protected void saveClaim(int userId, String trackId, String prizeId) {
@@ -425,7 +454,9 @@ public class RewardTrackManager {
      */
     public int adjustPoints(Habbo habbo, RewardTrack track, int delta) {
         UserRewardTrackState state = this.stateFor(habbo, track);
-        state.addPoints(delta);
+        synchronized (state) {
+            state.addPoints(delta);
+        }
         this.saveTrack(habbo.getHabboInfo().getId(), state);
         if (habbo.getClient() != null) {
             this.sendRewardTracks(habbo, false);
@@ -483,7 +514,6 @@ public class RewardTrackManager {
 
     private int moveTask(Habbo habbo, RewardTrack track, UserRewardTrackState state, RewardTrack.Task task, int after) {
         int points;
-        int peak;
         int total;
         // Wired firings run on worker threads; one move at a time per user and track pays a level once.
         synchronized (state) {
@@ -497,14 +527,13 @@ public class RewardTrackManager {
             if (points > 0) {
                 state.addPoints(points);
             }
-            peak = state.peakOf(task.getId());
             total = state.getPoints();
         }
         int userId = habbo.getHabboInfo().getId();
         if (points > 0) {
             this.saveTrack(userId, state);
         }
-        this.saveTaskProgress(userId, track.getId(), task.getId(), after, peak);
+        this.saveTaskProgress(userId, state, task.getId());
         if (habbo.getClient() != null) {
             habbo.getClient().sendResponse(new RewardTrackProgressComposer(track.getId(), task.getId(), after, total));
         }
@@ -520,17 +549,21 @@ public class RewardTrackManager {
             result = RESULT_UNKNOWN;
         } else {
             UserRewardTrackState state = this.stateFor(habbo, track);
-            if (state.isClaimed(prizeId)) {
-                result = RESULT_ALREADY_CLAIMED;
-            } else if (state.isPrizeLocked(prize)) {
-                result = RESULT_PREMIUM_REQUIRED;
-            } else if (state.getPoints() < prize.getRequiredPoints()) {
-                result = RESULT_NOT_ENOUGH_POINTS;
-            } else {
-                state.markClaimed(prizeId);
+            synchronized (state) {
+                if (state.isClaimed(prizeId)) {
+                    result = RESULT_ALREADY_CLAIMED;
+                } else if (state.isPrizeLocked(prize)) {
+                    result = RESULT_PREMIUM_REQUIRED;
+                } else if (state.getPoints() < prize.getRequiredPoints()) {
+                    result = RESULT_NOT_ENOUGH_POINTS;
+                } else {
+                    state.markClaimed(prizeId);
+                    result = RESULT_OK;
+                }
+            }
+            if (result == RESULT_OK) {
                 this.saveClaim(habbo.getHabboInfo().getId(), trackId, prizeId);
                 QuestRewards.grantTyped(habbo, prize.getRewardType(), prize.getExtraParams(), prize.getRewardAmount());
-                result = RESULT_OK;
             }
         }
         habbo.getClient().sendResponse(new RewardTrackClaimResultComposer(trackId, prizeId, result));
@@ -546,26 +579,32 @@ public class RewardTrackManager {
             result = RESULT_UNKNOWN;
         } else {
             UserRewardTrackState state = this.stateFor(habbo, track);
-            points = state.getPoints();
-            if (state.isPremium()) {
-                result = RESULT_ALREADY_PREMIUM;
-            } else if (habbo.getHabboInfo().getCredits() < track.getPremiumCostCredits()
-                    || habbo.getHabboInfo().getCurrencyAmount(QuestRewards.DIAMONDS_POINT_TYPE)
-                            < track.getPremiumCostDiamonds()) {
-                result = RESULT_NOT_ENOUGH_CURRENCY;
-            } else {
-                if (track.getPremiumCostCredits() > 0) {
-                    habbo.giveCredits(-track.getPremiumCostCredits(), "reward_track.premium");
-                }
-                if (track.getPremiumCostDiamonds() > 0) {
-                    habbo.givePoints(
-                            QuestRewards.DIAMONDS_POINT_TYPE, -track.getPremiumCostDiamonds(), "reward_track.premium");
-                }
-                state.setPremium(true);
-                state.addPoints(track.getPremiumInstantPoints());
+            synchronized (state) {
                 points = state.getPoints();
+                if (state.isPremium()) {
+                    result = RESULT_ALREADY_PREMIUM;
+                } else if (habbo.getHabboInfo().getCredits() < track.getPremiumCostCredits()
+                        || habbo.getHabboInfo().getCurrencyAmount(QuestRewards.DIAMONDS_POINT_TYPE)
+                                < track.getPremiumCostDiamonds()) {
+                    result = RESULT_NOT_ENOUGH_CURRENCY;
+                } else {
+                    if (track.getPremiumCostCredits() > 0) {
+                        habbo.giveCredits(-track.getPremiumCostCredits(), "reward_track.premium");
+                    }
+                    if (track.getPremiumCostDiamonds() > 0) {
+                        habbo.givePoints(
+                                QuestRewards.DIAMONDS_POINT_TYPE,
+                                -track.getPremiumCostDiamonds(),
+                                "reward_track.premium");
+                    }
+                    state.setPremium(true);
+                    state.addPoints(track.getPremiumInstantPoints());
+                    points = state.getPoints();
+                    result = RESULT_OK;
+                }
+            }
+            if (result == RESULT_OK) {
                 this.saveTrack(habbo.getHabboInfo().getId(), state);
-                result = RESULT_OK;
             }
         }
         habbo.getClient().sendResponse(new RewardTrackPremiumPurchaseResultComposer(trackId, result, points));

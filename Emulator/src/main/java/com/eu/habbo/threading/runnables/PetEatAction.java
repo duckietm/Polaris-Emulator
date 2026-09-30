@@ -41,6 +41,8 @@ public class PetEatAction implements Runnable {
 
                 // Faster eating: reduce 40 hunger per bite instead of 20
                 this.pet.addHunger(-40);
+                com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                        this.pet.getUserId(), com.eu.habbo.habbohotel.quests.QuestGoalType.FEED_PET, 1);
                 this.pet.setTask(PetTasks.EAT);
                 this.pet.getRoomUnit().setCanWalk(false);
 

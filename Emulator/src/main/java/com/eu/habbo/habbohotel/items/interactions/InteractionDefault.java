@@ -109,6 +109,16 @@ public class InteractionDefault extends HabboItem {
     @Override
     public void onWalk(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {}
 
+    /** The official swim effect a pool tile puts on the avatar. */
+    public static final int SWIM_EFFECT_ID = 29;
+
+    private static void countSwim(Habbo habbo, int effectId) {
+        if (effectId == SWIM_EFFECT_ID) {
+            com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                    habbo, com.eu.habbo.habbohotel.quests.QuestGoalType.SWIM, 1);
+        }
+    }
+
     @Override
     public void onWalkOn(RoomUnit roomUnit, Room room, Object[] objects) throws Exception {
         super.onWalkOn(roomUnit, room, objects);
@@ -124,6 +134,7 @@ public class InteractionDefault extends HabboItem {
                                 && habbo.getRoomUnit().getEffectId()
                                         != this.getBaseItem().getEffectM()) {
                             room.giveEffect(habbo, this.getBaseItem().getEffectM(), -1);
+                            countSwim(habbo, this.getBaseItem().getEffectM());
                             return;
                         }
 
@@ -132,6 +143,7 @@ public class InteractionDefault extends HabboItem {
                                 && habbo.getRoomUnit().getEffectId()
                                         != this.getBaseItem().getEffectF()) {
                             room.giveEffect(habbo, this.getBaseItem().getEffectF(), -1);
+                            countSwim(habbo, this.getBaseItem().getEffectF());
                         }
                     }
                 } else if (roomUnit.getRoomUnitType().equals(RoomUnitType.BOT)) {

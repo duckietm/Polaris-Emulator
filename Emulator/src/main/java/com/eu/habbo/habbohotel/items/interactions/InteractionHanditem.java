@@ -39,6 +39,11 @@ public class InteractionHanditem extends InteractionDefault {
 
         HabboItem instance = this;
         room.giveHandItem(roomUnit, this.getBaseItem().getRandomVendingItem());
+        com.eu.habbo.habbohotel.users.Habbo drinker = room.getHabbo(roomUnit);
+        if (drinker != null) {
+            com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                    drinker, com.eu.habbo.habbohotel.quests.QuestGoalType.GRAB_HAND_ITEM, 1);
+        }
 
         if (this.getBaseItem().getStateCount() > 1) {
             this.setExtradata("1");

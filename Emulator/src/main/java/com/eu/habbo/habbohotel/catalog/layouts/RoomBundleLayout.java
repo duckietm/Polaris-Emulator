@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.catalog.CatalogItem;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.permissions.RankLimits;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomManager;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -49,6 +50,11 @@ public class RoomBundleLayout extends SingleBundle {
         message.appendString(this.getTextDetails());
         message.appendString(this.getTextTeaser());
         message.appendString(this.getTextTwo());
+    }
+
+    @Override
+    protected boolean refreshesItemsOnRead() {
+        return true;
     }
 
     @Override
@@ -157,9 +163,7 @@ public class RoomBundleLayout extends SingleBundle {
                     .getRoomManager()
                     .getRoomsForHabbo(habbo)
                     .size();
-            int max = habbo.getHabboStats().hasActiveClub()
-                    ? RoomManager.MAXIMUM_ROOMS_HC
-                    : RoomManager.MAXIMUM_ROOMS_USER;
+            int max = RankLimits.rooms(habbo);
 
             if (count >= max) {
                 habbo.getClient().sendResponse(new CanCreateRoomComposer(count, max));

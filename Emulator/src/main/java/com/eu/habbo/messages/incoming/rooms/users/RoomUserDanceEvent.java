@@ -11,8 +11,7 @@ import com.eu.habbo.plugin.events.users.UserIdleEvent;
 public class RoomUserDanceEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
-        if (this.client.getHabbo().getHabboInfo().getCurrentRoom() == null)
-            return;
+        if (this.client.getHabbo().getHabboInfo().getCurrentRoom() == null) return;
 
         int danceId = this.packet.readInt();
         if (danceId >= 0 && danceId <= 4) {
@@ -21,9 +20,11 @@ public class RoomUserDanceEvent extends MessageHandler {
                 Habbo habbo = this.client.getHabbo();
 
                 if (this.client.getHabbo().getRoomUnit().getCacheable().get("control") != null) {
-                    habbo = (Habbo) this.client.getHabbo().getRoomUnit().getCacheable().get("control");
+                    habbo = (Habbo)
+                            this.client.getHabbo().getRoomUnit().getCacheable().get("control");
 
-                    if (habbo.getHabboInfo().getCurrentRoom() != this.client.getHabbo().getHabboInfo().getCurrentRoom()) {
+                    if (habbo.getHabboInfo().getCurrentRoom()
+                            != this.client.getHabbo().getHabboInfo().getCurrentRoom()) {
                         habbo.getRoomUnit().getCacheable().remove("controller");
                         this.client.getHabbo().getRoomUnit().getCacheable().remove("control");
                         habbo = this.client.getHabbo();
@@ -39,10 +40,21 @@ public class RoomUserDanceEvent extends MessageHandler {
                     }
                 }
 
+                boolean startsDancing = danceId > 0
+                        && habbo == this.client.getHabbo()
+                        && habbo.getRoomUnit().getDanceType() != DanceType.values()[danceId];
                 this.client.getHabbo().getHabboInfo().getCurrentRoom().dance(habbo, DanceType.values()[danceId]);
+                if (startsDancing) {
+                    com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                            habbo, com.eu.habbo.habbohotel.quests.QuestGoalType.DANCE, 1);
+                }
 
                 if (danceId > 0) {
-                    WiredManager.triggerUserPerformsAction(this.client.getHabbo().getHabboInfo().getCurrentRoom(), habbo.getRoomUnit(), WiredUserActionType.DANCE, danceId);
+                    WiredManager.triggerUserPerformsAction(
+                            this.client.getHabbo().getHabboInfo().getCurrentRoom(),
+                            habbo.getRoomUnit(),
+                            WiredUserActionType.DANCE,
+                            danceId);
                 }
             }
         }

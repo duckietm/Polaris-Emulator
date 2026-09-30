@@ -803,7 +803,9 @@ public class HabboInfo implements Runnable {
     public void run() {
         try {
             SqlQueries.update(
-                    "UPDATE users SET motto = ?, online = ?, look = ?, gender = ?, last_login = ?, last_online = ?, home_room = ?, ip_current = ?, `rank` = ?, machine_id = ?, username = ?, background_id = ?, background_stand_id = ?, background_overlay_id = ?, background_card_id = ?, background_border_id = ? WHERE id = ?",
+                    // No `rank`: it is written where it changes (HabboManager.setRank), so a rank set in the
+                    // database (a CMS) while the user is online is not overwritten by this save.
+                    "UPDATE users SET motto = ?, online = ?, look = ?, gender = ?, last_login = ?, last_online = ?, home_room = ?, ip_current = ?, machine_id = ?, username = ?, background_id = ?, background_stand_id = ?, background_overlay_id = ?, background_card_id = ?, background_border_id = ? WHERE id = ?",
                     this.motto,
                     this.online ? "1" : "0",
                     this.look,
@@ -812,7 +814,6 @@ public class HabboInfo implements Runnable {
                     this.lastOnline,
                     this.homeRoom,
                     this.ipLogin,
-                    this.rank != null ? this.rank.getId() : 1,
                     this.machineID,
                     this.username,
                     this.InfostandBg,

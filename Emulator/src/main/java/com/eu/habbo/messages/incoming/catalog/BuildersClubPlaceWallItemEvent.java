@@ -100,6 +100,8 @@ public class BuildersClubPlaceWallItemEvent extends MessageHandler {
         }
 
         BuildersClubRoomSupport.trackPlacedItem(item.getId(), placementUserId, room.getId());
+        com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                this.client.getHabbo(), com.eu.habbo.habbohotel.quests.QuestGoalType.PLACE_BUILDERS_CLUB_FURNI, 1);
 
         if (BuildersClubRoomSupport.syncRoom(room) == BuildersClubRoomSupport.SyncResult.LOCKED) {
             BuildersClubRoomSupport.sendRoomLockedBubble(room.getOwnerId());

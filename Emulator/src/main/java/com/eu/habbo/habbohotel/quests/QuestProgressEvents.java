@@ -16,11 +16,15 @@ public final class QuestProgressEvents {
 
     private QuestProgressEvents() {}
 
+    private static GameEnvironment environment() {
+        return Emulator.getGameEnvironment();
+    }
+
     public static void progress(Habbo habbo, QuestGoalType goalType, int amount) {
         if (habbo == null || habbo.getClient() == null || goalType == null || amount < 1) {
             return;
         }
-        GameEnvironment environment = Emulator.getGameEnvironment();
+        GameEnvironment environment = environment();
         if (environment == null) {
             return;
         }
@@ -46,9 +50,18 @@ public final class QuestProgressEvents {
         }
     }
 
+    /** Progress for a user by id, when they are online (a pet's owner, say). */
+    public static void progress(int userId, QuestGoalType goalType, int amount) {
+        GameEnvironment environment = environment();
+        if (environment == null || environment.getHabboManager() == null) {
+            return;
+        }
+        progress(environment.getHabboManager().getHabbo(userId), goalType, amount);
+    }
+
     /** A campaign or daily quest was completed: the daily tasks and the reward track count it. */
     public static void questCompleted(Habbo habbo) {
-        GameEnvironment environment = Emulator.getGameEnvironment();
+        GameEnvironment environment = environment();
         if (environment == null) {
             return;
         }
@@ -71,7 +84,7 @@ public final class QuestProgressEvents {
 
     /** A daily task reward was claimed: the bonus task and the reward track count it. */
     public static void dailyTaskClaimed(Habbo habbo) {
-        GameEnvironment environment = Emulator.getGameEnvironment();
+        GameEnvironment environment = environment();
         if (environment == null) {
             return;
         }
@@ -94,7 +107,7 @@ public final class QuestProgressEvents {
 
     /** Drops the cached state of a user who left. */
     public static void unload(int userId) {
-        GameEnvironment environment = Emulator.getGameEnvironment();
+        GameEnvironment environment = environment();
         if (environment == null) {
             return;
         }

@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.hotelview;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.hotelview.HotelViewSlot;
+import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.google.gson.JsonElement;
@@ -50,7 +51,7 @@ public class HotelViewLandingSaveEvent extends MessageHandler {
     public void handle() {
         Habbo habbo = this.client.getHabbo();
 
-        if (habbo == null || habbo.getHabboInfo().getRank().getId() < 7) {
+        if (habbo == null || !habbo.hasPermission(Permission.ACC_HOTELVIEW_EDIT)) {
             LOGGER.warn("Rejected HotelView landing save from an unauthorized client");
             return;
         }

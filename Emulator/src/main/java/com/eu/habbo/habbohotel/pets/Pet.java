@@ -754,6 +754,10 @@ public class Pet implements ISerialize, Runnable {
         AchievementManager.progressAchievement(
                 owner, Emulator.getGameEnvironment().getAchievementManager().getAchievement("PetLevelUp"));
         this.room.sendComposer(new PetLevelUpdatedComposer(this).compose());
+        if (owner != null) {
+            com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                    owner, com.eu.habbo.habbohotel.quests.QuestGoalType.LEVEL_PET, 1);
+        }
 
         // The room sees the pet change; only the owner is told about it, in a notification.
         if (owner != null && owner.getClient() != null) {
@@ -794,6 +798,8 @@ public class Pet implements ISerialize, Runnable {
         if (habbo != null) {
             habbo.getHabboStats().petRespectPointsToGive--;
             habbo.getHabboInfo().getCurrentRoom().sendComposer(new RoomPetRespectComposer(this).compose());
+            com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                    habbo, com.eu.habbo.habbohotel.quests.QuestGoalType.RESPECT_PET, 1);
 
             AchievementManager.progressAchievement(
                     habbo, Emulator.getGameEnvironment().getAchievementManager().getAchievement("PetRespectGiver"));

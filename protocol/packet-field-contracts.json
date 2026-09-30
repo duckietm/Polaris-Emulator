@@ -11090,6 +11090,17 @@
           "kind": "scalar",
           "type": "boolean",
           "name": "blockFriendRequests"
+        },
+        {
+          "kind": "optional",
+          "controller": "profileVisible",
+          "fields": [
+            {
+              "kind": "scalar",
+              "type": "boolean",
+              "name": "profileVisible"
+            }
+          ]
         }
       ]
     },
@@ -13268,6 +13279,11 @@
         {
           "kind": "scalar",
           "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
           "name": ""
         }
       ]

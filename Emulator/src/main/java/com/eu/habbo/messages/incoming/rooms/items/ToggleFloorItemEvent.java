@@ -158,7 +158,12 @@ public class ToggleFloorItemEvent extends MessageHandler {
                 return;
             }
 
+            String previousState = item.getExtradata();
             item.onClick(this.client, room, new Object[] {state});
+            if (!java.util.Objects.equals(previousState, item.getExtradata())) {
+                com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
+                        this.client.getHabbo(), com.eu.habbo.habbohotel.quests.QuestGoalType.USE_FURNI, 1);
+            }
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
         }

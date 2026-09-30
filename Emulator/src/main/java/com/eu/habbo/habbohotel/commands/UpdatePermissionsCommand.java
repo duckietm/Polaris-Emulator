@@ -2,21 +2,34 @@ package com.eu.habbo.habbohotel.commands;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.permissions.PermissionAuditLog;
+import com.eu.habbo.habbohotel.permissions.PermissionChange;
 import com.eu.habbo.habbohotel.permissions.PermissionsManager;
 import com.eu.habbo.habbohotel.permissions.Rank;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.messages.outgoing.users.UserPermissionsComposer;
+import java.util.List;
 
 public class UpdatePermissionsCommand extends Command {
     public UpdatePermissionsCommand() {
-        super("cmd_update_permissions", Emulator.getTexts().getValue("commands.keys.cmd_update_permissions").split(";"));
+        super(
+                "cmd_update_permissions",
+                Emulator.getTexts()
+                        .getValue("commands.keys.cmd_update_permissions")
+                        .split(";"));
     }
 
     @Override
     public boolean handle(GameClient gameClient, String[] params) throws Exception {
-        Emulator.getGameEnvironment().getPermissionsManager().reload();
+        List<PermissionChange> changes =
+                Emulator.getGameEnvironment().getPermissionsManager().reloadWithChanges();
+        PermissionAuditLog.permissionChanges(
+                gameClient.getHabbo().getHabboInfo().getId(),
+                gameClient.getHabbo().getHabboInfo().getUsername(),
+                changes,
+                "update_permissions");
 
         // PermissionsManager.reload() rebuilt the rank table — each online
         // Habbo's HabboInfo still references the OLD Rank object, so
@@ -40,19 +53,20 @@ public class UpdatePermissionsCommand extends Command {
             // Defensive fallback: if the admin deleted the rank from the
             // permission_ranks table between sessions, fall back to rank 1
             // (Member) so the user isn't stranded with a null Rank.
-            Rank freshRank = permissions.rankExists(currentRankId)
-                    ? permissions.getRank(currentRankId)
-                    : permissions.getRank(1);
+            Rank freshRank =
+                    permissions.rankExists(currentRankId) ? permissions.getRank(currentRankId) : permissions.getRank(1);
 
             habbo.getHabboInfo().setRank(freshRank);
             habbo.getClient().sendResponse(new UserPermissionsComposer(habbo));
             refreshed++;
         }
 
-        gameClient.getHabbo().whisper(
-                Emulator.getTexts().getValue("commands.succes.cmd_update_permissions") + " (" + refreshed + " online refreshed)",
-                RoomChatMessageBubbles.ALERT
-        );
+        gameClient
+                .getHabbo()
+                .whisper(
+                        Emulator.getTexts().getValue("commands.succes.cmd_update_permissions") + " (" + refreshed
+                                + " online refreshed, " + changes.size() + " permission changes)",
+                        RoomChatMessageBubbles.ALERT);
 
         return true;
     }

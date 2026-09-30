@@ -192,7 +192,11 @@ public class RoomPlaceItemEvent extends MessageHandler {
         this.client.sendResponse(new RemoveHabboItemComposer(item.getGiftAdjustedId()));
         this.client.getHabbo().getInventory().getItemsComponent().removeHabboItem(item.getId());
         com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
-                this.client.getHabbo(), com.eu.habbo.habbohotel.quests.QuestGoalType.PLACE_FURNI, 1);
+                this.client.getHabbo(),
+                BuildersClubRoomSupport.isTrackedItem(item.getId())
+                        ? com.eu.habbo.habbohotel.quests.QuestGoalType.PLACE_BUILDERS_CLUB_FURNI
+                        : com.eu.habbo.habbohotel.quests.QuestGoalType.PLACE_FURNI,
+                1);
         item.setFromGift(false);
 
         if (BuildersClubRoomSupport.isTrackedItem(item.getId())) {

@@ -2,6 +2,7 @@ package com.eu.habbo.messages.rcon;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.messages.outgoing.handshake.DisconnectReasonComposer;
 import com.google.gson.Gson;
 
 public class DisconnectUser extends RCONMessage<DisconnectUser.DisconnectUserJSON> {
@@ -29,14 +30,17 @@ public class DisconnectUser extends RCONMessage<DisconnectUser.DisconnectUserJSO
             return;
         }
 
-        Emulator.getGameServer().getGameClientManager().forceDisposeClient(target.getClient());
-        this.message = Emulator.getTexts().getValue("commands.succes.cmd_disconnect.disconnected").replace("%user%", target.getHabboInfo().getUsername());
+        Emulator.getGameServer()
+                .getGameClientManager()
+                .disconnectWithReason(target.getClient(), DisconnectReasonComposer.LOGOUT);
+        this.message = Emulator.getTexts()
+                .getValue("commands.succes.cmd_disconnect.disconnected")
+                .replace("%user%", target.getHabboInfo().getUsername());
     }
 
     static class DisconnectUserJSON {
 
         public int user_id = -1;
-
 
         public String username;
     }

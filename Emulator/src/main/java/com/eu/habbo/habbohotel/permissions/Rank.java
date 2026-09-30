@@ -11,8 +11,9 @@ public class Rank {
     private final int id;
 
     private int level;
-    private final Map<String, Permission> permissions;
-    private final Map<String, String> variables;
+    // Replaced whole on a reload, never changed in place, so a check never sees a half-filled map.
+    private volatile Map<String, Permission> permissions;
+    private volatile Map<String, String> variables;
     private String name;
     private String badge;
     private int roomEffect;
@@ -29,6 +30,10 @@ public class Rank {
     private int pixelsTimerAmount;
     private int gotwTimerAmount;
     private int soundboardCooldownSeconds;
+    // Limits this rank raises (0 = the hotel setting); see RankLimits.
+    private int maxRooms;
+    private int maxFriends;
+    private int maxFavouriteRooms;
 
     public Rank(ResultSet set) throws SQLException {
         this(set.getInt("id"));
@@ -48,34 +53,41 @@ public class Rank {
     }
 
     public void load(ResultSet set) throws SQLException {
-        this.permissions.clear();
-        this.variables.clear();
-
         this.loadMetadata(set);
 
+        Map<String, Permission> loadedPermissions = new HashMap<>();
+        Map<String, String> loadedVariables = new HashMap<>();
         ResultSetMetaData meta = set.getMetaData();
 
         for (int i = 1; i < meta.getColumnCount() + 1; i++) {
             String columnName = meta.getColumnName(i);
             if (columnName.startsWith("cmd_") || columnName.startsWith("acc_")) {
-                this.permissions.put(
-                        meta.getColumnName(i),
-                        new Permission(columnName, PermissionSetting.fromString(set.getString(i))));
+                loadedPermissions.put(
+                        columnName, new Permission(columnName, PermissionSetting.fromString(set.getString(i))));
             } else {
-                this.variables.put(meta.getColumnName(i), set.getString(i));
+                loadedVariables.put(columnName, set.getString(i));
             }
         }
+
+        this.permissions = loadedPermissions;
+        this.variables = loadedVariables;
     }
 
+    /** Metadata only; the permissions arrive afterwards through {@link #replacePermissions}. */
     public void loadNormalizedMetadata(ResultSet set) throws SQLException {
-        this.permissions.clear();
-        this.variables.clear();
         this.loadMetadata(set);
         this.storeMetadataVariables();
     }
 
+    /** Swaps in a complete permission set in one step. */
+    public void replacePermissions(Map<String, Permission> loadedPermissions) {
+        this.permissions = new HashMap<>(loadedPermissions);
+    }
+
     public void setPermission(String key, PermissionSetting setting) {
-        this.permissions.put(key, new Permission(key, setting));
+        Map<String, Permission> updated = new HashMap<>(this.permissions);
+        updated.put(key, new Permission(key, setting));
+        this.permissions = updated;
     }
 
     private void loadMetadata(ResultSet set) throws SQLException {
@@ -93,22 +105,37 @@ public class Rank {
         int loadedSoundboardCooldown = set.getInt("soundboard_cooldown_seconds");
         this.soundboardCooldownSeconds = set.wasNull() || loadedSoundboardCooldown < 0 ? 60 : loadedSoundboardCooldown;
         this.hasPrefix = !this.prefix.isEmpty();
+        this.maxRooms = optionalInt(set, "max_rooms");
+        this.maxFriends = optionalInt(set, "max_friends");
+        this.maxFavouriteRooms = optionalInt(set, "max_favourite_rooms");
+    }
+
+    /** A limit column, or 0 when the table (an older schema, the legacy one) does not have it. */
+    private static int optionalInt(ResultSet set, String column) {
+        try {
+            set.findColumn(column);
+            return Math.max(0, set.getInt(column));
+        } catch (SQLException e) {
+            return 0;
+        }
     }
 
     private void storeMetadataVariables() {
-        this.variables.put("id", Integer.toString(this.id));
-        this.variables.put("rank_name", this.name);
-        this.variables.put("badge", this.badge);
-        this.variables.put("room_effect", Integer.toString(this.roomEffect));
-        this.variables.put("log_commands", this.logCommands ? "1" : "0");
-        this.variables.put("prefix", this.prefix);
-        this.variables.put("prefix_color", this.prefixColor);
-        this.variables.put("level", Integer.toString(this.level));
-        this.variables.put("auto_points_amount", Integer.toString(this.diamondsTimerAmount));
-        this.variables.put("auto_credits_amount", Integer.toString(this.creditsTimerAmount));
-        this.variables.put("auto_pixels_amount", Integer.toString(this.pixelsTimerAmount));
-        this.variables.put("auto_gotw_amount", Integer.toString(this.gotwTimerAmount));
-        this.variables.put("soundboard_cooldown_seconds", Integer.toString(this.soundboardCooldownSeconds));
+        Map<String, String> variables = new HashMap<>();
+        variables.put("id", Integer.toString(this.id));
+        variables.put("rank_name", this.name);
+        variables.put("badge", this.badge);
+        variables.put("room_effect", Integer.toString(this.roomEffect));
+        variables.put("log_commands", this.logCommands ? "1" : "0");
+        variables.put("prefix", this.prefix);
+        variables.put("prefix_color", this.prefixColor);
+        variables.put("level", Integer.toString(this.level));
+        variables.put("auto_points_amount", Integer.toString(this.diamondsTimerAmount));
+        variables.put("auto_credits_amount", Integer.toString(this.creditsTimerAmount));
+        variables.put("auto_pixels_amount", Integer.toString(this.pixelsTimerAmount));
+        variables.put("auto_gotw_amount", Integer.toString(this.gotwTimerAmount));
+        variables.put("soundboard_cooldown_seconds", Integer.toString(this.soundboardCooldownSeconds));
+        this.variables = variables;
     }
 
     private String safeString(String value) {
@@ -120,14 +147,14 @@ public class Rank {
             return false;
         }
 
-        if (this.permissions.containsKey(key)) {
-            Permission permission = this.permissions.get(key);
+        Permission permission = this.permissions.get(key);
 
-            return permission.setting == PermissionSetting.ALLOWED
-                    || permission.setting == PermissionSetting.ROOM_OWNER && isRoomOwner;
+        if (permission == null) {
+            return false;
         }
 
-        return false;
+        return permission.setting == PermissionSetting.ALLOWED
+                || permission.setting == PermissionSetting.ROOM_OWNER && isRoomOwner;
     }
 
     public int getId() {
@@ -188,6 +215,25 @@ public class Rank {
 
     public int getGotwTimerAmount() {
         return this.gotwTimerAmount;
+    }
+
+    public int getMaxRooms() {
+        return this.maxRooms;
+    }
+
+    public int getMaxFriends() {
+        return this.maxFriends;
+    }
+
+    public int getMaxFavouriteRooms() {
+        return this.maxFavouriteRooms;
+    }
+
+    /** For tests and plugins; a reload replaces them from permission_ranks. */
+    public void setLimits(int maxRooms, int maxFriends, int maxFavouriteRooms) {
+        this.maxRooms = Math.max(0, maxRooms);
+        this.maxFriends = Math.max(0, maxFriends);
+        this.maxFavouriteRooms = Math.max(0, maxFavouriteRooms);
     }
 
     public int getSoundboardCooldownSeconds() {

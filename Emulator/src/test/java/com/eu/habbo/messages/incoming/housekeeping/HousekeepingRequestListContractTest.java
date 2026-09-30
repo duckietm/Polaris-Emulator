@@ -23,6 +23,7 @@ class HousekeepingRequestListContractTest {
                         "user.sanctions",
                         "user.notes",
                         "user.temp_rank",
+                        "user.private",
                         "room.chatlog",
                         "room.visits",
                         "hotel.bans",
@@ -30,7 +31,8 @@ class HousekeepingRequestListContractTest {
                         "hotel.online",
                         "hotel.rooms",
                         "hotel.stats",
-                        "hotel.permissions"),
+                        "hotel.permissions",
+                        "hotel.security"),
                 List.of(
                         HousekeepingRequestListEvent.USER_CHATLOG,
                         HousekeepingRequestListEvent.USER_VISITS,
@@ -39,6 +41,7 @@ class HousekeepingRequestListContractTest {
                         HousekeepingRequestListEvent.USER_SANCTIONS,
                         HousekeepingRequestListEvent.USER_NOTES,
                         HousekeepingRequestListEvent.USER_TEMP_RANK,
+                        HousekeepingRequestListEvent.USER_PRIVATE,
                         HousekeepingRequestListEvent.ROOM_CHATLOG,
                         HousekeepingRequestListEvent.ROOM_VISITS,
                         HousekeepingRequestListEvent.HOTEL_BANS,
@@ -46,7 +49,8 @@ class HousekeepingRequestListContractTest {
                         HousekeepingRequestListEvent.HOTEL_ONLINE,
                         HousekeepingRequestListEvent.HOTEL_ROOMS,
                         HousekeepingRequestListEvent.HOTEL_STATS,
-                        HousekeepingRequestListEvent.HOTEL_PERMISSIONS));
+                        HousekeepingRequestListEvent.HOTEL_PERMISSIONS,
+                        HousekeepingRequestListEvent.HOTEL_SECURITY));
     }
 
     @Test

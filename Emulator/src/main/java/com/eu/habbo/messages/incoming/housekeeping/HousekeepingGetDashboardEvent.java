@@ -1,14 +1,13 @@
 package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingDashboardComposer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class HousekeepingGetDashboardEvent extends MessageHandler {
+public class HousekeepingGetDashboardEvent extends HousekeepingHandler {
     @Override
     public int getRatelimit() {
         return 2000;
@@ -16,7 +15,7 @@ public class HousekeepingGetDashboardEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

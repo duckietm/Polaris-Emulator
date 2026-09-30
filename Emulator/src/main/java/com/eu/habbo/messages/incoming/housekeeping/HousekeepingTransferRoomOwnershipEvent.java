@@ -3,7 +3,6 @@ package com.eu.habbo.messages.incoming.housekeeping;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboInfo;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -16,7 +15,7 @@ import java.sql.SQLException;
  * touched via direct SQL rather than via Room.setOwnerId() because
  * the room may not be loaded.
  */
-public class HousekeepingTransferRoomOwnershipEvent extends MessageHandler {
+public class HousekeepingTransferRoomOwnershipEvent extends HousekeepingHandler {
     private static final String ACTION_KEY = "room.transfer";
 
     @Override
@@ -26,7 +25,7 @@ public class HousekeepingTransferRoomOwnershipEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

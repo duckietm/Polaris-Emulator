@@ -1,7 +1,6 @@
 package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 import com.eu.habbo.networking.gameserver.auth.PasswordHasher;
 import com.eu.habbo.networking.gameserver.auth.RememberJwtService;
@@ -19,7 +18,7 @@ import java.sql.SQLException;
  * the reset, and ships the PLAINTEXT new password back to the operator
  * in the action-result `message` so they can communicate it out-of-band.
  */
-public class HousekeepingResetUserPasswordEvent extends MessageHandler {
+public class HousekeepingResetUserPasswordEvent extends HousekeepingHandler {
     private static final String ACTION_KEY = "user.reset_password";
     private static final String PASSWORD_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
     private static final int PASSWORD_LENGTH = 12;
@@ -34,7 +33,7 @@ public class HousekeepingResetUserPasswordEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

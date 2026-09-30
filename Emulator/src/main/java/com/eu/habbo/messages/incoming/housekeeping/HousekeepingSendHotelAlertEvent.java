@@ -6,7 +6,6 @@ import com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.StaffAlertWithLinkComposer;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 import java.util.ArrayList;
@@ -22,7 +21,7 @@ import java.util.List;
  * alert is composed once and forwarded by reference, so a broadcast is
  * O(N habbos) wire writes, not O(N) compose calls.
  */
-public class HousekeepingSendHotelAlertEvent extends MessageHandler {
+public class HousekeepingSendHotelAlertEvent extends HousekeepingHandler {
     private static final String ACTION_KEY = "hotel.alert";
 
     static final String SCOPE_HOTEL = "hotel";
@@ -39,7 +38,7 @@ public class HousekeepingSendHotelAlertEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

@@ -2,14 +2,13 @@ package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog;
 import com.eu.habbo.habbohotel.modtool.ModToolBanList;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 /**
  * Ends one ban by its id, where the unban action ends every ban of a user.
  * Lets an operator lift an account ban while an IP or machine ban stays.
  */
-public class HousekeepingRevokeBanEvent extends MessageHandler {
+public class HousekeepingRevokeBanEvent extends HousekeepingHandler {
     static final String ACTION_KEY = "ban.revoke";
 
     @Override
@@ -19,7 +18,7 @@ public class HousekeepingRevokeBanEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

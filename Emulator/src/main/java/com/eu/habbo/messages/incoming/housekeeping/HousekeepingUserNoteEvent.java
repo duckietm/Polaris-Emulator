@@ -2,14 +2,13 @@ package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.database.SqlQueries;
 import com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 /**
  * Adds an internal staff note to a user, or deletes one of the operator's own notes. The list
  * is the user.notes housekeeping list.
  */
-public class HousekeepingUserNoteEvent extends MessageHandler {
+public class HousekeepingUserNoteEvent extends HousekeepingHandler {
     static final String ADD = "add";
     static final String DELETE = "delete";
     static final String ACTION_PREFIX = "user.note.";
@@ -21,7 +20,7 @@ public class HousekeepingUserNoteEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

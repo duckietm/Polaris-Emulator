@@ -20,7 +20,7 @@ class HousekeepingRevokeBanContractTest {
         int guard = source.indexOf("HousekeepingTargetRankGuard.canTargetUser(");
         int revoke = source.indexOf("ModToolBanList.revoke(");
 
-        assertTrue(source.contains("HousekeepingAccess.check(this.client)"), "the panel permission comes first");
+        assertTrue(source.contains("if (!this.allowed())"), "the panel permission comes first");
         assertTrue(guard > 0 && revoke > guard, "the rank guard must run before the ban is ended");
     }
 

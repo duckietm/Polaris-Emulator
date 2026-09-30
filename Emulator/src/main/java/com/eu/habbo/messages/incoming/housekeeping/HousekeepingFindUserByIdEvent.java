@@ -2,10 +2,9 @@ package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.HabboInfo;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingUserDetailComposer;
 
-public class HousekeepingFindUserByIdEvent extends MessageHandler {
+public class HousekeepingFindUserByIdEvent extends HousekeepingHandler {
     @Override
     public int getRatelimit() {
         return 500;
@@ -13,7 +12,7 @@ public class HousekeepingFindUserByIdEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

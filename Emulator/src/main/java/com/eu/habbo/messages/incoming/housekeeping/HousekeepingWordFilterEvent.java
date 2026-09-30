@@ -4,7 +4,6 @@ import com.eu.habbo.database.SqlQueries;
 import com.eu.habbo.habbohotel.commands.UpdateWordFilterCommand;
 import com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog;
 import com.eu.habbo.habbohotel.modtool.WordFilter;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 /**
@@ -13,7 +12,7 @@ import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultCompo
  * command's own permission on top of panel access. The list itself is the hotel.wordfilter
  * housekeeping list.
  */
-public class HousekeepingWordFilterEvent extends MessageHandler {
+public class HousekeepingWordFilterEvent extends HousekeepingHandler {
     static final String ADD = "add";
     static final String REMOVE = "remove";
 
@@ -36,7 +35,7 @@ public class HousekeepingWordFilterEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

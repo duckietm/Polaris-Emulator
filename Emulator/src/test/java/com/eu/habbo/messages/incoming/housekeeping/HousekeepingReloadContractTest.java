@@ -34,7 +34,7 @@ class HousekeepingReloadContractTest {
             assertTrue(source.contains("new " + command + "()"), "the reload must reuse " + command);
         }
 
-        assertTrue(source.contains("HousekeepingAccess.check(this.client)"), "the panel permission comes first");
+        assertTrue(source.contains("if (!this.allowed())"), "the panel permission comes first");
         assertTrue(
                 source.contains("hasPermission(command.permission)"),
                 "the operator must also hold the command's own permission");

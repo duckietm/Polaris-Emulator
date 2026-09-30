@@ -2,7 +2,6 @@ package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.Habbo;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 /**
@@ -10,7 +9,7 @@ import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultCompo
  * removes them from the current room), this drops their socket. Equivalent
  * to /disconnect in command form but issued through the HK panel.
  */
-public class HousekeepingForceDisconnectUserEvent extends MessageHandler {
+public class HousekeepingForceDisconnectUserEvent extends HousekeepingHandler {
     private static final String ACTION_KEY = "user.disconnect";
 
     @Override
@@ -20,7 +19,7 @@ public class HousekeepingForceDisconnectUserEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

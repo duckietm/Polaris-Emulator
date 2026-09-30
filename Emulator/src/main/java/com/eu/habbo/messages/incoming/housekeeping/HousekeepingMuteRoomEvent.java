@@ -2,7 +2,6 @@ package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.rooms.Room;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 /**
@@ -13,7 +12,7 @@ import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultCompo
  * operator unmutes manually — the minutes is reserved as a forward-
  * compat field on the wire.
  */
-public class HousekeepingMuteRoomEvent extends MessageHandler {
+public class HousekeepingMuteRoomEvent extends HousekeepingHandler {
     private static final String ACTION_KEY = "room.mute";
 
     @Override
@@ -23,7 +22,7 @@ public class HousekeepingMuteRoomEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

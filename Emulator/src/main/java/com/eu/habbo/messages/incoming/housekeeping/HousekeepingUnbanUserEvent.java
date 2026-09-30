@@ -2,10 +2,9 @@ package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.HabboInfo;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
-public class HousekeepingUnbanUserEvent extends MessageHandler {
+public class HousekeepingUnbanUserEvent extends HousekeepingHandler {
     private static final String ACTION_KEY = "user.unban";
 
     @Override
@@ -15,7 +14,7 @@ public class HousekeepingUnbanUserEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

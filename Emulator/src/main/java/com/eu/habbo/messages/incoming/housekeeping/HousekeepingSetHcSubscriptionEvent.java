@@ -2,7 +2,6 @@ package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.Habbo;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -13,7 +12,7 @@ import java.sql.SQLException;
  * if it's still in the future, otherwise stretches from `now`. Days==0
  * means cancel the active subscription (timestamp clamped to `now`).
  */
-public class HousekeepingSetHcSubscriptionEvent extends MessageHandler {
+public class HousekeepingSetHcSubscriptionEvent extends HousekeepingHandler {
     private static final String ACTION_KEY = "user.set_hc";
     private static final int SECONDS_IN_DAY = 24 * 3600;
 
@@ -24,7 +23,7 @@ public class HousekeepingSetHcSubscriptionEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

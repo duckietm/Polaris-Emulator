@@ -1,7 +1,6 @@
 package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionLogComposer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -34,7 +33,7 @@ import java.util.List;
  * Writing into the table is a follow-up: each HK handler will append
  * a row once the table exists; for now the listing is read-only.
  */
-public class HousekeepingListActionLogEvent extends MessageHandler {
+public class HousekeepingListActionLogEvent extends HousekeepingHandler {
     private static final int HARD_LIMIT = 500;
 
     @Override
@@ -44,7 +43,7 @@ public class HousekeepingListActionLogEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

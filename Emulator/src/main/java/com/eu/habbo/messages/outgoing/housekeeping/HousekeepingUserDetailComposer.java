@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.users.HabboBadge;
 import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.inventory.BadgesComponent;
 import com.eu.habbo.messages.ServerMessage;
+import com.eu.habbo.messages.incoming.housekeeping.HousekeepingPrivacy;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
 import java.sql.Connection;
@@ -70,7 +71,8 @@ public class HousekeepingUserDetailComposer extends MessageComposer {
         this.response.appendInt(this.info.getCurrencyAmount(CURRENCY_DUCKETS));
         this.response.appendInt(this.info.getCurrencyAmount(CURRENCY_DIAMONDS));
         this.response.appendString(safe(this.info.getMail()));
-        this.response.appendString(safe(this.info.getIpLogin()));
+        // Masked for everyone; the clear address is the audited user.private list.
+        this.response.appendString(HousekeepingPrivacy.maskIp(safe(this.info.getIpLogin())));
         this.response.appendBoolean(ban != null);
         this.response.appendBoolean(muteEnd > now);
         // A trade lock is the can_trade flag, set from the latest sanction's trade_locked_until.

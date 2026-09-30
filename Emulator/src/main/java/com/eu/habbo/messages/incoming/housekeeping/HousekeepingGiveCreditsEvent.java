@@ -5,10 +5,9 @@ import com.eu.habbo.habbohotel.economy.EconomyLedger;
 import com.eu.habbo.habbohotel.economy.EconomyOperation;
 import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.users.Habbo;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
-public class HousekeepingGiveCreditsEvent extends MessageHandler {
+public class HousekeepingGiveCreditsEvent extends HousekeepingHandler {
     private static final String ACTION_KEY = "user.give_credits";
 
     @Override
@@ -18,7 +17,7 @@ public class HousekeepingGiveCreditsEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

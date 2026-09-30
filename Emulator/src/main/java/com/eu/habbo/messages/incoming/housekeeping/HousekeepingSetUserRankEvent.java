@@ -6,7 +6,6 @@ import com.eu.habbo.habbohotel.permissions.Rank;
 import com.eu.habbo.habbohotel.permissions.TemporaryRanks;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboManager;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -18,7 +17,7 @@ import java.sql.SQLException;
  * :perm rank does: the rank lasts that long, then the user gets the rank from before back
  * (TemporaryRanks). 0 or no duration is a lasting rank, which also ends a running timer.
  */
-public class HousekeepingSetUserRankEvent extends MessageHandler {
+public class HousekeepingSetUserRankEvent extends HousekeepingHandler {
     private static final String ACTION_KEY = "user.set_rank";
 
     /** A temporary rank lasts at most a year; longer is a lasting rank. */
@@ -31,7 +30,7 @@ public class HousekeepingSetUserRankEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 
@@ -103,6 +102,19 @@ public class HousekeepingSetUserRankEvent extends MessageHandler {
 
         // The same path as :give_rank and RCON: saves the rank and, for an online user, swaps the rank
         // badge and effect and resends permissions, perks and the mod tool, and tells plugins.
+        try {
+            if (HousekeepingLockoutGuard.rankChangeLocksOut(userId, targetRankId, rank.getId())) {
+                this.client.sendResponse(
+                        new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.lockout"));
+                return;
+            }
+        } catch (com.eu.habbo.database.SqlQueries.DataAccessException e) {
+            // A check that cannot be made refuses the change.
+            this.client.sendResponse(
+                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.db_failed"));
+            return;
+        }
+
         int operatorId = this.client.getHabbo().getHabboInfo().getId();
         String operatorName = this.client.getHabbo().getHabboInfo().getUsername();
         boolean temporary = durationSeconds > 0;

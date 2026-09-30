@@ -28,7 +28,7 @@ class HousekeepingHotelToolsContractTest {
         String source = Files.readString(BASE.resolve("HousekeepingMaintenanceEvent.java"));
 
         assertEquals("cmd_maintenance", HousekeepingMaintenanceEvent.PERMISSION);
-        assertTrue(source.contains("HousekeepingAccess.check(this.client)"));
+        assertTrue(source.contains("if (!this.allowed())"));
         assertTrue(source.contains("hasPermission(PERMISSION)"));
         assertTrue(source.contains("new HousekeepingMaintenanceStatusComposer("));
     }

@@ -33,6 +33,7 @@ class HousekeepingAuditCoverageContractTest {
             "HousekeepingWordFilterEvent.java",
             "HousekeepingSetPermissionEvent.java",
             "HousekeepingUserNoteEvent.java",
+            "HousekeepingLockdownEvent.java",
             "HousekeepingUnbanUserEvent.java");
 
     @Test

@@ -5,7 +5,6 @@ import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomDeleter;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -17,7 +16,7 @@ import java.sql.SQLException;
  * rows go with it. The room is loaded with its data first, otherwise there
  * would be no items to give back.
  */
-public class HousekeepingDeleteRoomEvent extends MessageHandler {
+public class HousekeepingDeleteRoomEvent extends HousekeepingHandler {
     private static final String ACTION_KEY = "room.delete";
 
     @Override
@@ -27,7 +26,7 @@ public class HousekeepingDeleteRoomEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

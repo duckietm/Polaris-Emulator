@@ -1601,6 +1601,9 @@ public class PacketManager {
         this.registerHandler(
                 Incoming.HousekeepingUserNoteEvent,
                 com.eu.habbo.messages.incoming.housekeeping.HousekeepingUserNoteEvent.class);
+        this.registerHandler(
+                Incoming.HousekeepingLockdownEvent,
+                com.eu.habbo.messages.incoming.housekeeping.HousekeepingLockdownEvent.class);
 
         this.registerHandler(
                 Incoming.RequestRareValuesEvent,

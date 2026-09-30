@@ -10050,6 +10050,17 @@
           "kind": "scalar",
           "type": "int",
           "name": "targetId"
+        },
+        {
+          "kind": "optional",
+          "controller": "reveal",
+          "fields": [
+            {
+              "kind": "scalar",
+              "type": "int",
+              "name": "reveal"
+            }
+          ]
         }
       ]
     },
@@ -10227,6 +10238,28 @@
           "kind": "scalar",
           "type": "string",
           "name": "note"
+        }
+      ]
+    },
+    {
+      "name": "HOUSEKEEPING_LOCKDOWN",
+      "direction": "client_to_server",
+      "header": 9132,
+      "java": {
+        "symbol": "HousekeepingLockdownEvent",
+        "className": "HousekeepingLockdownEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingLockdownEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_LOCKDOWN",
+        "className": "HousekeepingLockdownComposer",
+        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingLockdownComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "enabled"
         }
       ]
     },

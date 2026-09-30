@@ -2,7 +2,6 @@ package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.Habbo;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -16,7 +15,7 @@ import java.sql.SQLException;
  * in-memory HabboStats.allowTrade flag cleared so the lock takes
  * effect on the active session without waiting for a relog.
  */
-public class HousekeepingTradeLockUserEvent extends MessageHandler {
+public class HousekeepingTradeLockUserEvent extends HousekeepingHandler {
     private static final String ACTION_KEY = "user.trade_lock";
 
     @Override
@@ -26,7 +25,7 @@ public class HousekeepingTradeLockUserEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

@@ -4,10 +4,9 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboManager;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingUserDetailComposer;
 
-public class HousekeepingFindUserByNameEvent extends MessageHandler {
+public class HousekeepingFindUserByNameEvent extends HousekeepingHandler {
     @Override
     public int getRatelimit() {
         return 500;
@@ -15,7 +14,7 @@ public class HousekeepingFindUserByNameEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

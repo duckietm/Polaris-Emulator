@@ -4,7 +4,6 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomManager;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 import com.eu.habbo.messages.outgoing.rooms.RoomSettingsUpdatedComposer;
 import java.util.ArrayList;
@@ -15,7 +14,7 @@ import java.util.List;
  * maximum users, category, trade mode and tags. The room is written through
  * immediately, and anyone inside is told its settings changed.
  */
-public class HousekeepingSaveRoomSettingsEvent extends MessageHandler {
+public class HousekeepingSaveRoomSettingsEvent extends HousekeepingHandler {
     private static final String ACTION_KEY = "room.settings";
 
     @Override
@@ -25,7 +24,7 @@ public class HousekeepingSaveRoomSettingsEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

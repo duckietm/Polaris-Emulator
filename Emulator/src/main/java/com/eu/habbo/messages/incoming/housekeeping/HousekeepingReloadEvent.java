@@ -9,7 +9,6 @@ import com.eu.habbo.habbohotel.commands.UpdatePermissionsCommand;
 import com.eu.habbo.habbohotel.commands.UpdateTextsCommand;
 import com.eu.habbo.habbohotel.commands.UpdateWordFilterCommand;
 import com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 import java.util.List;
 
@@ -19,7 +18,7 @@ import java.util.List;
  * exactly what the command does, and it is refused unless the operator also
  * holds that command's own permission.
  */
-public class HousekeepingReloadEvent extends MessageHandler {
+public class HousekeepingReloadEvent extends HousekeepingHandler {
     static final String ACTION_PREFIX = "hotel.reload.";
 
     static final String CATALOG = "catalog";
@@ -39,7 +38,7 @@ public class HousekeepingReloadEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

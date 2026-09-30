@@ -2,7 +2,6 @@ package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.rooms.Room;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingRoomListComposer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -20,7 +19,7 @@ import java.util.List;
  * identical — the client picks which mode it wants by toggling the
  * boolean.
  */
-public class HousekeepingSearchRoomsEvent extends MessageHandler {
+public class HousekeepingSearchRoomsEvent extends HousekeepingHandler {
     private static final int HARD_LIMIT = 50;
 
     @Override
@@ -30,7 +29,7 @@ public class HousekeepingSearchRoomsEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

@@ -3,7 +3,6 @@ package com.eu.habbo.messages.incoming.housekeeping;
 import com.eu.habbo.habbohotel.MaintenanceCountdown;
 import com.eu.habbo.habbohotel.MaintenanceMode;
 import com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingMaintenanceStatusComposer;
 
@@ -12,7 +11,7 @@ import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingMaintenanceStatus
  * stop a running countdown, or switch maintenance off. Every answer ends with the current
  * state. Changing it needs the :maintenance command's own permission on top of panel access.
  */
-public class HousekeepingMaintenanceEvent extends MessageHandler {
+public class HousekeepingMaintenanceEvent extends HousekeepingHandler {
     static final String STATUS = "status";
     static final String START = "start";
     static final String CANCEL = "cancel";
@@ -28,7 +27,7 @@ public class HousekeepingMaintenanceEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

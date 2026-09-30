@@ -3,7 +3,6 @@ package com.eu.habbo.messages.incoming.housekeeping;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.modtool.ModToolBan;
 import com.eu.habbo.habbohotel.modtool.ModToolBanType;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 import java.util.List;
 
@@ -13,7 +12,7 @@ import java.util.List;
  * unlike ModToolSanctionBanEvent which only accepts the four fixed
  * Habbo-protocol banType buckets.
  */
-public class HousekeepingBanUserEvent extends MessageHandler {
+public class HousekeepingBanUserEvent extends HousekeepingHandler {
     private static final String ACTION_KEY = "user.ban";
 
     @Override
@@ -23,7 +22,7 @@ public class HousekeepingBanUserEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

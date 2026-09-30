@@ -3,7 +3,6 @@ package com.eu.habbo.messages.incoming.housekeeping;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 /**
@@ -13,7 +12,7 @@ import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultCompo
  * Replicating the few lines locally keeps the HK module self-gated on
  * ACC_HOUSEKEEPING.
  */
-public class HousekeepingKickUserEvent extends MessageHandler {
+public class HousekeepingKickUserEvent extends HousekeepingHandler {
     private static final String ACTION_KEY = "user.kick";
 
     @Override
@@ -23,7 +22,7 @@ public class HousekeepingKickUserEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

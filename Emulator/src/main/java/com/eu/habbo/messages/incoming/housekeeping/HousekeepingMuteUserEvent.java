@@ -2,7 +2,6 @@ package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.Habbo;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 /**
@@ -12,7 +11,7 @@ import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultCompo
  * isn't online the handler returns ok=false with `user_offline` so the
  * UI can fall back to ModToolSanctionMute or surface a clear error.
  */
-public class HousekeepingMuteUserEvent extends MessageHandler {
+public class HousekeepingMuteUserEvent extends HousekeepingHandler {
     private static final String ACTION_KEY = "user.mute";
 
     @Override
@@ -22,7 +21,7 @@ public class HousekeepingMuteUserEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

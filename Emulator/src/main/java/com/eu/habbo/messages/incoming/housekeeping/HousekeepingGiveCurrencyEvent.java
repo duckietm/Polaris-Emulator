@@ -5,7 +5,6 @@ import com.eu.habbo.habbohotel.economy.EconomyLedger;
 import com.eu.habbo.habbohotel.economy.EconomyOperation;
 import com.eu.habbo.habbohotel.economy.EconomyOperationId;
 import com.eu.habbo.habbohotel.users.Habbo;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 /**
@@ -14,7 +13,7 @@ import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultCompo
  * Online users go through Habbo.givePoints / givePixels which dispatches
  * a UserCurrencyComposer; offline goes straight to `users_currency`.
  */
-public class HousekeepingGiveCurrencyEvent extends MessageHandler {
+public class HousekeepingGiveCurrencyEvent extends HousekeepingHandler {
     private static final int CURRENCY_DUCKETS = 0;
 
     @Override
@@ -24,7 +23,7 @@ public class HousekeepingGiveCurrencyEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 

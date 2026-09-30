@@ -3,7 +3,6 @@ package com.eu.habbo.messages.incoming.housekeeping;
 import com.eu.habbo.database.SqlQueries;
 import com.eu.habbo.habbohotel.commands.UpdatePermissionsCommand;
 import com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 import java.util.Optional;
 
@@ -13,7 +12,7 @@ import java.util.Optional;
  * command's permission, and the rank must be one the operator may act on - the same policy as
  * changing a user's rank - so nobody widens their own rank or one above it.
  */
-public class HousekeepingSetPermissionEvent extends MessageHandler {
+public class HousekeepingSetPermissionEvent extends HousekeepingHandler {
     static final String ACTION_KEY = "hotel.permission.set";
     static final String PERMISSION = "cmd_update_permissions";
 
@@ -24,7 +23,7 @@ public class HousekeepingSetPermissionEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!HousekeepingAccess.check(this.client)) {
+        if (!this.allowed()) {
             return;
         }
 
@@ -52,6 +51,11 @@ public class HousekeepingSetPermissionEvent extends MessageHandler {
 
             if (value < 0 || value > maxValue.get()) {
                 this.fail("housekeeping.error.invalid_input");
+                return;
+            }
+
+            if (HousekeepingLockoutGuard.permissionChangeLocksOut(permissionKey, rankId, value)) {
+                this.fail("housekeeping.error.lockout");
                 return;
             }
 

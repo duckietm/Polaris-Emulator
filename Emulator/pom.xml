@@ -27,7 +27,7 @@
         <mariadb.version>3.5.10</mariadb.version>
         <hikaricp.version>7.1.0</hikaricp.version>
         <dropwizard-metrics.version>4.2.40</dropwizard-metrics.version>
-        <caffeine.version>3.2.4</caffeine.version>
+        <caffeine.version>3.3.0</caffeine.version>
         <resilience4j.version>2.4.0</resilience4j.version>
         <hibernate-validator.version>9.1.4.Final</hibernate-validator.version>
         <commons-lang3.version>3.21.0</commons-lang3.version>

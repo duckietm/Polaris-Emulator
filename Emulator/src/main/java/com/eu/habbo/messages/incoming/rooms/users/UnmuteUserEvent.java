@@ -42,5 +42,10 @@ public class UnmuteUserEvent extends MessageHandler {
         }
 
         target.getHabboStats().unMute();
+
+        // The room mute an ambassador gave lifts with it.
+        if (room != null && room.isMuted(target)) {
+            room.unmuteHabbo(target);
+        }
     }
 }

@@ -21,7 +21,6 @@ import com.eu.habbo.habbohotel.hotlooks.HotLooksManager;
 import com.eu.habbo.habbohotel.items.FurnitureTextProvider;
 import com.eu.habbo.habbohotel.items.ItemManager;
 import com.eu.habbo.habbohotel.items.rentable.RentableFurnitureManager;
-import com.eu.habbo.habbohotel.mentions.MentionManager;
 import com.eu.habbo.habbohotel.modtool.ModToolManager;
 import com.eu.habbo.habbohotel.modtool.ModToolSanctions;
 import com.eu.habbo.habbohotel.modtool.WordFilter;
@@ -41,7 +40,6 @@ import com.eu.habbo.habbohotel.users.custombadge.CustomBadgeManager;
 import com.eu.habbo.habbohotel.users.infostand.InfostandBackgroundManager;
 import com.eu.habbo.habbohotel.users.subscriptions.SubscriptionManager;
 import com.eu.habbo.habbohotel.users.subscriptions.SubscriptionScheduler;
-import com.eu.habbo.habbohotel.wheel.WheelManager;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -89,12 +87,10 @@ public class GameEnvironment {
     private GoogleTranslateManager googleTranslateManager;
     private CustomBadgeManager customBadgeManager;
     private InfostandBackgroundManager infostandBackgroundManager;
-    private WheelManager wheelManager;
     private HotLooksManager hotLooksManager;
     private final HabbiconService habbiconService;
     private SoundboardManager soundboardManager;
     private TraxEditorManager traxEditorManager;
-    private MentionManager mentionManager;
     private com.eu.habbo.habbohotel.quests.QuestManager questManager;
     private com.eu.habbo.habbohotel.quests.DailyTaskManager dailyTaskManager;
     private com.eu.habbo.habbohotel.quests.RewardTrackManager rewardTrackManager;
@@ -159,12 +155,10 @@ public class GameEnvironment {
         this.customBadgeManager = this.services.create("custom badge manager", CustomBadgeManager::new);
         this.infostandBackgroundManager =
                 this.services.create("infostand backgrounds", InfostandBackgroundManager::new);
-        this.wheelManager = this.services.create("wheel manager", WheelManager::new);
         this.hotLooksManager = this.services.create("hot looks manager", HotLooksManager::new);
         this.soundboardManager =
                 this.services.create("soundboard manager", () -> new SoundboardManager(this.permissionsManager));
         this.traxEditorManager = this.services.create("trax editor manager", TraxEditorManager::new);
-        this.mentionManager = this.services.create("mention manager", MentionManager::new);
         this.questManager = this.services.create("quest manager", com.eu.habbo.habbohotel.quests.QuestManager::new);
         this.dailyTaskManager =
                 this.services.create("daily task manager", com.eu.habbo.habbohotel.quests.DailyTaskManager::new);
@@ -330,10 +324,6 @@ public class GameEnvironment {
         return this.catalogManager;
     }
 
-    public WheelManager getWheelManager() {
-        return this.wheelManager;
-    }
-
     public HotLooksManager getHotLooksManager() {
         return this.hotLooksManager;
     }
@@ -389,10 +379,6 @@ public class GameEnvironment {
 
     public PetManager getPetManager() {
         return this.petManager;
-    }
-
-    public MentionManager getMentionManager() {
-        return this.mentionManager;
     }
 
     public com.eu.habbo.habbohotel.quests.QuestManager getQuestManager() {

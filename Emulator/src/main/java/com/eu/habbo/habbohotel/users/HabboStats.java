@@ -135,8 +135,6 @@ public class HabboStats implements Runnable {
     private HabboInfo habboInfo;
     private boolean allowTrade;
     private DiscordPreferences discordPreferences = DiscordPreferences.UNINITIALIZED;
-    private boolean mentionsEnabled;
-    private boolean massMentionsEnabled;
     private int clubExpireTimestamp;
     private int muteEndTime;
     public int maxFriends;
@@ -180,8 +178,6 @@ public class HabboStats implements Runnable {
         this.guilds = new ArrayList<>();
         this.tags = set.getString("tags").split(";");
         this.allowTrade = set.getString("can_trade").equals("1");
-        this.mentionsEnabled = "1".equals(safeColumnString(set, "mentions_enabled", "1"));
-        this.massMentionsEnabled = "1".equals(safeColumnString(set, "mass_mentions_enabled", "1"));
         this.votedRooms = new IntArrayList();
         this.clubExpireTimestamp = set.getInt("club_expire_timestamp");
         this.loginStreak = set.getInt("login_streak");
@@ -1242,28 +1238,10 @@ public class HabboStats implements Runnable {
         else return this.allowTrade;
     }
 
-    public boolean mentionsEnabled() {
-        return this.mentionsEnabled;
-    }
-
-    public boolean massMentionsEnabled() {
-        return this.massMentionsEnabled;
-    }
-
     /** Hides the extended profile from everybody but its owner (the official isHidden flag). */
     public void setProfileHidden(boolean hidden) {
         this.hideProfile = hidden;
         persistFlag("hide_profile", hidden);
-    }
-
-    public void setMentionsEnabled(boolean enabled) {
-        this.mentionsEnabled = enabled;
-        persistFlag("mentions_enabled", enabled);
-    }
-
-    public void setMassMentionsEnabled(boolean enabled) {
-        this.massMentionsEnabled = enabled;
-        persistFlag("mass_mentions_enabled", enabled);
     }
 
     public void setGamePrivacy(boolean hideOnline, boolean blockFollowing, boolean blockFriendRequests) {
@@ -1285,7 +1263,7 @@ public class HabboStats implements Runnable {
     }
 
     private static final Set<String> PERSIST_FLAG_COLUMNS = Set.of(
-            "mentions_enabled", "mass_mentions_enabled", "wired_whisper_disabled", "safety_locked", "hide_profile");
+            "wired_whisper_disabled", "safety_locked", "hide_profile");
 
     private void persistFlag(String column, boolean enabled) {
         if (!PERSIST_FLAG_COLUMNS.contains(column)) {

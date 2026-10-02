@@ -66,7 +66,6 @@ public final class CmsCommandScopes {
             Map.entry("updatecatalog", "cache"),
             Map.entry("updateitems", "cache"),
             Map.entry("updatewordfilter", "cache"),
-            Map.entry("updatewheel", "cache"),
             Map.entry("updatesoundboard", "cache"));
 
     private CmsCommandScopes() {}

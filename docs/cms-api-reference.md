@@ -383,7 +383,6 @@ These reload server-side data after the CMS changes it in the database. Their
 | `updatecatalog` | Reload the catalog. |
 | `updateitems` | Reload item (furni) definitions. |
 | `updatewordfilter` | Reload the word filter. |
-| `updatewheel` | Reload the "wheel of fortune" / lucky wheel config. |
 | `updatesoundboard` | Reload soundboard data. |
 
 ---

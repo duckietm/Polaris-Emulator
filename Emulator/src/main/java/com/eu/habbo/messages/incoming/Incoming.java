@@ -629,11 +629,6 @@ public class Incoming {
     // Custom features — IDs 9300+ reserved
     public static final int RequestRareValuesEvent = 9300;
     public static final int GetHotLooksEvent = 9360; // AIR 13 avatar editor hot looks tab
-    public static final int WheelOpenEvent = 9301;
-    public static final int WheelSpinEvent = 9302;
-    public static final int WheelBuySpinEvent = 9303;
-    public static final int WheelAdminGetPrizesEvent = 9304;
-    public static final int WheelAdminSavePrizesEvent = 9305;
     public static final int SoundboardPlayEvent = 9306;
     public static final int SoundboardSetEnabledEvent = 9307;
     public static final int RequestEarningsCenterEvent = 9308;
@@ -663,9 +658,6 @@ public class Incoming {
     // 6010 (used by the original PR) is reserved by UNKNOWN_SNOWSTORM_6010, so habbicon uses 9417
     public static final int TriggerHabbiconEvent = 9417;
     public static final int DisconnectEvent = 2445;
-    public static final int RequestMentionsEvent = 4803;
-    public static final int MarkMentionsReadEvent = 4804;
-    public static final int DeleteMentionEvent = 4805;
     public static final int RequestMessengerConversationsEvent = 4900;
     public static final int RequestMessengerHistoryEvent = 4901;
     public static final int SendMessengerMessageEvent = 4902;

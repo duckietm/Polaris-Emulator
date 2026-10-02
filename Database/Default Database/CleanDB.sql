@@ -39191,18 +39191,6 @@ INSERT INTO `emulator_settings` (`key`, `value`, `comment`) VALUES
 	('login.turnstile.secretkey', '', ''),
 	('login.turnstile.sitekey', '', ''),
 	('marketplace.enabled', '1', ''),
-	('mentions.cooldown.ms', '3000', 'Per-sender cooldown between any two mentions, in milliseconds.'),
-	('mentions.delete.cooldown.ms', '500', 'Per-user cooldown between delete-mention packets.'),
-	('mentions.enabled', '1', 'Master switch. 1 = process @mentions, 0 = disable the feature entirely.'),
-	('mentions.everyone.aliases', 'all,everyone,tutti', 'Comma-separated aliases that trigger an @everyone broadcast (requires acc_mention_everyone).'),
-	('mentions.friends.aliases', 'friends,amici', 'Comma-separated aliases that trigger an @friends broadcast (requires acc_mention_friends).'),
-	('mentions.markall.cooldown.ms', '5000', 'Per-user cooldown between mark-all-as-read packets (bulk DB update).'),
-	('mentions.markread.cooldown.ms', '500', 'Per-user cooldown between mark-single-as-read packets.'),
-	('mentions.max.targets', '50', 'Hard cap on how many users a single broadcast (@all / @friends / @room) can fan out to.'),
-	('mentions.request.cooldown.ms', '2000', 'Per-user cooldown between RequestMentionsList packets.'),
-	('mentions.room.aliases', 'room,stanza', 'Comma-separated aliases that trigger an @room broadcast (no permission required, room scope only).'),
-	('mentions.room.cooldown.ms', '15000', 'Extra per-sender cooldown for broadcast mentions (@all / @friends / @room) on top of mentions.cooldown.ms.'),
-	('mentions.store.limit', '50', 'Number of mentions returned in the initial RequestMentionsList response.'),
 	('monsterplant.seed.item_id', '4582', ''),
 	('monsterplant.seed_rare.item_id', '4604', ''),
 	('moodlight.color_check.enabled', '1', ''),
@@ -39304,9 +39292,6 @@ INSERT INTO `emulator_settings` (`key`, `value`, `comment`) VALUES
 	('trax.editor.max_songs', '5', 'How many own songs a user may own at once.'),
 	('trax.editor.song.cost.amount', '25', 'Price of one new song in the configured currency. 0 = free.'),
 	('trax.editor.song.cost.currency', '5', 'Currency charged for a new song: -1 = credits, otherwise a users_currency type (0 = duckets, 5 = diamonds).'),
-	('wheel.free_spins_per_day', '1', 'Fortune wheel: free spins granted each day.'),
-	('wheel.spin_cost', '50', 'Fortune wheel: cost of one extra spin.'),
-	('wheel.spin_cost_type', '5', 'Fortune wheel: currency type for the spin cost (5 = diamonds; -1 = credits).'),
 	('wired.custom.enabled', '0', ''),
 	('wired.effect.teleport.delay', '100', ''),
 	('wired.highscores.displaycount', '25', ''),
@@ -39354,7 +39339,6 @@ INSERT INTO `emulator_texts` (`key`, `value`) VALUES
 	('bots.visitor.no_visits', 'There were no visitors when you were away.'),
 	('bots.visitor.visits', 'There were %count% visits since the last time you were away. If you want me to tell them say %positive%'),
 	('bubblealerts.notif_friendonline.message', '%username% just logged in! Say hi!'),
-	('bubblealerts.notif_mention.message', '%username% mentioned you. Click to visit %username% in %room_name%!'),
 	('camera.disabled', 'Sorry! Camera is disabled :('),
 	('camera.error.creation', 'Failed to create your picture. *sadpanda*'),
 	('camera.permission', 'You don\'t have permission to use the camera!'),
@@ -39409,8 +39393,6 @@ INSERT INTO `emulator_texts` (`key`, `value`) VALUES
 	('commands.description.cmd_credits', ':credits <username> <amount>'),
 	('commands.description.cmd_danceall', ':danceall <dance id>'),
 	('commands.description.cmd_diagonal', ':diagonal'),
-	('commands.description.cmd_disablemassmentions', ':disablemassmentions'),
-	('commands.description.cmd_disablementions', ':disablementions'),
 	('commands.description.cmd_disable_effects', ':disableffects'),
 	('commands.description.cmd_disconnect', ':disconnect <username>'),
 	('commands.description.cmd_duckets', ':duckets <username> <amount>'),
@@ -41349,27 +41331,6 @@ CREATE TABLE IF NOT EXISTS `guilds_members` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table camwijsnew.guilds_members: ~0 rows (approximately)
-
--- Dumping structure for table camwijsnew.habbo_mentions
-DROP TABLE IF EXISTS `habbo_mentions`;
-CREATE TABLE IF NOT EXISTS `habbo_mentions` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `target_user_id` int(11) NOT NULL,
-  `sender_user_id` int(11) NOT NULL,
-  `sender_username` varchar(64) NOT NULL DEFAULT '',
-  `room_id` int(11) NOT NULL DEFAULT 0,
-  `room_name` varchar(64) NOT NULL DEFAULT '',
-  `message` varchar(255) NOT NULL DEFAULT '',
-  `mention_type` tinyint(1) NOT NULL DEFAULT 0 COMMENT '0 = direct (@nick), 1 = broadcast (@all/@friends/@room)',
-  `timestamp` int(11) NOT NULL DEFAULT 0,
-  `read` tinyint(1) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id`),
-  KEY `idx_target_id` (`target_user_id`,`id`),
-  KEY `idx_target_unread` (`target_user_id`,`read`),
-  KEY `idx_target_timestamp` (`target_user_id`,`timestamp`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Dumping data for table camwijsnew.habbo_mentions: ~0 rows (approximately)
 
 -- Dumping structure for table camwijsnew.hotelview_landing_settings
 DROP TABLE IF EXISTS `hotelview_landing_settings`;
@@ -53028,8 +52989,6 @@ INSERT INTO `permission_definitions` (`permission_key`, `max_value`, `comment`, 
 	('acc_infinite_pixels', 1, 'Controls the infinite pixels capability for this rank. Values: 0 = disabled, 1 = enabled.', 0, 0, 0, 0, 0, 0, 1),
 	('acc_infinite_points', 1, 'Controls the infinite points capability for this rank. Values: 0 = disabled, 1 = enabled.', 0, 0, 0, 0, 0, 0, 1),
 	('acc_mention', 2, 'Controls the mention capability for this rank. Values: 0 = disabled, 1 = enabled, 2 = enabled with room-owner rights.', 0, 0, 0, 0, 0, 0, 1),
-	('acc_mention_everyone', 1, 'Allow sending @all / @everyone / @tutti broadcast mentions (hotel-wide).', 0, 0, 0, 0, 1, 1, 1),
-	('acc_mention_friends', 1, 'Allow sending @friends / @amici broadcast mentions (sender\'s online buddies).', 0, 0, 0, 0, 1, 1, 1),
 	('acc_mimic_unredeemed', 1, 'Controls the mimic unredeemed capability for this rank. Values: 0 = disabled, 1 = enabled.', 0, 0, 0, 0, 0, 0, 1),
 	('acc_modtool_room_info', 1, 'Controls the modtool room info capability for this rank. Values: 0 = disabled, 1 = enabled.', 0, 0, 1, 1, 1, 0, 1),
 	('acc_modtool_room_logs', 1, 'Controls the modtool room logs capability for this rank. Values: 0 = disabled, 1 = enabled.', 0, 0, 1, 1, 1, 0, 1),
@@ -53058,7 +53017,6 @@ INSERT INTO `permission_definitions` (`permission_key`, `max_value`, `comment`, 
 	('acc_unlimited_bots', 2, 'Overrides the bot restriction to the inventory and room.', 0, 0, 0, 0, 0, 0, 1),
 	('acc_unlimited_pets', 2, 'Overrides the pet restriction to the inventory and room.', 0, 0, 0, 0, 0, 0, 1),
 	('acc_update_notifications', 1, 'Controls the update notifications capability for this rank. Values: 0 = disabled, 1 = enabled.', 0, 0, 0, 0, 0, 0, 1),
-	('acc_wheeladmin', 1, 'Allows opening the Fortune Wheel prize editor (FortuneWheelSettingsView) to add/edit prize slices. Gated server-side by the same key.', 0, 0, 0, 0, 0, 0, 1),
 	('cmd_about', 1, 'Controls access to the :about command. Values: 0 = disabled, 1 = allowed.', 1, 1, 1, 1, 1, 1, 1),
 	('cmd_add_youtube_playlist', 1, 'Controls access to the :add youtube playlist command. Values: 0 = disabled, 1 = allowed.', 0, 0, 0, 0, 0, 0, 1),
 	('cmd_alert', 1, 'Controls access to the :alert command. Values: 0 = disabled, 1 = allowed.', 0, 0, 0, 0, 0, 0, 1),
@@ -53082,8 +53040,6 @@ INSERT INTO `permission_definitions` (`permission_key`, `max_value`, `comment`, 
 	('cmd_credits', 1, 'Controls access to the :credits command. Values: 0 = disabled, 1 = allowed.', 0, 0, 0, 0, 0, 0, 1),
 	('cmd_danceall', 2, 'Controls access to the :danceall command. Values: 0 = disabled, 1 = allowed, 2 = allowed with room-owner rights.', 0, 0, 0, 0, 0, 0, 1),
 	('cmd_diagonal', 2, 'Controls access to the :diagonal command. Values: 0 = disabled, 1 = allowed, 2 = allowed with room-owner rights.', 1, 1, 1, 1, 1, 1, 1),
-	('cmd_disablemassmentions', 1, 'Allow toggling :disablemassmentions to stop receiving broadcast mentions (direct @nick still works).', 1, 1, 1, 1, 1, 1, 1),
-	('cmd_disablementions', 1, 'Allow toggling :disablementions to stop receiving any @mention notifications.', 1, 1, 1, 1, 1, 1, 1),
 	('cmd_disable_effects', 2, 'Controls access to the :disable effects command. Values: 0 = disabled, 1 = allowed, 2 = allowed with room-owner rights.', 2, 2, 2, 2, 2, 2, 1),
 	('cmd_disconnect', 1, 'Controls access to the :disconnect command. Values: 0 = disabled, 1 = allowed.', 0, 0, 0, 0, 0, 0, 1),
 	('cmd_duckets', 1, 'Controls access to the :duckets command. Values: 0 = disabled, 1 = allowed.', 0, 0, 0, 0, 0, 0, 1),
@@ -55535,8 +55491,6 @@ CREATE TABLE IF NOT EXISTS `users_settings` (
   `max_rooms` int(11) DEFAULT 50,
   `max_friends` int(11) DEFAULT 300,
   `builders_club_bonus_furni` int(11) NOT NULL DEFAULT 0,
-  `mentions_enabled` enum('0','1') NOT NULL DEFAULT '1' COMMENT 'Receive @nick mention notifications.',
-  `mass_mentions_enabled` enum('0','1') NOT NULL DEFAULT '1' COMMENT 'Receive broadcast (@all / @friends / @room) mentions.',
   `volume_soundboard` int(11) NOT NULL DEFAULT 80,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE KEY `user_id` (`user_id`) USING BTREE,
@@ -55547,8 +55501,8 @@ CREATE TABLE IF NOT EXISTS `users_settings` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table camwijsnew.users_settings: ~1 rows (approximately)
-INSERT INTO `users_settings` (`id`, `user_id`, `credits`, `achievement_score`, `daily_respect_points`, `daily_pet_respect_points`, `respects_given`, `respects_received`, `guild_id`, `can_change_name`, `can_trade`, `is_citizen`, `citizen_level`, `helper_level`, `tradelock_amount`, `cfh_send`, `cfh_abusive`, `cfh_warnings`, `cfh_bans`, `block_following`, `block_friendrequests`, `hide_online`, `block_roominvites`, `volume_system`, `volume_furni`, `volume_trax`, `old_chat`, `block_camera_follow`, `chat_color`, `home_room`, `online_time`, `tags`, `club_expire_timestamp`, `login_streak`, `rent_space_id`, `rent_space_endtime`, `hof_points`, `block_alerts`, `talent_track_citizenship_level`, `talent_track_helpers_level`, `ignore_bots`, `ignore_pets`, `nux`, `mute_end_timestamp`, `allow_name_change`, `perk_trade`, `forums_post_count`, `ui_flags`, `has_gotten_default_saved_searches`, `hc_gifts_claimed`, `last_hc_payday`, `max_rooms`, `max_friends`, `builders_club_bonus_furni`, `mentions_enabled`, `mass_mentions_enabled`, `volume_soundboard`) VALUES
-	(1, 1, 0, 0, 3, 3, 0, 0, 0, '0', '1', '0', 0, 0, 0, 0, 0, 0, 0, '0', '0', '0', '0', 100, 100, 100, '0', '0', 0, 0, 0, 'Arcturus Emulator;', 0, 0, 0, 0, 0, '0', -1, -1, '0', '0', '0', 0, '0', '0', 0, 1, 1, 0, 0, 50, 300, 0, '1', '1', 80);
+INSERT INTO `users_settings` (`id`, `user_id`, `credits`, `achievement_score`, `daily_respect_points`, `daily_pet_respect_points`, `respects_given`, `respects_received`, `guild_id`, `can_change_name`, `can_trade`, `is_citizen`, `citizen_level`, `helper_level`, `tradelock_amount`, `cfh_send`, `cfh_abusive`, `cfh_warnings`, `cfh_bans`, `block_following`, `block_friendrequests`, `hide_online`, `block_roominvites`, `volume_system`, `volume_furni`, `volume_trax`, `old_chat`, `block_camera_follow`, `chat_color`, `home_room`, `online_time`, `tags`, `club_expire_timestamp`, `login_streak`, `rent_space_id`, `rent_space_endtime`, `hof_points`, `block_alerts`, `talent_track_citizenship_level`, `talent_track_helpers_level`, `ignore_bots`, `ignore_pets`, `nux`, `mute_end_timestamp`, `allow_name_change`, `perk_trade`, `forums_post_count`, `ui_flags`, `has_gotten_default_saved_searches`, `hc_gifts_claimed`, `last_hc_payday`, `max_rooms`, `max_friends`, `builders_club_bonus_furni`, `volume_soundboard`) VALUES
+	(1, 1, 0, 0, 3, 3, 0, 0, 0, '0', '1', '0', 0, 0, 0, 0, 0, 0, 0, '0', '0', '0', '0', 100, 100, 100, '0', '0', 0, 0, 0, 'Arcturus Emulator;', 0, 0, 0, 0, 0, '0', -1, -1, '0', '0', '0', 0, '0', '0', 0, 1, 1, 0, 0, 50, 300, 0, 80);
 
 -- Dumping structure for table camwijsnew.users_soundtracks
 DROP TABLE IF EXISTS `users_soundtracks`;
@@ -55640,57 +55594,6 @@ CREATE TABLE IF NOT EXISTS `vouchers` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table camwijsnew.vouchers: 0 rows
-
--- Dumping structure for table camwijsnew.wheel_prizes
-DROP TABLE IF EXISTS `wheel_prizes`;
-CREATE TABLE IF NOT EXISTS `wheel_prizes` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `type` varchar(16) NOT NULL DEFAULT 'nothing',
-  `value` varchar(64) NOT NULL DEFAULT '',
-  `amount` int(11) NOT NULL DEFAULT 1,
-  `points_type` int(11) NOT NULL DEFAULT 5,
-  `weight` int(11) NOT NULL DEFAULT 1,
-  `label` varchar(64) NOT NULL DEFAULT '',
-  `enabled` tinyint(1) NOT NULL DEFAULT 1,
-  `sort_order` int(11) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-
--- Dumping data for table camwijsnew.wheel_prizes: ~7 rows (approximately)
-INSERT INTO `wheel_prizes` (`id`, `type`, `value`, `amount`, `points_type`, `weight`, `label`, `enabled`, `sort_order`) VALUES
-	(1, 'points', '', 25, 5, 20, '25 diamonds', 1, 1),
-	(2, 'points', '', 50, 5, 12, '50 diamonds', 1, 2),
-	(3, 'points', '', 200, 5, 3, '200 diamonds', 1, 3),
-	(4, 'credits', '', 100, 0, 15, '100 credits', 1, 4),
-	(5, 'spin', '', 1, 0, 15, '1 Extra spin', 1, 5),
-	(6, 'spin', '', 2, 0, 6, '2 Extra spins', 1, 6),
-	(7, 'nothing', '', 0, 0, 29, 'Oh to bad!', 1, 7);
-
--- Dumping structure for table camwijsnew.wheel_recent_wins
-DROP TABLE IF EXISTS `wheel_recent_wins`;
-CREATE TABLE IF NOT EXISTS `wheel_recent_wins` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `username` varchar(64) NOT NULL DEFAULT '',
-  `look` varchar(255) NOT NULL DEFAULT '',
-  `prize_label` varchar(64) NOT NULL DEFAULT '',
-  `won_at` int(11) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-
--- Dumping data for table camwijsnew.wheel_recent_wins: ~0 rows (approximately)
-
--- Dumping structure for table camwijsnew.wheel_user_state
-DROP TABLE IF EXISTS `wheel_user_state`;
-CREATE TABLE IF NOT EXISTS `wheel_user_state` (
-  `user_id` int(11) NOT NULL,
-  `free_spins` int(11) NOT NULL DEFAULT 0,
-  `extra_spins` int(11) NOT NULL DEFAULT 0,
-  `last_reset` int(11) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-
--- Dumping data for table camwijsnew.wheel_user_state: ~0 rows (approximately)
 
 -- Dumping structure for table camwijsnew.wired_emulator_settings
 DROP TABLE IF EXISTS `wired_emulator_settings`;

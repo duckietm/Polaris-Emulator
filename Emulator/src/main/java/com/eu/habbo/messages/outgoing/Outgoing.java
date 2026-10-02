@@ -750,10 +750,6 @@ public class Outgoing {
     public static final int RareValuesComposer = 9400;
     public static final int HotLooksComposer = 9360; // AIR 13 avatar editor hot looks tab
     public static final int BuildHeightAvailableComposer = 9350; // Build height widget availability
-    public static final int WheelDataComposer = 9401;
-    public static final int WheelResultComposer = 9402;
-    public static final int WheelRecentWinsComposer = 9403;
-    public static final int WheelAdminPrizesComposer = 9404;
     public static final int SoundboardSettingsComposer = 9405;
     public static final int SoundboardPlayComposer = 9406;
     public static final int EarningsCenterComposer = 9407;
@@ -765,8 +761,6 @@ public class Outgoing {
     public static final int SoundboardPlayDeniedComposer = 9440;
     public static final int SoundboardCatalogComposer = 9441;
     public static final int SoundboardCatalogResultComposer = 9442;
-    public static final int MentionReceivedComposer = 4801;
-    public static final int MentionsListComposer = 4802;
     public static final int MessengerConversationsComposer = 4900;
     public static final int MessengerHistoryComposer = 4901;
     public static final int MessengerMessageAckComposer = 4902;

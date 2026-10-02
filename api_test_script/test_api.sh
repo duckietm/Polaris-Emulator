@@ -104,7 +104,6 @@ echo "--- cache reloads (empty data) ---"
 cmd updatecatalog    "{}"
 cmd updateitems      "{}"
 cmd updatewordfilter "{}"
-cmd updatewheel      "{}"
 cmd updatesoundboard "{}"
 
 if [ "$RUN_DESTRUCTIVE" = "1" ]; then

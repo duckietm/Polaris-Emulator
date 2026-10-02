@@ -18,8 +18,6 @@ class CommandDescriptionTextsContractTest {
     private static final List<String> REQUIRED_DESCRIPTION_KEYS = List.of(
             "commands.description.acc_modtool_room_info",
             "commands.description.cmd_add_youtube_playlist",
-            "commands.description.cmd_disablemassmentions",
-            "commands.description.cmd_disablementions",
             "commands.description.cmd_give_prefix",
             "commands.description.cmd_hidewired",
             "commands.description.cmd_list_prefixes",

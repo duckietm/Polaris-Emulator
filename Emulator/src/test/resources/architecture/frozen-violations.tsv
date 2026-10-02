@@ -800,10 +800,6 @@ U|com/eu/habbo/habbohotel/items/rentable/RentableFurnitureManager.java|CALL|getG
 U|com/eu/habbo/habbohotel/items/rentable/RentableFurnitureManager.java|CALL|getGameServer|1
 U|com/eu/habbo/habbohotel/items/rentable/RentableFurnitureManager.java|CALL|getIntUnixTimestamp|2
 U|com/eu/habbo/habbohotel/items/rentable/RentableFurnitureManager.java|CALL|getThreading|3
-U|com/eu/habbo/habbohotel/mentions/MentionManager.java|CALL|getConfig|15
-U|com/eu/habbo/habbohotel/mentions/MentionManager.java|CALL|getDatabase|4
-U|com/eu/habbo/habbohotel/mentions/MentionManager.java|CALL|getGameEnvironment|3
-U|com/eu/habbo/habbohotel/mentions/MentionManager.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/habbohotel/messenger/Message.java|CALL|getDatabaseLogger|1
 U|com/eu/habbo/habbohotel/messenger/Message.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/habbohotel/messenger/Messenger.java|CALL|getConfig|1
@@ -1101,11 +1097,6 @@ U|com/eu/habbo/habbohotel/users/subscriptions/SubscriptionScheduler.java|CALL|ge
 U|com/eu/habbo/habbohotel/users/subscriptions/SubscriptionScheduler.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/users/subscriptions/SubscriptionScheduler.java|CALL|getIntUnixTimestamp|1
 U|com/eu/habbo/habbohotel/users/subscriptions/SubscriptionScheduler.java|CALL|getPluginManager|1
-U|com/eu/habbo/habbohotel/wheel/WheelManager.java|CALL|getConfig|3
-U|com/eu/habbo/habbohotel/wheel/WheelManager.java|CALL|getDatabase|8
-U|com/eu/habbo/habbohotel/wheel/WheelManager.java|CALL|getGameEnvironment|2
-U|com/eu/habbo/habbohotel/wheel/WheelManager.java|CALL|getIntUnixTimestamp|2
-U|com/eu/habbo/habbohotel/wheel/WheelPrize.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/habbohotel/wired/WiredHandler.java|CALL|getConfig|2
 U|com/eu/habbo/habbohotel/wired/core/DefaultWiredServices.java|CALL|getThreading|3
 U|com/eu/habbo/habbohotel/wired/core/WiredContextVariableScope.java|CALL|getIntUnixTimestamp|2
@@ -1411,10 +1402,6 @@ U|com/eu/habbo/messages/incoming/inventory/prefixes/DeletePrefixEvent.java|CALL|
 U|com/eu/habbo/messages/incoming/inventory/prefixes/PurchaseCatalogPrefixEvent.java|CALL|getDatabase|1
 U|com/eu/habbo/messages/incoming/inventory/prefixes/PurchasePrefixEvent.java|CALL|getDatabase|1
 U|com/eu/habbo/messages/incoming/inventory/prefixes/PurchasePrefixEvent.java|CALL|getGameEnvironment|1
-U|com/eu/habbo/messages/incoming/mentions/DeleteMentionEvent.java|CALL|getGameEnvironment|1
-U|com/eu/habbo/messages/incoming/mentions/MarkMentionsReadEvent.java|CALL|getGameEnvironment|1
-U|com/eu/habbo/messages/incoming/mentions/RequestMentionsEvent.java|CALL|getConfig|1
-U|com/eu/habbo/messages/incoming/mentions/RequestMentionsEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/modtool/DeletePendingCallsForHelpEvent.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/messages/incoming/modtool/ModToolAlertEvent.java|CALL|getGameEnvironment|3
 U|com/eu/habbo/messages/incoming/modtool/ModToolAlertEvent.java|CALL|getTexts|1
@@ -1720,11 +1707,6 @@ U|com/eu/habbo/messages/incoming/users/UserSaveLookEvent.java|CALL|getPluginMana
 U|com/eu/habbo/messages/incoming/users/UserSaveLookEvent.java|CALL|getTexts|1
 U|com/eu/habbo/messages/incoming/users/UserSaveLookEvent.java|CALL|getThreading|1
 U|com/eu/habbo/messages/incoming/users/UserWearBadgeEvent.java|CALL|getThreading|1
-U|com/eu/habbo/messages/incoming/wheel/WheelAdminGetPrizesEvent.java|CALL|getGameEnvironment|1
-U|com/eu/habbo/messages/incoming/wheel/WheelAdminSavePrizesEvent.java|CALL|getGameEnvironment|1
-U|com/eu/habbo/messages/incoming/wheel/WheelBuySpinEvent.java|CALL|getGameEnvironment|1
-U|com/eu/habbo/messages/incoming/wheel/WheelOpenEvent.java|CALL|getGameEnvironment|1
-U|com/eu/habbo/messages/incoming/wheel/WheelSpinEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/wired/WiredConditionSaveDataEvent.java|CALL|getThreading|1
 U|com/eu/habbo/messages/incoming/wired/WiredEffectSaveDataEvent.java|CALL|getThreading|2
 U|com/eu/habbo/messages/incoming/wired/WiredTriggerSaveDataEvent.java|CALL|getThreading|1
@@ -1866,7 +1848,6 @@ U|com/eu/habbo/messages/rcon/UpdateSoundboard.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/rcon/UpdateUser.java|CALL|getConfig|1
 U|com/eu/habbo/messages/rcon/UpdateUser.java|CALL|getDatabase|1
 U|com/eu/habbo/messages/rcon/UpdateUser.java|CALL|getGameEnvironment|1
-U|com/eu/habbo/messages/rcon/UpdateWheel.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/rcon/UpdateWordfilter.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/monitoring/EmulatorStatsService.java|CALL|getConfig|8
 U|com/eu/habbo/monitoring/EmulatorStatsService.java|CALL|getDatabase|4

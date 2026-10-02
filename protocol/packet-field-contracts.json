@@ -7,15 +7,6 @@
     },
     "ranges": [
       {
-        "name": "mentions_client",
-        "direction": "client_to_server",
-        "start": 4800,
-        "end": 4899,
-        "origin": "custom",
-        "feature": "mentions",
-        "stability": "stable"
-      },
-      {
         "name": "messenger_client",
         "direction": "client_to_server",
         "start": 4900,
@@ -94,15 +85,6 @@
         "end": 10099,
         "origin": "custom",
         "feature": "catalog_tools",
-        "stability": "stable"
-      },
-      {
-        "name": "mentions_server",
-        "direction": "server_to_client",
-        "start": 4800,
-        "end": 4899,
-        "origin": "custom",
-        "feature": "mentions",
         "stability": "stable"
       },
       {
@@ -8569,71 +8551,6 @@
       ]
     },
     {
-      "name": "REQUEST_MENTIONS",
-      "direction": "client_to_server",
-      "header": 4803,
-      "java": {
-        "symbol": "RequestMentionsEvent",
-        "className": "RequestMentionsEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/mentions/RequestMentionsEvent.java"
-      },
-      "typescript": {
-        "symbol": "REQUEST_MENTIONS",
-        "className": "RequestMentionsComposer",
-        "path": "packages/communication/src/messages/outgoing/mentions/RequestMentionsComposer.ts"
-      },
-      "fields": []
-    },
-    {
-      "name": "MARK_MENTIONS_READ",
-      "direction": "client_to_server",
-      "header": 4804,
-      "java": {
-        "symbol": "MarkMentionsReadEvent",
-        "className": "MarkMentionsReadEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/mentions/MarkMentionsReadEvent.java"
-      },
-      "typescript": {
-        "symbol": "MARK_MENTIONS_READ",
-        "className": "MarkMentionsReadComposer",
-        "path": "packages/communication/src/messages/outgoing/mentions/MarkMentionsReadComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "mode"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "mentionId"
-        }
-      ]
-    },
-    {
-      "name": "DELETE_MENTION",
-      "direction": "client_to_server",
-      "header": 4805,
-      "java": {
-        "symbol": "DeleteMentionEvent",
-        "className": "DeleteMentionEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/mentions/DeleteMentionEvent.java"
-      },
-      "typescript": {
-        "symbol": "DELETE_MENTION",
-        "className": "DeleteMentionComposer",
-        "path": "packages/communication/src/messages/outgoing/mentions/DeleteMentionComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "mentionId"
-        }
-      ]
-    },
-    {
       "name": "REQUEST_MESSENGER_CONVERSATIONS",
       "direction": "client_to_server",
       "header": 4900,
@@ -10017,70 +9934,6 @@
         "symbol": "REQUEST_RARE_VALUES",
         "className": "RequestRareValuesComposer",
         "path": "packages/communication/src/messages/outgoing/rarevalues/RequestRareValuesComposer.ts"
-      },
-      "fields": []
-    },
-    {
-      "name": "WHEEL_OPEN",
-      "direction": "client_to_server",
-      "header": 9301,
-      "java": {
-        "symbol": "WheelOpenEvent",
-        "className": "WheelOpenEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wheel/WheelOpenEvent.java"
-      },
-      "typescript": {
-        "symbol": "WHEEL_OPEN",
-        "className": "WheelOpenComposer",
-        "path": "packages/communication/src/messages/outgoing/wheel/WheelOpenComposer.ts"
-      },
-      "fields": []
-    },
-    {
-      "name": "WHEEL_SPIN",
-      "direction": "client_to_server",
-      "header": 9302,
-      "java": {
-        "symbol": "WheelSpinEvent",
-        "className": "WheelSpinEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wheel/WheelSpinEvent.java"
-      },
-      "typescript": {
-        "symbol": "WHEEL_SPIN",
-        "className": "WheelSpinComposer",
-        "path": "packages/communication/src/messages/outgoing/wheel/WheelSpinComposer.ts"
-      },
-      "fields": []
-    },
-    {
-      "name": "WHEEL_BUY_SPIN",
-      "direction": "client_to_server",
-      "header": 9303,
-      "java": {
-        "symbol": "WheelBuySpinEvent",
-        "className": "WheelBuySpinEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wheel/WheelBuySpinEvent.java"
-      },
-      "typescript": {
-        "symbol": "WHEEL_BUY_SPIN",
-        "className": "WheelBuySpinComposer",
-        "path": "packages/communication/src/messages/outgoing/wheel/WheelBuySpinComposer.ts"
-      },
-      "fields": []
-    },
-    {
-      "name": "WHEEL_ADMIN_GET_PRIZES",
-      "direction": "client_to_server",
-      "header": 9304,
-      "java": {
-        "symbol": "WheelAdminGetPrizesEvent",
-        "className": "WheelAdminGetPrizesEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wheel/WheelAdminGetPrizesEvent.java"
-      },
-      "typescript": {
-        "symbol": "WHEEL_ADMIN_GET_PRIZES",
-        "className": "WheelAdminGetPrizesComposer",
-        "path": "packages/communication/src/messages/outgoing/wheel/WheelAdminGetPrizesComposer.ts"
       },
       "fields": []
     },
@@ -20214,28 +20067,6 @@
       ]
     },
     {
-      "name": "WHEEL_RESULT",
-      "direction": "server_to_client",
-      "header": 9402,
-      "java": {
-        "symbol": "WheelResultComposer",
-        "className": "WheelResultComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wheel/WheelResultComposer.java"
-      },
-      "typescript": {
-        "symbol": "WHEEL_RESULT",
-        "className": "WheelResultParser",
-        "path": "packages/communication/src/messages/parser/wheel/WheelResultParser.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": ""
-        }
-      ]
-    },
-    {
       "name": "ROOM_USE_HABBICON",
       "direction": "server_to_client",
       "header": 9410,
@@ -22293,7 +22124,7 @@
         "className": "RoomUnitChatWhisperComposer",
         "path": "packages/communication/src/messages/outgoing/room/unit/chat/RoomUnitChatWhisperComposer.ts"
       },
-      "reason": "Java analyzer: Packet fields delegated to external constructor RoomChatMessage inside handle; TypeScript analyzer: Outgoing value recipientName + \u0027 \u0027 + message has no statically resolvable wire type"
+      "reason": "Java analyzer: Packet fields delegated to external constructor RoomChatMessage inside handle; TypeScript analyzer: Outgoing value recipientName + ' ' + message has no statically resolvable wire type"
     },
     {
       "name": "MARKETPLACE_SELL_MULTIPLE_ITEMS",
@@ -23285,7 +23116,7 @@
         "className": "ClientHelloMessageComposer",
         "path": "packages/communication/src/messages/outgoing/handshake/ClientHelloMessageComposer.ts"
       },
-      "reason": "TypeScript analyzer: Outgoing value `NITRO-${OctaneVersion.RENDERER_VERSION.replaceAll(\u0027.\u0027, \u0027-\u0027)}` has no statically resolvable wire type"
+      "reason": "TypeScript analyzer: Outgoing value `NITRO-${OctaneVersion.RENDERER_VERSION.replaceAll('.', '-')}` has no statically resolvable wire type"
     },
     {
       "name": "SNOWWAR_LOAD_STAGE_READY",
@@ -23430,22 +23261,6 @@
         "path": "packages/communication/src/messages/outgoing/room/youtube/YouTubeRoomSettingsComposer.ts"
       },
       "reason": "TypeScript analyzer: Outgoing value enabled ? 1 : 0 has no statically resolvable wire type"
-    },
-    {
-      "name": "WHEEL_ADMIN_SAVE_PRIZES",
-      "direction": "client_to_server",
-      "header": 9305,
-      "java": {
-        "symbol": "WheelAdminSavePrizesEvent",
-        "className": "WheelAdminSavePrizesEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wheel/WheelAdminSavePrizesEvent.java"
-      },
-      "typescript": {
-        "symbol": "WHEEL_ADMIN_SAVE_PRIZES",
-        "className": "WheelAdminSavePrizesComposer",
-        "path": "packages/communication/src/messages/outgoing/wheel/WheelAdminSavePrizesComposer.ts"
-      },
-      "reason": "Java analyzer: Data-dependent packet operations in ForStmt inside handle; TypeScript analyzer: Outgoing composer message array cannot be resolved statically"
     },
     {
       "name": "SOUNDBOARD_SET_ENABLED",
@@ -27224,38 +27039,6 @@
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },
     {
-      "name": "MENTION_RECEIVED",
-      "direction": "server_to_client",
-      "header": 4801,
-      "java": {
-        "symbol": "MentionReceivedComposer",
-        "className": "MentionReceivedComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/mentions/MentionReceivedComposer.java"
-      },
-      "typescript": {
-        "symbol": "MENTION_RECEIVED",
-        "className": "MentionReceivedParser",
-        "path": "packages/communication/src/messages/parser/mentions/MentionReceivedParser.ts"
-      },
-      "reason": "TypeScript analyzer: Packet fields delegated to external constructor MentionListItem inside parse"
-    },
-    {
-      "name": "MENTIONS_LIST",
-      "direction": "server_to_client",
-      "header": 4802,
-      "java": {
-        "symbol": "MentionsListComposer",
-        "className": "MentionsListComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/mentions/MentionsListComposer.java"
-      },
-      "typescript": {
-        "symbol": "MENTIONS_LIST",
-        "className": "MentionsListParser",
-        "path": "packages/communication/src/messages/parser/mentions/MentionsListParser.ts"
-      },
-      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor MentionListItem inside parse"
-    },
-    {
       "name": "MESSENGER_CONVERSATIONS",
       "direction": "server_to_client",
       "header": 4900,
@@ -27860,54 +27643,6 @@
         "symbol": "RARE_VALUES",
         "className": "RareValuesParser",
         "path": "packages/communication/src/messages/parser/rarevalues/RareValuesParser.ts"
-      },
-      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
-    },
-    {
-      "name": "WHEEL_DATA",
-      "direction": "server_to_client",
-      "header": 9401,
-      "java": {
-        "symbol": "WheelDataComposer",
-        "className": "WheelDataComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wheel/WheelDataComposer.java"
-      },
-      "typescript": {
-        "symbol": "WHEEL_DATA",
-        "className": "WheelDataParser",
-        "path": "packages/communication/src/messages/parser/wheel/WheelDataParser.ts"
-      },
-      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
-    },
-    {
-      "name": "WHEEL_RECENT_WINS",
-      "direction": "server_to_client",
-      "header": 9403,
-      "java": {
-        "symbol": "WheelRecentWinsComposer",
-        "className": "WheelRecentWinsComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wheel/WheelRecentWinsComposer.java"
-      },
-      "typescript": {
-        "symbol": "WHEEL_RECENT_WINS",
-        "className": "WheelRecentWinsParser",
-        "path": "packages/communication/src/messages/parser/wheel/WheelRecentWinsParser.ts"
-      },
-      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
-    },
-    {
-      "name": "WHEEL_ADMIN_PRIZES",
-      "direction": "server_to_client",
-      "header": 9404,
-      "java": {
-        "symbol": "WheelAdminPrizesComposer",
-        "className": "WheelAdminPrizesComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wheel/WheelAdminPrizesComposer.java"
-      },
-      "typescript": {
-        "symbol": "WHEEL_ADMIN_PRIZES",
-        "className": "WheelAdminPrizesParser",
-        "path": "packages/communication/src/messages/parser/wheel/WheelAdminPrizesParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },

@@ -1,6 +1,7 @@
 package com.eu.habbo.database.migration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -63,13 +64,16 @@ class MigrationRunnerIT {
             assertTrue(tableExists(ds, "users"), "base table users must exist");
             assertTrue(tableExists(ds, "permission_ranks"), "Polaris table permission_ranks must exist");
             assertTrue(tableExists(ds, "wired_emulator_settings"), "Polaris table wired_emulator_settings must exist");
-            assertTrue(tableExists(ds, "habbo_mentions"), "current mentions schema must exist");
-            assertTrue(tableExists(ds, "wheel_prizes"), "current wheel schema must exist");
+            assertFalse(tableExists(ds, "habbo_mentions"), "removed mentions schema must stay absent");
+            assertFalse(tableExists(ds, "wheel_prizes"), "removed wheel schema must stay absent");
+            assertFalse(tableExists(ds, "wheel_user_state"), "removed wheel state schema must stay absent");
+            assertFalse(tableExists(ds, "wheel_recent_wins"), "removed wheel history schema must stay absent");
             assertTrue(tableExists(ds, "users_earnings_claims"), "current earnings schema must exist");
             assertTrue(tableExists(ds, "furnidata_edit_log"), "current furnidata audit schema must exist");
             assertTrue(tableExists(ds, "messenger_messages"), "dev messenger history schema must exist");
             assertTrue(tableExists(ds, "logs_economy"), "dev economy audit schema must exist");
             assertTrue(tableExists(ds, "logs_soundboard"), "soundboard management audit schema must exist");
+            assertTrue(tableExists(ds, "wordfilter"), "word filter schema must exist");
             assertEquals(
                     "InnoDB",
                     tableEngine(ds, "logs_soundboard"),
@@ -92,6 +96,30 @@ class MigrationRunnerIT {
                               AND TABLE_NAME = 'users_settings'
                               AND COLUMN_NAME = 'volume_soundboard'
                             """));
+            assertFalse(columnExists(ds, "users_settings", "mentions_enabled"));
+            assertFalse(columnExists(ds, "users_settings", "mass_mentions_enabled"));
+            assertEquals(0, intValue(ds, """
+                    SELECT COUNT(*) FROM emulator_settings
+                    WHERE `key` LIKE 'mentions.%' OR `key` LIKE 'wheel.%'
+                    """));
+            assertEquals(0, intValue(ds, """
+                    SELECT COUNT(*) FROM emulator_texts
+                    WHERE `key` IN (
+                        'commands.description.cmd_disablementions',
+                        'commands.description.cmd_disablemassmentions',
+                        'bubblealerts.notif_mention.message'
+                    )
+                    """));
+            assertEquals(0, intValue(ds, """
+                    SELECT COUNT(*) FROM permission_definitions
+                    WHERE permission_key IN (
+                        'acc_wheeladmin',
+                        'acc_mention_everyone',
+                        'acc_mention_friends',
+                        'cmd_disablementions',
+                        'cmd_disablemassmentions'
+                    )
+                    """));
 
             // The engine conversion took effect.
             assertEquals(
@@ -169,7 +197,8 @@ class MigrationRunnerIT {
             // unrelated legacy defaults, collations or storage engines.
             assertTrue(tableExists(ds, "permission_ranks"));
             assertTrue(tableExists(ds, "wired_emulator_settings"));
-            assertTrue(tableExists(ds, "habbo_mentions"));
+            assertFalse(tableExists(ds, "habbo_mentions"));
+            assertFalse(tableExists(ds, "wheel_prizes"));
             assertTrue(tableExists(ds, "messenger_messages"));
             assertTrue(tableExists(ds, "logs_economy"));
             assertTrue(columnExists(ds, "users", "auth_ticket_expires_at"));

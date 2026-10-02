@@ -38,7 +38,6 @@ import com.eu.habbo.messages.rcon.UpdateCatalog;
 import com.eu.habbo.messages.rcon.UpdateItems;
 import com.eu.habbo.messages.rcon.UpdateSoundboard;
 import com.eu.habbo.messages.rcon.UpdateUser;
-import com.eu.habbo.messages.rcon.UpdateWheel;
 import com.eu.habbo.messages.rcon.UpdateWordfilter;
 import com.eu.habbo.networking.Server;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -104,7 +103,6 @@ public class RCONServer extends Server {
         this.addRCONMessage("sendroombundle", SendRoomBundle.class);
         this.addRCONMessage("setrank", SetRank.class);
         this.addRCONMessage("updatewordfilter", UpdateWordfilter.class);
-        this.addRCONMessage("updatewheel", UpdateWheel.class);
         this.addRCONMessage("updatesoundboard", UpdateSoundboard.class);
         this.addRCONMessage("updatecatalog", UpdateCatalog.class);
         this.addRCONMessage("executecommand", ExecuteCommand.class);

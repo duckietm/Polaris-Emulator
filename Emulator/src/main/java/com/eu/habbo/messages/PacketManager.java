@@ -242,9 +242,6 @@ import com.eu.habbo.messages.incoming.inventory.prefixes.PurchasePrefixEvent;
 import com.eu.habbo.messages.incoming.inventory.prefixes.RequestUserPrefixesEvent;
 import com.eu.habbo.messages.incoming.inventory.prefixes.SetActivePrefixEvent;
 import com.eu.habbo.messages.incoming.inventory.prefixes.SetDisplayOrderEvent;
-import com.eu.habbo.messages.incoming.mentions.DeleteMentionEvent;
-import com.eu.habbo.messages.incoming.mentions.MarkMentionsReadEvent;
-import com.eu.habbo.messages.incoming.mentions.RequestMentionsEvent;
 import com.eu.habbo.messages.incoming.modtool.DeletePendingCallsForHelpEvent;
 import com.eu.habbo.messages.incoming.modtool.ModToolAlertEvent;
 import com.eu.habbo.messages.incoming.modtool.ModToolChangeRoomSettingsEvent;
@@ -1040,9 +1037,6 @@ public class PacketManager {
     }
 
     void registerRooms() throws Exception {
-        this.registerHandler(Incoming.RequestMentionsEvent, RequestMentionsEvent.class);
-        this.registerHandler(Incoming.MarkMentionsReadEvent, MarkMentionsReadEvent.class);
-        this.registerHandler(Incoming.DeleteMentionEvent, DeleteMentionEvent.class);
         this.registerHandler(Incoming.RequestRoomLoadEvent, RequestRoomLoadEvent.class);
         this.registerHandler(Incoming.RequestHeightmapEvent, RequestRoomHeightmapEvent.class);
         this.registerHandler(Incoming.RequestRoomHeightmapEvent, RequestRoomHeightmapEvent.class);
@@ -1582,15 +1576,6 @@ public class PacketManager {
                 Incoming.RequestRareValuesEvent,
                 com.eu.habbo.messages.incoming.rarevalues.RequestRareValuesEvent.class);
         this.registerHandler(Incoming.GetHotLooksEvent, com.eu.habbo.messages.incoming.hotlooks.GetHotLooksEvent.class);
-
-        this.registerHandler(Incoming.WheelOpenEvent, com.eu.habbo.messages.incoming.wheel.WheelOpenEvent.class);
-        this.registerHandler(Incoming.WheelSpinEvent, com.eu.habbo.messages.incoming.wheel.WheelSpinEvent.class);
-        this.registerHandler(Incoming.WheelBuySpinEvent, com.eu.habbo.messages.incoming.wheel.WheelBuySpinEvent.class);
-        this.registerHandler(
-                Incoming.WheelAdminGetPrizesEvent, com.eu.habbo.messages.incoming.wheel.WheelAdminGetPrizesEvent.class);
-        this.registerHandler(
-                Incoming.WheelAdminSavePrizesEvent,
-                com.eu.habbo.messages.incoming.wheel.WheelAdminSavePrizesEvent.class);
 
         this.registerHandler(
                 Incoming.SoundboardPlayEvent, com.eu.habbo.messages.incoming.soundboard.SoundboardPlayEvent.class);

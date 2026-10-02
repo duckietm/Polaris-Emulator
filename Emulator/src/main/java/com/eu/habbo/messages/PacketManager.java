@@ -236,12 +236,6 @@ import com.eu.habbo.messages.incoming.inventory.UnseenResetItemsEvent;
 import com.eu.habbo.messages.incoming.inventory.nickicons.PurchaseNickIconEvent;
 import com.eu.habbo.messages.incoming.inventory.nickicons.RequestUserNickIconsEvent;
 import com.eu.habbo.messages.incoming.inventory.nickicons.SetActiveNickIconEvent;
-import com.eu.habbo.messages.incoming.inventory.prefixes.DeletePrefixEvent;
-import com.eu.habbo.messages.incoming.inventory.prefixes.PurchaseCatalogPrefixEvent;
-import com.eu.habbo.messages.incoming.inventory.prefixes.PurchasePrefixEvent;
-import com.eu.habbo.messages.incoming.inventory.prefixes.RequestUserPrefixesEvent;
-import com.eu.habbo.messages.incoming.inventory.prefixes.SetActivePrefixEvent;
-import com.eu.habbo.messages.incoming.inventory.prefixes.SetDisplayOrderEvent;
 import com.eu.habbo.messages.incoming.modtool.DeletePendingCallsForHelpEvent;
 import com.eu.habbo.messages.incoming.modtool.ModToolAlertEvent;
 import com.eu.habbo.messages.incoming.modtool.ModToolChangeRoomSettingsEvent;
@@ -1021,14 +1015,6 @@ public class PacketManager {
         this.registerHandler(Incoming.RequestInventoryPetsEvent, RequestInventoryPetsEvent.class);
         this.registerHandler(Incoming.RequestInventoryPetDelete, RequestInventoryPetDelete.class);
         this.registerHandler(Incoming.RequestInventoryBadgeDelete, RequestInventoryBadgeDelete.class);
-
-        // Custom Prefixes
-        this.registerHandler(Incoming.RequestUserPrefixesEvent, RequestUserPrefixesEvent.class);
-        this.registerHandler(Incoming.SetActivePrefixEvent, SetActivePrefixEvent.class);
-        this.registerHandler(Incoming.DeletePrefixEvent, DeletePrefixEvent.class);
-        this.registerHandler(Incoming.PurchasePrefixEvent, PurchasePrefixEvent.class);
-        this.registerHandler(Incoming.PurchaseCatalogPrefixEvent, PurchaseCatalogPrefixEvent.class);
-        this.registerHandler(Incoming.SetDisplayOrderEvent, SetDisplayOrderEvent.class);
 
         // Nick Icons
         this.registerHandler(Incoming.RequestUserNickIconsEvent, RequestUserNickIconsEvent.class);

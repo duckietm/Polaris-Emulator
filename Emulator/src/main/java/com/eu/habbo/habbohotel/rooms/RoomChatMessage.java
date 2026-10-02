@@ -214,16 +214,9 @@ public class RoomChatMessage implements Runnable, ISerialize, DatabaseLoggable {
             message.appendString(this.RoomChatColour); // Added packet for room chat
             message.appendInt(this.getMessage().length());
 
-            // Custom prefix data
             UserCustomizationData customizationData =
                     (this.habbo != null) ? UserCustomizationData.fromHabbo(this.habbo) : UserCustomizationData.empty();
-            message.appendString(customizationData.prefixText);
-            message.appendString(customizationData.prefixColor);
-            message.appendString(customizationData.prefixIcon);
-            message.appendString(customizationData.prefixEffect);
-            message.appendString(customizationData.prefixFont);
             message.appendString(customizationData.nickIcon);
-            message.appendString(customizationData.displayOrder);
             // Optional tail: an old client stops reading before it, a new one reads -1 as "room setting".
             message.appendInt(this.bubbleWidthOverride);
         } catch (Exception e) {

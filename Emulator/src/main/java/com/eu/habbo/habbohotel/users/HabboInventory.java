@@ -9,9 +9,7 @@ import com.eu.habbo.habbohotel.users.inventory.EffectsComponent;
 import com.eu.habbo.habbohotel.users.inventory.ItemsComponent;
 import com.eu.habbo.habbohotel.users.inventory.NickIconsComponent;
 import com.eu.habbo.habbohotel.users.inventory.PetsComponent;
-import com.eu.habbo.habbohotel.users.inventory.PrefixesComponent;
 import com.eu.habbo.habbohotel.users.inventory.UnseenItemsComponent;
-import com.eu.habbo.habbohotel.users.inventory.UserVisualSettingsComponent;
 import com.eu.habbo.habbohotel.users.inventory.WardrobeComponent;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -31,9 +29,7 @@ public class HabboInventory {
     private EffectsComponent effectsComponent;
     private ItemsComponent itemsComponent;
     private PetsComponent petsComponent;
-    private PrefixesComponent prefixesComponent;
     private NickIconsComponent nickIconsComponent;
-    private UserVisualSettingsComponent userVisualSettingsComponent;
     private final UnseenItemsComponent unseenItemsComponent = new UnseenItemsComponent();
 
     public HabboInventory(Habbo habbo) {
@@ -75,19 +71,7 @@ public class HabboInventory {
         }
 
         try {
-            this.prefixesComponent = new PrefixesComponent(this.habbo);
-        } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
-        }
-
-        try {
             this.nickIconsComponent = new NickIconsComponent(this.habbo);
-        } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
-        }
-
-        try {
-            this.userVisualSettingsComponent = new UserVisualSettingsComponent(this.habbo);
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
         }
@@ -143,14 +127,6 @@ public class HabboInventory {
         this.petsComponent = petsComponent;
     }
 
-    public PrefixesComponent getPrefixesComponent() {
-        return this.prefixesComponent;
-    }
-
-    public void setPrefixesComponent(PrefixesComponent prefixesComponent) {
-        this.prefixesComponent = prefixesComponent;
-    }
-
     public NickIconsComponent getNickIconsComponent() {
         return this.nickIconsComponent;
     }
@@ -159,17 +135,9 @@ public class HabboInventory {
         this.nickIconsComponent = nickIconsComponent;
     }
 
-    public UserVisualSettingsComponent getUserVisualSettingsComponent() {
-        return this.userVisualSettingsComponent;
-    }
-
     /** Official unseen-item tracker state: what the inventory badge still counts as new. */
     public UnseenItemsComponent getUnseenItemsComponent() {
         return this.unseenItemsComponent;
-    }
-
-    public void setUserVisualSettingsComponent(UserVisualSettingsComponent userVisualSettingsComponent) {
-        this.userVisualSettingsComponent = userVisualSettingsComponent;
     }
 
     public void dispose() {
@@ -179,9 +147,7 @@ public class HabboInventory {
         this.itemsComponent.dispose();
         this.petsComponent.dispose();
         this.wardrobeComponent.dispose();
-        this.prefixesComponent.dispose();
         this.nickIconsComponent.dispose();
-        this.userVisualSettingsComponent.dispose();
 
         this.badgesComponent = null;
         this.botsComponent = null;
@@ -189,9 +155,7 @@ public class HabboInventory {
         this.itemsComponent = null;
         this.petsComponent = null;
         this.wardrobeComponent = null;
-        this.prefixesComponent = null;
         this.nickIconsComponent = null;
-        this.userVisualSettingsComponent = null;
     }
 
     public void addMarketplaceOffer(MarketPlaceOffer marketPlaceOffer) {

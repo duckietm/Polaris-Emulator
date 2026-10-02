@@ -11,7 +11,6 @@ import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import com.eu.habbo.messages.outgoing.inventory.nickicons.UserNickIconsComposer;
 import com.eu.habbo.messages.outgoing.users.UserCurrencyComposer;
 import java.sql.SQLException;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +37,7 @@ public class PurchaseNickIconEvent extends MessageHandler {
         }
 
         UserCustomizationPurchaseService service = new UserCustomizationPurchaseService(
-                new UserCustomizationRepository(Emulator.getDatabase().getDataSource()), List.of());
+                new UserCustomizationRepository(Emulator.getDatabase().getDataSource()));
         try {
             PurchaseResult result = service.purchaseNickIcon(habbo, requestedIconKey);
             if (result.status() != UserCustomizationPurchaseService.Status.SUCCESS) {

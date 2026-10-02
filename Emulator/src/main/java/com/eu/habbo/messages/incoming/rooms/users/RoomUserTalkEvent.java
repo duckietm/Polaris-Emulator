@@ -13,20 +13,19 @@ import org.slf4j.LoggerFactory;
 public class RoomUserTalkEvent extends MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(RoomUserTalkEvent.class);
 
-
     @Override
     public void handle() throws Exception {
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
-        if (room == null)
-            return;
+        if (room == null) return;
 
-        if (!this.client.getHabbo().getHabboStats().allowTalk())
-            return;
+        if (!this.client.getHabbo().getHabboStats().allowTalk()) return;
 
         RoomChatMessage message = new RoomChatMessage(this);
 
         if (message.getMessage().length() <= RoomChatMessage.MAXIMUM_LENGTH) {
-            if (Emulator.getPluginManager().fireEvent(new UserTalkEvent(this.client.getHabbo(), message, RoomChatType.TALK)).isCancelled()) {
+            if (Emulator.getPluginManager()
+                    .fireEvent(new UserTalkEvent(this.client.getHabbo(), message, RoomChatType.TALK))
+                    .isCancelled()) {
                 return;
             }
 
@@ -38,7 +37,10 @@ public class RoomUserTalkEvent extends MessageHandler {
                 }
             }
         } else {
-            String reportMessage = Emulator.getTexts().getValue("scripter.warning.chat.length").replace("%username%", this.client.getHabbo().getHabboInfo().getUsername()).replace("%length%", message.getMessage().length() + "");
+            String reportMessage = Emulator.getTexts()
+                    .getValue("scripter.warning.chat.length")
+                    .replace("%username%", this.client.getHabbo().getHabboInfo().getUsername())
+                    .replace("%length%", message.getMessage().length() + "");
             ScripterManager.scripterDetected(this.client, reportMessage);
             LOGGER.info(reportMessage);
         }

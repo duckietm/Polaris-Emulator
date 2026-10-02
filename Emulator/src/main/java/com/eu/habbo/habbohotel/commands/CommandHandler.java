@@ -358,9 +358,6 @@ public class CommandHandler {
         addCommand(new SoftKickCommand());
         addCommand(new SubscriptionCommand());
         addCommand(new UpdateChatBubblesCommand());
-        addCommand(new GivePrefixCommand());
-        addCommand(new ListPrefixesCommand());
-        addCommand(new RemovePrefixCommand());
         addCommand(new WiredCommand());
         addCommand(new TestCommand());
     }

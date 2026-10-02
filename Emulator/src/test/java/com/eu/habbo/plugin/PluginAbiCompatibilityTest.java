@@ -73,7 +73,7 @@ class PluginAbiCompatibilityTest {
             "the released Polaris jar (see abi-baseline/README.md for the pinned version)",
             Path.of("abi-baseline", "polaris-release-api.jar"),
             Path.of("abi-baseline", "accepted-divergence-polaris.txt"),
-            "da4111fd732beb33104cc62940f6649e9f5ca907ce2bff026c64878412072b29",
+            "f57f4371c3b249a10913d020aafaf66b5b38320fc15219d37a5d925b5a0a9b93",
             List.of(
                     "# Binary-incompatible divergence from the latest RELEASED Polaris jar that is",
                     "# accepted on this branch. One token per line; kept near-empty by policy —",

@@ -12829,7 +12829,7 @@ CREATE TABLE IF NOT EXISTS `catalog_pages` (
   `parent_id` int(11) NOT NULL DEFAULT -1,
   `caption_save` varchar(25) NOT NULL DEFAULT '',
   `caption` varchar(128) NOT NULL,
-  `page_layout` enum('default_3x3','club_buy','club_gift','frontpage','spaces','recycler','recycler_info','recycler_prizes','trophies','plasto','marketplace','marketplace_own_items','spaces_new','soundmachine','guilds','guild_furni','info_duckets','info_rentables','info_pets','roomads','single_bundle','sold_ltd_items','badge_display','bots','pets','pets2','pets3','productpage1','room_bundle','recent_purchases','default_3x3_color_grouping','guild_forum','vip_buy','info_loyalty','loyalty_vip_buy','collectibles','petcustomization','frontpage_featured','builders_club_frontpage','builders_club_addons','builders_club_loyalty','root','monkey','niko','mad_money','custom_prefix') NOT NULL DEFAULT 'default_3x3',
+  `page_layout` enum('default_3x3','club_buy','club_gift','frontpage','spaces','recycler','recycler_info','recycler_prizes','trophies','plasto','marketplace','marketplace_own_items','spaces_new','soundmachine','guilds','guild_furni','info_duckets','info_rentables','info_pets','roomads','single_bundle','sold_ltd_items','badge_display','bots','pets','pets2','pets3','productpage1','room_bundle','recent_purchases','default_3x3_color_grouping','guild_forum','vip_buy','info_loyalty','loyalty_vip_buy','collectibles','petcustomization','frontpage_featured','builders_club_frontpage','builders_club_addons','builders_club_loyalty','root','monkey','niko','mad_money') NOT NULL DEFAULT 'default_3x3',
   `icon_color` int(11) NOT NULL DEFAULT 1,
   `icon_image` int(11) NOT NULL DEFAULT 1,
   `min_rank` int(11) NOT NULL DEFAULT 1,
@@ -13630,7 +13630,7 @@ CREATE TABLE IF NOT EXISTS `catalog_pages_bc` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `parent_id` int(11) NOT NULL DEFAULT -1,
   `caption` varchar(128) NOT NULL,
-  `page_layout` enum('default_3x3','club_buy','club_gift','frontpage','spaces','recycler','recycler_info','recycler_prizes','trophies','plasto','marketplace','marketplace_own_items','spaces_new','soundmachine','guilds','guild_furni','info_duckets','info_rentables','info_pets','roomads','single_bundle','sold_ltd_items','badge_display','bots','pets','pets2','pets3','productpage1','room_bundle','recent_purchases','default_3x3_color_grouping','guild_forum','vip_buy','info_loyalty','loyalty_vip_buy','collectibles','petcustomization','frontpage_featured','builders_club_frontpage','builders_club_addons','builders_club_loyalty','root','monkey','niko','mad_money','custom_prefix') NOT NULL DEFAULT 'default_3x3',
+  `page_layout` enum('default_3x3','club_buy','club_gift','frontpage','spaces','recycler','recycler_info','recycler_prizes','trophies','plasto','marketplace','marketplace_own_items','spaces_new','soundmachine','guilds','guild_furni','info_duckets','info_rentables','info_pets','roomads','single_bundle','sold_ltd_items','badge_display','bots','pets','pets2','pets3','productpage1','room_bundle','recent_purchases','default_3x3_color_grouping','guild_forum','vip_buy','info_loyalty','loyalty_vip_buy','collectibles','petcustomization','frontpage_featured','builders_club_frontpage','builders_club_addons','builders_club_loyalty','root','monkey','niko','mad_money') NOT NULL DEFAULT 'default_3x3',
   `icon_color` int(11) NOT NULL DEFAULT 1,
   `icon_image` int(11) NOT NULL DEFAULT 1,
   `order_num` int(11) NOT NULL DEFAULT 1,
@@ -38652,59 +38652,6 @@ INSERT INTO `custom_nick_icons_catalog` (`id`, `icon_key`, `display_name`, `poin
 	(11, '5', 'Icon 5', 10, 0, 1, 5),
 	(12, '6', 'Icon 6', 10, 0, 1, 6);
 
--- Dumping structure for table camwijsnew.custom_prefix_blacklist
-DROP TABLE IF EXISTS `custom_prefix_blacklist`;
-CREATE TABLE IF NOT EXISTS `custom_prefix_blacklist` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `word` varchar(100) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_word` (`word`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-
--- Dumping data for table camwijsnew.custom_prefix_blacklist: ~0 rows (approximately)
-
--- Dumping structure for table camwijsnew.custom_prefix_settings
-DROP TABLE IF EXISTS `custom_prefix_settings`;
-CREATE TABLE IF NOT EXISTS `custom_prefix_settings` (
-  `key_name` varchar(100) NOT NULL,
-  `value` varchar(255) NOT NULL,
-  PRIMARY KEY (`key_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-
--- Dumping data for table camwijsnew.custom_prefix_settings: ~8 rows (approximately)
-INSERT INTO `custom_prefix_settings` (`key_name`, `value`) VALUES
-	('font_points_type', '0'),
-	('font_price_credits', '10'),
-	('font_price_points', '0'),
-	('max_length', '15'),
-	('min_rank_to_buy', '1'),
-	('points_type', '0'),
-	('price_credits', '5'),
-	('price_points', '0');
-
--- Dumping structure for table camwijsnew.custom_prefixes_catalog
-DROP TABLE IF EXISTS `custom_prefixes_catalog`;
-CREATE TABLE IF NOT EXISTS `custom_prefixes_catalog` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `display_name` varchar(100) NOT NULL DEFAULT '',
-  `text` varchar(50) NOT NULL,
-  `color` varchar(255) NOT NULL DEFAULT '#FFFFFF',
-  `icon` varchar(50) NOT NULL DEFAULT '',
-  `effect` varchar(50) NOT NULL DEFAULT '',
-  `font` varchar(50) NOT NULL DEFAULT '',
-  `points` int(11) NOT NULL DEFAULT 0,
-  `points_type` int(11) NOT NULL DEFAULT 0,
-  `enabled` tinyint(1) NOT NULL DEFAULT 1,
-  `sort_order` int(11) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-
--- Dumping data for table camwijsnew.custom_prefixes_catalog: ~3 rows (approximately)
-INSERT INTO `custom_prefixes_catalog` (`id`, `display_name`, `text`, `color`, `icon`, `effect`, `font`, `points`, `points_type`, `enabled`, `sort_order`) VALUES
-	(1, 'VIP', 'VIP', '#FFD700', '', 'glow', '', 10, 0, 1, 1),
-	(2, 'Legend', 'Legend', '#8B5CF6', '', 'discord-neon', '', 15, 0, 1, 2),
-	(3, 'Staff Pick', 'Staff', '#3B82F6', '*', 'cartoon', '', 20, 0, 1, 3);
-
 -- Dumping structure for table camwijsnew.emulator_api
 DROP TABLE IF EXISTS `emulator_api`;
 CREATE TABLE IF NOT EXISTS `emulator_api` (
@@ -39410,7 +39357,6 @@ INSERT INTO `emulator_texts` (`key`, `value`) VALUES
 	('commands.description.cmd_freeze_bots', ':freezebots'),
 	('commands.description.cmd_furnidata', ':furnidata'),
 	('commands.description.cmd_gift', ':gift <username> <itemid>'),
-	('commands.description.cmd_give_prefix', ':giveprefix <username> <text> <color> [icon] [effect]'),
 	('commands.description.cmd_give_rank', ':giverank <username> <rank>'),
 	('commands.description.cmd_ha', ':ha <message>'),
 	('commands.description.cmd_hal', ':hal <url> <message>'),
@@ -39425,7 +39371,6 @@ INSERT INTO `emulator_texts` (`key`, `value`) VALUES
 	('commands.description.cmd_kill', ':kill <username>'),
 	('commands.description.cmd_kiss', ':kiss <username>'),
 	('commands.description.cmd_lay', ':lay'),
-	('commands.description.cmd_list_prefixes', ':listprefixes <username>'),
 	('commands.description.cmd_machine_ban', ':machineban <username> [reason]'),
 	('commands.description.cmd_massbadge', ':massbadge <badge>'),
 	('commands.description.cmd_masscredits', ':masscredits <amount>'),
@@ -39448,7 +39393,6 @@ INSERT INTO `emulator_texts` (`key`, `value`) VALUES
 	('commands.description.cmd_randomword', ':rw <word>'),
 	('commands.description.cmd_redeem', ':redeem'),
 	('commands.description.cmd_reload_room', ':reload_room'),
-	('commands.description.cmd_remove_prefix', ':removeprefix <username> <id|all>'),
 	('commands.description.cmd_roomalert', ':roomalert <message>'),
 	('commands.description.cmd_roombadge', ':roombadge <badge>'),
 	('commands.description.cmd_roomcredits', ':roomcredits <amount>'),
@@ -39709,7 +39653,6 @@ INSERT INTO `emulator_texts` (`key`, `value`) VALUES
 	('commands.keys.cmd_freeze_bots', 'freeze_bot;freezebot;freezebots;freeze_bots'),
 	('commands.keys.cmd_furnidata', 'furnidata'),
 	('commands.keys.cmd_gift', 'gift'),
-	('commands.keys.cmd_give_prefix', 'giveprefix'),
 	('commands.keys.cmd_give_rank', 'giverank;setrank;give_rank;set_rank'),
 	('commands.keys.cmd_ha', 'hotelalert;ha'),
 	('commands.keys.cmd_hal', 'hal;halink'),
@@ -39720,7 +39663,6 @@ INSERT INTO `emulator_texts` (`key`, `value`) VALUES
 	('commands.keys.cmd_ip_ban', 'ipban;banip;ip_ban;ban_ip'),
 	('commands.keys.cmd_kickall', 'room_kick;kickall;roomkick;kick_all'),
 	('commands.keys.cmd_lay', 'lay'),
-	('commands.keys.cmd_list_prefixes', 'listprefixes'),
 	('commands.keys.cmd_machine_ban', 'machineban;banmachine;banmac;macban'),
 	('commands.keys.cmd_massbadge', 'massbadge;hotelbadge'),
 	('commands.keys.cmd_masscredits', 'mass_credits;masscredits'),
@@ -39737,14 +39679,12 @@ INSERT INTO `emulator_texts` (`key`, `value`) VALUES
 	('commands.keys.cmd_pickall', 'pickall;pickupall'),
 	('commands.keys.cmd_plugins', 'plugins'),
 	('commands.keys.cmd_points', 'diamonds;points'),
-	('commands.keys.cmd_prefix_blacklist', 'prefixblacklist'),
 	('commands.keys.cmd_promote_offer', 'promoteoffer;promotetargetoffer;promote_offer'),
 	('commands.keys.cmd_pull', 'pull'),
 	('commands.keys.cmd_push', 'push'),
 	('commands.keys.cmd_randomword', 'rw'),
 	('commands.keys.cmd_redeem', 'redeem;exchange'),
 	('commands.keys.cmd_reload_room', 'reload_room;reload;reloadroom'),
-	('commands.keys.cmd_remove_prefix', 'removeprefix'),
 	('commands.keys.cmd_roomalert', 'roomalert;room_alert;ra'),
 	('commands.keys.cmd_roombadge', 'roombadge'),
 	('commands.keys.cmd_roomcredits', 'roomcredits;room_credits;roomcoins;room_coins'),
@@ -53057,7 +52997,6 @@ INSERT INTO `permission_definitions` (`permission_key`, `max_value`, `comment`, 
 	('cmd_freeze_bots', 2, 'Controls access to the :freeze bots command. Values: 0 = disabled, 1 = allowed, 2 = allowed with room-owner rights.', 0, 1, 1, 1, 1, 1, 1),
 	('cmd_furnidata', 1, 'Allows using :furnidata to inspect items_base and room item data by clicking furniture.', 0, 0, 0, 0, 0, 0, 1),
 	('cmd_gift', 1, 'Controls access to the :gift command. Values: 0 = disabled, 1 = allowed.', 0, 0, 0, 0, 0, 0, 1),
-	('cmd_give_prefix', 1, 'Allows granting custom prefixes to users.', 0, 0, 0, 0, 0, 0, 0),
 	('cmd_give_rank', 1, 'Controls access to the :give rank command. Values: 0 = disabled, 1 = allowed.', 0, 0, 0, 0, 0, 0, 1),
 	('cmd_ha', 1, 'Controls access to the :ha command. Values: 0 = disabled, 1 = allowed.', 0, 0, 0, 0, 0, 0, 1),
 	('cmd_hal', 1, 'Controls access to the :hal command. Values: 0 = disabled, 1 = allowed.', 0, 0, 0, 0, 0, 0, 1),
@@ -53071,7 +53010,6 @@ INSERT INTO `permission_definitions` (`permission_key`, `max_value`, `comment`, 
 	('cmd_kickall', 2, 'Controls access to the :kickall command. Values: 0 = disabled, 1 = allowed, 2 = allowed with room-owner rights.', 0, 0, 0, 0, 0, 0, 1),
 	('cmd_kill', 2, 'Controls access to the :kill command. Values: 0 = disabled, 1 = allowed, 2 = allowed with room-owner rights.', 1, 1, 1, 1, 1, 1, 1),
 	('cmd_kiss', 2, 'Controls access to the :kiss command. Values: 0 = disabled, 1 = allowed, 2 = allowed with room-owner rights.', 1, 1, 1, 1, 1, 1, 1),
-	('cmd_list_prefixes', 1, 'Allows listing custom prefixes assigned to users.', 0, 0, 0, 0, 0, 0, 0),
 	('cmd_machine_ban', 1, 'Controls access to the :machine ban command. Values: 0 = disabled, 1 = allowed.', 0, 0, 0, 0, 0, 0, 1),
 	('cmd_massbadge', 1, 'Controls access to the :massbadge command. Values: 0 = disabled, 1 = allowed.', 0, 0, 0, 0, 0, 0, 1),
 	('cmd_masscredits', 1, 'Controls access to the :masscredits command. Values: 0 = disabled, 1 = allowed.', 0, 0, 0, 0, 0, 0, 1),
@@ -53088,14 +53026,12 @@ INSERT INTO `permission_definitions` (`permission_key`, `max_value`, `comment`, 
 	('cmd_pickall', 1, 'Controls access to the :pickall command. Values: 0 = disabled, 1 = allowed.', 1, 1, 1, 1, 1, 1, 1),
 	('cmd_plugins', 1, 'Controls access to the :plugins command. Values: 0 = disabled, 1 = allowed.', 0, 1, 1, 1, 1, 1, 1),
 	('cmd_points', 1, 'Controls access to the :points command. Values: 0 = disabled, 1 = allowed.', 0, 0, 0, 0, 0, 0, 1),
-	('cmd_prefix_blacklist', 1, 'Allows managing the custom prefix blacklist.', 0, 0, 0, 0, 0, 0, 0),
 	('cmd_promote_offer', 1, 'Controls access to the :promote offer command. Values: 0 = disabled, 1 = allowed.', 0, 0, 0, 0, 0, 0, 1),
 	('cmd_pull', 2, 'Controls access to the :pull command. Values: 0 = disabled, 1 = allowed, 2 = allowed with room-owner rights.', 0, 0, 0, 0, 0, 0, 1),
 	('cmd_push', 2, 'Controls access to the :push command. Values: 0 = disabled, 1 = allowed, 2 = allowed with room-owner rights.', 0, 0, 0, 0, 0, 0, 1),
 	('cmd_randomword', 1, 'Allows using :rw to guess the scrambled Word Guesser word.', 1, 1, 1, 1, 1, 1, 1),
 	('cmd_redeem', 1, 'Controls access to the :redeem command. Values: 0 = disabled, 1 = allowed.', 0, 0, 0, 0, 0, 0, 1),
 	('cmd_reload_room', 2, 'Controls access to the :reload room command. Values: 0 = disabled, 1 = allowed, 2 = allowed with room-owner rights.', 2, 2, 2, 2, 2, 2, 1),
-	('cmd_remove_prefix', 1, 'Allows removing custom prefixes from users.', 0, 0, 0, 0, 0, 0, 0),
 	('cmd_roomalert', 2, 'Controls access to the :roomalert command. Values: 0 = disabled, 1 = allowed, 2 = allowed with room-owner rights.', 0, 0, 0, 0, 0, 0, 1),
 	('cmd_roombadge', 1, 'Controls access to the :roombadge command. Values: 0 = disabled, 1 = allowed.', 0, 0, 0, 0, 0, 0, 0),
 	('cmd_roomcredits', 1, 'Controls access to the :roomcredits command. Values: 0 = disabled, 1 = allowed.', 0, 0, 0, 0, 0, 0, 1),
@@ -55091,38 +55027,6 @@ CREATE TABLE IF NOT EXISTS `user_nick_icons` (
 
 -- Dumping data for table camwijsnew.user_nick_icons: ~0 rows (approximately)
 
--- Dumping structure for table camwijsnew.user_prefixes
-DROP TABLE IF EXISTS `user_prefixes`;
-CREATE TABLE IF NOT EXISTS `user_prefixes` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `text` varchar(50) NOT NULL,
-  `color` varchar(255) NOT NULL DEFAULT '#FFFFFF',
-  `icon` varchar(50) NOT NULL DEFAULT '',
-  `effect` varchar(50) NOT NULL DEFAULT '',
-  `font` varchar(50) NOT NULL DEFAULT '',
-  `catalog_prefix_id` int(11) NOT NULL DEFAULT 0,
-  `display_name` varchar(100) NOT NULL DEFAULT '',
-  `points` int(11) NOT NULL DEFAULT 0,
-  `points_type` int(11) NOT NULL DEFAULT 0,
-  `is_custom` tinyint(1) NOT NULL DEFAULT 1,
-  `active` tinyint(1) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id`),
-  KEY `idx_user_id` (`user_id`),
-  KEY `idx_user_active` (`user_id`,`active`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Dumping data for table camwijsnew.user_prefixes: ~0 rows (approximately)
-
--- Dumping structure for table camwijsnew.user_visual_settings
-DROP TABLE IF EXISTS `user_visual_settings`;
-CREATE TABLE IF NOT EXISTS `user_visual_settings` (
-  `user_id` int(11) NOT NULL,
-  `display_order` varchar(50) NOT NULL DEFAULT 'icon-prefix-name',
-  PRIMARY KEY (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-
--- Dumping data for table camwijsnew.user_visual_settings: ~0 rows (approximately)
 
 -- Dumping structure for table camwijsnew.user_window_settings
 DROP TABLE IF EXISTS `user_window_settings`;
@@ -55660,13 +55564,12 @@ CREATE TABLE IF NOT EXISTS `wordfilter` (
   `hide` enum('0','1') NOT NULL DEFAULT '0' COMMENT 'Wether the whole message that contains this word should be hidden from being displayed.',
   `report` enum('0','1') NOT NULL DEFAULT '0' COMMENT 'Wether the message should be reported as auto-report to the moderators.',
   `mute` int(11) NOT NULL DEFAULT 0 COMMENT 'Time user gets muted for mentioning this word.',
-  `prefix_only` enum('0','1') NOT NULL DEFAULT '0' COMMENT 'When 1, this word only applies to custom prefixes, not to chat/motto/guild.',
   UNIQUE KEY `key` (`key`) USING BTREE
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC;
 
 -- Dumping data for table camwijsnew.wordfilter: 1 rows
-INSERT INTO `wordfilter` (`key`, `replacement`, `hide`, `report`, `mute`, `prefix_only`) VALUES
-	('com', 'bobba', '0', '0', 0, '0');
+INSERT INTO `wordfilter` (`key`, `replacement`, `hide`, `report`, `mute`) VALUES
+	('com', 'bobba', '0', '0', 0);
 
 -- Dumping structure for table camwijsnew.youtube_playlists
 DROP TABLE IF EXISTS `youtube_playlists`;

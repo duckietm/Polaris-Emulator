@@ -63,10 +63,8 @@ public class WordFilter {
                         continue;
                     }
 
-                    if (!word.prefixOnly) {
-                        if (word.autoReport) this.autoReportWords.add(word);
-                        else if (word.hideMessage) this.hideMessageWords.add(word);
-                    }
+                    if (word.autoReport) this.autoReportWords.add(word);
+                    else if (word.hideMessage) this.hideMessageWords.add(word);
 
                     this.words.add(word);
                 }
@@ -165,8 +163,6 @@ public class WordFilter {
         boolean foundShit = false;
 
         for (WordFilterWord word : this.words) {
-            if (word.prefixOnly) continue;
-
             if (Strings.CI.contains(filteredMessage, word.key)) {
                 if (habbo != null) {
                     if (Emulator.getPluginManager()
@@ -197,8 +193,6 @@ public class WordFilter {
         }
 
         for (WordFilterWord word : this.words) {
-            if (word.prefixOnly) continue;
-
             if (Strings.CI.contains(message, word.key)) {
                 if (habbo != null) {
                     if (Emulator.getPluginManager()

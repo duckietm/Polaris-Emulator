@@ -569,16 +569,9 @@ public class Incoming {
     public static final int CatalogProductMetadataEvent = 10081;
     public static final int CatalogRuntimeConfigurationEvent = 10082;
 
-    // Custom Prefixes
-    public static final int RequestUserPrefixesEvent = 7011;
-    public static final int SetActivePrefixEvent = 7012;
-    public static final int DeletePrefixEvent = 7013;
-    public static final int PurchasePrefixEvent = 7014;
     public static final int RequestUserNickIconsEvent = 7015;
     public static final int PurchaseNickIconEvent = 7016;
     public static final int SetActiveNickIconEvent = 7017;
-    public static final int PurchaseCatalogPrefixEvent = 7018;
-    public static final int SetDisplayOrderEvent = 7019;
     public static final int RoomRemoveBackgroundEvent = 7020;
     public static final int RoomRemovePaintEvent = 7021;
     public static final int SetBuildUnderpassEvent = 7022;

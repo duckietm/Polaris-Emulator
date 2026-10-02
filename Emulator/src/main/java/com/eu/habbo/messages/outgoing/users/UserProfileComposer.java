@@ -129,12 +129,6 @@ public class UserProfileComposer extends MessageComposer {
                 ? UserCustomizationData.fromHabbo(this.habbo)
                 : UserCustomizationData.fromUserId(this.habboInfo.getId());
         this.response.appendString(customizationData.nickIcon);
-        this.response.appendString(customizationData.prefixText);
-        this.response.appendString(customizationData.prefixColor);
-        this.response.appendString(customizationData.prefixIcon);
-        this.response.appendString(customizationData.prefixEffect);
-        this.response.appendString(customizationData.prefixFont);
-        this.response.appendString(customizationData.displayOrder);
         this.response.appendInt(this.getTotalBadges());
 
         // Appended after the fields above so older clients, which stop reading there, keep working.

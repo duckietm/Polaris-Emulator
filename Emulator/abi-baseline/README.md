@@ -23,6 +23,11 @@ so it runs on every `mvn test` / `mvn verify` and in CI):
    (currently: the v4.2.60→dev restructure of the internal
    `database.migrations`/`database.schema` packages).
 
+The accepted Polaris divergence also records the explicitly reviewed retirement
+of the fortune-wheel, mentions, and personal-prefix products. Only APIs dedicated
+to those removed products are accepted; nickname icons, rank metadata, normal
+word-filter behavior, and all unrelated plugin surfaces remain protected.
+
 ## How the gates work
 
 The test packages `target/classes` into a jar and compares it against each

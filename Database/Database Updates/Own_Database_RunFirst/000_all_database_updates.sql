@@ -365,23 +365,6 @@ VALUES ('hotel.timezone', 'Europe/Rome');
 
 
 -- =============================================================================
--- From: 21022026_user_prefixes.sql
--- =============================================================================
-CREATE TABLE IF NOT EXISTS `user_prefixes` (
-  `id` INT(11) NOT NULL AUTO_INCREMENT,
-  `user_id` INT(11) NOT NULL,
-  `text` VARCHAR(50) NOT NULL,
-  `color` VARCHAR(255) NOT NULL DEFAULT '#FFFFFF',
-  `icon` VARCHAR(50) NOT NULL DEFAULT '',
-  `effect` VARCHAR(50) NOT NULL DEFAULT '',
-  `active` TINYINT(1) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id`),
-  INDEX `idx_user_id` (`user_id`),
-  INDEX `idx_user_active` (`user_id`, `active`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
--- =============================================================================
 -- From: 06042026_builders_club_catalog_offers.sql
 -- =============================================================================
 ALTER TABLE `catalog_club_offers`

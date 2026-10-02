@@ -1262,8 +1262,8 @@ public class HabboStats implements Runnable {
         }
     }
 
-    private static final Set<String> PERSIST_FLAG_COLUMNS = Set.of(
-            "wired_whisper_disabled", "safety_locked", "hide_profile");
+    private static final Set<String> PERSIST_FLAG_COLUMNS =
+            Set.of("wired_whisper_disabled", "safety_locked", "hide_profile");
 
     private void persistFlag(String column, boolean enabled) {
         if (!PERSIST_FLAG_COLUMNS.contains(column)) {

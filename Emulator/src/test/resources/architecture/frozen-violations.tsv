@@ -215,8 +215,6 @@ U|com/eu/habbo/habbohotel/commands/FurniDataCommand.java|CALL|getTexts|3
 U|com/eu/habbo/habbohotel/commands/GiftCommand.java|CALL|getGameEnvironment|6
 U|com/eu/habbo/habbohotel/commands/GiftCommand.java|CALL|getRandom|1
 U|com/eu/habbo/habbohotel/commands/GiftCommand.java|CALL|getTexts|7
-U|com/eu/habbo/habbohotel/commands/GivePrefixCommand.java|CALL|getGameEnvironment|1
-U|com/eu/habbo/habbohotel/commands/GivePrefixCommand.java|CALL|getTexts|7
 U|com/eu/habbo/habbohotel/commands/GiveRankCommand.java|CALL|getGameEnvironment|4
 U|com/eu/habbo/habbohotel/commands/GiveRankCommand.java|CALL|getTexts|10
 U|com/eu/habbo/habbohotel/commands/HandItemCommand.java|CALL|getTexts|1
@@ -233,8 +231,6 @@ U|com/eu/habbo/habbohotel/commands/IPBanCommand.java|CALL|getGameServer|1
 U|com/eu/habbo/habbohotel/commands/IPBanCommand.java|CALL|getTexts|5
 U|com/eu/habbo/habbohotel/commands/InvisibleCommand.java|CALL|getTexts|3
 U|com/eu/habbo/habbohotel/commands/LayCommand.java|CALL|getTexts|1
-U|com/eu/habbo/habbohotel/commands/ListPrefixesCommand.java|CALL|getGameEnvironment|1
-U|com/eu/habbo/habbohotel/commands/ListPrefixesCommand.java|CALL|getTexts|5
 U|com/eu/habbo/habbohotel/commands/MachineBanCommand.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/habbohotel/commands/MachineBanCommand.java|CALL|getTexts|5
 U|com/eu/habbo/habbohotel/commands/MaintenanceCommand.java|CALL|getTexts|6
@@ -277,9 +273,6 @@ U|com/eu/habbo/habbohotel/commands/RedeemCommand.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/commands/ReloadRoomCommand.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/habbohotel/commands/ReloadRoomCommand.java|CALL|getTexts|1
 U|com/eu/habbo/habbohotel/commands/ReloadRoomCommand.java|CALL|getThreading|1
-U|com/eu/habbo/habbohotel/commands/RemovePrefixCommand.java|CALL|getGameEnvironment|1
-U|com/eu/habbo/habbohotel/commands/RemovePrefixCommand.java|CALL|getTexts|8
-U|com/eu/habbo/habbohotel/commands/RemovePrefixCommand.java|CALL|getThreading|2
 U|com/eu/habbo/habbohotel/commands/RewardTrackPointsCommand.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/habbohotel/commands/RewardTrackPointsCommand.java|CALL|getTexts|5
 U|com/eu/habbo/habbohotel/commands/RoomAlertCommand.java|CALL|getTexts|2
@@ -1054,7 +1047,6 @@ U|com/eu/habbo/habbohotel/users/HabboStats.java|CALL|getPluginManager|2
 U|com/eu/habbo/habbohotel/users/HabboStats.java|CALL|getTexts|1
 U|com/eu/habbo/habbohotel/users/UserCustomizationData.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/users/UserNickIcon.java|CALL|getDatabase|3
-U|com/eu/habbo/habbohotel/users/UserPrefix.java|CALL|getDatabase|3
 U|com/eu/habbo/habbohotel/users/cache/HabboOfferPurchase.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/users/custombadge/CustomBadgeManager.java|CALL|getDatabase|10
 U|com/eu/habbo/habbohotel/users/custombadge/CustomBadgeManager.java|CALL|getGameServer|5
@@ -1075,9 +1067,6 @@ U|com/eu/habbo/habbohotel/users/inventory/NickIconsComponent.java|CALL|getDataba
 U|com/eu/habbo/habbohotel/users/inventory/NickIconsComponent.java|CALL|getThreading|2
 U|com/eu/habbo/habbohotel/users/inventory/PetsComponent.java|CALL|getDatabase|1
 U|com/eu/habbo/habbohotel/users/inventory/PetsComponent.java|CALL|getThreading|1
-U|com/eu/habbo/habbohotel/users/inventory/PrefixesComponent.java|CALL|getDatabase|1
-U|com/eu/habbo/habbohotel/users/inventory/PrefixesComponent.java|CALL|getThreading|2
-U|com/eu/habbo/habbohotel/users/inventory/UserVisualSettingsComponent.java|CALL|getDatabase|2
 U|com/eu/habbo/habbohotel/users/inventory/WardrobeComponent.java|CALL|getDatabase|2
 U|com/eu/habbo/habbohotel/users/inventory/WardrobeComponent.java|CALL|getThreading|1
 U|com/eu/habbo/habbohotel/users/subscriptions/HcPayDayLogEntry.java|CALL|getDatabaseLogger|1
@@ -1398,10 +1387,6 @@ U|com/eu/habbo/messages/incoming/housekeeping/HousekeepingUnbanUserEvent.java|CA
 U|com/eu/habbo/messages/incoming/inventory/RequestInventoryItemsDelete.java|CALL|getThreading|1
 U|com/eu/habbo/messages/incoming/inventory/RequestInventoryPetDelete.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/inventory/nickicons/PurchaseNickIconEvent.java|CALL|getDatabase|1
-U|com/eu/habbo/messages/incoming/inventory/prefixes/DeletePrefixEvent.java|CALL|getThreading|1
-U|com/eu/habbo/messages/incoming/inventory/prefixes/PurchaseCatalogPrefixEvent.java|CALL|getDatabase|1
-U|com/eu/habbo/messages/incoming/inventory/prefixes/PurchasePrefixEvent.java|CALL|getDatabase|1
-U|com/eu/habbo/messages/incoming/inventory/prefixes/PurchasePrefixEvent.java|CALL|getGameEnvironment|1
 U|com/eu/habbo/messages/incoming/modtool/DeletePendingCallsForHelpEvent.java|CALL|getGameEnvironment|2
 U|com/eu/habbo/messages/incoming/modtool/ModToolAlertEvent.java|CALL|getGameEnvironment|3
 U|com/eu/habbo/messages/incoming/modtool/ModToolAlertEvent.java|CALL|getTexts|1

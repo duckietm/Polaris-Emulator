@@ -9034,108 +9034,6 @@
       ]
     },
     {
-      "name": "REQUEST_PREFIXES",
-      "direction": "client_to_server",
-      "header": 7011,
-      "java": {
-        "symbol": "RequestUserPrefixesEvent",
-        "className": "RequestUserPrefixesEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/inventory/prefixes/RequestUserPrefixesEvent.java"
-      },
-      "typescript": {
-        "symbol": "REQUEST_PREFIXES",
-        "className": "RequestPrefixesComposer",
-        "path": "packages/communication/src/messages/outgoing/inventory/prefixes/RequestPrefixesComposer.ts"
-      },
-      "fields": []
-    },
-    {
-      "name": "SET_ACTIVE_PREFIX",
-      "direction": "client_to_server",
-      "header": 7012,
-      "java": {
-        "symbol": "SetActivePrefixEvent",
-        "className": "SetActivePrefixEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/inventory/prefixes/SetActivePrefixEvent.java"
-      },
-      "typescript": {
-        "symbol": "SET_ACTIVE_PREFIX",
-        "className": "SetActivePrefixComposer",
-        "path": "packages/communication/src/messages/outgoing/inventory/prefixes/SetActivePrefixComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "prefixId"
-        }
-      ]
-    },
-    {
-      "name": "DELETE_PREFIX",
-      "direction": "client_to_server",
-      "header": 7013,
-      "java": {
-        "symbol": "DeletePrefixEvent",
-        "className": "DeletePrefixEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/inventory/prefixes/DeletePrefixEvent.java"
-      },
-      "typescript": {
-        "symbol": "DELETE_PREFIX",
-        "className": "DeletePrefixComposer",
-        "path": "packages/communication/src/messages/outgoing/inventory/prefixes/DeletePrefixComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "prefixId"
-        }
-      ]
-    },
-    {
-      "name": "PURCHASE_PREFIX",
-      "direction": "client_to_server",
-      "header": 7014,
-      "java": {
-        "symbol": "PurchasePrefixEvent",
-        "className": "PurchasePrefixEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/inventory/prefixes/PurchasePrefixEvent.java"
-      },
-      "typescript": {
-        "symbol": "PURCHASE_PREFIX",
-        "className": "PurchasePrefixComposer",
-        "path": "packages/communication/src/messages/outgoing/inventory/prefixes/PurchasePrefixComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "request"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "request"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "request"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "request"
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "request"
-        }
-      ]
-    },
-    {
       "name": "REQUEST_NICK_ICONS",
       "direction": "client_to_server",
       "header": 7015,
@@ -9192,50 +9090,6 @@
           "kind": "scalar",
           "type": "int",
           "name": "nickIconId"
-        }
-      ]
-    },
-    {
-      "name": "PURCHASE_CATALOG_PREFIX",
-      "direction": "client_to_server",
-      "header": 7018,
-      "java": {
-        "symbol": "PurchaseCatalogPrefixEvent",
-        "className": "PurchaseCatalogPrefixEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/inventory/prefixes/PurchaseCatalogPrefixEvent.java"
-      },
-      "typescript": {
-        "symbol": "PURCHASE_CATALOG_PREFIX",
-        "className": "PurchaseCatalogPrefixComposer",
-        "path": "packages/communication/src/messages/outgoing/inventory/prefixes/PurchaseCatalogPrefixComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "catalogPrefixId"
-        }
-      ]
-    },
-    {
-      "name": "SET_DISPLAY_ORDER",
-      "direction": "client_to_server",
-      "header": 7019,
-      "java": {
-        "symbol": "SetDisplayOrderEvent",
-        "className": "SetDisplayOrderEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/inventory/prefixes/SetDisplayOrderEvent.java"
-      },
-      "typescript": {
-        "symbol": "SET_DISPLAY_ORDER",
-        "className": "SetDisplayOrderComposer",
-        "path": "packages/communication/src/messages/outgoing/inventory/prefixes/SetDisplayOrderComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "displayOrder"
         }
       ]
     },
@@ -19126,36 +18980,6 @@
         },
         {
           "kind": "scalar",
-          "type": "string",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
           "type": "int",
           "name": ""
         }
@@ -19671,75 +19495,6 @@
           "type": "string",
           "name": ""
         },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": ""
-        }
-      ]
-    },
-    {
-      "name": "PREFIX_RECEIVED",
-      "direction": "server_to_client",
-      "header": 7002,
-      "java": {
-        "symbol": "PrefixReceivedComposer",
-        "className": "PrefixReceivedComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/inventory/prefixes/PrefixReceivedComposer.java"
-      },
-      "typescript": {
-        "symbol": "PREFIX_RECEIVED",
-        "className": "PrefixReceivedParser",
-        "path": "packages/communication/src/messages/parser/inventory/prefixes/PrefixReceivedParser.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": ""
-        },
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": ""
-        }
-      ]
-    },
-    {
-      "name": "CUSTOM_PREFIX_PURCHASE_FAILED",
-      "direction": "server_to_client",
-      "header": 7005,
-      "java": {
-        "symbol": "CustomPrefixPurchaseFailedComposer",
-        "className": "CustomPrefixPurchaseFailedComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/inventory/prefixes/CustomPrefixPurchaseFailedComposer.java"
-      },
-      "typescript": {
-        "symbol": "CUSTOM_PREFIX_PURCHASE_FAILED",
-        "className": "CustomPrefixPurchaseFailedParser",
-        "path": "packages/communication/src/messages/parser/inventory/prefixes/CustomPrefixPurchaseFailedParser.ts"
-      },
-      "fields": [
         {
           "kind": "scalar",
           "type": "string",
@@ -27341,38 +27096,6 @@
         "path": "packages/communication/src/messages/parser/room/furniture/AreaHideMessageParser.ts"
       },
       "reason": "TypeScript analyzer: Packet fields delegated to external constructor AreaHideMessageData inside parse"
-    },
-    {
-      "name": "USER_PREFIXES",
-      "direction": "server_to_client",
-      "header": 7001,
-      "java": {
-        "symbol": "UserPrefixesComposer",
-        "className": "UserPrefixesComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/inventory/prefixes/UserPrefixesComposer.java"
-      },
-      "typescript": {
-        "symbol": "USER_PREFIXES",
-        "className": "UserPrefixesParser",
-        "path": "packages/communication/src/messages/parser/inventory/prefixes/UserPrefixesParser.ts"
-      },
-      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in WhileStatement inside parse"
-    },
-    {
-      "name": "ACTIVE_PREFIX_UPDATED",
-      "direction": "server_to_client",
-      "header": 7003,
-      "java": {
-        "symbol": "ActivePrefixUpdatedComposer",
-        "className": "ActivePrefixUpdatedComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/inventory/prefixes/ActivePrefixUpdatedComposer.java"
-      },
-      "typescript": {
-        "symbol": "ACTIVE_PREFIX_UPDATED",
-        "className": "ActivePrefixUpdatedParser",
-        "path": "packages/communication/src/messages/parser/inventory/prefixes/ActivePrefixUpdatedParser.ts"
-      },
-      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside composeInternal"
     },
     {
       "name": "USER_NICK_ICONS",

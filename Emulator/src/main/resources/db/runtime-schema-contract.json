@@ -39,9 +39,6 @@
     "crafting_recipes": ["achievement", "enabled", "id", "limited", "product_name", "remaining", "reward", "secret"],
     "crafting_recipes_ingredients": ["amount", "item_id", "recipe_id"],
     "custom_nick_icons_catalog": ["display_name", "enabled", "icon_key", "id", "points", "points_type", "sort_order"],
-    "custom_prefix_blacklist": ["id", "word"],
-    "custom_prefix_settings": ["key_name", "value"],
-    "custom_prefixes_catalog": ["color", "display_name", "effect", "enabled", "font", "icon", "id", "points", "points_type", "sort_order", "text"],
     "daily_tasks": ["catalog_name", "code", "enabled", "goal_data", "goal_type", "id", "image_version", "is_bonus", "required_repeats", "reward_amount", "reward_extra", "reward_type", "sort_order"],
     "emulator_api": ["comment", "key", "value"],
     "emulator_errors": ["build_hash", "id", "stacktrace", "timestamp", "type", "version"],
@@ -170,9 +167,7 @@
     "user_custom_badge": ["badge_description", "badge_id", "badge_name", "date_created", "date_edit", "id", "user_id"],
     "user_nick_icons": ["active", "icon_key", "id", "user_id"],
     "user_permission_overrides": ["created_at", "created_by", "created_by_name", "expires_at", "id", "permission_key", "reason", "user_id", "value"],
-    "user_prefixes": ["active", "catalog_prefix_id", "color", "display_name", "effect", "font", "icon", "id", "is_custom", "points", "points_type", "text", "user_id"],
     "user_temporary_ranks": ["created_at", "expires_at", "previous_rank_id", "rank_id", "reason", "set_by", "set_by_name", "user_id"],
-    "user_visual_settings": ["display_order", "user_id"],
     "user_window_settings": ["height", "open_searches", "user_id", "width", "x", "y"],
     "users": ["access_token_version", "account_created", "account_day_of_birth", "auth_ticket", "auth_ticket_expires_at", "background_border_id", "background_card_id", "background_id", "background_overlay_id", "background_stand_id", "credits", "extra_rank", "gender", "home_room", "id", "ip_current", "ip_register", "last_login", "last_online", "last_username_change", "look", "machine_id", "mail", "mail_verified", "motto", "online", "password", "pincode", "pixels", "points", "rank", "real_name", "remember_token_expires_at", "remember_token_hash", "secret_key", "username"],
     "users_achievements": ["achievement_name", "progress", "user_id"],
@@ -210,7 +205,7 @@
     "wired_chest_transactions": ["chest_id", "chest_kind", "currency_type", "deposited", "details", "id", "room_id", "source", "timestamp", "transaction_type", "user_id", "user_name", "withdrawn"],
     "wired_emulator_settings": ["comment", "key", "value"],
     "wired_rewards_given": ["reward_id", "timestamp", "user_id", "wired_item"],
-    "wordfilter": ["hide", "key", "mute", "prefix_only", "replacement", "report"],
+    "wordfilter": ["hide", "key", "mute", "replacement", "report"],
     "youtube_playlists": ["item_id", "order", "playlist_id"]
   }
 }

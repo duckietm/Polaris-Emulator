@@ -74,6 +74,15 @@ class MigrationRunnerIT {
             assertTrue(tableExists(ds, "logs_economy"), "dev economy audit schema must exist");
             assertTrue(tableExists(ds, "logs_soundboard"), "soundboard management audit schema must exist");
             assertTrue(tableExists(ds, "wordfilter"), "word filter schema must exist");
+            assertTrue(tableExists(ds, "user_nick_icons"), "nickname icon ownership must remain available");
+            assertTrue(tableExists(ds, "custom_nick_icons_catalog"), "nickname icon catalog must remain available");
+            assertFalse(tableExists(ds, "user_prefixes"));
+            assertFalse(tableExists(ds, "custom_prefixes_catalog"));
+            assertFalse(tableExists(ds, "custom_prefix_settings"));
+            assertFalse(tableExists(ds, "custom_prefix_blacklist"));
+            assertFalse(tableExists(ds, "user_visual_settings"));
+            assertFalse(columnExists(ds, "wordfilter", "prefix_only"));
+            assertEquals(1, intValue(ds, "SELECT COUNT(*) FROM wordfilter WHERE `key` = 'com'"));
             assertEquals(
                     "InnoDB",
                     tableEngine(ds, "logs_soundboard"),
@@ -177,6 +186,13 @@ class MigrationRunnerIT {
 
         try (HikariDataSource ds = TestDatabase.freshDatabase("mig_arc_355")) {
             installArcturusFixture(ds);
+            try (Connection connection = ds.getConnection();
+                    Statement statement = connection.createStatement()) {
+                statement.execute("""
+                        INSERT INTO wordfilter (`key`, replacement, hide, report, mute)
+                        VALUES ('com', 'bobba', '0', '0', 0)
+                        """);
+            }
 
             assertEquals(SchemaPreflight.State.RECOGNISED_EXISTING, SchemaPreflight.detect(ds));
             String status = MigrationRunner.status(ds);
@@ -201,6 +217,15 @@ class MigrationRunnerIT {
             assertFalse(tableExists(ds, "wheel_prizes"));
             assertTrue(tableExists(ds, "messenger_messages"));
             assertTrue(tableExists(ds, "logs_economy"));
+            assertTrue(tableExists(ds, "user_nick_icons"));
+            assertTrue(tableExists(ds, "custom_nick_icons_catalog"));
+            assertFalse(tableExists(ds, "user_prefixes"));
+            assertFalse(tableExists(ds, "custom_prefixes_catalog"));
+            assertFalse(tableExists(ds, "custom_prefix_settings"));
+            assertFalse(tableExists(ds, "custom_prefix_blacklist"));
+            assertFalse(tableExists(ds, "user_visual_settings"));
+            assertFalse(columnExists(ds, "wordfilter", "prefix_only"));
+            assertEquals(1, intValue(ds, "SELECT COUNT(*) FROM wordfilter WHERE `key` = 'com'"));
             assertTrue(columnExists(ds, "users", "auth_ticket_expires_at"));
             assertTrue(columnExists(ds, "users", "background_border_id"));
             assertTrue(columnExists(ds, "users", "access_token_version"));

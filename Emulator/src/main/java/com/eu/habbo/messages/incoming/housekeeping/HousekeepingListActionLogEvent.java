@@ -1,10 +1,7 @@
 package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.permissions.Permission;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionLogComposer;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -36,7 +33,7 @@ import java.util.List;
  * Writing into the table is a follow-up: each HK handler will append
  * a row once the table exists; for now the listing is read-only.
  */
-public class HousekeepingListActionLogEvent extends MessageHandler {
+public class HousekeepingListActionLogEvent extends HousekeepingHandler {
     private static final int HARD_LIMIT = 500;
 
     @Override
@@ -46,7 +43,7 @@ public class HousekeepingListActionLogEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!this.client.getHabbo().hasPermission(Permission.ACC_HOUSEKEEPING)) {
+        if (!this.allowed()) {
             return;
         }
 
@@ -55,9 +52,9 @@ public class HousekeepingListActionLogEvent extends MessageHandler {
         List<HousekeepingActionLogComposer.Row> rows = new ArrayList<>();
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "SELECT id, timestamp, actor_id, actor_name, target_type, target_id, target_label, action, detail, success " +
-                     "FROM housekeeping_log ORDER BY id DESC LIMIT ?")) {
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT id, timestamp, actor_id, actor_name, target_type, target_id, target_label, action, detail, success "
+                                + "FROM housekeeping_log ORDER BY id DESC LIMIT ?")) {
             statement.setInt(1, limit);
 
             try (ResultSet rs = statement.executeQuery()) {
@@ -72,8 +69,7 @@ public class HousekeepingListActionLogEvent extends MessageHandler {
                             rs.getString("target_label"),
                             rs.getString("action"),
                             rs.getString("detail"),
-                            rs.getInt("success") == 1
-                    ));
+                            rs.getInt("success") == 1));
                 }
             }
         } catch (SQLException ignored) {

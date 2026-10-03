@@ -1,9 +1,7 @@
 package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 /**
@@ -11,7 +9,12 @@ import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultCompo
  * removes them from the current room), this drops their socket. Equivalent
  * to /disconnect in command form but issued through the HK panel.
  */
-public class HousekeepingForceDisconnectUserEvent extends MessageHandler {
+public class HousekeepingForceDisconnectUserEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.USERS;
+    }
+
     private static final String ACTION_KEY = "user.disconnect";
 
     @Override
@@ -21,7 +24,7 @@ public class HousekeepingForceDisconnectUserEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!this.client.getHabbo().hasPermission(Permission.ACC_HOUSEKEEPING)) {
+        if (!this.allowed()) {
             return;
         }
 
@@ -29,19 +32,22 @@ public class HousekeepingForceDisconnectUserEvent extends MessageHandler {
         String reason = HousekeepingInputGuard.normalize(this.packet.readString());
 
         if (userId <= 0 || !HousekeepingInputGuard.isWithinLimit(reason, HousekeepingInputGuard.MAX_REASON_LENGTH)) {
-            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.invalid_input"));
+            this.client.sendResponse(
+                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.invalid_input"));
             return;
         }
 
         Habbo target = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
 
         if (target == null) {
-            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.user_offline"));
+            this.client.sendResponse(
+                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.user_offline"));
             return;
         }
 
         if (!HousekeepingTargetRankGuard.canTargetUser(this.client.getHabbo(), userId)) {
-            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
+            this.client.sendResponse(
+                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
             return;
         }
 
@@ -55,7 +61,9 @@ public class HousekeepingForceDisconnectUserEvent extends MessageHandler {
         com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
                 this.client.getHabbo().getHabboInfo().getId(),
                 this.client.getHabbo().getHabboInfo().getUsername(),
-                ACTION_KEY, userId, "reason=" + HousekeepingInputGuard.auditValue(reason),
+                ACTION_KEY,
+                userId,
+                "reason=" + HousekeepingInputGuard.auditValue(reason),
                 this.client.getHabbo().getHabboInfo().getIpLogin());
         this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, userId, ""));
 

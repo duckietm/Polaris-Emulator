@@ -987,7 +987,8 @@ public class HabboStats implements Runnable {
         }
 
         this.mutedBubbleTracker = true;
-        this.muteEndTime += seconds;
+        // Saturate: a very long mute must stay in the future, not wrap to a negative end time.
+        this.muteEndTime = (int) Math.min((long) this.muteEndTime + seconds, Integer.MAX_VALUE);
 
         return this.remainingMuteTime();
     }

@@ -1,12 +1,15 @@
 package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingRoomDetailComposer;
 
-public class HousekeepingFindRoomByIdEvent extends MessageHandler {
+public class HousekeepingFindRoomByIdEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.ROOMS;
+    }
+
     @Override
     public int getRatelimit() {
         return 500;
@@ -14,7 +17,7 @@ public class HousekeepingFindRoomByIdEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!this.client.getHabbo().hasPermission(Permission.ACC_HOUSEKEEPING)) {
+        if (!this.allowed()) {
             return;
         }
 

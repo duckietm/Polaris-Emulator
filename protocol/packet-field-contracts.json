@@ -9590,6 +9590,17 @@
           "kind": "scalar",
           "type": "int",
           "name": "rankId"
+        },
+        {
+          "kind": "optional",
+          "controller": "durationSeconds",
+          "fields": [
+            {
+              "kind": "scalar",
+              "type": "int",
+              "name": "durationSeconds"
+            }
+          ]
         }
       ]
     },
@@ -9963,6 +9974,17 @@
           "kind": "scalar",
           "type": "string",
           "name": "message"
+        },
+        {
+          "kind": "optional",
+          "controller": "recipient",
+          "fields": [
+            {
+              "kind": "scalar",
+              "type": "string",
+              "name": "recipient"
+            }
+          ]
         }
       ]
     },
@@ -10001,6 +10023,243 @@
           "kind": "scalar",
           "type": "int",
           "name": "limit"
+        }
+      ]
+    },
+    {
+      "name": "HOUSEKEEPING_REQUEST_LIST",
+      "direction": "client_to_server",
+      "header": 9125,
+      "java": {
+        "symbol": "HousekeepingRequestListEvent",
+        "className": "HousekeepingRequestListEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingRequestListEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_REQUEST_LIST",
+        "className": "HousekeepingRequestListComposer",
+        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingRequestListComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "listKey"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "targetId"
+        },
+        {
+          "kind": "optional",
+          "controller": "reveal",
+          "fields": [
+            {
+              "kind": "scalar",
+              "type": "int",
+              "name": "reveal"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "HOUSEKEEPING_RELOAD",
+      "direction": "client_to_server",
+      "header": 9126,
+      "java": {
+        "symbol": "HousekeepingReloadEvent",
+        "className": "HousekeepingReloadEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingReloadEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_RELOAD",
+        "className": "HousekeepingReloadComposer",
+        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingReloadComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "target"
+        }
+      ]
+    },
+    {
+      "name": "HOUSEKEEPING_REVOKE_BAN",
+      "direction": "client_to_server",
+      "header": 9127,
+      "java": {
+        "symbol": "HousekeepingRevokeBanEvent",
+        "className": "HousekeepingRevokeBanEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingRevokeBanEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_REVOKE_BAN",
+        "className": "HousekeepingRevokeBanComposer",
+        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingRevokeBanComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "banId"
+        }
+      ]
+    },
+    {
+      "name": "HOUSEKEEPING_MAINTENANCE",
+      "direction": "client_to_server",
+      "header": 9128,
+      "java": {
+        "symbol": "HousekeepingMaintenanceEvent",
+        "className": "HousekeepingMaintenanceEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingMaintenanceEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_MAINTENANCE",
+        "className": "HousekeepingMaintenanceComposer",
+        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingMaintenanceComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "action"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "message"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "minutes"
+        }
+      ]
+    },
+    {
+      "name": "HOUSEKEEPING_WORD_FILTER",
+      "direction": "client_to_server",
+      "header": 9129,
+      "java": {
+        "symbol": "HousekeepingWordFilterEvent",
+        "className": "HousekeepingWordFilterEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingWordFilterEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_WORD_FILTER",
+        "className": "HousekeepingWordFilterComposer",
+        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingWordFilterComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "action"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "word"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "replacement"
+        }
+      ]
+    },
+    {
+      "name": "HOUSEKEEPING_SET_PERMISSION",
+      "direction": "client_to_server",
+      "header": 9130,
+      "java": {
+        "symbol": "HousekeepingSetPermissionEvent",
+        "className": "HousekeepingSetPermissionEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingSetPermissionEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_SET_PERMISSION",
+        "className": "HousekeepingSetPermissionComposer",
+        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingSetPermissionComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "permissionKey"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "rankId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "value"
+        }
+      ]
+    },
+    {
+      "name": "HOUSEKEEPING_USER_NOTE",
+      "direction": "client_to_server",
+      "header": 9131,
+      "java": {
+        "symbol": "HousekeepingUserNoteEvent",
+        "className": "HousekeepingUserNoteEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingUserNoteEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_USER_NOTE",
+        "className": "HousekeepingUserNoteComposer",
+        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingUserNoteComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "action"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "userId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "noteId"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "note"
+        }
+      ]
+    },
+    {
+      "name": "HOUSEKEEPING_LOCKDOWN",
+      "direction": "client_to_server",
+      "header": 9132,
+      "java": {
+        "symbol": "HousekeepingLockdownEvent",
+        "className": "HousekeepingLockdownEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingLockdownEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_LOCKDOWN",
+        "className": "HousekeepingLockdownComposer",
+        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingLockdownComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "enabled"
         }
       ]
     },
@@ -20021,6 +20280,43 @@
       ]
     },
     {
+      "name": "HOUSEKEEPING_MAINTENANCE_STATUS",
+      "direction": "server_to_client",
+      "header": 9207,
+      "java": {
+        "symbol": "HousekeepingMaintenanceStatusComposer",
+        "className": "HousekeepingMaintenanceStatusComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/housekeeping/HousekeepingMaintenanceStatusComposer.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_MAINTENANCE_STATUS",
+        "className": "HousekeepingMaintenanceStatusParser",
+        "path": "packages/communication/src/messages/parser/housekeeping/HousekeepingMaintenanceStatusParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
       "name": "CHEST_OPEN",
       "direction": "server_to_client",
       "header": 9327,
@@ -27640,6 +27936,22 @@
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },
     {
+      "name": "HOUSEKEEPING_SAVE_ROOM_SETTINGS",
+      "direction": "client_to_server",
+      "header": 9124,
+      "java": {
+        "symbol": "HousekeepingSaveRoomSettingsEvent",
+        "className": "HousekeepingSaveRoomSettingsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingSaveRoomSettingsEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_SAVE_ROOM_SETTINGS",
+        "className": "HousekeepingSaveRoomSettingsComposer",
+        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingSaveRoomSettingsComposer.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForStmt inside handle; TypeScript analyzer: Outgoing message array _data is mutated with push"
+    },
+    {
       "name": "HOUSEKEEPING_USER_DETAIL",
       "direction": "server_to_client",
       "header": 9200,
@@ -27702,6 +28014,22 @@
         "path": "packages/communication/src/messages/parser/housekeeping/HousekeepingActionLogParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor HousekeepingActionLogEntryData inside parse"
+    },
+    {
+      "name": "HOUSEKEEPING_LIST",
+      "direction": "server_to_client",
+      "header": 9206,
+      "java": {
+        "symbol": "HousekeepingListComposer",
+        "className": "HousekeepingListComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/housekeeping/HousekeepingListComposer.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_LIST",
+        "className": "HousekeepingListParser",
+        "path": "packages/communication/src/messages/parser/housekeeping/HousekeepingListParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in a loop inside parse"
     },
     {
       "name": "CHEST_DATA",

@@ -27,4 +27,23 @@ class TemporaryRanksTest {
 
         assertTrue(setRank > -1 && keeps > setRank && clear > keeps);
     }
+
+    @Test
+    void expiredOverridesAreCheckedWithoutGaps() {
+        int now = 1_000_000;
+
+        assertTrue(TemporaryRanks.overrideCheckStart(0, now) == now - 120);
+        assertTrue(TemporaryRanks.overrideCheckStart(now - 60, now) == now - 60);
+    }
+
+    @Test
+    void anExpiredOverrideRefreshesTheClient() throws Exception {
+        String source =
+                Files.readString(Path.of("src/main/java/com/eu/habbo/habbohotel/permissions/TemporaryRanks.java"));
+        int method = source.indexOf("void refreshExpiredOverrides(int now)");
+
+        assertTrue(source.indexOf("this.refreshExpiredOverrides(now)") > -1);
+        assertTrue(source.indexOf(".invalidate(userId)", method) > method);
+        assertTrue(source.indexOf("new UserPermissionsComposer(online)", method) > method);
+    }
 }

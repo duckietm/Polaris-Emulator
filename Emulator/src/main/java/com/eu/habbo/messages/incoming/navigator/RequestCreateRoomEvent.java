@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.permissions.RankLimits;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomCategory;
+import com.eu.habbo.habbohotel.rooms.RoomManager;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.navigator.CanCreateRoomComposer;
@@ -14,6 +15,8 @@ import org.slf4j.LoggerFactory;
 
 public class RequestCreateRoomEvent extends MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestCreateRoomEvent.class);
+
+    static final String STAFF_MODELS = "acc_navigator_staff";
 
     @Override
     public int getRatelimit() {
@@ -29,11 +32,27 @@ public class RequestCreateRoomEvent extends MessageHandler {
         int maxUsers = this.packet.readInt();
         int tradeType = this.packet.readInt();
 
-        if (!Emulator.getGameEnvironment().getRoomManager().layoutExists(modelName)) {
+        RoomManager roomManager = Emulator.getGameEnvironment().getRoomManager();
+
+        if (!roomManager.layoutExists(modelName)) {
             LOGGER.error(
                     "[SCRIPTER] Incorrect layout name \"{}\". {}",
                     modelName,
                     this.client.getHabbo().getHabboInfo().getUsername());
+            return;
+        }
+
+        Habbo creator = this.client.getHabbo();
+
+        if (!mayUseModel(
+                modelName,
+                roomManager.layoutClubOnly(modelName),
+                creator.getHabboStats().hasActiveClub(),
+                creator.hasPermission(STAFF_MODELS))) {
+            LOGGER.warn(
+                    "[SCRIPTER] {} may not create a room with model \"{}\"",
+                    creator.getHabboInfo().getUsername(),
+                    modelName);
             return;
         }
 
@@ -105,6 +124,18 @@ public class RequestCreateRoomEvent extends MessageHandler {
                         RoomCategoryUpdateMessageComposer.SELECTION_ROOM_CREATED));
             }
         }
+    }
+
+    /**
+     * The client only offers navigator models (it sends "model_" + the configured name); public
+     * room and game layouts are for staff. club_only models need Habbo Club.
+     */
+    static boolean mayUseModel(String modelName, boolean clubOnly, boolean hasClub, boolean staff) {
+        if (staff) return true;
+
+        if (!modelName.startsWith("model_")) return false;
+
+        return !clubOnly || hasClub;
     }
 
     /** Lowest-id category the user may use, or null when there is none. */

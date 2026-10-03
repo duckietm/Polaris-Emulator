@@ -588,6 +588,12 @@ public class RoomManager {
         return this.roomModelRepository.exists(name);
     }
 
+    /** room_models.club_only: only Habbo Club members may create a room with it. */
+    public boolean layoutClubOnly(String name) {
+        RoomLayoutData layout = this.roomModelRepository.layouts().get(name);
+        return layout != null && layout.clubOnly;
+    }
+
     public RoomLayout loadLayout(String name, Room room) {
         return this.roomModelRepository.load(name, room);
     }
@@ -1704,6 +1710,7 @@ public class RoomManager {
         final int doorY;
         final int doorDir;
         final String heightmap;
+        final boolean clubOnly;
 
         RoomLayoutData(ResultSet set) throws SQLException {
             this.name = set.getString("name");
@@ -1711,6 +1718,15 @@ public class RoomManager {
             this.doorY = set.getInt("door_y");
             this.doorDir = set.getInt("door_dir");
             this.heightmap = set.getString("heightmap");
+            this.clubOnly = clubOnly(set);
+        }
+
+        private static boolean clubOnly(ResultSet set) {
+            try {
+                return "1".equals(set.getString("club_only"));
+            } catch (SQLException missingColumn) {
+                return false;
+            }
         }
     }
 }

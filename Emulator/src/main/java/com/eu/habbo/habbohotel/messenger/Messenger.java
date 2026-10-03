@@ -111,12 +111,13 @@ public class Messenger {
         return false;
     }
 
-    public static boolean friendRequested(int userFrom, int userTo) {
+    /** True when {@code userFrom} has a pending friend request to {@code userTo}; note the argument order. */
+    public static boolean friendRequested(int userTo, int userFrom) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
                         "SELECT * FROM messenger_friendrequests WHERE user_to_id = ? AND user_from_id = ? LIMIT 1")) {
-            statement.setInt(1, userFrom);
-            statement.setInt(2, userTo);
+            statement.setInt(1, userTo);
+            statement.setInt(2, userFrom);
 
             try (ResultSet set = statement.executeQuery()) {
                 if (set.next()) {

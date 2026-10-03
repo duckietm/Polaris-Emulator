@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.achievements.TalentTrackType;
 import com.eu.habbo.habbohotel.campaign.calendar.CalendarRewardClaimed;
 import com.eu.habbo.habbohotel.catalog.CatalogItem;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.messenger.ConsoleMessageThrottle;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.permissions.RankLimits;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
@@ -115,6 +116,7 @@ public class HabboStats implements Runnable {
     public AtomicInteger chatCounter = new AtomicInteger(0);
     public final AtomicBoolean singingPirate = new AtomicBoolean(false);
     public long lastChat;
+    private final ConsoleMessageThrottle consoleThrottle = new ConsoleMessageThrottle();
     public long lastUsersSearched;
     public boolean nux;
     public boolean nuxReward;
@@ -998,6 +1000,11 @@ public class HabboStats implements Runnable {
 
     public boolean allowTalk() {
         return this.remainingMuteTime() == 0;
+    }
+
+    /** Console messages have their own flood window, apart from room chat's lastChat. */
+    public boolean consoleMessageFlooded(long nowMillis) {
+        return this.consoleThrottle.flooded(nowMillis);
     }
 
     public void unMute() {

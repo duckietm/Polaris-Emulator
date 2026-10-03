@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.guilds.Guild;
 import com.eu.habbo.habbohotel.messenger.Messenger;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
+import com.eu.habbo.habbohotel.users.ProfileVisibility;
 import com.eu.habbo.habbohotel.users.UserCustomizationData;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -72,12 +73,19 @@ public class UserProfileComposer extends MessageComposer {
                 LOGGER.error("Caught SQL exception", e);
             }
         }
+        // "Hide my profile": other users get the same layout with the counts, groups and
+        // last online time left out. The owner and moderators still see it all.
+        boolean hideDetails =
+                ProfileVisibility.hidesDetailsFrom(this.viewer.getHabbo(), this.habboInfo.getId(), profileHidden);
+
         this.response.appendInt(achievementScore);
-        this.response.appendInt(Messenger.getFriendCount(this.habboInfo.getId()));
+        this.response.appendInt(
+                hideDetails ? ProfileVisibility.HIDDEN_VALUE : Messenger.getFriendCount(this.habboInfo.getId()));
         this.response.appendBoolean(
                 this.viewer.getHabbo().getMessenger().getFriends().containsKey(this.habboInfo.getId())); // Friend
+        // Friend request sent: a pending request from the viewer to this user.
         this.response.appendBoolean(Messenger.friendRequested(
-                this.viewer.getHabbo().getHabboInfo().getId(), this.habboInfo.getId())); // Friend Request Send
+                this.habboInfo.getId(), this.viewer.getHabbo().getHabboInfo().getId()));
         this.response.appendBoolean(
                 this.habboInfo.isOnline() && (this.habbo == null || !this.habbo.getHabboStats().hideOnline));
 
@@ -104,6 +112,8 @@ public class UserProfileComposer extends MessageComposer {
             guilds = Emulator.getGameEnvironment().getGuildManager().getGuilds(this.habboInfo.getId());
         }
 
+        if (hideDetails) guilds = new ArrayList<>();
+
         this.response.appendInt(guilds.size());
         for (Guild guild : guilds) {
             this.response.appendInt(guild.getId());
@@ -118,7 +128,10 @@ public class UserProfileComposer extends MessageComposer {
             this.response.appendBoolean(guild.getOwnerId() == this.habboInfo.getId());
         }
 
-        this.response.appendInt(Emulator.getIntUnixTimestamp() - this.habboInfo.getLastOnline()); // Secs ago.
+        this.response.appendInt(
+                hideDetails
+                        ? ProfileVisibility.HIDDEN_VALUE
+                        : Emulator.getIntUnixTimestamp() - this.habboInfo.getLastOnline()); // Secs ago.
         this.response.appendBoolean(true);
 
         this.response.appendInt(this.habboInfo.getInfostandBg());
@@ -144,8 +157,8 @@ public class UserProfileComposer extends MessageComposer {
         UserProfileLevel level = UserProfileLevel.of(achievementScore, UserProfileLevel.DEFAULT_THRESHOLDS);
         this.response.appendInt(level.level());
         this.response.appendInt(level.nextLevelStart());
-        // Official isHidden: the owner hides the profile from everybody else. The client decides
-        // what to hide, as the official one does, so the owner still sees it all.
+        // Official isHidden: the owner hides the profile from everybody else. The hidden fields
+        // above are already left out for those viewers; the client shows the hidden notice.
         this.response.appendBoolean(profileHidden);
 
         return this.response;

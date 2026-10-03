@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.rooms.RoomState;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
+import java.util.Arrays;
 
 public class HousekeepingRoomDetailComposer extends MessageComposer {
     private final Room room;
@@ -25,7 +26,31 @@ public class HousekeepingRoomDetailComposer extends MessageComposer {
         this.response.appendBoolean(true);
         appendRoomFields(this.response, this.room);
 
+        // Detail-only tail, read by the renderer as optional trailing fields. It
+        // stays out of appendRoomFields because the room list repeats that block.
+        this.response.appendInt(this.room.getCategory());
+        this.response.appendInt(this.room.getTradeMode());
+        this.response.appendInt(
+                this.room.getState() != null ? this.room.getState().getState() : 0);
+
+        String[] tags = splitTags(this.room.getTags());
+        this.response.appendInt(tags.length);
+        for (String tag : tags) {
+            this.response.appendString(tag);
+        }
+
         return this.response;
+    }
+
+    private static String[] splitTags(String tags) {
+        if (tags == null || tags.isEmpty()) {
+            return new String[0];
+        }
+
+        return Arrays.stream(tags.split(";"))
+                .map(String::trim)
+                .filter(tag -> !tag.isEmpty())
+                .toArray(String[]::new);
     }
 
     /** Shared by HousekeepingRoomListComposer too. */
@@ -40,7 +65,7 @@ public class HousekeepingRoomDetailComposer extends MessageComposer {
         response.appendBoolean(room.getState() != null && room.getState() != RoomState.OPEN);
         response.appendBoolean(room.isMuted());
         response.appendBoolean(room.isPublicRoom());
-        response.appendInt(0); // createdAt — Room doesn't expose; left as 0 until a schema-side timestamp surfaces.
+        response.appendInt(room.getDateCreated());
     }
 
     private static String safe(String value) {

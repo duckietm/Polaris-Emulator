@@ -1,12 +1,11 @@
 package com.eu.habbo.messages.incoming.housekeeping;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class HousekeepingAuditCoverageContractTest {
     private static final List<String> SENSITIVE_HANDLERS = List.of(
@@ -27,8 +26,15 @@ class HousekeepingAuditCoverageContractTest {
             "HousekeepingKickUserEvent.java",
             "HousekeepingMuteRoomEvent.java",
             "HousekeepingRoomStateEvent.java",
-            "HousekeepingUnbanUserEvent.java"
-    );
+            "HousekeepingSaveRoomSettingsEvent.java",
+            "HousekeepingReloadEvent.java",
+            "HousekeepingRevokeBanEvent.java",
+            "HousekeepingMaintenanceEvent.java",
+            "HousekeepingWordFilterEvent.java",
+            "HousekeepingSetPermissionEvent.java",
+            "HousekeepingUserNoteEvent.java",
+            "HousekeepingLockdownEvent.java",
+            "HousekeepingUnbanUserEvent.java");
 
     @Test
     void sensitiveHousekeepingActionsWriteAuditEntries() throws Exception {
@@ -36,7 +42,8 @@ class HousekeepingAuditCoverageContractTest {
 
         for (String handler : SENSITIVE_HANDLERS) {
             String source = Files.readString(base.resolve(handler));
-            assertTrue(source.contains("HousekeepingAuditLog.log"),
+            assertTrue(
+                    source.contains("HousekeepingAuditLog.log"),
                     handler + " must append a housekeeping audit log entry after successful privileged actions");
         }
     }

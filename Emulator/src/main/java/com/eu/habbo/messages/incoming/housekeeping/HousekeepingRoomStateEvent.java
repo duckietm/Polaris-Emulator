@@ -1,10 +1,8 @@
 package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomState;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
 /**
@@ -13,7 +11,12 @@ import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultCompo
  * false => LOCKED. Persists state through `Room.save()` so the change
  * outlives an unload.
  */
-public class HousekeepingRoomStateEvent extends MessageHandler {
+public class HousekeepingRoomStateEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.ROOMS;
+    }
+
     @Override
     public int getRatelimit() {
         return 1000;
@@ -21,7 +24,7 @@ public class HousekeepingRoomStateEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!this.client.getHabbo().hasPermission(Permission.ACC_HOUSEKEEPING)) {
+        if (!this.allowed()) {
             return;
         }
 
@@ -30,29 +33,38 @@ public class HousekeepingRoomStateEvent extends MessageHandler {
         String actionKey = open ? "room.open" : "room.close";
 
         if (roomId <= 0) {
-            this.client.sendResponse(new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.invalid_input"));
+            this.client.sendResponse(
+                    new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.invalid_input"));
             return;
         }
 
         Room room = Emulator.getGameEnvironment().getRoomManager().loadRoom(roomId, false);
 
         if (room == null) {
-            this.client.sendResponse(new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.room_not_found"));
+            this.client.sendResponse(
+                    new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.room_not_found"));
             return;
         }
 
         if (!HousekeepingRoomGuard.canManageRoom(this.client.getHabbo(), room)) {
-            this.client.sendResponse(new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.rank_too_high"));
+            this.client.sendResponse(
+                    new HousekeepingActionResultComposer(actionKey, false, 0, "housekeeping.error.rank_too_high"));
             return;
         }
 
         room.setState(open ? RoomState.OPEN : RoomState.LOCKED);
+        // Room.save() only writes a room flagged as changed, and setState does not flag it.
+        room.setNeedsUpdate(true);
         room.save();
 
         com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
                 this.client.getHabbo().getHabboInfo().getId(),
                 this.client.getHabbo().getHabboInfo().getUsername(),
-                actionKey, 0, "roomId=" + roomId + " open=" + open,
+                actionKey,
+                com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.TARGET_ROOM,
+                roomId,
+                room.getName(),
+                "roomId=" + roomId + " open=" + open,
                 this.client.getHabbo().getHabboInfo().getIpLogin());
         this.client.sendResponse(new HousekeepingActionResultComposer(actionKey, true, roomId, ""));
     }

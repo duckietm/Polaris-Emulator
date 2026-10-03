@@ -3,9 +3,7 @@ package com.eu.habbo.habbohotel.rooms;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-record RoomSnapshot(
-        Initial initial,
-        PostBanLoad postBanLoad) {
+record RoomSnapshot(Initial initial, PostBanLoad postBanLoad) {
 
     static Initial readInitial(ResultSet set) throws SQLException {
         return new Initial(
@@ -67,7 +65,8 @@ record RoomSnapshot(
                         set.getInt("idle_sleep_timeout_seconds"),
                         set.getBoolean("idle_autokick_enabled"),
                         set.getInt("idle_autokick_timeout_seconds"),
-                        set.getString("moodlight_data")));
+                        set.getString("moodlight_data"),
+                        optionalInt(set, "date_created")));
     }
 
     private static boolean optionalBoolean(ResultSet set, String column) {
@@ -75,6 +74,14 @@ record RoomSnapshot(
             return set.getBoolean(column);
         } catch (Exception ignored) {
             return false;
+        }
+    }
+
+    private static int optionalInt(ResultSet set, String column) {
+        try {
+            return set.getInt(column);
+        } catch (Exception ignored) {
+            return 0;
         }
     }
 
@@ -137,8 +144,7 @@ record RoomSnapshot(
             boolean jukeboxActive,
             boolean hideWired,
             boolean buildersClubTrialLocked,
-            RoomState buildersClubOriginalState) {
-    }
+            RoomState buildersClubOriginalState) {}
 
     record PostBanLoad(
             int tradeMode,
@@ -150,6 +156,6 @@ record RoomSnapshot(
             int idleSleepTimeoutSeconds,
             boolean idleAutokickEnabled,
             int idleAutokickTimeoutSeconds,
-            String moodlightData) {
-    }
+            String moodlightData,
+            int dateCreated) {}
 }

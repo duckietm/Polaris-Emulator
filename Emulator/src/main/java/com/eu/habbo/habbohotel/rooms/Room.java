@@ -181,6 +181,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     private int banOption;
     private int pollId;
     private int tradeMode;
+    private int dateCreated;
     private boolean moveDiagonally;
     private boolean allowUnderpass;
     private boolean muteAllPets;
@@ -335,6 +336,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
         RoomSnapshot snapshot = RoomSnapshot.complete(initial, set);
         this.tradeMode = snapshot.postBanLoad().tradeMode();
+        this.dateCreated = snapshot.postBanLoad().dateCreated();
         this.moveDiagonally = snapshot.postBanLoad().moveDiagonally();
         this.allowUnderpass = snapshot.postBanLoad().allowUnderpass();
         this.muteAllPets = snapshot.postBanLoad().muteAllPets();
@@ -1029,6 +1031,10 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
     public void setTradeMode(int tradeMode) {
         this.tradeMode = tradeMode;
+    }
+
+    public int getDateCreated() {
+        return this.dateCreated;
     }
 
     public boolean moveDiagonally() {

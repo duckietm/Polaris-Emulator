@@ -429,6 +429,17 @@ public class ModToolManager {
         return roomVisits;
     }
 
+    /**
+     * Expiry of a ban that starts now. A permanent ban arrives as a duration close to
+     * {@link Integer#MAX_VALUE}, and adding it to the current time wrapped to a negative
+     * expiry: the ban was stored as already expired and never enforced.
+     */
+    static int banExpiry(int now, int duration) {
+        long expiry = (long) now + duration;
+
+        return expiry > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) expiry;
+    }
+
     public ModToolBan createOfflineUserBan(int userId, int staffId, int duration, String reason, ModToolBanType type) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
@@ -438,7 +449,7 @@ public class ModToolManager {
             statement.setInt(2, userId);
             statement.setInt(3, userId);
             statement.setInt(4, staffId);
-            statement.setInt(5, Emulator.getIntUnixTimestamp() + duration);
+            statement.setInt(5, banExpiry(Emulator.getIntUnixTimestamp(), duration));
             statement.setString(6, reason);
             statement.setString(7, type.getType());
 
@@ -557,7 +568,7 @@ public class ModToolManager {
                 offlineInfo != null ? offlineInfo.getIpLogin() : "offline",
                 offlineInfo != null ? offlineInfo.getMachineID() : "offline",
                 moderator.getHabboInfo().getId(),
-                Emulator.getIntUnixTimestamp() + duration,
+                banExpiry(Emulator.getIntUnixTimestamp(), duration),
                 reason,
                 type,
                 cfhTopic);
@@ -595,7 +606,7 @@ public class ModToolManager {
                         h != null ? h.getHabboInfo().getIpLogin() : "offline",
                         h != null ? h.getClient().getMachineId() : "offline",
                         moderator.getHabboInfo().getId(),
-                        Emulator.getIntUnixTimestamp() + duration,
+                        banExpiry(Emulator.getIntUnixTimestamp(), duration),
                         reason,
                         type,
                         cfhTopic);
@@ -619,7 +630,7 @@ public class ModToolManager {
                         h != null ? h.getHabboInfo().getIpLogin() : "offline",
                         h != null ? h.getClient().getMachineId() : "offline",
                         moderator.getHabboInfo().getId(),
-                        Emulator.getIntUnixTimestamp() + duration,
+                        banExpiry(Emulator.getIntUnixTimestamp(), duration),
                         reason,
                         type,
                         cfhTopic);

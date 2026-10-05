@@ -16,9 +16,10 @@ class RoomFacadeArchitectureTest {
         String source = Files.readString(ROOM_SOURCE);
 
         // 2170: the AIR 13 wired settings added three one-line delegations (roll back, timezone
-        // read, three-argument save). Raise this only for delegations, never for logic.
+        // read, three-argument save). 2171: the rights-only entry access load delegation.
+        // Raise this only for delegations, never for logic.
         assertTrue(
-                source.lines().count() <= 2170,
+                source.lines().count() <= 2171,
                 "Keep Room.java below the post-extraction compatibility-facade ceiling");
         assertFalse(source.contains("prepareStatement("), "Database statements belong in collaborators");
         assertFalse(source.matches("(?s).*\"(?:SELECT|INSERT|UPDATE|DELETE) .*"));

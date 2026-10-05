@@ -113,6 +113,9 @@ public class HabboStats implements Runnable {
     public int helpersLevel;
     public boolean perkTrade;
     public long roomEnterTimestamp;
+    // Room id and wall clock millis of the last room open; drive the room entry throttle.
+    public volatile int roomOpenedId;
+    public volatile long roomOpenedAtMillis;
     public AtomicInteger chatCounter = new AtomicInteger(0);
     public final AtomicBoolean singingPirate = new AtomicBoolean(false);
     public long lastChat;
@@ -984,18 +987,27 @@ public class HabboStats implements Runnable {
     }
 
     public int addMuteTime(int seconds) {
-        if (this.remainingMuteTime() == 0) {
-            this.muteEndTime = Emulator.getIntUnixTimestamp();
-        }
-
         this.mutedBubbleTracker = true;
-        this.muteEndTime += seconds;
+        this.muteEndTime = extendMuteEnd(this.muteEndTime, Emulator.getIntUnixTimestamp(), seconds);
 
         return this.remainingMuteTime();
     }
 
     public int remainingMuteTime() {
-        return Math.max(0, this.muteEndTime - Emulator.getIntUnixTimestamp());
+        return remainingMuteSeconds(this.muteEndTime, Emulator.getIntUnixTimestamp());
+    }
+
+    /**
+     * Extends a mute from now (or from the running mute's end) in long maths, clamped to the int column:
+     * a long mute such as Integer.MAX_VALUE seconds used to overflow into the past and mute nobody.
+     */
+    static int extendMuteEnd(int muteEndTime, int now, int seconds) {
+        long end = Math.max((long) muteEndTime, (long) now) + Math.max(0L, (long) seconds);
+        return (int) Math.min(end, Integer.MAX_VALUE);
+    }
+
+    static int remainingMuteSeconds(int muteEndTime, int now) {
+        return (int) Math.max(0L, (long) muteEndTime - (long) now);
     }
 
     public boolean allowTalk() {

@@ -26,15 +26,21 @@ public class StaffChatBuddy extends MessengerBuddy {
         if (!from.hasPermission(PERMISSION_KEY)) return;
 
         if (message.charAt(0) == ':') {
-            CommandHandler.handleCommand(from.getClient(), message);
+            CommandHandler.handleChatCommand(from.getClient(), message);
             return;
         }
 
         Message chatMessage = new Message(from.getHabboInfo().getId(), BUDDY_ID, message);
-        Emulator.getGameServer().getGameClientManager().sendBroadcastResponse(
-                new FriendChatMessageComposer(chatMessage, BUDDY_ID, from.getHabboInfo().getId()).compose(),
-                PERMISSION_KEY,
-                from.getClient());
+        Emulator.getGameServer()
+                .getGameClientManager()
+                .sendBroadcastResponse(
+                        new FriendChatMessageComposer(
+                                        chatMessage,
+                                        BUDDY_ID,
+                                        from.getHabboInfo().getId())
+                                .compose(),
+                        PERMISSION_KEY,
+                        from.getClient());
     }
 
     @Override
@@ -42,16 +48,16 @@ public class StaffChatBuddy extends MessengerBuddy {
         message.appendInt(this.getId());
         message.appendString(this.getUsername());
         message.appendInt(this.getGender().equals(HabboGender.M) ? 0 : 1);
-        message.appendBoolean(true);  // online
+        message.appendBoolean(true); // online
         message.appendBoolean(false); // not in room
         message.appendString(this.getLook());
-        message.appendInt(0);         // category
-        message.appendString("");     // motto
-        message.appendString("");     // last seen
-        message.appendString("");     // realname
-        message.appendBoolean(true);  // offline messaging supported
+        message.appendInt(0); // category
+        message.appendString(""); // motto
+        message.appendString(""); // last seen
+        message.appendString(""); // realname
+        message.appendBoolean(true); // offline messaging supported
         message.appendBoolean(false);
         message.appendBoolean(false);
-        message.appendShort(0);       // relation
+        message.appendShort(0); // relation
     }
 }

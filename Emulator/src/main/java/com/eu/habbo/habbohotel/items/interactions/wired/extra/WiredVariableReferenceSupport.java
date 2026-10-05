@@ -26,6 +26,10 @@ public final class WiredVariableReferenceSupport {
     public static final int SHARED_AVAILABILITY = 11;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredVariableReferenceSupport.class);
+    static final String DEFINITION_TYPES = "('wf_var_user', 'wf_var_room')";
+    /** A {@code wf_} item with interaction {@code default} takes its interaction from its name, as on load. */
+    static final String DEFINITION_TYPE_SQL = "CASE WHEN LOWER(items_base.interaction_type) IN " + DEFINITION_TYPES
+            + " THEN LOWER(items_base.interaction_type) ELSE LOWER(items_base.item_name) END";
 
     // Bounded read/write-through caches. Every write path also upserts the DB
     // (assignSharedUserVariable / updateSharedRoomVariable), so evicting an
@@ -84,11 +88,13 @@ public final class WiredVariableReferenceSupport {
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "SELECT rooms.id AS room_id, rooms.name AS room_name, items.id AS item_id, items.wired_data, items_base.interaction_type "
+                        "SELECT rooms.id AS room_id, rooms.name AS room_name, items.id AS item_id, items.wired_data, "
+                                + DEFINITION_TYPE_SQL + " AS interaction_type "
                                 + "FROM rooms "
                                 + "INNER JOIN items ON rooms.id = items.room_id "
                                 + "INNER JOIN items_base ON items.item_id = items_base.id "
-                                + "WHERE rooms.owner_id = ? AND rooms.id <> ? AND items_base.interaction_type IN ('wf_var_user', 'wf_var_room') "
+                                + "WHERE rooms.owner_id = ? AND rooms.id <> ? AND (items_base.interaction_type IN "
+                                + DEFINITION_TYPES + " OR items_base.item_name IN " + DEFINITION_TYPES + ") "
                                 + "ORDER BY rooms.name ASC, items.id ASC")) {
             statement.setInt(1, room.getOwnerId());
             statement.setInt(2, room.getId());
@@ -480,8 +486,8 @@ public final class WiredVariableReferenceSupport {
         }
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement =
-                        connection.prepareStatement("SELECT items.wired_data, items_base.interaction_type "
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT items.wired_data, " + DEFINITION_TYPE_SQL + " AS interaction_type "
                                 + "FROM items INNER JOIN items_base ON items.item_id = items_base.id "
                                 + "WHERE items.id = ? AND items.room_id = ? LIMIT 1")) {
             statement.setInt(1, reference.getSourceVariableItemId());

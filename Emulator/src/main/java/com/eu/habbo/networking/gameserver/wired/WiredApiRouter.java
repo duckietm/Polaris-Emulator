@@ -22,7 +22,12 @@ import org.slf4j.LoggerFactory;
 final class WiredApiRouter {
     static final String PREFIX = "/api/public";
     static final String DOCS_PATH = PREFIX + "/api-docs";
-    static final String ALLOWED_HEADERS = "Authorization, X-Api-Key, Content-Type";
+    static final String ALLOWED_HEADERS =
+            "X-Wired-Read-Key, X-Wired-Write-Key, Authorization, X-Api-Key, Content-Type, Accept";
+    /** Habbo's list query, then the older Polaris names. */
+    static final Set<String> HOLDER_QUERY =
+            Set.of("page", "size", "order_by", "order_dir", "pageSize", "sort", "order");
+
     static final String EXPOSED_HEADERS = "Retry-After, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredApiRouter.class);
@@ -88,10 +93,19 @@ final class WiredApiRouter {
                 room + "/variables",
                 Level.READ,
                 none,
-                "List the room's permanent variables.",
+                "The names of the room's permanent variables, by scope.",
                 null,
-                "VariableList",
+                "RoomVariables",
                 WiredApiEndpoints::listVariables));
+        routes.add(new Route(
+                "GET",
+                room + "/variables/definitions",
+                Level.READ,
+                none,
+                "The room's permanent variables with their settings (Polaris addition).",
+                null,
+                "VariableDefinitions",
+                WiredApiEndpoints::listDefinitions));
         routes.add(new Route(
                 "GET",
                 entry,
@@ -99,7 +113,7 @@ final class WiredApiRouter {
                 none,
                 "Read one holder's variable.",
                 null,
-                "Entry",
+                "WiredVariable",
                 WiredApiEndpoints::getEntry));
         routes.add(new Route(
                 "PUT",
@@ -107,8 +121,8 @@ final class WiredApiRouter {
                 Level.WRITE,
                 none,
                 "Give the holder the variable, creating or replacing it.",
-                "PutBody",
-                "Entry",
+                "ValueBody",
+                "WiredVariable",
                 WiredApiEndpoints::putEntry));
         routes.add(new Route(
                 "PATCH",
@@ -117,7 +131,7 @@ final class WiredApiRouter {
                 none,
                 "Change the value of a variable the holder has.",
                 "PatchBody",
-                "Entry",
+                "WiredVariable",
                 WiredApiEndpoints::patchEntry));
         routes.add(new Route(
                 "DELETE",
@@ -132,10 +146,10 @@ final class WiredApiRouter {
                 "GET",
                 holders,
                 Level.READ,
-                Set.of("page", "pageSize", "sort", "order"),
-                "List the holders of a variable, paged.",
+                HOLDER_QUERY,
+                "List the holders of a variable, sorted and paged.",
                 null,
-                "EntryPage",
+                "PagedVariables",
                 WiredApiEndpoints::listEntries));
         routes.add(new Route(
                 "GET",
@@ -155,14 +169,15 @@ final class WiredApiRouter {
                 "BulkDeleteBody",
                 "BulkDeleteResult",
                 WiredApiEndpoints::bulkDelete));
+        // The read key is enough to get in; operations that write need the write key as well.
         routes.add(new Route(
                 "POST",
                 room + "/variables/{scope}/{variableName}/batch",
-                Level.WRITE,
+                Level.READ,
                 none,
-                "Apply several set, add or delete operations to one variable.",
+                "Read and write one variable on up to 50 holders in one request.",
                 "BatchBody",
-                "BatchResult",
+                "BatchResults",
                 WiredApiEndpoints::batch));
         routes.add(new Route(
                 "GET",
@@ -171,7 +186,7 @@ final class WiredApiRouter {
                 none,
                 "Read a global variable.",
                 null,
-                "Value",
+                "WiredVariable",
                 WiredApiEndpoints::getGlobal));
         routes.add(new Route(
                 "PATCH",
@@ -179,8 +194,8 @@ final class WiredApiRouter {
                 Level.WRITE,
                 none,
                 "Change a global variable.",
-                "GlobalPatchBody",
-                "Value",
+                "PatchBody",
+                "WiredVariable",
                 WiredApiEndpoints::patchGlobal));
         routes.add(new Route(
                 "GET",
@@ -263,7 +278,7 @@ final class WiredApiRouter {
     WiredApiResponse handle(WiredApiRequest request) {
         WiredApiSettings current = this.settings.get();
         if (!current.enabled()) {
-            return this.error(request, current, new WiredApiException(404, "disabled", "Not found."), null);
+            return this.error(request, current, WiredApiException.unknownEndpoint(), null);
         }
         if (request.method().equals("OPTIONS")) {
             return this.preflight(request, current);
@@ -275,7 +290,7 @@ final class WiredApiRouter {
             this.limits.checkNotBlocked(request.clientIp());
             window = this.limits.acquireIp(request.clientIp(), current);
             if (request.body() != null && request.body().length > current.maxPayloadBytes()) {
-                throw new WiredApiException(413, "payload_too_large", "The body is too large.");
+                throw new WiredApiException(413, WiredApiException.PAYLOAD_TOO_LARGE, "The body is too large.");
             }
 
             List<String> segments = pathSegments(request.path());
@@ -314,7 +329,11 @@ final class WiredApiRouter {
                     request.method(),
                     route == null ? "(unrouted)" : route.path(),
                     e);
-            return this.error(request, current, new WiredApiException(500, "internal", "Internal error."), window);
+            return this.error(
+                    request,
+                    current,
+                    new WiredApiException(500, WiredApiException.INTERNAL_ERROR, "Internal error."),
+                    window);
         }
     }
 
@@ -335,7 +354,7 @@ final class WiredApiRouter {
             }
         }
         if (candidates.isEmpty()) {
-            throw WiredApiException.notFound("Unknown endpoint.");
+            throw WiredApiException.unknownEndpoint();
         }
         for (Route route : candidates) {
             if (route.method().equals(method)) {
@@ -344,7 +363,8 @@ final class WiredApiRouter {
         }
         Set<String> allowed = new LinkedHashSet<>();
         candidates.forEach(route -> allowed.add(route.method()));
-        throw new WiredApiException(405, "method_not_allowed", "Allowed: " + String.join(", ", allowed) + ".");
+        // The message carries the Allow header.
+        throw new WiredApiException(405, WiredApiException.METHOD_NOT_ALLOWED, String.join(", ", allowed));
     }
 
     private static boolean shapeMatches(List<String> template, List<String> segments) {
@@ -365,13 +385,13 @@ final class WiredApiRouter {
         String rest = path.length() > PREFIX.length() ? path.substring(PREFIX.length()) : "";
         List<String> segments = split(rest);
         if (segments.size() > MAX_SEGMENTS) {
-            throw WiredApiException.notFound("Unknown endpoint.");
+            throw WiredApiException.unknownEndpoint();
         }
         for (int i = 0; i < segments.size(); i++) {
             String segment = segments.get(i);
             boolean trailing = i == segments.size() - 1 && segment.isEmpty();
             if ((segment.isEmpty() && !trailing) || segment.length() > MAX_SEGMENT_LENGTH) {
-                throw WiredApiException.notFound("Unknown endpoint.");
+                throw WiredApiException.unknownEndpoint();
             }
         }
         return segments;
@@ -398,19 +418,22 @@ final class WiredApiRouter {
                 params.put(name.substring(1, name.length() - 1), segments.get(i));
             }
         }
-        positiveInt(params.get("roomId"), "roomId");
-        if (params.containsKey("entityId")) {
-            positiveInt(params.get("entityId"), "entityId");
+        // Like Habbo, a room id that is not a number names no room.
+        if (!isPositiveInt(params.get("roomId"))) {
+            throw WiredApiException.roomNotFound();
+        }
+        if (params.containsKey("entityId") && !isPositiveInt(params.get("entityId"))) {
+            throw WiredApiException.invalidTarget("'entityId' must be a positive 32-bit integer.");
         }
         if (params.containsKey("variableName")
                 && !HotelWiredApiRooms.NAME.matcher(params.get("variableName")).matches()) {
-            throw WiredApiException.badRequest("Invalid variable name.");
+            throw WiredApiException.notFound("No variable has this name.");
         }
         Scope scope = Scope.USER;
         if (params.containsKey("scope")) {
             scope = Scope.fromPath(params.get("scope"));
             if (scope == null || scope == Scope.GLOBAL) {
-                throw WiredApiException.badRequest("'scope' must be user or furni.");
+                throw WiredApiException.invalidTarget("'scope' must be user or furni.");
             }
         } else if (route.path().contains("/variables_profile/furni/")) {
             scope = Scope.FURNI;
@@ -418,20 +441,14 @@ final class WiredApiRouter {
         if (params.containsKey("targetKind")) {
             TargetKind kind = TargetKind.fromPath(params.get("targetKind"));
             if (kind == null || kind.scope() != scope) {
-                throw WiredApiException.badRequest(
-                        scope == Scope.USER
-                                ? "'targetKind' must be users, pets or bots."
-                                : "'targetKind' must be floor or wall.");
+                throw WiredApiException.invalidTarget("'targetKind' does not fit the scope.");
             }
         }
         return params;
     }
 
-    static int positiveInt(String raw, String name) {
-        if (raw == null || !POSITIVE_INT.matcher(raw).matches() || Long.parseLong(raw) > Integer.MAX_VALUE) {
-            throw WiredApiException.badRequest("'" + name + "' must be a positive 32-bit integer.");
-        }
-        return Integer.parseInt(raw);
+    static boolean isPositiveInt(String raw) {
+        return raw != null && POSITIVE_INT.matcher(raw).matches() && Long.parseLong(raw) <= Integer.MAX_VALUE;
     }
 
     private static void checkBody(WiredApiRequest request) {
@@ -478,7 +495,10 @@ final class WiredApiRouter {
 
     private WiredApiResponse error(
             WiredApiRequest request, WiredApiSettings current, WiredApiException e, WiredApiLimits.Window window) {
-        WiredApiResponse response = WiredApiResponse.json(e.status(), WiredApiJson.error(e.code(), e.getMessage()));
+        WiredApiResponse response = WiredApiResponse.json(e.status(), WiredApiJson.error(e.code()));
+        if (e.status() == 405) {
+            response.header("Allow", e.getMessage());
+        }
         if (e.status() == 429) {
             response.header("Retry-After", Long.toString(e.retryAfterSeconds()));
             if (e.limit() > 0) {
@@ -487,9 +507,6 @@ final class WiredApiRouter {
             response.header("X-RateLimit-Remaining", "0");
             response.header("X-RateLimit-Reset", Long.toString(e.retryAfterSeconds()));
             window = null;
-        }
-        if (e.status() == 401) {
-            response.header("WWW-Authenticate", "Bearer");
         }
         return this.finish(request, current, response, window);
     }

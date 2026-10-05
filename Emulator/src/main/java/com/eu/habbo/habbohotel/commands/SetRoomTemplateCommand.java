@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.commands;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.items.WebApiBoxSql;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import java.sql.Connection;
@@ -94,8 +95,9 @@ public class SetRoomTemplateCommand extends Command {
             try (PreparedStatement insItems = connection.prepareStatement(
                     "INSERT INTO room_templates_items (template_id, item_id, wall_pos, x, y, z, rot, extra_data, wired_data) "
                             + "SELECT ?, i.item_id, i.wall_pos, i.x, i.y, i.z, i.rot, i.extra_data, i.wired_data "
-                            + "FROM items i JOIN items_base ib ON ib.id = i.item_id "
-                            + "WHERE i.room_id = ? AND ib.interaction_type <> 'wf_xtra_var_web_api'")) {
+                            + "FROM items i "
+                            + "WHERE i.room_id = ? AND i.item_id NOT IN (" + WebApiBoxSql.BASE_ITEM_IDS
+                            + ")")) {
                 insItems.setInt(1, newTemplateId);
                 insItems.setInt(2, room.getId());
                 itemsCopied = insItems.executeUpdate();

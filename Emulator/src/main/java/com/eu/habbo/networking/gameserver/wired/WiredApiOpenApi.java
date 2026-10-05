@@ -6,17 +6,41 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
 
 /** The OpenAPI 3 document and a plain HTML page of it, both built from the route table. */
 final class WiredApiOpenApi {
     private static final String NAME_PATTERN = "^[A-Za-z0-9_]{1,40}$";
     private static final List<String[]> ERRORS = List.of(
-            new String[] {"400", "Invalid request (bad_request)."},
-            new String[] {"401", "Missing or unknown key (unauthorized)."},
-            new String[] {"403", "Key not allowed here (forbidden)."},
-            new String[] {"404", "Unknown room, variable or holder (not_found)."},
-            new String[] {"413", "Body too large (payload_too_large)."},
-            new String[] {"429", "Rate limited (rate_limited); see Retry-After."});
+            new String[] {"400", "Invalid target, value or request."},
+            new String[] {"403", "Key missing or invalid, API disabled for the room, or not allowed."},
+            new String[] {"404", "Unknown room, variable or holder."},
+            new String[] {"413", "Body too large."},
+            new String[] {"429", "Too many requests; see Retry-After."});
+    private static final String[] ERROR_CODES = {
+        WiredApiException.INVALID_TARGET,
+        WiredApiException.INVALID_VALUE,
+        WiredApiException.BULK_DELETE_EMPTY,
+        WiredApiException.BULK_DELETE_INVALID_VARIABLE,
+        WiredApiException.BATCH_EMPTY,
+        WiredApiException.BATCH_LIMIT_EXCEEDED,
+        WiredApiException.KEY_MISSING,
+        WiredApiException.KEY_INVALID,
+        WiredApiException.API_DISABLED,
+        WiredApiException.USER_NOT_PARTICIPATING,
+        WiredApiException.BULK_DELETE_NOT_ENABLED,
+        WiredApiException.ROOM_NOT_FOUND,
+        WiredApiException.NOT_FOUND,
+        WiredApiException.ENTITY_NOT_FOUND,
+        WiredApiException.TOO_MANY_REQUESTS,
+        WiredApiException.INVALID_REQUEST,
+        WiredApiException.BULK_DELETE_LIMIT_EXCEEDED,
+        WiredApiException.UNKNOWN_ENDPOINT,
+        WiredApiException.METHOD_NOT_ALLOWED,
+        WiredApiException.PAYLOAD_TOO_LARGE,
+        WiredApiException.CONFLICT,
+        WiredApiException.INTERNAL_ERROR
+    };
 
     private WiredApiOpenApi() {}
 
@@ -28,8 +52,9 @@ final class WiredApiOpenApi {
         info.addProperty("version", "1");
         info.addProperty(
                 "description",
-                "Read and write a room's permanent wired variables. Keys come from the room's Variables Web API"
-                        + " box and go in the Authorization header, never in the URL.");
+                "Read and write a room's permanent wired variables, in the format of Habbo's Wired Variables"
+                        + " API. Keys come from the room's Variables Web API box and go in the X-Wired-Read-Key and"
+                        + " X-Wired-Write-Key headers, never in the URL.");
         root.add("info", info);
         JsonArray servers = new JsonArray();
         JsonObject server = new JsonObject();
@@ -56,12 +81,14 @@ final class WiredApiOpenApi {
         operation.addProperty("summary", route.summary());
         operation.addProperty(
                 "description",
-                switch (route.level()) {
-                    case READ -> "Read key or write key.";
-                    case WRITE -> "Write key.";
-                    case BULK -> "Write key, and the box must allow bulk delete.";
-                    case NONE -> "No key.";
-                });
+                route.path().endsWith("/batch")
+                        ? "X-Wired-Read-Key; operations that write also need X-Wired-Write-Key."
+                        : switch (route.level()) {
+                            case READ -> "X-Wired-Read-Key (the write key also works).";
+                            case WRITE -> "X-Wired-Write-Key.";
+                            case BULK -> "X-Wired-Write-Key, and the box must allow bulk delete.";
+                            case NONE -> "No key.";
+                        });
         JsonArray parameters = new JsonArray();
         for (String segment : route.segments()) {
             if (segment.startsWith("{")) {
@@ -96,6 +123,14 @@ final class WiredApiOpenApi {
         }
         operation.add("responses", responses);
         JsonArray security = new JsonArray();
+        JsonObject habbo = new JsonObject();
+        if (route.path().endsWith("/batch") || route.level() == Level.READ) {
+            habbo.add("readKey", new JsonArray());
+        }
+        if (route.path().endsWith("/batch") || route.level() != Level.READ) {
+            habbo.add("writeKey", new JsonArray());
+        }
+        security.add(habbo);
         JsonObject bearer = new JsonObject();
         bearer.add("bearerKey", new JsonArray());
         security.add(bearer);
@@ -123,9 +158,23 @@ final class WiredApiOpenApi {
                 schema.addProperty("pattern", NAME_PATTERN);
             }
             case "scope" -> schema.add("enum", strings("user", "furni"));
-            case "targetKind" ->
+            case "targetKind" -> {
                 schema.add(
-                        "enum", path.contains("furni") ? strings("floor", "wall") : strings("users", "pets", "bots"));
+                        "enum",
+                        path.contains("/variables_profile/user/")
+                                ? strings("users", "pets", "bots")
+                                : path.contains("/variables_profile/furni/")
+                                        ? strings("furni", "furni-bc", "wall-items", "wall-items-bc")
+                                        : strings(
+                                                "users",
+                                                "pets",
+                                                "bots",
+                                                "furni",
+                                                "furni-bc",
+                                                "wall-items",
+                                                "wall-items-bc"));
+                schema.addProperty("description", "floor and wall are accepted for furni and wall-items.");
+            }
             default -> schema.addProperty("type", "string");
         }
         if (!schema.has("type")) {
@@ -142,19 +191,27 @@ final class WiredApiOpenApi {
         parameter.addProperty("required", false);
         JsonObject schema = new JsonObject();
         switch (name) {
-            case "page", "pageSize", "unique_id" -> {
+            case "page", "size", "pageSize" -> {
                 schema.addProperty("type", "integer");
                 schema.addProperty("minimum", 1);
+            }
+            case "order_by" -> {
+                schema.addProperty("type", "string");
+                schema.add("enum", strings("value", "creation_time", "update_time"));
             }
             case "sort" -> {
                 schema.addProperty("type", "string");
                 schema.add("enum", strings("entityId", "value"));
             }
-            case "order" -> {
+            case "order_dir", "order" -> {
                 schema.addProperty("type", "string");
                 schema.add("enum", strings("asc", "desc"));
             }
             default -> schema.addProperty("type", "string");
+        }
+        if (Set.of("pageSize", "sort", "order").contains(name)) {
+            parameter.addProperty("deprecated", true);
+            parameter.addProperty("description", "Older Polaris name; use size, order_by and order_dir.");
         }
         parameter.add("schema", schema);
         return parameter;
@@ -172,125 +229,144 @@ final class WiredApiOpenApi {
 
     private static JsonObject components() {
         JsonObject schemas = new JsonObject();
+        schemas.add("Error", object("error", enumString(ERROR_CODES)));
+        JsonObject names = new JsonObject();
+        names.addProperty("type", "array");
+        names.add("items", type("string"));
+        schemas.add("RoomVariables", object("users", names, "furni", names, "global", names));
         schemas.add(
-                "Error",
-                object(
-                        "error",
-                        object(
-                                "code",
-                                enumString(
-                                        "bad_request",
-                                        "unauthorized",
-                                        "forbidden",
-                                        "not_found",
-                                        "method_not_allowed",
-                                        "conflict",
-                                        "payload_too_large",
-                                        "rate_limited",
-                                        "disabled",
-                                        "internal"),
-                                "message",
-                                type("string"))));
-        schemas.add(
-                "Variable",
+                "VariableDefinition",
                 object(
                         "name",
                         type("string"),
                         "scope",
                         enumString("user", "furni", "global"),
-                        "hasValue",
+                        "has_value",
                         type("boolean"),
-                        "textConnected",
+                        "text_connected",
                         type("boolean")));
-        schemas.add("VariableList", object("variables", arrayOf("Variable")));
+        schemas.add("VariableDefinitions", object("variables", arrayOf("VariableDefinition")));
+        JsonObject value = type("string");
+        value.addProperty("pattern", "^-?[0-9]+$");
+        value.addProperty("description", "The value as text; left out for a variable without a value.");
+        JsonObject time = type("string");
+        time.addProperty("format", "date-time");
+        schemas.add("WiredVariable", object("value", value, "creation_time", time, "update_time", time));
         schemas.add(
-                "Entry",
+                "PagedVariableItem",
                 object(
-                        "entityId",
+                        "id",
                         type("integer"),
+                        "name",
+                        type("string"),
+                        "unique_id",
+                        type("string"),
                         "value",
-                        type("integer"),
-                        "createdAt",
-                        type("integer"),
-                        "updatedAt",
-                        type("integer")));
+                        value,
+                        "creation_time",
+                        time,
+                        "update_time",
+                        time));
         schemas.add(
-                "Value", object("value", type("integer"), "createdAt", type("integer"), "updatedAt", type("integer")));
-        schemas.add(
-                "EntryPage",
-                object(
-                        "page",
-                        type("integer"),
-                        "pageSize",
-                        type("integer"),
-                        "total",
-                        type("integer"),
-                        "entries",
-                        arrayOf("Entry")));
+                "PagedVariables",
+                object("items", arrayOf("PagedVariableItem"), "page", type("integer"), "size", type("integer")));
         schemas.add("Count", object("count", type("integer")));
-        schemas.add("PutBody", object("value", type("integer")));
-        schemas.add("PatchBody", object("value", type("integer"), "add", type("integer")));
-        schemas.add("GlobalPatchBody", object("value", type("integer"), "add", type("integer")));
-        JsonObject names = new JsonObject();
-        names.addProperty("type", "array");
-        names.add("items", type("string"));
-        schemas.add("BulkDeleteBody", object("names", names));
+        JsonObject input = new JsonObject();
+        input.addProperty("description", "A whole number, as text (\"12\") or as a number.");
+        schemas.add("ValueBody", object("value", input));
+        JsonObject add = type("integer");
+        add.addProperty("description", "Polaris addition: added to the current value instead of value.");
+        schemas.add("PatchBody", object("value", input, "add", add));
+        JsonObject deleteNames = new JsonObject();
+        deleteNames.addProperty("type", "array");
+        deleteNames.add("items", type("string"));
+        schemas.add("BulkDeleteBody", object("variables", deleteNames));
         JsonObject counts = new JsonObject();
         counts.addProperty("type", "object");
         counts.add("additionalProperties", type("integer"));
         schemas.add("BulkDeleteResult", object("deleted", counts));
         schemas.add(
-                "Operation",
+                "BatchRequest",
                 object(
-                        "op",
-                        enumString("set", "add", "delete"),
-                        "targetKind",
-                        enumString("users", "floor", "wall"),
-                        "entityId",
-                        type("integer"),
-                        "value",
-                        type("integer")));
-        schemas.add("BatchBody", object("operations", arrayOf("Operation")));
-        JsonObject result = object("ok", type("boolean"), "entry", ref("Entry"), "error", ref("Error"));
-        schemas.add("BatchResult", object("results", arrayOfSchema(result)));
+                        "op_id",
+                        type("string"),
+                        "method",
+                        enumString("GET", "PUT", "PATCH", "DELETE"),
+                        "path",
+                        type("string"),
+                        "body",
+                        ref("PatchBody")));
+        schemas.add("BatchBody", object("requests", arrayOf("BatchRequest")));
+        schemas.add("BatchError", object("code", enumString(ERROR_CODES), "message", type("string")));
+        JsonObject result = object(
+                "op_id",
+                type("string"),
+                "status",
+                type("integer"),
+                "body",
+                ref("WiredVariable"),
+                "error",
+                ref("BatchError"));
+        schemas.add("BatchResults", object("results", arrayOfSchema(result)));
         JsonObject values = new JsonObject();
         values.addProperty("type", "object");
-        values.addProperty("description", "Variable name to an integer, null (delete) or true (create without value).");
+        values.addProperty(
+                "description",
+                "Variable name to a whole number (text or number), null (delete) or true (Polaris: create"
+                        + " without value).");
         schemas.add("ProfilePatchBody", object("variables", values));
         JsonObject globals = new JsonObject();
         globals.addProperty("type", "object");
-        globals.add("additionalProperties", type("integer"));
+        globals.addProperty("description", "Variable name to a whole number (text or number).");
         schemas.add("GlobalProfilePatchBody", object("variables", globals));
         JsonObject profileValues = new JsonObject();
         profileValues.addProperty("type", "object");
-        profileValues.add("additionalProperties", ref("Value"));
-        schemas.add(
-                "Profile",
-                object(
-                        "targetKind",
-                        type("string"),
-                        "entityId",
-                        type("integer"),
-                        "name",
-                        type("string"),
-                        "variables",
-                        profileValues));
+        profileValues.add("additionalProperties", ref("WiredVariable"));
+        JsonObject owner = object("id", type("integer"), "name", type("string"), "unique_id", type("string"));
+        JsonObject profile = object(
+                "user",
+                owner,
+                "pet",
+                owner,
+                "bot",
+                owner,
+                "furni",
+                owner,
+                "furni_bc",
+                owner,
+                "wall_item",
+                owner,
+                "wall_item_bc",
+                owner,
+                "variables",
+                profileValues);
+        profile.addProperty("description", "One owner field, named after the target kind; none for the room.");
+        schemas.add("Profile", profile);
 
         JsonObject securitySchemes = new JsonObject();
+        securitySchemes.add("readKey", apiKeyHeader("X-Wired-Read-Key"));
+        securitySchemes.add("writeKey", apiKeyHeader("X-Wired-Write-Key"));
         JsonObject bearer = new JsonObject();
         bearer.addProperty("type", "http");
         bearer.addProperty("scheme", "bearer");
+        bearer.addProperty("description", "Older Polaris form: either key.");
         securitySchemes.add("bearerKey", bearer);
-        JsonObject header = new JsonObject();
-        header.addProperty("type", "apiKey");
-        header.addProperty("in", "header");
-        header.addProperty("name", "X-Api-Key");
+        JsonObject header = apiKeyHeader("X-Api-Key");
+        header.addProperty("description", "Older Polaris form: either key.");
         securitySchemes.add("apiKeyHeader", header);
 
         JsonObject components = new JsonObject();
         components.add("schemas", schemas);
         components.add("securitySchemes", securitySchemes);
         return components;
+    }
+
+    private static JsonObject apiKeyHeader(String name) {
+        JsonObject header = new JsonObject();
+        header.addProperty("type", "apiKey");
+        header.addProperty("in", "header");
+        header.addProperty("name", name);
+        return header;
     }
 
     private static JsonObject object(Object... properties) {
@@ -357,9 +433,12 @@ final class WiredApiOpenApi {
                 .append("</style></head><body><h1>Variables Web API</h1>")
                 .append("<p>Base path <code>")
                 .append(escape(WiredApiRouter.PREFIX))
-                .append("</code>. Send the key as <code>Authorization: Bearer &lt;key&gt;</code> ")
-                .append("(or <code>X-Api-Key</code>); keys in the URL are refused. ")
-                .append("Errors look like <code>{\"error\":{\"code\",\"message\"}}</code>. ")
+                .append("</code>, in the format of Habbo's Wired Variables API. Send the read key as ")
+                .append("<code>X-Wired-Read-Key</code> and the write key as <code>X-Wired-Write-Key</code> ")
+                .append("(<code>Authorization: Bearer</code> and <code>X-Api-Key</code> still work); ")
+                .append("keys in the URL are refused. Values travel as text (<code>\"12\"</code>), ")
+                .append("times as ISO 8601. Errors look like ")
+                .append("<code>{\"error\":\"wired.variables.key_invalid\"}</code>. ")
                 .append("The OpenAPI document is at <a href=\"")
                 .append(escape(WiredApiRouter.DOCS_PATH))
                 .append("\">")

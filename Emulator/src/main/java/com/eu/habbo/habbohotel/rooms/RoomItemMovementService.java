@@ -1077,11 +1077,21 @@ final class RoomItemMovementService {
             return helperHeight;
         }
 
-        HabboItem topItem = this.getTopPhysicsItemAt(x, y, exclude, physics);
+        // Moving through furni only skips the blocking; the furni still lands on the whole stack.
+        HabboItem topItem = this.getTopPhysicsItemAt(x, y, exclude, null);
         if (topItem != null) {
-            return topItem.getZ() + (topItem.getBaseItem().allowSit() ? 0 : Item.getCurrentHeight(topItem));
+            return landingHeight(
+                    topItem.getZ(),
+                    Item.getCurrentHeight(topItem),
+                    topItem.getBaseItem().allowSit(),
+                    physics != null && physics.shouldIgnoreFurni(topItem));
         }
 
         return height;
+    }
+
+    /** A seat is landed in, except one moved through, which is stacked onto like any other furni. */
+    static double landingHeight(double topZ, double topHeight, boolean topIsSeat, boolean movedThrough) {
+        return topZ + ((topIsSeat && !movedThrough) ? 0 : topHeight);
     }
 }

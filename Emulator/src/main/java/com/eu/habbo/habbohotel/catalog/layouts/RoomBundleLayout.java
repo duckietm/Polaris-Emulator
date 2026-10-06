@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.catalog.CatalogItem;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.WebApiBoxSql;
 import com.eu.habbo.habbohotel.permissions.RankLimits;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomManager;
@@ -205,7 +206,7 @@ public class RoomBundleLayout extends SingleBundle {
 
             try (PreparedStatement statement = connection.prepareStatement(
                     "INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, limited_data, guild_id, allow_underpass) (SELECT ?, ?, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, ?, ?, allow_underpass FROM items WHERE room_id = ?"
-                            + " AND item_id NOT IN (SELECT id FROM items_base WHERE interaction_type = 'wf_xtra_var_web_api'))",
+                            + " AND item_id NOT IN (" + WebApiBoxSql.BASE_ITEM_IDS + "))",
                     Statement.RETURN_GENERATED_KEYS)) {
                 statement.setInt(1, userId);
                 statement.setInt(2, roomId);

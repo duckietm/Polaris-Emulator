@@ -173,10 +173,9 @@ public class RoomFurniVariableManager {
             existingAssignment.setValue(normalizedValue, Emulator.getIntUnixTimestamp());
         }
 
+        // A temporary variable has no saved row (see RoomUserVariableManager.assignVariable).
         if (definition.isPermanentAvailability()) {
             this.upsertPersistentAssignment(furniId, definitionItemId, assignments.get(definitionItemId));
-        } else {
-            this.deletePersistentAssignment(furniId, definitionItemId);
         }
 
         if (changed
@@ -432,7 +431,10 @@ public class RoomFurniVariableManager {
             this.activeAssignmentsByFurniId.remove(furniId, assignments);
         }
 
-        this.deletePersistentAssignment(furniId, definitionItemId);
+        WiredExtraFurniVariable removedDefinition = this.getDefinition(definitionItemId);
+        if (removedDefinition == null || removedDefinition.isPermanentAvailability()) {
+            this.deletePersistentAssignment(furniId, definitionItemId);
+        }
         this.emitVariableChangedEvents(furniId, extra, definitionInfo, hadBefore, previousValue, false, null);
         this.broadcastSnapshot();
 

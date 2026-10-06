@@ -20,8 +20,11 @@ public class RedeemCommand extends Command {
 
     @Override
     public boolean handle(final GameClient gameClient, String[] params) throws Exception {
-        if (gameClient.getHabbo().getHabboInfo().getCurrentRoom().getActiveTradeForHabbo(gameClient.getHabbo()) != null)
-            return false;
+        if (gameClient.getHabbo().getHabboInfo().getCurrentRoom().getActiveTradeForHabbo(gameClient.getHabbo())
+                != null) {
+            gameClient.getHabbo().whisperLocalized("generic.cannot_do_that", RoomChatMessageBubbles.ALERT);
+            return true;
+        }
         List<HabboItem> items = new ArrayList<>();
 
         int credits = 0;

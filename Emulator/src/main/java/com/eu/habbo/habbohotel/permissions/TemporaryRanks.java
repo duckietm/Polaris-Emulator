@@ -3,6 +3,9 @@ package com.eu.habbo.habbohotel.permissions;
 import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.database.SqlQueries;
 import com.eu.habbo.habbohotel.GameEnvironment;
+import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.messages.outgoing.users.UserPerksComposer;
+import com.eu.habbo.messages.outgoing.users.UserPermissionsComposer;
 import com.eu.habbo.threading.ThreadPooling;
 import java.util.List;
 import java.util.Optional;
@@ -29,6 +32,9 @@ public final class TemporaryRanks {
 
     private final AtomicBoolean started = new AtomicBoolean();
 
+    /** Overrides that ran out up to this time have had their users refreshed. */
+    private volatile int overridesCheckedUntil;
+
     /** Starts the once-a-minute check; later calls do nothing. */
     void start(ThreadPooling threading) {
         if (threading != null && this.started.compareAndSet(false, true)) {
@@ -50,8 +56,13 @@ public final class TemporaryRanks {
                 SWEEP_MS);
     }
 
-    /** Gives every user whose time is up their previous rank back. */
     void sweep(int now) {
+        this.endTemporaryRanks(now);
+        this.refreshExpiredOverrides(now);
+    }
+
+    /** Gives every user whose time is up their previous rank back. */
+    private void endTemporaryRanks(int now) {
         List<Row> due;
 
         try {
@@ -81,6 +92,46 @@ public final class TemporaryRanks {
 
             clear(row.userId());
         }
+    }
+
+    /**
+     * A timed override that ran out changes what the client may show: drop the cached values and
+     * send online users their permissions and perks again.
+     */
+    void refreshExpiredOverrides(int now) {
+        int from = overrideCheckStart(this.overridesCheckedUntil, now);
+        this.overridesCheckedUntil = now;
+
+        List<Integer> users;
+
+        try {
+            users = SqlQueries.query(
+                    "SELECT DISTINCT user_id FROM user_permission_overrides WHERE expires_at > ? AND expires_at <= ?",
+                    rs -> rs.getInt("user_id"),
+                    from,
+                    now);
+        } catch (SqlQueries.DataAccessException e) {
+            LOGGER.error("Failed to read expired permission overrides", e);
+            return;
+        }
+
+        GameEnvironment environment = WiredPlatform.gameEnvironment();
+
+        for (int userId : users) {
+            environment.getPermissionsManager().getOverrides().invalidate(userId);
+
+            Habbo online = environment.getHabboManager().getHabbo(userId);
+
+            if (online != null && online.getClient() != null) {
+                online.getClient().sendResponse(new UserPermissionsComposer(online));
+                online.getClient().sendResponse(new UserPerksComposer(online));
+            }
+        }
+    }
+
+    /** The first check looks two sweeps back; later ones start where the last ended. */
+    static int overrideCheckStart(int checkedUntil, int now) {
+        return checkedUntil > 0 ? checkedUntil : now - (int) (SWEEP_MS / 1000L) * 2;
     }
 
     /**

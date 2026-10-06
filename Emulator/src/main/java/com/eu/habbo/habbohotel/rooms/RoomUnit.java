@@ -810,7 +810,7 @@ public class RoomUnit {
         RoomUserRotation rotation =
                 (RoomUserRotation.values()[Rotation.Calculate(this.getX(), this.getY(), location.x, location.y)]);
 
-        if (Math.abs(rotation.getValue() - this.bodyRotation.getValue()) <= 1) {
+        if (RoomUserRotation.rotationDistance(rotation.getValue(), this.bodyRotation.getValue()) <= 1) {
             this.headRotation = rotation;
         }
     }

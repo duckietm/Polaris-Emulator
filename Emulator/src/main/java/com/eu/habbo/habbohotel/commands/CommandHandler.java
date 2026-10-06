@@ -10,6 +10,7 @@ import com.eu.habbo.habbohotel.pets.PetCommand;
 import com.eu.habbo.habbohotel.pets.PetVocalsType;
 import com.eu.habbo.habbohotel.pets.RideablePet;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.rooms.RoomRightLevels;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserTypingComposer;
 import com.eu.habbo.plugin.events.users.UserCommandEvent;
@@ -25,6 +26,11 @@ import org.slf4j.LoggerFactory;
 public class CommandHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CommandHandler.class);
+
+    static final String GENERIC_ERROR_KEY = "commands.error.generic";
+    static final String GENERIC_ERROR_FALLBACK = "Something went wrong running that command.";
+    static final String NO_PERMISSION_KEY = "commands.error.no_permission";
+    static final String NO_PERMISSION_FALLBACK = "You do not have permission to use this command.";
 
     private static final Map<String, Command> commands = new HashMap<>(5);
     private static final Comparator<Command> ALPHABETICAL_ORDER = new Comparator<Command>() {
@@ -56,7 +62,58 @@ public class CommandHandler {
         }
     }
 
+    /** What running a line as a command did. Only {@link #SUCCESS} counts as handled for RCON, wired and plugins. */
+    enum CommandOutcome {
+        /** Not a known command (or a pet command): the line stays plain chat. */
+        UNKNOWN(false),
+        SUCCESS(true),
+        /** The command ran and returned false; easter eggs rely on the line still being said. */
+        RETURNED_FALSE(false),
+        /** The command threw. */
+        FAILED(true),
+        /** A known command the user may not use. */
+        NO_PERMISSION(true);
+
+        private final boolean consumesChat;
+
+        CommandOutcome(boolean consumesChat) {
+            this.consumesChat = consumesChat;
+        }
+
+        boolean consumesChat() {
+            return this.consumesChat;
+        }
+    }
+
+    /**
+     * Runs a command line. Returns true only when the command ran successfully; used by RCON, wired,
+     * sticky poles and plugins, so it gives no extra feedback.
+     */
     public static boolean handleCommand(GameClient gameClient, String commandLine) {
+        return execute(gameClient, commandLine) == CommandOutcome.SUCCESS;
+    }
+
+    /**
+     * Runs a line the player typed. A failing or forbidden command is answered with a whisper and not said
+     * in the room; returns true when the line must not be said as chat.
+     */
+    public static boolean handleChatCommand(GameClient gameClient, String commandLine) {
+        CommandOutcome outcome = execute(gameClient, commandLine);
+
+        if (outcome == CommandOutcome.FAILED) {
+            gameClient
+                    .getHabbo()
+                    .whisperLocalizedOrDefault(GENERIC_ERROR_KEY, GENERIC_ERROR_FALLBACK, RoomChatMessageBubbles.ALERT);
+        } else if (outcome == CommandOutcome.NO_PERMISSION) {
+            gameClient
+                    .getHabbo()
+                    .whisperLocalizedOrDefault(NO_PERMISSION_KEY, NO_PERMISSION_FALLBACK, RoomChatMessageBubbles.ALERT);
+        }
+
+        return outcome.consumesChat();
+    }
+
+    private static CommandOutcome execute(GameClient gameClient, String commandLine) {
         if (gameClient != null && commandLine != null) {
             if (commandLine.startsWith(":")) {
                 commandLine = commandLine.replaceFirst(":", "");
@@ -68,6 +125,7 @@ public class CommandHandler {
                         for (String s : command.keys) {
                             if (s.equalsIgnoreCase(parts[0])) {
                                 boolean succes = false;
+                                boolean failed = false;
                                 if (command.permission == null
                                         || gameClient
                                                 .getHabbo()
@@ -112,7 +170,9 @@ public class CommandHandler {
                                         Emulator.getPluginManager().fireEvent(userExecuteCommandEvent);
 
                                         if (userExecuteCommandEvent.isCancelled()) {
-                                            return userExecuteCommandEvent.isSuccess();
+                                            return userExecuteCommandEvent.isSuccess()
+                                                    ? CommandOutcome.SUCCESS
+                                                    : CommandOutcome.RETURNED_FALSE;
                                         }
 
                                         if (gameClient.getHabbo().getHabboInfo().getCurrentRoom() != null)
@@ -134,6 +194,7 @@ public class CommandHandler {
                                         succes = event.succes;
                                     } catch (Exception e) {
                                         LOGGER.error("Caught exception", e);
+                                        failed = true;
                                     }
 
                                     if (gameClient
@@ -151,9 +212,15 @@ public class CommandHandler {
                                                         commandLine,
                                                         succes));
                                     }
+
+                                    if (failed) {
+                                        return CommandOutcome.FAILED;
+                                    }
+
+                                    return succes ? CommandOutcome.SUCCESS : CommandOutcome.RETURNED_FALSE;
                                 }
 
-                                return succes;
+                                return CommandOutcome.NO_PERMISSION;
                             }
                         }
                     }
@@ -161,12 +228,12 @@ public class CommandHandler {
             } else {
                 String[] args = commandLine.split(" ");
 
-                if (args.length <= 1) return false;
+                if (args.length <= 1) return CommandOutcome.UNKNOWN;
 
                 if (gameClient.getHabbo().getHabboInfo().getCurrentRoom() != null) {
                     Room room = gameClient.getHabbo().getHabboInfo().getCurrentRoom();
 
-                    if (room.getCurrentPets().isEmpty()) return false;
+                    if (room.getCurrentPets().isEmpty()) return CommandOutcome.UNKNOWN;
 
                     for (Pet pet : room.getCurrentPets().values()) {
                         if (pet != null) {
@@ -211,7 +278,7 @@ public class CommandHandler {
                 }
             }
         }
-        return false;
+        return CommandOutcome.UNKNOWN;
     }
 
     public static Command getCommand(String key) {

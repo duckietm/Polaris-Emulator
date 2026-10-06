@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.habbicons.HabbiconService;
 import com.eu.habbo.habbohotel.messenger.Message;
 import com.eu.habbo.habbohotel.messenger.MessengerBuddy;
+import com.eu.habbo.habbohotel.messenger.StaffChatBuddy;
 import com.eu.habbo.habbohotel.messenger.history.MessengerHistoryService;
 import com.eu.habbo.habbohotel.messenger.history.MessengerHistoryServices;
 import com.eu.habbo.habbohotel.messenger.history.MessengerStoredMessage;
@@ -16,6 +17,7 @@ import com.eu.habbo.messages.outgoing.habbicons.UserHabbiconsComposer;
 
 public final class SendMessengerMessageEvent extends MessageHandler {
     private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(SendMessengerMessageEvent.class);
+    private static final int TEXT_MESSAGE = 0;
 
     @Override
     public void handle() {
@@ -26,14 +28,22 @@ public final class SendMessengerMessageEvent extends MessageHandler {
         String message = FriendInputGuard.normalizeMessage(packet.readString());
         String metadata = packet.readString();
         int senderId = client.getHabbo().getHabboInfo().getId();
+        boolean hasStaffChat = client.getHabbo().hasPermission(StaffChatBuddy.PERMISSION_KEY);
 
         try {
             if (!client.getHabbo().getHabboStats().allowTalk()) throw new IllegalStateException("muted");
-            if (!FriendInputGuard.isValidMessageTarget(conversationId, recipientId))
+            if (!FriendInputGuard.isValidMessageTarget(conversationId, recipientId, hasStaffChat))
                 throw new IllegalArgumentException("invalid message target");
+            // Same per-user console limit as the Flash message packet.
+            if (client.getHabbo().getHabboStats().consoleMessageFlooded(System.currentTimeMillis()))
+                throw new IllegalStateException("flood");
             if (conversationId <= 0) {
                 MessengerBuddy buddy = client.getHabbo().getMessenger().getFriend(recipientId);
                 if (buddy == null) throw new SecurityException("not friends");
+                if (FriendInputGuard.isStaffChatTarget(recipientId, hasStaffChat)) {
+                    this.sendStaffChat(buddy, confirmationId, type, message, metadata);
+                    return;
+                }
             }
             HabbiconService.Item habbicon = null;
             if (type == MessengerHistoryService.HABBICON_MESSAGE) {
@@ -78,5 +88,18 @@ public final class SendMessengerMessageEvent extends MessageHandler {
         } catch (java.sql.SQLException | RuntimeException exception) {
             client.sendResponse(new MessengerMessageFailedComposer(confirmationId, 7));
         }
+    }
+
+    /** Staff Chat is a broadcast, not a stored conversation: text only, acknowledged without history ids. */
+    private void sendStaffChat(MessengerBuddy buddy, int confirmationId, int type, String message, String metadata) {
+        if (type != TEXT_MESSAGE || message.isEmpty() || !metadata.isEmpty())
+            throw new IllegalArgumentException("Staff Chat takes plain text only");
+
+        buddy.onMessageReceived(client.getHabbo(), message);
+        int senderId = client.getHabbo().getHabboInfo().getId();
+        client.sendResponse(new MessengerMessageAckComposer(
+                confirmationId,
+                new MessengerStoredMessage(
+                        0, 0, senderId, type, message, metadata, System.currentTimeMillis() / 1000)));
     }
 }

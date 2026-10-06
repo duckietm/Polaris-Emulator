@@ -591,6 +591,10 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         }
     }
 
+    void loadAccessData() {
+        if (!this.isLoaded()) this.loader.loadAccessData();
+    }
+
     /**
      * Internal method that performs the actual room data loading.
      * Uses parallel loading for independent operations to reduce total load time.

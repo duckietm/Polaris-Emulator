@@ -57,6 +57,8 @@ public abstract class Server {
     protected final EventLoopGroup workerGroup;
     private final String name;
     private final String host;
+    private static final int STOP_WAIT_SECONDS = 5;
+
     private final int port;
     private volatile boolean listening;
     private volatile Channel serverChannel;
@@ -156,19 +158,22 @@ public abstract class Server {
     public void stop() {
         this.listening = false;
         LOGGER.info("Stopping {}", this.name);
-        if (this.serverChannel != null) {
-            this.serverChannel.close().syncUninterruptibly();
+        // Bounded waits: the shutdown saves rooms and users after this, so a group that never reports
+        // termination (seen after long runs, on the RCON server) must not hold it up forever.
+        if (this.serverChannel != null
+                && !this.serverChannel.close().awaitUninterruptibly(STOP_WAIT_SECONDS, TimeUnit.SECONDS)) {
+            LOGGER.warn("{}: listener did not close within {} s, continuing", this.name, STOP_WAIT_SECONDS);
         }
-        try {
-            this.workerGroup
-                    .shutdownGracefully(100, 3000, TimeUnit.MILLISECONDS)
-                    .sync();
-            this.bossGroup.shutdownGracefully(100, 3000, TimeUnit.MILLISECONDS).sync();
-        } catch (InterruptedException e) {
-            LOGGER.error("Exception during {} shutdown... HARD STOP", this.name, e);
-            Thread.currentThread().interrupt();
-        }
+        awaitTermination(this.workerGroup, "workers");
+        awaitTermination(this.bossGroup, "boss");
         LOGGER.info("Stopped {}", this.name);
+    }
+
+    private void awaitTermination(EventLoopGroup group, String role) {
+        if (!group.shutdownGracefully(100, 3000, TimeUnit.MILLISECONDS)
+                .awaitUninterruptibly(STOP_WAIT_SECONDS, TimeUnit.SECONDS)) {
+            LOGGER.warn("{}: {} did not stop within {} s, continuing", this.name, role, STOP_WAIT_SECONDS);
+        }
     }
 
     public ServerBootstrap getServerBootstrap() {

@@ -22,6 +22,7 @@ import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
@@ -69,25 +70,31 @@ public class RoomRightsManager {
     }
 
     /**
-     * Loads rights from database.
+     * Loads rights from database. The entry checks and the full room load may both run this,
+     * so the list is swapped under a lock instead of filled in place.
      */
     public void loadRights(Connection connection) {
-        this.rights.clear();
+        IntList loaded = new IntArrayList();
         try (PreparedStatement statement =
                 connection.prepareStatement("SELECT user_id FROM room_rights WHERE room_id = ?")) {
             statement.setInt(1, this.room.getId());
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
-                    int userId = set.getInt("user_id");
-                    if (this.legacyRights != null) {
-                        this.legacyRights.add(userId);
-                    } else {
-                        this.rights.add(userId);
-                    }
+                    loaded.add(set.getInt("user_id"));
                 }
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
+        }
+
+        synchronized (this) {
+            if (this.legacyRights != null) {
+                this.legacyRights.clear();
+                this.legacyRights.addAll(loaded);
+            } else {
+                this.rights.clear();
+                this.rights.addAll(loaded);
+            }
         }
     }
 

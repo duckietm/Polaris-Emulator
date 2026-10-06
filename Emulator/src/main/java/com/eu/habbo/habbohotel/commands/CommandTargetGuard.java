@@ -5,11 +5,10 @@ import com.eu.habbo.habbohotel.permissions.Rank;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
 
-final class CommandTargetGuard {
-    private CommandTargetGuard() {
-    }
+public final class CommandTargetGuard {
+    private CommandTargetGuard() {}
 
-    static boolean canTarget(Habbo moderator, Habbo target) {
+    public static boolean canTarget(Habbo moderator, Habbo target) {
         return target != null && canTarget(moderator, target.getHabboInfo());
     }
 

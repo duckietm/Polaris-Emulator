@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.wired.core;
 
+import com.eu.habbo.habbohotel.rooms.HeavyWiredRooms;
 import com.eu.habbo.habbohotel.rooms.Room;
 import java.util.Arrays;
 import java.util.Map;
@@ -290,7 +291,11 @@ final class WiredExecutionGuard {
     }
 
     WiredRoomDiagnostics diagnostics(int roomId) {
-        return this.roomDiagnostics.computeIfAbsent(roomId, ignored -> newDiagnostics(currentLimits()));
+        return this.roomDiagnostics.computeIfAbsent(roomId, ignored -> {
+            WiredRoomDiagnostics diagnostics = newDiagnostics(currentLimits());
+            diagnostics.onHeavyChange((heavy, now) -> HeavyWiredRooms.mark(roomId, heavy, now));
+            return diagnostics;
+        });
     }
 
     WiredRoomDiagnostics.Snapshot snapshot(int roomId) {
@@ -365,10 +370,12 @@ final class WiredExecutionGuard {
 
     void clearRoomDiagnostics(int roomId) {
         this.roomDiagnostics.remove(roomId);
+        HeavyWiredRooms.forget(roomId);
     }
 
     void clearAllDiagnostics() {
         this.roomDiagnostics.clear();
+        HeavyWiredRooms.forgetAll();
     }
 
     void clearRoomDiagnosticsLogs(int roomId) {
@@ -500,19 +507,18 @@ final class WiredExecutionGuard {
 
         if (limited && mayBan && tracker.shouldBan(maximumEvents)) {
             int eventCount = tracker.eventCount();
-            diagnostics(roomId)
-                    .recordKilled(
-                            now,
-                            String.format(
-                                    "Rate limit exceeded for %s with %d event(s) in %dms",
-                                    eventType.name(), eventCount, windowMs),
-                            eventType.name(),
-                            0);
+            String reason = String.format(
+                    "Rate limit exceeded for %s with %d event(s) in %dms", eventType.name(), eventCount, windowMs);
 
             long banDurationMs = banDurationMs();
             boolean banned = banDurationMs > 0;
             if (banned) {
+                diagnostics(roomId).recordKilled(now, reason, eventType.name(), 0);
                 this.bannedRooms.put(roomId, now + banDurationMs);
+            } else {
+                // No ban (the default): the rest of the window is dropped and the room keeps running.
+                diagnostics(roomId)
+                        .recordExecutionCap(now, reason + "; the rest of this window is skipped", eventType.name());
             }
             this.rateLimitSink.onLimit(room, eventType, eventCount, currentLimits(), banned);
         }

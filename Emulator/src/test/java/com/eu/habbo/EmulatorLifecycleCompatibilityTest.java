@@ -47,6 +47,9 @@ class EmulatorLifecycleCompatibilityTest {
         Map<Field, Boolean> originalFlags = new LinkedHashMap<>();
         try {
             install(originalFields, "polarisRuntime", runtime);
+            // dispose() flips these too; left set, later tests see a shutting-down emulator.
+            installFlag(originalFlags, "isReady", true);
+            installFlag(originalFlags, "isShuttingDown", false);
             installFlag(originalFlags, "stopped", false);
 
             Method dispose = Emulator.class.getDeclaredMethod("dispose");

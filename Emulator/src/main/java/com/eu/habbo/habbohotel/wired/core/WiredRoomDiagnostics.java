@@ -330,6 +330,7 @@ public final class WiredRoomDiagnostics {
     private volatile int consecutiveHeavyWindows;
     private volatile int consecutiveOverloadWindows;
     private volatile boolean heavy;
+    private volatile java.util.function.BiConsumer<Boolean, Long> heavyListener;
     private volatile String peakExecutionSourceLabel;
     private volatile int peakExecutionSourceId;
     private volatile String peakExecutionReason;
@@ -645,6 +646,7 @@ public final class WiredRoomDiagnostics {
 
             if (!this.heavy && (this.consecutiveHeavyWindows >= this.heavyConsecutiveWindowsThreshold)) {
                 this.heavy = true;
+                notifyHeavy(true, now);
                 record(
                         Type.MARKED_AS_HEAVY,
                         now,
@@ -657,7 +659,22 @@ public final class WiredRoomDiagnostics {
         }
 
         this.consecutiveHeavyWindows = 0;
-        this.heavy = false;
+        if (this.heavy) {
+            this.heavy = false;
+            notifyHeavy(false, now);
+        }
+    }
+
+    /** Told when the room becomes heavy or calms down again. */
+    void onHeavyChange(java.util.function.BiConsumer<Boolean, Long> listener) {
+        this.heavyListener = listener;
+    }
+
+    private void notifyHeavy(boolean nowHeavy, long now) {
+        java.util.function.BiConsumer<Boolean, Long> listener = this.heavyListener;
+        if (listener != null) {
+            listener.accept(nowHeavy, now);
+        }
     }
 
     private void record(Type type, long now, String reason, String sourceLabel, int sourceId) {

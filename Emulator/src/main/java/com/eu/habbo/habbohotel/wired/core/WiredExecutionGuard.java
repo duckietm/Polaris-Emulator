@@ -81,7 +81,9 @@ final class WiredExecutionGuard {
 
     enum EntryKind {
         EVENT,
-        SOURCE_ITEM
+        SOURCE_ITEM,
+        /** Raised by an effect (a signal, a called stack) inside a chain already admitted. */
+        EFFECT
     }
 
     interface LimitSource {
@@ -148,6 +150,7 @@ final class WiredExecutionGuard {
     private final ConcurrentHashMap<String, EventRateTracker> eventRateLimiters = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<PlayerEventKey, long[]> playerEventWindows = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, long[]> timerEventWindows = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, long[]> effectEventWindows = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, Long> bannedRooms = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, WiredRoomDiagnostics> roomDiagnostics = new ConcurrentHashMap<>();
     private volatile ActiveRoomCache recentActiveRoom;
@@ -220,6 +223,12 @@ final class WiredExecutionGuard {
             if (!admitTimerEvent(roomId, now)) {
                 return false;
             }
+        } else if (kind == EntryKind.EFFECT) {
+            // Their chain was admitted already; one signal per furni of a selection crossed the
+            // event limit within a second and stopped the room. Capped per second, never a ban.
+            if (!admitEffectEvent(roomId, now)) {
+                return false;
+            }
         } else if (isRateLimited(roomId, room, eventType, now, player == null)) {
             return false;
         }
@@ -235,7 +244,7 @@ final class WiredExecutionGuard {
             return true;
         }
 
-        if (kind == EntryKind.EVENT) {
+        if (kind != EntryKind.SOURCE_ITEM) {
             diagnostics(roomId)
                     .recordRecursionTimeout(
                             now,
@@ -339,6 +348,7 @@ final class WiredExecutionGuard {
         this.eventRateLimiters.keySet().removeIf(key -> key.startsWith(prefix));
         this.playerEventWindows.keySet().removeIf(key -> key.roomId() == roomId);
         this.timerEventWindows.remove(roomId);
+        this.effectEventWindows.remove(roomId);
         RateTrackerCache cached = this.recentRateTracker;
         if (cached != null && cached.roomId() == roomId) {
             this.recentRateTracker = null;
@@ -349,6 +359,7 @@ final class WiredExecutionGuard {
         this.eventRateLimiters.clear();
         this.playerEventWindows.clear();
         this.timerEventWindows.clear();
+        this.effectEventWindows.clear();
         this.recentRateTracker = null;
     }
 
@@ -405,6 +416,33 @@ final class WiredExecutionGuard {
     }
 
     private record PlayerEventKey(int roomId, int roomUnitId, WiredEvent.Type eventType) {}
+
+    /** Events effects may raise in a room per second (signals, called stacks), all chains together. */
+    static final int EFFECT_EVENTS_PER_SECOND = 1_000;
+
+    private boolean admitEffectEvent(int roomId, long now) {
+        long[] window = this.effectEventWindows.computeIfAbsent(roomId, ignored -> new long[] {now, 0L});
+        boolean admitted;
+        boolean firstDrop;
+        synchronized (window) {
+            if (now - window[0] >= 1_000L) {
+                window[0] = now;
+                window[1] = 0L;
+            }
+            window[1]++;
+            admitted = window[1] <= EFFECT_EVENTS_PER_SECOND;
+            firstDrop = window[1] == EFFECT_EVENTS_PER_SECOND + 1L;
+        }
+        if (firstDrop) {
+            diagnostics(roomId)
+                    .recordExecutionCap(
+                            now,
+                            "More than " + EFFECT_EVENTS_PER_SECOND
+                                    + " signals or stack calls in one second; the rest of this second is skipped",
+                            "signals");
+        }
+        return admitted;
+    }
 
     /** Timer firings a room may run per second, all repeaters together. */
     static final int TIMER_EVENTS_PER_SECOND = 200;

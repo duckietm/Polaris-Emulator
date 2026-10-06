@@ -115,9 +115,26 @@ public final class WiredTriggerSourceUtil {
         }
 
         WiredContext ctx = new WiredContext(event, trigger, DefaultWiredServices.getInstance(), new WiredState(100));
+        List<InteractionWiredEffect> selectors = getOrderedSelectorEffects(room, trigger);
 
-        for (InteractionWiredEffect effect : getOrderedSelectorEffects(room, trigger)) {
-            if (effect.requiresActor() && !ctx.hasActor()) {
+        // Ordinary selectors first, adding up from nothing; filters then narrow what they picked.
+        WiredTargets.Defaults defaults = ctx.targets().setDefaultsAside();
+        try {
+            runSelectors(ctx, room, selectors, false);
+        } finally {
+            ctx.targets().restoreDefaults(defaults);
+        }
+        runSelectors(ctx, room, selectors, true);
+
+        applySelectionFilterExtras(room, trigger, ctx);
+
+        return ctx;
+    }
+
+    private static void runSelectors(
+            WiredContext ctx, Room room, List<InteractionWiredEffect> selectors, boolean filters) {
+        for (InteractionWiredEffect effect : selectors) {
+            if (effect.usesExistingSelectorTargets() != filters || (effect.requiresActor() && !ctx.hasActor())) {
                 continue;
             }
 
@@ -132,10 +149,6 @@ public final class WiredTriggerSourceUtil {
                         ignored);
             }
         }
-
-        applySelectionFilterExtras(room, trigger, ctx);
-
-        return ctx;
     }
 
     private static List<InteractionWiredEffect> getOrderedSelectorEffects(Room room, InteractionWiredTrigger trigger) {

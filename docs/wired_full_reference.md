@@ -179,6 +179,7 @@ The wired runtime has multiple safety layers:
 - recursion depth protection
 - per-room, per-event-type rate limiting (only for events a stack in the room listens to)
 - timer firings (repeaters, timers, at-time triggers) are not counted toward the per-event-type rate limit and can never ban a room; instead a room runs at most `200` timer firings per second, all repeaters together, and the rest of that second is skipped (logged once as an execution cap)
+- events raised by effects inside an admitted chain (signals, called stacks, variable changes) are not counted toward the per-event-type rate limit either and never ban a room; a room runs at most `1000` of them per second and skips the rest of that second (logged once as an execution cap, source `signals`)
 - per-player throttle: an event a player raises by their own action (a click, a chat line, a step) is admitted at most `5` times per second per player and event type
 - temporary room wired ban after abuse (all wired in the room stops, including direct stack calls). Only floods that wired causes itself (loops, chains, delayed effects) ban the room; when players push a room over its rate limit, their extra events are dropped instead, so visitors cannot switch a room's wired off
 - delayed queue cap

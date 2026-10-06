@@ -547,7 +547,12 @@ public final class WiredEngine {
         List<InteractionWiredEffect> executedSelectors = new ArrayList<>();
         WiredEffectPlanner.SelectorPlan selectorPlan = this.effectPlanner.selectorPlan(effects);
 
-        executeSelectorList(selectorPlan.immediate(), ctx, executedSelectors);
+        WiredTargets.Defaults defaults = ctx.targets().setDefaultsAside();
+        try {
+            executeSelectorList(selectorPlan.immediate(), ctx, executedSelectors);
+        } finally {
+            ctx.targets().restoreDefaults(defaults);
+        }
         executeSelectorList(selectorPlan.deferred(), ctx, executedSelectors);
 
         return executedSelectors;

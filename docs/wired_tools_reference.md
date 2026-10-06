@@ -424,7 +424,13 @@ visitor spamming clicks cannot switch the owner's wired off.
 Timer firings (repeaters, timers, at-time triggers) skip this limiter too: a single 50 ms repeater
 fires 200 times per 10 s and used to ban its own room. A room instead runs at most `200` timer
 firings per second across all its repeaters; the rest of that second is skipped and logged once as
-`EXECUTION_CAP` with source `timers`. Recursion past `wired.abuse.max.recursion.depth` records
+`EXECUTION_CAP` with source `timers`.
+
+Events an effect raises inside a chain that was already admitted (signals, called stacks, variable
+changes) skip it as well: a stack sending one signal per furni of a 25-furni selection on a 50 ms
+repeater crossed the limit within a second. A room runs at most `1000` of them per second; the rest
+of that second is skipped and logged once as `EXECUTION_CAP` with source `signals`, never a ban.
+Recursion past `wired.abuse.max.recursion.depth` records
 `RECURSION_TIMEOUT`.
 
 ---

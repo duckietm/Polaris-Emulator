@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionJukeBox;
 import com.eu.habbo.habbohotel.items.interactions.InteractionMoodLight;
 import com.eu.habbo.habbohotel.items.interactions.InteractionMusicDisc;
 import com.eu.habbo.habbohotel.items.interactions.InteractionMuteArea;
+import com.eu.habbo.habbohotel.items.interactions.InteractionObstacle;
 import com.eu.habbo.habbohotel.items.interactions.InteractionPyramid;
 import com.eu.habbo.habbohotel.items.interactions.InteractionQueueSpeedControl;
 import com.eu.habbo.habbohotel.items.interactions.InteractionRoller;
@@ -287,6 +288,7 @@ final class RoomItemRegistry {
                 || item instanceof InteractionTagField
                 || item instanceof InteractionJukeBox
                 || item instanceof InteractionPetBreedingNest
+                || item instanceof InteractionObstacle
                 || item instanceof InteractionBlackHole
                 || item instanceof InteractionWiredHighscore
                 || item instanceof InteractionStickyPole
@@ -312,6 +314,7 @@ final class RoomItemRegistry {
                 || item instanceof InteractionTagField
                 || item instanceof InteractionJukeBox
                 || item instanceof InteractionPetBreedingNest
+                || item instanceof InteractionObstacle
                 || item instanceof InteractionBlackHole
                 || item instanceof InteractionWiredHighscore
                 || item instanceof InteractionStickyPole

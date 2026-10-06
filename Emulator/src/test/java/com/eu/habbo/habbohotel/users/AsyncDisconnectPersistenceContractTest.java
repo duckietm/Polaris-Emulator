@@ -44,7 +44,7 @@ class AsyncDisconnectPersistenceContractTest {
         int cloneCheck = source.indexOf("this.cloneCheck(userId)", firstWait);
         int forceDispose = source.indexOf("disconnectWithReason(", cloneCheck);
         int secondWait = source.indexOf("awaitDisconnectPersistence(userId)", forceDispose);
-        int reload = source.indexOf("binder.bind(statement)", secondWait);
+        int reload = source.indexOf("DetachedRows.read(query, binder::bind)", secondWait);
 
         assertTrue(ticketQuery > publicLoad);
         assertTrue(load > ticketQuery);

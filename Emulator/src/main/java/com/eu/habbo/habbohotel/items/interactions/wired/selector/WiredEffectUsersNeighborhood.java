@@ -164,22 +164,21 @@ public class WiredEffectUsersNeighborhood extends InteractionWiredEffect {
             Collection<RoomUnit> existingTargets) {
         LinkedHashSet<RoomUnit> matched = new LinkedHashSet<>(matchedTargets);
 
+        LinkedHashSet<RoomUnit> picked = matched;
         if (this.invert) {
-            LinkedHashSet<RoomUnit> base = new LinkedHashSet<>(neighborhoodTargets);
-            base.removeAll(matched);
-
-            if (this.filterExisting) {
-                base.retainAll(this.toLinkedHashSet(existingTargets));
-            }
-
-            return base;
+            picked = new LinkedHashSet<>(neighborhoodTargets);
+            picked.removeAll(matched);
         }
 
         if (this.filterExisting) {
-            matched.retainAll(this.toLinkedHashSet(existingTargets));
+            picked.retainAll(this.toLinkedHashSet(existingTargets));
+            return picked;
         }
 
-        return matched;
+        // Adds to what the stack's earlier selectors picked, like every other selector.
+        LinkedHashSet<RoomUnit> result = this.toLinkedHashSet(existingTargets);
+        result.addAll(picked);
+        return result;
     }
 
     private List<int[]> resolveSourcePositions(WiredContext ctx, Room room) {
@@ -223,7 +222,10 @@ public class WiredEffectUsersNeighborhood extends InteractionWiredEffect {
                     return positions;
                 }
 
-                return Collections.emptyList();
+                // The triggering user, as when the stack's default selection held them.
+                return ctx.actor()
+                        .map(actor -> Collections.singletonList(new int[] {actor.getX(), actor.getY()}))
+                        .orElse(Collections.emptyList());
             }
             case SOURCE_FURNI_TRIGGER: {
                 return ctx.sourceItem()

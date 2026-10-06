@@ -860,6 +860,11 @@ public class RoomUnit {
         return this.overridableTiles.contains(tileIndex);
     }
 
+    /** Whether tiles were granted to this unit to walk on whatever their state. */
+    public boolean hasOverrideTiles() {
+        return !this.overridableTiles.isEmpty();
+    }
+
     public void addOverrideTile(RoomTile tile) {
         int tileIndex = (tile.x & 0xFF) | (tile.y << 12);
         if (!this.overridableTiles.contains(tileIndex)) {

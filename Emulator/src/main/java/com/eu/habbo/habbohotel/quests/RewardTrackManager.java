@@ -30,6 +30,7 @@ import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +41,9 @@ import org.slf4j.LoggerFactory;
  */
 public class RewardTrackManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(RewardTrackManager.class);
+
+    /** Task saves queued and not started yet; such a save writes the newest progress when it runs. */
+    private final Set<String> pendingTaskSaves = ConcurrentHashMap.newKeySet();
 
     /** Result codes: 0 is success, the client localizes any other value as reward_track.*.notification.fail.&lt;code&gt;. */
     public static final int RESULT_OK = 0;
@@ -301,7 +305,12 @@ public class RewardTrackManager {
         if (!this.persistent) {
             return;
         }
+        String key = userId + ":" + state.getTrackId() + ":" + taskId;
+        if (!this.pendingTaskSaves.add(key)) {
+            return;
+        }
         this.runPersistence(() -> {
+            this.pendingTaskSaves.remove(key);
             synchronized (state.persistenceLock()) {
                 int count;
                 int peak;

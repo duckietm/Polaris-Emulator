@@ -142,6 +142,7 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
         }
 
         ch.pipeline().addLast("idleEventHandler", new IdleTimeoutHandler(30, 60));
+        ch.pipeline().addLast("gameClientRegistrar", new GameMessageHandler.ClientRegistrar());
         ch.pipeline().addLast(new GameMessageRateLimit());
         ch.pipeline().addLast("packetDispatchMarker", new PacketDispatchMarker());
         ch.pipeline()

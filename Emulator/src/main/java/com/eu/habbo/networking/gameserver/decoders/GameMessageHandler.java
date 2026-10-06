@@ -2,7 +2,7 @@ package com.eu.habbo.networking.gameserver.decoders;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.messages.ClientMessage;
-import com.eu.habbo.messages.PacketManager;
+import com.eu.habbo.networking.gameserver.GameServerAttributes;
 import com.eu.habbo.threading.runnables.ChannelReadHandler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -12,22 +12,42 @@ import io.netty.handler.codec.TooLongFrameException;
 import io.netty.handler.codec.UnsupportedMessageTypeException;
 import io.netty.handler.ssl.NotSslRecordException;
 import io.netty.util.ReferenceCountUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLHandshakeException;
 import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLHandshakeException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ChannelHandler.Sharable
 public class GameMessageHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOGGER = LoggerFactory.getLogger(GameMessageHandler.class);
 
+    /**
+     * Attaches the game client on the event loop when the channel registers. This handler runs on
+     * the packet executor, where registration is queued behind other work under load; a client that
+     * sends its handshake right after connecting then had its first packets dropped (no client yet).
+     */
+    @ChannelHandler.Sharable
+    public static final class ClientRegistrar extends ChannelInboundHandlerAdapter {
+        @Override
+        public void channelRegistered(ChannelHandlerContext ctx) {
+            register(ctx);
+        }
+    }
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) {
+        // Pipelines with a ClientRegistrar already have their client.
+        if (ctx.channel().attr(GameServerAttributes.CLIENT).get() != null) {
+            ctx.fireChannelRegistered();
+            return;
+        }
+        register(ctx);
+    }
+
+    private static void register(ChannelHandlerContext ctx) {
         if (!Emulator.getGameServer().getGameClientManager().addClient(ctx)) {
             ctx.channel().close();
         }
@@ -43,8 +63,10 @@ public class GameMessageHandler extends ChannelInboundHandlerAdapter {
         if (!(msg instanceof ClientMessage)) {
             try {
                 if (Emulator.getConfig().getBoolean("debug.mode")) {
-                    LOGGER.debug("Discarding non-game message {} from {}",
-                            msg.getClass().getSimpleName(), ctx.channel().remoteAddress());
+                    LOGGER.debug(
+                            "Discarding non-game message {} from {}",
+                            msg.getClass().getSimpleName(),
+                            ctx.channel().remoteAddress());
                 }
             } finally {
                 ReferenceCountUtil.release(msg);
@@ -82,29 +104,23 @@ public class GameMessageHandler extends ChannelInboundHandlerAdapter {
         if (Emulator.getConfig().getBoolean("debug.mode")) {
             if (cause instanceof NotSslRecordException) {
                 LOGGER.error("Plaintext received instead of ssl, closing channel");
-            }
-            else if (cause instanceof DecoderException) {
+            } else if (cause instanceof DecoderException) {
                 LOGGER.error("Plaintext received instead of ssl, closing channel");
-            }
-            else if (cause instanceof TooLongFrameException) {
+            } else if (cause instanceof TooLongFrameException) {
                 LOGGER.error("Disconnecting client, reason {}", cause.getMessage());
-            }
-            else if (cause instanceof SSLHandshakeException) {
+            } else if (cause instanceof SSLHandshakeException) {
                 LOGGER.error("URL Request error from source {}", ctx.channel().remoteAddress());
-            }
-            else if (cause instanceof NoSuchAlgorithmException) {
+            } else if (cause instanceof NoSuchAlgorithmException) {
                 LOGGER.error("Invalid SSL algorithm, only TLSv1.2 supported in the request");
-            }
-            else if (cause instanceof KeyManagementException) {
+            } else if (cause instanceof KeyManagementException) {
                 LOGGER.error("Invalid SSL algorithm, only TLSv1.2 supported in the request");
-            }
-            else if (cause instanceof UnsupportedMessageTypeException) {
-                LOGGER.error("There was an illegal SSL request from (X-forwarded-for/CF-Connecting-IP has not being injected yet!) {}", ctx.channel().remoteAddress());
-            }
-            else if (cause instanceof SSLException) {
+            } else if (cause instanceof UnsupportedMessageTypeException) {
+                LOGGER.error(
+                        "There was an illegal SSL request from (X-forwarded-for/CF-Connecting-IP has not being injected yet!) {}",
+                        ctx.channel().remoteAddress());
+            } else if (cause instanceof SSLException) {
                 LOGGER.error("SSL Problem: {}{}", cause.getMessage(), cause);
-            }
-            else {
+            } else {
                 LOGGER.error("Disconnecting client, exception in GameMessageHandler.", cause);
             }
         }

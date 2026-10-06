@@ -18,6 +18,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,9 @@ import org.slf4j.LoggerFactory;
  */
 public class DailyTaskManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DailyTaskManager.class);
+
+    /** Saves queued and not started yet; such a save writes the newest values when it runs. */
+    private final Set<String> pendingSaves = ConcurrentHashMap.newKeySet();
 
     /** The tasks of one user for one day. */
     public static final class UserDailyTasks {
@@ -170,9 +174,14 @@ public class DailyTaskManager {
         if (!this.persistent) {
             return;
         }
-        int repeats = state.getRepeats();
-        int status = state.getStatus();
+        String key = userId + ":" + state.getTaskId() + ":" + state.getDay();
+        if (!this.pendingSaves.add(key)) {
+            return;
+        }
         Emulator.getThreading().run(() -> {
+            this.pendingSaves.remove(key);
+            int repeats = state.getRepeats();
+            int status = state.getStatus();
             try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                     PreparedStatement statement = connection.prepareStatement(
                             "INSERT INTO users_daily_tasks (user_id, task_id, task_day, repeats, status, updated_at)"

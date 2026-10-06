@@ -317,10 +317,10 @@ public class RoomUserVariableManager {
 
         WiredExtraUserVariable definition = (WiredExtraUserVariable) extra;
 
+        // A temporary variable has no saved row: rows go when a variable stops being permanent and
+        // stale ones on load, so no DELETE per assign.
         if (definition.isPermanentAvailability()) {
             this.upsertPersistentAssignment(userId, definitionItemId, assignments.get(definitionItemId));
-        } else {
-            this.deletePersistentAssignment(userId, definitionItemId);
         }
 
         if (changed) {
@@ -645,9 +645,10 @@ public class RoomUserVariableManager {
             this.activeAssignmentsByUserId.remove(userId, assignments);
         }
 
-        this.deletePersistentAssignment(userId, definitionItemId);
-
         WiredExtraUserVariable definition = this.getDefinition(definitionItemId);
+        if (definition == null || definition.isPermanentAvailability()) {
+            this.deletePersistentAssignment(userId, definitionItemId);
+        }
         if (definition != null && definition.isSharedAvailability()) {
             WiredVariableReferenceSupport.clearSharedUserAssignment(this.room.getId(), definitionItemId, userId);
         }

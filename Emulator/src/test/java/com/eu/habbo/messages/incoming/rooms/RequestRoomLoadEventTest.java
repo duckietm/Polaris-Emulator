@@ -75,10 +75,11 @@ class RequestRoomLoadEventTest {
     }
 
     @Test
-    void clientSpawnCoordinatesAreHandedToTheEntryUnresolved() throws Exception {
+    void clientSpawnCoordinatesAreNeverTrusted() throws Exception {
+        // A player could otherwise enter on any open tile (past gates, inside game arenas).
         this.handle(41, 7, 8);
 
-        verify(this.roomManager).enterRoomAt(this.habbo, 41, "", 7, 8);
+        verify(this.roomManager).enterRoomAt(this.habbo, 41, "", -1, -1);
         verify(this.roomManager, never()).getRoom(anyInt());
         verify(this.roomManager, never()).loadRoom(anyInt());
     }

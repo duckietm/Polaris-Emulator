@@ -175,7 +175,6 @@ public final class BuildersClubRecolorService {
                         == to.getInteractionType().getType();
     }
 
-    /** True when neither the user nor the room is still waiting; then the user waits the base cooldown. */
     static boolean admit(int userId, int roomId, long now) {
         if (USER_NEXT.size() >= MAX_TRACKED) {
             USER_NEXT.clear();
@@ -217,8 +216,9 @@ public final class BuildersClubRecolorService {
 
     static Set<Integer> buildersClubItemsIn(Connection connection, int roomId) throws SQLException {
         Set<Integer> ids = new HashSet<>();
-        try (PreparedStatement statement =
-                connection.prepareStatement("SELECT item_id FROM builders_club_items WHERE room_id = ?")) {
+        try (PreparedStatement statement = connection.prepareStatement("SELECT builders_club_items.item_id"
+                + " FROM builders_club_items INNER JOIN items ON items.id = builders_club_items.item_id"
+                + " WHERE items.room_id = ?")) {
             statement.setInt(1, roomId);
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {

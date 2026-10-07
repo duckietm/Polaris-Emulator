@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
+/** The recolor service's queries against the real schema. */
 class BuildersClubRecolorServiceIT {
 
     @Test
@@ -31,13 +32,14 @@ class BuildersClubRecolorServiceIT {
                         + " VALUES ('990013', 1, 'bc_cone*13', 1)");
                 statement.executeUpdate(
                         "INSERT INTO items (id, user_id, room_id, item_id) VALUES (990101, 5, 77, 990012),"
-                                + " (990102, 5, 77, 990012), (990103, 5, 78, 990012)");
+                                + " (990102, 5, 77, 990012), (990103, 5, 78, 990012), (990104, 5, 77, 990012)");
                 statement.executeUpdate("INSERT INTO builders_club_items (item_id, user_id, room_id) VALUES"
-                        + " (990101, 5, 77), (990103, 5, 78)");
+                        + " (990101, 5, 77), (990103, 5, 78), (990104, 5, 0)");
 
                 assertTrue(BuildersClubRecolorService.offeredInBuildersClub(connection, 990013));
                 assertFalse(BuildersClubRecolorService.offeredInBuildersClub(connection, 990014));
-                assertEquals(Set.of(990101), BuildersClubRecolorService.buildersClubItemsIn(connection, 77));
+                // 990104 stands in room 77 although its tracking row still says room 0.
+                assertEquals(Set.of(990101, 990104), BuildersClubRecolorService.buildersClubItemsIn(connection, 77));
 
                 HabboItem placed = mock(HabboItem.class);
                 when(placed.getId()).thenReturn(990101);

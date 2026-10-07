@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.soundboard;
 
+import com.eu.habbo.habbohotel.permissions.Rank;
 import com.eu.habbo.habbohotel.soundboard.SoundboardSound;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -14,7 +15,7 @@ public class SoundboardSettingsComposer extends MessageComposer {
     private final List<SoundboardSound> sounds;
 
     public SoundboardSettingsComposer(boolean enabled, List<SoundboardSound> sounds) {
-        this(enabled, 60, sounds);
+        this(enabled, Rank.DEFAULT_SOUNDBOARD_COOLDOWN_SECONDS, sounds);
     }
 
     public SoundboardSettingsComposer(boolean enabled, int cooldownSeconds, List<SoundboardSound> sounds) {

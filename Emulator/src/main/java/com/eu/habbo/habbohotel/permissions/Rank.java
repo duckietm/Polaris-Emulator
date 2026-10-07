@@ -29,6 +29,9 @@ public class Rank {
     private int creditsTimerAmount;
     private int pixelsTimerAmount;
     private int gotwTimerAmount;
+    /** The soundboard cooldown a rank gets when nothing is configured for it. */
+    public static final int DEFAULT_SOUNDBOARD_COOLDOWN_SECONDS = 60;
+
     private int soundboardCooldownSeconds;
     // Limits this rank raises (0 = the hotel setting); see RankLimits.
     private int maxRooms;
@@ -49,7 +52,7 @@ public class Rank {
         this.creditsTimerAmount = 1;
         this.pixelsTimerAmount = 1;
         this.gotwTimerAmount = 1;
-        this.soundboardCooldownSeconds = 60;
+        this.soundboardCooldownSeconds = DEFAULT_SOUNDBOARD_COOLDOWN_SECONDS;
     }
 
     public void load(ResultSet set) throws SQLException {
@@ -103,7 +106,8 @@ public class Rank {
         this.pixelsTimerAmount = set.getInt("auto_pixels_amount");
         this.gotwTimerAmount = set.getInt("auto_gotw_amount");
         int loadedSoundboardCooldown = set.getInt("soundboard_cooldown_seconds");
-        this.soundboardCooldownSeconds = set.wasNull() || loadedSoundboardCooldown < 0 ? 60 : loadedSoundboardCooldown;
+        this.soundboardCooldownSeconds =
+                set.wasNull() || loadedSoundboardCooldown < 0 ? DEFAULT_SOUNDBOARD_COOLDOWN_SECONDS : loadedSoundboardCooldown;
         this.hasPrefix = !this.prefix.isEmpty();
         this.maxRooms = optionalInt(set, "max_rooms");
         this.maxFriends = optionalInt(set, "max_friends");

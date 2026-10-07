@@ -21,7 +21,11 @@ public class SoundboardSetEnabledEvent extends MessageHandler {
         Room room = this.currentRoom();
         if (room == null) return;
 
-        if (!canToggle(habbo, room)) return;
+        if (!canToggle(habbo, room)) {
+            // The client flips its switch before the server answers; say what is true so it can put it back.
+            SoundboardSettingsSender.send(habbo, room);
+            return;
+        }
 
         boolean enabled = this.packet.readInt() == 1;
 

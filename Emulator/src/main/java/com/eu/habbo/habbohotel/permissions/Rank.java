@@ -106,8 +106,9 @@ public class Rank {
         this.pixelsTimerAmount = set.getInt("auto_pixels_amount");
         this.gotwTimerAmount = set.getInt("auto_gotw_amount");
         int loadedSoundboardCooldown = set.getInt("soundboard_cooldown_seconds");
-        this.soundboardCooldownSeconds =
-                set.wasNull() || loadedSoundboardCooldown < 0 ? DEFAULT_SOUNDBOARD_COOLDOWN_SECONDS : loadedSoundboardCooldown;
+        this.soundboardCooldownSeconds = set.wasNull() || loadedSoundboardCooldown < 0
+                ? DEFAULT_SOUNDBOARD_COOLDOWN_SECONDS
+                : loadedSoundboardCooldown;
         this.hasPrefix = !this.prefix.isEmpty();
         this.maxRooms = optionalInt(set, "max_rooms");
         this.maxFriends = optionalInt(set, "max_friends");

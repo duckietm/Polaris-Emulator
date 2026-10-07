@@ -242,6 +242,12 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
         return this.baseItem;
     }
 
+    public void setBaseItem(Item baseItem) {
+        if (baseItem != null) {
+            this.baseItem = baseItem;
+        }
+    }
+
     public String getWallPosition() {
         return this.wallPosition;
     }

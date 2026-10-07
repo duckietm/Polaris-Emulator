@@ -11291,6 +11291,38 @@
       ]
     },
     {
+      "name": "BUILDERS_CLUB_RECOLOR_FURNI",
+      "direction": "client_to_server",
+      "header": 9480,
+      "java": {
+        "symbol": "BuildersClubRecolorFurniEvent",
+        "className": "BuildersClubRecolorFurniEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/catalog/BuildersClubRecolorFurniEvent.java"
+      },
+      "typescript": {
+        "symbol": "BUILDERS_CLUB_RECOLOR_FURNI",
+        "className": "BuildersClubRecolorFurniMessageComposer",
+        "path": "packages/communication/src/messages/outgoing/catalog/BuildersClubRecolorFurniMessageComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "itemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "colorIndex"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "scope"
+        }
+      ]
+    },
+    {
       "name": "DELETE_ITEM",
       "direction": "client_to_server",
       "header": 10018,

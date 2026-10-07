@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.rooms.users;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.commands.CommandTargetGuard;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
@@ -31,7 +32,8 @@ public class UnmuteUserEvent extends MessageHandler {
 
         Habbo target = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
 
-        if (target == null) {
+        // Not yourself, and not someone of your rank or above (their mute may come from staff).
+        if (!CommandTargetGuard.canTarget(moderator, target)) {
             return;
         }
 

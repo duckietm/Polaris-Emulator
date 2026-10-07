@@ -99,6 +99,7 @@ public class RoomGiftCommand extends Command {
             return true;
         }
 
-        return false;
+        gameClient.getHabbo().whisperLocalized("commands.description.cmd_roomgift", RoomChatMessageBubbles.ALERT);
+        return true;
     }
 }

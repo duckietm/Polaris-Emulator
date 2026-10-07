@@ -22,45 +22,30 @@ After tracing exploitability and compatibility requirements through the complete
 
 ## Remediation status
 
-The findings below describe the audited `main` branch before remediation. The listed remediation pull requests were rechecked on 2026-07-17; none should be treated as deployed until it is merged and any listed database migration is applied.
+The findings below describe the audited `main` branch before remediation. On **2026-10-02** every finding was re-checked against `origin/dev` (`b31066aa`) by static code review: the fix is present in the tree for all 16. The earlier remediation pull requests (#365–#373) were merged upstream on 2026-07-18, except #367, which was closed unmerged; the evidence below is the code now on `dev`. This was a read-only review. The Maven suite was not run for this update, and runtime behavior was not exercised.
 
 **Compatibility invariant:** remediation must be self-contained in Polaris, including Polaris-owned database migrations. Existing CMSs, clients, proxies, packet formats, and external authentication flows must continue working without code or behavior changes. A finding remains open if the only available design would force an external integration to adapt.
 
-| Finding | Status | Pull request / remaining work |
+| Finding | Status on `dev` | Evidence (`Emulator/src/main/java/com/eu/habbo/...`) |
 |---|---|---|
-| SEC-01 | Fixed in open PR | [#365](https://github.com/duckietm/Polaris-Emulator/pull/365) rejects negative/overflowing catalog totals and uses checked quantity arithmetic. |
-| SEC-02 | Fixed in open PR | [#365](https://github.com/duckietm/Polaris-Emulator/pull/365) prevalidates orders, reserves payment atomically, tracks every created resource, and compensates failed delivery. |
-| SEC-03 | Fixed in open PR | [#365](https://github.com/duckietm/Polaris-Emulator/pull/365) uses checked gift/subscription arithmetic, reserves payment before delivery, and refunds failed grants. |
-| SEC-04 | Fixed in open PR | [#369](https://github.com/duckietm/Polaris-Emulator/pull/369) retains the unique claim marker after any partial grant, closing repeatable inflation. A missing suffix is a fail-closed reliability event, not a replay vulnerability. |
-| SEC-05 | Fixed in open PR | [#365](https://github.com/duckietm/Polaris-Emulator/pull/365) checks club price, point, day, and seconds multiplication before mutation. |
-| SEC-06 | Fixed in open PR | [#366](https://github.com/duckietm/Polaris-Emulator/pull/366) bounds count and payload bytes before allocation and adds a handler rate limit. |
-| SEC-08 | Fixed in open PR | [#368](https://github.com/duckietm/Polaris-Emulator/pull/368) rejects wallet overflow, overdraft, and negative balances under the currency lock. |
-| SEC-09 | Fixed in open PR | [#368](https://github.com/duckietm/Polaris-Emulator/pull/368) uses checked `long` aggregation for marketplace claims and both sides of room trades, with wallet-headroom validation before ownership transfer. |
-| SEC-10 | Fixed in open PRs | [#368](https://github.com/duckietm/Polaris-Emulator/pull/368) serializes paid custom-badge quota/payment and provides exact wallet debits; [#365](https://github.com/duckietm/Polaris-Emulator/pull/365) applies an atomic purchase gate and combined debit to catalog, gift, and club flows. |
-| SEC-11 | Fixed in open PR | [#371](https://github.com/duckietm/Polaris-Emulator/pull/371) gives only Polaris-minted SSO tickets a short expiry. Existing CMS tickets with NULL expiry remain compatible and unchanged. |
-| SEC-12 | Fixed in open PR | [#372](https://github.com/duckietm/Polaris-Emulator/pull/372) revokes access/remember sessions on logout and credential change, including direct password changes detected through password binding. |
-| SEC-13 | Fixed in open PR | [#373](https://github.com/duckietm/Polaris-Emulator/pull/373) reuses fresh-login account, IP, and available machine-ID checks before a parked session can resume. |
-| SEC-14 | Fixed in open PR | [#368](https://github.com/duckietm/Polaris-Emulator/pull/368) locks offer/item rows, reserves exact payment, and commits sold state plus durable ownership in one transaction before publishing inventory state. |
-| SEC-15 | Fixed in open PR | [#370](https://github.com/duckietm/Polaris-Emulator/pull/370) applies the shared configured origin allowlist before emitting credentialed CORS headers. |
-| SEC-17 | Fixed in open PR | [#366](https://github.com/duckietm/Polaris-Emulator/pull/366) adds room/item/altar null guards and bounded ingredient lists validated against remaining packet bytes. |
-| SEC-18 | Fixed in open PR | [#365](https://github.com/duckietm/Polaris-Emulator/pull/365) applies one enabled/rank/club page-access policy to direct normal and gift purchases. |
+| SEC-01 | Fixed | `CatalogManager.calculateDiscountedPrice` uses `CatalogPurchaseMath.checkedPrice`; `CatalogPurchaseApplicationService` applies it to club totals. Tests: `CatalogPurchaseMathTest`. |
+| SEC-02 | Fixed (static review) | `CatalogManager.purchaseEntitlementsAtomically` and `purchaseBotsAndPetsAtomically`. Tests: `CatalogPurchaseAtomicityContractTest`, `AtomicCatalogPurchaseContractTest`. Failure paths were not exercised. |
+| SEC-03 | Fixed | `CatalogBuyItemAsGiftEvent` uses `checkedAdd` for the wrap fee and `requireNonNegative` for prices. |
+| SEC-04 | Fixed | `EarningsCenterManager.claim` retains the claim marker after a failed grant (fail-closed); it is only skipped when the marker cannot be written. |
+| SEC-05 | Fixed | `checkedPrice` / `checkedSubscriptionSeconds` in `CatalogPurchaseApplicationService`, `CatalogBuyItemAsGiftEvent`, `CatalogBuyClubDiscountEvent`. |
+| SEC-06 | Fixed (static review) | `JukeBoxRequestTrackDataEvent` validates the count with `PacketGuard.isValidIntList` (max 1,000) before allocating. The handler rate limit added by the original fix was later removed on purpose; the count and remaining-byte guard is what stops the allocation. |
+| SEC-08 | Fixed | `HabboInfo` mutates currencies under `currencyLock` with `Math.addExact` and rejects negative inputs. |
+| SEC-09 | Fixed | `MarketPlace` aggregates claims in `long` and validates with `WalletBalanceMath.checkedBalance`; `RoomTrade` aggregates in `long`. |
+| SEC-10 | Fixed (static review) | Catalog: shared `currencyLock` plus atomic purchase path. `CustomBadgeManager` serializes per user with `userMutationLocks`. Concurrency was not stress-tested. |
+| SEC-11 | Fixed | `SessionEndpoints` sets `auth_ticket_expires_at` on Polaris-minted tickets; NULL-expiry CMS tickets are still accepted (compatibility preserved). |
+| SEC-12 | Fixed | `AccessTokenService.revokeAll` on logout; `AccountChangeEndpoints` revokes remember families and bumps the token version on credential change. |
+| SEC-13 | Fixed | `SecureLoginEvent` calls `habbo.passesConnectionSecurityChecks()` and rejects banned identities before a parked session resumes. |
+| SEC-14 | Fixed (static review) | `MarketPlacePurchaseTransaction.commit` runs under `setAutoCommit(false)` with `commit`/`rollback`. Row-lock details were not re-read. |
+| SEC-15 | Fixed | `AuthHttpUtil`, `BadgeHttpHandler` and other HTTP handlers emit credentialed CORS headers only if `CorsOriginGate.isAllowed` passes. |
+| SEC-17 | Fixed | `CraftingCraftSecretEvent`: room/altar/item null checks and `PacketGuard.isValidIntList` (max 50 ingredients). |
+| SEC-18 | Fixed | `CatalogPageAccessPolicy.canAccess` is used by `CatalogPurchaseApplicationService` and `CatalogBuyItemAsGiftEvent`. |
 
-### Pull request verification matrix
-
-The exact heads below were rechecked on 2026-07-17. Each listed PR was open, mergeable, ready for review (`isDraft=false`), and began with `Finding and fix produced by OpenAI Codex.` GitHub reported no configured checks on these branches, so the complete Maven suite was run locally at every listed commit.
-
-| PR | Exact tested head | Finding coverage | Complete Maven suite |
-|---|---|---|---|
-| [#365](https://github.com/duckietm/Polaris-Emulator/pull/365) | `ac044d86` | SEC-01, SEC-02, SEC-03, SEC-05, catalog portion of SEC-10, SEC-18 | Pass |
-| [#366](https://github.com/duckietm/Polaris-Emulator/pull/366) | `f8619ea4` | SEC-06, SEC-17 | Pass |
-| [#368](https://github.com/duckietm/Polaris-Emulator/pull/368) | `9b156b4b` | SEC-08, SEC-09, SEC-10 custom-badge/wallet portion, SEC-14 | Pass |
-| [#369](https://github.com/duckietm/Polaris-Emulator/pull/369) | `88e5ee2a` | SEC-04 | Pass |
-| [#370](https://github.com/duckietm/Polaris-Emulator/pull/370) | `20372fd7` | SEC-15 | Pass |
-| [#371](https://github.com/duckietm/Polaris-Emulator/pull/371) | `54bda9cd` | SEC-11 | Pass |
-| [#372](https://github.com/duckietm/Polaris-Emulator/pull/372) | `5c20d1be` | SEC-12 | Pass |
-| [#373](https://github.com/duckietm/Polaris-Emulator/pull/373) | `552b2de6` | SEC-13 | Pass |
-
-PR [#367](https://github.com/duckietm/Polaris-Emulator/pull/367) is intentionally closed and provides no current remediation coverage. Its last head was also tested before closure, but a passing test suite is not evidence that its SSO design was proportionate or should be merged.
+Remaining work: add explicit regression tests for any finding without one (marketplace/trade overflow, SEC-13 resume ban, CORS gate) and re-run the full Maven suite on `dev` before treating this table as release evidence.
 
 ### Scope conclusions and exact boundaries
 
@@ -157,7 +142,7 @@ A concrete late-failure shape is a mixed offer containing ordinary furniture fol
 
 **Impact:** database-persistent free items, orphaned inventory rows, inconsistent limited-item counters, and duplication through deliberately constructed multi-item offers.
 
-**Fix:** PR #365 validates deterministic order conditions first, acquires the per-user purchase gate atomically, reserves credits and points under one wallet lock, tracks every created item/bot/pet, and deletes those resources plus refunds payment if a later step fails. Limited logs and selected side effects are deferred until delivery succeeds.
+**Fix (originally PR #365, now on `dev`):** The change validates deterministic order conditions first, acquires the per-user purchase gate atomically, reserves credits and points under one wallet lock, tracks every created item/bot/pet, and deletes those resources plus refunds payment if a later step fails. Limited logs and selected side effects are deferred until delivery succeeds.
 
 ### SEC-03 — Gift wrap fee addition can overflow and make gifts free
 
@@ -174,7 +159,7 @@ Club gift duration also uses `offer.getDays() * 86400` as an `int`, and subscrip
 
 **Impact:** free gifts and corrupted subscription expiry.
 
-**Fix:** PR #365 uses checked addition/multiplication and bounded duration, reserves the exact gift/subscription payment before delivery, compensates every created gift row on failure, and refunds a failed subscription grant.
+**Fix (originally PR #365, now on `dev`):** The change uses checked addition/multiplication and bounded duration, reserves the exact gift/subscription payment before delivery, compensates every created gift row on failure, and refunds a failed subscription grant.
 
 ### SEC-04 — Earnings reward failure allows replay of already-granted currency
 
@@ -191,7 +176,7 @@ If a later SQL-backed reward throws—for example, a configured item ID does not
 
 **Impact:** repeatable currency inflation from one claimable reward definition.
 
-**Fix:** PR #369 never removes the unique claim marker after reward delivery begins. A failed suffix therefore remains fail-closed and the already-delivered prefix cannot be claimed repeatedly. A future outbox may improve automatic reconciliation but is not required to close the inflation path.
+**Fix (originally PR #369, now on `dev`):** The change never removes the unique claim marker after reward delivery begins. A failed suffix therefore remains fail-closed and the already-delivered prefix cannot be claimed repeatedly. A future outbox may improve automatic reconciliation but is not required to close the inflation path.
 
 ### SEC-05 — Club-offer totals retain the original signed-integer weakness
 
@@ -276,7 +261,7 @@ Custom-badge creation has the same issue through concurrent HTTP requests: each 
 
 **Impact:** overspending, negative balances, duplicate/excess resources, and inconsistent purchase state.
 
-**Fix:** PR #368 enforces checked exact wallet debits and serializes paid custom-badge count/payment per user. PR #365 atomically gates catalog/gift/club purchases and combines their credit/point debit. These close the demonstrated concurrent request paths without changing external interfaces.
+**Fix (originally PR #368, now on `dev`):** The change enforces checked exact wallet debits and serializes paid custom-badge count/payment per user. PR #365 (also now on `dev`) atomically gates catalog/gift/club purchases and combines their credit/point debit. These close the demonstrated concurrent request paths without changing external interfaces.
 
 ### SEC-11 — Built-in login mints SSO tickets without setting their expiry
 
@@ -297,7 +282,7 @@ Secure login intentionally leaves the ticket reusable, increasing the replay win
 
 **Impact:** long-lived session hijacking after ticket disclosure and inconsistent login availability. This is not a direct authentication bypass: an attacker must first obtain the exact random ticket.
 
-**Fix:** PR #371 implements the narrow proportional fix: Polaris's password/remember issuers set a fresh short expiry on the existing column, logout clears it, and unchanged external CMS tickets retain legacy NULL-expiry behavior. No second session store or new external contract is introduced.
+**Fix (originally PR #371, now on `dev`):** The change implements the narrow proportional fix: Polaris's password/remember issuers set a fresh short expiry on the existing column, logout clears it, and unchanged external CMS tickets retain legacy NULL-expiry behavior. No second session store or new external contract is introduced.
 
 ### SEC-12 — Access JWTs are not revoked by logout or password change
 
@@ -342,7 +327,7 @@ The listing state transition, item ownership update, buyer inventory update, and
 
 **Impact:** sold-but-undelivered offers, delivered-but-unpaid items, and accounting disagreement after failures.
 
-**Fix:** PR #368 locks the offer and item rows, revalidates the persisted and plugin-adjusted price, reserves an exact atomic wallet debit, commits offer state and item ownership together, refunds on rollback, and publishes inventory state only after commit.
+**Fix (originally PR #368, now on `dev`):** The change locks the offer and item rows, revalidates the persisted and plugin-adjusted price, reserves an exact atomic wallet debit, commits offer state and item ownership together, refunds on rollback, and publishes inventory state only after commit.
 
 ### SEC-15 — Badge API reflects arbitrary origins with credentials enabled
 
@@ -418,15 +403,11 @@ The review also found several meaningful defenses that should be preserved:
 
 These controls reduce exposure but do not provide transactionality or checked arithmetic, which are the two recurring root causes in this report.
 
-## Recommended merge and follow-up order
+## Recommended follow-up order
 
 ### Immediate
 
-1. Merge #365 for catalog arithmetic, delivery compensation, purchase concurrency, and page access.
-2. Merge #368 for wallet invariants, custom-badge concurrency, aggregation safety, and marketplace transfer consistency.
-3. Merge #366 and #369 for packet allocation/crafting guards and earnings replay prevention.
-4. Merge #371, #372, and #373 as the narrow independent authentication/session fixes.
-5. Merge #370 for the isolated badge-origin policy correction.
+All 16 fixes are present on `dev` (see Remediation status). Before release: run the full Maven suite on `dev` and keep CI green.
 
 ### Next release
 

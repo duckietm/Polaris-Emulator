@@ -59,12 +59,20 @@ public class RoomItemManager {
             this.index.items().clear();
         }
 
+        // Everything comes through this connection: a load holds it, so asking the pool for another
+        // per item can starve the pool when several rooms load at once.
+        Set<Integer> buildersClub = this.readBuildersClubItems(connection);
+        this.readOwnerNames(connection, !buildersClub.isEmpty());
+
         try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM items WHERE room_id = ?")) {
             statement.setInt(1, this.room.getId());
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
-                    this.addHabboItem(
-                            Emulator.getGameEnvironment().getItemManager().loadHabboItem(set));
+                    HabboItem item =
+                            Emulator.getGameEnvironment().getItemManager().loadHabboItem(set);
+                    if (item != null) {
+                        this.ownership.add(item, buildersClub.contains(item.getId()), false);
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -77,6 +85,48 @@ public class RoomItemManager {
                     this.room.getId(),
                     this.itemCount(),
                     Room.MAXIMUM_FURNI);
+        }
+    }
+
+    private Set<Integer> readBuildersClubItems(Connection connection) {
+        Set<Integer> ids = new HashSet<>();
+        try (PreparedStatement statement =
+                connection.prepareStatement("SELECT builders_club_items.item_id FROM builders_club_items "
+                        + "INNER JOIN items ON items.id = builders_club_items.item_id WHERE items.room_id = ?")) {
+            statement.setInt(1, this.room.getId());
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    ids.add(set.getInt(1));
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception reading Builders Club items of room {}", this.room.getId(), e);
+        }
+        return ids;
+    }
+
+    /** The names of everyone owning items here, in one query instead of a profile load per owner. */
+    private void readOwnerNames(Connection connection, boolean hasBuildersClubItems) {
+        Int2ObjectMap<String> names = this.index.ownerNames();
+        try (PreparedStatement statement =
+                connection.prepareStatement("SELECT DISTINCT users.id, users.username FROM items "
+                        + "INNER JOIN users ON users.id = items.user_id WHERE items.room_id = ? "
+                        + "AND items.id NOT IN (SELECT item_id FROM builders_club_items)")) {
+            statement.setInt(1, this.room.getId());
+            try (ResultSet set = statement.executeQuery()) {
+                synchronized (names) {
+                    while (set.next()) {
+                        int userId = set.getInt(1);
+                        names.put(
+                                userId,
+                                hasBuildersClubItems && userId == BuildersClubRoomSupport.VIRTUAL_OWNER_ID
+                                        ? BuildersClubRoomSupport.DISPLAY_OWNER_NAME
+                                        : set.getString(2));
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception reading item owner names of room {}", this.room.getId(), e);
         }
     }
 

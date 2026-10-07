@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.IntSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +41,12 @@ public class RoomUserVariableManager {
     private final ConcurrentHashMap<Integer, ConcurrentHashMap<Integer, VariableAssignment>> activeAssignmentsByUserId;
     private final java.util.concurrent.atomic.AtomicBoolean broadcastRequested =
             new java.util.concurrent.atomic.AtomicBoolean(false);
+    /** Holders whose stored values are loaded: from restore until they leave. */
+    private final Set<Integer> residents = ConcurrentHashMap.newKeySet();
+    /** Bumped whenever stored rows of a whole variable are deleted, so a load that raced it reads again. */
+    private final AtomicLong storedClears = new AtomicLong();
+
+    private final RoomUserVariableStore store;
 
     public RoomUserVariableManager(Room room) {
         this(
@@ -52,6 +60,12 @@ public class RoomUserVariableManager {
         this.repository = repository;
         this.currentTimestamp = currentTimestamp;
         this.activeAssignmentsByUserId = new ConcurrentHashMap<>();
+        this.store = new RoomUserVariableStore(room, this, repository, currentTimestamp);
+    }
+
+    /** The values of users in this room and the saved rows of users who are not. */
+    public RoomUserVariableStore getStore() {
+        return this.store;
     }
 
     public void restorePermanentAssignments(Habbo habbo) {
@@ -95,6 +109,7 @@ public class RoomUserVariableManager {
 
         for (Integer holder : present) {
             this.applyRestored(holder, stored.getOrDefault(holder, List.of()));
+            this.residents.add(holder);
         }
         this.broadcastSnapshot();
     }
@@ -105,16 +120,71 @@ public class RoomUserVariableManager {
             return;
         }
 
-        List<RoomUserVariableRepository.StoredAssignment> stored = List.of();
-        try {
-            stored = this.repository.findByUser(this.room.getId(), userId);
-        } catch (SQLException e) {
-            LOGGER.error(
-                    "Failed to restore wired user variables for room {} and user {}", this.room.getId(), userId, e);
+        if (userId > 0) {
+            // Under the user's lock: a web API write of their saved rows lands before this read or waits.
+            ReentrantLock lock = UserVariableLocks.of(this.room.getId(), userId);
+            lock.lock();
+            try {
+                this.restoreStored(userId);
+            } finally {
+                lock.unlock();
+            }
+        } else {
+            this.restoreStored(userId);
         }
-
-        this.applyRestored(userId, stored);
         this.broadcastSnapshot();
+    }
+
+    private void restoreStored(int userId) {
+        for (int attempt = 0; ; attempt++) {
+            long clears = this.storedClears.get();
+            List<RoomUserVariableRepository.StoredAssignment> stored = List.of();
+            try {
+                stored = this.repository.findByUser(this.room.getId(), userId);
+            } catch (SQLException e) {
+                LOGGER.error(
+                        "Failed to restore wired user variables for room {} and user {}", this.room.getId(), userId, e);
+            }
+
+            this.applyRestored(userId, stored);
+            // A variable cleared for everyone while we read must not come back from the old rows.
+            if (this.storedClears.get() == clears || attempt >= 2) {
+                break;
+            }
+        }
+        this.residents.add(userId);
+    }
+
+    /** Whether the live store answers for this holder: loaded and in the room. */
+    boolean isLive(int userId) {
+        return this.residents.contains(userId) && UserVariableHolders.isInRoom(this.room, userId);
+    }
+
+    /** The users (not pets or bots) the live store answers for. */
+    Set<Integer> liveUsers() {
+        Set<Integer> users = new HashSet<>();
+        for (Integer userId : this.residents) {
+            if (userId > 0 && UserVariableHolders.isInRoom(this.room, userId)) {
+                users.add(userId);
+            }
+        }
+        return users;
+    }
+
+    /** Forgets live values a write left behind for a holder that has gone (its rows stay stored). */
+    void dropIfAbsent(int userId) {
+        if (!this.residents.contains(userId) && this.activeAssignmentsByUserId.remove(userId) != null) {
+            this.broadcastSnapshot();
+        }
+    }
+
+    /** The custom variable box behind an id, or null. */
+    WiredExtraUserVariable definitionOf(int definitionItemId) {
+        return this.getDefinition(definitionItemId);
+    }
+
+    InteractionWiredExtra definitionExtraOf(int definitionItemId) {
+        return this.getDefinitionExtra(definitionItemId);
     }
 
     private void applyRestored(int userId, List<RoomUserVariableRepository.StoredAssignment> rows) {
@@ -247,10 +317,10 @@ public class RoomUserVariableManager {
 
         WiredExtraUserVariable definition = (WiredExtraUserVariable) extra;
 
+        // A temporary variable has no saved row: rows go when a variable stops being permanent and
+        // stale ones on load, so no DELETE per assign.
         if (definition.isPermanentAvailability()) {
             this.upsertPersistentAssignment(userId, definitionItemId, assignments.get(definitionItemId));
-        } else {
-            this.deletePersistentAssignment(userId, definitionItemId);
         }
 
         if (changed) {
@@ -575,9 +645,10 @@ public class RoomUserVariableManager {
             this.activeAssignmentsByUserId.remove(userId, assignments);
         }
 
-        this.deletePersistentAssignment(userId, definitionItemId);
-
         WiredExtraUserVariable definition = this.getDefinition(definitionItemId);
+        if (definition == null || definition.isPermanentAvailability()) {
+            this.deletePersistentAssignment(userId, definitionItemId);
+        }
         if (definition != null && definition.isSharedAvailability()) {
             WiredVariableReferenceSupport.clearSharedUserAssignment(this.room.getId(), definitionItemId, userId);
         }
@@ -593,6 +664,7 @@ public class RoomUserVariableManager {
             return;
         }
 
+        this.residents.remove(userId);
         this.room.getArrayVariableManager().clearAssignmentsForUser(userId);
         if (this.activeAssignmentsByUserId.remove(userId) != null) {
             this.broadcastSnapshot();
@@ -618,6 +690,8 @@ public class RoomUserVariableManager {
             return owners.size();
         }
 
+        // Stored rows first, then the live values: a user loading meanwhile reads again (see restoreStored).
+        this.deletePersistentAssignmentsForDefinition(definitionItemId);
         Map<Integer, Integer> previousValues = new LinkedHashMap<>();
         for (Map.Entry<Integer, ConcurrentHashMap<Integer, VariableAssignment>> entry :
                 this.activeAssignmentsByUserId.entrySet()) {
@@ -631,7 +705,6 @@ public class RoomUserVariableManager {
             if (assignments.isEmpty()) this.activeAssignmentsByUserId.remove(entry.getKey(), assignments);
         }
 
-        this.deletePersistentAssignmentsForDefinition(definitionItemId);
         for (Map.Entry<Integer, Integer> entry : previousValues.entrySet()) {
             this.emitVariableChangedEvent(
                     entry.getKey(), definitionItemId, definitionInfo.hasValue(), true, entry.getValue(), false, null);
@@ -641,6 +714,7 @@ public class RoomUserVariableManager {
     }
 
     public void removeDefinition(int definitionItemId) {
+        this.deletePersistentAssignmentsForDefinition(definitionItemId);
         boolean changed = false;
 
         for (Map.Entry<Integer, ConcurrentHashMap<Integer, VariableAssignment>> entry :
@@ -655,7 +729,6 @@ public class RoomUserVariableManager {
             }
         }
 
-        this.deletePersistentAssignmentsForDefinition(definitionItemId);
         WiredExtraUserVariable definition = this.getDefinition(definitionItemId);
         if (definition != null && definition.isSharedAvailability()) {
             WiredVariableReferenceSupport.clearSharedUserDefinition(this.room.getId(), definitionItemId);
@@ -1301,6 +1374,7 @@ public class RoomUserVariableManager {
     private void deletePersistentAssignmentsForDefinition(int definitionItemId) {
         try {
             this.repository.deleteDefinition(this.room.getId(), definitionItemId);
+            this.storedClears.incrementAndGet();
         } catch (SQLException e) {
             LOGGER.error(
                     "Failed to delete permanent wired user variables for room {} and item {}",

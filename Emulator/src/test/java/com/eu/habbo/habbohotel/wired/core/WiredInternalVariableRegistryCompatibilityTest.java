@@ -28,7 +28,18 @@ class WiredInternalVariableRegistryCompatibilityTest {
                 Set.of("@team_red_score", "@team_green_score", "@team_blue_score", "@team_yellow_score"),
                 keys(WiredInternalVariableRegistry.Capability.ROOM_DESTINATION));
         assertEquals(
-                Set.of("@state", "@position_x", "@position_y", "@rotation", "@altitude", "@gravity", "@opacity"),
+                Set.of(
+                        "@state",
+                        "@position_x",
+                        "@position_y",
+                        "@rotation",
+                        "@altitude",
+                        "@gravity",
+                        "@opacity",
+                        "~recolorable_furni.color.rgb",
+                        "~recolorable_furni.color.rgb.r",
+                        "~recolorable_furni.color.rgb.g",
+                        "~recolorable_furni.color.rgb.b"),
                 keys(WiredInternalVariableRegistry.Capability.FURNI_DESTINATION));
         assertEquals(
                 Set.of(
@@ -68,6 +79,10 @@ class WiredInternalVariableRegistryCompatibilityTest {
         assertEquals(
                 Set.of(
                         "~teleport.target_id",
+                        "~recolorable_furni.color.rgb",
+                        "~recolorable_furni.color.rgb.r",
+                        "~recolorable_furni.color.rgb.g",
+                        "~recolorable_furni.color.rgb.b",
                         "@id",
                         "@class_id",
                         "@height",

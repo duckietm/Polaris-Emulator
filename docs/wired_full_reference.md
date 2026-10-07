@@ -97,6 +97,7 @@ Current core rules:
 - default global tick interval: `50ms`
 - hard allowed range: `10ms` to `500ms`
 - worker threads: `wired.tick.workers`, default `min(8, max(2, CPU count))`, allowed `1..32`
+- heavy workers: `wired.tick.heavy.workers`, default `1`, allowed `0..8`. A room the monitor marks heavy moves its timers and signal chains to these workers, so it cannot slow down the other rooms on its usual worker; it moves back after `30` calm seconds. `0` keeps heavy rooms where they are
 - repeaters and other tickables use a shared global tick counter
 - tickables are registered per room and unregistered when the room unloads
 
@@ -179,8 +180,9 @@ The wired runtime has multiple safety layers:
 - recursion depth protection
 - per-room, per-event-type rate limiting (only for events a stack in the room listens to)
 - timer firings (repeaters, timers, at-time triggers) are not counted toward the per-event-type rate limit and can never ban a room; instead a room runs at most `200` timer firings per second, all repeaters together, and the rest of that second is skipped (logged once as an execution cap)
+- events raised by effects inside an admitted chain (signals, called stacks, variable changes) are not counted toward the per-event-type rate limit either and never ban a room; a room runs at most `1000` of them per second and skips the rest of that second (logged once as an execution cap, source `signals`)
 - per-player throttle: an event a player raises by their own action (a click, a chat line, a step) is admitted at most `5` times per second per player and event type
-- temporary room wired ban after abuse (all wired in the room stops, including direct stack calls). Only floods that wired causes itself (loops, chains, delayed effects) ban the room; when players push a room over its rate limit, their extra events are dropped instead, so visitors cannot switch a room's wired off
+- over the per-event-type rate limit, the rest of the window is dropped and the room keeps running (logged once as an execution cap). A temporary room wired ban (all wired in the room stops, including direct stack calls) only applies when `wired.abuse.ban.duration.ms` is above `0`, and then only for floods wired causes itself (loops, chains, delayed effects); when players push a room over its rate limit, their extra events are always just dropped
 - delayed queue cap
 - execution budget per room window: each stack run costs its boxes plus one unit per ten selected furni or users, so a stack that moves or toggles half the room is charged for it
 - deferred event queue cap (`1000` events per drain)
@@ -197,12 +199,12 @@ Main defaults from runtime/config:
 
 - `wired.engine.maxStepsPerStack = 100`
 - `wired.abuse.max.recursion.depth = 10`
-- `wired.abuse.max.events.per.window = 100`
-- `wired.abuse.rate.limit.window.ms = 10000`
-- `wired.abuse.ban.duration.ms = 600000` (`0` disables the ban and only logs)
+- `wired.abuse.max.events.per.window = 1000`
+- `wired.abuse.rate.limit.window.ms = 1000`
+- `wired.abuse.ban.duration.ms = 0` (`0` drops the excess and keeps running; above `0` bans the room's wired for that long)
 - `wired.monitor.usage.window.ms = 1000`
-- `wired.monitor.usage.limit = 1000`
-- `wired.monitor.delayed.events.limit = 100`
+- `wired.monitor.usage.limit = 10000`
+- `wired.monitor.delayed.events.limit = 1000`
 
 Client input is also bounded on save: text params are capped (`hotel.wired.message.max_length`), selections are capped (`hotel.wired.furni.selection.count`), delays are capped (`hotel.wired.max_delay`), numeric params are clamped to their documented range, and variable tokens are normalized to `custom:<id>` or `internal:<key>` (anything else is treated as "no variable").
 
@@ -302,12 +304,13 @@ Value-or-variable settings:
 | `wired.signal.max.depth` | Max nested signal depth (default `100`) |
 | `wired.tick.interval.ms` | Global tick loop interval |
 | `wired.tick.workers` | Tick worker thread count |
+| `wired.tick.heavy.workers` | Extra tick workers for rooms marked heavy (`0` = off) |
 | `wired.tick.debug` | Tick debug logging |
 | `wired.tick.thread.priority` | Tick thread priority |
 | `wired.abuse.max.recursion.depth` | Recursion protection |
 | `wired.abuse.max.events.per.window` | Event spam protection |
 | `wired.abuse.rate.limit.window.ms` | Abuse window size |
-| `wired.abuse.ban.duration.ms` | Temporary room wired-ban duration (`0` = log only) |
+| `wired.abuse.ban.duration.ms` | Temporary room wired-ban duration (`0`, the default, = drop the excess and keep running) |
 | `wired.monitor.usage.window.ms` | Usage monitor window size |
 | `wired.monitor.usage.limit` | Execution budget per window |
 | `wired.monitor.delayed.events.limit` | Delayed queue ceiling |
@@ -351,7 +354,7 @@ Value-or-variable settings:
 - **Class:** `WiredTriggerHabboWalkOnFurni`
 - **Behavior:** fires when a room unit steps onto a furni (the furni's walk-on hook, also one-way gates). Triggering user: the unit that moved. Source furni: the furni stepped on. With picked furni it matches the picked furni or any furni on the same tile as one of them, so a picked tile stack works whichever layer is on top.
 - **Main settings:** int param 0 = furni source (`0` any furni stepped on, `100` picked furni, `200` furni chosen by the stack's selectors; other values fall back to `0`). With no int params the source is `100` when furni were sent, else `0`. Picked furni are only kept for source `100`. The editor offers up to `hotel.wired.furni.selection.count` furni (default 5).
-- **Notes:** source `0` fires for every furni anyone walks onto in the room. Walk events that no stack listens to are not counted toward the room's wired rate limit (100 events of one type per 10 s by default), so busy floors do not get a room's wired banned.
+- **Notes:** source `0` fires for every furni anyone walks onto in the room. Walk events that no stack listens to are not counted toward the room's wired rate limit (1000 events of one type per second by default), so busy floors do not use up a room's wired limits.
 
 ### `wf_trg_walks_off_furni`
 
@@ -2756,7 +2759,7 @@ Conventions used in the entries below:
 ### `wf_xtra_var_web_api`
 
 - **Class:** `WiredExtraVariableWebApi`
-- **Behavior:** the Variables Web API add-on (code 128). It holds a read key and a write key for the room's HTTP API (`/api/public/rooms/{roomId}/...`, contract in `docs/wired/web-api.md`, OpenAPI at `GET /api/public/api-docs`). The API reads and writes the room's permanent custom user, furni and global variables through the same code as the `:wired` creator tools, with change origin "Variable Web API".
+- **Behavior:** the Variables Web API add-on (code 128). It holds a read key and a write key for the room's HTTP API (`/api/public/rooms/{roomId}/...`, contract in `docs/wired/web-api.md`, OpenAPI at `GET /api/public/api-docs`), in the format of Habbo's Wired Variables API (keys in `X-Wired-Read-Key` / `X-Wired-Write-Key`, so habbo-sdk scripts work unchanged). The API reads and writes the room's permanent custom user, furni and global variables through the same code as the `:wired` creator tools, with change origin "Variable Web API".
 - **Main settings:** string param `readKey \t writeKey`, int params `[bulkDelete]`. The owner asks for a key with packet 2819 (`int itemId, boolean isReadKey`); the server mints 32 random bytes (base64url, 43 chars), stores it at once and answers with packet 59 to the owner only. On save a key is kept when sent back and cleared when sent empty; anything else is ignored. Bulk delete needs a write key. Saves by anyone but the owner change nothing.
 - **Notes:** only the box owner sees the keys; everyone else, staff included, gets empty keys, and keys appear in no other packet (debug packet logging prints no body for them). Keys are compared as SHA-256 hashes and never logged. A key only opens the room its box stands in, and only while that room belongs to the box owner. One generate request per box per 2 s. Picking the box up clears both keys and the permission. Stored keys are bound to the item id, so rows copied by room bundles, templates or the marketplace load without keys. Rows saved by the first design (`variableToken`, `writeEnabled`) load without keys; the owner generates new ones. The box cannot be traded, sold, gifted, recycled, put in a chest or wired trade, or given by gift commands; a user owns at most one (catalog purchases and housekeeping grants that would break this are refused) and a room holds at most one. Room bundles and room templates leave it out.
 ### `wf_xtra_rotate_to_dir`

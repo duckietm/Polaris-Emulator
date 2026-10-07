@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.users;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.database.DetachedRows;
 import com.eu.habbo.database.SqlQueries;
 import com.eu.habbo.habbohotel.economy.EconomyLedger;
 import com.eu.habbo.habbohotel.economy.EconomyOperation;
@@ -36,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import javax.sql.rowset.CachedRowSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,20 +75,19 @@ public class HabboManager {
     }
 
     public static HabboInfo getOfflineHabboInfo(int id) {
-        try {
-            return SqlQueries.queryOne("SELECT * FROM users WHERE id = ? LIMIT 1", HabboInfo::new, id)
-                    .orElse(null);
-        } catch (SqlQueries.DataAccessException e) {
-            LOGGER.error("Caught SQL exception", e);
-            return null;
-        }
+        return offlineHabboInfo("SELECT * FROM users WHERE id = ? LIMIT 1", statement -> statement.setInt(1, id));
     }
 
     public static HabboInfo getOfflineHabboInfo(String username) {
-        try {
-            return SqlQueries.queryOne("SELECT * FROM users WHERE username = ? LIMIT 1", HabboInfo::new, username)
-                    .orElse(null);
-        } catch (SqlQueries.DataAccessException e) {
+        return offlineHabboInfo(
+                "SELECT * FROM users WHERE username = ? LIMIT 1", statement -> statement.setString(1, username));
+    }
+
+    /** HabboInfo loads currencies and searches itself, so it is built after the row's connection is back. */
+    private static HabboInfo offlineHabboInfo(String sql, DetachedRows.Binder binder) {
+        try (CachedRowSet row = DetachedRows.read(sql, binder)) {
+            return row.next() ? new HabboInfo(row) : null;
+        } catch (SQLException | SqlQueries.DataAccessException e) {
             LOGGER.error("Caught SQL exception", e);
             return null;
         }
@@ -196,24 +197,22 @@ public class HabboManager {
             return null;
         }
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                PreparedStatement statement = connection.prepareStatement(query)) {
-            binder.bind(statement);
-            try (ResultSet set = statement.executeQuery()) {
-                if (set.next()) {
-                    habbo = new Habbo(set);
+        // The user's row is read first and its connection given back: building the Habbo loads its
+        // currencies, inventory, messenger and more, each on a connection of its own.
+        try (CachedRowSet set = DetachedRows.read(query, binder::bind)) {
+            if (set.next()) {
+                habbo = new Habbo(set);
 
-                    if (habbo.getHabboInfo().firstVisit) {
-                        Emulator.getPluginManager().fireEvent(new UserRegisteredEvent(habbo));
-                    }
-
-                    // NB: il ticket SSO NON viene svuotato qui di proposito. Dietro
-                    // Cloudflare il WebSocket viene droppato e il client ritenta più
-                    // volte con lo STESSO ticket: se lo consumassimo al primo uso, i
-                    // retry (e l'hard-refresh) fallirebbero con "non-existing SSO token".
-                    // Il ticket resta valido fino alla scadenza (auth_ticket_expires_at,
-                    // TTL gestito dal CMS) o finché il CMS non ne scrive uno nuovo / logout.
+                if (habbo.getHabboInfo().firstVisit) {
+                    Emulator.getPluginManager().fireEvent(new UserRegisteredEvent(habbo));
                 }
+
+                // NB: il ticket SSO NON viene svuotato qui di proposito. Dietro
+                // Cloudflare il WebSocket viene droppato e il client ritenta più
+                // volte con lo STESSO ticket: se lo consumassimo al primo uso, i
+                // retry (e l'hard-refresh) fallirebbero con "non-existing SSO token".
+                // Il ticket resta valido fino alla scadenza (auth_ticket_expires_at,
+                // TTL gestito dal CMS) o finché il CMS non ne scrive uno nuovo / logout.
             }
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);

@@ -187,7 +187,12 @@ public final class WiredSourceUtil {
         selectorCtx.setIncludeWiredSelectorItems(originalCtx.includeWiredSelectorItems());
 
         List<InteractionWiredEffect> selectorEffects = getOrderedSelectorEffects(originalCtx, room, triggerItem);
-        executeSelectorEffects(selectorCtx, selectorEffects, false);
+        WiredTargets.Defaults defaults = selectorCtx.targets().setDefaultsAside();
+        try {
+            executeSelectorEffects(selectorCtx, selectorEffects, false);
+        } finally {
+            selectorCtx.targets().restoreDefaults(defaults);
+        }
         executeSelectorEffects(selectorCtx, selectorEffects, true);
 
         applySelectionFilterExtras(room, triggerItem, selectorCtx);

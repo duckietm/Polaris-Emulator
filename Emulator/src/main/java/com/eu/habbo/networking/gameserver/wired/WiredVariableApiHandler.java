@@ -35,7 +35,13 @@ import org.slf4j.LoggerFactory;
 public class WiredVariableApiHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOGGER = LoggerFactory.getLogger(WiredVariableApiHandler.class);
     private static final int MAX_QUERY_PARAMS = 16;
-    private static final List<String> HEADERS = List.of("authorization", "x-api-key", "content-type", "origin");
+    private static final List<String> HEADERS = List.of(
+            WiredApiAuth.READ_KEY_HEADER,
+            WiredApiAuth.WRITE_KEY_HEADER,
+            "authorization",
+            "x-api-key",
+            "content-type",
+            "origin");
 
     private static final class Shared {
         static final WiredApiRouter ROUTER = new WiredApiRouter(
@@ -86,7 +92,7 @@ public class WiredVariableApiHandler extends ChannelInboundHandlerAdapter {
             try {
                 response = this.router().handle(toRequest(ctx, req, decoder, path));
             } catch (IllegalArgumentException e) {
-                response = WiredApiResponse.json(400, WiredApiJson.error("bad_request", "Malformed request."));
+                response = WiredApiResponse.json(400, WiredApiJson.error(WiredApiException.INVALID_REQUEST));
             }
             write(ctx, req, response);
         } finally {

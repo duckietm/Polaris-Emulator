@@ -93,6 +93,7 @@ How it works, what it covers and how to configure it is documented in
 - **Seth / iSetht** — Opacity & Gravity wireds
 - **Puffin** — the MyBoBBa catalogue assets, **xlRaiko** — the clothing pack
 - **bop** — Easter egg exploit & Nitro Memory Leaks
+- **Pathfinder** - This is based on the same logic as plusemu.dev from **Dennis  
 
 ## Community
 

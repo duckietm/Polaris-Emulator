@@ -1,5 +1,6 @@
 package com.eu.habbo.networking.gameserver.auth;
 
+import com.eu.habbo.habbohotel.items.WebApiBoxSql;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -148,12 +149,12 @@ final class RegistrationSupport {
         materializeCustomLayout(conn, templateId, newRoomId);
 
         int itemsInserted = 0;
-        try (PreparedStatement ins = conn.prepareStatement(
-                "INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot, "
+        try (PreparedStatement ins =
+                conn.prepareStatement("INSERT INTO items (user_id, room_id, item_id, wall_pos, x, y, z, rot, "
                         + "extra_data, wired_data, limited_data, guild_id) "
                         + "(SELECT ?, ?, item_id, wall_pos, x, y, z, rot, extra_data, wired_data, '0:0', 0 "
                         + "FROM room_templates_items WHERE template_id = ? "
-                        + "AND item_id NOT IN (SELECT id FROM items_base WHERE interaction_type = 'wf_xtra_var_web_api'))")) {
+                        + "AND item_id NOT IN (" + WebApiBoxSql.BASE_ITEM_IDS + "))")) {
             ins.setInt(1, userId);
             ins.setInt(2, newRoomId);
             ins.setInt(3, templateId);

@@ -10,14 +10,16 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRoomVari
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership;
+import com.eu.habbo.habbohotel.rooms.BuildersClubRoomSupport;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomFurniVariableManager;
 import com.eu.habbo.habbohotel.rooms.RoomUserVariableManager;
+import com.eu.habbo.habbohotel.rooms.RoomUserVariableStore;
+import com.eu.habbo.habbohotel.rooms.RoomUserVariableStore.Order;
 import com.eu.habbo.habbohotel.rooms.RoomVariableManager;
 import com.eu.habbo.habbohotel.rooms.RoomWiredVariableCatalog;
 import com.eu.habbo.habbohotel.rooms.RoomWiredVariableWrites;
 import com.eu.habbo.habbohotel.rooms.UserVariableHolders;
-import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredVariableChangeOrigin;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -28,14 +30,23 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.IntPredicate;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * The hotel's rooms as the variables web API sees them. Reads and writes go through the same
  * catalog and write helpers as the wired creator tools, under the "Variable Web API" change origin.
+ * User values go through the room's {@link RoomUserVariableStore}: live for users in the room, the
+ * saved rows for users who are not.
  */
 final class HotelWiredApiRooms implements WiredApiRooms {
     private static final Logger LOGGER = LoggerFactory.getLogger(HotelWiredApiRooms.class);
@@ -43,7 +54,9 @@ final class HotelWiredApiRooms implements WiredApiRooms {
 
     private static final String STORED_BOX_SQL = "SELECT items.id, items.user_id, items.wired_data FROM items "
             + "INNER JOIN items_base ON items_base.id = items.item_id "
-            + "WHERE items.room_id = ? AND items_base.interaction_type = ? LIMIT 4";
+            + "WHERE items.room_id = ? AND (items_base.interaction_type = ? OR items_base.item_name = ?) LIMIT 4";
+    private static final String BUILDERS_CLUB_SQL = "SELECT builders_club_items.item_id FROM builders_club_items "
+            + "INNER JOIN items ON items.id = builders_club_items.item_id WHERE items.room_id = ?";
 
     private final Cache<Integer, List<WiredExtraVariableWebApi.KeyState>> storedKeys = Caffeine.newBuilder()
             .maximumSize(16_384)
@@ -77,14 +90,20 @@ final class HotelWiredApiRooms implements WiredApiRooms {
 
     private static List<WiredExtraVariableWebApi.KeyState> readStoredKeys(int roomId) {
         Database database = WiredPlatform.database();
-        if (database == null) {
-            return List.of();
-        }
+        return database == null ? List.of() : readStoredKeys(database.getDataSource(), roomId);
+    }
+
+    /**
+     * The keys of the boxes stored in a room. A box is found by interaction or by item name, since a
+     * {@code wf_} item with interaction {@code default} takes its interaction from its name.
+     */
+    static List<WiredExtraVariableWebApi.KeyState> readStoredKeys(DataSource dataSource, int roomId) {
         List<WiredExtraVariableWebApi.KeyState> keys = new ArrayList<>();
-        try (Connection connection = database.getDataSource().getConnection();
+        try (Connection connection = dataSource.getConnection();
                 PreparedStatement statement = connection.prepareStatement(STORED_BOX_SQL)) {
             statement.setInt(1, roomId);
             statement.setString(2, WiredExtraVariableWebApi.INTERACTION_TYPE);
+            statement.setString(3, WiredExtraVariableWebApi.INTERACTION_TYPE);
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
                     WiredExtraVariableWebApi.KeyState state = WiredExtraVariableWebApi.parseStored(
@@ -98,6 +117,45 @@ final class HotelWiredApiRooms implements WiredApiRooms {
             LOGGER.error("Failed to read the web API box of room {}", roomId, e);
         }
         return List.copyOf(keys);
+    }
+
+    /**
+     * Whether an item is of a furni kind: floor or wall, and Builders Club or not. Builders Club items
+     * carry the virtual owner and are tracked in {@code builders_club_items}; the tracking is only
+     * looked up for items with that owner.
+     */
+    static boolean isOfKind(HabboItem item, TargetKind kind, IntPredicate trackedBuildersClub) {
+        if (item == null || item.getBaseItem() == null || kind.scope() != Scope.FURNI) {
+            return false;
+        }
+        FurnitureType type = kind.wall() ? FurnitureType.WALL : FurnitureType.FLOOR;
+        if (item.getBaseItem().getType() != type) {
+            return false;
+        }
+        boolean buildersClub =
+                item.getUserId() == BuildersClubRoomSupport.VIRTUAL_OWNER_ID && trackedBuildersClub.test(item.getId());
+        return buildersClub == kind.buildersClub();
+    }
+
+    /** The Builders Club item ids of a room, read once per request and only when an item needs it. */
+    private static Set<Integer> readBuildersClubItems(int roomId) {
+        Database database = WiredPlatform.database();
+        if (database == null) {
+            return Set.of();
+        }
+        Set<Integer> ids = new HashSet<>();
+        try (Connection connection = database.getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(BUILDERS_CLUB_SQL)) {
+            statement.setInt(1, roomId);
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    ids.add(set.getInt(1));
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Failed to read the Builders Club items of room {}", roomId, e);
+        }
+        return ids;
     }
 
     /** Whether a definition box is a permanent, non-array custom variable of the given scope. */
@@ -116,6 +174,7 @@ final class HotelWiredApiRooms implements WiredApiRooms {
         private final Room room;
         private final WiredExtraVariableWebApi box;
         private List<Variable> variables;
+        private Set<Integer> buildersClubItems;
 
         HotelRoom(Room room) {
             this.room = room;
@@ -231,25 +290,44 @@ final class HotelWiredApiRooms implements WiredApiRooms {
             return variable.scope() == Scope.USER ? userKey(kind, entityId) : entityId;
         }
 
+        private RoomUserVariableStore users() {
+            return this.room.getUserVariableManager().getStore();
+        }
+
         @Override
         public boolean holderExists(TargetKind kind, int entityId) {
-            return switch (kind) {
-                case USERS, PETS, BOTS -> UserVariableHolders.isInRoom(this.room, userKey(kind, entityId));
-                case FLOOR, WALL -> this.furni(kind, entityId) != null;
-            };
+            if (kind == TargetKind.USERS) {
+                return this.users().participates(UserVariableHolders.ofUser(entityId));
+            }
+            return kind.scope() == Scope.USER
+                    ? UserVariableHolders.isInRoom(this.room, userKey(kind, entityId))
+                    : this.furni(kind, entityId) != null;
+        }
+
+        @Override
+        public <T> T atomically(TargetKind kind, int entityId, Supplier<T> work) {
+            return kind == TargetKind.USERS
+                    ? this.users().withUser(UserVariableHolders.ofUser(entityId), work)
+                    : work.get();
         }
 
         private HabboItem furni(TargetKind kind, int entityId) {
             HabboItem item = this.room.getHabboItem(entityId);
-            if (item == null || item.getBaseItem() == null) {
-                return null;
+            return isOfKind(item, kind, this::isTrackedBuildersClubItem) ? item : null;
+        }
+
+        private boolean isTrackedBuildersClubItem(int itemId) {
+            if (this.buildersClubItems == null) {
+                this.buildersClubItems = readBuildersClubItems(this.room.getId());
             }
-            FurnitureType type = kind == TargetKind.WALL ? FurnitureType.WALL : FurnitureType.FLOOR;
-            return item.getBaseItem().getType() == type ? item : null;
+            return this.buildersClubItems.contains(itemId);
         }
 
         @Override
         public String holderName(TargetKind kind, int entityId) {
+            if (kind == TargetKind.USERS) {
+                return this.users().name(UserVariableHolders.ofUser(entityId));
+            }
             if (kind.scope() == Scope.USER) {
                 String name = UserVariableHolders.nameOf(this.room, userKey(kind, entityId));
                 return name.isEmpty() ? null : name;
@@ -260,15 +338,16 @@ final class HotelWiredApiRooms implements WiredApiRooms {
 
         @Override
         public int userIdByName(String username) {
-            Habbo habbo = this.room.getHabbo(username);
-            return habbo != null && habbo.getHabboInfo() != null
-                    ? habbo.getHabboInfo().getId()
-                    : 0;
+            return this.users().userIdByName(username);
         }
 
         @Override
         public Entry entry(Variable variable, TargetKind kind, int entityId) {
             int definition = variable.definitionItemId();
+            if (variable.scope() == Scope.USER && kind == TargetKind.USERS) {
+                RoomUserVariableStore.Value value = this.users().get(UserVariableHolders.ofUser(entityId), definition);
+                return value == null ? null : entry(variable, entityId, value);
+            }
             if (variable.scope() == Scope.USER) {
                 RoomUserVariableManager users = this.room.getUserVariableManager();
                 int key = userKey(kind, entityId);
@@ -292,8 +371,63 @@ final class HotelWiredApiRooms implements WiredApiRooms {
                     furni.getUpdatedAt(entityId, definition));
         }
 
+        private static Entry entry(Variable variable, int entityId, RoomUserVariableStore.Value value) {
+            return new Entry(
+                    entityId, variable.hasValue() ? value.value() : null, value.createdAt(), value.updatedAt());
+        }
+
         @Override
-        public List<Entry> holders(Variable variable, TargetKind kind) {
+        public Map<Variable, Entry> entries(TargetKind kind, int entityId) {
+            if (kind != TargetKind.USERS) {
+                return VariableRoom.super.entries(kind, entityId);
+            }
+            List<Integer> definitions = new ArrayList<>();
+            for (Variable variable : this.variables()) {
+                if (variable.scope() == Scope.USER) {
+                    definitions.add(variable.definitionItemId());
+                }
+            }
+            Map<Integer, RoomUserVariableStore.Value> values =
+                    this.users().all(UserVariableHolders.ofUser(entityId), definitions);
+            Map<Variable, Entry> entries = new LinkedHashMap<>();
+            for (Variable variable : this.variables()) {
+                RoomUserVariableStore.Value value =
+                        variable.scope() == Scope.USER ? values.get(variable.definitionItemId()) : null;
+                if (value != null) {
+                    entries.put(variable, entry(variable, entityId, value));
+                }
+            }
+            return entries;
+        }
+
+        @Override
+        public List<Entry> holderPage(
+                Variable variable, TargetKind kind, Order order, boolean descending, int offset, int limit) {
+            if (kind != TargetKind.USERS) {
+                return WiredApiRooms.page(this.holders(variable, kind), order, descending, offset, limit);
+            }
+            List<Entry> entries = new ArrayList<>();
+            for (RoomUserVariableStore.Holder holder :
+                    this.users().page(variable.definitionItemId(), order, descending, offset, limit)) {
+                entries.add(new Entry(
+                        holder.userId(),
+                        variable.hasValue() ? holder.value() : null,
+                        holder.createdAt(),
+                        holder.updatedAt(),
+                        holder.name() == null || holder.name().isEmpty() ? null : holder.name()));
+            }
+            return entries;
+        }
+
+        @Override
+        public int holderCount(Variable variable, TargetKind kind) {
+            return kind == TargetKind.USERS
+                    ? this.users().count(variable.definitionItemId())
+                    : this.holders(variable, kind).size();
+        }
+
+        /** The holders the live stores know, for everything but users. */
+        private List<Entry> holders(Variable variable, TargetKind kind) {
             List<Entry> entries = new ArrayList<>();
             for (RoomWiredVariableCatalog.Holder holder :
                     RoomWiredVariableCatalog.holders(this.room, catalogId(variable), true)) {
@@ -329,6 +463,12 @@ final class HotelWiredApiRooms implements WiredApiRooms {
         public boolean assign(Variable variable, TargetKind kind, int entityId, Integer value) {
             int target = writeTarget(variable.scope());
             int written = value == null ? 0 : value;
+            if (kind == TargetKind.USERS) {
+                return written(WiredVariableChangeOrigin.call(
+                        WiredVariableChangeOrigin.WEB_API,
+                        () -> this.users()
+                                .put(UserVariableHolders.ofUser(entityId), variable.definitionItemId(), written)));
+            }
             return WiredVariableChangeOrigin.call(
                     WiredVariableChangeOrigin.WEB_API,
                     () -> RoomWiredVariableWrites.assign(
@@ -341,6 +481,12 @@ final class HotelWiredApiRooms implements WiredApiRooms {
 
         @Override
         public boolean update(Variable variable, TargetKind kind, int entityId, int value) {
+            if (kind == TargetKind.USERS) {
+                return written(WiredVariableChangeOrigin.call(
+                        WiredVariableChangeOrigin.WEB_API,
+                        () -> this.users()
+                                .update(UserVariableHolders.ofUser(entityId), variable.definitionItemId(), value)));
+            }
             int target = writeTarget(variable.scope());
             return WiredVariableChangeOrigin.call(
                     WiredVariableChangeOrigin.WEB_API,
@@ -350,6 +496,11 @@ final class HotelWiredApiRooms implements WiredApiRooms {
 
         @Override
         public boolean remove(Variable variable, TargetKind kind, int entityId) {
+            if (kind == TargetKind.USERS) {
+                return written(WiredVariableChangeOrigin.call(
+                        WiredVariableChangeOrigin.WEB_API,
+                        () -> this.users().remove(UserVariableHolders.ofUser(entityId), variable.definitionItemId())));
+            }
             int target = writeTarget(variable.scope());
             return WiredVariableChangeOrigin.call(
                     WiredVariableChangeOrigin.WEB_API,
@@ -376,9 +527,21 @@ final class HotelWiredApiRooms implements WiredApiRooms {
                         : 0;
             }
             int target = writeTarget(variable.scope());
-            return WiredVariableChangeOrigin.call(
-                    WiredVariableChangeOrigin.WEB_API,
-                    () -> RoomWiredVariableWrites.clearAll(this.room, target, variable.definitionItemId()));
+            // The live clear also deletes the saved rows of users who are not in the room; count them first.
+            int absent = variable.scope() == Scope.USER ? this.users().countAbsent(variable.definitionItemId()) : 0;
+            return absent
+                    + WiredVariableChangeOrigin.call(
+                            WiredVariableChangeOrigin.WEB_API,
+                            () -> RoomWiredVariableWrites.clearAll(this.room, target, variable.definitionItemId()));
+        }
+
+        /** A saved-row write of a variable users do not keep is refused like any write for an absent user. */
+        static boolean written(RoomUserVariableStore.Write write) {
+            if (write == RoomUserVariableStore.Write.NOT_SAVED) {
+                throw WiredApiException.forbidden(
+                        WiredApiException.USER_NOT_PARTICIPATING, "The variable is not kept for users who leave.");
+            }
+            return write == RoomUserVariableStore.Write.WRITTEN;
         }
     }
 }

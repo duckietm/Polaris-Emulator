@@ -73,6 +73,7 @@ public class GameServer extends Server {
                     ch.pipeline().addLast(new GameClientMessageLogger());
                 }
                 ch.pipeline().addLast("idleEventHandler", new IdleTimeoutHandler(30, 60));
+                ch.pipeline().addLast("gameClientRegistrar", new GameMessageHandler.ClientRegistrar());
                 ch.pipeline().addLast(new GameMessageRateLimit());
                 ch.pipeline().addLast("packetDispatchMarker", new PacketDispatchMarker());
                 ch.pipeline()
@@ -162,7 +163,9 @@ public class GameServer extends Server {
     public void stop() {
         this.webSocketListening = false;
         if (this.webSocketChannel != null) {
-            this.webSocketChannel.close().syncUninterruptibly();
+            if (!this.webSocketChannel.close().awaitUninterruptibly(5, TimeUnit.SECONDS)) {
+                LOGGER.warn("WebSocket listener did not close within 5 s, continuing");
+            }
         }
         for (GameClient client :
                 new ArrayList<>(this.gameClientManager.getSessions().values())) {

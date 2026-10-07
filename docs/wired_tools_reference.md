@@ -107,12 +107,12 @@ This allows safe rollout during migration.
 | `wired.tick.thread.priority` | `6` | Java thread priority for the tick service. |
 | `wired.highscores.displaycount` | `25` | Seeded but not read by the code; a highscore board shows at most 50 rows. |
 | `wired.abuse.max.recursion.depth` | `10` | Maximum recursive wired depth before execution stops. |
-| `wired.abuse.max.events.per.window` | `100` | Maximum events of one type per room inside the abuse rate-limit window. Events that no stack in the room listens to are not counted (see 4.3.3). |
-| `wired.abuse.rate.limit.window.ms` | `10000` | Time window in milliseconds used by the abuse limiter. |
-| `wired.abuse.ban.duration.ms` | `600000` | Room wired-ban duration in milliseconds after abuse detection. `0` records `KILLED` and logs, but bans nothing. |
+| `wired.abuse.max.events.per.window` | `1000` | Maximum events of one type per room inside the abuse rate-limit window; the rest of the window is dropped. Events that no stack in the room listens to are not counted (see 4.3.3). |
+| `wired.abuse.rate.limit.window.ms` | `1000` | Time window in milliseconds used by the abuse limiter. |
+| `wired.abuse.ban.duration.ms` | `0` | Room wired-ban duration in milliseconds once the rate limit is crossed. `0` drops the rest of the window and logs `EXECUTION_CAP`; above `0` records `KILLED` and bans the room's wired. |
 | `wired.monitor.usage.window.ms` | `1000` | Rolling window size used to calculate monitor usage. |
-| `wired.monitor.usage.limit` | `1000` | Maximum usage budget allowed in one monitor window. |
-| `wired.monitor.delayed.events.limit` | `100` | Maximum delayed wired events that may be pending in one room. |
+| `wired.monitor.usage.limit` | `10000` | Maximum usage budget allowed in one monitor window. |
+| `wired.monitor.delayed.events.limit` | `1000` | Maximum delayed wired events that may be pending in one room. |
 | `wired.monitor.overload.average.ms` | `50` | Average execution threshold in milliseconds for overload tracking. |
 | `wired.monitor.overload.peak.ms` | `150` | Peak execution threshold in milliseconds for overload tracking. |
 | `wired.monitor.overload.consecutive.windows` | `2` | Consecutive overloaded windows required before `EXECUTOR_OVERLOAD`. |
@@ -405,26 +405,36 @@ After `wired.monitor.heavy.consecutive.windows` consecutive heavy windows:
 
 - the room is marked heavy
 - the monitor logs `MARKED_AS_HEAVY`
+- its timers and signal chains move to the heavy workers (`wired.tick.heavy.workers`, default `1`),
+  so it cannot slow down the other rooms on its usual worker; after `30` seconds without a heavy
+  window they move back
 
 ### 4.3.3 Rate limit and `KILLED`
 
 `WiredExecutionGuard` counts events per room and event type inside
 `wired.abuse.rate.limit.window.ms`. An event that no stack in the room listens to is dropped before
 it reaches the limiter (`WiredEventDispatcher.dispatch`), so visitors walking over plates or rolling
-dice cannot run a room into its limit. The first event over `wired.abuse.max.events.per.window`
-records `KILLED` and bans the room's wired for `wired.abuse.ban.duration.ms`; `Killed remaining`
-shows what is left of that ban.
+dice cannot run a room into its limit. Events over `wired.abuse.max.events.per.window` are dropped
+for the rest of the window and the room keeps running; the first one logs `EXECUTION_CAP`. Only when
+`wired.abuse.ban.duration.ms` is above `0` (default `0`) does it record `KILLED` and ban the room's
+wired for that long instead; `Killed remaining` shows what is left of that ban.
 
 Events a player raises by their own action (clicks, chat, steps, anything raised outside a running
 wired effect with a user as actor) are treated differently: each player gets at most `5` events of
 one type per second, and when players push the room over the limit their extra events are dropped
-without a ban. Only floods wired causes itself (loops, chains, delayed effects) ban the room, so a
-visitor spamming clicks cannot switch the owner's wired off.
+without a ban. With a ban configured, only floods wired causes itself (loops, chains, delayed
+effects) ban the room, so a visitor spamming clicks cannot switch the owner's wired off.
 
 Timer firings (repeaters, timers, at-time triggers) skip this limiter too: a single 50 ms repeater
 fires 200 times per 10 s and used to ban its own room. A room instead runs at most `200` timer
 firings per second across all its repeaters; the rest of that second is skipped and logged once as
-`EXECUTION_CAP` with source `timers`. Recursion past `wired.abuse.max.recursion.depth` records
+`EXECUTION_CAP` with source `timers`.
+
+Events an effect raises inside a chain that was already admitted (signals, called stacks, variable
+changes) skip it as well: a stack sending one signal per furni of a 25-furni selection on a 50 ms
+repeater crossed the limit within a second. A room runs at most `1000` of them per second; the rest
+of that second is skipped and logged once as `EXECUTION_CAP` with source `signals`, never a ban.
+Recursion past `wired.abuse.max.recursion.depth` records
 `RECURSION_TIMEOUT`.
 
 ---

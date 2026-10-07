@@ -108,14 +108,16 @@ final class AchievementRewards {
             throws SQLException {
         int badgeId = 0;
         int slot = 0;
+        int ownedLevel = 0;
         List<Integer> obsoleteBadges = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(
                 "SELECT id, badge_code, slot_id FROM users_badges WHERE user_id = ? ORDER BY id FOR UPDATE")) {
             statement.setInt(1, userId);
             try (ResultSet result = statement.executeQuery()) {
                 while (result.next()) {
-                    if (!AchievementManager.isAchievementBadge(result.getString("badge_code"), achievement.name))
-                        continue;
+                    String code = result.getString("badge_code");
+                    if (!AchievementManager.isAchievementBadge(code, achievement.name)) continue;
+                    ownedLevel = Math.max(ownedLevel, badgeLevel(code, achievement.name));
                     if (badgeId == 0) badgeId = result.getInt("id");
                     else obsoleteBadges.add(result.getInt("id"));
                     if (slot == 0) slot = result.getInt("slot_id");
@@ -123,7 +125,7 @@ final class AchievementRewards {
             }
         }
 
-        String badgeCode = "ACH_" + achievement.name + level;
+        String badgeCode = badgeCode(achievement.name, level, ownedLevel);
         try (PreparedStatement statement =
                 connection.prepareStatement("DELETE FROM users_badges WHERE id = ? AND user_id = ?")) {
             statement.setInt(2, userId);
@@ -159,6 +161,21 @@ final class AchievementRewards {
         }
 
         return new Badge(badgeId, badgeCode, slot);
+    }
+
+    /** A higher level granted by hand is kept rather than downgraded to the one just earned. */
+    static String badgeCode(String achievementName, int earnedLevel, int ownedLevel) {
+        return "ACH_" + achievementName + Math.max(earnedLevel, ownedLevel);
+    }
+
+    /** The level digits of an achievement badge code, 0 when they cannot be read. */
+    static int badgeLevel(String badgeCode, String achievementName) {
+        if (!AchievementManager.isAchievementBadge(badgeCode, achievementName)) return 0;
+        try {
+            return Integer.parseInt(badgeCode.substring(("ACH_" + achievementName).length()));
+        } catch (NumberFormatException overflow) {
+            return 0;
+        }
     }
 
     record Badge(int id, String code, int slot) {}

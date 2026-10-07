@@ -5,14 +5,13 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ProfileFriendsComposer extends MessageComposer {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProfileFriendsComposer.class);
@@ -30,11 +29,16 @@ public class ProfileFriendsComposer extends MessageComposer {
         this.userId = userId;
     }
 
+    /** No relationships, for a profile its owner hides from the viewer. */
+    public ProfileFriendsComposer(int userId) {
+        this.userId = userId;
+    }
+
     public ProfileFriendsComposer(Habbo habbo) {
         try {
-            for (Map.Entry<Integer, MessengerBuddy> map : habbo.getMessenger().getFriends().entrySet()) {
-                if (map.getValue().getRelation() == 0)
-                    continue;
+            for (Map.Entry<Integer, MessengerBuddy> map :
+                    habbo.getMessenger().getFriends().entrySet()) {
+                if (map.getValue().getRelation() == 0) continue;
 
                 switch (map.getValue().getRelation()) {
                     case 1:
@@ -63,14 +67,11 @@ public class ProfileFriendsComposer extends MessageComposer {
 
             int total = 0;
 
-            if (!this.lovers.isEmpty())
-                total++;
+            if (!this.lovers.isEmpty()) total++;
 
-            if (!this.friends.isEmpty())
-                total++;
+            if (!this.friends.isEmpty()) total++;
 
-            if (!this.haters.isEmpty())
-                total++;
+            if (!this.haters.isEmpty()) total++;
 
             this.response.appendInt(total);
 

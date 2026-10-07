@@ -1,12 +1,13 @@
 package com.eu.habbo.messages.incoming.friends;
 
+import com.eu.habbo.habbohotel.messenger.StaffChatBuddy;
+
 final class FriendInputGuard {
     static final int MAX_USERNAME_LENGTH = 15;
     static final int MAX_MESSAGE_LENGTH = 255;
     static final int MAX_RELATION_ID = 3;
 
-    private FriendInputGuard() {
-    }
+    private FriendInputGuard() {}
 
     static String normalizeUsername(String username) {
         return username == null ? "" : username.trim();
@@ -44,5 +45,19 @@ final class FriendInputGuard {
 
     static boolean isValidMessageTarget(int conversationId, int recipientId) {
         return isPositiveId(conversationId) || (conversationId == 0 && isPositiveId(recipientId));
+    }
+
+    /** The Staff Chat buddy, only for users holding its permission. */
+    static boolean isStaffChatTarget(int id, boolean hasStaffChat) {
+        return hasStaffChat && id == StaffChatBuddy.BUDDY_ID;
+    }
+
+    static boolean isValidConsoleTarget(int userId, boolean hasStaffChat) {
+        return isPositiveId(userId) || isStaffChatTarget(userId, hasStaffChat);
+    }
+
+    static boolean isValidMessageTarget(int conversationId, int recipientId, boolean hasStaffChat) {
+        return isValidMessageTarget(conversationId, recipientId)
+                || (conversationId == 0 && isStaffChatTarget(recipientId, hasStaffChat));
     }
 }

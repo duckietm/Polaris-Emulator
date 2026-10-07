@@ -11,6 +11,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.eu.habbo.habbohotel.economy.EconomyOperation;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
@@ -292,7 +293,13 @@ class QuestEngineTest {
 
     @Test
     void theRewardTrackPaysLevelPointsAndGatesThePrizes() {
-        RewardTrackManager manager = new RewardTrackManager(false) {};
+        List<EconomyOperation> payments = new ArrayList<>();
+        RewardTrackManager manager = new RewardTrackManager(false) {
+            @Override
+            protected void applyPayment(Habbo payer, List<EconomyOperation> operations) {
+                payments.addAll(operations);
+            }
+        };
         RewardTrack track = new RewardTrack("season_1", "blue", 1, 0, 0, true, 1.5, 50, 25, 0);
         RewardTrack.Task talk = new RewardTrack.Task("talk", "chat_with_someone", "", false, 1);
         talk.addLevel(new RewardTrack.Level(2, 10, false));
@@ -320,7 +327,8 @@ class QuestEngineTest {
         assertEquals(RewardTrackManager.RESULT_PREMIUM_REQUIRED, manager.claim(habbo, "season_1", "p1_premium"));
         assertEquals(RewardTrackManager.RESULT_NOT_ENOUGH_POINTS, manager.claim(habbo, "season_1", "p2"));
         assertEquals(RewardTrackManager.RESULT_UNKNOWN, manager.claim(habbo, "season_1", "nope"));
-        verify(habbo).givePoints(eq(Quest.REWARD_DUCKETS), eq(50), anyString());
+        verify(habbo)
+                .givePoints(eq(Quest.REWARD_DUCKETS), eq(50), anyString(), eq("reward_track:7:season_1:p1"), eq(7));
 
         RewardTracksComposer.Track wire = manager.toWire(track, manager.stateFor(habbo, track));
         assertEquals(2, wire.tasks().get(0).progressCount());
@@ -330,7 +338,9 @@ class QuestEngineTest {
 
         assertEquals(RewardTrackManager.RESULT_OK, manager.purchasePremium(habbo, "season_1"));
         assertEquals(RewardTrackManager.RESULT_ALREADY_PREMIUM, manager.purchasePremium(habbo, "season_1"));
-        verify(habbo).givePoints(eq(QuestRewards.DIAMONDS_POINT_TYPE), eq(-25), anyString());
+        assertEquals(1, payments.size(), "the diamonds are paid through the ledger once");
+        assertEquals(QuestRewards.DIAMONDS_POINT_TYPE, payments.get(0).currencyType());
+        assertEquals(-25, payments.get(0).delta());
         assertEquals(60, manager.stateFor(habbo, track).getPoints(), "the instant points are added");
         assertEquals(RewardTrackManager.RESULT_OK, manager.claim(habbo, "season_1", "p1_premium"));
         assertEquals(RewardTrackManager.RESULT_OK, manager.claim(habbo, "season_1", "p2"));

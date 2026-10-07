@@ -59,8 +59,10 @@ final class WiredEventDispatcher {
         }
 
         int roomId = room.getId();
-        if (!this.guard.tryEnterDeferredPublication(
-                roomId, room, event.getType(), WiredExecutionGuard.EntryKind.EVENT)) {
+        WiredExecutionGuard.EntryKind kind = event.isTriggeredByEffect()
+                ? WiredExecutionGuard.EntryKind.EFFECT
+                : WiredExecutionGuard.EntryKind.EVENT;
+        if (!this.guard.tryEnterDeferredPublication(roomId, room, event.getType(), kind)) {
             return false;
         }
 

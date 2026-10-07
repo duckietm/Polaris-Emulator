@@ -8,7 +8,9 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionJukeBox;
 import com.eu.habbo.habbohotel.items.interactions.InteractionMoodLight;
 import com.eu.habbo.habbohotel.items.interactions.InteractionMusicDisc;
 import com.eu.habbo.habbohotel.items.interactions.InteractionMuteArea;
+import com.eu.habbo.habbohotel.items.interactions.InteractionObstacle;
 import com.eu.habbo.habbohotel.items.interactions.InteractionPyramid;
+import com.eu.habbo.habbohotel.items.interactions.InteractionQueueSpeedControl;
 import com.eu.habbo.habbohotel.items.interactions.InteractionRoller;
 import com.eu.habbo.habbohotel.items.interactions.InteractionSnowboardSlope;
 import com.eu.habbo.habbohotel.items.interactions.InteractionStickyPole;
@@ -286,6 +288,7 @@ final class RoomItemRegistry {
                 || item instanceof InteractionTagField
                 || item instanceof InteractionJukeBox
                 || item instanceof InteractionPetBreedingNest
+                || item instanceof InteractionObstacle
                 || item instanceof InteractionBlackHole
                 || item instanceof InteractionWiredHighscore
                 || item instanceof InteractionStickyPole
@@ -294,7 +297,8 @@ final class RoomItemRegistry {
                 || item instanceof InteractionSnowboardSlope
                 || item instanceof InteractionFireworks
                 || item instanceof InteractionVoteCounter
-                || item instanceof InteractionWiredDisableControl;
+                || item instanceof InteractionWiredDisableControl
+                || item instanceof InteractionQueueSpeedControl;
     }
 
     private static boolean isUndefinedSpecialTypeOnRemoval(HabboItem item) {
@@ -310,6 +314,7 @@ final class RoomItemRegistry {
                 || item instanceof InteractionTagField
                 || item instanceof InteractionJukeBox
                 || item instanceof InteractionPetBreedingNest
+                || item instanceof InteractionObstacle
                 || item instanceof InteractionBlackHole
                 || item instanceof InteractionWiredHighscore
                 || item instanceof InteractionStickyPole
@@ -317,6 +322,7 @@ final class RoomItemRegistry {
                 || item instanceof InteractionTent
                 || item instanceof InteractionSnowboardSlope
                 || item instanceof InteractionVoteCounter
-                || item instanceof InteractionWiredDisableControl;
+                || item instanceof InteractionWiredDisableControl
+                || item instanceof InteractionQueueSpeedControl;
     }
 }

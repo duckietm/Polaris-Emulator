@@ -30,6 +30,14 @@ final class RoomLoader {
         this.operations.loadWiredData();
     }
 
+    /**
+     * Reads only what the entry checks need, without the room contents: the rights. Bans are
+     * already loaded when the room is constructed.
+     */
+    void loadAccessData() {
+        this.operations.loadRights();
+    }
+
     void load(long generation) {
         if (!this.operations.prepare(generation)) {
             return;

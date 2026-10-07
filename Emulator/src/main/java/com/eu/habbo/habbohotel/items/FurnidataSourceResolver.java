@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.slf4j.Logger;
@@ -55,9 +56,26 @@ public final class FurnidataSourceResolver {
         if (fromAssetBase != null && fromAssetBase.ok()) return fromAssetBase;
 
         if (legacyOverridePath != null && !legacyOverridePath.isEmpty()) {
-            Path p = Paths.get(legacyOverridePath);
+            if (FurnidataDownloader.isUrl(legacyOverridePath)) {
+                return FurnidataDownloader.resolve(legacyOverridePath);
+            }
+            Path p;
+            try {
+                p = Paths.get(legacyOverridePath);
+            } catch (InvalidPathException e) {
+                return new Source(
+                        null,
+                        false,
+                        Status.ERROR,
+                        "items.furnidata.path is not a valid path or http(s) URL: \"" + legacyOverridePath + "\"");
+            }
             if (!Files.isDirectory(p) && !FurnidataJson.isSupportedDocument(p)) {
-                return new Source(p, false, Status.ERROR, "Unsupported furnidata format; use .json or .jsonc");
+                return new Source(
+                        p,
+                        false,
+                        Status.ERROR,
+                        "items.furnidata.path must be a local .json/.jsonc file, a furnidata folder or an http(s) URL, not \""
+                                + legacyOverridePath + "\"");
             }
             if (Files.exists(p))
                 return new Source(p, Files.isDirectory(p), Status.RESOLVED, "items.furnidata.path fallback");

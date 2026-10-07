@@ -28,6 +28,8 @@ public final class QuestRewards {
 
     public static final int DIAMONDS_POINT_TYPE = 5;
 
+    private static final String REASON = "quests.reward";
+
     private QuestRewards() {}
 
     /** The official rule: HC members earn double duckets from quests. */
@@ -37,28 +39,52 @@ public final class QuestRewards {
 
     /** activityPointType style rewards: -1 credits, otherwise the points type (0 duckets, 5 diamonds). */
     public static void grantActivityPoints(Habbo habbo, int activityPointType, int amount) {
+        grantActivityPoints(habbo, activityPointType, amount, null);
+    }
+
+    /** With an operation id the ledger applies the grant at most once; null uses a fresh id. */
+    public static void grantActivityPoints(Habbo habbo, int activityPointType, int amount, String operationId) {
         if (habbo == null || amount < 1) {
             return;
         }
         if (activityPointType == Quest.REWARD_CREDITS) {
-            habbo.giveCredits(amount, "quests.reward");
+            if (operationId == null) {
+                habbo.giveCredits(amount, REASON);
+            } else {
+                habbo.giveCredits(
+                        amount, REASON, operationId, habbo.getHabboInfo().getId());
+            }
             return;
         }
         int granted = activityPointType == Quest.REWARD_DUCKETS
                 ? ducketAmount(amount, habbo.getHabboStats().hasActiveClub())
                 : amount;
-        habbo.givePoints(activityPointType, granted, "quests.reward");
+        if (operationId == null) {
+            habbo.givePoints(activityPointType, granted, REASON);
+        } else {
+            habbo.givePoints(
+                    activityPointType,
+                    granted,
+                    REASON,
+                    operationId,
+                    habbo.getHabboInfo().getId());
+        }
     }
 
     /** String reward types used by the daily tasks and the reward track. */
     public static void grantTyped(Habbo habbo, String rewardType, String extra, int amount) {
+        grantTyped(habbo, rewardType, extra, amount, null);
+    }
+
+    /** As above; the operation id makes a currency grant idempotent in the ledger. */
+    public static void grantTyped(Habbo habbo, String rewardType, String extra, int amount, String operationId) {
         if (habbo == null || rewardType == null) {
             return;
         }
         switch (rewardType.trim().toLowerCase()) {
-            case TYPE_CREDITS -> grantActivityPoints(habbo, Quest.REWARD_CREDITS, amount);
-            case TYPE_DUCKETS -> grantActivityPoints(habbo, Quest.REWARD_DUCKETS, amount);
-            case TYPE_DIAMONDS -> grantActivityPoints(habbo, DIAMONDS_POINT_TYPE, amount);
+            case TYPE_CREDITS -> grantActivityPoints(habbo, Quest.REWARD_CREDITS, amount, operationId);
+            case TYPE_DUCKETS -> grantActivityPoints(habbo, Quest.REWARD_DUCKETS, amount, operationId);
+            case TYPE_DIAMONDS -> grantActivityPoints(habbo, DIAMONDS_POINT_TYPE, amount, operationId);
             case TYPE_BADGE -> grantBadge(habbo, extra);
             case TYPE_FURNI -> grantFurni(habbo, extra, amount);
             default -> LOGGER.warn("Unknown quest reward type {}", rewardType);

@@ -1,6 +1,7 @@
 package com.eu.habbo.networking.gameserver.wired;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableWebApi;
+import com.eu.habbo.habbohotel.rooms.RoomUserVariableStore.Order;
 import com.eu.habbo.habbohotel.rooms.UserVariableHolders;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -50,13 +51,20 @@ final class FakeWiredApiRooms implements WiredApiRooms {
         boolean bulk;
         final List<Variable> variables = new ArrayList<>();
         final Map<Integer, String> users = new LinkedHashMap<>();
+        /** Users who are not in the room but have saved values in it. */
+        final Map<Integer, String> absentUsers = new LinkedHashMap<>();
+
         final Map<Integer, String> pets = new LinkedHashMap<>();
         final Map<Integer, String> bots = new LinkedHashMap<>();
-        final Map<Integer, Boolean> furni = new LinkedHashMap<>();
+        final Map<Integer, TargetKind> furni = new LinkedHashMap<>();
         final Map<String, Map<Integer, Entry>> values = new HashMap<>();
         final Map<String, Integer> globals = new HashMap<>();
         int writes;
         long now = 1_000;
+        /** User calls made outside {@link #atomically}; the endpoints should make none. */
+        final List<String> unguardedUserCalls = new ArrayList<>();
+
+        private int guarded;
 
         FakeRoom(int id, String readKey, String writeKey) {
             this.id = id;
@@ -77,6 +85,11 @@ final class FakeWiredApiRooms implements WiredApiRooms {
 
         FakeRoom user(int id, String name) {
             this.users.put(id, name);
+            return this;
+        }
+
+        FakeRoom absentUser(int id, String name) {
+            this.absentUsers.put(id, name);
             return this;
         }
 
@@ -107,12 +120,15 @@ final class FakeWiredApiRooms implements WiredApiRooms {
         }
 
         FakeRoom floor(int id) {
-            this.furni.put(id, true);
-            return this;
+            return this.item(id, TargetKind.FURNI);
         }
 
         FakeRoom wall(int id) {
-            this.furni.put(id, false);
+            return this.item(id, TargetKind.WALL_ITEMS);
+        }
+
+        FakeRoom item(int id, TargetKind kind) {
+            this.furni.put(id, kind);
             return this;
         }
 
@@ -150,18 +166,17 @@ final class FakeWiredApiRooms implements WiredApiRooms {
         @Override
         public boolean holderExists(TargetKind kind, int entityId) {
             return switch (kind) {
-                case USERS -> this.users.containsKey(entityId);
+                case USERS -> this.users.containsKey(entityId) || this.absentUsers.containsKey(entityId);
                 case PETS -> this.pets.containsKey(entityId);
                 case BOTS -> this.bots.containsKey(entityId);
-                case FLOOR -> Boolean.TRUE.equals(this.furni.get(entityId));
-                case WALL -> Boolean.FALSE.equals(this.furni.get(entityId));
+                default -> this.furni.get(entityId) == kind;
             };
         }
 
         @Override
         public String holderName(TargetKind kind, int entityId) {
             return switch (kind) {
-                case USERS -> this.users.get(entityId);
+                case USERS -> this.users.getOrDefault(entityId, this.absentUsers.get(entityId));
                 case PETS -> this.pets.get(entityId);
                 case BOTS -> this.bots.get(entityId);
                 default -> null;
@@ -170,16 +185,35 @@ final class FakeWiredApiRooms implements WiredApiRooms {
 
         @Override
         public int userIdByName(String username) {
-            for (Map.Entry<Integer, String> user : this.users.entrySet()) {
-                if (user.getValue().equals(username)) {
-                    return user.getKey();
+            for (Map<Integer, String> users : List.of(this.users, this.absentUsers)) {
+                for (Map.Entry<Integer, String> user : users.entrySet()) {
+                    if (user.getValue().equals(username)) {
+                        return user.getKey();
+                    }
                 }
             }
             return 0;
         }
 
         @Override
+        public <T> T atomically(TargetKind kind, int entityId, java.util.function.Supplier<T> work) {
+            this.guarded++;
+            try {
+                return work.get();
+            } finally {
+                this.guarded--;
+            }
+        }
+
+        private void guard(String call, TargetKind kind) {
+            if (kind == TargetKind.USERS && this.guarded == 0) {
+                this.unguardedUserCalls.add(call);
+            }
+        }
+
+        @Override
         public Entry entry(Variable variable, TargetKind kind, int entityId) {
+            this.guard("entry", kind);
             if (!this.holderExists(kind, entityId)) {
                 return null;
             }
@@ -188,7 +222,17 @@ final class FakeWiredApiRooms implements WiredApiRooms {
         }
 
         @Override
-        public List<Entry> holders(Variable variable, TargetKind kind) {
+        public List<Entry> holderPage(
+                Variable variable, TargetKind kind, Order order, boolean descending, int offset, int limit) {
+            return WiredApiRooms.page(this.holders(variable, kind), order, descending, offset, limit);
+        }
+
+        @Override
+        public int holderCount(Variable variable, TargetKind kind) {
+            return this.holders(variable, kind).size();
+        }
+
+        List<Entry> holders(Variable variable, TargetKind kind) {
             List<Entry> entries = new ArrayList<>();
             for (Map.Entry<Integer, Entry> stored :
                     this.values.getOrDefault(variable.name(), Map.of()).entrySet()) {
@@ -207,6 +251,7 @@ final class FakeWiredApiRooms implements WiredApiRooms {
 
         @Override
         public boolean assign(Variable variable, TargetKind kind, int entityId, Integer value) {
+            this.guard("assign", kind);
             this.writes++;
             if (!this.holderExists(kind, entityId)) {
                 return false;
@@ -217,6 +262,7 @@ final class FakeWiredApiRooms implements WiredApiRooms {
 
         @Override
         public boolean update(Variable variable, TargetKind kind, int entityId, int value) {
+            this.guard("update", kind);
             this.writes++;
             Entry entry = this.entry(variable, kind, entityId);
             if (entry == null) {
@@ -230,6 +276,7 @@ final class FakeWiredApiRooms implements WiredApiRooms {
 
         @Override
         public boolean remove(Variable variable, TargetKind kind, int entityId) {
+            this.guard("remove", kind);
             this.writes++;
             Map<Integer, Entry> held = this.values.get(variable.name());
             return held != null && held.remove(storeKey(kind, entityId)) != null;

@@ -29,12 +29,15 @@ public class StalkFriendEvent extends MessageHandler {
 
         Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(friendId);
 
-        if (habbo == null || !habbo.isOnline()) {
+        boolean canStalk = this.client.getHabbo().hasPermission("acc_can_stalk");
+
+        // A friend who hides being online looks offline here too, so following does not give it away.
+        if (habbo == null || !habbo.isOnline() || hiddenFrom(habbo.getHabboStats().hideOnline, canStalk)) {
             this.client.sendResponse(new StalkErrorComposer(StalkErrorComposer.FRIEND_OFFLINE));
             return;
         }
 
-        if (habbo.getHabboStats().blockFollowing && !this.client.getHabbo().hasPermission("acc_can_stalk")) {
+        if (habbo.getHabboStats().blockFollowing && !canStalk) {
             this.client.sendResponse(new StalkErrorComposer(StalkErrorComposer.FRIEND_BLOCKED_STALKING));
             return;
         }
@@ -59,5 +62,9 @@ public class StalkFriendEvent extends MessageHandler {
                     this.client.getHabbo(),
                     RoomChatMessageBubbles.ALERT)));
         }
+    }
+
+    static boolean hiddenFrom(boolean hidesOnline, boolean canStalk) {
+        return hidesOnline && !canStalk;
     }
 }

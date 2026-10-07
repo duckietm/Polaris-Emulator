@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.games.GameTeamColors;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.pets.Pet;
+import com.eu.habbo.habbohotel.rooms.BuildersClubPalette;
 import com.eu.habbo.habbohotel.rooms.FurnitureMovementError;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomRightLevels;
@@ -167,6 +168,10 @@ public final class WiredInternalVariableSupport {
                     "@dimensions.x",
                     "@dimensions.y" -> true;
             case "~teleport.target_id" -> item.getTeleportTargetId() > 0;
+            case "~recolorable_furni.color.rgb",
+                    "~recolorable_furni.color.rgb.r",
+                    "~recolorable_furni.color.rgb.g",
+                    "~recolorable_furni.color.rgb.b" -> BuildersClubPalette.hasColor(item);
             case "@wallitem_offset" -> item.getBaseItem().getType() == FurnitureType.WALL;
             case "@gravity" -> item.getBaseItem().getType() == FurnitureType.FLOOR;
             case "@opacity" -> true;
@@ -377,6 +382,10 @@ public final class WiredInternalVariableSupport {
 
         return switch (normalized) {
             case "~teleport.target_id" -> item.getTeleportTargetId();
+            case "~recolorable_furni.color.rgb",
+                    "~recolorable_furni.color.rgb.r",
+                    "~recolorable_furni.color.rgb.g",
+                    "~recolorable_furni.color.rgb.b" -> BuildersClubPalette.read(item, normalized);
             case "@id" -> item.getId();
             case "@class_id" ->
                 (item.getBaseItem() != null) ? item.getBaseItem().getId() : null;
@@ -462,6 +471,11 @@ public final class WiredInternalVariableSupport {
             case "@position_y" -> moveFurniTo(room, item, item.getX(), value, item.getRotation(), item.getZ());
             case "@rotation" -> moveFurniTo(room, item, item.getX(), item.getY(), value, item.getZ());
             case "@altitude" -> moveFurniTo(room, item, item.getX(), item.getY(), item.getRotation(), value / 100.0);
+            // Builders Club furni only, into the nearest colour of its palette.
+            case "~recolorable_furni.color.rgb",
+                    "~recolorable_furni.color.rgb.r",
+                    "~recolorable_furni.color.rgb.g",
+                    "~recolorable_furni.color.rgb.b" -> BuildersClubPalette.write(room, item, normalized, value);
             default -> false;
         };
     }

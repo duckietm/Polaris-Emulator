@@ -32,7 +32,8 @@ final class WiredGlobalPlaceholderSupport {
             + "FROM rooms "
             + "INNER JOIN items ON rooms.id = items.room_id "
             + "INNER JOIN items_base ON items.item_id = items_base.id "
-            + "WHERE rooms.owner_id = ? AND rooms.id <> ? AND items_base.interaction_type = ? "
+            + "WHERE rooms.owner_id = ? AND rooms.id <> ? "
+            + "AND (items_base.interaction_type = ? OR items_base.item_name = ?) "
             + "ORDER BY rooms.name ASC, items.id ASC LIMIT ?";
 
     private WiredGlobalPlaceholderSupport() {}
@@ -50,18 +51,24 @@ final class WiredGlobalPlaceholderSupport {
             return Collections.emptyList();
         }
 
+        return loadShared(dataSource, room.getOwnerId(), room.getId());
+    }
+
+    /** By interaction or by item name, like the item loader's fallback for {@code wf_} items. */
+    static List<SharedPlaceholder> loadShared(DataSource dataSource, int ownerId, int roomId) {
         try (Connection connection = dataSource.getConnection();
                 PreparedStatement statement = connection.prepareStatement(SHARED_SQL)) {
-            statement.setInt(1, room.getOwnerId());
-            statement.setInt(2, room.getId());
+            statement.setInt(1, ownerId);
+            statement.setInt(2, roomId);
             statement.setString(3, INTERACTION_TYPE);
-            statement.setInt(4, MAX_SCANNED_ROWS);
+            statement.setString(4, INTERACTION_TYPE);
+            statement.setInt(5, MAX_SCANNED_ROWS);
 
             try (ResultSet set = statement.executeQuery()) {
                 return readShared(set);
             }
         } catch (SQLException e) {
-            LOGGER.error("Failed to load shared global placeholders for room {}", room.getId(), e);
+            LOGGER.error("Failed to load shared global placeholders for room {}", roomId, e);
             return Collections.emptyList();
         }
     }

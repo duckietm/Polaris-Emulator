@@ -30,6 +30,7 @@ import com.eu.habbo.habbohotel.users.DanceType;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.users.HabboManager;
+import com.eu.habbo.habbohotel.users.HabboStats;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.messages.incoming.users.UserNuxEvent;
 import com.eu.habbo.messages.outgoing.hotelview.HotelViewComposer;
@@ -207,7 +208,9 @@ public class RoomManager {
                 () -> Emulator.getIntUnixTimestamp(),
                 RoomBan::insert);
         this.roomEntryService = new RoomEntryService(
-                roomId -> this.loadRoom(roomId, true),
+                roomId -> this.loadRoom(roomId),
+                Room::loadAccessData,
+                this::ensureRoomDataLoaded,
                 this::getRoom,
                 (habbo, room) -> !Emulator.getPluginManager()
                         .fireEvent(new UserEnterRoomEvent(habbo, room))
@@ -456,12 +459,7 @@ public class RoomManager {
             room = this.activeRooms.get(id);
 
             if (loadData) {
-                if (room.isLoadingInProgress()) {
-                    // Wait for background loading to complete
-                    room.waitForLoad();
-                } else if (room.isPreLoaded() && !room.isLoaded()) {
-                    room.loadData();
-                }
+                this.ensureRoomDataLoaded(room);
             }
 
             return room;
@@ -488,6 +486,30 @@ public class RoomManager {
         }
 
         return room;
+    }
+
+    /**
+     * Whether a room info request may start loading the room contents early: only when the user
+     * can walk in without password, doorbell or rights check, so a refused entry loads nothing.
+     */
+    public static boolean mayPrefetchRoomData(Habbo habbo, Room room) {
+        if (habbo == null || room == null || room.isBanned(habbo)) {
+            return false;
+        }
+        if (room.isOwner(habbo) || habbo.hasPermission(Permission.ACC_ENTERANYROOM)) {
+            return true;
+        }
+        return room.getState() == RoomState.OPEN && !room.isBuildersClubTrialLocked();
+    }
+
+    /** Loads the room contents unless they are loaded already; waits for a load in progress. */
+    void ensureRoomDataLoaded(Room room) {
+        if (room.isLoadingInProgress()) {
+            // Wait for background loading to complete
+            room.waitForLoad();
+        } else if (room.isPreLoaded() && !room.isLoaded()) {
+            room.loadData();
+        }
     }
 
     public Room createRoom(
@@ -675,6 +697,14 @@ public class RoomManager {
         this.roomEntryService.enter(habbo, roomId, password, overrideChecks, doorLocation, isReconnectSpawn);
     }
 
+    /**
+     * Enters a room at reconnect coordinates. They are checked against the layout once the
+     * contents are loaded (a walkable tile, or the door otherwise); negative means the door.
+     */
+    public void enterRoomAt(Habbo habbo, int roomId, String password, int spawnX, int spawnY) {
+        this.roomEntryService.enter(habbo, roomId, password, false, RoomEntryService.Spawn.reconnectAt(spawnX, spawnY));
+    }
+
     void openRoom(Habbo habbo, Room room, RoomTile doorLocation) {
         this.openRoom(habbo, room, doorLocation, false);
     }
@@ -682,6 +712,9 @@ public class RoomManager {
     void openRoom(Habbo habbo, Room room, RoomTile doorLocation, boolean isReconnectSpawn) {
         if (room == null || room.getLayout() == null) return;
 
+        this.markRoomOpened(habbo, room);
+        // Decided before the entry log records the room as visited.
+        boolean firstVisit = markRoomVisited(habbo.getHabboStats(), room.getId());
         if (Emulator.getConfig().getBoolean("hotel.room.enter.logs")) {
             this.logEnter(habbo, room);
         }
@@ -819,8 +852,7 @@ public class RoomManager {
             habbo.getClient().sendResponse(new RoomPromotionMessageComposer(null, null));
         }
 
-        if (room.getOwnerId() != habbo.getHabboInfo().getId()
-                && !habbo.getHabboStats().visitedRoom(room.getId())) {
+        if (room.getOwnerId() != habbo.getHabboInfo().getId() && firstVisit) {
             AchievementManager.progressAchievement(
                     habbo, Emulator.getGameEnvironment().getAchievementManager().getAchievement("RoomEntry"));
         }
@@ -1152,8 +1184,21 @@ public class RoomManager {
         }
     }
 
-    void logEnter(Habbo habbo, Room room) {
+    /** Records the visit and returns true when it is the first one for this user. */
+    static boolean markRoomVisited(HabboStats stats, int roomId) {
+        if (stats.visitedRoom(roomId)) return false;
+        stats.addVisitRoom(roomId);
+        return true;
+    }
+
+    /** Stamps the entry: seconds for the visit log and hosting time, room and millis for the entry throttle. */
+    void markRoomOpened(Habbo habbo, Room room) {
         habbo.getHabboStats().roomEnterTimestamp = Emulator.getIntUnixTimestamp();
+        habbo.getHabboStats().roomOpenedId = room.getId();
+        habbo.getHabboStats().roomOpenedAtMillis = System.currentTimeMillis();
+    }
+
+    void logEnter(Habbo habbo, Room room) {
         try {
             this.roomRepository.recordEntry(
                     room.getId(), habbo.getHabboInfo().getId(), (int) habbo.getHabboStats().roomEnterTimestamp);
@@ -1166,6 +1211,14 @@ public class RoomManager {
 
     public void leaveRoom(Habbo habbo, Room room) {
         this.leaveRoom(habbo, room, true);
+    }
+
+    /** Whole minutes between the entry and now, both unix seconds; 0 when the entry is unknown. */
+    static int minutesInRoom(long enteredAtSeconds, long nowSeconds) {
+        if (enteredAtSeconds <= 0 || nowSeconds <= enteredAtSeconds) {
+            return 0;
+        }
+        return (int) ((nowSeconds - enteredAtSeconds) / 60);
     }
 
     public void leaveRoom(Habbo habbo, Room room, boolean redirectToHotelView) {
@@ -1190,8 +1243,7 @@ public class RoomManager {
                 AchievementManager.progressAchievement(
                         room.getOwnerId(),
                         Emulator.getGameEnvironment().getAchievementManager().getAchievement("RoomDecoHosting"),
-                        (int) Math.floor(
-                                (Emulator.getIntUnixTimestamp() - habbo.getHabboStats().roomEnterTimestamp) / 60000));
+                        minutesInRoom(habbo.getHabboStats().roomEnterTimestamp, Emulator.getIntUnixTimestamp()));
             }
 
             habbo.getMessenger().connectionChanged(habbo, habbo.isOnline(), false);

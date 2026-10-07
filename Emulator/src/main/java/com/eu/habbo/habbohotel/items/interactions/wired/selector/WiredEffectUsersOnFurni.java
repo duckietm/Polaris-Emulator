@@ -49,11 +49,8 @@ public class WiredEffectUsersOnFurni extends InteractionWiredEffect {
 
         this.refresh(room);
 
+        // No source furni selects nothing; earlier selectors' picks stay, as with any other selector.
         List<HabboItem> sourceItems = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items);
-        if (sourceItems.isEmpty()) {
-            ctx.targets().setUsers(Collections.emptySet());
-            return;
-        }
 
         Set<RoomUnit> result = new LinkedHashSet<>();
 

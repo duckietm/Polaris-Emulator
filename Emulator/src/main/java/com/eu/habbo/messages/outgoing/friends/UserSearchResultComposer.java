@@ -5,7 +5,6 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -16,7 +15,10 @@ public class UserSearchResultComposer extends MessageComposer {
     private final Set<MessengerBuddy> friends;
     private final Habbo habbo;
 
-    private static Comparator<MessengerBuddy> COMPARATOR = Comparator.comparing((MessengerBuddy b) -> b.getUsername().length()).thenComparing((MessengerBuddy b, MessengerBuddy b2) -> b.getUsername().compareToIgnoreCase(b2.getUsername()));
+    private static Comparator<MessengerBuddy> COMPARATOR = Comparator.comparing(
+                    (MessengerBuddy b) -> b.getUsername().length())
+            .thenComparing(
+                    (MessengerBuddy b, MessengerBuddy b2) -> b.getUsername().compareToIgnoreCase(b2.getUsername()));
 
     public UserSearchResultComposer(Set<MessengerBuddy> users, Set<MessengerBuddy> friends, Habbo habbo) {
         this.users = users;
@@ -40,13 +42,15 @@ public class UserSearchResultComposer extends MessageComposer {
         u.sort(UserSearchResultComposer.COMPARATOR);
         friends.sort(UserSearchResultComposer.COMPARATOR);
 
-        this.response.appendInt(this.friends.size());
-        for (MessengerBuddy buddy : this.friends) {
+        // Online as the friend list shows it (hidden status reads as offline); follow only when online.
+        this.response.appendInt(friends.size());
+        for (MessengerBuddy buddy : friends) {
+            boolean online = buddy.isVisibleOnline();
             this.response.appendInt(buddy.getId());
             this.response.appendString(buddy.getUsername());
             this.response.appendString(buddy.getMotto());
-            this.response.appendBoolean(false);
-            this.response.appendBoolean(false);
+            this.response.appendBoolean(online);
+            this.response.appendBoolean(online && buddy.getId() > 0);
             this.response.appendString("");
             this.response.appendInt(1);
             this.response.appendString(buddy.getLook());
@@ -54,15 +58,17 @@ public class UserSearchResultComposer extends MessageComposer {
         }
 
         this.response.appendInt(u.size());
+        // Non-friends: online only when they do not hide it; only friends can be followed.
         for (MessengerBuddy buddy : u) {
+            boolean online = buddy.isVisibleOnline();
             this.response.appendInt(buddy.getId());
             this.response.appendString(buddy.getUsername());
             this.response.appendString(buddy.getMotto());
-            this.response.appendBoolean(false);
+            this.response.appendBoolean(online);
             this.response.appendBoolean(false);
             this.response.appendString("");
             this.response.appendInt(1);
-            this.response.appendString(buddy.isVisibleOnline() ? buddy.getLook() : "");
+            this.response.appendString(online ? buddy.getLook() : "");
             this.response.appendString("");
         }
 
@@ -71,8 +77,7 @@ public class UserSearchResultComposer extends MessageComposer {
 
     private boolean inFriendList(MessengerBuddy buddy) {
         for (MessengerBuddy friend : this.friends) {
-            if (friend.getUsername().equals(buddy.getUsername()))
-                return true;
+            if (friend.getUsername().equals(buddy.getUsername())) return true;
         }
 
         return false;

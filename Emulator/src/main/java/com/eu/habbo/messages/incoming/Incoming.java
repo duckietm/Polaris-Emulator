@@ -125,6 +125,8 @@ public class Incoming {
 
     public static final int BuildersClubPlaceRoomItemEvent = 1051;
     public static final int BuildersClubPlaceWallItemEvent = 462;
+    // Builders Club recolor window (custom id): itemId, colour index, scope.
+    public static final int BuildersClubRecolorFurniEvent = 9480;
     public static final int RequestInventoryPetsEvent = 3095;
     public static final int ModToolRequestRoomVisitsEvent = 3526;
     /** @deprecated Unsupported wire header retained for plugin ABI compatibility. */

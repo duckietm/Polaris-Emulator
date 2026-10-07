@@ -1,6 +1,9 @@
 package com.eu.habbo.habbohotel.wired.tick;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredPlatform;
+import com.eu.habbo.core.ConfigurationManager;
+import com.eu.habbo.habbohotel.rooms.HeavyWiredRooms;
 import com.eu.habbo.habbohotel.rooms.Room;
 import java.util.Map;
 import java.util.Set;
@@ -35,6 +38,11 @@ public final class WiredTickService {
     public static final int MIN_WORKER_COUNT = 1;
     public static final int MAX_WORKER_COUNT = 32;
 
+    /** Extra workers for rooms the wired monitor marked heavy; 0 keeps them on their usual worker. */
+    static final int DEFAULT_HEAVY_WORKER_COUNT = 1;
+
+    static final int MAX_HEAVY_WORKER_COUNT = 8;
+
     public static final long SLOW_TICKABLE_THRESHOLD_MS = 100L;
     /** A slow room warns at most this often: at 20 ticks a second it used to flood the log. */
     private static final long SLOW_WARNING_INTERVAL_MS = 10_000L;
@@ -59,6 +67,10 @@ public final class WiredTickService {
     private boolean debugEnabled = false;
     private int threadPriority = Thread.NORM_PRIORITY + 1;
     private int workerCount = DEFAULT_WORKER_COUNT;
+    private int heavyWorkerCount = DEFAULT_HEAVY_WORKER_COUNT;
+
+    /** The shard each room with tickables is on; a heavy room moves to a heavy shard and back. */
+    private final ConcurrentHashMap<Integer, Integer> roomShards = new ConcurrentHashMap<>();
 
     /** Global logical tick counter shared by every shard. */
     private final AtomicLong tickCount = new AtomicLong(0);
@@ -84,8 +96,8 @@ public final class WiredTickService {
 
     @SuppressWarnings("unchecked")
     private WiredTickService() {
-        this.shardRoomTickables = new ConcurrentHashMap[MAX_WORKER_COUNT];
-        for (int i = 0; i < MAX_WORKER_COUNT; i++) {
+        this.shardRoomTickables = new ConcurrentHashMap[MAX_WORKER_COUNT + MAX_HEAVY_WORKER_COUNT];
+        for (int i = 0; i < this.shardRoomTickables.length; i++) {
             this.shardRoomTickables[i] = new ConcurrentHashMap<>();
         }
         this.running = new AtomicBoolean(false);
@@ -93,9 +105,15 @@ public final class WiredTickService {
 
     /** For tests: fixed settings, no hotel configuration read on start. */
     WiredTickService(int workerCount, int tickIntervalMs) {
+        this(workerCount, tickIntervalMs, 0);
+    }
+
+    /** For tests: fixed settings, with heavy workers. */
+    WiredTickService(int workerCount, int tickIntervalMs, int heavyWorkerCount) {
         this();
         this.workerCount = Math.max(MIN_WORKER_COUNT, Math.min(MAX_WORKER_COUNT, workerCount));
         this.tickIntervalMs = Math.max(MIN_TICK_INTERVAL_MS, Math.min(MAX_TICK_INTERVAL_MS, tickIntervalMs));
+        this.heavyWorkerCount = Math.max(0, Math.min(MAX_HEAVY_WORKER_COUNT, heavyWorkerCount));
         this.fixedConfiguration = true;
     }
 
@@ -128,6 +146,12 @@ public final class WiredTickService {
                     MAX_WORKER_COUNT,
                     this.workerCount);
         }
+
+        ConfigurationManager config = WiredPlatform.configuration();
+        int configuredHeavy = config != null
+                ? config.getInt("wired.tick.heavy.workers", DEFAULT_HEAVY_WORKER_COUNT)
+                : DEFAULT_HEAVY_WORKER_COUNT;
+        this.heavyWorkerCount = Math.max(0, Math.min(MAX_HEAVY_WORKER_COUNT, configuredHeavy));
     }
 
     public int getTickIntervalMs() {
@@ -140,6 +164,10 @@ public final class WiredTickService {
 
     public int getWorkerCount() {
         return workerCount;
+    }
+
+    int getHeavyWorkerCount() {
+        return heavyWorkerCount;
     }
 
     public static WiredTickService getInstance() {
@@ -164,9 +192,10 @@ public final class WiredTickService {
         }
 
         LOGGER.info(
-                "Starting WiredTickService with {}ms tick interval (workers={}, debug={}, priority={})...",
+                "Starting WiredTickService with {}ms tick interval (workers={}, heavy workers={}, debug={}, priority={})...",
                 tickIntervalMs,
                 workerCount,
+                heavyWorkerCount,
                 debugEnabled,
                 threadPriority);
 
@@ -177,15 +206,17 @@ public final class WiredTickService {
             return t;
         });
 
-        this.shardExecutors = new ExecutorService[workerCount];
-        this.shardRequestedTicks = new AtomicLong[workerCount];
-        this.shardProcessedTicks = new AtomicLong[workerCount];
-        this.shardScheduled = new AtomicBoolean[workerCount];
+        int shards = totalShards();
+        this.shardExecutors = new ExecutorService[shards];
+        this.shardRequestedTicks = new AtomicLong[shards];
+        this.shardProcessedTicks = new AtomicLong[shards];
+        this.shardScheduled = new AtomicBoolean[shards];
 
-        for (int i = 0; i < workerCount; i++) {
+        for (int i = 0; i < shards; i++) {
             final int shardIndex = i;
+            final String name = i < workerCount ? "WiredTickShard-" + i : "WiredTickHeavy-" + (i - workerCount);
             this.shardExecutors[i] = Executors.newSingleThreadExecutor(r -> {
-                Thread t = new Thread(r, "WiredTickShard-" + shardIndex);
+                Thread t = new Thread(r, name);
                 t.setDaemon(true);
                 t.setPriority(threadPriority);
                 return t;
@@ -195,6 +226,7 @@ public final class WiredTickService {
             this.shardScheduled[i] = new AtomicBoolean(false);
         }
 
+        this.rehomeRooms();
         this.tickCount.set(0L);
         running.set(true);
 
@@ -261,9 +293,10 @@ public final class WiredTickService {
         shardProcessedTicks = null;
         shardScheduled = null;
 
-        for (int i = 0; i < MAX_WORKER_COUNT; i++) {
-            shardRoomTickables[i].clear();
+        for (ConcurrentHashMap<Integer, Set<WiredTickable>> shard : shardRoomTickables) {
+            shard.clear();
         }
+        roomShards.clear();
         LOGGER.info("WiredTickService stopped");
     }
 
@@ -277,7 +310,7 @@ public final class WiredTickService {
         }
 
         int roomId = room.getId();
-        int shardIndex = getShardIndex(roomId);
+        int shardIndex = roomShards.computeIfAbsent(roomId, id -> desiredShard(id, System.currentTimeMillis()));
         Set<WiredTickable> tickables =
                 shardRoomTickables[shardIndex].computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet());
 
@@ -292,25 +325,31 @@ public final class WiredTickService {
         }
 
         int roomId = room.getId();
-        int shardIndex = getShardIndex(roomId);
-        Set<WiredTickable> tickables = shardRoomTickables[shardIndex].get(roomId);
-
-        if (tickables != null) {
-            if (tickables.remove(tickable)) {
-                tickable.onUnregistered(room);
+        // Every shard: a room being moved may briefly have tickables on two.
+        boolean removed = false;
+        for (ConcurrentHashMap<Integer, Set<WiredTickable>> shard : shardRoomTickables) {
+            Set<WiredTickable> tickables = shard.get(roomId);
+            if (tickables == null) {
+                continue;
             }
-
+            removed |= tickables.remove(tickable);
             if (tickables.isEmpty()) {
-                shardRoomTickables[shardIndex].remove(roomId);
+                shard.remove(roomId, tickables);
             }
         }
+        if (removed) {
+            tickable.onUnregistered(room);
+        }
+        forgetShardIfEmpty(roomId);
     }
 
     public void unregister(int roomId, int tickableId) {
-        int shardIndex = getShardIndex(roomId);
-        Set<WiredTickable> tickables = shardRoomTickables[shardIndex].get(roomId);
+        for (ConcurrentHashMap<Integer, Set<WiredTickable>> shard : shardRoomTickables) {
+            Set<WiredTickable> tickables = shard.get(roomId);
+            if (tickables == null) {
+                continue;
+            }
 
-        if (tickables != null) {
             tickables.removeIf(t -> {
                 if (t.getId() == tickableId) {
                     Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(roomId);
@@ -323,9 +362,10 @@ public final class WiredTickService {
             });
 
             if (tickables.isEmpty()) {
-                shardRoomTickables[shardIndex].remove(roomId);
+                shard.remove(roomId, tickables);
             }
         }
+        forgetShardIfEmpty(roomId);
     }
 
     public void unregisterRoom(Room room) {
@@ -334,11 +374,17 @@ public final class WiredTickService {
         }
 
         int roomId = room.getId();
-        int shardIndex = getShardIndex(roomId);
-        Set<WiredTickable> tickables = shardRoomTickables[shardIndex].remove(roomId);
+        Set<WiredTickable> tickables = ConcurrentHashMap.newKeySet();
+        for (ConcurrentHashMap<Integer, Set<WiredTickable>> shard : shardRoomTickables) {
+            Set<WiredTickable> removed = shard.remove(roomId);
+            if (removed != null) {
+                tickables.addAll(removed);
+            }
+        }
+        this.roomShards.remove(roomId);
         this.pendingRoomTasks.remove(roomId);
 
-        if (tickables != null) {
+        if (!tickables.isEmpty()) {
             for (WiredTickable tickable : tickables) {
                 try {
                     if (tickable != null) {
@@ -362,8 +408,7 @@ public final class WiredTickService {
         }
 
         int roomId = room.getId();
-        int shardIndex = getShardIndex(roomId);
-        Set<WiredTickable> tickables = shardRoomTickables[shardIndex].get(roomId);
+        Set<WiredTickable> tickables = shardRoomTickables[currentShard(roomId)].get(roomId);
 
         if (tickables != null) {
             for (WiredTickable tickable : tickables) {
@@ -383,23 +428,26 @@ public final class WiredTickService {
     }
 
     public int getTickableCount(int roomId) {
-        int shardIndex = getShardIndex(roomId);
-        Set<WiredTickable> tickables = shardRoomTickables[shardIndex].get(roomId);
-        return tickables != null ? tickables.size() : 0;
+        int count = 0;
+        for (ConcurrentHashMap<Integer, Set<WiredTickable>> shard : shardRoomTickables) {
+            Set<WiredTickable> tickables = shard.get(roomId);
+            count += tickables != null ? tickables.size() : 0;
+        }
+        return count;
     }
 
     public int getTotalTickableCount() {
         int count = 0;
-        for (int i = 0; i < MAX_WORKER_COUNT; i++) {
-            count += shardRoomTickables[i].values().stream().mapToInt(Set::size).sum();
+        for (ConcurrentHashMap<Integer, Set<WiredTickable>> shard : shardRoomTickables) {
+            count += shard.values().stream().mapToInt(Set::size).sum();
         }
         return count;
     }
 
     public int getActiveRoomCount() {
         int count = 0;
-        for (int i = 0; i < MAX_WORKER_COUNT; i++) {
-            count += shardRoomTickables[i].size();
+        for (ConcurrentHashMap<Integer, Set<WiredTickable>> shard : shardRoomTickables) {
+            count += shard.size();
         }
         return count;
     }
@@ -415,7 +463,7 @@ public final class WiredTickService {
 
         long currentTick = tickCount.incrementAndGet();
 
-        for (int shardIndex = 0; shardIndex < workerCount; shardIndex++) {
+        for (int shardIndex = 0; shardIndex < shardRequestedTicks.length; shardIndex++) {
             shardRequestedTicks[shardIndex].set(currentTick);
             scheduleShardIfNeeded(shardIndex);
         }
@@ -434,7 +482,7 @@ public final class WiredTickService {
     /** Whether the current thread is the wired worker of this room. */
     public boolean isOnRoomWorker(int roomId) {
         Integer shard = CURRENT_SHARD.get();
-        return shard != null && this.running.get() && this.shardExecutors != null && shard == getShardIndex(roomId);
+        return shard != null && this.running.get() && this.shardExecutors != null && shard == currentShard(roomId);
     }
 
     /**
@@ -458,7 +506,7 @@ public final class WiredTickService {
             return true;
         }
 
-        int shardIndex = getShardIndex(roomId);
+        int shardIndex = currentShard(roomId);
         try {
             executors[shardIndex].execute(() -> {
                 Integer previous = CURRENT_SHARD.get();
@@ -528,6 +576,13 @@ public final class WiredTickService {
             int roomId = entry.getKey();
             Set<WiredTickable> tickables = entry.getValue();
             if (tickables == null || tickables.isEmpty()) {
+                continue;
+            }
+
+            // Moved by its own worker between two ticks, so a room never ticks on two threads at once.
+            int desired = desiredShard(roomId, shardStart);
+            if (desired != shardIndex) {
+                moveRoom(roomId, shardIndex, desired);
                 continue;
             }
 
@@ -615,8 +670,69 @@ public final class WiredTickService {
         }
     }
 
-    private int getShardIndex(int roomId) {
+    private int totalShards() {
+        return workerCount + heavyWorkerCount;
+    }
+
+    /** The shard a room belongs on now: a heavy shard while its wired is heavy, else its usual one. */
+    private int desiredShard(int roomId, long now) {
+        if (heavyWorkerCount > 0 && HeavyWiredRooms.isHeavy(roomId, now)) {
+            return workerCount + Math.floorMod(roomId, heavyWorkerCount);
+        }
         return Math.floorMod(roomId, workerCount);
+    }
+
+    /** The shard a room's work goes to: where its tickables are, else where it belongs. */
+    int currentShard(int roomId) {
+        Integer shard = roomShards.get(roomId);
+        return shard != null && shard < totalShards() ? shard : desiredShard(roomId, System.currentTimeMillis());
+    }
+
+    private void moveRoom(int roomId, int from, int to) {
+        Set<WiredTickable> moved = shardRoomTickables[from].remove(roomId);
+        if (moved == null) {
+            return;
+        }
+        shardRoomTickables[to].merge(roomId, moved, (existing, added) -> {
+            existing.addAll(added);
+            return existing;
+        });
+        roomShards.put(roomId, to);
+        LOGGER.info(
+                "Room {} wired {} the heavy workers ({} -> {})",
+                roomId,
+                to >= workerCount ? "moved to" : "moved back from",
+                from,
+                to);
+    }
+
+    /** Rooms registered before start may sit on shards of another worker count. */
+    private void rehomeRooms() {
+        long now = System.currentTimeMillis();
+        for (int shard = 0; shard < shardRoomTickables.length; shard++) {
+            for (Integer roomId : shardRoomTickables[shard].keySet()) {
+                int desired = desiredShard(roomId, now);
+                if (desired != shard) {
+                    Set<WiredTickable> moved = shardRoomTickables[shard].remove(roomId);
+                    if (moved != null) {
+                        shardRoomTickables[desired].merge(roomId, moved, (existing, added) -> {
+                            existing.addAll(added);
+                            return existing;
+                        });
+                    }
+                }
+                roomShards.put(roomId, desired);
+            }
+        }
+    }
+
+    private void forgetShardIfEmpty(int roomId) {
+        for (ConcurrentHashMap<Integer, Set<WiredTickable>> shard : shardRoomTickables) {
+            if (shard.containsKey(roomId)) {
+                return;
+            }
+        }
+        roomShards.remove(roomId);
     }
 
     private boolean shouldWarnSlow(long key) {

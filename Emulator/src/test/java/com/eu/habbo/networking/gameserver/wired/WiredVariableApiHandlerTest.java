@@ -38,14 +38,14 @@ class WiredVariableApiHandlerTest {
         EmbeddedChannel channel = this.channel();
         FullHttpRequest request = new DefaultFullHttpRequest(
                 HttpVersion.HTTP_1_1, HttpMethod.GET, "/api/public/rooms/5/variables/user/points/users/1");
-        request.headers().set(HttpHeaderNames.AUTHORIZATION, "Bearer " + READ);
+        request.headers().set("X-Wired-Read-Key", READ);
 
         channel.writeInbound(request);
         FullHttpResponse response = channel.readOutbound();
 
         assertEquals(200, response.status().code());
         String body = response.content().toString(StandardCharsets.UTF_8);
-        assertTrue(body.contains("\"value\":12"), body);
+        assertTrue(body.contains("\"value\":\"12\""), body);
         assertEquals(body.length(), response.headers().getInt(HttpHeaderNames.CONTENT_LENGTH));
         assertEquals("application/json; charset=utf-8", response.headers().get(HttpHeaderNames.CONTENT_TYPE));
         assertEquals(0, request.refCnt());
@@ -60,6 +60,26 @@ class WiredVariableApiHandlerTest {
                 HttpVersion.HTTP_1_1,
                 HttpMethod.PATCH,
                 "/api/public/rooms/5/variables/user/points/users/1",
+                Unpooled.copiedBuffer("{\"value\":\"15\"}", StandardCharsets.UTF_8));
+        request.headers().set("X-Wired-Write-Key", WRITE);
+        request.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json");
+
+        channel.writeInbound(request);
+        FullHttpResponse response = channel.readOutbound();
+
+        assertEquals(200, response.status().code());
+        assertTrue(response.content().toString(StandardCharsets.UTF_8).contains("\"value\":\"15\""));
+        response.release();
+        channel.finishAndReleaseAll();
+    }
+
+    @Test
+    void theOlderBearerHeaderStillPassesThePipeline() {
+        EmbeddedChannel channel = this.channel();
+        FullHttpRequest request = new DefaultFullHttpRequest(
+                HttpVersion.HTTP_1_1,
+                HttpMethod.PATCH,
+                "/api/public/rooms/5/variables/user/points/users/1",
                 Unpooled.copiedBuffer("{\"add\":3}", StandardCharsets.UTF_8));
         request.headers().set(HttpHeaderNames.AUTHORIZATION, "Bearer " + WRITE);
         request.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json");
@@ -68,7 +88,7 @@ class WiredVariableApiHandlerTest {
         FullHttpResponse response = channel.readOutbound();
 
         assertEquals(200, response.status().code());
-        assertTrue(response.content().toString(StandardCharsets.UTF_8).contains("\"value\":15"));
+        assertTrue(response.content().toString(StandardCharsets.UTF_8).contains("\"value\":\"15\""));
         response.release();
         channel.finishAndReleaseAll();
     }
@@ -109,6 +129,9 @@ class WiredVariableApiHandlerTest {
         FullHttpResponse response = channel.readOutbound();
 
         assertEquals(400, response.status().code());
+        assertEquals(
+                "{\"error\":\"wired.variables.invalid_request\"}",
+                response.content().toString(StandardCharsets.UTF_8));
         response.release();
         channel.finishAndReleaseAll();
     }

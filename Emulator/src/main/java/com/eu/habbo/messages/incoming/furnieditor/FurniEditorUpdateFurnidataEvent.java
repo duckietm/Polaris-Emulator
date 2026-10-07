@@ -106,6 +106,11 @@ public class FurniEditorUpdateFurnidataEvent extends MessageHandler {
             this.client.sendResponse(new FurniEditorResultComposer(false, "Furnidata source not configured"));
             return;
         }
+        if (provider.isSourceReadOnly()) {
+            this.client.sendResponse(new FurniEditorResultComposer(
+                    false, "Furnidata is downloaded from a URL (items.furnidata.path): edit it on the web server"));
+            return;
+        }
 
         // Capture old values (before write) for the audit log
         String oldName = provider.getName(classname);

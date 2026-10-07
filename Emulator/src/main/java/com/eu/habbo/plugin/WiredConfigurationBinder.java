@@ -33,26 +33,25 @@ final class WiredConfigurationBinder extends ConfigurationBinder {
         this.apply(
                 "wired.abuse.max.events.per.window",
                 () -> WiredEngine.MAX_EVENTS_PER_WINDOW =
-                        this.configuration.getInt("wired.abuse.max.events.per.window", 100));
+                        this.configuration.getInt("wired.abuse.max.events.per.window", 1000));
         this.apply(
                 "wired.abuse.rate.limit.window.ms",
                 () -> WiredEngine.RATE_LIMIT_WINDOW_MS =
-                        this.configuration.getInt("wired.abuse.rate.limit.window.ms", 10000));
+                        this.configuration.getInt("wired.abuse.rate.limit.window.ms", 1000));
         this.apply(
                 "wired.abuse.ban.duration.ms",
-                () -> WiredEngine.WIRED_BAN_DURATION_MS =
-                        this.configuration.getInt("wired.abuse.ban.duration.ms", 600000));
+                () -> WiredEngine.WIRED_BAN_DURATION_MS = this.configuration.getInt("wired.abuse.ban.duration.ms", 0));
         this.apply(
                 "wired.monitor.usage.window.ms",
                 () -> WiredEngine.MONITOR_USAGE_WINDOW_MS =
                         this.configuration.getInt("wired.monitor.usage.window.ms", 1000));
         this.apply(
                 "wired.monitor.usage.limit",
-                () -> WiredEngine.MONITOR_USAGE_LIMIT = this.configuration.getInt("wired.monitor.usage.limit", 1000));
+                () -> WiredEngine.MONITOR_USAGE_LIMIT = this.configuration.getInt("wired.monitor.usage.limit", 10000));
         this.apply(
                 "wired.monitor.delayed.events.limit",
                 () -> WiredEngine.MONITOR_DELAYED_EVENTS_LIMIT =
-                        this.configuration.getInt("wired.monitor.delayed.events.limit", 100));
+                        this.configuration.getInt("wired.monitor.delayed.events.limit", 1000));
         this.apply(
                 "wired.monitor.overload.average.ms",
                 () -> WiredEngine.MONITOR_OVERLOAD_AVERAGE_MS =

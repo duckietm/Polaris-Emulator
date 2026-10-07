@@ -10,8 +10,9 @@ public final class UserDailyTaskState {
 
     private final int taskId;
     private final String day;
-    private int repeats;
-    private int status;
+    // Written under the manager's lock, read by the save that runs later on a worker.
+    private volatile int repeats;
+    private volatile int status;
 
     public UserDailyTaskState(int taskId, String day, int repeats, int status) {
         this.taskId = taskId;

@@ -257,7 +257,7 @@ public class RoomChatManager {
         }
 
         if (habbo.getRoomUnit().isInvisible() && Emulator.getConfig().getBoolean("invisible.prevent.chat", false)) {
-            if (!CommandHandler.handleCommand(habbo.getClient(), roomChatMessage.getUnfilteredMessage())) {
+            if (!CommandHandler.handleChatCommand(habbo.getClient(), roomChatMessage.getUnfilteredMessage())) {
                 habbo.whisper(Emulator.getTexts().getValue("invisible.prevent.chat.error"));
             }
 
@@ -371,7 +371,7 @@ public class RoomChatManager {
         // Handle commands and wired
         boolean suppressSaysOutput = false;
         if (chatType != RoomChatType.WHISPER) {
-            if (CommandHandler.handleCommand(habbo.getClient(), roomChatMessage.getUnfilteredMessage())) {
+            if (CommandHandler.handleChatCommand(habbo.getClient(), roomChatMessage.getUnfilteredMessage())) {
                 WiredManager.triggerUserSays(
                         habbo.getHabboInfo().getCurrentRoom(), habbo.getRoomUnit(), wiredSayMessage);
                 roomChatMessage.isCommand = true;
@@ -541,39 +541,7 @@ public class RoomChatManager {
 
                     // Turn head toward speaker if conditions are met
                     if (!h.equals(habbo)) {
-                        RoomUnit roomUnit = h.getRoomUnit();
-                        if (!roomUnit.isWalking()
-                                && !roomUnit.hasStatus(RoomUnitStatus.MOVE)
-                                && !roomUnit.hasStatus(RoomUnitStatus.LAY)
-                                && !roomUnit.isIdle()
-                                && !roomUnit.isInvisible()) {
-                            RoomUserRotation targetRotation = RoomUserRotation.values()[
-                                    Rotation.Calculate(
-                                            roomUnit.getX(),
-                                            roomUnit.getY(),
-                                            habbo.getRoomUnit().getX(),
-                                            habbo.getRoomUnit().getY())];
-                            // Only turn head if speaker is within peripheral vision (1 rotation step)
-                            if (RoomUserRotation.rotationDistance(
-                                            roomUnit.getBodyRotation().getValue(), targetRotation.getValue())
-                                    <= 1) {
-                                roomUnit.setHeadRotation(targetRotation);
-                                roomUnit.statusUpdate(true);
-
-                                // Schedule head reset after 2 seconds
-                                Emulator.getThreading()
-                                        .run(
-                                                () -> {
-                                                    if (roomUnit.isInRoom()
-                                                            && !roomUnit.isWalking()
-                                                            && !roomUnit.isIdle()) {
-                                                        roomUnit.setHeadRotation(roomUnit.getBodyRotation());
-                                                        roomUnit.statusUpdate(true);
-                                                    }
-                                                },
-                                                2000);
-                            }
-                        }
+                        turnHeadTowardSpeaker(h.getRoomUnit(), habbo.getRoomUnit());
                     }
                 }
                 continue;
@@ -611,45 +579,66 @@ public class RoomChatManager {
 
                 // Turn head toward speaker if conditions are met
                 if (!h.equals(habbo)) {
-                    RoomUnit roomUnit = h.getRoomUnit();
-                    if (!roomUnit.isWalking()
-                            && !roomUnit.hasStatus(RoomUnitStatus.MOVE)
-                            && !roomUnit.hasStatus(RoomUnitStatus.LAY)
-                            && !roomUnit.isIdle()
-                            && !roomUnit.isInvisible()) {
-                        RoomUserRotation targetRotation = RoomUserRotation.values()[
-                                Rotation.Calculate(
-                                        roomUnit.getX(),
-                                        roomUnit.getY(),
-                                        habbo.getRoomUnit().getX(),
-                                        habbo.getRoomUnit().getY())];
-                        // Only turn head if speaker is within peripheral vision (1 rotation step)
-                        if (RoomUserRotation.rotationDistance(
-                                        roomUnit.getBodyRotation().getValue(), targetRotation.getValue())
-                                <= 1) {
-                            roomUnit.setHeadRotation(targetRotation);
-                            roomUnit.statusUpdate(true);
-
-                            // Schedule head reset after 2 seconds
-                            Emulator.getThreading()
-                                    .run(
-                                            () -> {
-                                                if (roomUnit.isInRoom()
-                                                        && !roomUnit.isWalking()
-                                                        && !roomUnit.isIdle()) {
-                                                    roomUnit.setHeadRotation(roomUnit.getBodyRotation());
-                                                    roomUnit.statusUpdate(true);
-                                                }
-                                            },
-                                            2000);
-                        }
-                    }
+                    turnHeadTowardSpeaker(h.getRoomUnit(), habbo.getRoomUnit());
                 }
                 continue;
             }
             // Staff should be able to see the tent chat anyhow
             this.showTentChatMessageOutsideTentIfPermitted(h, roomChatMessage, tentRectangle);
         }
+    }
+
+    private static void turnHeadTowardSpeaker(RoomUnit roomUnit, RoomUnit speaker) {
+        if (roomUnit.isWalking()
+                || roomUnit.hasStatus(RoomUnitStatus.MOVE)
+                || roomUnit.hasStatus(RoomUnitStatus.LAY)
+                || roomUnit.isIdle()
+                || roomUnit.isInvisible()) {
+            return;
+        }
+
+        RoomUserRotation targetRotation = headRotationTowardSpeaker(
+                roomUnit.getX(),
+                roomUnit.getY(),
+                roomUnit.getBodyRotation().getValue(),
+                speaker.getX(),
+                speaker.getY());
+        if (targetRotation == null) {
+            return;
+        }
+
+        roomUnit.setHeadRotation(targetRotation);
+        roomUnit.statusUpdate(true);
+
+        // Schedule head reset after 2 seconds
+        Emulator.getThreading()
+                .run(
+                        () -> {
+                            if (roomUnit.isInRoom() && !roomUnit.isWalking() && !roomUnit.isIdle()) {
+                                roomUnit.setHeadRotation(roomUnit.getBodyRotation());
+                                roomUnit.statusUpdate(true);
+                            }
+                        },
+                        2000);
+    }
+
+    /**
+     * Head rotation a listener turns to when someone speaks, or null when the head stays put:
+     * the speaker stands on the listener's tile (no direction) or is outside peripheral vision
+     * (more than 1 rotation step from the body).
+     */
+    static RoomUserRotation headRotationTowardSpeaker(
+            int listenerX, int listenerY, int bodyRotation, int speakerX, int speakerY) {
+        if (listenerX == speakerX && listenerY == speakerY) {
+            return null;
+        }
+
+        RoomUserRotation targetRotation =
+                RoomUserRotation.values()[Rotation.Calculate(listenerX, listenerY, speakerX, speakerY)];
+        if (RoomUserRotation.rotationDistance(bodyRotation, targetRotation.getValue()) > 1) {
+            return null;
+        }
+        return targetRotation;
     }
 
     /**

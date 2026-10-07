@@ -3,7 +3,9 @@ package com.eu.habbo.habbohotel.rooms;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -19,6 +21,7 @@ import java.lang.reflect.Field;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 
 class RoomEntryPolicyBehaviorTest {
 
@@ -68,6 +71,41 @@ class RoomEntryPolicyBehaviorTest {
         verify(habbo.getClient()).sendResponse(any(GenericErrorMessagesComposer.class));
         verify(habbo.getClient()).sendResponse(any(HotelViewComposer.class));
         assertSame(null, manager.openedRoom);
+    }
+
+    @Test
+    void refusedEntryLoadsOnlyTheAccessDataNotTheRoomContents() {
+        RecordingRoomManager manager = new RecordingRoomManager();
+        Room room = room(41, RoomState.PASSWORD);
+        Habbo habbo = habbo(41);
+        when(room.getPassword()).thenReturn("secret");
+        when(room.isPreLoaded()).thenReturn(true);
+        manager.registerActiveRoom(room);
+
+        manager.enterRoom(habbo, 41, "wrong");
+
+        verify(room).loadAccessData();
+        verify(room, never()).loadData();
+        verify(room, never()).waitForLoad();
+        verify(room, never()).startBackgroundLoad();
+        assertSame(null, manager.openedRoom);
+    }
+
+    @Test
+    void grantedEntryLoadsTheRoomContentsBeforeOpening() {
+        RecordingRoomManager manager = new RecordingRoomManager();
+        Room room = room(41, RoomState.PASSWORD);
+        Habbo habbo = habbo(41);
+        when(room.getPassword()).thenReturn("secret");
+        when(room.isPreLoaded()).thenReturn(true);
+        manager.registerActiveRoom(room);
+
+        manager.enterRoom(habbo, 41, "secret");
+
+        InOrder order = inOrder(room);
+        order.verify(room).loadAccessData();
+        order.verify(room).loadData();
+        assertSame(room, manager.openedRoom);
     }
 
     @Test

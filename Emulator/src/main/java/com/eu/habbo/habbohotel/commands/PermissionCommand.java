@@ -21,6 +21,7 @@ import com.eu.habbo.messages.outgoing.users.UserPermissionsComposer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Staff tool for permissions:
@@ -300,9 +301,21 @@ public class PermissionCommand extends Command {
             return;
         }
 
-        // A second temporary rank still ends on the rank from before the first.
-        int previousRankId = TemporaryRanks.find(target.getId())
-                .map(TemporaryRanks.Row::previousRankId)
+        // A second temporary rank still ends on the rank from before the first, so whoever replaces it
+        // must be able to give that rank too (else a short one would end someone else's demotion early).
+        Optional<TemporaryRanks.Row> running = TemporaryRanks.find(target.getId());
+        if (running.isPresent()
+                && !CommandTargetGuard.canAssignRank(
+                        actor,
+                        environment
+                                .getPermissionsManager()
+                                .getRank(running.get().previousRankId()))) {
+            actor.whisper(
+                    "A temporary rank set by a higher rank is running; it ends on a rank above yours.",
+                    RoomChatMessageBubbles.ALERT);
+            return;
+        }
+        int previousRankId = running.map(TemporaryRanks.Row::previousRankId)
                 .orElse(target.getRank() != null ? target.getRank().getId() : 1);
         int expiresAt = WiredPlatform.unixTimestamp() + duration;
         String reason = params.length > 5 ? String.join(" ", Arrays.copyOfRange(params, 5, params.length)) : "";

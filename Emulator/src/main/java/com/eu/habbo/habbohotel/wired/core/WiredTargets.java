@@ -185,6 +185,33 @@ public final class WiredTargets {
         this.itemsModifiedBySelector = itemsModifiedBySelector;
     }
 
+    /** The trigger's default user and furni, set aside while a stack's ordinary selectors run. */
+    record Defaults(Set<RoomUnit> users, Set<HabboItem> items) {}
+
+    /**
+     * Sets aside the defaults no selector has replaced yet, so ordinary selectors, which add to one
+     * another, start from nothing instead of keeping the triggering user and furni.
+     */
+    Defaults setDefaultsAside() {
+        Defaults defaults = new Defaults(new LinkedHashSet<>(this.users), new LinkedHashSet<>(this.items));
+        if (!this.usersModifiedBySelector) this.users.clear();
+        if (!this.itemsModifiedBySelector) this.items.clear();
+        return defaults;
+    }
+
+    /** Gives back the defaults no selector replaced, for filter selectors and effects. */
+    void restoreDefaults(Defaults defaults) {
+        if (defaults == null) return;
+        if (!this.usersModifiedBySelector) {
+            this.users.clear();
+            this.users.addAll(defaults.users());
+        }
+        if (!this.itemsModifiedBySelector) {
+            this.items.clear();
+            this.items.addAll(defaults.items());
+        }
+    }
+
     /**
      * Add a user to the targets.
      * @param user the user to add (null is ignored)

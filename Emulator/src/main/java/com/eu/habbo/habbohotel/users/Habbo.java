@@ -585,8 +585,19 @@ public class Habbo implements Runnable {
         this.whisper(this.getText(textKey), bubble);
     }
 
+    /**
+     * Whispers a text a hotel may not have in emulator_texts yet, falling back to the given line.
+     */
+    public void whisperLocalizedOrDefault(String textKey, String fallback, RoomChatMessageBubbles bubble) {
+        this.whisper(this.getText(textKey, fallback), bubble);
+    }
+
     private String getText(String key) {
-        return Emulator.getTexts().getValue(key);
+        return this.getText(key, "");
+    }
+
+    private String getText(String key, String fallback) {
+        return Emulator.getTexts().getValue(key, fallback);
     }
 
     public void talk(String message) {

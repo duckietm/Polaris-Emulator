@@ -58,6 +58,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CatalogBuyItemAsGiftEvent extends MessageHandler {
+    static final String GIFT_HIDE_SENDER = "acc_gift_hide_sender";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(CatalogBuyItemAsGiftEvent.class);
 
     private static final int USERNAME_MAX = 32;
@@ -118,6 +120,9 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                 int color = this.packet.readInt();
                 int ribbonId = this.packet.readInt();
                 boolean showName = this.packet.readBoolean();
+
+                // Only staff may hide who sent a gift; the client offers it to them alone.
+                if (!showName && !this.client.getHabbo().hasPermission(GIFT_HIDE_SENDER)) showName = true;
 
                 LOGGER.debug(
                         "Gift request: pageId={}, itemId={}, spriteId={}, color={}, ribbonId={}",

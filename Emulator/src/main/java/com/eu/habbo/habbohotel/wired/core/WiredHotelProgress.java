@@ -196,7 +196,7 @@ public final class WiredHotelProgress {
                 continue;
             }
             UserRewardTrackState state = manager.stateFor(habbo, track);
-            if (task.isPremium() && !state.isPremium()) {
+            if (state == null || (task.isPremium() && !state.isPremium())) {
                 continue;
             }
             int current = state.progressOf(taskId);

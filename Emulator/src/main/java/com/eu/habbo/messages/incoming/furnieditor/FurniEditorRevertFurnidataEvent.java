@@ -8,12 +8,11 @@ import com.eu.habbo.habbohotel.items.FurnitureTextProvider;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
-import com.eu.habbo.messages.outgoing.furniture.FurnitureDataReloadComposer;
 import com.eu.habbo.messages.outgoing.furnieditor.FurniEditorResultComposer;
+import com.eu.habbo.messages.outgoing.furniture.FurnitureDataReloadComposer;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 /**
  * Incoming handler 10048 — admin reverts a furni's furnidata to the last rotating backup.
@@ -49,11 +48,15 @@ public class FurniEditorRevertFurnidataEvent extends MessageHandler {
         String classnameForLog = (classname != null) ? classname : "?";
 
         // 4. Verify provider is configured
-        FurnitureTextProvider provider =
-            Emulator.getGameEnvironment().getFurnitureTextProvider();
+        FurnitureTextProvider provider = Emulator.getGameEnvironment().getFurnitureTextProvider();
 
         if (provider == null || provider.getSource() == null) {
             this.client.sendResponse(new FurniEditorResultComposer(false, "Furnidata source not configured"));
+            return;
+        }
+        if (provider.isSourceReadOnly()) {
+            this.client.sendResponse(new FurniEditorResultComposer(
+                    false, "Furnidata is downloaded from a URL (items.furnidata.path): edit it on the web server"));
             return;
         }
 
@@ -66,11 +69,7 @@ public class FurniEditorRevertFurnidataEvent extends MessageHandler {
         FurnidataLock.LOCK.lock();
         try {
             FurnidataWriter writer = new FurnidataWriter(
-                provider.getSource(),
-                provider.isSourceDirectory(),
-                provider.getMaxBytes(),
-                3 /* backupKeep */
-            );
+                    provider.getSource(), provider.isSourceDirectory(), provider.getMaxBytes(), 3 /* backupKeep */);
             reverted = writer.revertLastBackup();
             if (!reverted) {
                 this.client.sendResponse(new FurniEditorResultComposer(false, "No backup found to revert"));
@@ -80,11 +79,10 @@ public class FurniEditorRevertFurnidataEvent extends MessageHandler {
             delta = provider.reindexFromSource();
 
             if (!delta.isEmpty()) {
-                int deltaCap = Integer.parseInt(
-                    Emulator.getConfig().getValue("items.furnidata.delta.cap", "500"));
+                int deltaCap = Integer.parseInt(Emulator.getConfig().getValue("items.furnidata.delta.cap", "500"));
                 FurnitureDataReloadComposer composer = (delta.size() > deltaCap)
-                    ? new FurnitureDataReloadComposer(FurnitureDataReloadComposer.MODE_RELOAD_HINT, List.of())
-                    : new FurnitureDataReloadComposer(FurnitureDataReloadComposer.MODE_DELTA, delta);
+                        ? new FurnitureDataReloadComposer(FurnitureDataReloadComposer.MODE_RELOAD_HINT, List.of())
+                        : new FurnitureDataReloadComposer(FurnitureDataReloadComposer.MODE_DELTA, delta);
                 broadcastToAll(composer);
             }
         } finally {
@@ -93,23 +91,28 @@ public class FurniEditorRevertFurnidataEvent extends MessageHandler {
 
         // 6. Audit log (outside lock — DB write, not latency-sensitive)
         FurnidataAuditLog.record(
-            adminId,
-            classnameForLog,
-            "revert",
-            "", // previous state unknown at this point
-            "",
-            "",
-            ""
-        );
+                adminId,
+                classnameForLog,
+                "revert",
+                "", // previous state unknown at this point
+                "",
+                "",
+                "");
 
         // 7. Respond success
         this.client.sendResponse(new FurniEditorResultComposer(true, "Furnidata reverted", itemId));
-        LOGGER.info("FurniEditorRevertFurnidataEvent: admin {} reverted furnidata for classname '{}' (item {})",
-            adminId, classnameForLog, itemId);
+        LOGGER.info(
+                "FurniEditorRevertFurnidataEvent: admin {} reverted furnidata for classname '{}' (item {})",
+                adminId,
+                classnameForLog,
+                itemId);
     }
 
     private static void broadcastToAll(FurnitureDataReloadComposer composer) {
-        for (Habbo habbo : Emulator.getGameEnvironment().getHabboManager().getOnlineHabbos().values()) {
+        for (Habbo habbo : Emulator.getGameEnvironment()
+                .getHabboManager()
+                .getOnlineHabbos()
+                .values()) {
             if (habbo.getClient() != null) {
                 habbo.getClient().sendResponse(composer);
             }

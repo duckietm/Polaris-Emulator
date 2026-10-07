@@ -64,7 +64,7 @@ CREATE TABLE `emulator_settings` (
 - `networking` (1)
 - `notify` (1)
 - `path` (1)
-- `pathfinder` (4)
+- `pathfinder` (5)
 - `pirate_parrot` (2)
 - `postit` (1)
 - `pyramids` (1)
@@ -649,6 +649,7 @@ Pathfinder safety and performance settings.
 |---|---|---|---|
 | `pathfinder.execution_time.milli` | `25` | `integer` | Maximum pathfinder execution time in milliseconds before aborting. |
 | `pathfinder.max_execution_time.enabled` | `1` | `boolean` | Enforce the pathfinder execution time limit. |
+| `pathfinder.occupied_goal.walk_adjacent` | `1` | `boolean` | Clicking a tile someone stands on walks to the tile next to it; `0` keeps the old behaviour (no walk). |
 | `pathfinder.step.allow.falling` | `1` | `boolean` | Allow the pathfinder to walk down falling steps. |
 | `pathfinder.step.maximum.height` | `1.1` | `number` | Maximum height difference the pathfinder may step onto. |
 

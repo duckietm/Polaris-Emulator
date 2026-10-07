@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.incoming.wired;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubPalette;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
@@ -11,7 +12,13 @@ final class WiredFurniRuntimeStatePolicy {
     static final int MAX_KEY_LENGTH = 64;
     static final String GRAVITY_KEY = "@gravity";
     static final String OPACITY_KEY = "@opacity";
-    private static final Set<String> ALLOWED_KEYS = Set.of(GRAVITY_KEY, OPACITY_KEY);
+    private static final Set<String> ALLOWED_KEYS = Set.of(
+            GRAVITY_KEY,
+            OPACITY_KEY,
+            BuildersClubPalette.RGB,
+            BuildersClubPalette.RED,
+            BuildersClubPalette.GREEN,
+            BuildersClubPalette.BLUE);
 
     private WiredFurniRuntimeStatePolicy() {}
 
@@ -54,10 +61,16 @@ final class WiredFurniRuntimeStatePolicy {
         return ALLOWED_KEYS.contains(normalized) ? normalized : "";
     }
 
-    /** Gravity is a flag; opacity is a percentage. Anything outside its own range is rejected. */
+    /** Gravity is a flag, opacity a percentage, a colour 0xRRGGBB and its parts 0-255. */
     private static boolean isValueInRange(String normalizedKey, int value) {
         if (OPACITY_KEY.equals(normalizedKey)) {
             return value >= 0 && value <= 100;
+        }
+        if (BuildersClubPalette.RGB.equals(normalizedKey)) {
+            return value >= 0 && value <= 0xFFFFFF;
+        }
+        if (BuildersClubPalette.isKey(normalizedKey)) {
+            return value >= 0 && value <= 0xFF;
         }
         return value == 0 || value == 1;
     }

@@ -124,6 +124,7 @@ public class GiftCommand extends Command {
             return true;
         }
 
-        return false;
+        gameClient.getHabbo().whisperLocalized("commands.description.cmd_gift", RoomChatMessageBubbles.ALERT);
+        return true;
     }
 }

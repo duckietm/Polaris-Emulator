@@ -115,6 +115,7 @@ public class MassGiftCommand extends Command {
             return true;
         }
 
-        return false;
+        gameClient.getHabbo().whisperLocalized("commands.description.cmd_massgift", RoomChatMessageBubbles.ALERT);
+        return true;
     }
 }

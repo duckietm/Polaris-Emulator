@@ -11,6 +11,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -174,41 +175,63 @@ final class WiredApiJson {
         return out.toString();
     }
 
-    static JsonObject entry(WiredApiRooms.Entry entry, boolean withEntityId) {
+    /** Whether a body value is a variable value: an integer, as a JSON number or as text like Habbo sends. */
+    static boolean isValue(Object value) {
+        return isInteger(value)
+                || (value instanceof String text && INTEGER.matcher(text).matches());
+    }
+
+    /** A variable value, sent as text ({@code "12"}, Habbo's form) or as a JSON number; 32-bit here. */
+    static int value(Object value, String field) {
+        String literal =
+                value instanceof JsonNumber number ? number.literal() : value instanceof String text ? text : null;
+        if (literal == null || !INTEGER.matcher(literal).matches()) {
+            throw WiredApiException.invalidValue("'" + safe(field) + "' must be a whole number.");
+        }
+        long parsed = Long.parseLong(literal);
+        if (parsed < Integer.MIN_VALUE || parsed > Integer.MAX_VALUE) {
+            throw WiredApiException.invalidValue("'" + safe(field) + "' must fit a 32-bit integer.");
+        }
+        return (int) parsed;
+    }
+
+    /** Habbo's stored value: the value as text (left out for a variable without one) and ISO 8601 times. */
+    static JsonObject stored(WiredApiRooms.Entry entry) {
         JsonObject json = new JsonObject();
-        if (withEntityId) {
-            json.addProperty("entityId", entry.entityId());
-        }
         if (entry.value() != null) {
-            json.addProperty("value", entry.value());
+            json.addProperty("value", Integer.toString(entry.value()));
         }
-        json.addProperty("createdAt", entry.createdAt());
-        json.addProperty("updatedAt", entry.updatedAt());
+        json.addProperty("creation_time", isoTime(entry.createdAt()));
+        json.addProperty("update_time", isoTime(entry.updatedAt()));
         return json;
     }
 
-    static JsonObject variable(WiredApiRooms.Variable variable) {
+    static String isoTime(long unixSeconds) {
+        return Instant.ofEpochSecond(Math.max(0, unixSeconds)).toString();
+    }
+
+    /** A variable definition (Polaris addition, {@code GET /variables/definitions}). */
+    static JsonObject definition(WiredApiRooms.Variable variable) {
         JsonObject json = new JsonObject();
         json.addProperty("name", variable.name());
         json.addProperty("scope", variable.scope().path());
-        json.addProperty("hasValue", variable.hasValue());
-        json.addProperty("textConnected", variable.textConnected());
+        json.addProperty("has_value", variable.hasValue());
+        json.addProperty("text_connected", variable.textConnected());
         return json;
     }
 
-    static String error(String code, String message) {
-        JsonObject error = new JsonObject();
-        error.addProperty("code", code);
-        error.addProperty("message", message == null ? "" : message);
+    /** Habbo's error body: just the code. */
+    static String error(String code) {
         JsonObject body = new JsonObject();
-        body.add("error", error);
+        body.addProperty("error", code);
         return body.toString();
     }
 
+    /** The error of one batch operation; like Habbo, the message mirrors the code. */
     static JsonObject errorObject(WiredApiException exception) {
         JsonObject error = new JsonObject();
         error.addProperty("code", exception.code());
-        error.addProperty("message", exception.getMessage());
+        error.addProperty("message", exception.code());
         return error;
     }
 

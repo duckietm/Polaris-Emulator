@@ -1,14 +1,23 @@
 package com.eu.habbo.habbohotel.quests;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.database.SqlQueries;
+import com.eu.habbo.habbohotel.economy.EconomyLedger;
+import com.eu.habbo.habbohotel.economy.EconomyOperation;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.LedgerWalletMutation;
 import com.eu.habbo.messages.outgoing.quests.RewardTrackClaimResultComposer;
 import com.eu.habbo.messages.outgoing.quests.RewardTrackPremiumPurchaseResultComposer;
 import com.eu.habbo.messages.outgoing.quests.RewardTrackProgressComposer;
 import com.eu.habbo.messages.outgoing.quests.RewardTrackTextsComposer;
 import com.eu.habbo.messages.outgoing.quests.RewardTracksComposer;
+import com.eu.habbo.messages.outgoing.users.UserCreditsComposer;
+import com.eu.habbo.messages.outgoing.users.UserPointsComposer;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -17,9 +26,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +42,9 @@ import org.slf4j.LoggerFactory;
 public class RewardTrackManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(RewardTrackManager.class);
 
+    /** Task saves queued and not started yet; such a save writes the newest progress when it runs. */
+    private final Set<String> pendingTaskSaves = ConcurrentHashMap.newKeySet();
+
     /** Result codes: 0 is success, the client localizes any other value as reward_track.*.notification.fail.&lt;code&gt;. */
     public static final int RESULT_OK = 0;
 
@@ -40,6 +54,9 @@ public class RewardTrackManager {
     public static final int RESULT_ALREADY_CLAIMED = 4;
     public static final int RESULT_NOT_ENOUGH_CURRENCY = 5;
     public static final int RESULT_ALREADY_PREMIUM = 6;
+
+    static final String PREMIUM_REASON = "reward_track.premium";
+    private static final int MAX_OPERATION_ID = 96;
 
     private final Map<String, RewardTrack> tracks = new LinkedHashMap<>();
     private final Map<Integer, Map<String, UserRewardTrackState>> users = new ConcurrentHashMap<>();
@@ -199,12 +216,15 @@ public class RewardTrackManager {
 
     // ------------------------------------------------------------------ user state
 
+    /** The user's state on this track, null when it could not be loaded. */
     public UserRewardTrackState stateFor(Habbo habbo, RewardTrack track) {
         return this.stateFor(habbo.getHabboInfo().getId(), track);
     }
 
+    /** The user's state on this track, null when it could not be loaded. */
     public UserRewardTrackState stateFor(int userId, RewardTrack track) {
         Map<String, UserRewardTrackState> byTrack = this.users.computeIfAbsent(userId, id -> new ConcurrentHashMap<>());
+        // A failed load returns null and is not cached: an empty state would overwrite the stored progress.
         return byTrack.computeIfAbsent(track.getId(), trackId -> this.load(userId, trackId));
     }
 
@@ -212,7 +232,8 @@ public class RewardTrackManager {
         this.users.remove(userId);
     }
 
-    private UserRewardTrackState load(int userId, String trackId) {
+    /** Loads the stored state, null when the database could not be read. */
+    protected UserRewardTrackState load(int userId, String trackId) {
         UserRewardTrackState state = new UserRewardTrackState(trackId, 0, false);
         if (!this.persistent) {
             return state;
@@ -252,6 +273,7 @@ public class RewardTrackManager {
             }
         } catch (SQLException exception) {
             LOGGER.error("Could not load reward track {} of user {}", trackId, userId, exception);
+            return null;
         }
         return state;
     }
@@ -283,7 +305,12 @@ public class RewardTrackManager {
         if (!this.persistent) {
             return;
         }
+        String key = userId + ":" + state.getTrackId() + ":" + taskId;
+        if (!this.pendingTaskSaves.add(key)) {
+            return;
+        }
         this.runPersistence(() -> {
+            this.pendingTaskSaves.remove(key);
             synchronized (state.persistenceLock()) {
                 int count;
                 int peak;
@@ -333,24 +360,114 @@ public class RewardTrackManager {
         }
     }
 
-    protected void saveClaim(int userId, String trackId, String prizeId) {
+    /**
+     * Writes points and premium now, before the reply, reading the newest values like {@link #saveTrack}.
+     * Must not be called while holding the state's lock. False when the write failed.
+     */
+    protected boolean saveTrackNow(int userId, UserRewardTrackState state) {
         if (!this.persistent) {
-            return;
+            return true;
         }
-        Emulator.getThreading().run(() -> {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-                    PreparedStatement statement = connection.prepareStatement(
-                            "INSERT IGNORE INTO users_reward_track_prizes (user_id, track_id, prize_id, claimed_at)"
-                                    + " VALUES (?, ?, ?, ?)")) {
-                statement.setInt(1, userId);
-                statement.setString(2, trackId);
-                statement.setString(3, prizeId);
-                statement.setInt(4, Emulator.getIntUnixTimestamp());
-                statement.execute();
-            } catch (SQLException exception) {
-                LOGGER.error("Could not save reward track claim {}/{} of user {}", trackId, prizeId, userId, exception);
+        synchronized (state.persistenceLock()) {
+            int points;
+            boolean premium;
+            synchronized (state) {
+                points = state.getPoints();
+                premium = state.isPremium();
             }
-        });
+            try {
+                SqlQueries.update(
+                        "INSERT INTO users_reward_tracks (user_id, track_id, points, premium) VALUES (?, ?, ?, ?)"
+                                + " ON DUPLICATE KEY UPDATE points = VALUES(points), premium = VALUES(premium)",
+                        userId,
+                        state.getTrackId(),
+                        points,
+                        premium);
+                return true;
+            } catch (RuntimeException exception) {
+                LOGGER.error("Could not save reward track {} of user {}", state.getTrackId(), userId, exception);
+                return false;
+            }
+        }
+    }
+
+    /**
+     * Stores the claim before anything is granted. True only when this call inserted the row, so a
+     * replay or a concurrent claim never pays twice.
+     */
+    protected boolean recordClaim(int userId, String trackId, String prizeId) {
+        if (!this.persistent) {
+            return true;
+        }
+        return SqlQueries.update(
+                        "INSERT IGNORE INTO users_reward_track_prizes (user_id, track_id, prize_id, claimed_at)"
+                                + " VALUES (?, ?, ?, ?)",
+                        userId,
+                        trackId,
+                        prizeId,
+                        Emulator.getIntUnixTimestamp())
+                == 1;
+    }
+
+    /** Takes the premium payment through the ledger in one transaction; throws when it was not applied. */
+    protected void applyPayment(Habbo habbo, List<EconomyOperation> operations) throws SQLException {
+        LedgerWalletMutation.executeBatch(habbo, operations);
+    }
+
+    // ------------------------------------------------------------------ operation ids
+
+    /** Ledger id of a prize grant; fixed per prize so a replayed grant is not paid twice. */
+    static String prizeOperationId(int userId, String trackId, String prizeId) {
+        return operationId("reward_track:" + userId + ":", trackId + ":" + prizeId, "");
+    }
+
+    /** Ledger id of one premium debit; fixed per track so a retried purchase is not charged twice. */
+    static String premiumOperationId(int userId, String trackId, String currency) {
+        return operationId("reward_track_premium:" + userId + ":", trackId, ":" + currency);
+    }
+
+    static String operationId(String prefix, String key, String suffix) {
+        String id = prefix + key + suffix;
+        if (id.length() <= MAX_OPERATION_ID) {
+            return id;
+        }
+        // Long ids are hashed, which keeps them deterministic within the column size.
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256").digest(key.getBytes(StandardCharsets.UTF_8));
+            return prefix + HexFormat.of().formatHex(digest).substring(0, 40) + suffix;
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException(exception);
+        }
+    }
+
+    /** The debits of the premium pass, credits first; empty when it is free. */
+    static List<EconomyOperation> premiumOperations(int userId, RewardTrack track) {
+        List<EconomyOperation> operations = new ArrayList<>(2);
+        if (track.getPremiumCostCredits() > 0) {
+            operations.add(new EconomyOperation(
+                    premiumOperationId(userId, track.getId(), "credits"),
+                    userId,
+                    userId,
+                    "credit_debit",
+                    PREMIUM_REASON,
+                    EconomyLedger.CREDITS,
+                    -track.getPremiumCostCredits(),
+                    null,
+                    track.getId()));
+        }
+        if (track.getPremiumCostDiamonds() > 0) {
+            operations.add(new EconomyOperation(
+                    premiumOperationId(userId, track.getId(), "diamonds"),
+                    userId,
+                    userId,
+                    "currency_debit",
+                    PREMIUM_REASON,
+                    QuestRewards.DIAMONDS_POINT_TYPE,
+                    -track.getPremiumCostDiamonds(),
+                    null,
+                    track.getId()));
+        }
+        return operations;
     }
 
     // ------------------------------------------------------------------ wire
@@ -424,7 +541,10 @@ public class RewardTrackManager {
     public RewardTracksComposer rewardTracks(Habbo habbo, boolean reload) {
         List<RewardTracksComposer.Track> wire = new ArrayList<>();
         for (RewardTrack track : this.activeTracks()) {
-            wire.add(this.toWire(track, this.stateFor(habbo, track)));
+            UserRewardTrackState state = this.stateFor(habbo, track);
+            if (state != null) {
+                wire.add(this.toWire(track, state));
+            }
         }
         return new RewardTracksComposer(this.tracks.isEmpty(), wire, reload);
     }
@@ -450,10 +570,14 @@ public class RewardTrackManager {
 
     /**
      * Staff hand: adds (or, negative, removes) points on a track; the total never goes below zero.
-     * Returns the points the user has afterwards. The user's window follows when they are online.
+     * Returns the points the user has afterwards, -1 when the user's track could not be loaded. The
+     * user's window follows when they are online.
      */
     public int adjustPoints(Habbo habbo, RewardTrack track, int delta) {
         UserRewardTrackState state = this.stateFor(habbo, track);
+        if (state == null) {
+            return -1;
+        }
         synchronized (state) {
             state.addPoints(delta);
         }
@@ -470,6 +594,9 @@ public class RewardTrackManager {
         }
         for (RewardTrack track : this.activeTracks()) {
             UserRewardTrackState state = this.stateFor(habbo, track);
+            if (state == null) {
+                continue;
+            }
             for (RewardTrack.Task task : track.getTasks()) {
                 if (task.getGoalType() != goalType || (task.isPremium() && !state.isPremium())) {
                     continue;
@@ -493,6 +620,9 @@ public class RewardTrackManager {
             return 0;
         }
         UserRewardTrackState state = this.stateFor(habbo, track);
+        if (state == null) {
+            return 0;
+        }
         if (task.isPremium() && !state.isPremium()) {
             return state.progressOf(task.getId());
         }
@@ -505,6 +635,9 @@ public class RewardTrackManager {
             return;
         }
         UserRewardTrackState state = this.stateFor(habbo, track);
+        if (state == null) {
+            return;
+        }
         for (RewardTrack.Task task : tasks) {
             if (state.progressOf(task.getId()) > 0) {
                 this.moveTask(habbo, track, state, task, 0);
@@ -544,41 +677,64 @@ public class RewardTrackManager {
     public int claim(Habbo habbo, String trackId, String prizeId) {
         RewardTrack track = this.tracks.get(trackId);
         RewardTrack.Prize prize = track == null ? null : track.getPrize(prizeId);
+        UserRewardTrackState state = prize == null ? null : this.stateFor(habbo, track);
         int result;
-        if (track == null || prize == null) {
+        if (state == null) {
             result = RESULT_UNKNOWN;
         } else {
-            UserRewardTrackState state = this.stateFor(habbo, track);
             synchronized (state) {
-                if (state.isClaimed(prizeId)) {
-                    result = RESULT_ALREADY_CLAIMED;
-                } else if (state.isPrizeLocked(prize)) {
-                    result = RESULT_PREMIUM_REQUIRED;
-                } else if (state.getPoints() < prize.getRequiredPoints()) {
-                    result = RESULT_NOT_ENOUGH_POINTS;
-                } else {
-                    state.markClaimed(prizeId);
-                    result = RESULT_OK;
-                }
+                result = this.claimLoaded(habbo, track, prize, state);
             }
             if (result == RESULT_OK) {
-                this.saveClaim(habbo.getHabboInfo().getId(), trackId, prizeId);
-                QuestRewards.grantTyped(habbo, prize.getRewardType(), prize.getExtraParams(), prize.getRewardAmount());
+                QuestRewards.grantTyped(
+                        habbo,
+                        prize.getRewardType(),
+                        prize.getExtraParams(),
+                        prize.getRewardAmount(),
+                        prizeOperationId(habbo.getHabboInfo().getId(), trackId, prizeId));
             }
         }
         habbo.getClient().sendResponse(new RewardTrackClaimResultComposer(trackId, prizeId, result));
         return result;
     }
 
+    /** Checks the prize and stores the claim; RESULT_OK only when this call stored it. */
+    private int claimLoaded(Habbo habbo, RewardTrack track, RewardTrack.Prize prize, UserRewardTrackState state) {
+        if (state.isClaimed(prize.getId())) {
+            return RESULT_ALREADY_CLAIMED;
+        }
+        if (state.isPrizeLocked(prize)) {
+            return RESULT_PREMIUM_REQUIRED;
+        }
+        if (state.getPoints() < prize.getRequiredPoints()) {
+            return RESULT_NOT_ENOUGH_POINTS;
+        }
+        int userId = habbo.getHabboInfo().getId();
+        boolean inserted;
+        try {
+            inserted = this.recordClaim(userId, track.getId(), prize.getId());
+        } catch (RuntimeException exception) {
+            LOGGER.error(
+                    "Could not save reward track claim {}/{} of user {}",
+                    track.getId(),
+                    prize.getId(),
+                    userId,
+                    exception);
+            return RESULT_UNKNOWN;
+        }
+        state.markClaimed(prize.getId());
+        return inserted ? RESULT_OK : RESULT_ALREADY_CLAIMED;
+    }
+
     /** PurchaseRewardTrackPremium(trackId): pays the diamonds and/or credits, unlocks the premium tier. */
     public int purchasePremium(Habbo habbo, String trackId) {
         RewardTrack track = this.tracks.get(trackId);
+        UserRewardTrackState state = track == null || !track.hasPremium() ? null : this.stateFor(habbo, track);
         int result;
         int points = 0;
-        if (track == null || !track.hasPremium()) {
+        if (state == null) {
             result = RESULT_UNKNOWN;
         } else {
-            UserRewardTrackState state = this.stateFor(habbo, track);
             synchronized (state) {
                 points = state.getPoints();
                 if (state.isPremium()) {
@@ -588,23 +744,30 @@ public class RewardTrackManager {
                                 < track.getPremiumCostDiamonds()) {
                     result = RESULT_NOT_ENOUGH_CURRENCY;
                 } else {
-                    if (track.getPremiumCostCredits() > 0) {
-                        habbo.giveCredits(-track.getPremiumCostCredits(), "reward_track.premium");
-                    }
-                    if (track.getPremiumCostDiamonds() > 0) {
-                        habbo.givePoints(
-                                QuestRewards.DIAMONDS_POINT_TYPE,
-                                -track.getPremiumCostDiamonds(),
-                                "reward_track.premium");
-                    }
-                    state.setPremium(true);
-                    state.addPoints(track.getPremiumInstantPoints());
-                    points = state.getPoints();
                     result = RESULT_OK;
                 }
             }
             if (result == RESULT_OK) {
-                this.saveTrack(habbo.getHabboInfo().getId(), state);
+                // Paid outside the state lock; the fixed ledger ids make a concurrent second purchase a no-op.
+                result = this.payPremium(habbo, track);
+            }
+            if (result == RESULT_OK) {
+                synchronized (state) {
+                    if (state.isPremium()) {
+                        result = RESULT_ALREADY_PREMIUM;
+                    } else {
+                        state.setPremium(true);
+                        state.addPoints(track.getPremiumInstantPoints());
+                    }
+                    points = state.getPoints();
+                }
+            }
+            if (result == RESULT_OK) {
+                int userId = habbo.getHabboInfo().getId();
+                if (!this.saveTrackNow(userId, state)) {
+                    // Paid already: keep the pass and retry the write in the background.
+                    this.saveTrack(userId, state);
+                }
             }
         }
         habbo.getClient().sendResponse(new RewardTrackPremiumPurchaseResultComposer(trackId, result, points));
@@ -612,5 +775,39 @@ public class RewardTrackManager {
             this.sendRewardTracks(habbo, false);
         }
         return result;
+    }
+
+    private int payPremium(Habbo habbo, RewardTrack track) {
+        List<EconomyOperation> operations =
+                premiumOperations(habbo.getHabboInfo().getId(), track);
+        if (operations.isEmpty()) {
+            return RESULT_OK;
+        }
+        try {
+            this.applyPayment(habbo, operations);
+        } catch (IllegalArgumentException exception) {
+            return RESULT_NOT_ENOUGH_CURRENCY;
+        } catch (SQLException | RuntimeException exception) {
+            LOGGER.error(
+                    "Could not take the reward track {} premium payment of user {}",
+                    track.getId(),
+                    habbo.getHabboInfo().getId(),
+                    exception);
+            return RESULT_UNKNOWN;
+        }
+        if (habbo.getClient() != null) {
+            for (EconomyOperation operation : operations) {
+                if (operation.currencyType() == EconomyLedger.CREDITS) {
+                    habbo.getClient().sendResponse(new UserCreditsComposer(habbo));
+                } else {
+                    habbo.getClient()
+                            .sendResponse(new UserPointsComposer(
+                                    habbo.getHabboInfo().getCurrencyAmount(operation.currencyType()),
+                                    operation.delta(),
+                                    operation.currencyType()));
+                }
+            }
+        }
+        return RESULT_OK;
     }
 }

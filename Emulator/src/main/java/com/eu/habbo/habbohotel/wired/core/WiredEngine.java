@@ -69,23 +69,23 @@ public final class WiredEngine {
     /** Maximum recursion depth to prevent infinite loops (e.g., collision + chase) */
     public static volatile int MAX_RECURSION_DEPTH = 10;
 
-    /** Maximum events of same type per room within rate limit window before banning */
-    public static volatile int MAX_EVENTS_PER_WINDOW = 100;
+    /** Maximum events of same type per room within the rate limit window; the rest are dropped */
+    public static volatile int MAX_EVENTS_PER_WINDOW = 1000;
 
     /** Time window for counting rapid events (milliseconds) */
-    public static volatile long RATE_LIMIT_WINDOW_MS = 10000;
+    public static volatile long RATE_LIMIT_WINDOW_MS = 1000;
 
-    /** Duration to ban wired execution in a room after abuse detected (milliseconds) */
-    public static volatile long WIRED_BAN_DURATION_MS = 600000;
+    /** Wired ban after the rate limit is crossed (milliseconds); 0 drops the excess and keeps running */
+    public static volatile long WIRED_BAN_DURATION_MS = 0;
 
     /** Monitor usage window in milliseconds */
     public static volatile int MONITOR_USAGE_WINDOW_MS = 1000;
 
     /** Monitor execution cap per room window */
-    public static volatile int MONITOR_USAGE_LIMIT = 1000;
+    public static volatile int MONITOR_USAGE_LIMIT = 10000;
 
     /** Maximum delayed events allowed per room at the same time */
-    public static volatile int MONITOR_DELAYED_EVENTS_LIMIT = 100;
+    public static volatile int MONITOR_DELAYED_EVENTS_LIMIT = 1000;
 
     /** Average execution threshold that marks overload */
     public static volatile int MONITOR_OVERLOAD_AVERAGE_MS = 50;
@@ -547,7 +547,12 @@ public final class WiredEngine {
         List<InteractionWiredEffect> executedSelectors = new ArrayList<>();
         WiredEffectPlanner.SelectorPlan selectorPlan = this.effectPlanner.selectorPlan(effects);
 
-        executeSelectorList(selectorPlan.immediate(), ctx, executedSelectors);
+        WiredTargets.Defaults defaults = ctx.targets().setDefaultsAside();
+        try {
+            executeSelectorList(selectorPlan.immediate(), ctx, executedSelectors);
+        } finally {
+            ctx.targets().restoreDefaults(defaults);
+        }
         executeSelectorList(selectorPlan.deferred(), ctx, executedSelectors);
 
         return executedSelectors;
@@ -1185,8 +1190,8 @@ public final class WiredEngine {
                     room.getOwnerName(),
                     banMinutes);
         } else {
-            LOGGER.warn(
-                    "Wired rate limit exceeded in room {} ({}) for event {} ({} events). Ban disabled (wired.abuse.ban.duration.ms=0).",
+            LOGGER.debug(
+                    "Wired rate limit exceeded in room {} ({}) for event {} ({} events); the rest of the window is dropped.",
                     roomId,
                     room.getName(),
                     eventType.name(),

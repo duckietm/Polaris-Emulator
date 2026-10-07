@@ -115,6 +115,38 @@ class IntroductionRewardTrackTest {
     }
 
     @Test
+    void saveOfATaskWaitingInTheQueueTakesLaterProgressWithIt() {
+        List<Runnable> queued = new ArrayList<>();
+        List<int[]> written = new ArrayList<>();
+        RewardTrackManager manager = new RewardTrackManager(true) {
+            @Override
+            protected void runPersistence(Runnable write) {
+                queued.add(write);
+            }
+
+            @Override
+            protected void writeTaskProgress(int userId, String trackId, String taskId, int count, int peak) {
+                written.add(new int[] {count, peak});
+            }
+        };
+        UserRewardTrackState state = new UserRewardTrackState("introduction", 0, false);
+
+        for (int count = 1; count <= 5; count++) {
+            state.setProgress("chat", count);
+            manager.saveTaskProgress(1, state, "chat");
+        }
+        manager.saveTaskProgress(1, state, "swim");
+        assertEquals(2, queued.size(), "one queued write per task, however often it moves");
+
+        queued.remove(0).run();
+        assertEquals(5, written.get(0)[0], "the write carries the newest progress");
+
+        state.setProgress("chat", 6);
+        manager.saveTaskProgress(1, state, "chat");
+        assertEquals(2, queued.size(), "once a write has started, the next change queues again");
+    }
+
+    @Test
     void aSlowOlderSaveNeverOverwritesNewerPoints() {
         List<Runnable> queued = new ArrayList<>();
         List<int[]> written = new ArrayList<>();

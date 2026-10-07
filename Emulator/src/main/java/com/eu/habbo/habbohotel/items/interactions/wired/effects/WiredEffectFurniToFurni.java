@@ -5,7 +5,6 @@ import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
-import com.eu.habbo.habbohotel.rooms.FurnitureMovementError;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -78,14 +77,9 @@ public class WiredEffectFurniToFurni extends InteractionWiredEffect {
                 continue;
             }
 
-            FurnitureMovementError error = WiredMoveCarryHelper.moveFurni(
-                    room, this, moveItem, targetTile, moveItem.getRotation(), null, false, ctx);
-            if (error == FurnitureMovementError.NONE) {
-                continue;
-            }
-
-            WiredMoveCarryHelper.moveFurni(
-                    room, this, moveItem, targetTile, moveItem.getRotation(), targetItem.getZ(), null, false, ctx);
+            // Habbo's stacking rules decide; a refused move (onto a chair, say) stays refused.
+            // Movement Physics' "move through furni" is what lets it onto such furni.
+            WiredMoveCarryHelper.moveFurni(room, this, moveItem, targetTile, moveItem.getRotation(), null, false, ctx);
         }
     }
 

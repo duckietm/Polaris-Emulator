@@ -56,6 +56,26 @@ class WiredFurniRuntimeStatePolicyTest {
     }
 
     @Test
+    void colourKeysAreAllowedButOutOfRangeColoursAreRejected() {
+        assertEquals(
+                "~recolorable_furni.color.rgb",
+                WiredFurniRuntimeStatePolicy.normalizeAllowedKey("~recolorable_furni.color.rgb"));
+        assertEquals(
+                "~recolorable_furni.color.rgb.g",
+                WiredFurniRuntimeStatePolicy.normalizeAllowedKey(" ~recolorable_furni.color.rgb.g "));
+        assertEquals("", WiredFurniRuntimeStatePolicy.normalizeAllowedKey("~recolorable_furni.color.alpha"));
+
+        Room room = mock(Room.class);
+        HabboItem item = floorItem();
+        assertFalse(WiredFurniRuntimeStatePolicy.write(room, item, "~recolorable_furni.color.rgb", 0x1000000)
+                .supported());
+        assertFalse(WiredFurniRuntimeStatePolicy.write(room, item, "~recolorable_furni.color.rgb", -1)
+                .supported());
+        assertFalse(WiredFurniRuntimeStatePolicy.write(room, item, "~recolorable_furni.color.rgb.r", 256)
+                .supported());
+    }
+
+    @Test
     void opacityIsReadableAndWritableAcrossItsFullPercentageRange() {
         Room room = mock(Room.class);
         RoomWiredRuntime runtime = mock(RoomWiredRuntime.class);

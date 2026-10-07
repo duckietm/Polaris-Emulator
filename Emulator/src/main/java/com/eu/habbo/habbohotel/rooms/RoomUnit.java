@@ -810,7 +810,7 @@ public class RoomUnit {
         RoomUserRotation rotation =
                 (RoomUserRotation.values()[Rotation.Calculate(this.getX(), this.getY(), location.x, location.y)]);
 
-        if (Math.abs(rotation.getValue() - this.bodyRotation.getValue()) <= 1) {
+        if (RoomUserRotation.rotationDistance(rotation.getValue(), this.bodyRotation.getValue()) <= 1) {
             this.headRotation = rotation;
         }
     }
@@ -858,6 +858,11 @@ public class RoomUnit {
 
         int tileIndex = (tile.x & 0xFF) | (tile.y << 12);
         return this.overridableTiles.contains(tileIndex);
+    }
+
+    /** Whether tiles were granted to this unit to walk on whatever their state. */
+    public boolean hasOverrideTiles() {
+        return !this.overridableTiles.isEmpty();
     }
 
     public void addOverrideTile(RoomTile tile) {

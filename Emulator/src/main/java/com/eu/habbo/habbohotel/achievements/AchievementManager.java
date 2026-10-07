@@ -39,6 +39,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,10 +49,11 @@ public class AchievementManager {
     public static volatile boolean TALENTTRACK_ENABLED = false;
 
     private final Map<String, Achievement> achievements;
+    private final Object reloadLock = new Object();
     private final Map<TalentTrackType, LinkedHashMap<Integer, TalentTrackLevel>> talentTrackLevels;
 
     public AchievementManager() {
-        this.achievements = new HashMap<>();
+        this.achievements = new ConcurrentHashMap<>();
         this.talentTrackLevels = new HashMap<>();
     }
 
@@ -66,19 +68,24 @@ public class AchievementManager {
             if (habbo != null) {
                 progressAchievement(habbo, achievement, amount);
             } else {
-                try (Connection connection = openConnection();
-                        PreparedStatement statement = connection.prepareStatement(""
-                                + "INSERT INTO users_achievements_queue (user_id, achievement_id, amount) VALUES (?, ?, ?) "
-                                + "ON DUPLICATE KEY UPDATE amount = LEAST(2147483647, CAST(amount AS SIGNED) + ?)")) {
-                    statement.setInt(1, habboId);
-                    statement.setInt(2, achievement.id);
-                    statement.setInt(3, amount);
-                    statement.setInt(4, amount);
-                    statement.execute();
-                } catch (SQLException e) {
-                    LOGGER.error("Caught SQL exception", e);
-                }
+                queueOffline(habboId, achievement, amount);
             }
+        }
+    }
+
+    /** Stores progress for a user that is not online; it is applied on their next login. */
+    private static void queueOffline(int habboId, Achievement achievement, int amount) {
+        try (Connection connection = openConnection();
+                PreparedStatement statement = connection.prepareStatement(""
+                        + "INSERT INTO users_achievements_queue (user_id, achievement_id, amount) VALUES (?, ?, ?) "
+                        + "ON DUPLICATE KEY UPDATE amount = LEAST(2147483647, CAST(amount AS SIGNED) + ?)")) {
+            statement.setInt(1, habboId);
+            statement.setInt(2, achievement.id);
+            statement.setInt(3, amount);
+            statement.setInt(4, amount);
+            statement.execute();
+        } catch (SQLException | RuntimeException e) {
+            LOGGER.error("Unable to queue achievement {} for user {}", achievement.name, habboId, e);
         }
     }
 
@@ -87,7 +94,13 @@ public class AchievementManager {
     }
 
     public static void progressAchievement(Habbo habbo, Achievement achievement, int amount) {
-        if (achievement == null || habbo == null || !habbo.isOnline() || amount <= 0) return;
+        if (achievement == null || habbo == null || amount <= 0) return;
+        if (!habbo.isOnline()) {
+            // Logging in or out: keep the progress for the next login instead of dropping it.
+            if (habbo.getHabboInfo() != null && habbo.getHabboInfo().getId() > 0)
+                queueOffline(habbo.getHabboInfo().getId(), achievement, amount);
+            return;
+        }
 
         try {
             LedgerWalletMutation.coordinated(habbo, () -> {
@@ -107,7 +120,9 @@ public class AchievementManager {
             throws SQLException {
         int currentProgress = Math.max(0, habbo.getHabboStats().getAchievementProgress(achievement));
         int newProgress = (int) Math.min(Integer.MAX_VALUE, (long) currentProgress + amount);
-        AchievementLevel oldLevel = achievement.getLevelForProgress(currentProgress);
+        // One snapshot for the whole transition, so a reload cannot change the levels midway.
+        Map<Integer, AchievementLevel> levels = achievement.levels();
+        AchievementLevel oldLevel = Achievement.levelForProgress(levels, currentProgress);
 
         if (achievement.state == 0 || achievement.state == 2 || achievement.state == 3) return;
         if (hasAchieved(habbo, achievement) || currentProgress == newProgress) {
@@ -133,8 +148,8 @@ public class AchievementManager {
                 && plugins.fireEvent(new UserAchievementProgressEvent(habbo, achievement, amount))
                         .isCancelled()) return;
 
-        AchievementLevel newLevel = achievement.getLevelForProgress(newProgress);
-        List<AchievementLevel> earnedLevels = achievement.levels.values().stream()
+        AchievementLevel newLevel = Achievement.levelForProgress(levels, newProgress);
+        List<AchievementLevel> earnedLevels = levels.values().stream()
                 .filter(level -> (oldLevel == null || level.level > oldLevel.level)
                         && newLevel != null
                         && level.level <= newLevel.level)
@@ -324,11 +339,12 @@ public class AchievementManager {
             return false;
         }
 
-        AchievementLevel level = achievement.getLevelForProgress(currentProgress);
+        Map<Integer, AchievementLevel> levels = achievement.levels();
+        AchievementLevel level = Achievement.levelForProgress(levels, currentProgress);
 
         if (level == null) return false;
 
-        AchievementLevel nextLevel = achievement.levels.get(level.level + 1);
+        AchievementLevel nextLevel = levels.get(level.level + 1);
 
         return nextLevel == null && currentProgress >= level.progress;
     }
@@ -387,27 +403,21 @@ public class AchievementManager {
 
     public void reload() {
         long millis = System.currentTimeMillis();
-        synchronized (this.achievements) {
-            for (Achievement achievement : this.achievements.values()) {
-                achievement.clearLevels();
-            }
-
+        synchronized (this.reloadLock) {
             try (Connection connection = openConnection()) {
+                Map<String, Achievement> loaded;
                 try (Statement statement = connection.createStatement();
                         ResultSet set = statement.executeQuery("SELECT * FROM achievements ORDER BY name, level")) {
-                    while (set.next()) {
-                        if (!this.achievements.containsKey(set.getString("name"))) {
-                            this.achievements.put(set.getString("name"), new Achievement(set));
-                        } else {
-                            this.achievements.get(set.getString("name")).addLevel(new AchievementLevel(set));
-                            this.achievements.get(set.getString("name")).loadMetadata(set);
-                        }
-                    }
+                    loaded = readAchievements(set);
                 } catch (SQLException e) {
                     LOGGER.error("Caught SQL exception", e);
+                    loaded = null;
                 } catch (Exception e) {
                     LOGGER.error("Caught exception", e);
+                    loaded = null;
                 }
+                // A failed read keeps the current achievements instead of publishing a partial set.
+                if (loaded != null) this.applyLoaded(loaded);
 
                 synchronized (this.talentTrackLevels) {
                     this.talentTrackLevels.clear();
@@ -436,16 +446,43 @@ public class AchievementManager {
         LOGGER.info("Achievement Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
     }
 
+    /** Reads every achievement with its complete level set, without touching the live ones. */
+    static Map<String, Achievement> readAchievements(ResultSet set) throws SQLException {
+        Map<String, Achievement> loaded = new LinkedHashMap<>();
+        while (set.next()) {
+            String name = set.getString("name");
+            Achievement achievement = loaded.get(name);
+            if (achievement == null) {
+                loaded.put(name, new Achievement(set));
+            } else {
+                achievement.addLevel(new AchievementLevel(set));
+                achievement.loadMetadata(set);
+            }
+        }
+        return loaded;
+    }
+
+    /**
+     * Publishes a reloaded set: known achievements keep their identity (online progress is keyed by it)
+     * and swap in their new levels at once, new ones are added and deleted ones removed.
+     */
+    void applyLoaded(Map<String, Achievement> loaded) {
+        for (Achievement fresh : loaded.values()) {
+            Achievement current = this.achievements.get(fresh.name);
+            if (current != null) current.refreshFrom(fresh);
+            else this.achievements.put(fresh.name, fresh);
+        }
+        this.achievements.keySet().retainAll(loaded.keySet());
+    }
+
     public Achievement getAchievement(String name) {
         return this.achievements.get(name);
     }
 
     public Achievement getAchievement(int id) {
-        synchronized (this.achievements) {
-            for (Map.Entry<String, Achievement> set : this.achievements.entrySet()) {
-                if (set.getValue().id == id) {
-                    return set.getValue();
-                }
+        for (Achievement achievement : this.achievements.values()) {
+            if (achievement.id == id) {
+                return achievement;
             }
         }
 

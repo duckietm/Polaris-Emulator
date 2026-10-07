@@ -31,7 +31,7 @@ public class FriendRequest extends RCONMessage<FriendRequest.JSON> {
             return;
         }
 
-        if (!Messenger.friendRequested(json.user_id, json.target_id)) {
+        if (!Messenger.friendRequested(json.target_id, json.user_id)) {
             Messenger.makeFriendRequest(json.user_id, json.target_id);
 
             Habbo target = Emulator.getGameEnvironment().getHabboManager().getHabbo(json.target_id);
@@ -64,7 +64,6 @@ public class FriendRequest extends RCONMessage<FriendRequest.JSON> {
 
         @Positive(message = "invalid user")
         public int user_id;
-
 
         @Positive(message = "invalid target")
         public int target_id;

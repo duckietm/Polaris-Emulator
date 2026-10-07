@@ -38,6 +38,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -934,46 +935,48 @@ public class RoomUnitManager {
     }
 
     public Set<RoomUnit> getRoomUnits(RoomTile atTile) {
+        return this.collectRoomUnits(unit -> atTile == null || unit.getCurrentLocation() == atTile);
+    }
+
+    /** The units on a tile, filtered in place: the pathfinder asks this for every tile it tries. */
+    public Collection<RoomUnit> getRoomUnitsAt(RoomTile tile) {
+        if (tile == null) {
+            return new HashSet<>();
+        }
+        return this.collectRoomUnits(unit -> tile.equals(unit.getCurrentLocation()));
+    }
+
+    private Set<RoomUnit> collectRoomUnits(Predicate<RoomUnit> filter) {
         Set<RoomUnit> units = new HashSet<>();
 
         for (Habbo habbo : this.currentHabbos.values()) {
-            if (habbo != null
-                    && habbo.getRoomUnit() != null
-                    && habbo.getRoomUnit().getRoom() != null
-                    && habbo.getRoomUnit().getRoom().getId() == this.room.getId()
-                    && (atTile == null || habbo.getRoomUnit().getCurrentLocation() == atTile)) {
-                units.add(habbo.getRoomUnit());
+            if (habbo != null) {
+                this.collectRoomUnit(habbo.getRoomUnit(), filter, units);
             }
         }
 
         for (Pet pet : this.currentPets.values()) {
-            if (pet != null
-                    && pet.getRoomUnit() != null
-                    && pet.getRoomUnit().getRoom() != null
-                    && pet.getRoomUnit().getRoom().getId() == this.room.getId()
-                    && (atTile == null || pet.getRoomUnit().getCurrentLocation() == atTile)) {
-                units.add(pet.getRoomUnit());
+            if (pet != null) {
+                this.collectRoomUnit(pet.getRoomUnit(), filter, units);
             }
         }
 
         for (Bot bot : this.currentBots.values()) {
-            if (bot != null
-                    && bot.getRoomUnit() != null
-                    && bot.getRoomUnit().getRoom() != null
-                    && bot.getRoomUnit().getRoom().getId() == this.room.getId()
-                    && (atTile == null || bot.getRoomUnit().getCurrentLocation() == atTile)) {
-                units.add(bot.getRoomUnit());
+            if (bot != null) {
+                this.collectRoomUnit(bot.getRoomUnit(), filter, units);
             }
         }
 
         return units;
     }
 
-    public Collection<RoomUnit> getRoomUnitsAt(RoomTile tile) {
-        Set<RoomUnit> roomUnits = getRoomUnits();
-        return roomUnits.stream()
-                .filter(unit -> unit.getCurrentLocation().equals(tile))
-                .collect(Collectors.toSet());
+    private void collectRoomUnit(RoomUnit unit, Predicate<RoomUnit> filter, Set<RoomUnit> units) {
+        if (unit != null
+                && unit.getRoom() != null
+                && unit.getRoom().getId() == this.room.getId()
+                && filter.test(unit)) {
+            units.add(unit);
+        }
     }
 
     public void giveEffect(Habbo habbo, int effectId, int duration) {

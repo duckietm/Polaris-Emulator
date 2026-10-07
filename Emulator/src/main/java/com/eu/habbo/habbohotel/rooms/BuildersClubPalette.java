@@ -56,6 +56,10 @@ public final class BuildersClubPalette {
     private static final ConcurrentHashMap<Integer, Integer> COLOR_BY_BASE = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<Integer, RoomItems> ROOM_ITEMS = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<Integer, long[]> ROOM_BUDGET = new ConcurrentHashMap<>();
+    /** When each refusal reason was last logged, so a hotel owner sees why without a flooded log. */
+    private static final ConcurrentHashMap<String, Long> LAST_REFUSAL_LOG = new ConcurrentHashMap<>();
+
+    private static final long REFUSAL_LOG_MS = 60_000L;
     private static final Object PALETTE_LOCK = new Object();
     private static final AtomicReference<Palettes> PALETTES = new AtomicReference<>(new Palettes(Map.of(), 0L));
 
@@ -72,10 +76,20 @@ public final class BuildersClubPalette {
     /** True when the furni is a colour variant with a known colour. */
     public static boolean hasColor(HabboItem item) {
         Item base = item == null ? null : item.getBaseItem();
-        return base != null
-                && base.getType() == FurnitureType.FLOOR
-                && BuildersClubRecolorService.familyOf(base.getName()) != null
-                && colorOf(base) != NO_COLOR;
+        if (base == null
+                || base.getType() != FurnitureType.FLOOR
+                || BuildersClubRecolorService.familyOf(base.getName()) == null) {
+            return false;
+        }
+        if (colorOf(base) == NO_COLOR) {
+            logRefusal(
+                    "no-furnidata",
+                    "no colour for {} in furnidata: check that the furnidata source is found at startup"
+                            + " (FurnitureTextProvider) and has partcolors for it",
+                    base.getName());
+            return false;
+        }
+        return true;
     }
 
     public static Integer read(HabboItem item, String key) {
@@ -99,9 +113,27 @@ public final class BuildersClubPalette {
                 paletteOf(BuildersClubRecolorService.familyOf(base.getName())),
                 BuildersClubPalette::colorOf);
         if (target == null || target.getId() == base.getId()) {
+            logRefusal(
+                    "no-target-" + room.getId(),
+                    "no other Builders Club colour of {} is nearer to #{} (the colours come from catalog_items_bc)",
+                    base.getName(),
+                    String.format("%06X", wanted));
             return false;
         }
-        if (!isBuildersClubItem(room, item) || !spend(room.getId(), System.currentTimeMillis())) {
+        if (!isBuildersClubItem(room, item)) {
+            logRefusal(
+                    "not-bc-" + room.getId(),
+                    "furni {} in room {} is not Builders Club furni (builders_club_items), so it keeps its colour",
+                    item.getId(),
+                    room.getId());
+            return false;
+        }
+        if (!spend(room.getId(), System.currentTimeMillis())) {
+            logRefusal(
+                    "budget-" + room.getId(),
+                    "room {} reached {} recolors this second",
+                    room.getId(),
+                    MAX_RECOLORS_PER_SECOND);
             return false;
         }
 
@@ -110,6 +142,19 @@ public final class BuildersClubPalette {
         room.sendComposer(new AddFloorItemComposer(item, room.getFurniOwnerName(item.getUserId())).compose());
         persist(item.getId(), target.getId(), room.getId());
         return true;
+    }
+
+    private static void logRefusal(String reason, String message, Object... arguments) {
+        long now = System.currentTimeMillis();
+        if (LAST_REFUSAL_LOG.size() >= MAX_TRACKED_ROOMS) {
+            LAST_REFUSAL_LOG.clear();
+        }
+        Long last = LAST_REFUSAL_LOG.get(reason);
+        if (last != null && now - last < REFUSAL_LOG_MS) {
+            return;
+        }
+        LAST_REFUSAL_LOG.put(reason, now);
+        LOGGER.warn("Recolor refused: " + message, arguments);
     }
 
     /** The value of a variable for a colour: the colour itself or one of its parts. */

@@ -67,6 +67,11 @@ public class FurnitureTextProvider {
         return this.source;
     }
 
+    /** Furnidata downloaded from a URL is a local copy: edits belong on the web server, not here. */
+    public boolean isSourceReadOnly() {
+        return FurnidataDownloader.isDownloadedCopy(this.source);
+    }
+
     /** Returns {@code true} when the resolved source is a directory (split-tier layout). */
     public boolean isSourceDirectory() {
         return this.source != null && Files.isDirectory(this.source);
@@ -99,7 +104,11 @@ public class FurnitureTextProvider {
             this.sourceDescription = source.message();
             return source.path();
         }
-        LOGGER.warn("FurnitureTextProvider: no furnidata source resolved ({}) - {}", source.status(), source.message());
+        LOGGER.warn(
+                "FurnitureTextProvider: no furnidata source resolved ({}) - {} [path: {}]",
+                source.status(),
+                source.message(),
+                source.path());
         return null;
     }
 

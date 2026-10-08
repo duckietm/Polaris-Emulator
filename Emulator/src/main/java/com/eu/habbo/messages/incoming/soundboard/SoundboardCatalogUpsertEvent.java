@@ -36,9 +36,8 @@ public class SoundboardCatalogUpsertEvent extends MessageHandler {
 
         // Trailing again, after the classname: the pad's own cooldown in seconds. Without it an
         // update keeps the stored value.
-        int cooldownSeconds = this.packet.bytesAvailable() > 0
-                ? this.packet.readInt()
-                : SoundboardCatalogCommand.KEEP_COOLDOWN;
+        int cooldownSeconds =
+                this.packet.bytesAvailable() > 0 ? this.packet.readInt() : SoundboardCatalogCommand.KEEP_COOLDOWN;
 
         SoundboardCatalogCommand command =
                 new SoundboardCatalogCommand(id, name, classname, url, minRank, enabled, cooldownSeconds);

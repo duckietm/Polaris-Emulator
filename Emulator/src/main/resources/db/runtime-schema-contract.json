@@ -154,7 +154,7 @@
     "snowwar_game_tokens": ["games", "user_id"],
     "snowwar_scores": ["matches", "score", "user_id", "week_start"],
     "snowwar_token_offers": ["enabled", "games", "id", "localization_id", "order_num", "points_type", "price_credits", "price_points"],
-    "soundboard_sounds": ["classname", "enabled", "id", "min_rank", "name", "sort_order", "url"],
+    "soundboard_sounds": ["classname", "cooldown_seconds", "enabled", "id", "min_rank", "name", "sort_order", "url"],
     "soundtracks": ["author", "code", "id", "length", "name", "track"],
     "special_enables": ["effect_id", "min_rank"],
     "support_cfh_categories": ["id", "name_external", "name_internal"],

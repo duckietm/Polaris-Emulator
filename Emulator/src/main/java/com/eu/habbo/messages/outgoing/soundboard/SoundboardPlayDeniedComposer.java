@@ -25,7 +25,8 @@ public class SoundboardPlayDeniedComposer extends MessageComposer {
         COOLDOWN(1),
         ROOM_DISABLED(2),
         UNAVAILABLE(3),
-        RIGHTS_REQUIRED(4);
+        RIGHTS_REQUIRED(4),
+        PAD_COOLDOWN(5);
 
         private final int wireCode;
 

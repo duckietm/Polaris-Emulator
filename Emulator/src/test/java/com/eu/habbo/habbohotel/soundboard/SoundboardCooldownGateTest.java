@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.soundboard;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -35,6 +36,20 @@ class SoundboardCooldownGateTest {
 
         assertTrue(gate.tryAcquire(42, 1_000L, 0).allowed());
         assertTrue(gate.tryAcquire(42, 1_000L, 0).allowed());
+    }
+
+    @Test
+    void peekReportsTheWaitWithoutStartingOne() {
+        SoundboardCooldownGate gate = new SoundboardCooldownGate();
+
+        assertTrue(gate.peek(42, 1_000L).allowed());
+        assertTrue(gate.tryAcquire(42, 1_000L, 10).allowed());
+
+        SoundboardCooldownGate.Decision waiting = gate.peek(42, 4_500L);
+        assertFalse(waiting.allowed());
+        assertEquals(7, waiting.remainingSeconds());
+        assertTrue(gate.peek(42, 11_000L).allowed());
+        assertTrue(gate.peek(43, 4_500L).allowed());
     }
 
     @Test

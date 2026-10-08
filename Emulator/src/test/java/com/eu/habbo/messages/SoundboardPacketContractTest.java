@@ -138,7 +138,7 @@ class SoundboardPacketContractTest {
 
     @Test
     void catalogCarriesEnabledAndDisabledManagementFields() {
-        SoundboardSound disabled = new SoundboardSound(7, "Campanella", "bell", "/sounds/bell.mp3", false, 20, 5);
+        SoundboardSound disabled = new SoundboardSound(7, "Campanella", "bell", "/sounds/bell.mp3", false, 20, 5, 15);
         ByteBuf packet =
                 new SoundboardCatalogComposer(List.of(disabled)).compose().get();
         packet.skipBytes(6);
@@ -151,6 +151,20 @@ class SoundboardPacketContractTest {
         assertEquals(20, packet.readInt());
         assertEquals(5, packet.readInt());
         assertEquals("bell", readString(packet));
+        // the pad's own cooldown closes the packet, one per pad in the same order
+        assertEquals(15, packet.readInt());
+        assertFalse(packet.isReadable());
+    }
+
+    @Test
+    void aPadCooldownDenialHasItsOwnReasonSoThePanelIsNotLocked() {
+        ByteBuf packet = new SoundboardPlayDeniedComposer(SoundboardPlayDeniedComposer.Reason.PAD_COOLDOWN, 8)
+                .compose()
+                .get();
+        packet.skipBytes(6);
+
+        assertEquals(5, packet.readInt());
+        assertEquals(8, packet.readInt());
         assertFalse(packet.isReadable());
     }
 

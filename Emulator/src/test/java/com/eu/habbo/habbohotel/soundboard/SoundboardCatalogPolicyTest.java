@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.soundboard;
 
+import static com.eu.habbo.habbohotel.soundboard.SoundboardCatalogResult.Code.INVALID_COOLDOWN;
 import static com.eu.habbo.habbohotel.soundboard.SoundboardCatalogResult.Code.INVALID_NAME;
 import static com.eu.habbo.habbohotel.soundboard.SoundboardCatalogResult.Code.INVALID_ORDER;
 import static com.eu.habbo.habbohotel.soundboard.SoundboardCatalogResult.Code.INVALID_RANK;
@@ -48,6 +49,14 @@ class SoundboardCatalogPolicyTest {
         assertEquals(
                 INVALID_RANK,
                 manager.upsert(42, new SoundboardCatalogCommand(0, "Bell", "bell", "/bell.mp3", 6, true))
+                        .code());
+        assertEquals(
+                INVALID_COOLDOWN,
+                manager.upsert(42, new SoundboardCatalogCommand(0, "Bell", "bell", "/bell.mp3", 1, true, 3_601))
+                        .code());
+        assertEquals(
+                INVALID_COOLDOWN,
+                manager.upsert(42, new SoundboardCatalogCommand(0, "Bell", "bell", "/bell.mp3", 1, true, -2))
                         .code());
 
         verify(repository, never()).upsert(org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.any());

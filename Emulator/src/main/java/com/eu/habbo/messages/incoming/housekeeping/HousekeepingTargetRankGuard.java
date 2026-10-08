@@ -69,6 +69,17 @@ final class HousekeepingTargetRankGuard {
         return canTargetRank(operator, rankId);
     }
 
+    /** The highest configured rank: the one the housekeeping lockdown still lets in. */
+    static boolean isTopRank(Habbo operator) {
+        if (operator == null
+                || operator.getHabboInfo() == null
+                || operator.getHabboInfo().getRank() == null) {
+            return false;
+        }
+
+        return operator.getHabboInfo().getRank().getId() >= highestConfiguredRankId();
+    }
+
     private static int highestConfiguredRankId() {
         int highestRankId = 0;
         for (Rank rank : Emulator.getGameEnvironment().getPermissionsManager().getAllRanks()) {

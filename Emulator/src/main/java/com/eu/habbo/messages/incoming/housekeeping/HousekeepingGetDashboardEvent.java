@@ -1,16 +1,13 @@
 package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.permissions.Permission;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingDashboardComposer;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class HousekeepingGetDashboardEvent extends MessageHandler {
+public class HousekeepingGetDashboardEvent extends HousekeepingHandler {
     @Override
     public int getRatelimit() {
         return 2000;
@@ -18,11 +15,14 @@ public class HousekeepingGetDashboardEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!this.client.getHabbo().hasPermission(Permission.ACC_HOUSEKEEPING)) {
+        if (!this.allowed()) {
             return;
         }
 
-        int onlineUsers = Emulator.getGameEnvironment().getHabboManager().getOnlineHabbos().size();
+        int onlineUsers = Emulator.getGameEnvironment()
+                .getHabboManager()
+                .getOnlineHabbos()
+                .size();
         int activeRooms = 0;
         int totalUsers = 0;
         int totalRooms = 0;
@@ -41,21 +41,23 @@ public class HousekeepingGetDashboardEvent extends MessageHandler {
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) FROM users");
-                 ResultSet rs = statement.executeQuery()) {
+                    ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) totalUsers = rs.getInt(1);
             }
 
             try (PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) FROM rooms");
-                 ResultSet rs = statement.executeQuery()) {
+                    ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) totalRooms = rs.getInt(1);
             }
 
-            try (PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) FROM support_tickets WHERE state = 0");
-                 ResultSet rs = statement.executeQuery()) {
+            try (PreparedStatement statement =
+                            connection.prepareStatement("SELECT COUNT(*) FROM support_tickets WHERE state = 0");
+                    ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) pendingTickets = rs.getInt(1);
             }
 
-            try (PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) FROM bans WHERE timestamp > ?")) {
+            try (PreparedStatement statement =
+                    connection.prepareStatement("SELECT COUNT(*) FROM bans WHERE timestamp > ?")) {
                 statement.setInt(1, now - (24 * 3600));
                 try (ResultSet rs = statement.executeQuery()) {
                     if (rs.next()) sanctionsLast24h = rs.getInt(1);
@@ -79,8 +81,7 @@ public class HousekeepingGetDashboardEvent extends MessageHandler {
                 pendingTickets,
                 sanctionsLast24h,
                 Math.max(uptime, 0),
-                version
-        ));
+                version));
     }
 
     // Approximate uptime — captured at class-load time rather than emu startup

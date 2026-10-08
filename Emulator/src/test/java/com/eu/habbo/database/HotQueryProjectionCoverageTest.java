@@ -100,7 +100,8 @@ class HotQueryProjectionCoverageTest {
             "trade_mode",
             "move_diagonally",
             "allow_underpass",
-            "moodlight_data");
+            "moodlight_data",
+            "date_created");
 
     @Test
     void marketplacePurchaseQueriesCoverEveryConsumedColumn() throws Exception {

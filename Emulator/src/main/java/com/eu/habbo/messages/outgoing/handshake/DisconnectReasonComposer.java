@@ -9,6 +9,9 @@ import com.eu.habbo.messages.outgoing.Outgoing;
  * the connection closes. The client shows the matching hotel text and does not reconnect.
  */
 public class DisconnectReasonComposer extends MessageComposer {
+    /** The client shows its maintenance text for this code. */
+    public static final int MAINTENANCE = -2;
+
     public static final int LOGOUT = 0;
     public static final int JUST_BANNED = 1;
     public static final int CONCURRENT_LOGIN = 2;

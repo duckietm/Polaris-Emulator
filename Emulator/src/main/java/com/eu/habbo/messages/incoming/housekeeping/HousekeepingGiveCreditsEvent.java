@@ -4,12 +4,15 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.economy.EconomyLedger;
 import com.eu.habbo.habbohotel.economy.EconomyOperation;
 import com.eu.habbo.habbohotel.economy.EconomyOperationId;
-import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 
-public class HousekeepingGiveCreditsEvent extends MessageHandler {
+public class HousekeepingGiveCreditsEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.ECONOMY;
+    }
+
     private static final String ACTION_KEY = "user.give_credits";
 
     @Override
@@ -19,7 +22,7 @@ public class HousekeepingGiveCreditsEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!this.client.getHabbo().hasPermission(Permission.ACC_HOUSEKEEPING)) {
+        if (!this.allowed()) {
             return;
         }
 
@@ -27,12 +30,14 @@ public class HousekeepingGiveCreditsEvent extends MessageHandler {
         int amount = this.packet.readInt();
 
         if (userId <= 0 || !HousekeepingMutationGuard.isPositiveGrantAmount(amount)) {
-            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.invalid_input"));
+            this.client.sendResponse(
+                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.invalid_input"));
             return;
         }
 
         if (!HousekeepingTargetRankGuard.canTargetUser(this.client.getHabbo(), userId)) {
-            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
+            this.client.sendResponse(
+                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
             return;
         }
 
@@ -51,10 +56,18 @@ public class HousekeepingGiveCreditsEvent extends MessageHandler {
 
         try {
             EconomyLedger.execute(new EconomyOperation(
-                    operationId, userId, actorId, "credit_grant", "housekeeping.user.give_credits",
-                    EconomyLedger.CREDITS, amount, null, ACTION_KEY));
+                    operationId,
+                    userId,
+                    actorId,
+                    "credit_grant",
+                    "housekeeping.user.give_credits",
+                    EconomyLedger.CREDITS,
+                    amount,
+                    null,
+                    ACTION_KEY));
         } catch (Exception e) {
-            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.db_failed"));
+            this.client.sendResponse(
+                    new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.db_failed"));
             return;
         }
 
@@ -66,7 +79,9 @@ public class HousekeepingGiveCreditsEvent extends MessageHandler {
         com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
                 this.client.getHabbo().getHabboInfo().getId(),
                 this.client.getHabbo().getHabboInfo().getUsername(),
-                ACTION_KEY, userId, "amount=" + amount,
+                ACTION_KEY,
+                userId,
+                "amount=" + amount,
                 this.client.getHabbo().getHabboInfo().getIpLogin());
     }
 }

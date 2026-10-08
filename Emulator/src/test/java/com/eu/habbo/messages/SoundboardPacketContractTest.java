@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.soundboard.SoundboardCatalogResult;
+import com.eu.habbo.habbohotel.soundboard.SoundboardRoomMode;
 import com.eu.habbo.habbohotel.soundboard.SoundboardSound;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboStats;
@@ -41,7 +42,24 @@ class SoundboardPacketContractTest {
         assertEquals("/sounds/soundboard/campanella.mp3", readString(packet));
         // classnames follow the records as their own block
         assertEquals("campanella", readString(packet));
+        // the room mode comes last, so a client that stops after the classnames still works
+        assertEquals(SoundboardRoomMode.EVERYONE.wireCode(), packet.readInt());
         assertFalse(packet.isReadable());
+    }
+
+    @Test
+    void settingsTellTheRoomModeAndKeepTheBooleanOnForAnyModeButOff() {
+        for (SoundboardRoomMode mode : SoundboardRoomMode.values()) {
+            ByteBuf packet = new SoundboardSettingsComposer(mode, 60, List.of())
+                    .compose()
+                    .get();
+            packet.skipBytes(6);
+
+            assertEquals(mode.enabled(), packet.readBoolean());
+            packet.skipBytes(8);
+            assertEquals(mode.wireCode(), packet.readInt());
+            assertFalse(packet.isReadable());
+        }
     }
 
     @Test

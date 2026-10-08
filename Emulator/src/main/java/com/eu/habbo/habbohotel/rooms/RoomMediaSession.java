@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.rooms;
 
+import com.eu.habbo.habbohotel.soundboard.SoundboardRoomMode;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.rooms.youtube.YouTubeRoomBroadcastComposer;
 import com.eu.habbo.messages.outgoing.rooms.youtube.YouTubeRoomWatchersComposer;
@@ -15,7 +16,7 @@ final class RoomMediaSession {
     private final List<String> playlist = new CopyOnWriteArrayList<>();
     private final Set<Integer> watchers = ConcurrentHashMap.newKeySet();
     private boolean youtubeEnabled;
-    private boolean soundboardEnabled;
+    private SoundboardRoomMode soundboardMode = SoundboardRoomMode.OFF;
     private String currentVideo = "";
     private String senderName = "";
 
@@ -32,11 +33,19 @@ final class RoomMediaSession {
     }
 
     boolean soundboardEnabled() {
-        return this.soundboardEnabled;
+        return this.soundboardMode.enabled();
     }
 
     void soundboardEnabled(boolean enabled) {
-        this.soundboardEnabled = enabled;
+        this.soundboardMode = enabled ? SoundboardRoomMode.EVERYONE : SoundboardRoomMode.OFF;
+    }
+
+    SoundboardRoomMode soundboardMode() {
+        return this.soundboardMode;
+    }
+
+    void soundboardMode(SoundboardRoomMode mode) {
+        this.soundboardMode = mode;
     }
 
     String currentVideo() {

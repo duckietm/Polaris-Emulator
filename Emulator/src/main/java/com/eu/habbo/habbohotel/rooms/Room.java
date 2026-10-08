@@ -6,6 +6,7 @@ import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.games.Game;
 import com.eu.habbo.habbohotel.guilds.Guild;
 import com.eu.habbo.habbohotel.pets.Pet;
+import com.eu.habbo.habbohotel.soundboard.SoundboardRoomMode;
 import com.eu.habbo.habbohotel.users.DanceType;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -218,6 +219,14 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         this.media.soundboardEnabled(enabled);
     }
 
+    public SoundboardRoomMode getSoundboardMode() {
+        return this.media.soundboardMode();
+    }
+
+    public void setSoundboardMode(SoundboardRoomMode mode) {
+        this.media.soundboardMode(mode);
+    }
+
     public String getYoutubeCurrentVideo() {
         return this.media.currentVideo();
     }
@@ -306,7 +315,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         this.allowWalkthrough = initial.allowWalkthrough();
         this.hideWall = initial.hideWall();
         this.setYoutubeEnabled(initial.youtubeEnabled());
-        this.setSoundboardEnabled(initial.soundboardEnabled());
+        this.setSoundboardMode(SoundboardRoomMode.fromWire(initial.soundboardMode()));
         this.chatMode = initial.chatMode();
         this.chatWeight = initial.chatWeight();
         this.chatSpeed = initial.chatSpeed();

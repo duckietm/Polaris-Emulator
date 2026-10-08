@@ -65,6 +65,7 @@
     "hotelview_landing_votes": ["option_id", "slot_id", "user_id"],
     "hotelview_news": ["button_link", "button_text", "button_type", "id", "image", "text", "title"],
     "housekeeping_log": ["action", "actor_id", "actor_name", "detail", "id", "success", "target_id", "target_label", "target_type", "timestamp"],
+    "housekeeping_user_notes": ["author_id", "author_name", "created_at", "id", "note", "user_id"],
     "infostand_backgrounds": ["category", "id", "is_ambassador_only", "is_hc_only", "min_rank"],
     "item_plants": ["death_count", "grow_counts", "id", "item_name"],
     "item_plants_data": ["count_state", "item_id", "last_water_date", "state"],

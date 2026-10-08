@@ -1,25 +1,27 @@
 package com.eu.habbo.messages.incoming.housekeeping;
 
 import com.eu.habbo.Emulator;
-import com.eu.habbo.habbohotel.permissions.Permission;
+import com.eu.habbo.habbohotel.GameEnvironment;
+import com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog;
 import com.eu.habbo.habbohotel.rooms.Room;
-import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.habbohotel.rooms.RoomDeleter;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
-
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 /**
- * Permanently delete a room. Mirrors the minimum-viable subset of
- * RequestDeleteRoomEvent: eject all users from the live room, dispose
- * + uncache, then DELETE FROM rooms. Pets/guild/custom-layout cleanup
- * is intentionally skipped on this slice — leftover rows in those
- * tables become orphans but don't crash the emulator; a follow-up
- * pass can cascade once we have a HK audit-log row to attach the
- * orphan-cleanup to.
+ * Permanently deletes a room the same way its owner does from the navigator
+ * ({@link RoomDeleter}): furni, bots and pets go back to their owners, the
+ * room's group is removed, and rights, votes, word filter and custom model
+ * rows go with it. The room is loaded with its data first, otherwise there
+ * would be no items to give back.
  */
-public class HousekeepingDeleteRoomEvent extends MessageHandler {
+public class HousekeepingDeleteRoomEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.ROOMS;
+    }
+
     private static final String ACTION_KEY = "room.delete";
 
     @Override
@@ -29,53 +31,53 @@ public class HousekeepingDeleteRoomEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!this.client.getHabbo().hasPermission(Permission.ACC_HOUSEKEEPING)) {
+        if (!this.allowed()) {
             return;
         }
 
         int roomId = this.packet.readInt();
 
         if (roomId <= 0) {
-            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.invalid_input"));
+            this.fail("housekeeping.error.invalid_input");
             return;
         }
 
-        Room room = Emulator.getGameEnvironment().getRoomManager().loadRoom(roomId, false);
+        GameEnvironment environment = Emulator.getGameEnvironment();
+        Room room = environment.getRoomManager().loadRoom(roomId, true);
 
         if (room == null) {
-            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.room_not_found"));
+            this.fail("housekeeping.error.room_not_found");
             return;
         }
 
         if (!HousekeepingRoomGuard.canManageRoom(this.client.getHabbo(), room)) {
-            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
+            this.fail("housekeeping.error.rank_too_high");
             return;
         }
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("DELETE FROM rooms WHERE id = ? LIMIT 1")) {
-            statement.setInt(1, roomId);
-            int rows = statement.executeUpdate();
+        String roomName = room.getName();
 
-            if (rows == 0) {
-                this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.room_not_found"));
-                return;
-            }
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
+            // Pets are saved in place: this is a rare staff action, not a hot path.
+            RoomDeleter.delete(room, environment, connection, Runnable::run);
         } catch (SQLException e) {
-            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.db_failed"));
+            this.fail("housekeeping.error.db_failed");
             return;
         }
 
-        room.ejectAll();
-        room.preventUnloading = false;
-        room.dispose();
-        Emulator.getGameEnvironment().getRoomManager().uncacheRoom(room);
-
-        com.eu.habbo.habbohotel.modtool.HousekeepingAuditLog.log(
+        HousekeepingAuditLog.log(
                 this.client.getHabbo().getHabboInfo().getId(),
                 this.client.getHabbo().getHabboInfo().getUsername(),
-                ACTION_KEY, 0, "roomId=" + roomId,
+                ACTION_KEY,
+                HousekeepingAuditLog.TARGET_ROOM,
+                roomId,
+                roomName,
+                "roomId=" + roomId + " owner=" + room.getOwnerName(),
                 this.client.getHabbo().getHabboInfo().getIpLogin());
         this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, true, roomId, ""));
+    }
+
+    private void fail(String message) {
+        this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, message));
     }
 }

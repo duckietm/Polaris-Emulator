@@ -5,8 +5,6 @@ import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredWebApiOwnership;
-import com.eu.habbo.habbohotel.permissions.Permission;
-import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.housekeeping.HousekeepingActionResultComposer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -19,7 +17,12 @@ import java.sql.SQLException;
  * — they'll see the new items next time they open the hand inventory
  * (or after a relog).
  */
-public class HousekeepingGrantItemEvent extends MessageHandler {
+public class HousekeepingGrantItemEvent extends HousekeepingHandler {
+    @Override
+    protected String requiredPermission() {
+        return HousekeepingAreas.ECONOMY;
+    }
+
     private static final String ACTION_KEY = "user.grant_item";
     private static final int MAX_QUANTITY_PER_CALL = 100;
 
@@ -30,7 +33,7 @@ public class HousekeepingGrantItemEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        if (!this.client.getHabbo().hasPermission(Permission.ACC_HOUSEKEEPING)) {
+        if (!this.allowed()) {
             return;
         }
 

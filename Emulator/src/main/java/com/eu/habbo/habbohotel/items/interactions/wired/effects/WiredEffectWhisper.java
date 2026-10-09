@@ -97,20 +97,20 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
         int[] params = settings.getIntParams();
         this.userSource = (params.length > 0) ? params[0] : WiredSourceUtil.SOURCE_TRIGGER;
         this.visibilitySelection = (params.length > 1 && params[1] == VISIBILITY_ALL_ROOM_USERS)
-                ? VISIBILITY_ALL_ROOM_USERS
-                : VISIBILITY_SOURCE_USERS;
+            ? VISIBILITY_ALL_ROOM_USERS
+            : VISIBILITY_SOURCE_USERS;
         this.bubbleStyle = (params.length > 2) ? params[2] : RoomChatMessageBubbles.WIRED.getType();
         this.bubbleWidthOverride = RoomChatMessage.normalizeBubbleWidthOverride(
-                (params.length > 3) ? params[3] : RoomChatMessage.NO_BUBBLE_WIDTH_OVERRIDE);
+            (params.length > 3) ? params[3] : RoomChatMessage.NO_BUBBLE_WIDTH_OVERRIDE);
 
         if (gameClient.getHabbo() == null || !gameClient.getHabbo().hasPermission(Permission.ACC_SUPERWIRED)) {
             message = Emulator.getGameEnvironment().getWordFilter().filter(message, null);
         }
 
         int maxLength =
-                Emulator.getConfig().getInt("hotel.wired.show_message.max_length", DEFAULT_SHOW_MESSAGE_MAX_LENGTH);
+            Emulator.getConfig().getInt("hotel.wired.show_message.max_length", DEFAULT_SHOW_MESSAGE_MAX_LENGTH);
         int maxLines =
-                Emulator.getConfig().getInt("hotel.wired.show_message.max_lines", DEFAULT_SHOW_MESSAGE_MAX_LINES);
+            Emulator.getConfig().getInt("hotel.wired.show_message.max_lines", DEFAULT_SHOW_MESSAGE_MAX_LINES);
         message = clampMessage(message, maxLength, maxLines);
 
         int delay = settings.getDelay();
@@ -190,8 +190,8 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
         }
 
         return (room == null)
-                ? null
-                : ctx.actor().map(roomUnit -> room.getHabbo(roomUnit)).orElse(null);
+            ? null
+            : ctx.actor().map(roomUnit -> room.getHabbo(roomUnit)).orElse(null);
     }
 
     protected String buildMessage(WiredContext ctx, Habbo referenceHabbo) {
@@ -202,16 +202,16 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
         }
 
         String msg = this.message
-                .replace("%user%", username)
-                .replace(
-                        "%online_count%",
-                        Emulator.getGameEnvironment().getHabboManager().getOnlineCount() + "")
-                .replace(
-                        "%room_count%",
-                        Emulator.getGameEnvironment()
-                                        .getRoomManager()
-                                        .getActiveRooms()
-                                        .size() + "");
+            .replace("%user%", username)
+            .replace(
+                "%online_count%",
+                Emulator.getGameEnvironment().getHabboManager().getOnlineCount() + "")
+            .replace(
+                "%room_count%",
+                Emulator.getGameEnvironment()
+                    .getRoomManager()
+                    .getActiveRooms()
+                    .size() + "");
 
         return WiredTextPlaceholderUtil.applyUsernamePlaceholders(ctx, msg);
     }
@@ -239,7 +239,7 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
 
     private String buildDeliveryKey(WiredContext ctx, Habbo habbo) {
         return ctx.room().getId() + ":" + this.getId() + ":"
-                + habbo.getHabboInfo().getId() + ":" + ctx.event().getCreatedAtMs();
+            + habbo.getHabboInfo().getId() + ":" + ctx.event().getCreatedAtMs();
     }
 
     private static void cleanupDeliveryDedup(long now) {
@@ -268,10 +268,15 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
             List<RoomUnit> sourceUsers = resolveUsers(ctx);
             List<Habbo> recipients = resolveRecipients(ctx, sourceUsers);
             Habbo sharedSourceHabbo = (this.visibilitySelection == VISIBILITY_ALL_ROOM_USERS)
-                    ? resolveMessageSourceHabbo(ctx, sourceUsers)
-                    : null;
+                ? resolveMessageSourceHabbo(ctx, sourceUsers)
+                : null;
 
             for (Habbo habbo : recipients) {
+                // The user turned wired whispers off in their settings.
+                if (habbo.getHabboStats() != null && habbo.getHabboStats().wiredWhisperDisabled) {
+                    continue;
+                }
+
                 if (!shouldDeliverToRecipient(ctx, habbo)) {
                     continue;
                 }
@@ -298,7 +303,7 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
 
     private RoomChatMessage chatMessage(String text, RoomUnit unit) {
         RoomChatMessage chatMessage =
-                new RoomChatMessage(text, unit, RoomChatMessageBubbles.getBubble(this.bubbleStyle));
+            new RoomChatMessage(text, unit, RoomChatMessageBubbles.getBubble(this.bubbleStyle));
         chatMessage.setBubbleWidthOverride(this.bubbleWidthOverride);
         return chatMessage;
     }
@@ -306,13 +311,13 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
     @Override
     public String getWiredData() {
         return WiredManager.getGson()
-                .toJson(new JsonData(
-                        this.message,
-                        this.getDelay(),
-                        this.userSource,
-                        this.visibilitySelection,
-                        this.bubbleStyle,
-                        this.bubbleWidthOverride));
+            .toJson(new JsonData(
+                this.message,
+                this.getDelay(),
+                this.userSource,
+                this.visibilitySelection,
+                this.bubbleStyle,
+                this.bubbleWidthOverride));
     }
 
     @Override
@@ -324,18 +329,18 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
             this.setDelay(WiredUtilityPayloadGuard.delay(jsonData.delay));
             this.message = WiredUtilityPayloadGuard.text(jsonData.message);
             this.userSource = (jsonData.userSource != null)
-                    ? WiredUtilityPayloadGuard.userSource(jsonData.userSource)
-                    : WiredSourceUtil.SOURCE_TRIGGER;
+                ? WiredUtilityPayloadGuard.userSource(jsonData.userSource)
+                : WiredSourceUtil.SOURCE_TRIGGER;
             this.visibilitySelection =
-                    (jsonData.visibilitySelection != null && jsonData.visibilitySelection == VISIBILITY_ALL_ROOM_USERS)
-                            ? VISIBILITY_ALL_ROOM_USERS
-                            : VISIBILITY_SOURCE_USERS;
+                (jsonData.visibilitySelection != null && jsonData.visibilitySelection == VISIBILITY_ALL_ROOM_USERS)
+                    ? VISIBILITY_ALL_ROOM_USERS
+                    : VISIBILITY_SOURCE_USERS;
             this.bubbleStyle =
-                    (jsonData.bubbleStyle != null) ? jsonData.bubbleStyle : RoomChatMessageBubbles.WIRED.getType();
+                (jsonData.bubbleStyle != null) ? jsonData.bubbleStyle : RoomChatMessageBubbles.WIRED.getType();
             this.bubbleWidthOverride = RoomChatMessage.normalizeBubbleWidthOverride(
-                    (jsonData.bubbleWidthOverride != null)
-                            ? jsonData.bubbleWidthOverride
-                            : RoomChatMessage.NO_BUBBLE_WIDTH_OVERRIDE);
+                (jsonData.bubbleWidthOverride != null)
+                    ? jsonData.bubbleWidthOverride
+                    : RoomChatMessage.NO_BUBBLE_WIDTH_OVERRIDE);
         } else {
             this.message = "";
 
@@ -371,7 +376,7 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
     @Override
     public boolean requiresTriggeringUser() {
         return (this.userSource == WiredSourceUtil.SOURCE_TRIGGER)
-                || WiredTextPlaceholderUtil.requiresActor(this.getRoom(), this);
+            || WiredTextPlaceholderUtil.requiresActor(this.getRoom(), this);
     }
 
     static class JsonData {
@@ -383,12 +388,12 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
         Integer bubbleWidthOverride;
 
         public JsonData(
-                String message,
-                int delay,
-                int userSource,
-                int visibilitySelection,
-                int bubbleStyle,
-                int bubbleWidthOverride) {
+            String message,
+            int delay,
+            int userSource,
+            int visibilitySelection,
+            int bubbleStyle,
+            int bubbleWidthOverride) {
             this.message = message;
             this.delay = delay;
             this.userSource = userSource;

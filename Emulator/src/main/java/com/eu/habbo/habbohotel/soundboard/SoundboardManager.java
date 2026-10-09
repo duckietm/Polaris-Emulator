@@ -28,7 +28,7 @@ public class SoundboardManager {
 
     public SoundboardManager() {
         this(
-                rankId -> 60,
+                rankId -> Rank.DEFAULT_SOUNDBOARD_COOLDOWN_SECONDS,
                 rankId -> rankId > 0,
                 new SoundboardCatalogRepository(Emulator.getDatabase().getDataSource()));
     }
@@ -104,9 +104,9 @@ public class SoundboardManager {
             cooldown = this.cooldownByRank.applyAsInt(rankId);
         } catch (RuntimeException exception) {
             LOGGER.warn("Unable to resolve Soundboard cooldown for rank {}", rankId, exception);
-            return 60;
+            return Rank.DEFAULT_SOUNDBOARD_COOLDOWN_SECONDS;
         }
-        return cooldown < 0 ? 60 : cooldown;
+        return cooldown < 0 ? Rank.DEFAULT_SOUNDBOARD_COOLDOWN_SECONDS : cooldown;
     }
 
     public PlayDecision tryPlay(int userId, int rankId, int soundId, long nowMillis) {

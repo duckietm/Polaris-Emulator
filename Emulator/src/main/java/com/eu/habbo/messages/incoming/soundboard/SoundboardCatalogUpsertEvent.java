@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.soundboard;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.soundboard.SoundboardCatalogCommand;
 import com.eu.habbo.habbohotel.soundboard.SoundboardCatalogResult;
 import com.eu.habbo.habbohotel.soundboard.SoundboardManager;
@@ -34,9 +35,13 @@ public class SoundboardCatalogUpsertEvent extends MessageHandler {
         String classname = this.packet.bytesAvailable() > 0 ? this.packet.readString() : "";
 
         SoundboardCatalogCommand command = new SoundboardCatalogCommand(id, name, classname, url, minRank, enabled);
-        SoundboardManager manager = Emulator.getGameEnvironment().getSoundboardManager();
+        GameEnvironment environment = Emulator.getGameEnvironment();
+        SoundboardManager manager = environment.getSoundboardManager();
         SoundboardCatalogResult result = manager.upsert(habbo.getHabboInfo().getId(), command);
         this.sendResult(result);
+        if (result.successful()) {
+            SoundboardSettingsSender.sendToActiveRooms(manager, environment.getRoomManager());
+        }
     }
 
     private void sendResult(SoundboardCatalogResult result) {

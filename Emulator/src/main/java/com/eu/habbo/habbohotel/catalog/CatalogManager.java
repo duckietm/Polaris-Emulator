@@ -1440,7 +1440,8 @@ public class CatalogManager {
         Set<HabboItem> createdItems = new HashSet<>();
         List<Bot> createdBots = new ArrayList<>();
         List<Pet> createdPets = new ArrayList<>();
-        List<Integer> pendingEffects = new ArrayList<>();
+        // Effect id and duration (seconds, 0 permanent) per bought effect.
+        List<int[]> pendingEffects = new ArrayList<>();
         List<Guild> pendingGuildForums = new ArrayList<>();
         boolean paymentTaken = false;
         boolean purchaseDelivered = false;
@@ -1690,7 +1691,7 @@ public class CatalogManager {
                                 }
 
                                 if (effectId > 0) {
-                                    pendingEffects.add(effectId);
+                                    pendingEffects.add(new int[] {effectId, item.getEffectDuration()});
                                 }
                             } else if (Item.isPet(baseItem)) {
                                 String[] data = extradata.split("\n");
@@ -1983,6 +1984,16 @@ public class CatalogManager {
                     }
                 }
 
+                // A permanent effect cannot be bought again.
+                for (int[] effect : pendingEffects) {
+                    if (habbo.getInventory().getEffectsComponent().ownsPermanently(effect[0])) {
+                        habbo.getClient()
+                                .sendResponse(
+                                        new AlertPurchaseUnavailableComposer(AlertPurchaseUnavailableComposer.ILLEGAL));
+                        return;
+                    }
+                }
+
                 if (badgeFound && item.getBaseItems().size() == 1) {
                     habbo.getClient()
                             .sendResponse(
@@ -2021,8 +2032,8 @@ public class CatalogManager {
                 }
                 paymentTaken = true;
 
-                for (Integer effectId : pendingEffects) {
-                    habbo.getInventory().getEffectsComponent().createEffect(effectId);
+                for (int[] effect : pendingEffects) {
+                    habbo.getInventory().getEffectsComponent().createEffect(effect[0], effect[1]);
                 }
                 for (Guild guild : pendingGuildForums) {
                     guild.setForum(true);

@@ -6,10 +6,17 @@ import com.eu.habbo.messages.outgoing.catalog.marketplace.MarketplaceSellItemCom
 
 public class RequestSellItemEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
+    @Override
     public void handle() throws Exception {
-        if (MarketPlace.MARKETPLACE_ENABLED)
-            this.client.sendResponse(new MarketplaceSellItemComposer(1, 0));
-        else
-            this.client.sendResponse(new MarketplaceSellItemComposer(3, 0));
+        // A closed marketplace is "not allowed"; NO_TRADE_PASS would tell the user to buy a pass.
+        int result = MarketPlace.MARKETPLACE_ENABLED
+                ? MarketplaceSellItemComposer.ALLOWED
+                : MarketplaceSellItemComposer.NOT_ALLOWED;
+
+        this.client.sendResponse(new MarketplaceSellItemComposer(result, 0));
     }
 }

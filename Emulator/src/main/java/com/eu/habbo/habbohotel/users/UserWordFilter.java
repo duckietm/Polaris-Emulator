@@ -19,6 +19,8 @@ import java.util.regex.Pattern;
 public final class UserWordFilter {
     /** The room word filter caps its words at 25 characters; the personal one follows it. */
     public static final int MAX_WORD_LENGTH = 25;
+    /** Every received message is checked against each word, so the list is capped. */
+    public static final int MAX_WORDS = 100;
 
     private final Set<String> words = new LinkedHashSet<>();
 
@@ -36,7 +38,7 @@ public final class UserWordFilter {
 
     public synchronized boolean add(String word) {
         String normalized = normalize(word);
-        return normalized != null && this.words.add(normalized);
+        return normalized != null && this.words.size() < MAX_WORDS && this.words.add(normalized);
     }
 
     public synchronized boolean remove(String word) {

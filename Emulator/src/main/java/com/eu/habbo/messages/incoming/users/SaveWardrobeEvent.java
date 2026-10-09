@@ -7,26 +7,55 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.plugin.events.users.UserSavedWardrobeEvent;
 
 public class SaveWardrobeEvent extends MessageHandler {
+    // The client offers 10 slots (avatar.wardrobe.max.slots), numbered from 1.
+    static final int MAX_SLOT_ID = 10;
+    // users_wardrobe.look is varchar(256).
+    static final int MAX_LOOK_LENGTH = 256;
+
+    @Override
+    public int getRatelimit() {
+        return 500;
+    }
+
     @Override
     public void handle() throws Exception {
         final int slotId = this.packet.readInt();
         final String look = this.packet.readString();
         final String gender = this.packet.readString();
 
-        if (slotId < 0 || slotId > 8 || look.isEmpty()) return;
+        if (slotId < 0 || slotId > MAX_SLOT_ID || look.isEmpty() || look.length() > MAX_LOOK_LENGTH) return;
         if (!gender.equals("M") && !gender.equals("F")) return;
 
         WardrobeComponent.WardrobeItem wardrobeItem;
-        if (this.client.getHabbo().getInventory().getWardrobeComponent().getLooks().containsKey(slotId)) {
-            wardrobeItem = this.client.getHabbo().getInventory().getWardrobeComponent().getLooks().get(slotId);
+        if (this.client
+                .getHabbo()
+                .getInventory()
+                .getWardrobeComponent()
+                .getLooks()
+                .containsKey(slotId)) {
+            wardrobeItem = this.client
+                    .getHabbo()
+                    .getInventory()
+                    .getWardrobeComponent()
+                    .getLooks()
+                    .get(slotId);
             wardrobeItem.setGender(HabboGender.valueOf(gender));
             wardrobeItem.setLook(look);
             wardrobeItem.setNeedsUpdate(true);
         } else {
-            wardrobeItem = this.client.getHabbo().getInventory().getWardrobeComponent().createLook(this.client.getHabbo(), slotId, look);
+            wardrobeItem = this.client
+                    .getHabbo()
+                    .getInventory()
+                    .getWardrobeComponent()
+                    .createLook(this.client.getHabbo(), slotId, look);
             wardrobeItem.setGender(HabboGender.valueOf(gender));
             wardrobeItem.setNeedsInsert(true);
-            this.client.getHabbo().getInventory().getWardrobeComponent().getLooks().put(slotId, wardrobeItem);
+            this.client
+                    .getHabbo()
+                    .getInventory()
+                    .getWardrobeComponent()
+                    .getLooks()
+                    .put(slotId, wardrobeItem);
         }
 
         UserSavedWardrobeEvent wardrobeEvent = new UserSavedWardrobeEvent(this.client.getHabbo(), wardrobeItem);

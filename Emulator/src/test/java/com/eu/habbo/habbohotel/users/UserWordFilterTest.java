@@ -35,6 +35,18 @@ class UserWordFilterTest {
     }
 
     @Test
+    void addStopsAtTheWordCap() {
+        UserWordFilter filter = new UserWordFilter();
+
+        for (int i = 0; i < UserWordFilter.MAX_WORDS; i++) {
+            assertTrue(filter.add("word" + i));
+        }
+
+        assertFalse(filter.add("onemore"));
+        assertEquals(UserWordFilter.MAX_WORDS, filter.size());
+    }
+
+    @Test
     void applyMasksEveryOccurrenceCaseInsensitivelyAndLeavesOtherTextAlone() {
         UserWordFilter filter = new UserWordFilter();
         filter.add("pippo");

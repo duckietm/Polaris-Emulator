@@ -8,6 +8,11 @@ import com.eu.habbo.messages.outgoing.polls.PollQuestionsComposer;
 
 public class GetPollDataEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        return 1000;
+    }
+
+    @Override
     public void handle() throws Exception {
         int pollId = this.packet.readInt();
 

@@ -171,6 +171,44 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
         return this.extradata;
     }
 
+    /** Default length of a bought effect when the offer does not set one (one day). */
+    public static final int DEFAULT_EFFECT_DURATION = 86400;
+
+    /** Longest effect an offer can sell (one year); 0 is permanent. */
+    public static final int MAX_EFFECT_DURATION = 31536000;
+
+    /**
+     * How long an effect from this offer lasts, from catalog_items.extradata: "permanent" or "0" for a
+     * permanent effect, a number of seconds for a timed one, empty for the one-day default.
+     */
+    public int getEffectDuration() {
+        return effectDuration(this.extradata);
+    }
+
+    static int effectDuration(String extradata) {
+        String value = extradata == null ? "" : extradata.trim();
+
+        if (value.isEmpty()) return DEFAULT_EFFECT_DURATION;
+        if (value.equalsIgnoreCase("permanent")) return 0;
+
+        try {
+            int seconds = Integer.parseInt(value);
+
+            if (seconds <= 0) return 0;
+
+            return Math.min(seconds, MAX_EFFECT_DURATION);
+        } catch (NumberFormatException exception) {
+            return DEFAULT_EFFECT_DURATION;
+        }
+    }
+
+    /** Class id the client gets for a product: the effect id for effects (icon and preview), else the sprite id. */
+    static int catalogClassId(Item item) {
+        if (item.getType() == FurnitureType.EFFECT && item.getEffectM() > 0) return item.getEffectM();
+
+        return item.getSpriteId();
+    }
+
     public boolean isClubOnly() {
         return this.clubOnly;
     }
@@ -331,7 +369,7 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
             if (item.getType() == FurnitureType.BADGE) {
                 message.appendString(item.getName());
             } else {
-                message.appendInt(item.getSpriteId());
+                message.appendInt(catalogClassId(item));
 
                 if (this.getName().contains("wallpaper_single")
                         || this.getName().contains("floor_single")
@@ -356,6 +394,9 @@ public class CatalogItem implements ISerialize, Runnable, Comparable<CatalogItem
                     message.appendString(this.getExtradata());
                 } else if (this.getName().startsWith("SONG ")) {
                     message.appendString(this.getExtradata());
+                } else if (item.getType() == FurnitureType.EFFECT) {
+                    // The effect's length in seconds, 0 for permanent, so the catalog can show it.
+                    message.appendString(Integer.toString(this.getEffectDuration()));
                 } else {
                     message.appendString("");
                 }

@@ -272,6 +272,11 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
                     : null;
 
             for (Habbo habbo : recipients) {
+                // The user turned wired whispers off in their settings.
+                if (habbo.getHabboStats() != null && habbo.getHabboStats().wiredWhisperDisabled) {
+                    continue;
+                }
+
                 if (!shouldDeliverToRecipient(ctx, habbo)) {
                     continue;
                 }

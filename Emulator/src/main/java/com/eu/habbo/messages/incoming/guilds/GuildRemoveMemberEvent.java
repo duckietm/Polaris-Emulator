@@ -73,12 +73,18 @@ public class GuildRemoveMemberEvent extends MessageHandler {
             Emulator.getPluginManager().fireEvent(removedMemberEvent);
             if (removedMemberEvent.isCancelled()) return;
 
-            if (block && userId != this.client.getHabbo().getHabboInfo().getId()) {
+            // A pending request was never counted as a member, and only members can be blocked.
+            boolean wasRequest = targetMember.getRank().equals(GuildRank.REQUESTED);
+
+            if (block
+                    && !wasRequest
+                    && userId != this.client.getHabbo().getHabboInfo().getId()) {
                 Emulator.getGameEnvironment().getGuildManager().blockMember(guild, userId);
             } else {
                 Emulator.getGameEnvironment().getGuildManager().removeMember(guild, userId);
             }
-            guild.decreaseMemberCount();
+
+            if (!wasRequest) guild.decreaseMemberCount();
 
             if (userId != this.client.getHabbo().getHabboInfo().getId()) {
                 this.client.sendResponse(new GuildRefreshMembersListComposer(guild));

@@ -25,6 +25,8 @@ class MonsterplantBreedingContractTest {
         String handler = source("com/eu/habbo/messages/incoming/rooms/pets/BreedMonsterplantsEvent.java");
 
         assertTrue(handler.contains("new PetBreedingStartComposer(ANSWER_ASKED, theirs.getId(), mine.getId())"));
+        // The official client only shows the accept button for TYPE_REQUEST (3).
+        assertTrue(handler.contains("ANSWER_ASKED = 3;"));
         assertTrue(handler.contains("if (request == null || request.requesterPetId() != theirs.getId()) return;"));
     }
 

@@ -7,13 +7,12 @@ import com.eu.habbo.messages.outgoing.inventory.EffectsListEffectEnableComposer;
 import com.eu.habbo.messages.outgoing.inventory.EffectsListRemoveComposer;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class EffectsComponent {
     private static final Logger LOGGER = LoggerFactory.getLogger(EffectsComponent.class);
@@ -24,7 +23,9 @@ public class EffectsComponent {
 
     public EffectsComponent(Habbo habbo) {
         this.habbo = habbo;
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM users_effects WHERE user_id = ?")) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT * FROM users_effects WHERE user_id = ?")) {
             statement.setInt(1, habbo.getHabboInfo().getId());
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
@@ -34,7 +35,7 @@ public class EffectsComponent {
         } catch (SQLException e) {
             LOGGER.error("Caught SQL exception", e);
         }
-        if(habbo.getHabboInfo().getRank().getRoomEffect() > 0)
+        if (habbo.getHabboInfo().getRank().getRoomEffect() > 0)
             this.createRankEffect(habbo.getHabboInfo().getRank().getRoomEffect());
     }
 
@@ -48,7 +49,10 @@ public class EffectsComponent {
             if (this.effects.containsKey(effectId)) {
                 effect = this.effects.get(effectId);
 
-                if (effect.total <= 99) {
+                if (duration <= 0) {
+                    // A permanent copy replaces the timed ones.
+                    effect.duration = 0;
+                } else if (effect.total <= 99) {
                     effect.total++;
                 }
             } else {
@@ -63,7 +67,8 @@ public class EffectsComponent {
         return effect;
     }
 
-    public static HabboEffect persistEffect(Connection connection, int userId, int effectId, int duration) throws SQLException {
+    public static HabboEffect persistEffect(Connection connection, int userId, int effectId, int duration)
+            throws SQLException {
         String upsert = "INSERT INTO users_effects (user_id, effect, total, duration) VALUES (?, ?, 1, ?) "
                 + "ON DUPLICATE KEY UPDATE total = LEAST(total + 1, 100), duration = VALUES(duration)";
         try (PreparedStatement statement = connection.prepareStatement(upsert)) {
@@ -72,8 +77,8 @@ public class EffectsComponent {
             statement.setInt(3, duration);
             statement.executeUpdate();
         }
-        try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT * FROM users_effects WHERE user_id = ? AND effect = ? LIMIT 1")) {
+        try (PreparedStatement statement =
+                connection.prepareStatement("SELECT * FROM users_effects WHERE user_id = ? AND effect = ? LIMIT 1")) {
             statement.setInt(1, userId);
             statement.setInt(2, effectId);
             try (ResultSet result = statement.executeQuery()) {
@@ -100,6 +105,15 @@ public class EffectsComponent {
         return rankEffect;
     }
 
+    /** Owned as a permanent effect (rank effects excluded). */
+    public boolean ownsPermanently(int effectId) {
+        synchronized (this.effects) {
+            HabboEffect effect = this.effects.get(effectId);
+
+            return effect != null && !effect.isRankEnable && effect.duration <= 0;
+        }
+    }
+
     public void addEffect(HabboEffect effect) {
         this.effects.put(effect.effect, effect);
 
@@ -108,9 +122,11 @@ public class EffectsComponent {
 
     public void dispose() {
         synchronized (this.effects) {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE users_effects SET duration = ?, activation_timestamp = ?, total = ? WHERE user_id = ? AND effect = ?")) {
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                    PreparedStatement statement = connection.prepareStatement(
+                            "UPDATE users_effects SET duration = ?, activation_timestamp = ?, total = ? WHERE user_id = ? AND effect = ?")) {
                 for (HabboEffect effect : this.effects.values()) {
-                    if(!effect.isRankEnable) {
+                    if (!effect.isRankEnable) {
                         try {
                             statement.setInt(1, effect.duration);
                             statement.setInt(2, effect.activationTimestamp);
@@ -204,8 +220,7 @@ public class EffectsComponent {
         }
 
         public boolean isRemaining() {
-            if(this.duration <= 0)
-                return true;
+            if (this.duration <= 0) return true;
 
             if (this.total > 0) {
                 if (this.activationTimestamp >= 0) {
@@ -220,14 +235,16 @@ public class EffectsComponent {
         }
 
         public int remainingTime() {
-            if(this.duration <= 0) //permanant
-                return Integer.MAX_VALUE;
+            if (this.duration <= 0) // permanant
+            return Integer.MAX_VALUE;
 
             return Emulator.getIntUnixTimestamp() - this.activationTimestamp + this.duration;
         }
 
         public void insert() {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO users_effects (user_id, effect, total, duration) VALUES (?, ?, ?, ?)")) {
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                    PreparedStatement statement = connection.prepareStatement(
+                            "INSERT INTO users_effects (user_id, effect, total, duration) VALUES (?, ?, ?, ?)")) {
                 statement.setInt(1, this.userId);
                 statement.setInt(2, this.effect);
                 statement.setInt(3, this.total);
@@ -239,7 +256,9 @@ public class EffectsComponent {
         }
 
         public void delete() {
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("DELETE FROM users_effects WHERE user_id = ? AND effect = ?")) {
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                    PreparedStatement statement =
+                            connection.prepareStatement("DELETE FROM users_effects WHERE user_id = ? AND effect = ?")) {
                 statement.setInt(1, this.userId);
                 statement.setInt(2, this.effect);
                 statement.execute();

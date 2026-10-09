@@ -8,7 +8,8 @@ public enum RoomUserAction {
     UNKNOWN(4),
     IDLE(5),
     JUMP(6),
-    THUMB_UP(7);
+    THUMB_UP(7),
+    SIX_SEVEN(67);
 
     private final int action;
 

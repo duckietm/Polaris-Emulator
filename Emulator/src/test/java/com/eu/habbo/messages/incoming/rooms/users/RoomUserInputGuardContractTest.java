@@ -1,12 +1,11 @@
 package com.eu.habbo.messages.incoming.rooms.users;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 class RoomUserInputGuardContractTest {
     private static String source(String name) throws Exception {
@@ -15,7 +14,7 @@ class RoomUserInputGuardContractTest {
 
     @Test
     void roomModerationHandlersRejectInvalidUserAndRoomIds() throws Exception {
-        for (String handler : new String[]{"RoomUserBanEvent", "UnbanRoomUserEvent", "RoomUserMuteEvent"}) {
+        for (String handler : new String[] {"RoomUserBanEvent", "UnbanRoomUserEvent", "RoomUserMuteEvent"}) {
             String source = source(handler);
             int userRead = source.indexOf("int userId = this.packet.readInt()");
             int roomRead = source.indexOf("int roomId = this.packet.readInt()", userRead);
@@ -23,7 +22,8 @@ class RoomUserInputGuardContractTest {
             int roomLookup = source.indexOf("getCurrentRoom()", guard);
 
             assertTrue(userRead > -1 && roomRead > userRead, handler + " should read user and room ids");
-            assertTrue(guard > roomRead && guard < roomLookup,
+            assertTrue(
+                    guard > roomRead && guard < roomLookup,
                     handler + " should reject invalid ids before resolving room state");
         }
     }
@@ -41,9 +41,11 @@ class RoomUserInputGuardContractTest {
         int removeGuard = removeRights.indexOf("RoomUserInputGuard.isPositiveId(userId)", removeRead);
         int removeCall = removeRights.indexOf("room.removeRights(userId)", removeGuard);
 
-        assertTrue(giveGuard > giveRead && giveGuard < giveTarget,
+        assertTrue(
+                giveGuard > giveRead && giveGuard < giveTarget,
                 "give-rights should validate target id before online/friend lookups");
-        assertTrue(removeGuard > removeRead && removeGuard < removeCall,
+        assertTrue(
+                removeGuard > removeRead && removeGuard < removeCall,
                 "remove-rights should skip invalid ids before removing rights");
     }
 
@@ -58,9 +60,9 @@ class RoomUserInputGuardContractTest {
         int event = source.indexOf("new UserKickEvent", permissionCheck);
         int kick = source.indexOf("room.kickHabbo(target, true)", event);
 
-        assertTrue(idGuard > userRead && idGuard < targetLookup,
-                "kick should validate target id before room lookup");
-        assertTrue(permissionCheck > targetLookup && event > permissionCheck && event < kick,
+        assertTrue(idGuard > userRead && idGuard < targetLookup, "kick should validate target id before room lookup");
+        assertTrue(
+                permissionCheck > targetLookup && event > permissionCheck && event < kick,
                 "kick plugin event should only fire once the actor is authorized");
     }
 
@@ -73,10 +75,10 @@ class RoomUserInputGuardContractTest {
         int composer = source.indexOf("new RoomUserActionComposer", guard);
         int wired = source.indexOf("WiredManager.triggerUserPerformsAction", guard);
 
-        assertTrue(guard > actionRead && guard < composer,
+        assertTrue(
+                guard > actionRead && guard < composer,
                 "room actions should reject unknown ids before composing room state");
-        assertTrue(guard < wired,
-                "room actions should reject unknown ids before wired triggers");
+        assertTrue(guard < wired, "room actions should reject unknown ids before wired triggers");
     }
 
     @Test
@@ -87,5 +89,8 @@ class RoomUserInputGuardContractTest {
         assertTrue(RoomUserInputGuard.isValidAction(0));
         assertTrue(RoomUserInputGuard.isValidAction(7));
         assertFalse(RoomUserInputGuard.isValidAction(8));
+        assertTrue(RoomUserInputGuard.isValidAction(67));
+        assertFalse(RoomUserInputGuard.isValidAction(66));
+        assertFalse(RoomUserInputGuard.isValidAction(68));
     }
 }

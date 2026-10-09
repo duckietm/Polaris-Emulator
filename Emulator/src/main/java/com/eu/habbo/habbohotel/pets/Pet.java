@@ -551,6 +551,8 @@ public class Pet implements ISerialize, Runnable {
         message.appendInt(0);
         message.appendInt(0);
         message.appendInt(0);
+        // Rarity level; only monster plants have one.
+        message.appendInt(-1);
     }
 
     public void findNest() {

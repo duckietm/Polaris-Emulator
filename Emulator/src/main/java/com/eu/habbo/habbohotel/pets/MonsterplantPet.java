@@ -267,6 +267,7 @@ public class MonsterplantPet extends Pet implements IPetLook {
         message.appendInt(this.eyesColor);
 
         message.appendInt(this.growthStage);
+        message.appendInt(this.getRarity());
     }
 
     public int remainingTimeToLive() {

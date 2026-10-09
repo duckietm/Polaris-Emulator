@@ -20,8 +20,11 @@ public class BreedMonsterplantsEvent extends MessageHandler {
     private static final int STATE_CANCEL = 1;
     private static final int STATE_ACCEPT = 2;
 
-    /** The states the client reads back: 0 means "somebody is asking you". */
-    private static final int ANSWER_ASKED = 0;
+    /**
+     * The states the client reads back (official RoomWidgetPetBreedingEvent): 3 is TYPE_REQUEST,
+     * "somebody is asking you"; 0 would open the window without the accept button.
+     */
+    private static final int ANSWER_ASKED = 3;
 
     private static final int ANSWER_CANCELLED = 1;
     private static final int ANSWER_ACCEPTED = 2;

@@ -5,10 +5,10 @@ import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.guilds.Guild;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.UserCustomizationData;
+import com.eu.habbo.habbohotel.users.inventory.BadgeRanks;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-
 import java.util.Collection;
 
 public class RoomUsersComposer extends MessageComposer {
@@ -46,13 +46,14 @@ public class RoomUsersComposer extends MessageComposer {
             this.response.appendInt(this.habbo.getHabboInfo().getInfostandOverlay());
             this.response.appendInt(this.habbo.getHabboInfo().getInfostandCardBg());
             this.response.appendString(this.habbo.getHabboInfo().getLook());
-            this.response.appendInt(this.habbo.getRoomUnit().getId()); //Room Unit ID
+            this.response.appendInt(this.habbo.getRoomUnit().getId()); // Room Unit ID
             this.response.appendInt(this.habbo.getRoomUnit().getX());
             this.response.appendInt(this.habbo.getRoomUnit().getY());
             this.response.appendString(this.habbo.getRoomUnit().getZ() + "");
             this.response.appendInt(this.habbo.getRoomUnit().getBodyRotation().getValue());
             this.response.appendInt(1);
-            this.response.appendString(this.habbo.getHabboInfo().getGender().name().toUpperCase());
+            this.response.appendString(
+                    this.habbo.getHabboInfo().getGender().name().toUpperCase());
             this.response.appendInt(this.habbo.getHabboStats().guild != 0 ? this.habbo.getHabboStats().guild : -1);
             this.response.appendInt(this.habbo.getHabboStats().guild != 0 ? 1 : -1);
 
@@ -60,8 +61,7 @@ public class RoomUsersComposer extends MessageComposer {
             if (this.habbo.getHabboStats().guild != 0) {
                 Guild g = Emulator.getGameEnvironment().getGuildManager().getGuild(this.habbo.getHabboStats().guild);
 
-                if (g != null)
-                    name = g.getName();
+                if (g != null) name = g.getName();
             }
             this.response.appendString(name);
 
@@ -76,6 +76,8 @@ public class RoomUsersComposer extends MessageComposer {
             this.response.appendString(customizationData.prefixEffect);
             this.response.appendString(customizationData.prefixFont);
             this.response.appendString(customizationData.displayOrder);
+            // Official badgesRank: place on the total-badges leaderboard, -1 if unknown.
+            this.response.appendInt(BadgeRanks.rankOf(this.habbo.getHabboInfo().getId()));
             this.response.appendString(this.habbo.getHabboInfo().getRoomEntryMethod());
             this.response.appendInt(this.habbo.getHabboInfo().getRoomEntryTeleportId());
             this.response.appendInt(this.habbo.getHabboInfo().getInfostandBorder());
@@ -91,21 +93,23 @@ public class RoomUsersComposer extends MessageComposer {
                     this.response.appendInt(habbo.getHabboInfo().getInfostandOverlay());
                     this.response.appendInt(habbo.getHabboInfo().getInfostandCardBg());
                     this.response.appendString(habbo.getHabboInfo().getLook());
-                    this.response.appendInt(habbo.getRoomUnit().getId()); //Room Unit ID
+                    this.response.appendInt(habbo.getRoomUnit().getId()); // Room Unit ID
                     this.response.appendInt(habbo.getRoomUnit().getX());
                     this.response.appendInt(habbo.getRoomUnit().getY());
                     this.response.appendString(habbo.getRoomUnit().getZ() + "");
-                    this.response.appendInt(habbo.getRoomUnit().getBodyRotation().getValue());
+                    this.response.appendInt(
+                            habbo.getRoomUnit().getBodyRotation().getValue());
                     this.response.appendInt(1);
-                    this.response.appendString(habbo.getHabboInfo().getGender().name().toUpperCase());
+                    this.response.appendString(
+                            habbo.getHabboInfo().getGender().name().toUpperCase());
                     this.response.appendInt(habbo.getHabboStats().guild != 0 ? habbo.getHabboStats().guild : -1);
                     this.response.appendInt(habbo.getHabboStats().guild != 0 ? 1 : -1);
                     String name = "";
                     if (habbo.getHabboStats().guild != 0) {
-                        Guild g = Emulator.getGameEnvironment().getGuildManager().getGuild(habbo.getHabboStats().guild);
+                        Guild g =
+                                Emulator.getGameEnvironment().getGuildManager().getGuild(habbo.getHabboStats().guild);
 
-                        if (g != null)
-                            name = g.getName();
+                        if (g != null) name = g.getName();
                     }
                     this.response.appendString(name);
                     this.response.appendString("");
@@ -119,6 +123,8 @@ public class RoomUsersComposer extends MessageComposer {
                     this.response.appendString(customizationData.prefixEffect);
                     this.response.appendString(customizationData.prefixFont);
                     this.response.appendString(customizationData.displayOrder);
+                    this.response.appendInt(
+                            BadgeRanks.rankOf(habbo.getHabboInfo().getId()));
                     this.response.appendString(habbo.getHabboInfo().getRoomEntryMethod());
                     this.response.appendInt(habbo.getHabboInfo().getRoomEntryTeleportId());
                     this.response.appendInt(habbo.getHabboInfo().getInfostandBorder());

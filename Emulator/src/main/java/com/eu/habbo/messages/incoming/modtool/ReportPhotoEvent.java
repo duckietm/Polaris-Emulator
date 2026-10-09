@@ -71,6 +71,7 @@ public class ReportPhotoEvent extends MessageHandler {
                 ModToolReportInputGuard.withReporterContact("", reporterName, reporterEmail),
                 ModToolTicketType.PHOTO);
         issue.photoItem = item;
+        issue.category = topicId;
 
         new InsertModToolIssue(issue).run();
 

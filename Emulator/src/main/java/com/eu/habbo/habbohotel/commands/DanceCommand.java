@@ -13,8 +13,8 @@ import com.eu.habbo.messages.outgoing.rooms.users.RoomUserDanceComposer;
 public class DanceCommand extends Command {
     public DanceCommand() {
         super(
-            "cmd_dance",
-            Emulator.getTexts().getValue("commands.keys.cmd_dance").split(";"));
+                "cmd_dance",
+                Emulator.getTexts().getValue("commands.keys.cmd_dance").split(";"));
     }
 
     @Override
@@ -31,8 +31,8 @@ public class DanceCommand extends Command {
                 danceId = Integer.parseInt(params[1]);
             } catch (NumberFormatException e) {
                 habbo.whisper(
-                    Emulator.getTexts().getValue("commands.error.cmd_dance.invalid_dance"),
-                    RoomChatMessageBubbles.ALERT);
+                        Emulator.getTexts().getValue("commands.error.cmd_dance.invalid_dance"),
+                        RoomChatMessageBubbles.ALERT);
                 return true;
             }
 
@@ -43,15 +43,15 @@ public class DanceCommand extends Command {
 
             if (danceId < 0 || danceId > 4) {
                 habbo.whisper(
-                    Emulator.getTexts().getValue("commands.error.cmd_dance.outside_bounds"),
-                    RoomChatMessageBubbles.ALERT);
+                        Emulator.getTexts().getValue("commands.error.cmd_dance.outside_bounds"),
+                        RoomChatMessageBubbles.ALERT);
                 return true;
             }
 
             habbo.getRoomUnit().setDanceType(DanceType.values()[danceId]);
             habbo.getHabboInfo()
-                .getCurrentRoom()
-                .sendComposer(new RoomUserDanceComposer(habbo.getRoomUnit()).compose());
+                    .getCurrentRoom()
+                    .sendComposer(new RoomUserDanceComposer(habbo.getRoomUnit()).compose());
 
             String danceName = danceId == 0 ? "stop" : "dance " + danceId;
             habbo.whisper("You are now doing " + danceName + "!", RoomChatMessageBubbles.NORMAL);

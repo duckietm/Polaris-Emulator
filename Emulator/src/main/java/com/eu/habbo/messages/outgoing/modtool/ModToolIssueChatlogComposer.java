@@ -47,17 +47,13 @@ public class ModToolIssueChatlogComposer extends MessageComposer {
         this.response.appendInt(this.issue.reportedId);
         this.response.appendInt(this.issue.roomId);
 
+        // An empty log still gets a record, so the evidence window shows its source and doesn't wait forever.
         Collections.sort(this.chatlog);
-
-        if (this.chatlog.isEmpty()) return null;
 
         this.response.appendByte(this.type.getType()); // Report Type
 
         if (this.issue.type == ModToolTicketType.IM) {
-            this.response.appendShort(1);
-
-            ModToolChatRecordDataContext.MESSAGE_ID.append(this.response);
-            this.response.appendInt(this.issue.senderId);
+            this.response.appendShort(0);
         } else if (this.issue.type == ModToolTicketType.DISCUSSION) {
             this.response.appendShort(this.type == ModToolIssueChatlogType.FORUM_COMMENT ? 3 : 2);
 
@@ -72,13 +68,17 @@ public class ModToolIssueChatlogComposer extends MessageComposer {
                 this.response.appendInt(this.issue.commentId);
             }
         } else if (this.issue.type == ModToolTicketType.PHOTO) {
-            this.response.appendShort(2);
+            this.response.appendShort(3);
 
             ModToolChatRecordDataContext.ROOM_NAME.append(this.response);
             this.response.appendString(this.roomName);
 
+            ModToolChatRecordDataContext.ROOM_ID.append(this.response);
+            this.response.appendInt(this.issue.roomId);
+
+            // The photo can be gone after a restart.
             ModToolChatRecordDataContext.PHOTO_ID.append(this.response);
-            this.response.appendString(this.issue.photoItem.getId() + "");
+            this.response.appendString(this.issue.photoItem == null ? "" : this.issue.photoItem.getId() + "");
         } else {
             this.response.appendShort(3); // Context Count
 

@@ -57,6 +57,7 @@ public class ModToolIssue implements ISerialize {
         this.modName = set.getString("mod_username");
         this.type = ModToolTicketType.values()[set.getInt("type") - 1];
         this.category = set.getInt("category");
+        this.roomId = set.getInt("room_id");
         this.groupId = set.getInt("group_id");
         this.threadId = set.getInt("thread_id");
         this.commentId = set.getInt("comment_id");

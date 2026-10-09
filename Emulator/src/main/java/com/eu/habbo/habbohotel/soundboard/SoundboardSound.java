@@ -14,6 +14,7 @@ public class SoundboardSound {
     public final boolean enabled;
     public final int sortOrder;
     public final int minRank;
+    public final int cooldownSeconds;
 
     public SoundboardSound(ResultSet set) throws SQLException {
         this(
@@ -23,7 +24,8 @@ public class SoundboardSound {
                 set.getString("url"),
                 set.getBoolean("enabled"),
                 set.getInt("sort_order"),
-                set.getInt("min_rank"));
+                set.getInt("min_rank"),
+                set.getInt("cooldown_seconds"));
     }
 
     public SoundboardSound(int id, String name, String classname, String url, int minRank) {
@@ -32,6 +34,18 @@ public class SoundboardSound {
 
     public SoundboardSound(
             int id, String name, String classname, String url, boolean enabled, int sortOrder, int minRank) {
+        this(id, name, classname, url, enabled, sortOrder, minRank, 0);
+    }
+
+    public SoundboardSound(
+            int id,
+            String name,
+            String classname,
+            String url,
+            boolean enabled,
+            int sortOrder,
+            int minRank,
+            int cooldownSeconds) {
         this.id = id;
         this.name = name == null ? "" : name;
         this.classname = classname == null ? "" : classname;
@@ -39,6 +53,7 @@ public class SoundboardSound {
         this.enabled = enabled;
         this.sortOrder = sortOrder;
         this.minRank = Math.max(1, minRank);
+        this.cooldownSeconds = Math.max(0, cooldownSeconds);
     }
 
     public boolean isAvailableTo(int rankId) {

@@ -45,10 +45,12 @@ public class SoundboardPlayEvent extends MessageHandler {
                         soundId,
                         System.currentTimeMillis());
         if (!decision.allowed()) {
-            if (decision.denialReason() == SoundboardManager.DenialReason.COOLDOWN) {
-                this.sendDenied(SoundboardPlayDeniedComposer.Reason.COOLDOWN, decision.remainingSeconds());
-            } else {
-                this.sendDenied(SoundboardPlayDeniedComposer.Reason.UNAVAILABLE, 0);
+            switch (decision.denialReason()) {
+                case COOLDOWN ->
+                    this.sendDenied(SoundboardPlayDeniedComposer.Reason.COOLDOWN, decision.remainingSeconds());
+                case PAD_COOLDOWN ->
+                    this.sendDenied(SoundboardPlayDeniedComposer.Reason.PAD_COOLDOWN, decision.remainingSeconds());
+                default -> this.sendDenied(SoundboardPlayDeniedComposer.Reason.UNAVAILABLE, 0);
             }
             return;
         }

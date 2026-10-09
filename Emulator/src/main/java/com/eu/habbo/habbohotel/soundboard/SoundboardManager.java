@@ -20,7 +20,10 @@ public class SoundboardManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(SoundboardManager.class);
     private static final int MAX_REORDER_SIZE = SoundboardCatalogRepository.MAX_CATALOG_SIZE;
 
+    public static final int MAX_PAD_COOLDOWN_SECONDS = 3_600;
+
     private final SoundboardCooldownGate cooldownGate = new SoundboardCooldownGate();
+    private final SoundboardCooldownGate padCooldownGate = new SoundboardCooldownGate();
     private final IntUnaryOperator cooldownByRank;
     private final IntPredicate rankExists;
     private final SoundboardCatalogRepository repository;
@@ -115,11 +118,21 @@ public class SoundboardManager {
             return new PlayDecision(false, null, DenialReason.NOT_AVAILABLE, 0);
         }
 
+        // The pad's own cooldown is only read here, so a player turned away by it does not also
+        // spend the rank cooldown on a sound nobody heard.
+        long padKey = ((long) userId << 32) | (sound.id & 0xFFFFFFFFL);
+        SoundboardCooldownGate.Decision padCooldown = this.padCooldownGate.peek(padKey, nowMillis);
+        if (sound.cooldownSeconds > 0 && !padCooldown.allowed()) {
+            return new PlayDecision(false, sound, DenialReason.PAD_COOLDOWN, padCooldown.remainingSeconds());
+        }
+
         SoundboardCooldownGate.Decision cooldown =
                 this.cooldownGate.tryAcquire(userId, nowMillis, this.getCooldownSecondsForRank(rankId));
         if (!cooldown.allowed()) {
             return new PlayDecision(false, sound, DenialReason.COOLDOWN, cooldown.remainingSeconds());
         }
+
+        this.padCooldownGate.tryAcquire(padKey, nowMillis, sound.cooldownSeconds);
 
         return new PlayDecision(true, sound, DenialReason.NONE, 0);
     }
@@ -149,6 +162,11 @@ public class SoundboardManager {
             return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.INVALID_RANK);
         }
 
+        if (command.cooldownSeconds() > MAX_PAD_COOLDOWN_SECONDS
+                || command.cooldownSeconds() < SoundboardCatalogCommand.KEEP_COOLDOWN) {
+            return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.INVALID_COOLDOWN);
+        }
+
         if (command.id() < 0) {
             return SoundboardCatalogResult.failure(SoundboardCatalogResult.Code.NOT_FOUND);
         }
@@ -159,7 +177,14 @@ public class SoundboardManager {
 
         SoundboardCatalogResult result = this.repository.upsert(
                 staffUserId,
-                new SoundboardCatalogCommand(command.id(), name, classname, url, command.minRank(), command.enabled()));
+                new SoundboardCatalogCommand(
+                        command.id(),
+                        name,
+                        classname,
+                        url,
+                        command.minRank(),
+                        command.enabled(),
+                        command.cooldownSeconds()));
         if (result.successful()) {
             this.reload();
         }
@@ -202,7 +227,8 @@ public class SoundboardManager {
     public enum DenialReason {
         NONE,
         NOT_AVAILABLE,
-        COOLDOWN
+        COOLDOWN,
+        PAD_COOLDOWN
     }
 
     public record PlayDecision(

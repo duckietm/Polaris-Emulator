@@ -48,6 +48,39 @@ class SoundboardManagerContractTest {
     }
 
     @Test
+    void aPadCooldownHoldsOnlyThatPadForThatPlayer() {
+        SoundboardSound slow = new SoundboardSound(11, "Slow", "slow", "", true, 30, 1, 20);
+        SoundboardSound other = new SoundboardSound(12, "Other", "other", "", true, 40, 1, 0);
+        SoundboardManager padManager = new SoundboardManager(List.of(slow, other), rankId -> 1);
+
+        assertTrue(padManager.tryPlay(10, 1, slow.id, 1_000L).allowed());
+
+        SoundboardManager.PlayDecision again = padManager.tryPlay(10, 1, slow.id, 3_000L);
+        assertFalse(again.allowed());
+        assertEquals(SoundboardManager.DenialReason.PAD_COOLDOWN, again.denialReason());
+        assertEquals(18, again.remainingSeconds());
+
+        assertTrue(padManager.tryPlay(10, 1, other.id, 3_000L).allowed());
+        assertTrue(padManager.tryPlay(11, 1, slow.id, 3_000L).allowed());
+        assertTrue(padManager.tryPlay(10, 1, slow.id, 21_000L).allowed());
+    }
+
+    @Test
+    void aPadTurnedAwayByItsCooldownDoesNotSpendTheRankCooldown() {
+        SoundboardSound slow = new SoundboardSound(11, "Slow", "slow", "", true, 30, 1, 20);
+        SoundboardSound other = new SoundboardSound(12, "Other", "other", "", true, 40, 1, 0);
+        SoundboardManager padManager = new SoundboardManager(List.of(slow, other), rankId -> 5);
+
+        assertTrue(padManager.tryPlay(10, 1, slow.id, 1_000L).allowed());
+        assertEquals(
+                SoundboardManager.DenialReason.PAD_COOLDOWN,
+                padManager.tryPlay(10, 1, slow.id, 5_000L).denialReason());
+
+        // The rank cooldown started at 1 000 ms and ends at 6 000 ms; the refused attempt did not move it.
+        assertTrue(padManager.tryPlay(10, 1, other.id, 6_000L).allowed());
+    }
+
+    @Test
     void unknownOrInvalidRankCooldownFallsBackToSixtySeconds() {
         assertEquals(60, this.manager.getCooldownSecondsForRank(99));
     }

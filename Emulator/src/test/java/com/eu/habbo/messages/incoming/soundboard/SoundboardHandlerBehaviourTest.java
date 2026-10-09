@@ -2,7 +2,6 @@ package com.eu.habbo.messages.incoming.soundboard;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.atLeast;
@@ -23,6 +22,7 @@ import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.soundboard.SoundboardCatalogCommand;
 import com.eu.habbo.habbohotel.soundboard.SoundboardCatalogResult;
 import com.eu.habbo.habbohotel.soundboard.SoundboardManager;
+import com.eu.habbo.habbohotel.soundboard.SoundboardRoomMode;
 import com.eu.habbo.habbohotel.soundboard.SoundboardSound;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
@@ -48,8 +48,8 @@ class SoundboardHandlerBehaviourTest {
             fixture.handle(new SoundboardSetEnabledEvent(), packet(9307, 1));
         }
 
-        verify(fixture.room, never()).setSoundboardEnabled(true);
-        verify(fixture.manager, never()).setRoomEnabled(anyInt(), anyBoolean());
+        verify(fixture.room, never()).setSoundboardMode(any());
+        verify(fixture.manager, never()).setRoomMode(anyInt(), any());
         assertEquals(List.of(Outgoing.SoundboardSettingsComposer), fixture.headersSentTo(fixture.client));
     }
 
@@ -63,10 +63,65 @@ class SoundboardHandlerBehaviourTest {
             fixture.handle(new SoundboardSetEnabledEvent(), packet(9307, 1));
         }
 
-        verify(fixture.room).setSoundboardEnabled(true);
-        verify(fixture.manager).setRoomEnabled(fixture.roomId, true);
+        verify(fixture.room).setSoundboardMode(SoundboardRoomMode.EVERYONE);
+        verify(fixture.manager).setRoomMode(fixture.roomId, SoundboardRoomMode.EVERYONE);
         assertEquals(List.of(Outgoing.SoundboardSettingsComposer), fixture.headersSentTo(fixture.client));
         verify(neighbour.getClient(), times(1)).sendResponse(any(ServerMessage.class));
+    }
+
+    @Test
+    void theOwnerCanLimitTheRoomToPeopleWithRights() throws Exception {
+        Fixture fixture = new Fixture();
+        fixture.inRoomOwnedBy(fixture.actorId, false);
+
+        try (MockedStatic<Emulator> emulator = fixture.serving()) {
+            fixture.handle(new SoundboardSetEnabledEvent(), packet(9307, 2));
+        }
+
+        verify(fixture.room).setSoundboardMode(SoundboardRoomMode.RIGHTS);
+        verify(fixture.manager).setRoomMode(fixture.roomId, SoundboardRoomMode.RIGHTS);
+    }
+
+    @Test
+    void aCodeNobodyDefinedSwitchesTheSoundboardOff() throws Exception {
+        Fixture fixture = new Fixture();
+        fixture.inRoomOwnedBy(fixture.actorId, true);
+
+        try (MockedStatic<Emulator> emulator = fixture.serving()) {
+            fixture.handle(new SoundboardSetEnabledEvent(), packet(9307, 9));
+        }
+
+        verify(fixture.room).setSoundboardMode(SoundboardRoomMode.OFF);
+    }
+
+    @Test
+    void inTheRightsModeAPlayerWithoutRightsIsDeniedAndNobodyHearsIt() throws Exception {
+        Fixture fixture = new Fixture();
+        fixture.inRoomOwnedBy(7, SoundboardRoomMode.RIGHTS);
+        when(fixture.room.hasRights(fixture.habbo)).thenReturn(false);
+
+        try (MockedStatic<Emulator> emulator = fixture.serving()) {
+            fixture.handle(new SoundboardPlayEvent(), packet(9306, 3));
+        }
+
+        assertEquals(List.of(Outgoing.SoundboardPlayDeniedComposer), fixture.headersSentTo(fixture.client));
+        verify(fixture.room, never()).sendComposer(any(ServerMessage.class));
+    }
+
+    @Test
+    void inTheRightsModeAPlayerWithRightsPlaysNormally() throws Exception {
+        Fixture fixture = new Fixture();
+        fixture.inRoomOwnedBy(7, SoundboardRoomMode.RIGHTS);
+        when(fixture.room.hasRights(fixture.habbo)).thenReturn(true);
+        SoundboardSound bell = new SoundboardSound(3, "Bell", "bell", "", 1);
+        when(fixture.manager.tryPlay(anyInt(), anyInt(), anyInt(), anyLong()))
+                .thenReturn(new SoundboardManager.PlayDecision(true, bell, SoundboardManager.DenialReason.NONE, 0));
+
+        try (MockedStatic<Emulator> emulator = fixture.serving()) {
+            fixture.handle(new SoundboardPlayEvent(), packet(9306, 3));
+        }
+
+        verify(fixture.room, times(1)).sendComposer(any(ServerMessage.class));
     }
 
     @Test
@@ -235,9 +290,14 @@ class SoundboardHandlerBehaviourTest {
         }
 
         void inRoomOwnedBy(int ownerId, boolean soundboardOn) {
+            this.inRoomOwnedBy(ownerId, soundboardOn ? SoundboardRoomMode.EVERYONE : SoundboardRoomMode.OFF);
+        }
+
+        void inRoomOwnedBy(int ownerId, SoundboardRoomMode mode) {
             when(this.room.getId()).thenReturn(this.roomId);
             when(this.room.getOwnerId()).thenReturn(ownerId);
-            when(this.room.isSoundboardEnabled()).thenReturn(soundboardOn);
+            when(this.room.getSoundboardMode()).thenReturn(mode);
+            when(this.room.isSoundboardEnabled()).thenReturn(mode.enabled());
             when(this.room.getHabbos()).thenAnswer(invocation -> List.copyOf(this.inRoom));
             this.inRoom.add(this.habbo);
             this.activeRooms.add(this.room);

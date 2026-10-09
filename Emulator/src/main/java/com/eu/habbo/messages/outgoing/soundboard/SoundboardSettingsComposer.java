@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.outgoing.soundboard;
 
 import com.eu.habbo.habbohotel.permissions.Rank;
+import com.eu.habbo.habbohotel.soundboard.SoundboardRoomMode;
 import com.eu.habbo.habbohotel.soundboard.SoundboardSound;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -10,7 +11,7 @@ import java.util.List;
 // Sent on room enter (and on toggle): whether the soundboard is active in this
 // room + the available pads. The client shows the toolbar icon only if enabled.
 public class SoundboardSettingsComposer extends MessageComposer {
-    private final boolean enabled;
+    private final SoundboardRoomMode mode;
     private final int cooldownSeconds;
     private final List<SoundboardSound> sounds;
 
@@ -19,7 +20,11 @@ public class SoundboardSettingsComposer extends MessageComposer {
     }
 
     public SoundboardSettingsComposer(boolean enabled, int cooldownSeconds, List<SoundboardSound> sounds) {
-        this.enabled = enabled;
+        this(enabled ? SoundboardRoomMode.EVERYONE : SoundboardRoomMode.OFF, cooldownSeconds, sounds);
+    }
+
+    public SoundboardSettingsComposer(SoundboardRoomMode mode, int cooldownSeconds, List<SoundboardSound> sounds) {
+        this.mode = mode;
         this.cooldownSeconds = Math.max(0, cooldownSeconds);
         this.sounds = sounds;
     }
@@ -27,7 +32,7 @@ public class SoundboardSettingsComposer extends MessageComposer {
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.SoundboardSettingsComposer);
-        this.response.appendBoolean(this.enabled);
+        this.response.appendBoolean(this.mode.enabled());
         this.response.appendInt(this.cooldownSeconds);
         this.response.appendInt(this.sounds.size());
         for (SoundboardSound sound : this.sounds) {
@@ -46,6 +51,11 @@ public class SoundboardSettingsComposer extends MessageComposer {
         for (SoundboardSound sound : this.sounds) {
             this.response.appendString(sound.classname);
         }
+
+        // Last, after the classname block: who may play. A client that predates it stops reading
+        // above and still sees the boolean (any mode but off reads as on); the server refuses a
+        // player without rights in the rights mode either way.
+        this.response.appendInt(this.mode.wireCode());
         return this.response;
     }
 }

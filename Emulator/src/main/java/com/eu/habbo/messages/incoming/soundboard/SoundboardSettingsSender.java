@@ -19,7 +19,7 @@ public final class SoundboardSettingsSender {
         int rankId = habbo.getHabboInfo().getRank().getId();
         habbo.getClient()
                 .sendResponse(new SoundboardSettingsComposer(
-                                room.isSoundboardEnabled(),
+                                room.getSoundboardMode(),
                                 manager.getCooldownSecondsForRank(rankId),
                                 manager.getSoundsForRank(rankId))
                         .compose());
@@ -37,7 +37,7 @@ public final class SoundboardSettingsSender {
             recipient
                     .getClient()
                     .sendResponse(new SoundboardSettingsComposer(
-                                    room.isSoundboardEnabled(),
+                                    room.getSoundboardMode(),
                                     manager.getCooldownSecondsForRank(rankId),
                                     manager.getSoundsForRank(rankId))
                             .compose());

@@ -229,10 +229,14 @@ public class SoundboardManager {
     }
 
     public void setRoomEnabled(int roomId, boolean enabled) {
+        this.setRoomMode(roomId, enabled ? SoundboardRoomMode.EVERYONE : SoundboardRoomMode.OFF);
+    }
+
+    public void setRoomMode(int roomId, SoundboardRoomMode mode) {
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
                 PreparedStatement statement =
                         connection.prepareStatement("UPDATE rooms SET soundboard_enabled = ? WHERE id = ? LIMIT 1")) {
-            statement.setString(1, enabled ? "1" : "0");
+            statement.setInt(1, mode.wireCode());
             statement.setInt(2, roomId);
             statement.executeUpdate();
         } catch (SQLException exception) {

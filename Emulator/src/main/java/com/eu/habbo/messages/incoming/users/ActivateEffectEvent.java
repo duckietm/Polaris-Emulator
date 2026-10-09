@@ -7,6 +7,11 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 
 public class ActivateEffectEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        return 250;
+    }
+
+    @Override
     public void handle() throws Exception {
         int effectId = this.packet.readInt();
         Habbo habbo = this.client.getHabbo();

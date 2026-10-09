@@ -4,6 +4,11 @@ import com.eu.habbo.messages.incoming.MessageHandler;
 
 public class EnableEffectEvent extends MessageHandler {
     @Override
+    public int getRatelimit() {
+        return 250;
+    }
+
+    @Override
     public void handle() throws Exception {
         int effectId = this.packet.readInt();
 
@@ -15,7 +20,11 @@ public class EnableEffectEvent extends MessageHandler {
             this.client.getHabbo().getInventory().getEffectsComponent().activatedEffect = 0;
 
             if (this.client.getHabbo().getHabboInfo().getCurrentRoom() != null) {
-                this.client.getHabbo().getHabboInfo().getCurrentRoom().giveEffect(this.client.getHabbo().getRoomUnit(), 0, -1);
+                this.client
+                        .getHabbo()
+                        .getHabboInfo()
+                        .getCurrentRoom()
+                        .giveEffect(this.client.getHabbo().getRoomUnit(), 0, -1);
             }
         }
     }

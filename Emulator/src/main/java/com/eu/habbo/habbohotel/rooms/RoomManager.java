@@ -1165,7 +1165,7 @@ public class RoomManager {
         var soundboardManager = Emulator.getGameEnvironment().getSoundboardManager();
         habbo.getClient()
                 .sendResponse(new com.eu.habbo.messages.outgoing.soundboard.SoundboardSettingsComposer(
-                                room.isSoundboardEnabled(),
+                                room.getSoundboardMode(),
                                 soundboardManager.getCooldownSecondsForRank(
                                         habbo.getHabboInfo().getRank().getId()),
                                 soundboardManager.getSoundsForRank(

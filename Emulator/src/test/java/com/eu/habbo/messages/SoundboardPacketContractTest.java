@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.eu.habbo.habbohotel.rooms.RoomChatMessageBubbles;
 import com.eu.habbo.habbohotel.soundboard.SoundboardCatalogResult;
+import com.eu.habbo.habbohotel.soundboard.SoundboardRoomMode;
 import com.eu.habbo.habbohotel.soundboard.SoundboardSound;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboStats;
@@ -41,7 +42,24 @@ class SoundboardPacketContractTest {
         assertEquals("/sounds/soundboard/campanella.mp3", readString(packet));
         // classnames follow the records as their own block
         assertEquals("campanella", readString(packet));
+        // the room mode comes last, so a client that stops after the classnames still works
+        assertEquals(SoundboardRoomMode.EVERYONE.wireCode(), packet.readInt());
         assertFalse(packet.isReadable());
+    }
+
+    @Test
+    void settingsTellTheRoomModeAndKeepTheBooleanOnForAnyModeButOff() {
+        for (SoundboardRoomMode mode : SoundboardRoomMode.values()) {
+            ByteBuf packet = new SoundboardSettingsComposer(mode, 60, List.of())
+                    .compose()
+                    .get();
+            packet.skipBytes(6);
+
+            assertEquals(mode.enabled(), packet.readBoolean());
+            packet.skipBytes(8);
+            assertEquals(mode.wireCode(), packet.readInt());
+            assertFalse(packet.isReadable());
+        }
     }
 
     @Test
@@ -120,7 +138,7 @@ class SoundboardPacketContractTest {
 
     @Test
     void catalogCarriesEnabledAndDisabledManagementFields() {
-        SoundboardSound disabled = new SoundboardSound(7, "Campanella", "bell", "/sounds/bell.mp3", false, 20, 5);
+        SoundboardSound disabled = new SoundboardSound(7, "Campanella", "bell", "/sounds/bell.mp3", false, 20, 5, 15);
         ByteBuf packet =
                 new SoundboardCatalogComposer(List.of(disabled)).compose().get();
         packet.skipBytes(6);
@@ -133,6 +151,20 @@ class SoundboardPacketContractTest {
         assertEquals(20, packet.readInt());
         assertEquals(5, packet.readInt());
         assertEquals("bell", readString(packet));
+        // the pad's own cooldown closes the packet, one per pad in the same order
+        assertEquals(15, packet.readInt());
+        assertFalse(packet.isReadable());
+    }
+
+    @Test
+    void aPadCooldownDenialHasItsOwnReasonSoThePanelIsNotLocked() {
+        ByteBuf packet = new SoundboardPlayDeniedComposer(SoundboardPlayDeniedComposer.Reason.PAD_COOLDOWN, 8)
+                .compose()
+                .get();
+        packet.skipBytes(6);
+
+        assertEquals(5, packet.readInt());
+        assertEquals(8, packet.readInt());
         assertFalse(packet.isReadable());
     }
 

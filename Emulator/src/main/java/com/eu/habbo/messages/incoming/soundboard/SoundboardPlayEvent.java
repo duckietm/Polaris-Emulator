@@ -3,6 +3,7 @@ package com.eu.habbo.messages.incoming.soundboard;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.soundboard.SoundboardManager;
+import com.eu.habbo.habbohotel.soundboard.SoundboardRoomMode;
 import com.eu.habbo.habbohotel.soundboard.SoundboardSound;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -25,8 +26,13 @@ public class SoundboardPlayEvent extends MessageHandler {
             this.sendDenied(SoundboardPlayDeniedComposer.Reason.UNAVAILABLE, 0);
             return;
         }
-        if (!room.isSoundboardEnabled()) {
+        SoundboardRoomMode mode = room.getSoundboardMode();
+        if (!mode.enabled()) {
             this.sendDenied(SoundboardPlayDeniedComposer.Reason.ROOM_DISABLED, 0);
+            return;
+        }
+        if (!mode.allows(room.hasRights(habbo))) {
+            this.sendDenied(SoundboardPlayDeniedComposer.Reason.RIGHTS_REQUIRED, 0);
             return;
         }
 
@@ -39,10 +45,12 @@ public class SoundboardPlayEvent extends MessageHandler {
                         soundId,
                         System.currentTimeMillis());
         if (!decision.allowed()) {
-            if (decision.denialReason() == SoundboardManager.DenialReason.COOLDOWN) {
-                this.sendDenied(SoundboardPlayDeniedComposer.Reason.COOLDOWN, decision.remainingSeconds());
-            } else {
-                this.sendDenied(SoundboardPlayDeniedComposer.Reason.UNAVAILABLE, 0);
+            switch (decision.denialReason()) {
+                case COOLDOWN ->
+                    this.sendDenied(SoundboardPlayDeniedComposer.Reason.COOLDOWN, decision.remainingSeconds());
+                case PAD_COOLDOWN ->
+                    this.sendDenied(SoundboardPlayDeniedComposer.Reason.PAD_COOLDOWN, decision.remainingSeconds());
+                default -> this.sendDenied(SoundboardPlayDeniedComposer.Reason.UNAVAILABLE, 0);
             }
             return;
         }

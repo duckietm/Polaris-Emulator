@@ -11181,6 +11181,11 @@
           "kind": "scalar",
           "type": "string",
           "name": "classname"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "cooldownSeconds"
         }
       ]
     },

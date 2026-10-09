@@ -32,6 +32,11 @@ public class SoundboardCatalogComposer extends MessageComposer {
         for (SoundboardSound sound : this.sounds) {
             this.response.appendString(sound.classname);
         }
+
+        // And after the classnames, one cooldown per pad in the same order.
+        for (SoundboardSound sound : this.sounds) {
+            this.response.appendInt(sound.cooldownSeconds);
+        }
         return this.response;
     }
 }

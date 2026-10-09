@@ -13,7 +13,8 @@ import javax.sql.DataSource;
 public class SoundboardCatalogRepository {
     public static final int MAX_CATALOG_SIZE = 500;
     private static final Gson GSON = new Gson();
-    private static final String SELECT_FIELDS = "id, name, classname, url, enabled, sort_order, min_rank";
+    private static final String SELECT_FIELDS =
+            "id, name, classname, url, enabled, sort_order, min_rank, cooldown_seconds";
 
     private final DataSource dataSource;
 
@@ -125,15 +126,17 @@ public class SoundboardCatalogRepository {
     private SoundboardSound insert(Connection connection, SoundboardCatalogCommand command, int sortOrder)
             throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO soundboard_sounds (name, classname, url, enabled, sort_order, min_rank) "
-                        + "VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO soundboard_sounds (name, classname, url, enabled, sort_order, min_rank, cooldown_seconds) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?)",
                 Statement.RETURN_GENERATED_KEYS)) {
+            int cooldownSeconds = Math.max(0, command.cooldownSeconds());
             statement.setString(1, command.name());
             setClassname(statement, 2, command.classname());
             statement.setString(3, command.url());
             statement.setBoolean(4, command.enabled());
             statement.setInt(5, sortOrder);
             statement.setInt(6, command.minRank());
+            statement.setInt(7, cooldownSeconds);
             statement.executeUpdate();
             try (ResultSet keys = statement.getGeneratedKeys()) {
                 if (!keys.next()) {
@@ -146,22 +149,27 @@ public class SoundboardCatalogRepository {
                         command.url(),
                         command.enabled(),
                         sortOrder,
-                        command.minRank());
+                        command.minRank(),
+                        cooldownSeconds);
             }
         }
     }
 
     private SoundboardSound update(Connection connection, SoundboardSound before, SoundboardCatalogCommand command)
             throws SQLException {
+        int cooldownSeconds = command.cooldownSeconds() == SoundboardCatalogCommand.KEEP_COOLDOWN
+                ? before.cooldownSeconds
+                : command.cooldownSeconds();
         try (PreparedStatement statement = connection.prepareStatement(
-                "UPDATE soundboard_sounds SET name = ?, classname = ?, url = ?, enabled = ?, min_rank = ? "
-                        + "WHERE id = ?")) {
+                "UPDATE soundboard_sounds SET name = ?, classname = ?, url = ?, enabled = ?, min_rank = ?, "
+                        + "cooldown_seconds = ? WHERE id = ?")) {
             statement.setString(1, command.name());
             setClassname(statement, 2, command.classname());
             statement.setString(3, command.url());
             statement.setBoolean(4, command.enabled());
             statement.setInt(5, command.minRank());
-            statement.setInt(6, command.id());
+            statement.setInt(6, cooldownSeconds);
+            statement.setInt(7, command.id());
             if (statement.executeUpdate() != 1) {
                 throw new SQLException("Soundboard update affected an unexpected number of rows");
             }
@@ -173,7 +181,8 @@ public class SoundboardCatalogRepository {
                 command.url(),
                 command.enabled(),
                 before.sortOrder,
-                command.minRank());
+                command.minRank(),
+                cooldownSeconds);
     }
 
     // The unique index tolerates many url-only rows only because they store

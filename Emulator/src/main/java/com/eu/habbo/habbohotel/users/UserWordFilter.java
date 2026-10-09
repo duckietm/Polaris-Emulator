@@ -76,8 +76,8 @@ public final class UserWordFilter {
         String result = message;
         for (String word : snapshot) {
             result = Pattern.compile(Pattern.quote(word), Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE)
-                .matcher(result)
-                .replaceAll(Matcher.quoteReplacement(replacement));
+                    .matcher(result)
+                    .replaceAll(Matcher.quoteReplacement(replacement));
         }
         return result;
     }

@@ -35,6 +35,7 @@ public class MentionManager {
     private final ConcurrentHashMap<Integer, Long> cooldowns = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, Long> roomBroadcastCooldowns = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, Long> requestListCooldowns = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, Long> requestPageCooldowns = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, Long> markReadCooldowns = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, Long> markAllCooldowns = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, Long> deleteCooldowns = new ConcurrentHashMap<>();
@@ -43,7 +44,7 @@ public class MentionManager {
     private static final long PRUNE_INTERVAL_MS = 5 * 60_000L;
 
     public boolean isEnabled() {
-        return Emulator.getConfig().getInt("mentions.enabled", 1) == 1;
+        return configInt("mentions.enabled", 1) == 1;
     }
 
     public enum BroadcastScope {
@@ -99,7 +100,7 @@ public class MentionManager {
 
             int senderId = sender.getHabboInfo().getId();
             long now = System.currentTimeMillis();
-            long cooldownMs = Emulator.getConfig().getInt("mentions.cooldown.ms", 3000);
+            long cooldownMs = configInt("mentions.cooldown.ms", 3000);
             Long last = this.cooldowns.get(senderId);
             if (last != null && (now - last) < cooldownMs) {
                 return;
@@ -132,14 +133,14 @@ public class MentionManager {
             }
 
             if (broadcastScope != BroadcastScope.NONE) {
-                long roomCooldownMs = Emulator.getConfig().getInt("mentions.room.cooldown.ms", 15000);
+                long roomCooldownMs = configInt("mentions.room.cooldown.ms", 15000);
                 Long lastRoom = this.roomBroadcastCooldowns.get(senderId);
                 if (lastRoom != null && (now - lastRoom) < roomCooldownMs) {
                     return;
                 }
             }
 
-            int maxTargets = Emulator.getConfig().getInt("mentions.max.targets", 50);
+            int maxTargets = configInt("mentions.max.targets", 50);
             if (maxTargets <= 0) maxTargets = 1;
 
             List<Target> targets = new ArrayList<>();
@@ -368,15 +369,39 @@ public class MentionManager {
         }
     }
 
+    /** How many mentions one page holds. */
+    public int pageSize() {
+        return normalizePageSize(configInt("mentions.store.limit", 50));
+    }
+
+    static int normalizePageSize(int configured) {
+        if (configured <= 0) return 50;
+        return Math.min(configured, 200);
+    }
+
     public List<HabboMention> getMentions(int userId, int limit) {
+        return this.getMentionsPage(userId, limit, 0).mentions();
+    }
+
+    /**
+     * The newest {@code limit} mentions, or the ones older than {@code beforeId} when it is
+     * positive. One more row than asked is read to know whether older ones remain.
+     */
+    public MentionPage getMentionsPage(int userId, int limit, int beforeId) {
+        int size = normalizePageSize(limit);
         List<HabboMention> mentions = new ArrayList<>();
-        if (limit <= 0) limit = 50;
-        if (limit > 200) limit = 200;
+
+        if (beforeId <= 0) {
+            this.pruneRead(userId);
+        }
+
         try (Connection connection = openConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "SELECT habbo_mentions.*, users.look AS sender_figure FROM habbo_mentions LEFT JOIN users ON users.id = habbo_mentions.sender_user_id WHERE target_user_id = ? ORDER BY id DESC LIMIT ?")) {
+                        "SELECT habbo_mentions.*, users.look AS sender_figure FROM habbo_mentions LEFT JOIN users ON users.id = habbo_mentions.sender_user_id WHERE target_user_id = ? AND (? <= 0 OR habbo_mentions.id < ?) ORDER BY id DESC LIMIT ?")) {
             statement.setInt(1, userId);
-            statement.setInt(2, limit);
+            statement.setInt(2, beforeId);
+            statement.setInt(3, beforeId);
+            statement.setInt(4, size + 1);
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
                     mentions.add(new HabboMention(set));
@@ -385,7 +410,25 @@ public class MentionManager {
         } catch (SQLException e) {
             LOGGER.error("Failed to load mentions.", e);
         }
-        return mentions;
+
+        boolean hasMore = mentions.size() > size;
+        return new MentionPage(hasMore ? new ArrayList<>(mentions.subList(0, size)) : mentions, hasMore);
+    }
+
+    /** Opt-in: with {@code mentions.retention.days} above zero, the read mentions older than that go. */
+    private void pruneRead(int userId) {
+        int days = configInt("mentions.retention.days", 0);
+        if (days <= 0) return;
+
+        try (Connection connection = openConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "DELETE FROM habbo_mentions WHERE target_user_id = ? AND `read` = 1 AND timestamp < ?")) {
+            statement.setInt(1, userId);
+            statement.setInt(2, Emulator.getIntUnixTimestamp() - days * 86400);
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.error("Failed to prune old mentions.", e);
+        }
     }
 
     public void markRead(int userId, int mode, int mentionId) {
@@ -420,8 +463,13 @@ public class MentionManager {
         }
     }
 
+    public boolean tryAcquireRequestPage(int userId) {
+        long cooldownMs = configInt("mentions.page.cooldown.ms", 300);
+        return tryAcquire(this.requestPageCooldowns, userId, cooldownMs);
+    }
+
     public boolean tryAcquireRequestList(int userId) {
-        long cooldownMs = Emulator.getConfig().getInt("mentions.request.cooldown.ms", 2000);
+        long cooldownMs = configInt("mentions.request.cooldown.ms", 2000);
         return tryAcquire(this.requestListCooldowns, userId, cooldownMs);
     }
 
@@ -434,10 +482,10 @@ public class MentionManager {
         long cooldownMs;
         ConcurrentHashMap<Integer, Long> bucket;
         if (mode == 1) {
-            cooldownMs = Emulator.getConfig().getInt("mentions.markread.cooldown.ms", 500);
+            cooldownMs = configInt("mentions.markread.cooldown.ms", 500);
             bucket = this.markReadCooldowns;
         } else {
-            cooldownMs = Emulator.getConfig().getInt("mentions.markall.cooldown.ms", 5000);
+            cooldownMs = configInt("mentions.markall.cooldown.ms", 5000);
             bucket = this.markAllCooldowns;
         }
         return tryAcquire(bucket, userId, cooldownMs);
@@ -446,7 +494,7 @@ public class MentionManager {
     /** Kept for plugins built against earlier releases; the delete handler no longer uses it. */
     @Deprecated
     public boolean tryAcquireDelete(int userId) {
-        long cooldownMs = Emulator.getConfig().getInt("mentions.delete.cooldown.ms", 500);
+        long cooldownMs = configInt("mentions.delete.cooldown.ms", 500);
         return tryAcquire(this.deleteCooldowns, userId, cooldownMs);
     }
 
@@ -465,16 +513,17 @@ public class MentionManager {
         if (now - this.lastPrune < PRUNE_INTERVAL_MS) return;
         this.lastPrune = now;
 
-        long mentionWindow = Emulator.getConfig().getInt("mentions.cooldown.ms", 3000);
-        long roomWindow = Emulator.getConfig().getInt("mentions.room.cooldown.ms", 15000);
-        long requestWindow = Emulator.getConfig().getInt("mentions.request.cooldown.ms", 2000);
-        long markReadWindow = Emulator.getConfig().getInt("mentions.markread.cooldown.ms", 500);
-        long markAllWindow = Emulator.getConfig().getInt("mentions.markall.cooldown.ms", 5000);
-        long deleteWindow = Emulator.getConfig().getInt("mentions.delete.cooldown.ms", 500);
+        long mentionWindow = configInt("mentions.cooldown.ms", 3000);
+        long roomWindow = configInt("mentions.room.cooldown.ms", 15000);
+        long requestWindow = configInt("mentions.request.cooldown.ms", 2000);
+        long markReadWindow = configInt("mentions.markread.cooldown.ms", 500);
+        long markAllWindow = configInt("mentions.markall.cooldown.ms", 5000);
+        long deleteWindow = configInt("mentions.delete.cooldown.ms", 500);
 
         prune(this.cooldowns, now, mentionWindow);
         prune(this.roomBroadcastCooldowns, now, roomWindow);
         prune(this.requestListCooldowns, now, requestWindow);
+        prune(this.requestPageCooldowns, now, configInt("mentions.page.cooldown.ms", 300));
         prune(this.markReadCooldowns, now, markReadWindow);
         prune(this.markAllCooldowns, now, markAllWindow);
         prune(this.deleteCooldowns, now, deleteWindow);
@@ -489,6 +538,10 @@ public class MentionManager {
                 it.remove();
             }
         }
+    }
+
+    private static int configInt(String key, int defaultValue) {
+        return Emulator.getConfig().getInt(key, defaultValue);
     }
 
     private static Connection openConnection() throws SQLException {

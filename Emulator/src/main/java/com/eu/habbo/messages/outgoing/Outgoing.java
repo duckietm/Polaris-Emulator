@@ -769,6 +769,7 @@ public class Outgoing {
     public static final int SoundboardCatalogResultComposer = 9442;
     public static final int MentionReceivedComposer = 4801;
     public static final int MentionsListComposer = 4802;
+    public static final int MentionsPageComposer = 4803;
     public static final int MessengerConversationsComposer = 4900;
     public static final int MessengerHistoryComposer = 4901;
     public static final int MessengerMessageAckComposer = 4902;

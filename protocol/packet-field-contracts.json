@@ -4925,7 +4925,7 @@
         {
           "kind": "scalar",
           "type": "string",
-          "name": ""
+          "name": "recoveryToken"
         }
       ]
     },
@@ -8634,6 +8634,28 @@
       ]
     },
     {
+      "name": "REQUEST_MENTIONS_PAGE",
+      "direction": "client_to_server",
+      "header": 4806,
+      "java": {
+        "symbol": "RequestMentionsPageEvent",
+        "className": "RequestMentionsPageEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/mentions/RequestMentionsPageEvent.java"
+      },
+      "typescript": {
+        "symbol": "REQUEST_MENTIONS_PAGE",
+        "className": "RequestMentionsPageComposer",
+        "path": "packages/communication/src/messages/outgoing/mentions/RequestMentionsPageComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "beforeId"
+        }
+      ]
+    },
+    {
       "name": "REQUEST_MESSENGER_CONVERSATIONS",
       "direction": "client_to_server",
       "header": 4900,
@@ -9567,44 +9589,6 @@
       ]
     },
     {
-      "name": "HOUSEKEEPING_SET_USER_RANK",
-      "direction": "client_to_server",
-      "header": 9107,
-      "java": {
-        "symbol": "HousekeepingSetUserRankEvent",
-        "className": "HousekeepingSetUserRankEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingSetUserRankEvent.java"
-      },
-      "typescript": {
-        "symbol": "HOUSEKEEPING_SET_USER_RANK",
-        "className": "HousekeepingSetUserRankComposer",
-        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingSetUserRankComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "userId"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "rankId"
-        },
-        {
-          "kind": "optional",
-          "controller": "durationSeconds",
-          "fields": [
-            {
-              "kind": "scalar",
-              "type": "int",
-              "name": "durationSeconds"
-            }
-          ]
-        }
-      ]
-    },
-    {
       "name": "HOUSEKEEPING_TRADE_LOCK_USER",
       "direction": "client_to_server",
       "header": 9108,
@@ -9956,39 +9940,6 @@
       ]
     },
     {
-      "name": "HOUSEKEEPING_SEND_HOTEL_ALERT",
-      "direction": "client_to_server",
-      "header": 9121,
-      "java": {
-        "symbol": "HousekeepingSendHotelAlertEvent",
-        "className": "HousekeepingSendHotelAlertEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingSendHotelAlertEvent.java"
-      },
-      "typescript": {
-        "symbol": "HOUSEKEEPING_SEND_HOTEL_ALERT",
-        "className": "HousekeepingSendHotelAlertComposer",
-        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingSendHotelAlertComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "message"
-        },
-        {
-          "kind": "optional",
-          "controller": "recipient",
-          "fields": [
-            {
-              "kind": "scalar",
-              "type": "string",
-              "name": "recipient"
-            }
-          ]
-        }
-      ]
-    },
-    {
       "name": "HOUSEKEEPING_GET_DASHBOARD",
       "direction": "client_to_server",
       "header": 9122,
@@ -10023,44 +9974,6 @@
           "kind": "scalar",
           "type": "int",
           "name": "limit"
-        }
-      ]
-    },
-    {
-      "name": "HOUSEKEEPING_REQUEST_LIST",
-      "direction": "client_to_server",
-      "header": 9125,
-      "java": {
-        "symbol": "HousekeepingRequestListEvent",
-        "className": "HousekeepingRequestListEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingRequestListEvent.java"
-      },
-      "typescript": {
-        "symbol": "HOUSEKEEPING_REQUEST_LIST",
-        "className": "HousekeepingRequestListComposer",
-        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingRequestListComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "listKey"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "targetId"
-        },
-        {
-          "kind": "optional",
-          "controller": "reveal",
-          "fields": [
-            {
-              "kind": "scalar",
-              "type": "int",
-              "name": "reveal"
-            }
-          ]
         }
       ]
     },
@@ -11326,49 +11239,6 @@
       ]
     },
     {
-      "name": "USER_SETTINGS_PRIVACY",
-      "direction": "client_to_server",
-      "header": 9415,
-      "java": {
-        "symbol": "SaveGamePrivacySettingsEvent",
-        "className": "SaveGamePrivacySettingsEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/users/SaveGamePrivacySettingsEvent.java"
-      },
-      "typescript": {
-        "symbol": "USER_SETTINGS_PRIVACY",
-        "className": "UserSettingsPrivacyComposer",
-        "path": "packages/communication/src/messages/outgoing/user/settings/UserSettingsPrivacyComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "boolean",
-          "name": "hideOnline"
-        },
-        {
-          "kind": "scalar",
-          "type": "boolean",
-          "name": "blockFollowing"
-        },
-        {
-          "kind": "scalar",
-          "type": "boolean",
-          "name": "blockFriendRequests"
-        },
-        {
-          "kind": "optional",
-          "controller": "profileVisible",
-          "fields": [
-            {
-              "kind": "scalar",
-              "type": "boolean",
-              "name": "profileVisible"
-            }
-          ]
-        }
-      ]
-    },
-    {
       "name": "REQUEST_OFFLINE_MESSAGES",
       "direction": "client_to_server",
       "header": 9416,
@@ -11737,54 +11607,6 @@
       "fields": []
     },
     {
-      "name": "WIRED_USER_VARIABLE_UPDATE",
-      "direction": "client_to_server",
-      "header": 10025,
-      "java": {
-        "symbol": "WiredUserVariableUpdateEvent",
-        "className": "WiredUserVariableUpdateEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredUserVariableUpdateEvent.java"
-      },
-      "typescript": {
-        "symbol": "WIRED_USER_VARIABLE_UPDATE",
-        "className": "WiredUserVariableUpdateComposer",
-        "path": "packages/communication/src/messages/outgoing/roomevents/WiredUserVariableUpdateComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "targetType"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "targetId"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "variableItemId"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "value"
-        },
-        {
-          "kind": "optional",
-          "controller": "variableToken",
-          "fields": [
-            {
-              "kind": "scalar",
-              "type": "string",
-              "name": "variableToken"
-            }
-          ]
-        }
-      ]
-    },
-    {
       "name": "WIRED_USER_VARIABLE_MANAGE",
       "direction": "client_to_server",
       "header": 10026,
@@ -12026,6 +11848,105 @@
       ]
     },
     {
+      "name": "WIRED_ARRAY_INSPECTION_REQUEST",
+      "direction": "client_to_server",
+      "header": 10034,
+      "java": {
+        "symbol": "WiredArrayInspectionRequestEvent",
+        "className": "WiredArrayInspectionRequestEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredArrayInspectionRequestEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_ARRAY_INSPECTION_REQUEST",
+        "className": "WiredArrayInspectionRequestComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredArrayInspectionRequestComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "variableType"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "requestedOwnerId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "definitionItemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "page"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "pageSize"
+        }
+      ]
+    },
+    {
+      "name": "WIRED_ARRAY_INSPECTION_UPDATE",
+      "direction": "client_to_server",
+      "header": 10035,
+      "java": {
+        "symbol": "WiredArrayInspectionUpdateEvent",
+        "className": "WiredArrayInspectionUpdateEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredArrayInspectionUpdateEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_ARRAY_INSPECTION_UPDATE",
+        "className": "WiredArrayInspectionUpdateComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredArrayInspectionUpdateComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "variableType"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "requestedOwnerId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "definitionItemId"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "index"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "fieldId"
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "rawValue"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "page"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "pageSize"
+        }
+      ]
+    },
+    {
       "name": "FURNI_EDITOR_SEARCH",
       "direction": "client_to_server",
       "header": 10040,
@@ -12199,7 +12120,7 @@
         {
           "kind": "scalar",
           "type": "string",
-          "name": ""
+          "name": "json"
         }
       ]
     },
@@ -20132,6 +20053,28 @@
       ]
     },
     {
+      "name": "WIRED_ARRAY_INSPECTION_DATA",
+      "direction": "server_to_client",
+      "header": 5111,
+      "java": {
+        "symbol": "WiredArrayInspectionDataComposer",
+        "className": "WiredArrayInspectionDataComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredArrayInspectionDataComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_ARRAY_INSPECTION_DATA",
+        "className": "WiredArrayInspectionDataParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredArrayInspectionDataParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        }
+      ]
+    },
+    {
       "name": "PREFIX_RECEIVED",
       "direction": "server_to_client",
       "header": 7002,
@@ -21861,22 +21804,6 @@
       "reason": "Header is registered only by the Octane Renderer packet registry"
     },
     {
-      "direction": "client_to_server",
-      "side": "typescript",
-      "header": 10034,
-      "symbol": "WIRED_ARRAY_INSPECTION_REQUEST",
-      "path": "packages/communication/src/messages/outgoing/roomevents/WiredArrayInspectionRequestComposer.ts",
-      "reason": "Header is registered only by the Octane Renderer packet registry"
-    },
-    {
-      "direction": "client_to_server",
-      "side": "typescript",
-      "header": 10035,
-      "symbol": "WIRED_ARRAY_INSPECTION_UPDATE",
-      "path": "packages/communication/src/messages/outgoing/roomevents/WiredArrayInspectionUpdateComposer.ts",
-      "reason": "Header is registered only by the Octane Renderer packet registry"
-    },
-    {
       "direction": "server_to_client",
       "side": "typescript",
       "header": 47,
@@ -22154,14 +22081,6 @@
       "header": 5110,
       "symbol": "WIRED_FURNI_MOVE_STYLE",
       "path": "packages/communication/src/messages/parser/roomevents/WiredFurniMoveStyleParser.ts",
-      "reason": "Header is registered only by the Octane Renderer packet registry"
-    },
-    {
-      "direction": "server_to_client",
-      "side": "typescript",
-      "header": 5111,
-      "symbol": "WIRED_ARRAY_INSPECTION_DATA",
-      "path": "packages/communication/src/messages/parser/roomevents/WiredArrayInspectionDataParser.ts",
       "reason": "Header is registered only by the Octane Renderer packet registry"
     },
     {
@@ -23020,7 +22939,7 @@
         "className": "RoomEnterComposer",
         "path": "packages/communication/src/messages/outgoing/room/access/RoomEnterComposer.ts"
       },
-      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle; TypeScript analyzer: Outgoing composer message array cannot be resolved statically"
+      "reason": "TypeScript analyzer: Outgoing composer message array cannot be resolved statically"
     },
     {
       "name": "UNSEEN_RESET_ITEMS",
@@ -23452,7 +23371,7 @@
         "className": "RequestFurniInventoryWhenNotInRoomComposer",
         "path": "packages/communication/src/messages/outgoing/inventory/furni/RequestFurniInventoryWhenNotInRoomComposer.ts"
       },
-      "reason": "Java analyzer: Java analyzer could not resolve handle: Method handle not found in E:\\Users\\simol\\Desktop\\DEV\\emulatore\\Emulator\\src\\main\\java\\com\\eu\\habbo\\messages\\incoming\\inventory\\HotelViewInventoryEvent.java"
+      "reason": "Java analyzer: Java analyzer could not resolve handle: Method handle not found in E:\\Users\\simol\\Desktop\\DEV\\.workspace\\tmp\\srv-g\\Emulator\\src\\main\\java\\com\\eu\\habbo\\messages\\incoming\\inventory\\HotelViewInventoryEvent.java"
     },
     {
       "name": "POLL_ANSWER",
@@ -23468,7 +23387,7 @@
         "className": "PollAnswerComposer",
         "path": "packages/communication/src/messages/outgoing/poll/PollAnswerComposer.ts"
       },
-      "reason": "TypeScript analyzer: Outgoing value answers.length has no statically resolvable wire type"
+      "reason": "Java analyzer: Data-dependent packet operations in ForStmt inside handle; TypeScript analyzer: Outgoing value answers.length has no statically resolvable wire type"
     },
     {
       "name": "MODTOOL_REQUEST_USER_ROOMS",
@@ -23775,6 +23694,70 @@
       "reason": "TypeScript analyzer: Outgoing value enabled ? 1 : 0 has no statically resolvable wire type"
     },
     {
+      "name": "HOUSEKEEPING_SET_USER_RANK",
+      "direction": "client_to_server",
+      "header": 9107,
+      "java": {
+        "symbol": "HousekeepingSetUserRankEvent",
+        "className": "HousekeepingSetUserRankEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingSetUserRankEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_SET_USER_RANK",
+        "className": "HousekeepingSetUserRankComposer",
+        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingSetUserRankComposer.ts"
+      },
+      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [int, int, optional\u003cdurationSeconds:[int]\u003e] versus TypeScript [int, int, {\"type\":\"optional\",\"controller\":\"durationSeconds\",\"fields\":[{\"type\":\"int\",}]}]"
+    },
+    {
+      "name": "HOUSEKEEPING_SEND_HOTEL_ALERT",
+      "direction": "client_to_server",
+      "header": 9121,
+      "java": {
+        "symbol": "HousekeepingSendHotelAlertEvent",
+        "className": "HousekeepingSendHotelAlertEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingSendHotelAlertEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_SEND_HOTEL_ALERT",
+        "className": "HousekeepingSendHotelAlertComposer",
+        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingSendHotelAlertComposer.ts"
+      },
+      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [string, optional\u003crecipient:[string]\u003e] versus TypeScript [string, {\"type\":\"optional\",\"controller\":\"recipient\",\"fields\":[{\"type\":\"string\",}]}]"
+    },
+    {
+      "name": "HOUSEKEEPING_SAVE_ROOM_SETTINGS",
+      "direction": "client_to_server",
+      "header": 9124,
+      "java": {
+        "symbol": "HousekeepingSaveRoomSettingsEvent",
+        "className": "HousekeepingSaveRoomSettingsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingSaveRoomSettingsEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_SAVE_ROOM_SETTINGS",
+        "className": "HousekeepingSaveRoomSettingsComposer",
+        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingSaveRoomSettingsComposer.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForStmt inside handle; TypeScript analyzer: Outgoing message array _data is mutated with push"
+    },
+    {
+      "name": "HOUSEKEEPING_REQUEST_LIST",
+      "direction": "client_to_server",
+      "header": 9125,
+      "java": {
+        "symbol": "HousekeepingRequestListEvent",
+        "className": "HousekeepingRequestListEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingRequestListEvent.java"
+      },
+      "typescript": {
+        "symbol": "HOUSEKEEPING_REQUEST_LIST",
+        "className": "HousekeepingRequestListComposer",
+        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingRequestListComposer.ts"
+      },
+      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [string, int, optional\u003creveal:[int]\u003e] versus TypeScript [string, int, {\"type\":\"optional\",\"controller\":\"reveal\",\"fields\":[{\"type\":\"int\",}]}]"
+    },
+    {
       "name": "WHEEL_ADMIN_SAVE_PRIZES",
       "direction": "client_to_server",
       "header": 9305,
@@ -23804,7 +23787,7 @@
         "className": "SoundboardSetEnabledComposer",
         "path": "packages/communication/src/messages/outgoing/soundboard/SoundboardSetEnabledComposer.ts"
       },
-      "reason": "TypeScript analyzer: Outgoing value enabled ? 1 : 0 has no statically resolvable wire type"
+      "reason": "TypeScript analyzer: Outgoing value Number(mode) has no statically resolvable wire type"
     },
     {
       "name": "WIRED_TRADE_OFFER_ITEMS",
@@ -23887,6 +23870,22 @@
       "reason": "TypeScript analyzer: Outgoing value scene.backgroundUrl has no statically resolvable wire type"
     },
     {
+      "name": "USER_SETTINGS_PRIVACY",
+      "direction": "client_to_server",
+      "header": 9415,
+      "java": {
+        "symbol": "SaveGamePrivacySettingsEvent",
+        "className": "SaveGamePrivacySettingsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/users/SaveGamePrivacySettingsEvent.java"
+      },
+      "typescript": {
+        "symbol": "USER_SETTINGS_PRIVACY",
+        "className": "UserSettingsPrivacyComposer",
+        "path": "packages/communication/src/messages/outgoing/user/settings/UserSettingsPrivacyComposer.ts"
+      },
+      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [boolean, boolean, boolean, optional\u003cprofileVisible:[boolean]\u003e] versus TypeScript [boolean, boolean, boolean, {\"type\":\"optional\",\"controller\":\"profileVisible\",\"fields\":[{\"type\":\"boolean\",}]}]"
+    },
+    {
       "name": "GET_HABBICON_SHOP_DATA",
       "direction": "client_to_server",
       "header": 9460,
@@ -23933,6 +23932,22 @@
         "path": "packages/communication/src/messages/outgoing/roomevents/WiredMonitorRequestComposer.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle"
+    },
+    {
+      "name": "WIRED_USER_VARIABLE_UPDATE",
+      "direction": "client_to_server",
+      "header": 10025,
+      "java": {
+        "symbol": "WiredUserVariableUpdateEvent",
+        "className": "WiredUserVariableUpdateEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredUserVariableUpdateEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_USER_VARIABLE_UPDATE",
+        "className": "WiredUserVariableUpdateComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredUserVariableUpdateComposer.ts"
+      },
+      "reason": "Pre-existing wire mismatch requires runtime protocol decision: Java [int, int, int, int, optional\u003cvariableToken:[string]\u003e] versus TypeScript [int, int, int, int, {\"type\":\"optional\",\"controller\":\"variableToken\",\"fields\":[{\"type\":\"string\",}]}]"
     },
     {
       "name": "CATALOG_ADMIN_SAVE_PAGE",
@@ -25452,7 +25467,7 @@
         "className": "WiredFurniActionParser",
         "path": "packages/communication/src/messages/parser/roomevents/WiredFurniActionParser.ts"
       },
-      "reason": "Java analyzer: Packet fields delegated to external serializer serializeWiredData inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor WiredActionDefinition inside parse"
+      "reason": "Java analyzer: Packet fields delegated to external serializer serializeWiredDataFor inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor WiredActionDefinition inside parse"
     },
     {
       "name": "UNIT_CHAT",
@@ -26460,7 +26475,7 @@
         "className": "PerkAllowancesMessageParser",
         "path": "packages/communication/src/messages/parser/perk/PerkAllowancesMessageParser.ts"
       },
-      "reason": "TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+      "reason": "Java analyzer: Overloaded local helper method cannot be resolved: isAllowed; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },
     {
       "name": "QUESTION_ANSWERED",
@@ -27596,7 +27611,23 @@
         "className": "MentionsListParser",
         "path": "packages/communication/src/messages/parser/mentions/MentionsListParser.ts"
       },
-      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor MentionListItem inside parse"
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside appendMentions; TypeScript analyzer: Packet fields delegated to external constructor MentionListItem inside parse"
+    },
+    {
+      "name": "MENTIONS_PAGE",
+      "direction": "server_to_client",
+      "header": 4803,
+      "java": {
+        "symbol": "MentionsPageComposer",
+        "className": "MentionsPageComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/mentions/MentionsPageComposer.java"
+      },
+      "typescript": {
+        "symbol": "MENTIONS_PAGE",
+        "className": "MentionsPageParser",
+        "path": "packages/communication/src/messages/parser/mentions/MentionsPageParser.ts"
+      },
+      "reason": "Java analyzer: Packet fields delegated to external serializer appendMentions inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor MentionListItem inside parse"
     },
     {
       "name": "MESSENGER_CONVERSATIONS",
@@ -27983,22 +28014,6 @@
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },
     {
-      "name": "HOUSEKEEPING_SAVE_ROOM_SETTINGS",
-      "direction": "client_to_server",
-      "header": 9124,
-      "java": {
-        "symbol": "HousekeepingSaveRoomSettingsEvent",
-        "className": "HousekeepingSaveRoomSettingsEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingSaveRoomSettingsEvent.java"
-      },
-      "typescript": {
-        "symbol": "HOUSEKEEPING_SAVE_ROOM_SETTINGS",
-        "className": "HousekeepingSaveRoomSettingsComposer",
-        "path": "packages/communication/src/messages/outgoing/housekeeping/HousekeepingSaveRoomSettingsComposer.ts"
-      },
-      "reason": "Java analyzer: Data-dependent packet operations in ForStmt inside handle; TypeScript analyzer: Outgoing message array _data is mutated with push"
-    },
-    {
       "name": "HOUSEKEEPING_USER_DETAIL",
       "direction": "server_to_client",
       "header": 9200,
@@ -28028,7 +28043,7 @@
         "className": "HousekeepingRoomDetailParser",
         "path": "packages/communication/src/messages/parser/housekeeping/HousekeepingRoomDetailParser.ts"
       },
-      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside composeInternal; TypeScript analyzer: Packet fields delegated to external constructor HousekeepingRoomData inside parse"
+      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in WhileStatement inside parse"
     },
     {
       "name": "HOUSEKEEPING_ROOM_LIST",
@@ -28076,7 +28091,7 @@
         "className": "HousekeepingListParser",
         "path": "packages/communication/src/messages/parser/housekeeping/HousekeepingListParser.ts"
       },
-      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in a loop inside parse"
+      "reason": "Java analyzer: Data-dependent packet operations in ForStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in WhileStatement inside parse"
     },
     {
       "name": "CHEST_DATA",
@@ -28479,6 +28494,70 @@
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },
     {
+      "name": "WIRED_VARIABLE_FX_CONFIGS",
+      "direction": "server_to_client",
+      "header": 9473,
+      "java": {
+        "symbol": "WiredVariableFxConfigsComposer",
+        "className": "WiredVariableFxConfigsComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredVariableFxConfigsComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_VARIABLE_FX_CONFIGS",
+        "className": "WiredVariableFxConfigsParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredVariableFxConfigsParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal"
+    },
+    {
+      "name": "WIRED_VARIABLE_FX_CONFIGS_REMOVED",
+      "direction": "server_to_client",
+      "header": 9474,
+      "java": {
+        "symbol": "WiredVariableFxConfigsRemovedComposer",
+        "className": "WiredVariableFxConfigsRemovedComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredVariableFxConfigsRemovedComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_VARIABLE_FX_CONFIGS_REMOVED",
+        "className": "WiredVariableFxConfigsRemovedParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredVariableFxConfigsRemovedParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
+      "name": "WIRED_VARIABLE_FX_STATUS",
+      "direction": "server_to_client",
+      "header": 9475,
+      "java": {
+        "symbol": "WiredVariableFxStatusComposer",
+        "className": "WiredVariableFxStatusComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredVariableFxStatusComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_VARIABLE_FX_STATUS",
+        "className": "WiredVariableFxStatusParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredVariableFxStatusParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal"
+    },
+    {
+      "name": "WIRED_VARIABLE_FX_STATUS_REMOVED",
+      "direction": "server_to_client",
+      "header": 9476,
+      "java": {
+        "symbol": "WiredVariableFxStatusRemovedComposer",
+        "className": "WiredVariableFxStatusRemovedComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredVariableFxStatusRemovedComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_VARIABLE_FX_STATUS_REMOVED",
+        "className": "WiredVariableFxStatusRemovedParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredVariableFxStatusRemovedParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
       "name": "TREASURE_HUNT_FIRST_WINNER",
       "direction": "server_to_client",
       "header": 9485,
@@ -28715,70 +28794,6 @@
         "symbol": "REWARD_TRACK_TEXTS",
         "className": "RewardTrackTextsMessageParser",
         "path": "packages/communication/src/messages/parser/quest/RewardTrackTextsMessageParser.ts"
-      },
-      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
-    },
-    {
-      "name": "WIRED_VARIABLE_FX_CONFIGS",
-      "direction": "server_to_client",
-      "header": 9473,
-      "java": {
-        "symbol": "WiredVariableFxConfigsComposer",
-        "className": "WiredVariableFxConfigsComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredVariableFxConfigsComposer.java"
-      },
-      "typescript": {
-        "symbol": "WIRED_VARIABLE_FX_CONFIGS",
-        "className": "WiredVariableFxConfigsParser",
-        "path": "packages/communication/src/messages/parser/roomevents/WiredVariableFxConfigsParser.ts"
-      },
-      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
-    },
-    {
-      "name": "WIRED_VARIABLE_FX_CONFIGS_REMOVED",
-      "direction": "server_to_client",
-      "header": 9474,
-      "java": {
-        "symbol": "WiredVariableFxConfigsRemovedComposer",
-        "className": "WiredVariableFxConfigsRemovedComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredVariableFxConfigsRemovedComposer.java"
-      },
-      "typescript": {
-        "symbol": "WIRED_VARIABLE_FX_CONFIGS_REMOVED",
-        "className": "WiredVariableFxConfigsRemovedParser",
-        "path": "packages/communication/src/messages/parser/roomevents/WiredVariableFxConfigsRemovedParser.ts"
-      },
-      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
-    },
-    {
-      "name": "WIRED_VARIABLE_FX_STATUS",
-      "direction": "server_to_client",
-      "header": 9475,
-      "java": {
-        "symbol": "WiredVariableFxStatusComposer",
-        "className": "WiredVariableFxStatusComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredVariableFxStatusComposer.java"
-      },
-      "typescript": {
-        "symbol": "WIRED_VARIABLE_FX_STATUS",
-        "className": "WiredVariableFxStatusParser",
-        "path": "packages/communication/src/messages/parser/roomevents/WiredVariableFxStatusParser.ts"
-      },
-      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
-    },
-    {
-      "name": "WIRED_VARIABLE_FX_STATUS_REMOVED",
-      "direction": "server_to_client",
-      "header": 9476,
-      "java": {
-        "symbol": "WiredVariableFxStatusRemovedComposer",
-        "className": "WiredVariableFxStatusRemovedComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredVariableFxStatusRemovedComposer.java"
-      },
-      "typescript": {
-        "symbol": "WIRED_VARIABLE_FX_STATUS_REMOVED",
-        "className": "WiredVariableFxStatusRemovedParser",
-        "path": "packages/communication/src/messages/parser/roomevents/WiredVariableFxStatusRemovedParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     }

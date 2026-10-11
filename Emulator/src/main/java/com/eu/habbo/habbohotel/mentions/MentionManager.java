@@ -172,7 +172,7 @@ public class MentionManager {
 
             int mentionType =
                     (broadcastScope != BroadcastScope.NONE) ? HabboMention.TYPE_ROOM : HabboMention.TYPE_DIRECT;
-            int timestamp = Emulator.getIntUnixTimestamp();
+            int timestamp = nowSeconds();
             String roomName = truncate(room.getName(), ROOM_NAME_MAX_LENGTH);
             String storedMessage = truncate(message, MESSAGE_MAX_LENGTH);
 
@@ -424,7 +424,7 @@ public class MentionManager {
                 PreparedStatement statement = connection.prepareStatement(
                         "DELETE FROM habbo_mentions WHERE target_user_id = ? AND `read` = 1 AND timestamp < ?")) {
             statement.setInt(1, userId);
-            statement.setInt(2, Emulator.getIntUnixTimestamp() - days * 86400);
+            statement.setInt(2, nowSeconds() - days * 86400);
             statement.executeUpdate();
         } catch (SQLException e) {
             LOGGER.error("Failed to prune old mentions.", e);
@@ -538,6 +538,10 @@ public class MentionManager {
                 it.remove();
             }
         }
+    }
+
+    private static int nowSeconds() {
+        return Emulator.getIntUnixTimestamp();
     }
 
     private static int configInt(String key, int defaultValue) {

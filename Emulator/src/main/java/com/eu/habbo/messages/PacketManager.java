@@ -245,7 +245,6 @@ import com.eu.habbo.messages.incoming.inventory.prefixes.SetDisplayOrderEvent;
 import com.eu.habbo.messages.incoming.mentions.DeleteMentionEvent;
 import com.eu.habbo.messages.incoming.mentions.MarkMentionsReadEvent;
 import com.eu.habbo.messages.incoming.mentions.RequestMentionsEvent;
-import com.eu.habbo.messages.incoming.mentions.RequestMentionsPageEvent;
 import com.eu.habbo.messages.incoming.modtool.DeletePendingCallsForHelpEvent;
 import com.eu.habbo.messages.incoming.modtool.ModToolAlertEvent;
 import com.eu.habbo.messages.incoming.modtool.ModToolChangeRoomSettingsEvent;
@@ -1052,7 +1051,6 @@ public class PacketManager {
         this.registerHandler(Incoming.RequestMentionsEvent, RequestMentionsEvent.class);
         this.registerHandler(Incoming.MarkMentionsReadEvent, MarkMentionsReadEvent.class);
         this.registerHandler(Incoming.DeleteMentionEvent, DeleteMentionEvent.class);
-        this.registerHandler(Incoming.RequestMentionsPageEvent, RequestMentionsPageEvent.class);
         this.registerHandler(Incoming.RequestRoomLoadEvent, RequestRoomLoadEvent.class);
         this.registerHandler(Incoming.RequestHeightmapEvent, RequestRoomHeightmapEvent.class);
         this.registerHandler(Incoming.RequestRoomHeightmapEvent, RequestRoomHeightmapEvent.class);

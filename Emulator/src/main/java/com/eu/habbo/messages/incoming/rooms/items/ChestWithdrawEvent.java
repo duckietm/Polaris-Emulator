@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.rooms.items;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestNotifications;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionFailures;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -35,15 +36,22 @@ public class ChestWithdrawEvent extends MessageHandler {
         if (currencyType < 0) currencyType = -1;
 
         HabboItem item = room.getHabboItem(itemId);
-        if (!(item instanceof InteractionWiredChest chest)) return;
-
-        if (!room.hasRights(habbo)) return;
+        // A refusal is answered with its reason, not silence: 12 when this is no wired chest, 15 when
+        // the chest is locked to this player or they lack the rights to withdraw.
+        int refusal = ChestTransactionFailures.withdrawRefusal(item, habbo, room.hasRights(habbo));
+        if (!(item instanceof InteractionWiredChest chest)) {
+            ChestTransactionFailures.send(habbo, refusal);
+            return;
+        }
 
         ChestStorage contents = chest.getContents();
         // A locked chest refuses everyone but its owner. Push the state back instead of failing
         // silently, so the window can show the lock rather than leaving the button looking broken.
-        if (chest.isLockedFor(habbo)) {
-            this.client.sendResponse(new ChestDataComposer(chest, this.client.getHabbo()));
+        if (refusal != ChestTransactionFailures.NONE) {
+            if (chest.isLockedFor(habbo)) {
+                this.client.sendResponse(new ChestDataComposer(chest, this.client.getHabbo()));
+            }
+            ChestTransactionFailures.send(habbo, refusal);
             return;
         }
 

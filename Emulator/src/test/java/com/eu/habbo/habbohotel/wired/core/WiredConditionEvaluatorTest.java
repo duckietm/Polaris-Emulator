@@ -57,6 +57,63 @@ class WiredConditionEvaluatorTest {
         assertEquals(0, state.steps());
     }
 
+    @Test
+    void theEvaluationAddOnModeAppliesToItsPickedConditionsAndTheOthersMustAllPass() {
+        Room room = mock(Room.class);
+        com.eu.habbo.habbohotel.rooms.RoomSpecialTypes types =
+                mock(com.eu.habbo.habbohotel.rooms.RoomSpecialTypes.class);
+        org.mockito.Mockito.when(room.getRoomSpecialTypes()).thenReturn(types);
+        WiredExtraOrEval orEval = mock(WiredExtraOrEval.class);
+        org.mockito.Mockito.when(orEval.getEvaluatedConditionIds()).thenReturn(java.util.Set.of(1, 2));
+        org.mockito.Mockito.when(
+                        types.getExtras(org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyInt()))
+                .thenReturn(java.util.Set.of(orEval));
+        com.eu.habbo.habbohotel.users.HabboItem trigger = mock(com.eu.habbo.habbohotel.users.HabboItem.class);
+        WiredServices services = mock(WiredServices.class);
+        WiredConditionEvaluator evaluator = new WiredConditionEvaluator((ignoredRoom, format, arguments) -> {});
+
+        // "At least one" over the picked 1 and 2; condition 3 is not picked and must pass on its own.
+        WiredStack passing = new WiredStack(
+                trigger,
+                null,
+                List.of(box(1, false), box(2, true), box(3, true)),
+                List.of(),
+                WiredExtraOrEval.MODE_AT_LEAST_ONE,
+                1,
+                false,
+                false,
+                false);
+        assertTrue(evaluator.outcomeForExecution(passing, context(room, services, passing, new WiredState(10)), false));
+
+        WiredStack failingOther = new WiredStack(
+                trigger,
+                null,
+                List.of(box(1, false), box(2, true), box(3, false)),
+                List.of(),
+                WiredExtraOrEval.MODE_AT_LEAST_ONE,
+                1,
+                false,
+                false,
+                false);
+        assertFalse(evaluator.outcomeForExecution(
+                failingOther, context(room, services, failingOther, new WiredState(10)), false));
+
+        // Without picks the mode covers every condition, so one passing condition is enough.
+        org.mockito.Mockito.when(orEval.getEvaluatedConditionIds()).thenReturn(java.util.Set.of());
+        assertTrue(evaluator.outcomeForExecution(
+                failingOther, context(room, services, failingOther, new WiredState(10)), false));
+    }
+
+    private static IWiredCondition box(int id, boolean result) {
+        com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition condition =
+                mock(com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition.class);
+        org.mockito.Mockito.when(condition.getId()).thenReturn(id);
+        org.mockito.Mockito.when(condition.evaluate(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(result);
+        org.mockito.Mockito.when(condition.operator()).thenReturn(WiredConditionOperator.AND);
+        return condition;
+    }
+
     private static WiredStack stack(List<IWiredCondition> conditions) {
         return new WiredStack(null, null, conditions, List.of(), WiredExtraOrEval.MODE_ALL, 1, false, false, false);
     }

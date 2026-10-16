@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredSaveRefusedException;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -54,6 +55,7 @@ public class WiredExtraOrEval extends InteractionWiredExtra {
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
         int[] params = settings.getIntParams();
+        refuseNonConditionPicks(settings);
 
         int mode = (params.length > 0) ? params[0] : MODE_ALL;
         this.evaluationMode = mode == -1
@@ -209,6 +211,18 @@ public class WiredExtraOrEval extends InteractionWiredExtra {
         return this.compareValue;
     }
 
+    /**
+     * The ids of the picked conditions the mode applies to; empty when it applies to every condition of the stack
+     * (nothing picked, or another furni source).
+     */
+    public Set<Integer> getEvaluatedConditionIds() {
+        if (this.furniSource != WiredSourceUtil.SOURCE_SELECTED || this.items.isEmpty()) return Set.of();
+
+        Set<Integer> ids = new HashSet<>();
+        for (HabboItem item : this.items) ids.add(item.getId());
+        return ids;
+    }
+
     private void refresh(Room room) {
         Set<HabboItem> remove = new HashSet<>();
 
@@ -281,6 +295,22 @@ public class WiredExtraOrEval extends InteractionWiredExtra {
                 return value;
             default:
                 return WiredSourceUtil.SOURCE_TRIGGER;
+        }
+    }
+
+    /** Official: only conditions and add-ons can be picked; any other picked furni refuses the save. */
+    private void refuseNonConditionPicks(WiredSettings settings) {
+        int[] sources = settings.getFurniSourceTypes();
+        int source = normalizeFurniSource(sources.length > 0 ? sources[0] : WiredSourceUtil.SOURCE_TRIGGER);
+        if (source != WiredSourceUtil.SOURCE_SELECTED || settings.getFurniIds().length == 0) return;
+
+        Room room = settings.getRoom();
+        if (room == null) return;
+
+        for (int itemId : settings.getFurniIds()) {
+            if (!isSelectableConditionOrExtra(room.getHabboItem(itemId))) {
+                throw new WiredSaveRefusedException("wiredfurni.error.condition_evaluation_furni");
+            }
         }
     }
 

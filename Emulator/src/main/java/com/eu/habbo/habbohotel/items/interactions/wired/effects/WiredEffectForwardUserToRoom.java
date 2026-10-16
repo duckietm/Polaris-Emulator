@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionCustomValues;
 import com.eu.habbo.habbohotel.items.interactions.InteractionTeleport;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredSaveRefusedException;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.rooms.PendingRoomEntry;
@@ -18,6 +19,7 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
+import com.eu.habbo.habbohotel.wired.core.WiredDelay;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
@@ -135,10 +137,9 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
                     return false;
                 }
                 // Room linkers are teleporters, so they pass here with plain teleporters and room links.
-                // The client refuses any other pick with the room-linker text before it is sent; this
-                // save keeps its published signature, so a forged pick is refused without a message.
+                // Any other pick refuses the save with the room-linker text, as on the official server.
                 if (!isRoomLink(item) && !(item instanceof InteractionTeleport)) {
-                    return false;
+                    throw new WiredSaveRefusedException("wiredfurni.error.require_room_linker");
                 }
                 if (!picked.contains(item)) {
                     picked.add(item);
@@ -154,7 +155,7 @@ public class WiredEffectForwardUserToRoom extends InteractionWiredEffect {
         int maxDelay = (WiredPlatform.configuration() == null)
                 ? 20
                 : WiredPlatform.configuration().getInt("hotel.wired.max_delay", 20);
-        if (delay < 0 || delay > maxDelay) {
+        if (!WiredDelay.isValid(delay, maxDelay)) {
             return false;
         }
 

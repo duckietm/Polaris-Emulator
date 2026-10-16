@@ -12,6 +12,7 @@ public final class RoomWiredRuntime {
     private final AtomicLong cacheGeneration = new AtomicLong();
     private final WiredGravityService gravity;
     private final WiredOpacityService opacity;
+    private final WiredVisualizationService visualization;
     private final WiredTradingManager trading;
     private final WiredProjectileFlights projectiles = new WiredProjectileFlights();
     private final WiredBoxFlashes boxFlashes = new WiredBoxFlashes();
@@ -19,6 +20,7 @@ public final class RoomWiredRuntime {
     RoomWiredRuntime(Room room) {
         this.gravity = new WiredGravityService(room);
         this.opacity = new WiredOpacityService(room);
+        this.visualization = new WiredVisualizationService(room);
         this.trading = new WiredTradingManager(room);
     }
 
@@ -120,17 +122,28 @@ public final class RoomWiredRuntime {
         }
     }
 
+    /** The room's highlights and avatar transparency, applied and sent by {@link WiredVisualizationBroadcaster}. */
+    WiredVisualizationService visualization() {
+        return this.visualization;
+    }
+
     void forgetOpacity(HabboItem item) {
         this.opacity.forgetItem(item);
+        this.visualization.forgetItem(item);
     }
 
     void forgetOpacityUser(int userId) {
         this.opacity.forgetUser(userId);
     }
 
+    void forgetVisualizationUser(int userId, int roomUnitId) {
+        this.visualization.forgetUser(userId, roomUnitId);
+    }
+
     void dispose() {
         this.gravity.dispose();
         this.opacity.dispose();
+        this.visualization.dispose();
         this.projectiles.clear();
         // Every open negotiation is holding somebody's furniture out of their inventory. Letting the
         // room go without handing it back would lose it.

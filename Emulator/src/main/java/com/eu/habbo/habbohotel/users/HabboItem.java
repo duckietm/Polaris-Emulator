@@ -80,6 +80,8 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
      */
     private volatile boolean temporary = false;
 
+    private int temporaryOwnerId;
+
     private boolean isFromGift = false;
     /** Avatars may walk underneath this item when it is raised high enough, even when the room-wide underpass setting is off. */
     private boolean allowUnderpass = false;
@@ -362,6 +364,17 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
 
     public void markTemporary() {
         this.temporary = true;
+    }
+
+    /** A temporary copy placed by a box: its owner may pick the copy up, like the room owner. */
+    public void markTemporary(int ownerId) {
+        this.markTemporary();
+        this.temporaryOwnerId = ownerId;
+    }
+
+    /** The owner of the box that placed this temporary copy, or 0. */
+    public int getTemporaryOwnerId() {
+        return this.temporaryOwnerId;
     }
 
     @Override

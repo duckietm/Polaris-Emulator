@@ -1,8 +1,10 @@
 package com.eu.habbo.habbohotel.wired.core;
 
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition;
+import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraOrEval;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredConditionOperator;
 import com.eu.habbo.habbohotel.wired.api.IWiredCondition;
 import com.eu.habbo.habbohotel.wired.api.WiredStack;
@@ -11,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Internal owner of WIRED condition grouping, evaluation modes and negation.
@@ -43,8 +46,39 @@ final class WiredConditionEvaluator {
     }
 
     private boolean evaluate(WiredStack stack, WiredContext context) {
-        return evaluateByMode(
-                stack.conditions(), context, stack.conditionEvaluationMode(), stack.conditionEvaluationValue());
+        Set<Integer> evaluated = evaluatedConditionIds(stack, context.room());
+        if (evaluated.isEmpty()) {
+            return evaluateByMode(
+                    stack.conditions(), context, stack.conditionEvaluationMode(), stack.conditionEvaluationValue());
+        }
+
+        // The evaluation add-on's mode covers the conditions picked in it; every other condition must still pass.
+        List<IWiredCondition> picked = new ArrayList<>();
+        List<IWiredCondition> others = new ArrayList<>();
+        for (IWiredCondition condition : stack.conditions()) {
+            if (condition instanceof InteractionWiredCondition box && evaluated.contains(box.getId())) {
+                picked.add(condition);
+            } else {
+                others.add(condition);
+            }
+        }
+
+        // Both groups are evaluated, so every passing condition flashes as before.
+        boolean othersPassed = evaluateByMode(others, context, WiredExtraOrEval.MODE_ALL, 1);
+        boolean pickedPassed =
+                evaluateByMode(picked, context, stack.conditionEvaluationMode(), stack.conditionEvaluationValue());
+        return othersPassed && pickedPassed;
+    }
+
+    /** The conditions the stack's evaluation add-on picked; empty when its mode applies to all of them. */
+    private static Set<Integer> evaluatedConditionIds(WiredStack stack, Room room) {
+        HabboItem trigger = stack.triggerItem();
+        if (trigger == null || room == null || room.getRoomSpecialTypes() == null) return Set.of();
+
+        for (InteractionWiredExtra extra : room.getRoomSpecialTypes().getExtras(trigger.getX(), trigger.getY())) {
+            if (extra instanceof WiredExtraOrEval orEval) return orEval.getEvaluatedConditionIds();
+        }
+        return Set.of();
     }
 
     private boolean evaluateByMode(

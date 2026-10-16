@@ -69,14 +69,38 @@ public abstract class InteractionWired extends InteractionDefault {
     private final AtomicBoolean processing = new AtomicBoolean(false);
     private final ConcurrentHashMap<Long, Long> userExecutionCache = new ConcurrentHashMap<>();
 
+    /** The box was never saved since it was placed: its editor opens on the official default sources. */
+    private volatile boolean editorFresh;
+
     InteractionWired(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
         this.setExtradata("0");
+        this.editorFresh = storedWiredDataIsEmpty(set);
     }
 
     InteractionWired(int id, int userId, Item item, String extradata, int limitedStack, int limitedSells) {
         super(id, userId, item, extradata, limitedStack, limitedSells);
         this.setExtradata("0");
+        this.editorFresh = true;
+    }
+
+    private static boolean storedWiredDataIsEmpty(ResultSet set) {
+        try {
+            String stored = set.getString("wired_data");
+            return stored == null || stored.isBlank();
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    /** Whether the box was never saved since it was placed. */
+    public boolean isEditorFresh() {
+        return this.editorFresh;
+    }
+
+    /** A save went through: the editor now opens on what the box holds. */
+    public void markEditorSaved() {
+        this.editorFresh = false;
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.wired.protocol;
 
+import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
 import com.eu.habbo.messages.ServerMessage;
 import io.netty.buffer.ByteBuf;
 import java.nio.charset.StandardCharsets;
@@ -18,8 +19,8 @@ import java.nio.charset.StandardCharsets;
  * advancedMode}, the input sources conf, {@code bool allowWallFurni}, the holder's type specifics
  * (condition quantifier type byte and invert), the wired context and {@code int[] defaultIntParams}.
  *
- * <p>The furni and user sources come from the box's source fields; the other new fields go out empty
- * until each box writes them itself. An action's context block (the variable leaderboard) is passed
+ * <p>The furni and user sources come from the box's source fields and the input sources conf from
+ * {@link WiredInputSourcesConf}; the other new fields go out empty until each box writes them itself. An action's context block (the variable leaderboard) is passed
  * on as it is.
  */
 public final class WiredDefinitionWire {
@@ -80,6 +81,21 @@ public final class WiredDefinitionWire {
                 definition.selectorFilter = selector.selectorFilter();
                 definition.selectorInvert = selector.selectorInvert();
             }
+            definition.inputSources = WiredInputSourcesConf.of(box);
+            definition.textPlaceholders = WiredTextPlaceholderContext.namesFor(box);
+            if (box instanceof InteractionWired wired && wired.isEditorFresh()) {
+                // A box that was never saved opens on the official default sources.
+                definition.furniSources = WiredSourceSaveRules.fill(
+                        new int[0],
+                        definition.inputSources.allowedFurni().length,
+                        definition.inputSources.defaultFurni(),
+                        definition.furniSources);
+                definition.userSources = WiredSourceSaveRules.fill(
+                        new int[0],
+                        definition.inputSources.allowedUsers().length,
+                        definition.inputSources.defaultUsers(),
+                        definition.userSources);
+            }
             writeOfficial(definition, holder, target);
         } finally {
             body.release();
@@ -102,6 +118,9 @@ public final class WiredDefinitionWire {
         boolean selectorInvert;
         int code;
         int delay;
+        WiredInputSourcesConf inputSources = WiredInputSourcesConf.NONE;
+        /** The text-placeholder context of a message box; null for the others. */
+        WiredTextPlaceholderContext.Names textPlaceholders;
         /** An action's legacy context block (count and entries), passed on unchanged. */
         byte[] contexts = new byte[0];
         /** Bytes a legacy box wrote after the fields this layout knows. */
@@ -161,12 +180,7 @@ public final class WiredDefinitionWire {
         }
 
         out.appendBoolean(false); // advanced mode
-        // Input sources conf: allowed furni, allowed users, default furni, default users.
-        out.appendInt(0);
-        out.appendInt(0);
-        out.appendInt(0);
-        out.appendInt(0);
-        out.appendBoolean(false); // allow wall furni
+        definition.inputSources.write(out); // input sources conf and allow wall furni
 
         if (holder == Holder.CONDITION) {
             out.appendByte(0); // quantifier type: none
@@ -175,6 +189,8 @@ public final class WiredDefinitionWire {
 
         if (definition.contexts.length > 0) {
             out.appendRawBytes(definition.contexts);
+        } else if (definition.textPlaceholders != null) {
+            WiredTextPlaceholderContext.write(out, definition.textPlaceholders);
         } else {
             out.appendInt(0); // wired context
         }

@@ -179,6 +179,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRollDice | E
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSayCommand | EFFECT | type=EFFECT_TEXT | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSendSignal | EFFECT | type=SEND_SIGNAL | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetAltitude | EFFECT | type=SET_ALTITUDE | actor=false | execute=OK
+com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetHighlight | EFFECT | type=SET_HIGHLIGHT | actor=true | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetRollerSpeed | EFFECT | type=SET_ROLLER_SPEED | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetRoomAd | EFFECT | type=SET_ROOM_AD | actor=false | execute=OK
 com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSit | EFFECT | type=USER_TARGET | actor=true | execute=OK

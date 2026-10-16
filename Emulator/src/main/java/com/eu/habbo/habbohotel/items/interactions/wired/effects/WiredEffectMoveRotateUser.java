@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
@@ -61,8 +62,18 @@ public class WiredEffectMoveRotateUser extends InteractionWiredEffect {
             RoomUserRotation targetHeadRotation = hasRotation ? targetBodyRotation : roomUnit.getHeadRotation();
 
             if (roomUnit.isWalking()) {
-                if (hasRotation) {
-                    WiredUserMovementHelper.updateUserDirection(room, roomUnit, targetBodyRotation, targetHeadRotation);
+                if (this.movementDirection < 0
+                        || !this.pushWalkingUser(
+                                room,
+                                roomUnit,
+                                targetBodyRotation,
+                                targetHeadRotation,
+                                movementPhysics,
+                                jumpStrength)) {
+                    if (hasRotation) {
+                        WiredUserMovementHelper.updateUserDirection(
+                                room, roomUnit, targetBodyRotation, targetHeadRotation);
+                    }
                 }
                 continue;
             }
@@ -101,6 +112,63 @@ public class WiredEffectMoveRotateUser extends InteractionWiredEffect {
                 WiredUserMovementHelper.updateUserDirection(room, roomUnit, targetBodyRotation, targetHeadRotation);
             }
         }
+    }
+
+    /**
+     * Habbo replaces the step in progress: the push runs from the step's start tile to the tile being
+     * stepped onto plus the push, and the walk then resumes towards its goal. Pushed on the last
+     * step the walk ends there; pushed back onto the start tile the user walks on the spot.
+     */
+    private boolean pushWalkingUser(
+            Room room,
+            RoomUnit roomUnit,
+            RoomUserRotation bodyRotation,
+            RoomUserRotation headRotation,
+            WiredMovementPhysics movementPhysics,
+            int jumpStrength) {
+        RoomTile stepStart = roomUnit.getPreviousLocation();
+        RoomTile goal = roomUnit.getGoal();
+        // The user's tile is already the one being stepped onto.
+        RoomTile targetTile = this.getTargetTile(room, roomUnit, this.movementDirection);
+
+        if (!this.canMoveTo(room, roomUnit, targetTile, movementPhysics)) {
+            return false;
+        }
+
+        boolean noAnimation = WiredMoveCarryHelper.hasNoAnimationExtra(room, this);
+        int animationDuration = noAnimation
+                ? 0
+                : WiredMoveCarryHelper.getAnimationDuration(
+                        room, this, WiredUserMovementHelper.DEFAULT_ANIMATION_DURATION);
+        double targetZ = targetTile.getStackHeight() + ((targetTile.state == RoomTileState.SIT) ? -0.5 : 0);
+
+        if (!WiredUserMovementHelper.moveUser(
+                room,
+                roomUnit,
+                stepStart,
+                targetTile,
+                targetZ,
+                bodyRotation,
+                headRotation,
+                animationDuration,
+                noAnimation,
+                movementPhysics,
+                jumpStrength)) {
+            return false;
+        }
+
+        if (goal != null && goal != targetTile) {
+            WiredPlatform.threading()
+                    .run(
+                            () -> {
+                                if (roomUnit.getRoom() == room && roomUnit.getCurrentLocation() == targetTile) {
+                                    roomUnit.setGoalLocation(goal);
+                                }
+                            },
+                            animationDuration);
+        }
+
+        return true;
     }
 
     @Override

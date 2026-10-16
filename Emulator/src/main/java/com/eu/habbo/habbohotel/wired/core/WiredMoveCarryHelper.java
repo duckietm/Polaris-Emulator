@@ -15,6 +15,7 @@ import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.rooms.RoomUnitStatus;
 import com.eu.habbo.habbohotel.rooms.RoomUnitType;
+import com.eu.habbo.habbohotel.rooms.WiredFurniStateBatch;
 import com.eu.habbo.habbohotel.rooms.WiredProjectileFlights;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -23,10 +24,13 @@ import com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.FloorItemOnRollerComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
 import java.lang.ref.WeakReference;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +46,17 @@ public final class WiredMoveCarryHelper {
     private static final ThreadLocal<List<WiredMovementsComposer.MovementData>> COLLECTED_MOVEMENTS =
             new ThreadLocal<>();
     private static final ThreadLocal<Integer> MOVEMENT_COLLECTION_DEPTH = new ThreadLocal<>();
+    // The firings that opened the nested collections, innermost last. A firing that does not run
+    // Execute in Order sends nothing for a furni it moves and brings back, as in Habbo.
+    private static final ThreadLocal<Deque<Firing>> FIRINGS = ThreadLocal.withInitial(ArrayDeque::new);
+    private static final ThreadLocal<int[]> FIRING_COUNTER = ThreadLocal.withInitial(() -> new int[1]);
+    // Per furni in the collection: the one firing that moved it, or MANY_FIRINGS.
+    private static final ThreadLocal<Map<Integer, Integer>> FURNI_FIRINGS = ThreadLocal.withInitial(HashMap::new);
+    private static final ThreadLocal<Map<Integer, Integer>> ORIGINAL_ROTATIONS = ThreadLocal.withInitial(HashMap::new);
+    private static final int MANY_FIRINGS = -1;
+
+    private record Firing(int id, boolean dropsReturnedFurni) {}
+
     private static final ConcurrentHashMap<Integer, Long> SUPPRESSED_STATUS_COMPOSER_UNTIL = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<Integer, ConcurrentHashMap<Integer, UserFollowEntry>> ACTIVE_USER_FOLLOWERS =
             new ConcurrentHashMap<>();
@@ -198,6 +213,10 @@ public final class WiredMoveCarryHelper {
             return FurnitureMovementError.INVALID_MOVE;
         }
 
+        if (isCollectingMovements()) {
+            ORIGINAL_ROTATIONS.get().putIfAbsent(movingItem.getId(), movingItem.getRotation());
+        }
+
         rotation = resolveProjectileRotation(room, stackItem, movingItem, targetTile, rotation);
 
         if (!hasMovementBehaviorExtra(room, stackItem)) {
@@ -348,19 +367,21 @@ public final class WiredMoveCarryHelper {
             List<WiredMovementsComposer.MovementData> collectedMovements = COLLECTED_MOVEMENTS.get();
 
             if (collectedMovements != null) {
-                collectedMovements.add(WiredMovementsComposer.furniMovement(
-                        movingItem.getId(),
-                        oldLocation.x,
-                        oldLocation.y,
-                        targetTile.x,
-                        targetTile.y,
-                        oldZ,
-                        movingItem.getZ(),
-                        movingItem.getRotation(),
-                        WiredMovementsComposer.DEFAULT_DURATION,
-                        0,
-                        WiredMovementsComposer.FURNI_ANCHOR_NONE,
-                        0));
+                collect(
+                        collectedMovements,
+                        WiredMovementsComposer.furniMovement(
+                                movingItem.getId(),
+                                oldLocation.x,
+                                oldLocation.y,
+                                targetTile.x,
+                                targetTile.y,
+                                oldZ,
+                                movingItem.getZ(),
+                                movingItem.getRotation(),
+                                WiredMovementsComposer.DEFAULT_DURATION,
+                                0,
+                                WiredMovementsComposer.FURNI_ANCHOR_NONE,
+                                0));
             } else {
                 room.sendComposer(new FloorItemOnRollerComposer(
                                 movingItem, null, oldLocation, oldZ, targetTile, movingItem.getZ(), 0, room)
@@ -408,6 +429,19 @@ public final class WiredMoveCarryHelper {
     }
 
     public static void beginMovementCollection() {
+        beginMovementCollection(false);
+    }
+
+    /**
+     * Opens a movement collection for one firing.
+     *
+     * @param dropsReturnedFurni the firing runs its actions without Execute in Order: a furni that
+     *     only it moves and that ends where it started gets no entry at all
+     */
+    public static void beginMovementCollection(boolean dropsReturnedFurni) {
+        FIRINGS.get().addLast(new Firing(++FIRING_COUNTER.get()[0], dropsReturnedFurni));
+        WiredFurniStateBatch.open();
+
         Integer currentDepth = MOVEMENT_COLLECTION_DEPTH.get();
 
         if (currentDepth == null || currentDepth <= 0) {
@@ -421,6 +455,10 @@ public final class WiredMoveCarryHelper {
     }
 
     public static ServerMessage finishMovementCollection() {
+        FIRINGS.get().pollLast();
+        // The firing's furni states go out before its movements; nested firings only close their level.
+        WiredFurniStateBatch.close();
+
         Integer currentDepth = MOVEMENT_COLLECTION_DEPTH.get();
 
         if (currentDepth != null && currentDepth > 1) {
@@ -431,14 +469,44 @@ public final class WiredMoveCarryHelper {
         List<WiredMovementsComposer.MovementData> movements = COLLECTED_MOVEMENTS.get();
         COLLECTED_MOVEMENTS.remove();
         MOVEMENT_COLLECTION_DEPTH.remove();
+        Map<Integer, Integer> furniFirings = new HashMap<>(FURNI_FIRINGS.get());
+        Map<Integer, Integer> originalRotations = new HashMap<>(ORIGINAL_ROTATIONS.get());
+        FURNI_FIRINGS.get().clear();
+        ORIGINAL_ROTATIONS.get().clear();
         // The style hints go out first: the client must know the style before the movement starts.
         WiredMoveStyleHelper.finishCollection();
+
+        Set<Integer> droppable = new HashSet<>();
+        for (Map.Entry<Integer, Integer> entry : furniFirings.entrySet()) {
+            if (entry.getValue() != MANY_FIRINGS) {
+                droppable.add(entry.getKey());
+            }
+        }
+        movements = WiredMovementsComposer.withoutReturnedFurni(movements, droppable, originalRotations);
 
         if (movements == null || movements.isEmpty()) {
             return null;
         }
 
         return new WiredMovementsComposer(movements).compose();
+    }
+
+    /** Adds a movement to the collection, remembering which firing moved the furni. */
+    private static void collect(
+            List<WiredMovementsComposer.MovementData> collected, WiredMovementsComposer.MovementData movement) {
+        collected.add(movement);
+
+        int furniId = WiredMovementsComposer.furniId(movement);
+        if (furniId < 0) {
+            return;
+        }
+
+        Firing firing = FIRINGS.get().peekLast();
+        int firingId = (firing != null && firing.dropsReturnedFurni()) ? firing.id() : MANY_FIRINGS;
+        // A furni moved by several firings (a chain of signals) keeps its entries.
+        FURNI_FIRINGS
+                .get()
+                .merge(furniId, firingId, (previous, current) -> previous.equals(current) ? previous : MANY_FIRINGS);
     }
 
     static boolean isCollectingMovements() {
@@ -450,6 +518,9 @@ public final class WiredMoveCarryHelper {
         SUPPRESSED_STATUS_ROOM_UNIT_IDS.remove();
         COLLECTED_MOVEMENTS.remove();
         MOVEMENT_COLLECTION_DEPTH.remove();
+        FIRINGS.remove();
+        FURNI_FIRINGS.remove();
+        ORIGINAL_ROTATIONS.remove();
         WiredMoveStyleHelper.discardCollection();
     }
 
@@ -1108,7 +1179,9 @@ public final class WiredMoveCarryHelper {
         List<WiredMovementsComposer.MovementData> collectedMovements = COLLECTED_MOVEMENTS.get();
 
         if (collectedMovements != null) {
-            collectedMovements.addAll(movements);
+            for (WiredMovementsComposer.MovementData movement : movements) {
+                collect(collectedMovements, movement);
+            }
         } else {
             room.sendComposer(new WiredMovementsComposer(movements).compose());
         }

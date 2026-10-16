@@ -11,7 +11,12 @@ public class InteractionGameUpCounter extends InteractionGameTimer {
     private static final int ONE_SECOND_MS = 1000;
     private static final int HALF_SECOND_MS = 500;
     private static final int MAX_UPCOUNTER_TIME = ((99 * 60) + 59);
+    private static final int ROOM_CYCLE_MS = 500;
     private int subSecondOffsetMs = 0;
+    /** The counter was adjusted while stopped: the next Start counts on from there instead of from 0. */
+    private boolean adjustedSinceStop = false;
+    /** The delay of the first tick of a Start, aligned to the room's 500 ms grid; 0 when none is pending. */
+    private long pendingStartDelayMs = 0;
 
     public InteractionGameUpCounter(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -87,6 +92,9 @@ public class InteractionGameUpCounter extends InteractionGameTimer {
 
     @Override
     protected long getTimerStartDelayMs() {
+        long pending = this.pendingStartDelayMs;
+        this.pendingStartDelayMs = 0;
+        if (pending > 0) return pending;
         return this.getNextTickDelayMs();
     }
 
@@ -137,10 +145,25 @@ public class InteractionGameUpCounter extends InteractionGameTimer {
             WiredManager.triggerGameEnds(room);
         }
 
-        this.setCurrentTimeInMs(0);
+        // A value adjusted after the last stop is kept, as in Habbo.
+        if (!this.adjustedSinceStop) this.setCurrentTimeInMs(0);
+        this.adjustedSinceStop = false;
         this.applyCounterState(room, true);
 
+        if (room != null)
+            this.pendingStartDelayMs = firstTickDelayMs(room.getCycleTimestamp(), System.currentTimeMillis());
         this.startTimer(room);
+    }
+
+    /**
+     * A started counter shows its first second on the 2nd 500 ms room boundary strictly after the start, so 501 to
+     * 1000 ms later, and ticks every second on that grid from then on.
+     */
+    static long firstTickDelayMs(long lastCycle, long now) {
+        long firstBoundary = (lastCycle <= 0 || lastCycle > now)
+                ? now + ROOM_CYCLE_MS
+                : lastCycle + (((now - lastCycle) / ROOM_CYCLE_MS) + 1) * ROOM_CYCLE_MS;
+        return firstBoundary + ROOM_CYCLE_MS - now;
     }
 
     public void stopCounter(Room room) {
@@ -159,6 +182,7 @@ public class InteractionGameUpCounter extends InteractionGameTimer {
 
         this.endGame(room);
         this.setCurrentTimeInMs(0);
+        this.adjustedSinceStop = false;
         this.applyCounterState(room, true);
 
         if (wasActive) {
@@ -202,6 +226,7 @@ public class InteractionGameUpCounter extends InteractionGameTimer {
         }
 
         this.setCurrentTimeInMs(nextTimeMs);
+        if (!this.isRunning) this.adjustedSinceStop = true;
         this.applyCounterState(room, true);
 
         // Setting the clock onto a time is reaching it, as in Habbo: a "clock reaches" trigger

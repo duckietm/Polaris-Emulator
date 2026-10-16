@@ -33,6 +33,7 @@ import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.habbohotel.users.HabboStats;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.label.WiredLabelSupport;
+import com.eu.habbo.habbohotel.wired.protocol.WiredTextPlaceholderContext;
 import com.eu.habbo.messages.incoming.users.UserNuxEvent;
 import com.eu.habbo.messages.outgoing.hotelview.HotelViewComposer;
 import com.eu.habbo.messages.outgoing.polls.PollStartComposer;
@@ -1028,6 +1029,11 @@ public class RoomManager {
         habbo.getClient().sendResponse(new WiredEnvironmentComposer(room).compose());
         // AIR furniture labels (2237): the wf_label notes this player may see.
         WiredLabelSupport.sendAll(room, habbo);
+        // AIR wired visualization state (1826 furni, 1454 avatars): the highlights and avatar
+        // transparency this player sees, applied without easing.
+        WiredVisualizationBroadcaster.sendState(room, habbo);
+        // AIR: a room whose message boxes use $(trigger_text) says so to everyone entering.
+        WiredTextPlaceholderContext.sendTriggerTextNotice(room, habbo);
 
         if (!room.getCurrentPets().isEmpty()) {
             habbo.getClient()

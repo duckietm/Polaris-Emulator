@@ -196,6 +196,12 @@ public class RoomUnitManager {
             this.currentHabbos.remove(habbo.getHabboInfo().getId());
         }
         this.room.forgetWiredOpacityUser(habbo.getHabboInfo().getId());
+        RoomWiredRuntime wiredRuntime = this.room.getWiredRuntime();
+        if (wiredRuntime != null) {
+            wiredRuntime.forgetVisualizationUser(
+                    habbo.getHabboInfo().getId(),
+                    habbo.getRoomUnit() == null ? -1 : habbo.getRoomUnit().getId());
+        }
         this.room
                 .getUserVariableManager()
                 .clearAssignmentsForUser(habbo.getHabboInfo().getId());

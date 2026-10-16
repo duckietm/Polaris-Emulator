@@ -987,7 +987,9 @@ public class RoomFurniVariableManager {
             Integer previousValue,
             boolean existsAfter,
             Integer currentValue) {
-        boolean created = !existedBefore && existsAfter;
+        if (WiredVariableGiveScope.suppresses(existedBefore, previousValue, existsAfter, currentValue)) return;
+
+        boolean created = WiredVariableGiveScope.created(existedBefore, existsAfter);
         boolean deleted = existedBefore && !existsAfter;
         WiredEvent.VariableChangeKind changeKind =
                 resolveVariableChangeKind(hasValue, existedBefore, previousValue, existsAfter, currentValue);

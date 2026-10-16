@@ -15,8 +15,10 @@ METHOD public abstract com.eu.habbo.habbohotel.items.interactions.InteractionWir
 METHOD public com.eu.habbo.habbohotel.items.interactions.InteractionWired#flashBox(com.eu.habbo.habbohotel.rooms.Room):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.InteractionWired#getUserExecutionCacheSize(-):int throws -
 METHOD public abstract com.eu.habbo.habbohotel.items.interactions.InteractionWired#getWiredData(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.InteractionWired#isEditorFresh(-):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.InteractionWired#isUsable(-):boolean throws -
 METHOD public abstract com.eu.habbo.habbohotel.items.interactions.InteractionWired#loadWiredData(java.sql.ResultSet,com.eu.habbo.habbohotel.rooms.Room):void throws java.sql.SQLException
+METHOD public com.eu.habbo.habbohotel.items.interactions.InteractionWired#markEditorSaved(-):void throws -
 METHOD public abstract com.eu.habbo.habbohotel.items.interactions.InteractionWired#onPickUp(-):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.InteractionWired#onPickUp(com.eu.habbo.habbohotel.rooms.Room):void throws -
 METHOD public static com.eu.habbo.habbohotel.items.interactions.InteractionWired#readSettings(com.eu.habbo.messages.ClientMessage,boolean):com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings throws -
@@ -150,6 +152,9 @@ METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.WiredNumer
 
 TYPE public final com.eu.habbo.habbohotel.items.interactions.wired.WiredRewardPolicy extends java.lang.Object
 METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.WiredRewardPolicy#canConfigure(com.eu.habbo.habbohotel.gameclients.GameClient):boolean throws -
+
+TYPE public com.eu.habbo.habbohotel.items.interactions.wired.WiredSaveRefusedException extends java.lang.RuntimeException
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.WiredSaveRefusedException(java.lang.String) throws -
 
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings extends java.lang.Object
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings(int[],java.lang.String,int[],int) throws -
@@ -330,6 +335,13 @@ FIELD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage
 FIELD public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage$LogEntry#withdrawn:int
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage$LogEntry(-) throws -
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage$LogEntry(java.lang.String,long,java.lang.String,int,int) throws -
+
+TYPE public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionFailures extends java.lang.Object
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionFailures#NONE:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionFailures#NOT_A_WIRED_CHEST:int
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionFailures#NO_OR_LOCKED_CHESTS:int
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionFailures#send(com.eu.habbo.habbohotel.users.Habbo,int):void throws -
+METHOD public static com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionFailures#withdrawRefusal(com.eu.habbo.habbohotel.users.HabboItem,com.eu.habbo.habbohotel.users.Habbo,boolean):int throws -
 
 TYPE public final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog extends java.lang.Object
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog#FILTER_ALL:int
@@ -3512,6 +3524,23 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffe
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetAltitude#saveData(com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings,com.eu.habbo.habbohotel.gameclients.GameClient):boolean throws com.eu.habbo.messages.incoming.wired.WiredSaveException
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetAltitude#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
 
+TYPE public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetHighlight extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect implements com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources
+FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetHighlight#type:com.eu.habbo.habbohotel.wired.WiredEffectType
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetHighlight(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
+CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetHighlight(java.sql.ResultSet,com.eu.habbo.habbohotel.items.Item) throws java.sql.SQLException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetHighlight#execute(com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.Room,java.lang.Object[]):boolean throws -
+METHOD-ANNOTATION com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetHighlight#execute(com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.Room,java.lang.Object[]):boolean throws - java.lang.Deprecated[forRemoval=false, since=]
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetHighlight#execute(com.eu.habbo.habbohotel.wired.core.WiredContext):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetHighlight#getType(-):com.eu.habbo.habbohotel.wired.WiredEffectType throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetHighlight#getWiredData(-):java.lang.String throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetHighlight#loadWiredData(java.sql.ResultSet,com.eu.habbo.habbohotel.rooms.Room):void throws java.sql.SQLException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetHighlight#officialFurniSources(-):int[] throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetHighlight#officialUserSources(-):int[] throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetHighlight#onPickUp(-):void throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetHighlight#requiresTriggeringUser(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetHighlight#saveData(com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings,com.eu.habbo.habbohotel.gameclients.GameClient):boolean throws com.eu.habbo.messages.incoming.wired.WiredSaveException
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetHighlight#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -
+
 TYPE public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetRollerSpeed extends com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect
 FIELD public static final com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetRollerSpeed#type:com.eu.habbo.habbohotel.wired.WiredEffectType
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetRollerSpeed(int,int,com.eu.habbo.habbohotel.items.Item,java.lang.String,int,int) throws -
@@ -4071,6 +4100,7 @@ CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredE
 CONSTRUCTOR public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraOrEval(java.sql.ResultSet,com.eu.habbo.habbohotel.items.Item) throws java.sql.SQLException
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraOrEval#execute(com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.Room,java.lang.Object[]):boolean throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraOrEval#getCompareValue(-):int throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraOrEval#getEvaluatedConditionIds(-):java.util.Set<java.lang.Integer> throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraOrEval#getEvaluationMode(-):int throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraOrEval#getFurniSource(-):int throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraOrEval#getWiredData(-):java.lang.String throws -
@@ -6184,6 +6214,7 @@ ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 98 PROGRESS_ACHIEVEMENT
 ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 99 PROGRESS_REWARD_TRACK
 ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 100 RESET_REWARD_TRACK
 ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 101 GIVE_HAND_ITEM
+ENUM com.eu.habbo.habbohotel.wired.WiredEffectType 102 SET_HIGHLIGHT
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#ADJUST_CLOCK:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#ALL_USERS_LEAVE_TEAM:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#BOT_CLOTHES:com.eu.habbo.habbohotel.wired.WiredEffectType
@@ -6263,6 +6294,7 @@ FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#RESET_TI
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#SCAN_CHEST_FURNI_BY_TYPE:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#SEND_SIGNAL:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#SET_ALTITUDE:com.eu.habbo.habbohotel.wired.WiredEffectType
+FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#SET_HIGHLIGHT:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#SET_ROLLER_SPEED:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#SET_ROOM_AD:com.eu.habbo.habbohotel.wired.WiredEffectType
 FIELD public static final com.eu.habbo.habbohotel.wired.WiredEffectType#SHOW_MESSAGE:com.eu.habbo.habbohotel.wired.WiredEffectType
@@ -7267,6 +7299,15 @@ METHOD public static com.eu.habbo.habbohotel.wired.core.WiredDailyTaskSupport#ef
 METHOD public static com.eu.habbo.habbohotel.wired.core.WiredDailyTaskSupport#isDailyCounter(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra):boolean throws -
 METHOD public static com.eu.habbo.habbohotel.wired.core.WiredDailyTaskSupport#isExpired(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra,int,int):boolean throws -
 
+TYPE public final com.eu.habbo.habbohotel.wired.core.WiredDelay extends java.lang.Object
+FIELD public static final com.eu.habbo.habbohotel.wired.core.WiredDelay#MAX_PRECISE_STEPS:int
+FIELD public static final com.eu.habbo.habbohotel.wired.core.WiredDelay#PRECISE_STEP_MS:int
+FIELD public static final com.eu.habbo.habbohotel.wired.core.WiredDelay#PULSE_MS:long
+METHOD public static com.eu.habbo.habbohotel.wired.core.WiredDelay#isDelayed(int):boolean throws -
+METHOD public static com.eu.habbo.habbohotel.wired.core.WiredDelay#isValid(int,int):boolean throws -
+METHOD public static com.eu.habbo.habbohotel.wired.core.WiredDelay#normalize(int,int):int throws -
+METHOD public static com.eu.habbo.habbohotel.wired.core.WiredDelay#toMillis(int):long throws -
+
 TYPE public abstract interface com.eu.habbo.habbohotel.wired.core.WiredDerivedVariableBox
 METHOD public abstract com.eu.habbo.habbohotel.wired.core.WiredDerivedVariableBox#derive(int,java.lang.Integer):java.lang.Integer throws -
 METHOD public abstract com.eu.habbo.habbohotel.wired.core.WiredDerivedVariableBox#getSelectedSubvariables(-):java.util.List<java.lang.Integer> throws -
@@ -7668,6 +7709,7 @@ METHOD public static com.eu.habbo.habbohotel.wired.core.WiredManager#unregisterT
 
 TYPE public final com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper extends java.lang.Object
 METHOD public static com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper#beginMovementCollection(-):void throws -
+METHOD public static com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper#beginMovementCollection(boolean):void throws -
 METHOD public static com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper#cleanupRoomUnit(com.eu.habbo.habbohotel.rooms.RoomUnit):void throws -
 METHOD public static com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper#clearStatusComposerSuppression(com.eu.habbo.habbohotel.rooms.RoomUnit):void throws -
 METHOD public static com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper#finishMovementCollection(-):com.eu.habbo.messages.ServerMessage throws -
@@ -7912,6 +7954,7 @@ METHOD public com.eu.habbo.habbohotel.wired.core.WiredSimulation$SimulatedPositi
 
 TYPE public final com.eu.habbo.habbohotel.wired.core.WiredSourceUtil extends java.lang.Object
 FIELD public static final com.eu.habbo.habbohotel.wired.core.WiredSourceUtil#SOURCE_CLICKED_USER:int
+FIELD public static final com.eu.habbo.habbohotel.wired.core.WiredSourceUtil#SOURCE_REACHED_USER:int
 FIELD public static final com.eu.habbo.habbohotel.wired.core.WiredSourceUtil#SOURCE_SELECTED:int
 FIELD public static final com.eu.habbo.habbohotel.wired.core.WiredSourceUtil#SOURCE_SELECTOR:int
 FIELD public static final com.eu.habbo.habbohotel.wired.core.WiredSourceUtil#SOURCE_SIGNAL:int
@@ -7983,6 +8026,7 @@ METHOD public com.eu.habbo.habbohotel.wired.core.WiredTextInputCaptureSupport$Ca
 METHOD public static com.eu.habbo.habbohotel.wired.core.WiredTextInputCaptureSupport$CaptureResult#noMatch(-):com.eu.habbo.habbohotel.wired.core.WiredTextInputCaptureSupport$CaptureResult throws -
 
 TYPE public final com.eu.habbo.habbohotel.wired.core.WiredTextPlaceholderUtil extends java.lang.Object
+FIELD public static final com.eu.habbo.habbohotel.wired.core.WiredTextPlaceholderUtil#TRIGGER_TEXT_TOKEN:java.lang.String
 METHOD public static com.eu.habbo.habbohotel.wired.core.WiredTextPlaceholderUtil#applyUsernamePlaceholders(com.eu.habbo.habbohotel.wired.core.WiredContext,java.lang.String):java.lang.String throws -
 METHOD public static com.eu.habbo.habbohotel.wired.core.WiredTextPlaceholderUtil#requiresActor(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.users.HabboItem):boolean throws -
 
@@ -7999,6 +8043,7 @@ METHOD public static com.eu.habbo.habbohotel.wired.core.WiredUserMovementHelper#
 METHOD public static com.eu.habbo.habbohotel.wired.core.WiredUserMovementHelper#clearStatusComposerSuppression(com.eu.habbo.habbohotel.rooms.RoomUnit):void throws -
 METHOD public static com.eu.habbo.habbohotel.wired.core.WiredUserMovementHelper#consumeSuppressedWalkCommand(com.eu.habbo.habbohotel.rooms.RoomUnit):boolean throws -
 METHOD public static com.eu.habbo.habbohotel.wired.core.WiredUserMovementHelper#hopInPlace(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.RoomUserRotation,com.eu.habbo.habbohotel.rooms.RoomUserRotation,int,int):boolean throws -
+METHOD public static com.eu.habbo.habbohotel.wired.core.WiredUserMovementHelper#moveUser(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.RoomTile,com.eu.habbo.habbohotel.rooms.RoomTile,double,com.eu.habbo.habbohotel.rooms.RoomUserRotation,com.eu.habbo.habbohotel.rooms.RoomUserRotation,int,boolean,com.eu.habbo.habbohotel.wired.core.WiredMovementPhysics,int):boolean throws -
 METHOD public static com.eu.habbo.habbohotel.wired.core.WiredUserMovementHelper#moveUser(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.RoomTile,double,com.eu.habbo.habbohotel.rooms.RoomUserRotation,com.eu.habbo.habbohotel.rooms.RoomUserRotation,int):boolean throws -
 METHOD public static com.eu.habbo.habbohotel.wired.core.WiredUserMovementHelper#moveUser(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.RoomTile,double,com.eu.habbo.habbohotel.rooms.RoomUserRotation,com.eu.habbo.habbohotel.rooms.RoomUserRotation,int,boolean):boolean throws -
 METHOD public static com.eu.habbo.habbohotel.wired.core.WiredUserMovementHelper#moveUser(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.RoomTile,double,com.eu.habbo.habbohotel.rooms.RoomUserRotation,com.eu.habbo.habbohotel.rooms.RoomUserRotation,int,boolean,com.eu.habbo.habbohotel.wired.core.WiredMovementPhysics):boolean throws -
@@ -8417,6 +8462,16 @@ TYPE public final com.eu.habbo.habbohotel.wired.protocol.WiredHolders extends ja
 METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredHolders#isVariable(com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra):boolean throws -
 METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredHolders#of(com.eu.habbo.habbohotel.items.interactions.InteractionWired):com.eu.habbo.habbohotel.wired.protocol.WiredDefinitionWire$Holder throws -
 
+TYPE public final com.eu.habbo.habbohotel.wired.protocol.WiredInputSourcesConf extends java.lang.Object
+FIELD public static final com.eu.habbo.habbohotel.wired.protocol.WiredInputSourcesConf#NONE:com.eu.habbo.habbohotel.wired.protocol.WiredInputSourcesConf
+METHOD public com.eu.habbo.habbohotel.wired.protocol.WiredInputSourcesConf#allowWallFurni(-):boolean throws -
+METHOD public com.eu.habbo.habbohotel.wired.protocol.WiredInputSourcesConf#allowedFurni(-):int[][] throws -
+METHOD public com.eu.habbo.habbohotel.wired.protocol.WiredInputSourcesConf#allowedUsers(-):int[][] throws -
+METHOD public com.eu.habbo.habbohotel.wired.protocol.WiredInputSourcesConf#defaultFurni(-):int[] throws -
+METHOD public com.eu.habbo.habbohotel.wired.protocol.WiredInputSourcesConf#defaultUsers(-):int[] throws -
+METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredInputSourcesConf#forInteraction(java.lang.String):com.eu.habbo.habbohotel.wired.protocol.WiredInputSourcesConf throws -
+METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredInputSourcesConf#of(java.lang.Object):com.eu.habbo.habbohotel.wired.protocol.WiredInputSourcesConf throws -
+
 TYPE public abstract interface com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSecondaryPicks
 METHOD public abstract com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSecondaryPicks#officialFurniIds2(-):int[] throws -
 
@@ -8438,6 +8493,15 @@ METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredSelectorCodes#o
 TYPE public final com.eu.habbo.habbohotel.wired.protocol.WiredSourceFields extends java.lang.Object
 METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredSourceFields#furniSources(java.lang.Object):int[] throws -
 METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredSourceFields#userSources(java.lang.Object):int[] throws -
+
+TYPE public final com.eu.habbo.habbohotel.wired.protocol.WiredSourceSaveRules extends java.lang.Object
+FIELD public static final com.eu.habbo.habbohotel.wired.protocol.WiredSourceSaveRules#INVALID_FURNI_SOURCE:java.lang.String
+FIELD public static final com.eu.habbo.habbohotel.wired.protocol.WiredSourceSaveRules#INVALID_USER_SOURCE:java.lang.String
+METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredSourceSaveRules#apply(java.lang.Object,com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings,com.eu.habbo.habbohotel.rooms.Room):java.lang.String throws -
+
+TYPE public final com.eu.habbo.habbohotel.wired.protocol.WiredTextPlaceholderContext extends java.lang.Object
+FIELD public static final com.eu.habbo.habbohotel.wired.protocol.WiredTextPlaceholderContext#TRIGGER_TEXT:java.lang.String
+METHOD public static com.eu.habbo.habbohotel.wired.protocol.WiredTextPlaceholderContext#sendTriggerTextNotice(com.eu.habbo.habbohotel.rooms.Room,com.eu.habbo.habbohotel.users.Habbo):void throws -
 
 TYPE public final com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets extends java.lang.Object
 FIELD public static final com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets#OFFICIAL_CONTEXT:int
@@ -8819,6 +8883,7 @@ FIELD public static final com.eu.habbo.messages.outgoing.rooms.WiredMovementsCom
 FIELD public static final com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer#USER_MOVEMENT_WALK:int
 CONSTRUCTOR public com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer(java.util.List<com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer$MovementData>) throws -
 METHOD protected com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer#composeInternal(-):com.eu.habbo.messages.ServerMessage throws -
+METHOD public static com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer#furniId(com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer$MovementData):int throws -
 METHOD public static com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer#furniMovement(int,int,int,int,int,double,double):com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer$MovementData throws -
 METHOD public static com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer#furniMovement(int,int,int,int,int,double,double,int,int):com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer$MovementData throws -
 METHOD public static com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer#furniMovement(int,int,int,int,int,double,double,int,int,int):com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer$MovementData throws -
@@ -8827,6 +8892,7 @@ METHOD public static com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer
 METHOD public static com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer#userSlideMovement(int,int,int,int,int,double,double,int,int,int):com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer$MovementData throws -
 METHOD public static com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer#userWalkMovement(int,int,int,int,int,double,double,int,int,int):com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer$MovementData throws -
 METHOD public static com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer#wallItemMovement(int,boolean,int[]):com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer$MovementData throws -
+METHOD public static com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer#withoutReturnedFurni(java.util.List<com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer$MovementData>,java.util.Set<java.lang.Integer>,java.util.Map<java.lang.Integer, java.lang.Integer>):java.util.List<com.eu.habbo.messages.outgoing.rooms.WiredMovementsComposer$MovementData> throws -
 
 TYPE public com.eu.habbo.messages.outgoing.wired.WiredAllVariablesDiffComposer extends com.eu.habbo.messages.outgoing.MessageComposer
 CONSTRUCTOR public com.eu.habbo.messages.outgoing.wired.WiredAllVariablesDiffComposer(int,boolean,java.util.List<java.lang.String>,java.util.List<com.eu.habbo.habbohotel.rooms.RoomWiredVariableCatalog$Variable>) throws -

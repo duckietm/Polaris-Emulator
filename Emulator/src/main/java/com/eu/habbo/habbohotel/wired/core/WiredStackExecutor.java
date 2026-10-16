@@ -544,7 +544,7 @@ final class WiredStackExecutor {
                 continue;
             }
             cost += effect.isSelector() ? 2 : 3;
-            if (effect.getDelay() > 0) {
+            if (WiredDelay.isDelayed(effect.getDelay())) {
                 cost += 4;
             }
         }
@@ -574,7 +574,7 @@ final class WiredStackExecutor {
             if (effect.isSelector()) {
                 selectors++;
             }
-            if (effect.getDelay() > 0) {
+            if (WiredDelay.isDelayed(effect.getDelay())) {
                 delayedEffects++;
             }
         }

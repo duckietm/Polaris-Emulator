@@ -321,6 +321,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRollD
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSayCommand;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSendSignal;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetAltitude;
+import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetHighlight;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetRollerSpeed;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetRoomAd;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSit;
@@ -1196,6 +1197,8 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_label", WiredExtraLabel.class));
         this.interactionsList.add(new ItemInteraction("recolorable", InteractionRecolorable.class));
         this.interactionsList.add(new ItemInteraction("wf_trg_room_initialized", WiredTriggerRoomInitialized.class));
+        // Belongs beside wf_act_change_opacity, but sits last so no registered wired interaction moves.
+        this.interactionsList.add(new ItemInteraction("wf_act_set_highlight", WiredEffectSetHighlight.class));
     }
 
     public void addItemInteraction(ItemInteraction itemInteraction) {

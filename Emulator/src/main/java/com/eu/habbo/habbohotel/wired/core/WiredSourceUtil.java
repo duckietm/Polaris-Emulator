@@ -15,6 +15,9 @@ import java.util.Optional;
 
 public final class WiredSourceUtil {
     public static final int SOURCE_TRIGGER = 0;
+    /** The user a bot reached; only under a Bot Reaches User trigger. */
+    public static final int SOURCE_REACHED_USER = 10;
+
     public static final int SOURCE_CLICKED_USER = 11;
     public static final int SOURCE_SELECTED = 100;
     public static final int SOURCE_SELECTOR = 200;
@@ -91,6 +94,7 @@ public final class WiredSourceUtil {
     public static boolean isDefaultUserSource(int value) {
         switch (value) {
             case SOURCE_TRIGGER:
+            case SOURCE_REACHED_USER:
             case SOURCE_CLICKED_USER:
             case SOURCE_SELECTOR:
             case SOURCE_SIGNAL:
@@ -190,10 +194,10 @@ public final class WiredSourceUtil {
         WiredTargets.Defaults defaults = selectorCtx.targets().setDefaultsAside();
         try {
             executeSelectorEffects(selectorCtx, selectorEffects, false);
+            executeSelectorEffects(selectorCtx, selectorEffects, true);
         } finally {
             selectorCtx.targets().restoreDefaults(defaults);
         }
-        executeSelectorEffects(selectorCtx, selectorEffects, true);
 
         applySelectionFilterExtras(room, triggerItem, selectorCtx);
 
@@ -289,13 +293,16 @@ public final class WiredSourceUtil {
                         : Collections.emptyList();
             case SOURCE_SIGNAL:
                 if (ctx.eventType() == WiredEvent.Type.SIGNAL_RECEIVED) {
-                    // Everything the signal passed on; a signal from before the sets were carried
-                    // still names its one furni.
+                    // Everything the signal passed on. A signal built without the sets still names its one
+                    // furni, unless that is the receiving antenna (the triggering furni of the stack).
                     List<HabboItem> forwarded = ctx.event().getForwardedItems();
                     if (!forwarded.isEmpty()) {
                         return new ArrayList<>(forwarded);
                     }
-                    return ctx.sourceItem().map(Collections::singletonList).orElse(Collections.emptyList());
+                    return ctx.sourceItem()
+                            .filter(item -> item.getId() != ctx.event().getSignalChannel())
+                            .map(Collections::singletonList)
+                            .orElse(Collections.emptyList());
                 }
                 return Collections.emptyList();
             default:
@@ -314,6 +321,14 @@ public final class WiredSourceUtil {
                 return triggeringUsers(ctx);
             case SOURCE_CLICKED_USER:
                 if (ctx.eventType() == WiredEvent.Type.USER_CLICKS_USER) {
+                    return ctx.event()
+                            .getTargetUnit()
+                            .map(Collections::singletonList)
+                            .orElse(Collections.emptyList());
+                }
+                return Collections.emptyList();
+            case SOURCE_REACHED_USER:
+                if (ctx.eventType() == WiredEvent.Type.BOT_REACHED_HABBO) {
                     return ctx.event()
                             .getTargetUnit()
                             .map(Collections::singletonList)

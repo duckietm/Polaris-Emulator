@@ -25,9 +25,13 @@ import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,34 +83,27 @@ public class WiredEffectMatchFurni extends InteractionWiredEffect implements Int
             return;
         }
 
+        List<WiredMatchFurniSetting> spots = dealSpots(this.settings, targets.size(), ThreadLocalRandom.current());
+        int index = 0;
         for (HabboItem item : targets) {
             if (item == null) continue;
-
-            WiredMatchFurniSetting setting = this.resolveSettingForTarget(room, item);
-            if (setting == null) continue;
-
-            this.applySetting(room, item, setting, ctx);
+            this.applySetting(room, item, spots.get(index++), ctx);
         }
     }
 
-    private WiredMatchFurniSetting resolveSettingForTarget(Room room, HabboItem target) {
-        WiredMatchFurniSetting fallback = null;
+    /**
+     * The snapshot spots for {@code targets} furni that were not picked: the saved entries in random order, dealt out
+     * one per furni whatever its type, and reused from the start when there are more furni than entries. A one-furni
+     * snapshot so gives its entry to every target.
+     */
+    static List<WiredMatchFurniSetting> dealSpots(
+            Collection<WiredMatchFurniSetting> settings, int targets, Random random) {
+        List<WiredMatchFurniSetting> shuffled = new ArrayList<>(settings);
+        Collections.shuffle(shuffled, random);
 
-        for (WiredMatchFurniSetting setting : this.settings) {
-            HabboItem sourceItem = room.getHabboItem(setting.item_id);
-            if (sourceItem == null) continue;
-            if (sourceItem.getBaseItem().getId() != target.getBaseItem().getId()) continue;
-
-            if (setting.state.equals(target.getExtradata())) {
-                return setting;
-            }
-
-            if (fallback == null) {
-                fallback = setting;
-            }
-        }
-
-        return fallback;
+        List<WiredMatchFurniSetting> dealt = new ArrayList<>(targets);
+        for (int i = 0; i < targets; i++) dealt.add(shuffled.get(i % shuffled.size()));
+        return dealt;
     }
 
     void applySetting(Room room, HabboItem item, WiredMatchFurniSetting setting, WiredContext ctx) {

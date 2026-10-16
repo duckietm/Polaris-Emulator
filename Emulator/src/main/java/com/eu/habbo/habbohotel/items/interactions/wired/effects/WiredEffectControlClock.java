@@ -65,7 +65,7 @@ public class WiredEffectControlClock extends InteractionWiredEffect {
             }
 
             if (item instanceof InteractionGameUpCounter) {
-                this.controlUpCounter((InteractionGameUpCounter) item, room);
+                this.controlUpCounter((InteractionGameUpCounter) item, room, ctx);
                 continue;
             }
 
@@ -73,7 +73,7 @@ public class WiredEffectControlClock extends InteractionWiredEffect {
         }
     }
 
-    private void controlUpCounter(InteractionGameUpCounter counter, Room room) {
+    private void controlUpCounter(InteractionGameUpCounter counter, Room room, WiredContext ctx) {
         switch (this.action) {
             case ACTION_START:
                 counter.restartFromZero(room);
@@ -90,6 +90,12 @@ public class WiredEffectControlClock extends InteractionWiredEffect {
             case ACTION_RESUME:
                 counter.resumeCounter(room);
                 break;
+        }
+
+        // Start, Stop and Reset change the counter's state once each, even when the shown time stays the same; its
+        // ticks and adjustments do not.
+        if (this.action == ACTION_START || this.action == ACTION_STOP || this.action == ACTION_RESET) {
+            WiredManager.triggerFurniStateUpdated(room, ctx.actor().orElse(null), counter, true);
         }
     }
 

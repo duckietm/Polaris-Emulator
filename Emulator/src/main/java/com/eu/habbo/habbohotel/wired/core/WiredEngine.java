@@ -465,13 +465,13 @@ public final class WiredEngine {
                 }
             }
         } else {
-            // Normal mode: preserve the physical stack order.
-            // This matches the legacy handler behavior and avoids visual/state races
-            // for combinations such as Move/Rotate + Match To Snapshot in the same stack.
-            toExecute = new ArrayList<>(effects);
+            // Normal mode: the physical stack order, except where Habbo was seen to run an action
+            // after the ones it depends on (Match to Snapshot, Show Message).
+            toExecute = WiredObservedEffectOrder.apply(new ArrayList<>(effects));
         }
 
-        WiredMoveCarryHelper.beginMovementCollection();
+        // Without Execute in Order, a furni this firing moves and brings back gets no entry.
+        WiredMoveCarryHelper.beginMovementCollection(true);
 
         try (WiredInternalVariableSupport.UserMoveBatchScope ignored =
                 WiredInternalVariableSupport.beginUserMoveBatch()) {
@@ -486,7 +486,7 @@ public final class WiredEngine {
 
                 // Handle delay
                 int delay = effect.getDelay();
-                if (delay > 0) {
+                if (WiredDelay.isDelayed(delay)) {
                     List<IWiredEffect> delayedBatch = new ArrayList<>();
                     delayedBatch.add(effect);
 
@@ -551,13 +551,15 @@ public final class WiredEngine {
         List<InteractionWiredEffect> executedSelectors = new ArrayList<>();
         WiredEffectPlanner.SelectorPlan selectorPlan = this.effectPlanner.selectorPlan(effects);
 
+        // Filter selectors narrow what the stack's other selectors picked; with none of their kind they start from
+        // nothing too, as in Habbo, instead of filtering the triggering user and furni.
         WiredTargets.Defaults defaults = ctx.targets().setDefaultsAside();
         try {
             executeSelectorList(selectorPlan.immediate(), ctx, executedSelectors);
+            executeSelectorList(selectorPlan.deferred(), ctx, executedSelectors);
         } finally {
             ctx.targets().restoreDefaults(defaults);
         }
-        executeSelectorList(selectorPlan.deferred(), ctx, executedSelectors);
 
         return executedSelectors;
     }
@@ -683,7 +685,7 @@ public final class WiredEngine {
             int delay = delayBatch.delay();
             List<IWiredEffect> batch = delayBatch.effects();
 
-            if (delay > 0) {
+            if (WiredDelay.isDelayed(delay)) {
                 flashEffects(ctx.room(), batch);
                 scheduleOrderedEffectBatch(batch, ctx, delay, currentTime);
             } else {

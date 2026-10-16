@@ -4,6 +4,7 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition;
 import com.eu.habbo.habbohotel.items.interactions.games.InteractionGameUpCounter;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredSaveRefusedException;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -201,6 +202,7 @@ public class WiredConditionCounterTimeMatches extends InteractionWiredCondition 
     @Override
     public boolean saveData(WiredSettings settings) {
         int[] params = settings.getIntParams();
+        refuseNonCounterPicks(settings);
 
         int seconds = (params.length > 0) ? Math.clamp(params[0], 0, 59) : 0;
         this.minutes = (params.length > 1) ? this.normalizeMinutes(params[1]) : 0;
@@ -265,6 +267,21 @@ public class WiredConditionCounterTimeMatches extends InteractionWiredCondition 
 
     private int getTargetTimeInMs() {
         return (this.minutes * 60_000) + (this.halfSecondSteps * 500);
+    }
+
+    /** Official: picking anything but a counter refuses the save with the counter text. */
+    private void refuseNonCounterPicks(WiredSettings settings) {
+        int[] sources = settings.getFurniSourceTypes();
+        if (sources.length == 0 || this.normalizeFurniSource(sources[0]) != WiredSourceUtil.SOURCE_SELECTED) return;
+
+        Room room = settings.getRoom();
+        if (room == null) return;
+
+        for (int itemId : settings.getFurniIds()) {
+            if (!(room.getHabboItem(itemId) instanceof InteractionGameUpCounter)) {
+                throw new WiredSaveRefusedException("wiredfurni.error.require_counter_furni");
+            }
+        }
     }
 
     private boolean matchesCounter(InteractionGameUpCounter counter, int targetTimeInMs) {

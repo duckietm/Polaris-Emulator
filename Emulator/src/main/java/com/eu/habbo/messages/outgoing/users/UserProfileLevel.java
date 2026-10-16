@@ -8,7 +8,7 @@ import java.util.Arrays;
  * least the N-th threshold. The thresholds are a comma separated, ascending list of scores; the
  * first one is level 1.
  */
-final class UserProfileLevel {
+public final class UserProfileLevel {
     static final String DEFAULT_THRESHOLDS =
             "0,50,150,300,500,800,1200,1700,2300,3000,4000,5000,6500,8000,10000,12500,15000,20000,25000,30000";
 
@@ -33,6 +33,11 @@ final class UserProfileLevel {
         int nextLevelStart = level < steps.length ? steps[level] : score;
 
         return new UserProfileLevel(level, nextLevelStart);
+    }
+
+    /** The account level of a user with {@code score} achievement points, as the profile shows it. */
+    public static int accountLevel(int score) {
+        return of(score, DEFAULT_THRESHOLDS).level();
     }
 
     int level() {

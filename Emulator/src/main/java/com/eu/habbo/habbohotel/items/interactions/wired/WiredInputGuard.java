@@ -105,8 +105,9 @@ public final class WiredInputGuard {
         return values;
     }
 
+    /** Pulses, or a negative precise delay in milliseconds, within the configured maximum time. */
     public static int normalizeDelay(int delay) {
-        return Math.max(0, Math.min(delay, maxDelay()));
+        return com.eu.habbo.habbohotel.wired.core.WiredDelay.normalize(delay, maxDelay());
     }
 
     public static int normalizeStuffSelectionCode(int code) {

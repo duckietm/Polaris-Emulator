@@ -263,6 +263,10 @@ public class WiredEffectSendSignal extends InteractionWiredEffect
                 actor != null ? actor.getId() : "null",
                 sourceItem != null ? sourceItem.getId() : "null");
 
+        // The furni of the signal are reached through "furni from signal" (201) only; the receiving stack's
+        // triggering furni is the antenna, as in Habbo.
+        List<HabboItem> forwarded = furniCarried.isEmpty() && sourceItem != null ? List.of(sourceItem) : furniCarried;
+
         WiredEvent.Builder builder = WiredEvent.builder(WiredEvent.Type.SIGNAL_RECEIVED, room)
                 .tile(tile)
                 .callStackDepth(depth)
@@ -270,13 +274,13 @@ public class WiredEffectSendSignal extends InteractionWiredEffect
                 .signalUserCount(signalUserCount)
                 .signalFurniCount(signalFurniCount)
                 .forwardedUsers(usersCarried)
-                .forwardedItems(furniCarried)
+                .forwardedItems(forwarded)
+                .sourceItem(antenna)
                 .contextVariableScope(ctx.contextVariables().copy())
                 .triggeredByEffect(true);
 
         if (actor != null) builder.actor(actor);
         if (originActor != null) builder.originActor(originActor);
-        if (sourceItem != null) builder.sourceItem(sourceItem);
 
         boolean result = dispatchSignalEvent(builder.build());
         LOGGER.debug("[SendSignal] handleEvent returned: {}", result);

@@ -110,7 +110,8 @@ final class WiredSelectionFilterSupport {
                 int amount = ((WiredExtraFilterUser) extra).resolveAmount(ctx);
                 if (amount > 0) {
                     userLimit = Math.min(userLimit, amount);
-                    userRandom |= ((WiredExtraFilterUser) extra).isRandomPick();
+                    // The official user filter always keeps a random N.
+                    userRandom = true;
                 }
             } else if (extra instanceof WiredExtraFilterUsersByVariable) {
                 variableFilters.add((WiredExtraFilterUsersByVariable) extra);
@@ -151,7 +152,7 @@ final class WiredSelectionFilterSupport {
         return new FilterScope();
     }
 
-    /** The first N in selection order, as officially, or a random N (ours). */
+    /** The first N in selection order, or a random N (the user filter, and furni filters set to random). */
     private static <T> List<T> limitIterable(Iterable<T> values, int limit, boolean random) {
         List<T> result = new ArrayList<>();
 

@@ -5,9 +5,11 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredInputGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredLargePayload;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredSaveRefusedException;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.protocol.WiredSourceSaveRules;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.UpdateFailedComposer;
 import com.eu.habbo.messages.outgoing.wired.WiredSavedComposer;
@@ -37,9 +39,14 @@ public class WiredConditionSaveDataEvent extends MessageHandler {
                                     WiredSettings settings = InteractionWired.readSettings(
                                             this.packet, InteractionWired.SaveKind.CONDITION, maximumStringLength);
                                     settings.setRoom(room);
+                                    String sourceRefusal = WiredSourceSaveRules.apply(condition, settings, room);
+                                    if (sourceRefusal != null) throw new WiredSaveRefusedException(sourceRefusal);
                                     return settings;
                                 },
                                 () -> this.packet);
+                    } catch (WiredSaveRefusedException refused) {
+                        this.client.sendResponse(new UpdateFailedComposer(refused.getMessage()));
+                        return;
                     } catch (IllegalArgumentException exception) {
                         this.client.sendResponse(new UpdateFailedComposer("Invalid wired condition settings"));
                         return;
@@ -51,6 +58,7 @@ public class WiredConditionSaveDataEvent extends MessageHandler {
                         return;
                     }
 
+                    condition.markEditorSaved();
                     this.client.sendResponse(new WiredSavedComposer());
                     condition.needsUpdate(true);
                     Emulator.getThreading().run(condition);

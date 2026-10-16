@@ -5,11 +5,13 @@ import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredInputGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.rooms.UserVariableHolders;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
+import com.eu.habbo.habbohotel.rooms.WiredVariableGiveScope;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
@@ -185,6 +187,8 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
         if (WiredContextVariableSupport.assignVariable(ctx, room, this.variableItemId, value, this.overrideExisting)) {
             long oldValue = previous == null ? 0L : previous;
             long newValue = value == null ? 0L : value;
+            // A give that kept the value fires nothing; any other give reports the variable as created.
+            if (existed && definitionInfo.hasValue() && newValue == oldValue) return;
             WiredEvent.VariableChangeKind kind = !existed || !definitionInfo.hasValue()
                     ? WiredEvent.VariableChangeKind.NONE
                     : newValue == oldValue
@@ -193,7 +197,7 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
                                     ? WiredEvent.VariableChangeKind.INCREASED
                                     : WiredEvent.VariableChangeKind.DECREASED;
             WiredContextVariableSupport.triggerVariableChanged(
-                    ctx, room, this.variableItemId, !existed, false, kind, oldValue, newValue);
+                    ctx, room, this.variableItemId, true, false, kind, oldValue, newValue);
         }
     }
 
@@ -277,7 +281,9 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
                 continue;
             }
 
-            room.getUserVariableManager().assignVariable(holder, this.variableItemId, value, this.overrideExisting);
+            // A give always reports the value as created (see WiredVariableGiveScope).
+            WiredVariableGiveScope.give(() -> room.getUserVariableManager()
+                    .assignVariable(holder, this.variableItemId, value, this.overrideExisting));
         }
     }
 
@@ -308,7 +314,8 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
                 continue;
             }
 
-            room.getFurniVariableManager().assignVariable(item, this.variableItemId, value, this.overrideExisting);
+            WiredVariableGiveScope.give(() -> room.getFurniVariableManager()
+                    .assignVariable(item, this.variableItemId, value, this.overrideExisting));
         }
     }
 
@@ -535,7 +542,7 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
                         ? WiredValueVariable.TARGET_GLOBAL
                         : WiredValueVariable.normalizeTarget(data.referenceTarget);
                 this.sameHolder = this.fromVariable && data.sameHolder;
-                this.setDelay(Math.max(0, data.delay));
+                this.setDelay(WiredInputGuard.normalizeDelay(data.delay));
 
                 if (room != null && data.selectedFurniIds != null) {
                     for (Integer itemId : data.selectedFurniIds) {

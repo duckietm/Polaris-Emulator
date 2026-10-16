@@ -129,11 +129,41 @@ public final class WiredUserMovementHelper {
             boolean noAnimation,
             WiredMovementPhysics movementPhysics,
             int jumpStrength) {
+        return moveUser(
+                room,
+                roomUnit,
+                null,
+                targetTile,
+                targetZ,
+                bodyRotation,
+                headRotation,
+                duration,
+                noAnimation,
+                movementPhysics,
+                jumpStrength);
+    }
+
+    /**
+     * As the others, sliding from {@code fromTile} (the start of a step in progress) instead of the
+     * user's tile when it is given.
+     */
+    public static boolean moveUser(
+            Room room,
+            RoomUnit roomUnit,
+            RoomTile fromTile,
+            RoomTile targetTile,
+            double targetZ,
+            RoomUserRotation bodyRotation,
+            RoomUserRotation headRotation,
+            int duration,
+            boolean noAnimation,
+            WiredMovementPhysics movementPhysics,
+            int jumpStrength) {
         if (room == null || roomUnit == null || targetTile == null || room.getLayout() == null) {
             return false;
         }
 
-        RoomTile oldLocation = roomUnit.getCurrentLocation();
+        RoomTile oldLocation = fromTile != null ? fromTile : roomUnit.getCurrentLocation();
         WiredMovementPhysics resolvedMovementPhysics =
                 movementPhysics == null ? WiredMovementPhysics.NONE : movementPhysics;
 

@@ -13,6 +13,7 @@ import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
+import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
@@ -22,11 +23,15 @@ import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The official "place furni" action (AIR code 55, furni {@code wf_act_place_furni}): puts temporary
@@ -48,6 +53,12 @@ import java.util.List;
  * param, as our other variable boxes send them: {@code "spawnVariableId\tvalueVariableId"}.
  */
 public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect implements WiredOfficialSources {
+    private static final String PLACEMENT_FAILURE_TYPE = "wired.error";
+    private static final String PLACEMENT_FAILURE_IMAGE = "${image.library.url}album1584/WIRD2.png";
+    private static final String PLACEMENT_FAILURE_MESSAGE = "${room.error.wired.placement_failure}";
+    private static final long PLACEMENT_FAILURE_INTERVAL_MS = 5000L;
+    private static final ConcurrentHashMap<Integer, Long> PLACEMENT_FAILURE_SHOWN = new ConcurrentHashMap<>();
+
     public static final WiredEffectType type = WiredEffectType.PLACE_FURNI;
 
     static final int LOCATION_SOURCE = 0;
@@ -189,8 +200,13 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
         ConfigurationManager config = WiredPlatform.configuration();
         int ceiling = (config == null) ? 2500 : config.getInt("hotel.rooms.max.furniture", 2500);
 
+        boolean failed = false;
+
         for (Snapshot source : this.snapshot) {
-            if (room.getFloorItems().size() >= ceiling) break;
+            if (room.getFloorItems().size() >= ceiling) {
+                failed = true;
+                break;
+            }
 
             Item base = WiredPlatform.gameEnvironment() == null
                     ? null
@@ -204,7 +220,12 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
                     WiredPlatform.gameEnvironment().getItemManager().createTemporaryItem(base, source.extradata);
             if (copy == null) continue;
 
-            if (room.placeFloorFurniAt(copy, tile, source.rotation, null) != FurnitureMovementError.NONE) continue;
+            copy.markTemporary(this.getUserId());
+
+            if (room.placeFloorFurniAt(copy, tile, source.rotation, null) != FurnitureMovementError.NONE) {
+                failed = true;
+                continue;
+            }
 
             double z =
                     switch (this.altitude) {
@@ -221,6 +242,38 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
             if (this.spawnWithVariable) {
                 room.getFurniVariableManager().assignVariable(copy, this.spawnVariableId, spawnValue, true);
             }
+        }
+
+        if (failed) {
+            notifyPlacementFailure(room);
+        }
+    }
+
+    /**
+     * Habbo shows everybody in the room, visitors too, a "placement failed" notice when Place Furni
+     * could not place its copies, at most once per user every 5 seconds. The rest of the stack runs on.
+     */
+    private static void notifyPlacementFailure(Room room) {
+        long now = System.currentTimeMillis();
+        Map<String, String> keys = new HashMap<>();
+        keys.put("image", PLACEMENT_FAILURE_IMAGE);
+        keys.put("message", PLACEMENT_FAILURE_MESSAGE);
+
+        for (Habbo habbo : room.getHabbos()) {
+            if (habbo == null || habbo.getClient() == null) continue;
+
+            int habboId = habbo.getHabboInfo().getId();
+            Long shown = PLACEMENT_FAILURE_SHOWN.get(habboId);
+
+            if (shown != null && (now - shown) < PLACEMENT_FAILURE_INTERVAL_MS) continue;
+
+            PLACEMENT_FAILURE_SHOWN.put(habboId, now);
+            habbo.getClient().sendResponse(new BubbleAlertComposer(PLACEMENT_FAILURE_TYPE, keys));
+        }
+
+        // Old entries are only worth a few seconds; drop them now and then.
+        if (PLACEMENT_FAILURE_SHOWN.size() > 1000) {
+            PLACEMENT_FAILURE_SHOWN.values().removeIf(shown -> (now - shown) >= PLACEMENT_FAILURE_INTERVAL_MS);
         }
     }
 

@@ -5,6 +5,7 @@ import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredInputGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -150,7 +151,7 @@ public class WiredEffectRemoveTemporaryFurni extends InteractionWiredEffect impl
                 if (id != null && id > 0) this.selectedItemIds.add(id);
             }
         }
-        this.setDelay(Math.max(0, data.delay));
+        this.setDelay(WiredInputGuard.normalizeDelay(data.delay));
     }
 
     @Override

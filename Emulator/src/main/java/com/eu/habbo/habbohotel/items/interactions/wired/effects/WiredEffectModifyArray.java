@@ -244,7 +244,7 @@ public final class WiredEffectModifyArray extends InteractionWiredEffect impleme
             this.firstIndex = WiredArrayEditorSupport.normalizeAddress(data.firstIndex);
             this.secondIndex = WiredArrayEditorSupport.normalizeAddress(data.secondIndex);
             this.fieldInputs = WiredArrayEditorSupport.normalizeInputs(data.fieldInputs);
-            this.setDelay(Math.min(Math.max(0, data.delay), WiredInputGuard.maxDelay()));
+            this.setDelay(WiredInputGuard.normalizeDelay(data.delay));
             WiredArrayEditorSupport.loadItems(this.selectedItems, data.itemIds, room);
         } catch (Exception exception) {
             LOGGER.warn("Rejected invalid Modify Array wired_data for item {}", this.getId());

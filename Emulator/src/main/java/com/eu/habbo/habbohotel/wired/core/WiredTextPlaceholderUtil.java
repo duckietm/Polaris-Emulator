@@ -44,6 +44,8 @@ public final class WiredTextPlaceholderUtil {
             return text;
         }
 
+        text = applyTriggerText(ctx, text);
+
         Room room = ctx.room();
         HabboItem triggerItem = ctx.triggerItem();
 
@@ -130,6 +132,18 @@ public final class WiredTextPlaceholderUtil {
         }
 
         return preserveRepeatedSpaces(resolvedText);
+    }
+
+    /** The official {@code $(trigger_text)}: the whole message that fired a User Says Keyword stack. */
+    public static final String TRIGGER_TEXT_TOKEN = "$(trigger_text)";
+
+    static String applyTriggerText(WiredContext ctx, String text) {
+        if (!text.contains(TRIGGER_TEXT_TOKEN)) return text;
+
+        String said = ctx.eventType() == WiredEvent.Type.USER_SAYS
+                ? ctx.event().getText().orElse("")
+                : "";
+        return replaceWithBudget(text, TRIGGER_TEXT_TOKEN, said);
     }
 
     /** The room's global placeholders by item id, capped; a stack's own placeholders are applied first. */

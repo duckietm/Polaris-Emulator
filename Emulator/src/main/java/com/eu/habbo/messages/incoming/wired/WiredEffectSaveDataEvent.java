@@ -6,9 +6,11 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredInputGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredLargePayload;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredSaveRefusedException;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.protocol.WiredSourceSaveRules;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.UpdateFailedComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.ItemStateComposer;
@@ -43,6 +45,9 @@ public class WiredEffectSaveDataEvent extends MessageHandler {
                         this.client.sendResponse(new UpdateFailedComposer("Invalid wired effect settings"));
                         return;
                     }
+
+                    String sourceRefusal = WiredSourceSaveRules.apply(effect != null ? effect : extra, settings, room);
+                    if (sourceRefusal != null) throw new WiredSaveException(sourceRefusal);
                     boolean saved;
 
                     if (effect != null) {
@@ -52,6 +57,8 @@ public class WiredEffectSaveDataEvent extends MessageHandler {
                     }
 
                     if (saved) {
+                        if (effect != null) effect.markEditorSaved();
+                        else extra.markEditorSaved();
                         this.client.sendResponse(new WiredSavedComposer());
                         if (effect != null) {
                             if (effect.isSelector()) {
@@ -79,7 +86,7 @@ public class WiredEffectSaveDataEvent extends MessageHandler {
                         this.client.sendResponse(
                                 new UpdateFailedComposer("There was an error while saving that effect"));
                     }
-                } catch (WiredSaveException e) {
+                } catch (WiredSaveException | WiredSaveRefusedException e) {
                     this.client.sendResponse(new UpdateFailedComposer(e.getMessage()));
                 }
             }

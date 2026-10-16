@@ -180,7 +180,11 @@ class WiredEffectForwardUserToRoomTest {
         when(this.room.getHabboItem(8)).thenReturn(linker);
         WiredEffectForwardUserToRoom box = box();
 
-        assertFalse(box.saveData(settings("", new int[] {5}, 0, WiredSourceUtil.SOURCE_SELECTED), null));
+        com.eu.habbo.habbohotel.items.interactions.wired.WiredSaveRefusedException refused =
+                org.junit.jupiter.api.Assertions.assertThrows(
+                        com.eu.habbo.habbohotel.items.interactions.wired.WiredSaveRefusedException.class,
+                        () -> box.saveData(settings("", new int[] {5}, 0, WiredSourceUtil.SOURCE_SELECTED), null));
+        assertEquals("wiredfurni.error.require_room_linker", refused.getMessage());
         assertTrue(box.saveData(settings("", new int[] {6}, 0, WiredSourceUtil.SOURCE_SELECTED), null));
         assertEquals(6, json(box).getAsJsonArray("itemIds").get(0).getAsInt());
         assertTrue(box.saveData(settings("", new int[] {8}, 0, WiredSourceUtil.SOURCE_SELECTED), null));

@@ -97,9 +97,9 @@ public class ChestStorage {
     private int notifyMode = 0; // 0 = always
     /**
      * Anti-theft switch, set from the chest's own window or across the room from the wired chests
-     * tab. A locked chest still answers wired effects but refuses everything anyone <em>else</em>
-     * does by hand, deposits included. The owner is never locked out of their own chest, which is
-     * what makes the lock safe to leave on.
+     * tab. A locked chest refuses everything anyone <em>else</em> does by hand, deposits included,
+     * and wired cannot take from it either. The owner is never locked out of their own chest, which
+     * is what makes the lock safe to leave on.
      */
     private boolean locked = false;
 
@@ -507,9 +507,17 @@ public class ChestStorage {
         return this.wiredEnabled;
     }
 
-    /** One way only: a room built on a chest must not lose it. */
+    /**
+     * One way only: a room built on a chest must not lose it.
+     *
+     * <p>The upgrade leaves the chest locked, as the official hotel does: a freshly upgraded chest is
+     * not open to wired (or anyone but its owner) until the owner unlocks it on purpose.
+     */
     public void enableWired() {
+        if (this.wiredEnabled) return;
+
         this.wiredEnabled = true;
+        this.locked = true;
     }
 
     public int getPreviewMode() {

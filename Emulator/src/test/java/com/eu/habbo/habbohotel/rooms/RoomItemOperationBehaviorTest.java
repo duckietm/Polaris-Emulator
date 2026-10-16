@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.rooms;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.mock;
@@ -89,6 +90,30 @@ class RoomItemOperationBehaviorTest {
         room.getItemManager().updateItemState(controller);
 
         assertEquals(List.of(Outgoing.ItemStateComposer, Outgoing.HanditemBlockStateComposer), room.messageHeaders());
+    }
+
+    @Test
+    void wiredFiringSendsItsFurniStatesTogetherOnceItCloses() throws Exception {
+        RecordingRoom room = roomWithLayout();
+        HabboItem furni = item("default", null);
+        room.floorItems = Set.of(furni);
+
+        WiredFurniStateBatch.open();
+        try {
+            WiredFurniStateBatch.open();
+            room.updateItemState(furni);
+            WiredFurniStateBatch.close();
+            room.updateItemState(furni);
+            assertEquals(List.of(), room.messageHeaders());
+        } finally {
+            WiredFurniStateBatch.close();
+        }
+
+        assertEquals(List.of(Outgoing.ItemsDataUpdateComposer), room.messageHeaders());
+        assertFalse(WiredFurniStateBatch.isOpen());
+
+        room.updateItemState(furni);
+        assertEquals(List.of(Outgoing.ItemsDataUpdateComposer, Outgoing.ItemStateComposer), room.messageHeaders());
     }
 
     private static RecordingRoom roomWithLayout() throws Exception {

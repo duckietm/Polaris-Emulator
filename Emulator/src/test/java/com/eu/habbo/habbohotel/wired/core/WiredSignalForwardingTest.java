@@ -71,6 +71,29 @@ class WiredSignalForwardingTest {
     }
 
     @Test
+    void theReceivingStacksTriggeringFurniIsTheAntennaAndItsFurniComeFromTheSignal() {
+        Room room = mock(Room.class);
+        HabboItem antenna = furni(42);
+        HabboItem ball = furni(10);
+
+        WiredContext carried = context(WiredEvent.builder(WiredEvent.Type.SIGNAL_RECEIVED, room)
+                .signalChannel(42)
+                .sourceItem(antenna)
+                .forwardedItems(List.of(ball))
+                .build());
+
+        assertEquals(List.of(antenna), WiredSourceUtil.resolveItems(carried, WiredSourceUtil.SOURCE_TRIGGER, null));
+        assertEquals(List.of(ball), WiredSourceUtil.resolveItems(carried, WiredSourceUtil.SOURCE_SIGNAL, null));
+
+        WiredContext empty = context(WiredEvent.builder(WiredEvent.Type.SIGNAL_RECEIVED, room)
+                .signalChannel(42)
+                .sourceItem(antenna)
+                .build());
+
+        assertEquals(List.of(), WiredSourceUtil.resolveItems(empty, WiredSourceUtil.SOURCE_SIGNAL, null));
+    }
+
+    @Test
     void onlyACallStacksBoxMarksItsEventAsAStackCall() {
         Room room = mock(Room.class);
 

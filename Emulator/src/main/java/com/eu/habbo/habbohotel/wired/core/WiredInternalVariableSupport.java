@@ -22,6 +22,7 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboGender;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.arrays.WiredArrayRuntimeSupport;
+import com.eu.habbo.messages.outgoing.users.UserProfileLevel;
 import com.eu.habbo.util.HotelDateTimeUtil;
 import java.time.ZonedDateTime;
 import java.time.temporal.WeekFields;
@@ -201,7 +202,11 @@ public final class WiredInternalVariableSupport {
             case "@index" -> roomUnit.getId();
             case "@type" -> getUserTypeValue(habbo, bot, pet);
             case "@gender" -> getGenderValue(habbo, bot);
-            case "@level" -> (roomUnit.getRightsLevel() != null) ? roomUnit.getRightsLevel().level : 0;
+            // The account level the extended profile shows, from the achievement score; not the room rights.
+            case "@level" ->
+                (habbo != null)
+                        ? UserProfileLevel.accountLevel(habbo.getHabboStats().getAchievementScore())
+                        : 0;
             case "@achievement_score" -> (habbo != null) ? habbo.getHabboStats().getAchievementScore() : null;
             case "@is_hc" -> (habbo != null && habbo.getHabboStats().hasActiveClub()) ? 1 : 0;
             case "@has_rights" ->

@@ -906,10 +906,20 @@ public class RoomUnit {
             return false;
         }
 
+        // A swimmer cannot sit or lay, as in Habbo, also off the water tile.
+        if (isSwimEffect(this.getEffectId())) {
+            return false;
+        }
+
         HabboItem topItem = this.room.getTopItemAt(this.getX(), this.getY());
 
         return topItem == null
                 || (!(topItem instanceof InteractionWater) && !(topItem instanceof InteractionWaterItem));
+    }
+
+    /** The swimming effects (29 and 30 for the two genders, 185 the swim ring). */
+    static boolean isSwimEffect(int effectId) {
+        return effectId == 29 || effectId == 30 || effectId == 185;
     }
 
     public RoomTile getClosestTile(List<RoomTile> tiles) {

@@ -4,8 +4,12 @@ import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class WiredMovementsComposer extends MessageComposer {
@@ -67,6 +71,63 @@ public class WiredMovementsComposer extends MessageComposer {
         }
 
         return new ArrayList<>(normalized.values());
+    }
+
+    /** The furni id of a furni movement entry, or -1 for any other entry. */
+    public static int furniId(MovementData movement) {
+        return (movement instanceof FurniMovementData furni) ? furni.id : -1;
+    }
+
+    /**
+     * Leaves out the furni that end where they started, in place and rotation: one firing moved
+     * them and brought them back. {@code droppable} names the furni this may apply to and
+     * {@code originalRotations} their rotation before the first move.
+     */
+    public static List<MovementData> withoutReturnedFurni(
+            List<MovementData> movements, Set<Integer> droppable, Map<Integer, Integer> originalRotations) {
+        if (movements == null || movements.isEmpty() || droppable == null || droppable.isEmpty()) {
+            return movements;
+        }
+
+        Map<Integer, FurniMovementData> first = new HashMap<>();
+        Map<Integer, FurniMovementData> last = new HashMap<>();
+
+        for (MovementData movement : movements) {
+            if (movement instanceof FurniMovementData furni && droppable.contains(furni.id)) {
+                first.putIfAbsent(furni.id, furni);
+                last.put(furni.id, furni);
+            }
+        }
+
+        Set<Integer> returned = new HashSet<>();
+
+        for (Map.Entry<Integer, FurniMovementData> entry : first.entrySet()) {
+            FurniMovementData start = entry.getValue();
+            FurniMovementData end = last.get(entry.getKey());
+            Integer originalRotation = originalRotations == null ? null : originalRotations.get(entry.getKey());
+
+            if (start.fromX == end.toX
+                    && start.fromY == end.toY
+                    && Double.compare(start.fromZ, end.toZ) == 0
+                    && originalRotation != null
+                    && originalRotation == end.rotation) {
+                returned.add(entry.getKey());
+            }
+        }
+
+        if (returned.isEmpty()) {
+            return movements;
+        }
+
+        List<MovementData> kept = new ArrayList<>(movements.size());
+
+        for (MovementData movement : movements) {
+            if (!(movement instanceof FurniMovementData furni) || !returned.contains(furni.id)) {
+                kept.add(movement);
+            }
+        }
+
+        return kept;
     }
 
     private static String movementKey(MovementData movement) {

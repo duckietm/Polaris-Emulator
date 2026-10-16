@@ -14,11 +14,17 @@ public final class RoomWiredRuntime {
     private final WiredOpacityService opacity;
     private final WiredTradingManager trading;
     private final WiredProjectileFlights projectiles = new WiredProjectileFlights();
+    private final WiredBoxFlashes boxFlashes = new WiredBoxFlashes();
 
     RoomWiredRuntime(Room room) {
         this.gravity = new WiredGravityService(room);
         this.opacity = new WiredOpacityService(room);
         this.trading = new WiredTradingManager(room);
+    }
+
+    /** The wired boxes that flipped since the last room cycle, sent together by the cycle. */
+    public WiredBoxFlashes getBoxFlashes() {
+        return this.boxFlashes;
     }
 
     /** The room's open wired contract negotiations, one per player. */

@@ -21352,6 +21352,28 @@
           "name": ""
         }
       ]
+    },
+    {
+      "name": "GAME_CENTER_IN_ARENA_QUEUE",
+      "direction": "server_to_client",
+      "header": 872,
+      "java": {
+        "symbol": "Game2InArenaQueueComposer",
+        "className": "Game2InArenaQueueComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/gamecenter/Game2InArenaQueueComposer.java"
+      },
+      "typescript": {
+        "symbol": "GAME_CENTER_IN_ARENA_QUEUE",
+        "className": "Game2InArenaQueueMessageParser",
+        "path": "packages/communication/src/messages/parser/game/directory/Game2InArenaQueueMessageParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
     }
   ],
   "unpaired": [
@@ -22001,14 +22023,6 @@
       "header": 761,
       "symbol": "IS_OFFER_GIFTABLE",
       "path": "packages/communication/src/messages/parser/catalog/IsOfferGiftableMessageParser.ts",
-      "reason": "Header is registered only by the Octane Renderer packet registry"
-    },
-    {
-      "direction": "server_to_client",
-      "side": "typescript",
-      "header": 872,
-      "symbol": "GAME_CENTER_IN_ARENA_QUEUE",
-      "path": "packages/communication/src/messages/parser/game/directory/Game2InArenaQueueMessageParser.ts",
       "reason": "Header is registered only by the Octane Renderer packet registry"
     },
     {

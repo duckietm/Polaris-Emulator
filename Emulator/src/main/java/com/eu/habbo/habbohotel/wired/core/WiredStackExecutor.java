@@ -157,6 +157,12 @@ final class WiredStackExecutor {
         int monitorSourceId = monitorSourceId(stack.triggerItem());
         logMatchedStack(room, stack, event, negateConditions, mode);
 
+        // Habbo flips a trigger when it fires, also when its conditions then fail. A called stack
+        // flashes its actions but not its trigger, which did not fire.
+        if (!event.isStackCall() && stack.triggerItem() instanceof InteractionWiredTrigger firedTrigger) {
+            firedTrigger.flashBox(room);
+        }
+
         List<InteractionWiredEffect> executedSelectors = Collections.emptyList();
         if (stack.hasEffects()) {
             executedSelectors = this.hooks.executeSelectors(stack, context);
@@ -232,7 +238,7 @@ final class WiredStackExecutor {
 
         RoomUnit actor = event.getActor().orElse(null);
         if (stack.triggerItem() instanceof InteractionWiredTrigger trigger) {
-            trigger.activateBox(room, actor, currentTime);
+            trigger.recordExecution(actor, currentTime);
         }
         activateExtras(room, stack.triggerItem(), actor, currentTime);
         this.hooks.finalizeSelectors(executedSelectors, context, currentTime);

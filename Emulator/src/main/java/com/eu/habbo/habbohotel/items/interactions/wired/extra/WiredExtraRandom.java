@@ -170,49 +170,42 @@ public class WiredExtraRandom extends InteractionWiredExtra {
         Collections.shuffle(shuffledEffects, Emulator.getRandom());
 
         int desiredAmount = Math.min(this.pickAmount, shuffledEffects.size());
-        Set<Integer> recentEffectIds = this.getRecentEffectIds();
-        LinkedHashSet<T> selectedEffects = new LinkedHashSet<>();
+        List<List<Integer>> history =
+                this.skipExecutions > 0 ? new ArrayList<>(this.recentExecutionEffectIds) : List.of();
 
-        for (T effect : shuffledEffects) {
-            if (recentEffectIds.contains(idResolver.applyAsInt(effect))) {
-                continue;
-            }
-
-            selectedEffects.add(effect);
-            if (selectedEffects.size() >= desiredAmount) {
-                break;
-            }
+        // Too few actions left once the recent executions are avoided: Habbo stops avoiding the
+        // oldest execution first, so the top-up is the least recently used and two actions alternate.
+        List<T> candidates = notIn(shuffledEffects, history, 0, idResolver);
+        for (int forgotten = 1; candidates.size() < desiredAmount && forgotten <= history.size(); forgotten++) {
+            candidates = notIn(shuffledEffects, history, forgotten, idResolver);
         }
 
-        if (selectedEffects.size() < desiredAmount) {
-            for (T effect : shuffledEffects) {
-                selectedEffects.add(effect);
-                if (selectedEffects.size() >= desiredAmount) {
-                    break;
-                }
-            }
-        }
+        LinkedHashSet<T> selectedEffects =
+                new LinkedHashSet<>(candidates.subList(0, Math.min(desiredAmount, candidates.size())));
 
         this.recordExecution(selectedEffects, idResolver);
         return new ArrayList<>(selectedEffects);
     }
 
-    private synchronized void clearRecentExecutions() {
-        this.recentExecutionEffectIds.clear();
+    /** The actions not run in the recorded executions, leaving out the oldest {@code forgotten} ones. */
+    private static <T> List<T> notIn(
+            List<T> effects, List<List<Integer>> history, int forgotten, ToIntFunction<T> idResolver) {
+        Set<Integer> avoided = new LinkedHashSet<>();
+        for (List<Integer> execution : history.subList(Math.min(forgotten, history.size()), history.size())) {
+            avoided.addAll(execution);
+        }
+
+        List<T> remaining = new ArrayList<>();
+        for (T effect : effects) {
+            if (!avoided.contains(idResolver.applyAsInt(effect))) {
+                remaining.add(effect);
+            }
+        }
+        return remaining;
     }
 
-    private Set<Integer> getRecentEffectIds() {
-        LinkedHashSet<Integer> ids = new LinkedHashSet<>();
-
-        if (this.skipExecutions <= 0) {
-            return ids;
-        }
-
-        for (List<Integer> executionIds : this.recentExecutionEffectIds) {
-            ids.addAll(executionIds);
-        }
-
-        return ids;
+    private synchronized void clearRecentExecutions() {
+        this.recentExecutionEffectIds.clear();
     }
 
     private <T> void recordExecution(Collection<T> selectedEffects, ToIntFunction<T> idResolver) {

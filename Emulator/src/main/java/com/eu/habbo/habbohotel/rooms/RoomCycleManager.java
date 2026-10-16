@@ -10,11 +10,10 @@ import com.eu.habbo.habbohotel.pets.Pet;
 import com.eu.habbo.habbohotel.users.DanceType;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
-import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.rooms.RoomAccessDeniedComposer;
-import com.eu.habbo.messages.outgoing.rooms.users.RoomUnitIdleComposer;
+import com.eu.habbo.messages.outgoing.rooms.items.ItemsDataUpdateComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserIgnoredComposer;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
 import com.eu.habbo.plugin.events.users.UserExitRoomEvent;
@@ -63,6 +62,8 @@ public class RoomCycleManager {
         boolean loaded = this.room.isLoaded();
 
         if (loaded) {
+            // Wired box flashes go out first, ahead of the movement packets of the same cycle.
+            processWiredBoxFlashes();
             processScheduledTasks();
             processCycleTasks();
             processDecoHosting();
@@ -130,6 +131,14 @@ public class RoomCycleManager {
 
     boolean advanceIdleUnload(boolean empty) {
         return this.room.advanceIdleUnload(empty);
+    }
+
+    private void processWiredBoxFlashes() {
+        Set<HabboItem> flipped = this.room.getWiredRuntime().getBoxFlashes().drain();
+
+        if (!flipped.isEmpty() && !this.room.isHideWired()) {
+            this.room.sendComposer(new ItemsDataUpdateComposer(flipped).compose());
+        }
     }
 
     private void processScheduledTasks() {
@@ -200,9 +209,8 @@ public class RoomCycleManager {
         boolean roomIdleBehaviorEnabled = this.room.isIdleSleepEnabled() || this.room.isIdleAutokickEnabled();
 
         if (Emulator.getConfig().getBoolean("hotel.rooms.auto.idle") || roomIdleBehaviorEnabled) {
-            int sleepCycles = this.room.isIdleSleepEnabled()
-                    ? this.room.getIdleSleepTimeoutSeconds() * 2
-                    : Room.IDLE_CYCLES;
+            int sleepCycles =
+                    this.room.isIdleSleepEnabled() ? this.room.getIdleSleepTimeoutSeconds() * 2 : Room.IDLE_CYCLES;
             int kickCycles = this.room.isIdleAutokickEnabled()
                     ? this.room.getIdleAutokickTimeoutSeconds() * 2
                     : Room.IDLE_CYCLES_KICK;

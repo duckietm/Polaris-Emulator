@@ -17,7 +17,6 @@ import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredTriggerSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredTriggerSaveException;
-import com.eu.habbo.messages.outgoing.rooms.items.ItemStateComposer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -25,20 +24,17 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 public class WiredTriggerReceiveSignal extends InteractionWiredTrigger {
     public static final WiredTriggerType type = WiredTriggerType.RECEIVE_SIGNAL;
 
-    private static final long ACTIVATION_PULSE_MS = 300L;
     private static final String ANTENNA_INTERACTION = "antenna";
     private static final String REQUIRE_ANTENNA_ERROR = "You can only select antenna furni.";
 
     private int channel = 0; // signal channel (0-based)
     private Set<HabboItem> items;
     private int furniSource = WiredSourceUtil.SOURCE_SELECTED;
-    private final AtomicLong activationToken = new AtomicLong();
 
     public WiredTriggerReceiveSignal(ResultSet set, Item baseItem) throws SQLException {
         super(set, baseItem);
@@ -216,34 +212,8 @@ public class WiredTriggerReceiveSignal extends InteractionWiredTrigger {
 
     @Override
     public void activateBox(Room room, RoomUnit roomUnit, long millis) {
-        if (roomUnit != null) {
-            this.addUserExecutionCache(roomUnit.getId(), millis);
-        }
-
-        if (room == null || room.isHideWired() || this.getBaseItem().getStateCount() <= 1) {
-            return;
-        }
-
-        final long token = this.activationToken.incrementAndGet();
-
-        if ("1".equals(this.getExtradata())) {
-            this.setExtradata("0");
-            room.sendComposer(new ItemStateComposer(this).compose());
-        }
-
-        this.setExtradata("1");
-        room.sendComposer(new ItemStateComposer(this).compose());
-
-        Emulator.getThreading()
-                .run(
-                        () -> {
-                            if (!room.isLoaded()) return;
-                            if (this.activationToken.get() != token) return;
-
-                            this.setExtradata("0");
-                            room.sendComposer(new ItemStateComposer(this).compose());
-                        },
-                        ACTIVATION_PULSE_MS);
+        // Flashes like every other box (once per 500 ms window), no separate light-up pulse.
+        super.activateBox(room, roomUnit, millis);
     }
 
     @Override

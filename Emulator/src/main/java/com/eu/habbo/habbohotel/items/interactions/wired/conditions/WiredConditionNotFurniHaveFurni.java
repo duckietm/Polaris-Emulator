@@ -52,7 +52,8 @@ public class WiredConditionNotFurniHaveFurni extends InteractionWiredCondition {
         this.refresh();
 
         List<HabboItem> targets = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.items);
-        if (targets.isEmpty()) return true;
+        // Habbo fails an empty selection, like the positive "furni has furni on" does.
+        if (targets.isEmpty()) return false;
 
         if (room.getLayout() == null) return true;
 

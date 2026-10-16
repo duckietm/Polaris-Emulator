@@ -13,7 +13,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionCounte
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionDateRangeActive | CONDITION | type=DATE_RANGE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFrozen | CONDITION | type=USER_STATE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniHaveFurni | CONDITION | type=FURNI_HAS_FURNI | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniHaveHabbo | CONDITION | type=FURNI_HAVE_HABBO | operator=AND | evaluate=false
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniHaveHabbo | CONDITION | type=FURNI_HAVE_HABBO | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniInRange | CONDITION | type=FURNI_RANGE | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniNotInRange | CONDITION | type=FURNI_RANGE | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionFurniOpacityIs | CONDITION | type=FURNI_OPACITY | operator=AND | evaluate=false
@@ -50,7 +50,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionMottoC
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionMovementValidation | CONDITION | type=MOVEMENT_VALIDATION | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNoBattleBanzaiRunning | CONDITION | type=NO_BATTLEBANZAI | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotFrozen | CONDITION | type=NOT_USER_STATE | operator=AND | evaluate=false
-com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotFurniHaveFurni | CONDITION | type=NOT_FURNI_HAVE_FURNI | operator=AND | evaluate=true
+com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotFurniHaveFurni | CONDITION | type=NOT_FURNI_HAVE_FURNI | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotFurniHaveHabbo | CONDITION | type=NOT_FURNI_HAVE_HABBO | operator=AND | evaluate=true
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotFurniOpacityIs | CONDITION | type=FURNI_OPACITY | operator=AND | evaluate=false
 com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionNotFurniTypeMatch | CONDITION | type=NOT_STUFF_IS | operator=AND | evaluate=true

@@ -12,6 +12,7 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.InteractionWired#cleanE
 METHOD public com.eu.habbo.habbohotel.items.interactions.InteractionWired#clearUserExecutionCache(-):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.InteractionWired#endProcessing(-):void throws -
 METHOD public abstract com.eu.habbo.habbohotel.items.interactions.InteractionWired#execute(com.eu.habbo.habbohotel.rooms.RoomUnit,com.eu.habbo.habbohotel.rooms.Room,java.lang.Object[]):boolean throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.InteractionWired#flashBox(com.eu.habbo.habbohotel.rooms.Room):void throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.InteractionWired#getUserExecutionCacheSize(-):int throws -
 METHOD public abstract com.eu.habbo.habbohotel.items.interactions.InteractionWired#getWiredData(-):java.lang.String throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.InteractionWired#isUsable(-):boolean throws -
@@ -21,6 +22,7 @@ METHOD public com.eu.habbo.habbohotel.items.interactions.InteractionWired#onPick
 METHOD public static com.eu.habbo.habbohotel.items.interactions.InteractionWired#readSettings(com.eu.habbo.messages.ClientMessage,boolean):com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings throws -
 METHOD public static com.eu.habbo.habbohotel.items.interactions.InteractionWired#readSettings(com.eu.habbo.messages.ClientMessage,boolean,int):com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings throws -
 METHOD public static com.eu.habbo.habbohotel.items.interactions.InteractionWired#readSettings(com.eu.habbo.messages.ClientMessage,com.eu.habbo.habbohotel.items.interactions.InteractionWired$SaveKind,int):com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings throws -
+METHOD public com.eu.habbo.habbohotel.items.interactions.InteractionWired#recordExecution(com.eu.habbo.habbohotel.rooms.RoomUnit,long):void throws -
 METHOD protected com.eu.habbo.habbohotel.items.interactions.InteractionWired#requiredCooldown(-):long throws -
 METHOD public com.eu.habbo.habbohotel.items.interactions.InteractionWired#run(-):void throws -
 METHOD public abstract com.eu.habbo.habbohotel.items.interactions.InteractionWired#serializeWiredData(com.eu.habbo.messages.ServerMessage,com.eu.habbo.habbohotel.rooms.Room):void throws -

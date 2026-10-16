@@ -12,13 +12,13 @@ import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHab
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboSaysKeyword;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.WiredBoxFlashes;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.api.IWiredEffect;
 import com.eu.habbo.habbohotel.wired.api.WiredStack;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.GenericAlertComposer;
-import com.eu.habbo.messages.outgoing.rooms.items.ItemStateComposer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -122,7 +122,6 @@ public final class WiredEngine {
     private final ConcurrentHashMap<String, Integer> unseenIndices;
 
     /** Track filter-selector animation tokens so rapid executions do not reset newer animations */
-    private final ConcurrentHashMap<Integer, Long> filteredSelectorAnimationTokens;
 
     /**
      * Create a new wired engine.
@@ -213,7 +212,6 @@ public final class WiredEngine {
         this.eventDispatcher = new WiredEventDispatcher(
                 this.executionGuard, this.stackRepository, this.stackExecutor::executeEvent, this::debug);
         this.unseenIndices = new ConcurrentHashMap<>();
-        this.filteredSelectorAnimationTokens = new ConcurrentHashMap<>();
     }
 
     /**
@@ -508,6 +506,9 @@ public final class WiredEngine {
                         effectIndex++;
                     }
 
+                    // A delayed action flashes when its stack fires, not when it runs.
+                    flashEffects(ctx.room(), delayedBatch);
+
                     if (delayedBatch.size() == 1) {
                         scheduleDelayedEffect(effect, ctx, delay, currentTime);
                     } else {
@@ -578,10 +579,6 @@ public final class WiredEngine {
                 if (effect instanceof InteractionWiredEffect) {
                     InteractionWiredEffect wiredEffect = (InteractionWiredEffect) effect;
                     executedSelectors.add(wiredEffect);
-
-                    if (wiredEffect.usesExistingSelectorTargets()) {
-                        setFilteredSelectorState(ctx.room(), wiredEffect, "3");
-                    }
                 }
             } catch (Exception e) {
                 LOGGER.warn("Error executing selector: {}", e.getMessage());
@@ -598,69 +595,23 @@ public final class WiredEngine {
         RoomUnit actor = ctx.actor().orElse(null);
 
         for (InteractionWiredEffect wiredEffect : executedSelectors) {
-            if (wiredEffect.usesExistingSelectorTargets()) {
-                animateFilteredSelectorBox(room, wiredEffect);
-            } else {
-                wiredEffect.activateBox(room, actor, currentTime);
+            if (room != null && !room.isHideWired() && room.getWiredRuntime() != null) {
+                boolean filterMode = wiredEffect.usesExistingSelectorTargets();
+
+                room.getWiredRuntime()
+                        .getBoxFlashes()
+                        .flip(wiredEffect, state -> WiredBoxFlashes.selector(state, filterMode));
             }
+
+            wiredEffect.recordExecution(actor, currentTime);
         }
     }
 
-    private void animateFilteredSelectorBox(Room room, InteractionWiredEffect wiredEffect) {
-        if (room == null || wiredEffect == null) {
-            return;
-        }
-
-        // If wired is hidden, skip animation but ensure any stale token is cleaned up
-        if (room.isHideWired()) {
-            this.filteredSelectorAnimationTokens.remove(wiredEffect.getId());
-            return;
-        }
-
-        long animationToken = System.nanoTime();
-        this.filteredSelectorAnimationTokens.put(wiredEffect.getId(), animationToken);
-
-        setFilteredSelectorState(room, wiredEffect, "3", animationToken, false);
-        scheduleFilteredSelectorState(room, wiredEffect, "4", animationToken, 80L, false);
-        scheduleFilteredSelectorState(room, wiredEffect, "5", animationToken, 160L, false);
-        scheduleFilteredSelectorState(room, wiredEffect, "3", animationToken, 240L, true);
-    }
-
-    private void scheduleFilteredSelectorState(
-            Room room,
-            InteractionWiredEffect wiredEffect,
-            String state,
-            long animationToken,
-            long delay,
-            boolean clearToken) {
-        WiredPlatform.threading()
-                .run(() -> setFilteredSelectorState(room, wiredEffect, state, animationToken, clearToken), delay);
-    }
-
-    private void setFilteredSelectorState(Room room, InteractionWiredEffect wiredEffect, String state) {
-        setFilteredSelectorState(room, wiredEffect, state, 0L, false);
-    }
-
-    private void setFilteredSelectorState(
-            Room room, InteractionWiredEffect wiredEffect, String state, long animationToken, boolean clearToken) {
-        if (room == null || wiredEffect == null || room.isHideWired()) {
-            return;
-        }
-
-        if (animationToken != 0L) {
-            Long currentToken = this.filteredSelectorAnimationTokens.get(wiredEffect.getId());
-            if (currentToken == null || currentToken != animationToken) {
-                return;
+    private static void flashEffects(Room room, List<IWiredEffect> effects) {
+        for (IWiredEffect effect : effects) {
+            if (effect instanceof InteractionWiredEffect wiredEffect) {
+                wiredEffect.flashBox(room);
             }
-        }
-
-        if (!state.equals(wiredEffect.getExtradata())) {
-            wiredEffect.setExtradata(state);
-            room.sendComposer(new ItemStateComposer(wiredEffect).compose());
-        }
-
-        if (clearToken) {
-            this.filteredSelectorAnimationTokens.remove(wiredEffect.getId(), animationToken);
         }
     }
 
@@ -713,8 +664,9 @@ public final class WiredEngine {
         try {
             WiredExecutionScope.execute(effect, context);
 
+            // Flashed when it was scheduled.
             if (effect instanceof InteractionWiredEffect wiredEffect) {
-                wiredEffect.activateBox(context.room(), context.actor().orElse(null), executionTime);
+                wiredEffect.recordExecution(context.actor().orElse(null), executionTime);
             }
         } catch (Exception exception) {
             LOGGER.warn("Error executing delayed effect: {}", exception.getMessage());
@@ -732,6 +684,7 @@ public final class WiredEngine {
             List<IWiredEffect> batch = delayBatch.effects();
 
             if (delay > 0) {
+                flashEffects(ctx.room(), batch);
                 scheduleOrderedEffectBatch(batch, ctx, delay, currentTime);
             } else {
                 executeOrderedEffectBatch(batch, ctx, currentTime, false);
@@ -823,9 +776,13 @@ public final class WiredEngine {
 
                     WiredExecutionScope.execute(effect, ctx);
 
-                    if (effect instanceof InteractionWiredEffect) {
-                        InteractionWiredEffect wiredEffect = (InteractionWiredEffect) effect;
-                        wiredEffect.activateBox(room, actor, executionTime);
+                    if (effect instanceof InteractionWiredEffect wiredEffect) {
+                        // A delayed batch (run with its execution time) flashed when it was scheduled.
+                        if (useExecutionTimeForCooldown) {
+                            wiredEffect.recordExecution(actor, executionTime);
+                        } else {
+                            wiredEffect.activateBox(room, actor, executionTime);
+                        }
                     }
                 } catch (Exception e) {
                     LOGGER.warn("Error executing ordered effect batch item: {}", e.getMessage());

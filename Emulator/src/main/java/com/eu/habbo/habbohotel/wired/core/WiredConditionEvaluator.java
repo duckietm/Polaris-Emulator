@@ -64,6 +64,11 @@ final class WiredConditionEvaluator {
             boolean result = condition.evaluate(context);
             String conditionKey = conditionGroupKey(condition);
 
+            // A passing condition flashes with its trigger; a failed one stays at rest.
+            if (result && condition instanceof InteractionWiredCondition conditionBox) {
+                conditionBox.flashBox(room);
+            }
+
             if (condition.operator() == WiredConditionOperator.OR) {
                 groupedOrResults
                         .computeIfAbsent(conditionKey, ignored -> new ArrayList<>())

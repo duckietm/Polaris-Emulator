@@ -33,7 +33,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,11 +55,9 @@ public class WiredEffectSendSignal extends InteractionWiredEffect
     private static final int ANTENNA_TRIGGER = 1;
     private static final String ANTENNA_INTERACTION = "antenna";
     private static final String FORWARD_ITEM_SPLIT_REGEX = "[;,\\t]";
-    private static final long ANTENNA_PULSE_MS = 300L;
     // Users x furni x antennas can multiply; one firing never sends more than this many signals.
     static final int MAX_SIGNALS_PER_FIRING = 250;
     static final int MAX_FORWARDED = 100;
-    private static final ConcurrentHashMap<Integer, Long> ANTENNA_PULSE_TOKENS = new ConcurrentHashMap<>();
 
     private Set<HabboItem> items;
     private Set<HabboItem> forwardItems;
@@ -285,34 +282,16 @@ public class WiredEffectSendSignal extends InteractionWiredEffect
         LOGGER.debug("[SendSignal] handleEvent returned: {}", result);
     }
 
+    // Habbo flips an antenna on every signal it carries (it does not light up and reset).
     private void pulseAntenna(Room room, HabboItem antenna) {
         if (room == null || antenna == null || antenna.getBaseItem() == null) return;
         if (antenna.getBaseItem().getStateCount() <= 1) return;
 
-        final long token = System.currentTimeMillis();
-        ANTENNA_PULSE_TOKENS.put(antenna.getId(), token);
-
-        if ("1".equals(antenna.getExtradata())) {
-            antenna.setExtradata("0");
-            room.updateItemState(antenna);
+        synchronized (antenna) {
+            antenna.setExtradata("1".equals(antenna.getExtradata()) ? "0" : "1");
         }
 
-        antenna.setExtradata("1");
         room.updateItemState(antenna);
-
-        Emulator.getThreading()
-                .run(
-                        () -> {
-                            if (!room.isLoaded()) return;
-
-                            Long currentToken = ANTENNA_PULSE_TOKENS.get(antenna.getId());
-                            if (currentToken == null || currentToken.longValue() != token) return;
-
-                            antenna.setExtradata("0");
-                            room.updateItemState(antenna);
-                            ANTENNA_PULSE_TOKENS.remove(antenna.getId(), token);
-                        },
-                        ANTENNA_PULSE_MS);
     }
 
     @Override

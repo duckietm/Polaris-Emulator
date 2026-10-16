@@ -6,9 +6,9 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredInputGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.WiredBoxFlashes;
 import com.eu.habbo.messages.ClientMessage;
 import com.eu.habbo.messages.ServerMessage;
-import com.eu.habbo.messages.outgoing.rooms.items.ItemStateComposer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -135,10 +135,21 @@ public abstract class InteractionWired extends InteractionDefault {
     }
 
     public void activateBox(Room room, RoomUnit roomUnit, long millis) {
-        if (!room.isHideWired()) {
-            this.setExtradata(this.getExtradata().equals("1") ? "0" : "1");
-            room.sendComposer(new ItemStateComposer(this).compose());
+        this.flashBox(room);
+        this.recordExecution(roomUnit, millis);
+    }
+
+    /** Flips the box's light; the room cycle sends every flipped box together, once per 500 ms. */
+    public void flashBox(Room room) {
+        if (room == null || room.isHideWired() || room.getWiredRuntime() == null) {
+            return;
         }
+
+        room.getWiredRuntime().getBoxFlashes().flip(this, WiredBoxFlashes::toggle);
+    }
+
+    /** Remembers that this box ran for the user, for its per-user cooldown, without flashing it. */
+    public void recordExecution(RoomUnit roomUnit, long millis) {
         if (roomUnit != null) {
             this.addUserExecutionCache(roomUnit.getId(), millis);
         }

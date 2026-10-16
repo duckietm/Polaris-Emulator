@@ -191,6 +191,9 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
     public Long resolveLongValue(String text) {
         if (text == null) return null;
         String normalizedText = normalizePreservedSpaces(text);
+        // Case-insensitive, and the last matching line wins, as in Habbo: "abc" against
+        // 1=abc and 2=ABC reads 2.
+        Long matched = null;
 
         for (Map.Entry<Long, String> entry : this.longMappings.entrySet()) {
             if (entry == null || entry.getKey() == null || entry.getValue() == null) {
@@ -200,11 +203,11 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
             String normalizedMappingValue = normalizePreservedSpaces(entry.getValue());
 
             if (normalizedMappingValue.equalsIgnoreCase(normalizedText)) {
-                return entry.getKey();
+                matched = entry.getKey();
             }
         }
 
-        return null;
+        return matched;
     }
 
     private void setMappingsText(String value) {

@@ -712,6 +712,7 @@ public class Outgoing {
     public static final int Game2GameNotFoundComposer = 444;
     public static final int Game2GameCancelledComposer = 3493;
     public static final int Game2UserBlockedComposer = 3508;
+    public static final int Game2InArenaQueueComposer = 872;
     public static final int SnowWarGameTokensComposer = 3419;
 
     // Furni Editor

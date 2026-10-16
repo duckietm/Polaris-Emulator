@@ -31,6 +31,7 @@ public class SnowStormLobbyTeamsComposer extends MessageComposer {
     private final int selectedArenaId;
     private final List<SnowWarArenaDefinition> arenas;
     private final Map<Integer, Integer> skillLevels;
+    private final Map<Integer, Integer> teams;
 
     public SnowStormLobbyTeamsComposer(
             List<Habbo> players,
@@ -48,6 +49,19 @@ public class SnowStormLobbyTeamsComposer extends MessageComposer {
             int selectedArenaId,
             List<SnowWarArenaDefinition> arenas,
             Map<Integer, Integer> skillLevels) {
+        this(players, teamCount, leaderUserId, selectedArenaId, arenas, skillLevels, Collections.emptyMap());
+    }
+
+    /** {@code teams}: userId to team, as the match will split them (SnowWarTeams); empty = round robin. */
+    public SnowStormLobbyTeamsComposer(
+            List<Habbo> players,
+            int teamCount,
+            int leaderUserId,
+            int selectedArenaId,
+            List<SnowWarArenaDefinition> arenas,
+            Map<Integer, Integer> skillLevels,
+            Map<Integer, Integer> teams) {
+        this.teams = teams;
         this.players = players;
         this.teamCount = teamCount;
         this.leaderUserId = leaderUserId;
@@ -67,7 +81,7 @@ public class SnowStormLobbyTeamsComposer extends MessageComposer {
         for (Habbo habbo : this.players) {
             this.response.appendInt(0); // objectId - not assigned until match creation
             this.response.appendInt(habbo.getHabboInfo().getId());
-            this.response.appendInt(index % this.teamCount);
+            this.response.appendInt(this.teams.getOrDefault(habbo.getHabboInfo().getId(), index % this.teamCount));
             this.response.appendString(habbo.getHabboInfo().getUsername());
             this.response.appendString(habbo.getHabboInfo().getLook());
             this.response.appendString(habbo.getHabboInfo().getGender().name().toUpperCase());

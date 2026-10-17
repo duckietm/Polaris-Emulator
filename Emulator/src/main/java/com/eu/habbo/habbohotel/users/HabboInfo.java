@@ -67,10 +67,10 @@ public class HabboInfo implements Runnable {
     private final Object currencyLock = new Object();
     private final Object ledgerMutationLock = new Object();
     private GamePlayer gamePlayer;
-    private int photoRoomId;
-    private int photoTimestamp;
-    private String photoURL;
-    private String photoJSON;
+    private volatile int photoRoomId;
+    private volatile int photoTimestamp;
+    private volatile String photoURL;
+    private volatile String photoJSON;
     private int webPublishTimestamp;
     private int purchasedPhotoTimestamp;
     private String machineID;

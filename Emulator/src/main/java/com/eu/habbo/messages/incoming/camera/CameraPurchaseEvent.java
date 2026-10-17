@@ -3,6 +3,7 @@ package com.eu.habbo.messages.incoming.camera;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.achievements.AchievementManager;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -23,10 +24,16 @@ public class CameraPurchaseEvent extends MessageHandler {
     public static int CAMERA_PURCHASE_POINTS_TYPE = 5;
 
     // A double click must not buy (and charge) twice: one purchase per second, as the other
-    // purchase handlers do. Buying another copy on purpose still works.
+    // purchase handlers do. A second packet for the same photo is refused by the claim below.
     @Override
     public int getRatelimit() {
         return 1000;
+    }
+
+    /** True when the user is still in the room the pending photo was taken in. */
+    static boolean isInPhotoRoom(HabboInfo habboInfo) {
+        Room room = habboInfo.getCurrentRoom();
+        return room != null && habboInfo.getPhotoRoomId() > 0 && room.getId() == habboInfo.getPhotoRoomId();
     }
 
     @Override
@@ -50,15 +57,20 @@ public class CameraPurchaseEvent extends MessageHandler {
             return;
         }
 
-        if (habboInfo.getPhotoTimestamp() == 0
-                || habboInfo.getPhotoJSON() == null
-                || habboInfo.getPhotoJSON().isEmpty()
-                || !habboInfo.getPhotoJSON().contains(Integer.toString(habboInfo.getPhotoTimestamp()))) {
+        int photoTimestamp = habboInfo.getPhotoTimestamp();
+        String photoJSON = habboInfo.getPhotoJSON();
+        String photoURL = habboInfo.getPhotoURL();
+        int photoRoomId = habboInfo.getPhotoRoomId();
+
+        if (photoTimestamp == 0
+                || photoJSON == null
+                || photoJSON.isEmpty()
+                || !photoJSON.contains(Integer.toString(photoTimestamp))) {
             LOGGER.warn(
                     "Camera purchase for {} aborted: no valid rendered photo in state (timestamp={}, jsonEmpty={}). Take a photo again before buying.",
                     habboInfo.getUsername(),
-                    habboInfo.getPhotoTimestamp(),
-                    habboInfo.getPhotoJSON() == null || habboInfo.getPhotoJSON().isEmpty());
+                    photoTimestamp,
+                    photoJSON == null || photoJSON.isEmpty());
             return;
         }
 
@@ -67,12 +79,18 @@ public class CameraPurchaseEvent extends MessageHandler {
             return;
         }
 
+        if (!isInPhotoRoom(habboInfo)) {
+            LOGGER.warn(
+                    "Camera purchase for {} aborted: photo was taken in room {} but the user is in room {}.",
+                    habboInfo.getUsername(),
+                    photoRoomId,
+                    habboInfo.getCurrentRoom().getId());
+            habbo.alert("You can only buy a photo in the room where you took it.");
+            return;
+        }
+
         if (Emulator.getPluginManager()
-                .fireEvent(new UserPurchasePictureEvent(
-                        habbo,
-                        habboInfo.getPhotoURL(),
-                        habboInfo.getCurrentRoom().getId(),
-                        habboInfo.getPhotoTimestamp()))
+                .fireEvent(new UserPurchasePictureEvent(habbo, photoURL, photoRoomId, photoTimestamp))
                 .isCancelled()) return;
 
         int cameraItemId = Emulator.getConfig().getInt("camera.item_id");
@@ -89,14 +107,31 @@ public class CameraPurchaseEvent extends MessageHandler {
             return;
         }
 
-        HabboItem photoItem = Emulator.getGameEnvironment()
-                .getItemManager()
-                .createItem(habboInfo.getId(), item, 0, 0, habboInfo.getPhotoJSON());
+        // Claim the photo before anything is charged or created: a second packet for the same
+        // photo, even one racing this one, stops here.
+        if (!habboInfo.claimPhotoPurchase(photoTimestamp)) {
+            LOGGER.warn(
+                    "Camera purchase for {} ignored: photo {} was already bought.",
+                    habboInfo.getUsername(),
+                    photoTimestamp);
+            return;
+        }
+
+        if (!this.charge(habbo)) {
+            habboInfo.releasePhotoPurchase(photoTimestamp);
+            habbo.alert("You don't have enough credits!");
+            return;
+        }
+
+        HabboItem photoItem =
+                Emulator.getGameEnvironment().getItemManager().createItem(habboInfo.getId(), item, 0, 0, photoJSON);
         if (photoItem == null) {
             LOGGER.warn(
                     "Camera purchase for {} aborted: createItem returned null for camera.item_id={}.",
                     habboInfo.getUsername(),
                     cameraItemId);
+            this.refund(habbo);
+            habboInfo.releasePhotoPurchase(photoTimestamp);
             habbo.alert(Emulator.getTexts().getValue("camera.error.creation"));
             return;
         }
@@ -109,10 +144,24 @@ public class CameraPurchaseEvent extends MessageHandler {
         this.client.sendResponse(new AddHabboItemComposer(photoItem));
         this.client.sendResponse(new InventoryRefreshComposer());
 
-        habbo.giveCredits(-CAMERA_PURCHASE_CREDITS);
-        habbo.givePoints(CAMERA_PURCHASE_POINTS_TYPE, -CAMERA_PURCHASE_POINTS);
-
         AchievementManager.progressAchievement(
                 habbo, Emulator.getGameEnvironment().getAchievementManager().getAchievement("CameraPhotoCount"));
+    }
+
+    /** Takes the price, all of it or nothing. */
+    private boolean charge(Habbo habbo) {
+        if (CAMERA_PURCHASE_CREDITS > 0 && !habbo.tryTakeCredits(CAMERA_PURCHASE_CREDITS)) return false;
+
+        if (CAMERA_PURCHASE_POINTS > 0 && !habbo.tryTakePoints(CAMERA_PURCHASE_POINTS_TYPE, CAMERA_PURCHASE_POINTS)) {
+            habbo.giveCredits(CAMERA_PURCHASE_CREDITS);
+            return false;
+        }
+
+        return true;
+    }
+
+    private void refund(Habbo habbo) {
+        habbo.giveCredits(CAMERA_PURCHASE_CREDITS);
+        habbo.givePoints(CAMERA_PURCHASE_POINTS_TYPE, CAMERA_PURCHASE_POINTS);
     }
 }

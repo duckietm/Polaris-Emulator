@@ -72,6 +72,7 @@ public class HabboInfo implements Runnable {
     private String photoURL;
     private String photoJSON;
     private int webPublishTimestamp;
+    private int purchasedPhotoTimestamp;
     private String machineID;
     private List<NavigatorSavedSearch> savedSearches = new ArrayList<>();
     private List<MessengerCategory> messengerCategories = new ArrayList<>();
@@ -775,12 +776,46 @@ public class HabboInfo implements Runnable {
         this.photoJSON = photoJSON;
     }
 
-    public int getWebPublishTimestamp() {
+    /**
+     * Marks the photo taken at {@code timestamp} as bought. Returns false when that photo was bought
+     * already, so a repeated purchase packet for the same photo buys nothing.
+     */
+    public synchronized boolean claimPhotoPurchase(int timestamp) {
+        if (timestamp <= 0 || this.purchasedPhotoTimestamp == timestamp) return false;
+
+        this.purchasedPhotoTimestamp = timestamp;
+        return true;
+    }
+
+    /** Undoes {@link #claimPhotoPurchase(int)} when the purchase could not be completed. */
+    public synchronized void releasePhotoPurchase(int timestamp) {
+        if (this.purchasedPhotoTimestamp == timestamp) this.purchasedPhotoTimestamp = 0;
+    }
+
+    public synchronized int getWebPublishTimestamp() {
         return this.webPublishTimestamp;
     }
 
-    public void setWebPublishTimestamp(int webPublishTimestamp) {
+    public synchronized void setWebPublishTimestamp(int webPublishTimestamp) {
         this.webPublishTimestamp = webPublishTimestamp;
+    }
+
+    /**
+     * Takes the web publish slot at {@code now} when the last publish is at least {@code delay}
+     * seconds old. Returns the previous publish time, for {@link #releaseWebPublish(int, int)}, or -1
+     * when the slot is still taken.
+     */
+    public synchronized int claimWebPublish(int now, int delay) {
+        int previous = this.webPublishTimestamp;
+        if (now - previous < delay) return -1;
+
+        this.webPublishTimestamp = now;
+        return previous;
+    }
+
+    /** Gives back a publish slot taken at {@code now} that did not end in a publish. */
+    public synchronized void releaseWebPublish(int now, int previous) {
+        if (this.webPublishTimestamp == now) this.webPublishTimestamp = previous;
     }
 
     public String getMachineID() {

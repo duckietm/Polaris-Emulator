@@ -26,8 +26,9 @@ public class CameraRoomPictureEvent extends MessageHandler {
 
     public static int CAMERA_RENDER_DELAY = 15;
     public static int MAX_IMAGE_BYTES = 2 * 1024 * 1024; // 2 MB max upload
-    public static int MAX_IMAGE_WIDTH = 1024;
-    public static int MAX_IMAGE_HEIGHT = 1024;
+    // Room photos are always 320x320, as the client renders them: an upload must be exactly this size.
+    public static int MAX_IMAGE_WIDTH = 320;
+    public static int MAX_IMAGE_HEIGHT = 320;
     public static int MAX_DAILY_RENDERS = 50;
 
     private ByteBuf image = null;
@@ -119,11 +120,7 @@ public class CameraRoomPictureEvent extends MessageHandler {
             return null;
         }
 
-        if (dimensions == null
-                || dimensions[0] <= 0
-                || dimensions[1] <= 0
-                || dimensions[0] > MAX_IMAGE_WIDTH
-                || dimensions[1] > MAX_IMAGE_HEIGHT) {
+        if (!hasPhotoDimensions(dimensions)) {
             LOGGER.warn(
                     "User {} attempted camera upload with invalid dimensions: {}x{}",
                     habboInfo.getUsername(),
@@ -147,10 +144,12 @@ public class CameraRoomPictureEvent extends MessageHandler {
             return null;
         }
 
-        if (theImage.getWidth() > MAX_IMAGE_WIDTH || theImage.getHeight() > MAX_IMAGE_HEIGHT) {
+        if (theImage.getWidth() != MAX_IMAGE_WIDTH || theImage.getHeight() != MAX_IMAGE_HEIGHT) {
             LOGGER.warn(
-                    "User {} decoded image exceeds dimension limits: {}x{}",
+                    "User {} decoded image is not {}x{}: {}x{}",
                     habboInfo.getUsername(),
+                    MAX_IMAGE_WIDTH,
+                    MAX_IMAGE_HEIGHT,
                     theImage.getWidth(),
                     theImage.getHeight());
             handleImageProcessingError(habbo);
@@ -225,6 +224,13 @@ public class CameraRoomPictureEvent extends MessageHandler {
 
         LOGGER.debug("Camera photo saved to {}", imageFile.getAbsolutePath());
         return url;
+    }
+
+    static boolean hasPhotoDimensions(int[] dimensions) {
+        return dimensions != null
+                && dimensions.length == 2
+                && dimensions[0] == MAX_IMAGE_WIDTH
+                && dimensions[1] == MAX_IMAGE_HEIGHT;
     }
 
     private boolean isPNG(byte[] bytes) {

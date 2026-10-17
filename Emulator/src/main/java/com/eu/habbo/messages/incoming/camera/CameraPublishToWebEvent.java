@@ -39,7 +39,17 @@ public class CameraPublishToWebEvent extends MessageHandler {
 
         int photoTimestamp = habboInfo.getPhotoTimestamp();
         String photoJSON = habboInfo.getPhotoJSON();
-        if (photoTimestamp == 0 || photoJSON.isEmpty() || !photoJSON.contains(Integer.toString(photoTimestamp))) return;
+        if (photoTimestamp == 0
+                || photoJSON == null
+                || photoJSON.isEmpty()
+                || !photoJSON.contains(Integer.toString(photoTimestamp))) return;
+
+        if (!CameraPurchaseEvent.isInPhotoRoom(habboInfo)) {
+            LOGGER.warn(
+                    "Camera publish for {} aborted: the user left the room the photo was taken in.",
+                    habboInfo.getUsername());
+            return;
+        }
 
         int currentTimestamp = Emulator.getIntUnixTimestamp();
         int timeSinceLastPublish = currentTimestamp - habboInfo.getWebPublishTimestamp();
@@ -58,6 +68,11 @@ public class CameraPublishToWebEvent extends MessageHandler {
                     return;
                 }
 
+                // Take the publish slot atomically: of two packets racing past the delay check
+                // above, only one publishes and pays.
+                int previousPublish = habboInfo.claimWebPublish(currentTimestamp, CAMERA_PUBLISH_DELAY);
+                if (previousPublish < 0) return;
+
                 try (Connection connection =
                                 Emulator.getDatabase().getDataSource().getConnection();
                         PreparedStatement statement = connection.prepareStatement(
@@ -67,11 +82,11 @@ public class CameraPublishToWebEvent extends MessageHandler {
                     statement.setInt(3, publishPictureEvent.timestamp);
                     statement.setString(4, publishPictureEvent.URL);
                     statement.execute();
-                    habboInfo.setWebPublishTimestamp(currentTimestamp);
                     habbo.givePoints(CAMERA_PUBLISH_POINTS_TYPE, -CAMERA_PUBLISH_POINTS);
                     com.eu.habbo.habbohotel.quests.QuestProgressEvents.progress(
                             habbo, com.eu.habbo.habbohotel.quests.QuestGoalType.PUBLISH_PICTURE, 1);
                 } catch (SQLException e) {
+                    habboInfo.releaseWebPublish(currentTimestamp, previousPublish);
                     LOGGER.error("Caught SQL exception", e);
                 }
             }

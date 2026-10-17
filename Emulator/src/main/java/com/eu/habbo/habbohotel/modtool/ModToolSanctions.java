@@ -3,9 +3,6 @@ package com.eu.habbo.habbohotel.modtool;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.plugin.events.sanctions.SanctionEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -14,6 +11,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ModToolSanctions {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModToolSanctions.class);
@@ -38,10 +37,17 @@ public class ModToolSanctions {
     }
 
     private void loadSanctionLevels() {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM sanction_levels")) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement("SELECT * FROM sanction_levels")) {
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
-                    this.sanctionLevelsHashmap.put(set.getInt("level"), new ModToolSanctionLevelItem(set.getInt("level"), set.getString("type"), set.getInt("hour_length"), set.getInt("probation_days")));
+                    this.sanctionLevelsHashmap.put(
+                            set.getInt("level"),
+                            new ModToolSanctionLevelItem(
+                                    set.getInt("level"),
+                                    set.getString("type"),
+                                    set.getInt("hour_length"),
+                                    set.getInt("probation_days")));
                 }
             }
         } catch (SQLException e) {
@@ -56,7 +62,9 @@ public class ModToolSanctions {
     public Map<Integer, ArrayList<ModToolSanctionItem>> getSanctions(int habboId) {
         synchronized (this.sanctionHashmap) {
             this.sanctionHashmap.clear();
-            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM sanctions WHERE habbo_id = ? ORDER BY id ASC")) {
+            try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                    PreparedStatement statement =
+                            connection.prepareStatement("SELECT * FROM sanctions WHERE habbo_id = ? ORDER BY id ASC")) {
                 statement.setInt(1, habboId);
                 try (ResultSet set = statement.executeQuery()) {
                     while (set.next()) {
@@ -64,7 +72,15 @@ public class ModToolSanctions {
                             this.sanctionHashmap.put(set.getInt("habbo_id"), new ArrayList<>());
                         }
 
-                        ModToolSanctionItem item = new ModToolSanctionItem(set.getInt("id"), set.getInt("habbo_id"), set.getInt("sanction_level"), set.getInt("probation_timestamp"), set.getBoolean("is_muted"), set.getInt("mute_duration"), set.getInt("trade_locked_until"), set.getString("reason"));
+                        ModToolSanctionItem item = new ModToolSanctionItem(
+                                set.getInt("id"),
+                                set.getInt("habbo_id"),
+                                set.getInt("sanction_level"),
+                                set.getInt("probation_timestamp"),
+                                set.getBoolean("is_muted"),
+                                set.getInt("mute_duration"),
+                                set.getInt("trade_locked_until"),
+                                set.getString("reason"));
 
                         if (!this.sanctionHashmap.get(set.getInt("habbo_id")).contains(item)) {
                             this.sanctionHashmap.get(set.getInt("habbo_id")).add(item);
@@ -79,8 +95,17 @@ public class ModToolSanctions {
         }
     }
 
-    private void insertSanction(int habboId, int sanctionLevel, int probationTimestamp, String reason, int tradeLockedUntil, boolean isMuted, int muteDuration) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO sanctions (habbo_id, sanction_level, probation_timestamp, reason, trade_locked_until, is_muted, mute_duration) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
+    private void insertSanction(
+            int habboId,
+            int sanctionLevel,
+            int probationTimestamp,
+            String reason,
+            int tradeLockedUntil,
+            boolean isMuted,
+            int muteDuration) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO sanctions (habbo_id, sanction_level, probation_timestamp, reason, trade_locked_until, is_muted, mute_duration) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
             statement.setInt(1, habboId);
             statement.setInt(2, sanctionLevel);
             statement.setInt(3, probationTimestamp);
@@ -96,7 +121,9 @@ public class ModToolSanctions {
     }
 
     public void updateSanction(int rowId, int probationTimestamp) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE sanctions SET probation_timestamp = ? WHERE id = ?")) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement("UPDATE sanctions SET probation_timestamp = ? WHERE id = ?")) {
             statement.setInt(1, probationTimestamp);
             statement.setInt(2, rowId);
 
@@ -107,7 +134,9 @@ public class ModToolSanctions {
     }
 
     public void updateTradeLockedUntil(int rowId, int tradeLockedUntil) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE sanctions SET trade_locked_until = ? WHERE id = ?")) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement("UPDATE sanctions SET trade_locked_until = ? WHERE id = ?")) {
             statement.setInt(1, tradeLockedUntil);
             statement.setInt(2, rowId);
 
@@ -118,7 +147,9 @@ public class ModToolSanctions {
     }
 
     public void updateMuteDuration(int rowId, int muteDuration) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE sanctions SET mute_duration = ? WHERE id = ?")) {
+        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement("UPDATE sanctions SET mute_duration = ? WHERE id = ?")) {
             statement.setInt(1, muteDuration);
             statement.setInt(2, rowId);
 
@@ -128,7 +159,15 @@ public class ModToolSanctions {
         }
     }
 
-    public void run(int habboId, Habbo self, int sanctionLevel, int cfhTopic, String reason, int tradeLockedUntil, boolean isMuted, int muteDuration) {
+    public void run(
+            int habboId,
+            Habbo self,
+            int sanctionLevel,
+            int cfhTopic,
+            String reason,
+            int tradeLockedUntil,
+            boolean isMuted,
+            int muteDuration) {
         if (!ModToolManager.canModerateTarget(self, habboId)) {
             return;
         }
@@ -137,22 +176,38 @@ public class ModToolSanctions {
 
         ModToolSanctionLevelItem sanctionLevelItem = getSanctionLevelItem(sanctionLevel);
 
-        insertSanction(habboId, sanctionLevel, buildProbationTimestamp(sanctionLevelItem), reason, tradeLockedUntil, isMuted, muteDuration);
+        insertSanction(
+                habboId,
+                sanctionLevel,
+                buildProbationTimestamp(sanctionLevelItem),
+                reason,
+                tradeLockedUntil,
+                isMuted,
+                muteDuration);
 
         runSanctionBasedOnLevel(sanctionLevelItem, habboId, reason, cfhTopic, self, muteDuration);
 
-        Emulator.getPluginManager().fireEvent(new SanctionEvent(self, Emulator.getGameEnvironment().getHabboManager().getHabbo(habboId), sanctionLevel));
+        Emulator.getPluginManager()
+                .fireEvent(new SanctionEvent(
+                        self, Emulator.getGameEnvironment().getHabboManager().getHabbo(habboId), sanctionLevel));
     }
 
     private int buildProbationTimestamp(ModToolSanctionLevelItem sanctionLevelItem) {
-        return Emulator.getIntUnixTimestamp() + (sanctionLevelItem.sanctionProbationDays * 24 * 60 * 60);
+        return ModToolManager.banExpiry(
+                Emulator.getIntUnixTimestamp(), ModToolManager.daysToSeconds(sanctionLevelItem.sanctionProbationDays));
     }
 
     public int getProbationDays(ModToolSanctionLevelItem sanctionLevelItem) {
         return sanctionLevelItem.sanctionProbationDays;
     }
 
-    private void runSanctionBasedOnLevel(ModToolSanctionLevelItem sanctionLevelItem, int habboId, String reason, int cfhTopic, Habbo self, int muteDuration) {
+    private void runSanctionBasedOnLevel(
+            ModToolSanctionLevelItem sanctionLevelItem,
+            int habboId,
+            String reason,
+            int cfhTopic,
+            Habbo self,
+            int muteDuration) {
         Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(habboId);
 
         int muteDurationSeconds = 0;
@@ -164,10 +219,25 @@ public class ModToolSanctions {
         }
 
         switch (sanctionLevelItem.sanctionType) {
-            case "ALERT": habbo.alert(reason); break;
-            case "BAN": Emulator.getGameEnvironment().getModToolManager().ban(habboId, self, reason, sanctionLevelItem.sanctionHourLength, ModToolBanType.ACCOUNT, cfhTopic); break;
-            case "MUTE": habbo.mute(muteDurationSeconds == 0 ? 3600 : muteDurationSeconds, false); break;
-            default: break;
+            case "ALERT":
+                habbo.alert(reason);
+                break;
+            case "BAN":
+                Emulator.getGameEnvironment()
+                        .getModToolManager()
+                        .ban(
+                                habboId,
+                                self,
+                                reason,
+                                ModToolManager.hoursToSeconds(sanctionLevelItem.sanctionHourLength),
+                                ModToolBanType.ACCOUNT,
+                                cfhTopic);
+                break;
+            case "MUTE":
+                habbo.mute(muteDurationSeconds == 0 ? 3600 : muteDurationSeconds, false);
+                break;
+            default:
+                break;
         }
     }
 

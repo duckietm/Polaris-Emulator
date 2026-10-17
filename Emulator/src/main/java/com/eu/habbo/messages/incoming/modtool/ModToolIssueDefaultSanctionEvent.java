@@ -66,13 +66,13 @@ public class ModToolIssueDefaultSanctionEvent extends MessageHandler {
                                             issue.reportedId,
                                             this.client.getHabbo(),
                                             defaultSanction.message,
-                                            defaultSanction.banLength * 86400,
+                                            ModToolManager.daysToSeconds(defaultSanction.banLength),
                                             ModToolBanType.ACCOUNT,
                                             modToolCategory.id);
                         } else if (defaultSanction.muteLength > 0) {
 
                             if (target != null) {
-                                target.mute(defaultSanction.muteLength * 86400, false);
+                                target.mute(ModToolManager.daysToSeconds(defaultSanction.muteLength), false);
                             }
                         }
                     }

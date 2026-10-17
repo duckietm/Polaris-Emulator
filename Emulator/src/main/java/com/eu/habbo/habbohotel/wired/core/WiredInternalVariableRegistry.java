@@ -174,7 +174,7 @@ final class WiredInternalVariableRegistry {
                 "@timezone_server",
                 "@timezone_client",
                 "@current_time",
-                "@current_time.millisecond_of_second",
+                "@current_time.milliseconds_of_seconds",
                 "@current_time.seconds_of_minute",
                 "@current_time.minute_of_hour",
                 "@current_time.hour_of_day",
@@ -215,6 +215,8 @@ final class WiredInternalVariableRegistry {
                 "@event.variable_update.difference",
                 "@event.variable_update.change_origin");
 
+        // AIR's part name; boxes saved with our earlier name keep resolving.
+        builder.alias("@current_time.millisecond_of_second", "@current_time.milliseconds_of_seconds");
         builder.alias("@position.x", "@position_x");
         builder.alias("@position.y", "@position_y");
         builder.alias("@effect", "@effect_id");

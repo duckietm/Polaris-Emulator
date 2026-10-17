@@ -107,6 +107,28 @@ class WiredEffectSendSignalTest {
         return settings;
     }
 
+    @Test
+    void aNonAntennaPickIsRefusedWithTheOfficialKey() {
+        Room room = mock(Room.class);
+        HabboItem chair = mock(HabboItem.class);
+        when(chair.getId()).thenReturn(402);
+        Item chairBase = base();
+        when(chair.getBaseItem()).thenReturn(chairBase);
+        when(room.getHabboItem(402)).thenReturn(chair);
+        WiredEffectSendSignal box = new WiredEffectSendSignal(1, 1, base(), "", 0, 0);
+
+        try (MockedStatic<Emulator> emulator = mockStatic(Emulator.class)) {
+            installHotel(emulator, room);
+
+            com.eu.habbo.messages.incoming.wired.WiredSaveException refused =
+                    org.junit.jupiter.api.Assertions.assertThrows(
+                            com.eu.habbo.messages.incoming.wired.WiredSaveException.class,
+                            () -> box.saveData(
+                                    slots(new WiredSettings(new int[] {0, 0}, "", new int[] {402}, 0), 100), null));
+            assertEquals("wiredfurni.error.require_antenna_furni", refused.getMessage());
+        }
+    }
+
     private static String stored(int antennaSource) {
         return "{\"delay\":0,\"itemIds\":[401],\"forwardItemIds\":[],\"antennaSource\":" + antennaSource
                 + ",\"furniForward\":0,\"userForward\":0,\"signalPerFurni\":false,\"signalPerUser\":false,"

@@ -119,9 +119,18 @@ final class WiredChestReward {
     }
 
     /** The reward popup: the box's text, shown when the box says so and something was given. */
-    void showPopup(Habbo habbo, int given) {
-        if (habbo == null || given <= 0 || !this.showPopupByDefault || this.popupText.isEmpty()) return;
-        habbo.alert(this.popupText);
+    /**
+     * Tell the rewarded user what they got (AIR {@code WiredTransactionSuccess} type 2): the given
+     * coins and furni as a rule, the box's text, and whether the reward popup opens by itself.
+     */
+    void announce(
+            Habbo habbo,
+            java.util.List<com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract.Term>
+                    given) {
+        if (habbo == null || habbo.getClient() == null || given == null || given.isEmpty()) return;
+        habbo.getClient()
+                .sendResponse(com.eu.habbo.messages.outgoing.rooms.items.WiredTransactionSuccessComposer.reward(
+                        given, this.popupText, this.showPopupByDefault));
     }
 
     /** The JSON fields the chest boxes store for these settings. */

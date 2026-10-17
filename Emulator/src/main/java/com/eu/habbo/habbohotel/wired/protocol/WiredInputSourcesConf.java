@@ -58,12 +58,12 @@ public final class WiredInputSourcesConf {
         }
 
         WiredInputSourcesConf pickedFurniOrSignal = furni(new int[][] {FURNI_PICKED_OR_SIGNAL}, 100);
+        put(pickedFurniOrSignal, "wf_slc_users_onfurni", "wf_slc_furni_onfurni", "wf_slc_remote");
+        // Habbo lets these pick wall furni (672c338f).
         put(
-                pickedFurniOrSignal,
-                "wf_slc_users_onfurni",
-                "wf_slc_furni_onfurni",
                 "wf_slc_furni_bytype",
-                "wf_slc_remote");
+                new WiredInputSourcesConf(
+                        new int[][] {FURNI_PICKED_OR_SIGNAL}, new int[0][], new int[] {100}, new int[0], true));
 
         WiredInputSourcesConf neighborhood = new WiredInputSourcesConf(
                 new int[][] {FURNI_PICKED_OR_SIGNAL},
@@ -96,10 +96,14 @@ public final class WiredInputSourcesConf {
                 "wf_cnd_not_triggerer_match");
 
         WiredInputSourcesConf pickedFurni = furni(new int[][] {FURNI_NO_SECOND_PICKS}, 100);
+        // The snapshot conditions take wall furni (dba6fcd8); Match to Snapshot does not.
+        put(
+                new WiredInputSourcesConf(
+                        new int[][] {FURNI_NO_SECOND_PICKS}, new int[0][], new int[] {100}, new int[0], true),
+                "wf_cnd_match_snapshot",
+                "wf_cnd_not_match_snap");
         put(
                 pickedFurni,
-                "wf_cnd_match_snapshot",
-                "wf_cnd_not_match_snap",
                 "wf_act_match_to_sshot",
                 "wf_act_adjust_clock",
                 "wf_act_control_clock",
@@ -153,11 +157,14 @@ public final class WiredInputSourcesConf {
                         false));
         put("wf_xtra_mov_carry_users", users(new int[][] {PHYSICS_USERS}, 900));
 
+        put("wf_trg_walks_off_furni", furni(new int[][] {{100, 200}}, 100));
+        put("wf_trg_click_tile", furni(new int[][] {{100, 200}}, 100));
+        // Wall picks are allowed on these triggers, as in Habbo (672c338f, 1f18e4b6).
         put(
-                furni(new int[][] {{100, 200}}, 100),
+                new WiredInputSourcesConf(new int[][] {{100, 200}}, new int[0][], new int[] {100}, new int[0], true),
                 "wf_trg_state_changed",
                 "wf_trg_stuff_state",
-                "wf_trg_walks_off_furni");
+                "wf_trg_click_furni");
         put("wf_trg_bot_reached_avtr", users(new int[][] {{100, 200}}, 100));
 
         put(
@@ -179,7 +186,47 @@ public final class WiredInputSourcesConf {
                 "wf_act_give_currency",
                 "wf_act_give_furni");
 
+        // Their reference picks are 100 in the official editor; stored 101 rows still load as the same picks.
+        put(
+                new WiredInputSourcesConf(
+                        new int[][] {FURNI_NO_SECOND_PICKS}, new int[][] {USERS}, new int[] {0}, new int[] {0}, false),
+                "wf_xtra_mov_curve",
+                "wf_xtra_filter_furni_by_var",
+                "wf_xtra_filter_users_by_var");
+
         put("wf_act_remove_furni", furni(new int[][] {{0, 200, 201}}, 200));
+
+        // Movers open on the triggering furni, targets on the picks (r92f furni_to_furni frame).
+        put(
+                "wf_act_furni_to_furni",
+                new WiredInputSourcesConf(
+                        new int[][] {ALL_FURNI, ALL_FURNI}, new int[0][], new int[] {0, 100}, new int[0], true));
+        put(users(new int[][] {BOTS, USERS}, 100, 0), "wf_act_bot_follow_avatar", "wf_act_bot_talk_to_avatar");
+        // Show Message offers no clicked-user source.
+        put(usersOnly, "wf_act_show_message", "wf_act_neg_show_message");
+        // Relative Move and Toggle to Random allow wall picks.
+        put(
+                new WiredInputSourcesConf(
+                        new int[][] {FURNI_NO_SECOND_PICKS}, new int[0][], new int[] {100}, new int[0], true),
+                "wf_act_rel_mov",
+                "wf_act_toggle_to_rnd");
+        // Give Variable and the variable value / age conditions: one holder selection per kind, walls allowed.
+        put(
+                new WiredInputSourcesConf(
+                        new int[][] {ALL_FURNI}, new int[][] {USERS}, new int[] {0}, new int[] {0}, true),
+                "wf_act_give_var",
+                "wf_cnd_var_val_match",
+                "wf_cnd_var_age_match");
+        // Place Furni opens on the snapshot of its picks (110), the target on the triggering furni and the value on
+        // the selector (a336d8ab).
+        put(
+                "wf_act_place_furni",
+                new WiredInputSourcesConf(
+                        new int[][] {{0, 100, 101, 110, 200, 201}, ALL_FURNI, ALL_FURNI},
+                        new int[][] {USERS, USERS},
+                        new int[] {110, 0, 200},
+                        new int[] {0, 200},
+                        true));
     }
 
     private final int[][] allowedFurni;

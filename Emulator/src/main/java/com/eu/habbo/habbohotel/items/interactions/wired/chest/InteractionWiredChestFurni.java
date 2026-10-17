@@ -1,6 +1,5 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 
-import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
@@ -36,7 +35,7 @@ public class InteractionWiredChestFurni extends InteractionWiredChest {
     @Override
     public void onClick(GameClient client, Room room, Object[] objects) throws Exception {
         if (client == null || room == null) return;
-        if (!this.contents.isAccessOpen() && !room.hasRights(client.getHabbo())) return;
+        if (!this.getContents().isAccessOpen() && !room.hasRights(client.getHabbo())) return;
         ChestOpenHelper.open(client, this, room);
     }
 
@@ -53,22 +52,13 @@ public class InteractionWiredChestFurni extends InteractionWiredChest {
 
     @Override
     protected int storedCount() {
-        return this.contents.furniItemCount();
+        return this.getContents().furniItemCount();
     }
 
     @Override
     public boolean saveData(WiredSettings settings, GameClient gameClient) {
-        int[] params = settings.getIntParams();
-        int baseItemId = (params.length > 0) ? params[0] : 0;
-        int quantity = (params.length > 1) ? Math.max(0, params[1]) : 0;
-
-        this.contents = new ChestStorage();
-        // Only stock a valid, existing base item.
-        if (baseItemId > 0
-                && quantity > 0
-                && Emulator.getGameEnvironment().getItemManager().getItem(baseItemId) != null) {
-            this.contents.add(ChestStorage.KIND_FURNI, baseItemId, quantity);
-        }
+        // A chest is filled by deposits only (AIR model). The wired editor used to be able to set its
+        // contents outright, which created coins and furni out of nothing; it no longer touches them.
         return true;
     }
 
@@ -76,7 +66,7 @@ public class InteractionWiredChestFurni extends InteractionWiredChest {
     public void serializeWiredData(ServerMessage message, Room room) {
         int baseItemId = 0;
         int quantity = 0;
-        for (ChestStorage.Entry e : this.contents.entries()) {
+        for (ChestStorage.Entry e : this.getContents().entries()) {
             if (e.kind == ChestStorage.KIND_FURNI) {
                 baseItemId = e.type;
                 quantity = e.quantity;

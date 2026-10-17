@@ -455,6 +455,16 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
 
     public abstract boolean canWalkOn(RoomUnit roomUnit, Room room, Object[] objects);
 
+    /**
+     * "State changed" for a furni whose state a user changed outside the plain toggle (a dice roll, a vending
+     * machine, a random-state furni), as in Habbo. Behaviour observed in plus-emulator/PlusEMU 54c5c942 and 72f46ba0,
+     * reimplemented.
+     */
+    protected static void notifyStateChanged(Room room, RoomUnit unit, HabboItem item) {
+        WiredManager.triggerFurniStateChanged(room, unit, item);
+        WiredManager.triggerFurniStateUpdated(room, unit, item, false);
+    }
+
     public abstract boolean isWalkable();
 
     @Override

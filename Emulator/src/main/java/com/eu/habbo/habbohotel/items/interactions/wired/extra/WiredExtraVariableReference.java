@@ -67,8 +67,9 @@ public class WiredExtraVariableReference extends InteractionWiredExtra implement
                 WiredVariableReferenceSupport.findSharedDefinition(
                         room, config.sourceRoomId, config.sourceVariableItemId, config.sourceTargetType);
 
+        // The official refusal for a reference to a variable that is not (or no longer) shared (18f2688f).
         if (definition == null) {
-            throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
+            throw new WiredSaveException("wiredfurni.error.variables.reference.valid");
         }
 
         this.variableName = normalizedName;

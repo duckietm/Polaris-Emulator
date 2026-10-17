@@ -210,6 +210,7 @@ com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMoveNoAnimation
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovePhysics | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraOrEval | EXTRA | configured=true | execute=false
+com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraPointerVariable | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraProjectile | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraQuest | EXTRA | configured=true | execute=false
 com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraQuestChain | EXTRA | configured=true | execute=false

@@ -20,7 +20,8 @@ import java.nio.charset.StandardCharsets;
  * (condition quantifier type byte and invert), the wired context and {@code int[] defaultIntParams}.
  *
  * <p>The furni and user sources come from the box's source fields and the input sources conf from
- * {@link WiredInputSourcesConf}; the other new fields go out empty until each box writes them itself. An action's context block (the variable leaderboard) is passed
+ * {@link WiredInputSourcesConf}, the default int params and the condition quantifier from {@link WiredEditorDefaults};
+ * the other new fields go out empty until each box writes them itself. An action's context block (the variable leaderboard) is passed
  * on as it is.
  */
 public final class WiredDefinitionWire {
@@ -83,8 +84,16 @@ public final class WiredDefinitionWire {
             }
             definition.inputSources = WiredInputSourcesConf.of(box);
             definition.textPlaceholders = WiredTextPlaceholderContext.namesFor(box);
+            definition.defaultIntParams = WiredEditorDefaults.defaultIntParams(box);
+            definition.quantifierType = WiredEditorDefaults.quantifierType(box);
+            definition.quantifierCode = WiredEditorDefaults.quantifierCode(box);
+            definition.quantifierInvert = WiredEditorDefaults.quantifierInvert(box);
             if (box instanceof InteractionWired wired && wired.isEditorFresh()) {
-                // A box that was never saved opens on the official default sources.
+                // A box that was never saved opens on the official default int params (AIR reads the
+                // editor's ints straight from intParams) and the official default sources.
+                if (definition.defaultIntParams.length > 0) {
+                    definition.intParams = definition.defaultIntParams.clone();
+                }
                 definition.furniSources = WiredSourceSaveRules.fill(
                         new int[0],
                         definition.inputSources.allowedFurni().length,
@@ -125,6 +134,13 @@ public final class WiredDefinitionWire {
         byte[] contexts = new byte[0];
         /** Bytes a legacy box wrote after the fields this layout knows. */
         int leftover;
+        /** The int params the official editor's "reset to default" restores. */
+        int[] defaultIntParams = new int[0];
+        /** A condition's quantifier footer: type (0 none), the box's all / any choice and the negative labels. */
+        int quantifierType;
+
+        int quantifierCode;
+        boolean quantifierInvert;
     }
 
     static Definition readLegacy(ByteBuf in, Holder holder) {
@@ -171,7 +187,7 @@ public final class WiredDefinitionWire {
 
         switch (holder) {
             case ACTION -> out.appendInt(definition.delay);
-            case CONDITION -> out.appendInt(0); // quantifier code
+            case CONDITION -> out.appendInt(definition.quantifierCode);
             case SELECTOR -> {
                 out.appendBoolean(definition.selectorFilter);
                 out.appendBoolean(definition.selectorInvert);
@@ -183,8 +199,8 @@ public final class WiredDefinitionWire {
         definition.inputSources.write(out); // input sources conf and allow wall furni
 
         if (holder == Holder.CONDITION) {
-            out.appendByte(0); // quantifier type: none
-            out.appendBoolean(false); // invert
+            out.appendByte(definition.quantifierType);
+            out.appendBoolean(definition.quantifierInvert);
         }
 
         if (definition.contexts.length > 0) {
@@ -194,7 +210,7 @@ public final class WiredDefinitionWire {
         } else {
             out.appendInt(0); // wired context
         }
-        writeInts(out, new int[0]); // default int params
+        writeInts(out, definition.defaultIntParams);
     }
 
     /** Actions, selectors, addons and variables go out with their official codes. */

@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.wired.protocol;
 
+import com.eu.habbo.habbohotel.items.ItemManager;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -26,6 +27,8 @@ public final class WiredSourceSaveRules {
     public static final String INVALID_FURNI_SOURCE = "wiredfurni.error.invalid_furni_source";
     /** A clicked or reached user source under a stack without the trigger that names that user. */
     public static final String INVALID_USER_SOURCE = "wiredfurni.error.invalid_user_source";
+    /** A box save that picks a temporary (Place Furni) copy. */
+    public static final String TEMP_FURNI_NOT_ALLOWED = "wiredfurni.error.temp_furni_not_allowed";
 
     private static final String CLICK_USER_TRIGGER = "wf_trg_click_user";
     private static final String BOT_REACHED_USER_TRIGGER = "wf_trg_bot_reached_avtr";
@@ -39,6 +42,12 @@ public final class WiredSourceSaveRules {
      */
     public static String apply(Object box, WiredSettings settings, Room room) {
         if (settings == null) return null;
+
+        // A temporary (Place Furni) copy cannot be picked in a box, as in Habbo; selectors still deliver copies.
+        // Behaviour observed in plus-emulator/PlusEMU 55f02174, reimplemented.
+        if (picksTemporaryFurni(settings.getFurniIds()) || picksTemporaryFurni(settings.getFurniIds2())) {
+            return TEMP_FURNI_NOT_ALLOWED;
+        }
 
         WiredInputSourcesConf conf = WiredInputSourcesConf.of(box);
 
@@ -65,6 +74,14 @@ public final class WiredSourceSaveRules {
         settings.setFurniSourceTypes(furni);
         settings.setUserSourceTypes(users);
         return null;
+    }
+
+    private static boolean picksTemporaryFurni(int[] picks) {
+        if (picks == null) return false;
+        for (int id : picks) {
+            if (ItemManager.isTemporaryItemId(id)) return true;
+        }
+        return false;
     }
 
     /** {@code sent} with exactly {@code slots} entries, the missing ones taken from {@code defaults}. */

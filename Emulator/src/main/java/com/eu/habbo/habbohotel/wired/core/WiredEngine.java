@@ -225,7 +225,14 @@ public final class WiredEngine {
     }
 
     public boolean handleEvent(WiredEvent event, boolean negateConditions) {
-        return this.eventDispatcher.dispatch(event, negateConditions);
+        // The box flashes of this dispatch go out when it ends, in the same batch as the chat or click that fired
+        // it, not on the next room cycle.
+        WiredBoxFlashes.openPass();
+        try {
+            return this.eventDispatcher.dispatch(event, negateConditions);
+        } finally {
+            WiredBoxFlashes.closePass();
+        }
     }
 
     /** The hotel-wide allowance of the achievement and reward-track boxes. */
@@ -242,7 +249,12 @@ public final class WiredEngine {
      * @return true if any matching stack was triggered
      */
     public boolean handleEventForSourceItem(WiredEvent event, int sourceItemId) {
-        return this.eventDispatcher.dispatchForSourceItem(event, sourceItemId);
+        WiredBoxFlashes.openPass();
+        try {
+            return this.eventDispatcher.dispatchForSourceItem(event, sourceItemId);
+        } finally {
+            WiredBoxFlashes.closePass();
+        }
     }
 
     /**
@@ -1102,6 +1114,13 @@ public final class WiredEngine {
         this.executionGuard
                 .diagnostics(roomId)
                 .recordUnreachable(System.currentTimeMillis(), reason, sourceLabel, sourceId);
+    }
+
+    /** Place Furni could not place a copy: counted in the room's wired diagnostics. */
+    public void notePlacementFailure(int roomId, String reason, String sourceLabel, int sourceId) {
+        this.executionGuard
+                .diagnostics(roomId)
+                .recordPlacementFailure(System.currentTimeMillis(), reason, sourceLabel, sourceId);
     }
 
     /** A line a "write to logs" box wrote, into the room log at the box's level. */

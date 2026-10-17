@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraArrayCap
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextVariable;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.WiredVariableDefinitionInfo;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.outgoing.wired.WiredUserVariablesDataComposer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -60,6 +61,8 @@ public final class WiredContextVariableSupport {
                     definition.isArray()));
         }
 
+        definitions.addAll(WiredPointerVariableSupport.definitionInfos(room, WiredVariableTargets.OFFICIAL_CONTEXT));
+
         if (room != null && room.getRoomSpecialTypes() != null) {
             Set<String> projections = new LinkedHashSet<>();
             for (InteractionWiredExtra extra : room.getRoomSpecialTypes().getExtras()) {
@@ -97,6 +100,10 @@ public final class WiredContextVariableSupport {
 
     public static WiredVariableDefinitionInfo getDefinitionInfo(Room room, int definitionItemId) {
         WiredExtraContextVariable definition = getDefinition(room, definitionItemId);
+        if (definition == null && WiredPointerVariableSupport.isPointer(room, definitionItemId)) {
+            return WiredPointerVariableSupport.definitionInfo(
+                    room, definitionItemId, WiredVariableTargets.OFFICIAL_CONTEXT);
+        }
         if (definition == null
                 || definition.getVariableName() == null
                 || definition.getVariableName().trim().isEmpty()) {

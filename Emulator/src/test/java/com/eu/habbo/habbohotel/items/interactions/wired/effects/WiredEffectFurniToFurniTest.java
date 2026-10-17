@@ -2,17 +2,22 @@ package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
 import static com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectTestFixtures.base;
 import static com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectTestFixtures.config;
+import static com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectTestFixtures.context;
 import static com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectTestFixtures.installPlatform;
 import static com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectTestFixtures.json;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.core.ConfigurationManager;
+import com.eu.habbo.habbohotel.items.FurnitureType;
+import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -76,5 +81,38 @@ class WiredEffectFurniToFurniTest {
                 new int[] {WiredSourceUtil.SOURCE_SELECTED, WiredSourceUtil.SOURCE_SELECTED},
                 box.officialFurniSources());
         assertArrayEquals(new int[] {302}, box.officialFurniIds2());
+    }
+
+    @Test
+    void aWallTargetSavesButMovesNothing() throws Exception {
+        Room room = mock(Room.class);
+        HabboItem moved = mock(HabboItem.class);
+        when(moved.getId()).thenReturn(301);
+        when(room.getHabboItem(301)).thenReturn(moved);
+        HabboItem torch = mock(HabboItem.class);
+        Item wallBase = mock(Item.class);
+        when(wallBase.getType()).thenReturn(FurnitureType.WALL);
+        when(torch.getBaseItem()).thenReturn(wallBase);
+        when(torch.getId()).thenReturn(302);
+        when(room.getHabboItem(302)).thenReturn(torch);
+        WiredEffectFurniToFurni box = new WiredEffectFurniToFurni(1, 1, base(), "", 0, 0);
+        ConfigurationManager config = config();
+
+        try (MockedStatic<WiredPlatform> platform = mockStatic(WiredPlatform.class);
+                MockedStatic<Emulator> emulator = mockStatic(Emulator.class)) {
+            installPlatform(platform, room);
+            emulator.when(Emulator::getConfig).thenReturn(config);
+
+            WiredSettings settings = new WiredSettings(new int[0], "", new int[] {301}, 0);
+            settings.setFurniSourceTypes(new int[] {WiredSourceUtil.SOURCE_SELECTED, WiredSourceUtil.SOURCE_SELECTED});
+            settings.setFurniIds2(new int[] {302});
+            box.saveData(settings, null);
+            box.execute(context(room));
+        }
+
+        assertEquals(302, json(box).getAsJsonArray("targetItemIds").get(0).getAsInt());
+        // The wall target is dropped, so nothing reads where it stands.
+        verify(torch, never()).getX();
+        verify(torch, never()).getY();
     }
 }

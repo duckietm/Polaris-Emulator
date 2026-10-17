@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.items.interactions.games;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.messages.outgoing.rooms.items.ItemExtraDataComposer;
 import com.eu.habbo.threading.runnables.games.GameUpCounter;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -130,8 +131,10 @@ public class InteractionGameUpCounter extends InteractionGameTimer {
     private void applyCounterState(Room room, boolean updateRoom) {
         this.setExtradata(this.timeNow + "\t" + this.baseTime);
 
+        // Each tick goes out as an ObjectDataUpdate (id and stuff data, our "now<TAB>base" format kept) instead of a
+        // full ObjectUpdate. Behaviour observed in plus-emulator/PlusEMU 3cb2aa78, reimplemented.
         if (updateRoom && room != null) {
-            room.updateItem(this);
+            room.sendComposer(new ItemExtraDataComposer(this).compose());
         }
 
         this.needsUpdate(true);

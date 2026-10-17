@@ -407,6 +407,7 @@ INTERACTION 401 wf_xtra_var_leaderboard=WiredExtraVariableLeaderboard
 INTERACTION 402 wf_label=WiredExtraLabel
 INTERACTION 403 wf_trg_room_initialized=WiredTriggerRoomInitialized
 INTERACTION 404 wf_act_set_highlight=WiredEffectSetHighlight
+INTERACTION 405 wf_var_pointer=WiredExtraPointerVariable
 
 LAYOUT EFFECT 000 TOGGLE_STATE=0
 LAYOUT EFFECT 001 RESET_TIMERS=1

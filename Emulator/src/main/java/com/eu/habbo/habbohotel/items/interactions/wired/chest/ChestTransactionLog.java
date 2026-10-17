@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.WiredCompatibilityDiagnostics;
+import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.users.Habbo;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -94,27 +95,27 @@ public final class ChestTransactionLog {
             int withdrawn,
             int deposited,
             List<ChestFurniStoredItem> items) {
-        if (roomId <= 0 || chestId <= 0) return;
+        com.eu.habbo.threading.ThreadPooling threading = WiredPlatform.threading();
+        if (roomId <= 0 || chestId <= 0 || threading == null) return;
 
         int userId = habbo == null ? 0 : habbo.getHabboInfo().getId();
         String userName = habbo == null ? "" : habbo.getHabboInfo().getUsername();
         String details = encodeDetails(items);
         int timestamp = Emulator.getIntUnixTimestamp();
 
-        Emulator.getThreading()
-                .runPersistence(() -> insert(
-                        roomId,
-                        chestId,
-                        chestKind,
-                        type,
-                        source,
-                        userId,
-                        userName == null ? "" : userName,
-                        currencyType,
-                        withdrawn,
-                        deposited,
-                        details,
-                        timestamp));
+        threading.runPersistence(() -> insert(
+                roomId,
+                chestId,
+                chestKind,
+                type,
+                source,
+                userId,
+                userName == null ? "" : userName,
+                currencyType,
+                withdrawn,
+                deposited,
+                details,
+                timestamp));
     }
 
     private static void insert(

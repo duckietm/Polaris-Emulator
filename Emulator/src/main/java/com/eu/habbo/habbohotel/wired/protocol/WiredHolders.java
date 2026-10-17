@@ -8,6 +8,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraDailyTask;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraPointerVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraQuest;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraQuestChain;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRoomVariable;
@@ -20,7 +21,7 @@ import java.util.List;
  * Which official definition packet a wired box belongs to. The official client has six: triggers,
  * actions, conditions, addons, selectors and variables. Our selectors are effects and our addons and
  * variable definitions are extras; the variable definitions are the official variable types (furni,
- * user, global, context, reference, quest, quest chain, echo, daily task).
+ * user, global, context, reference, quest, quest chain, echo, daily task, pointer).
  */
 public final class WiredHolders {
     private static final List<Class<? extends InteractionWiredExtra>> VARIABLES = List.of(
@@ -32,7 +33,8 @@ public final class WiredHolders {
             WiredExtraQuest.class,
             WiredExtraQuestChain.class,
             WiredExtraVariableEcho.class,
-            WiredExtraDailyTask.class);
+            WiredExtraDailyTask.class,
+            WiredExtraPointerVariable.class);
 
     private WiredHolders() {}
 

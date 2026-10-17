@@ -91,7 +91,7 @@ public final class CameraRender {
 
         if (this.data.getPlanes() != null) {
             for (CameraPlane plane : this.data.getPlanes()) {
-                if (plane == null || plane == backgroundPlane || this.planeRenderer.isLandscapePlane(plane)) {
+                if (plane == null || plane == backgroundPlane) {
                     continue;
                 }
                 layers.add(RenderLayer.forPlane(plane, order++));

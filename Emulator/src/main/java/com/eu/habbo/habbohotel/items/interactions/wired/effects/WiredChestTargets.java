@@ -72,6 +72,23 @@ final class WiredChestTargets {
         return null;
     }
 
+    /** Every chest of {@code kind} that wired may take from, in source order. */
+    static <T extends InteractionWiredChest> List<T> allUsable(Collection<HabboItem> candidates, Class<T> kind) {
+        List<T> usable = new ArrayList<>();
+        for (HabboItem item : candidates) {
+            if (!kind.isInstance(item)) continue;
+            T chest = kind.cast(item);
+            if (chest.answersWired() && !chest.getContents().isLocked() && !usable.contains(chest)) usable.add(chest);
+        }
+        return usable;
+    }
+
+    /** Resolve the box's chest source to every chest it may take from this time (AIR: all of them). */
+    static <T extends InteractionWiredChest> List<T> resolveAll(
+            WiredContext ctx, Room room, int chestSource, Collection<Integer> chestIds, Class<T> kind) {
+        return allUsable(WiredSourceUtil.resolveItems(ctx, chestSource, picked(room, chestIds)), kind);
+    }
+
     /** Resolve the box's chest source and pick the chest it uses this time. */
     static <T extends InteractionWiredChest> T resolve(
             WiredContext ctx, Room room, int chestSource, Collection<Integer> chestIds, Class<T> kind) {

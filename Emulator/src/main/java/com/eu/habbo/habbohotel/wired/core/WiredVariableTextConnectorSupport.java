@@ -132,6 +132,18 @@ public final class WiredVariableTextConnectorSupport {
         return fallback(connectors, String.valueOf(value));
     }
 
+    /**
+     * The text a value no connector names reads as: the first connector's "_=" text, or null when none
+     * sets one (the official {@code WiredVariable.textConnectorFallback}).
+     */
+    public static String fallbackText(Room room, int definitionItemId) {
+        for (WiredExtraVariableTextConnector connector : getConnectors(room, definitionItemId, 0)) {
+            String fallback = connector.getFallbackText();
+            if (fallback != null) return fallback;
+        }
+        return null;
+    }
+
     /** The first connector's "_=" text (official), else the number itself. */
     private static String fallback(List<WiredExtraVariableTextConnector> connectors, String number) {
         for (WiredExtraVariableTextConnector connector : connectors) {

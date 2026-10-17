@@ -370,10 +370,6 @@ import com.eu.habbo.messages.incoming.rooms.competition.SubmitRoomToCompetitionE
 import com.eu.habbo.messages.incoming.rooms.competition.VoteForRoomEvent;
 import com.eu.habbo.messages.incoming.rooms.items.AdvertisingSaveEvent;
 import com.eu.habbo.messages.incoming.rooms.items.ChestCloseEvent;
-import com.eu.habbo.messages.incoming.rooms.items.ChestDepositEvent;
-import com.eu.habbo.messages.incoming.rooms.items.ChestDepositFurniEvent;
-import com.eu.habbo.messages.incoming.rooms.items.ChestDepositInventoryItemEvent;
-import com.eu.habbo.messages.incoming.rooms.items.ChestEnableWiredEvent;
 import com.eu.habbo.messages.incoming.rooms.items.ChestOpenEvent;
 import com.eu.habbo.messages.incoming.rooms.items.ChestRequestLogEvent;
 import com.eu.habbo.messages.incoming.rooms.items.ChestSaveNotificationsEvent;
@@ -1087,19 +1083,18 @@ public class PacketManager {
         this.registerHandler(Incoming.ClickUserEvent, ClickUserEvent.class);
         this.registerHandler(Incoming.ToggleFloorItemEvent, ToggleFloorItemEvent.class);
         this.registerHandler(Incoming.ToggleWallItemEvent, ToggleWallItemEvent.class);
-        this.registerHandler(Incoming.ChestDepositEvent, ChestDepositEvent.class);
+        // AIR chest model: deposits only go through the wired trade (ChestStartDepositEvent), and the
+        // Wired upgrade is part of the settings save, so the wallet/inventory deposit messages and
+        // ChestEnableWiredEvent are no longer registered.
         this.registerHandler(Incoming.ChestWithdrawEvent, ChestWithdrawEvent.class);
         this.registerHandler(Incoming.ChestWithdrawFurniEvent, ChestWithdrawFurniEvent.class);
-        this.registerHandler(Incoming.ChestDepositFurniEvent, ChestDepositFurniEvent.class);
         this.registerHandler(Incoming.ChestStartDepositEvent, ChestStartDepositEvent.class);
-        this.registerHandler(Incoming.ChestDepositInventoryItemEvent, ChestDepositInventoryItemEvent.class);
         this.registerHandler(Incoming.ChestWithdrawAllFurniEvent, ChestWithdrawAllFurniEvent.class);
         this.registerHandler(Incoming.ChestOpenEvent, ChestOpenEvent.class);
         this.registerHandler(Incoming.ChestSaveSettingsEvent, ChestSaveSettingsEvent.class);
         this.registerHandler(Incoming.ChestSaveNotificationsEvent, ChestSaveNotificationsEvent.class);
         this.registerHandler(Incoming.ChestSaveOptionsEvent, ChestSaveOptionsEvent.class);
         this.registerHandler(Incoming.ChestCloseEvent, ChestCloseEvent.class);
-        this.registerHandler(Incoming.ChestEnableWiredEvent, ChestEnableWiredEvent.class);
         this.registerHandler(Incoming.ChestUpgradeCapacityEvent, ChestUpgradeCapacityEvent.class);
         this.registerHandler(Incoming.ChestRequestLogEvent, ChestRequestLogEvent.class);
         this.registerHandler(Incoming.WiredChestRoomLogsEvent, WiredChestRoomLogsEvent.class);

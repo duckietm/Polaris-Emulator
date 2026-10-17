@@ -7,12 +7,19 @@ public class WiredMatchFurniSetting {
     public final int x;
     public final int y;
     public final double z;
+    /** A wall item's wall position (tile, offset and side); null for floor furni. */
+    public final String wallPosition;
 
     public WiredMatchFurniSetting(int itemId, String state, int rotation, int x, int y) {
         this(itemId, state, rotation, x, y, 0.0D);
     }
 
     public WiredMatchFurniSetting(int itemId, String state, int rotation, int x, int y, double z) {
+        this(itemId, state, rotation, x, y, z, null);
+    }
+
+    public WiredMatchFurniSetting(int itemId, String state, int rotation, int x, int y, double z, String wallPosition) {
+        this.wallPosition = (wallPosition == null || wallPosition.isEmpty()) ? null : wallPosition;
         this.item_id = itemId;
         this.state = state == null ? "" : state.replace("\t\t\t", " ");
         this.rotation = rotation;

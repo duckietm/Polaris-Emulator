@@ -142,7 +142,8 @@ public final class WiredVariableLevelSystemSupport {
                 result.add(createDerivedInfo(
                         createSyntheticItemId(targetType, baseDefinition.getItemId(), subvariableType),
                         baseDefinition,
-                        boxSubvariableKey(box, subvariableType)));
+                        boxSubvariableKey(box, subvariableType),
+                        true));
             }
         }
 
@@ -150,11 +151,12 @@ public final class WiredVariableLevelSystemSupport {
         if (timeUtilities != null
                 && (baseDefinition.hasValue() || timeUtilities.readsTimestamps())
                 && baseDefinition.getItemId() <= TIME_MAX_BASE_ID) {
-            for (int subvariableType : timeUtilities.getSelectedSubvariables()) {
+            for (int subvariableType : timeUtilities.getListedSubvariables()) {
                 result.add(createDerivedInfo(
                         createTimeItemId(targetType, baseDefinition.getItemId(), subvariableType),
                         baseDefinition,
-                        timeUtilities.subvariableKey(subvariableType)));
+                        timeUtilities.subvariableKey(subvariableType),
+                        !isWritableTimePart(timeUtilities, subvariableType, baseDefinition)));
             }
         }
 
@@ -164,14 +166,34 @@ public final class WiredVariableLevelSystemSupport {
     }
 
     private static WiredVariableDefinitionInfo createDerivedInfo(
-            int syntheticItemId, WiredVariableDefinitionInfo baseDefinition, String key) {
+            int syntheticItemId, WiredVariableDefinitionInfo baseDefinition, String key, boolean readOnly) {
         return new WiredVariableDefinitionInfo(
                 syntheticItemId,
                 baseDefinition.getName() + "." + key,
                 true,
                 baseDefinition.getAvailability(),
                 false,
-                true);
+                readOnly);
+    }
+
+    private static boolean isWritableTimePart(
+            WiredExtraTimeUtilities timeUtilities, int subvariableType, WiredVariableDefinitionInfo baseDefinition) {
+        return timeUtilities.isWritable(subvariableType) && baseDefinition.hasValue() && !baseDefinition.isReadOnly();
+    }
+
+    /**
+     * The base variable's new value after writing {@code partValue} into a writable derived part (a value-mode
+     * Time Utilities part), or null when the part cannot be written or the result does not fit.
+     */
+    public static Integer writeDerivedValue(Room room, DerivedDefinition derived, Integer baseValue, int partValue) {
+        if (derived == null
+                || baseValue == null
+                || !derived.isWritable()
+                || !(derived.levelSystem instanceof WiredExtraTimeUtilities timeUtilities)) {
+            return null;
+        }
+
+        return timeUtilities.write(derived.subvariableType, baseValue, partValue, WiredRoomTime.zoneFor(room));
     }
 
     public static WiredVariableDefinitionInfo getDerivedDefinitionInfo(Room room, int targetType, int syntheticItemId) {
@@ -187,7 +209,7 @@ public final class WiredVariableLevelSystemSupport {
                 true,
                 derived.baseDefinition.getAvailability(),
                 false,
-                true);
+                !derived.isWritable());
     }
 
     public static DerivedDefinition resolveDerivedDefinition(Room room, int targetType, int syntheticItemId) {
@@ -248,7 +270,7 @@ public final class WiredVariableLevelSystemSupport {
         }
 
         WiredExtraTimeUtilities timeUtilities = getTimeUtilities(room, baseExtra);
-        if (timeUtilities == null || !timeUtilities.hasSubvariable(subvariableType)) {
+        if (timeUtilities == null || !timeUtilities.listsSubvariable(subvariableType)) {
             return null;
         }
 
@@ -469,11 +491,11 @@ public final class WiredVariableLevelSystemSupport {
         return switch (subvariableType) {
             case WiredExtraVariableLevelUpSystem.SUB_CURRENT_LEVEL -> "current_level";
             case WiredExtraVariableLevelUpSystem.SUB_CURRENT_XP -> "current_xp";
-            case WiredExtraVariableLevelUpSystem.SUB_LEVEL_PROGRESS -> "level_progress";
-            case WiredExtraVariableLevelUpSystem.SUB_LEVEL_PROGRESS_PERCENT -> "level_progress_percent";
-            case WiredExtraVariableLevelUpSystem.SUB_TOTAL_XP_REQUIRED -> "total_xp_required";
+            case WiredExtraVariableLevelUpSystem.SUB_LEVEL_PROGRESS -> "progress";
+            case WiredExtraVariableLevelUpSystem.SUB_LEVEL_PROGRESS_PERCENT -> "progress_percentage";
+            case WiredExtraVariableLevelUpSystem.SUB_TOTAL_XP_REQUIRED -> "xp_required";
             case WiredExtraVariableLevelUpSystem.SUB_XP_REMAINING -> "xp_remaining";
-            case WiredExtraVariableLevelUpSystem.SUB_IS_AT_MAX -> "is_at_max";
+            case WiredExtraVariableLevelUpSystem.SUB_IS_AT_MAX -> "is_maxed";
             case WiredExtraVariableLevelUpSystem.SUB_MAX_LEVEL -> "max_level";
             default -> "value";
         };
@@ -717,6 +739,12 @@ public final class WiredVariableLevelSystemSupport {
 
         public InteractionWiredExtra getLevelSystem() {
             return this.levelSystem;
+        }
+
+        /** Whether the part can be written (value-mode Time Utilities parts of a writable variable). */
+        public boolean isWritable() {
+            return this.levelSystem instanceof WiredExtraTimeUtilities timeUtilities
+                    && isWritableTimePart(timeUtilities, this.subvariableType, this.baseDefinition);
         }
     }
 

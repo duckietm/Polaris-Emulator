@@ -42,6 +42,7 @@ public class WiredAllVariablesDiffComposer extends MessageComposer {
         response.appendBoolean(!variable.isReadOnly()); // canWriteValue
         response.appendBoolean(false); // canInterceptChanges
         response.appendBoolean(false); // isInvisible
+        response.appendBoolean(variable.requiresExecutionContext()); // a pointer only exists while a stack runs
         response.appendBoolean(true); // canReadCreationTime
         response.appendBoolean(true); // canReadLastUpdateTime
 
@@ -53,6 +54,9 @@ public class WiredAllVariablesDiffComposer extends MessageComposer {
                 response.appendInt(mapping.getKey());
                 response.appendString(mapping.getValue());
             }
+            String fallback = variable.getTextConnectorFallback();
+            response.appendBoolean(fallback != null); // hasTextConnectorFallback
+            if (fallback != null) response.appendString(fallback);
         }
     }
 

@@ -63,7 +63,8 @@ public final class WiredAddonCodes {
             108, 5, // quest
             109, 6, // quest chain
             83, 7, // echo
-            2008, 8); // daily task
+            2008, 8, // daily task
+            2009, 9); // pointer
 
     private WiredAddonCodes() {}
 

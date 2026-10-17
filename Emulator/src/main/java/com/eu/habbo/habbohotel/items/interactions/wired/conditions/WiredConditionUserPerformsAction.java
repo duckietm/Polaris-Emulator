@@ -11,12 +11,13 @@ import com.eu.habbo.habbohotel.wired.WiredUserActionType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialQuantifier;
 import com.eu.habbo.messages.ServerMessage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
-public class WiredConditionUserPerformsAction extends InteractionWiredCondition {
+public class WiredConditionUserPerformsAction extends InteractionWiredCondition implements WiredOfficialQuantifier {
     private static final String CACHE_LAST_ACTION_ID = "wired.last_user_action.id";
     private static final String CACHE_LAST_ACTION_PARAMETER = "wired.last_user_action.parameter";
     private static final String CACHE_LAST_ACTION_TIMESTAMP = "wired.last_user_action.timestamp";
@@ -346,5 +347,10 @@ public class WiredConditionUserPerformsAction extends InteractionWiredCondition 
             this.userSource = userSource;
             this.quantifier = quantifier;
         }
+    }
+
+    @Override
+    public int officialQuantifierCode() {
+        return this.getQuantifier();
     }
 }

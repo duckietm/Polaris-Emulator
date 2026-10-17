@@ -43,7 +43,7 @@ public class WiredTradeOfferItemsEvent extends MessageHandler {
         WiredTradingSession session = manager.getSession(habbo);
         if (session == null) return;
 
-        int changed = remove ? session.withdrawItems(itemIds) : session.offerItems(itemIds);
+        int changed = manager.offer(habbo, itemIds, remove);
         if (changed > 0) this.client.sendResponse(new InventoryRefreshComposer());
 
         // Pushed even when nothing changed: the client asked, and a refused offer has to leave the

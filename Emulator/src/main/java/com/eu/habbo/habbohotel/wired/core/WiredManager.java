@@ -140,7 +140,7 @@ public final class WiredManager {
         boolean debug = Emulator.getConfig().getBoolean(CONFIG_DEBUG, false);
 
         // Load additional configuration
-        MAXIMUM_FURNI_SELECTION = Emulator.getConfig().getInt("hotel.wired.furni.selection.count", 5);
+        MAXIMUM_FURNI_SELECTION = Emulator.getConfig().getInt("hotel.wired.furni.selection.count", 20);
         TELEPORT_DELAY = Emulator.getConfig().getInt("wired.effect.teleport.delay", 500);
 
         // Apply the configured value on every runtime generation so an in-process restart cannot
@@ -302,6 +302,15 @@ public final class WiredManager {
         }
 
         engine.noteUnreachable(roomId, reason, sourceLabel, sourceId);
+    }
+
+    /** Place Furni could not place a copy. Silent when the engine is not up. */
+    public static void notePlacementFailure(int roomId, String reason, String sourceLabel, int sourceId) {
+        if (engine == null) {
+            return;
+        }
+
+        engine.notePlacementFailure(roomId, reason, sourceLabel, sourceId);
     }
 
     /** A line a "write to logs" box wrote. Silent when the engine is not up. */
@@ -1126,7 +1135,7 @@ public final class WiredManager {
     // ========== Configuration Constants (moved from WiredHandler) ==========
 
     /** Maximum number of furniture items that can be selected in a single wired component */
-    public static volatile int MAXIMUM_FURNI_SELECTION = 5;
+    public static volatile int MAXIMUM_FURNI_SELECTION = 20;
 
     /** Delay in milliseconds between teleport executions */
     public static volatile int TELEPORT_DELAY = 500;

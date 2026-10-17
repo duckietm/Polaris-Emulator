@@ -62,15 +62,10 @@ public class WiredEffectSaveDataEvent extends MessageHandler {
                         this.client.sendResponse(new WiredSavedComposer());
                         if (effect != null) {
                             if (effect.isSelector()) {
-                                if (effect.usesExistingSelectorTargets()) {
-                                    effect.setExtradata("3");
-                                    room.sendComposer(new ItemStateComposer(effect).compose());
-                                } else if ("3".equals(effect.getExtradata())
-                                        || "4".equals(effect.getExtradata())
-                                        || "5".equals(effect.getExtradata())) {
-                                    effect.setExtradata("0");
-                                    room.sendComposer(new ItemStateComposer(effect).compose());
-                                }
+                                // Every selector save sends its resting state, as in Habbo: 3 with Filter, 0 without
+                                // (Invert does not change it). Behaviour observed in plus-emulator/PlusEMU 74b6b1b0.
+                                effect.setExtradata(selectorRestingState(effect));
+                                room.sendComposer(new ItemStateComposer(effect).compose());
                             }
 
                             effect.needsUpdate(true);
@@ -91,6 +86,11 @@ public class WiredEffectSaveDataEvent extends MessageHandler {
                 }
             }
         }
+    }
+
+    /** A selector rests at 3 when it filters the existing selection and at 0 otherwise. */
+    static String selectorRestingState(InteractionWiredEffect selector) {
+        return selector.usesExistingSelectorTargets() ? "3" : "0";
     }
 
     /**

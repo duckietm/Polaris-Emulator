@@ -83,6 +83,9 @@ public class RoomUnit {
     private DanceType danceType;
     private RoomUnitType roomUnitType;
     private volatile Deque<RoomTile> path = new ConcurrentLinkedDeque<>();
+    /** The tile of the step being announced, while its walk triggers run; null otherwise. */
+    private volatile RoomTile steppingTo;
+
     private int handItem;
     private long handItemTimestamp;
     private long lastRollerTime;
@@ -133,6 +136,7 @@ public class RoomUnit {
     }
 
     public boolean cycle(Room room) {
+        this.steppingTo = null;
         try {
             Habbo rider = null;
             if (this.getRoomUnitType() == RoomUnitType.PET) {
@@ -301,6 +305,9 @@ public class RoomUnit {
                 }
             }
 
+            // The walk triggers below fire in the tick that announces the step; their conditions count this unit
+            // on the tile it steps to, as in Habbo. Behaviour observed in plus-emulator/PlusEMU f1f78291.
+            this.steppingTo = next;
             HabboItem habboItem = room.getTopItemAt(this.getX(), this.getY());
             if (habboItem != null) {
                 if (habboItem != item || !itemOccupiesTile(habboItem, next.x, next.y)) {
@@ -317,6 +324,7 @@ public class RoomUnit {
                     if (item.canWalkOn(this, room, null)) {
                         item.onWalkOn(this, room, new Object[] {this.getCurrentLocation(), next});
                     } else if (item instanceof ConditionalGate) {
+                        this.steppingTo = null;
                         this.setRotation(oldRotation);
                         this.tilesWalked--;
                         this.setGoalLocation(this.currentLocation);
@@ -371,6 +379,7 @@ public class RoomUnit {
 
             this.setZ(zHeight);
             this.setCurrentLocation(room.getLayout().getTile(next.x, next.y));
+            this.steppingTo = null;
             this.resetIdleTimer();
 
             if (habbo != null) {
@@ -397,6 +406,8 @@ public class RoomUnit {
         } catch (Exception e) {
             LOGGER.error("Caught exception", e);
             return false;
+        } finally {
+            this.steppingTo = null;
         }
     }
 
@@ -433,6 +444,15 @@ public class RoomUnit {
 
     public RoomTile getCurrentLocation() {
         return this.currentLocation;
+    }
+
+    /**
+     * Where wired conditions count this unit: the tile it is stepping to while its step is being announced (walk
+     * triggers fire then), otherwise its current tile.
+     */
+    public RoomTile getWiredLocation() {
+        RoomTile stepping = this.steppingTo;
+        return stepping != null ? stepping : this.currentLocation;
     }
 
     public void setCurrentLocation(RoomTile location) {

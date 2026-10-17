@@ -19,6 +19,12 @@ public class Outgoing {
     public static final int WiredTradeCompletedComposer = 9334;
     public static final int ChestUpgradeResultComposer = 9335;
     public static final int ChestNotificationComposer = 9336;
+    // AIR wired chest model (WIN63-202610131318); ids from our custom range, never the rotated table.
+    public static final int ChestCoinsComposer = 9337;
+    public static final int ChestSettingsUpdatedComposer = 9338;
+    public static final int WiredTransactionSuccessComposer = 9339;
+    public static final int WiredTransactionFailComposer = 9346;
+    public static final int WiredTradeErrorComposer = 9347;
     public static final int FavoriteRoomsCountComposer = 151;
     public static final int UserCurrencyComposer = 2018;
     public static final int RedeemVoucherOKComposer = 3336;

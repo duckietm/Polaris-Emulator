@@ -4,6 +4,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomChatMessage;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -141,7 +142,10 @@ public class WiredTriggerHabboSaysKeyword extends InteractionWiredTrigger {
         this.ownerOnly = (params.length > 0) && (params[0] == 1);
         this.matchMode = (params.length > 1) ? this.normalizeMatchMode(params[1]) : MATCH_CONTAINS;
         this.hideMessage = (params.length > 2) && (params[2] == 1);
-        this.key = (this.matchMode == MATCH_ALL_WORDS) ? "" : settings.getStringParam();
+        // A keyword longer than a chat line could never match: it is kept as its first chat-length characters,
+        // as in Habbo. Behaviour observed in plus-emulator/PlusEMU 113363bf, reimplemented.
+        String keyword = RoomChatMessage.truncateToMaximumLength(settings.getStringParam());
+        this.key = (this.matchMode == MATCH_ALL_WORDS) ? "" : keyword;
 
         return true;
     }

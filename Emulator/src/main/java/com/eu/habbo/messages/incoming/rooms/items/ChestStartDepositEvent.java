@@ -1,21 +1,20 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
-import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestDepositSession;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionFailures;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
-import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestFurni;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
 
 /**
- * Start furni deposit mode (official Kigike / header 3514 wire shape).
- * We use header {@code ChestStartDepositEvent} (9324) because 3514 is unavailable in Nitro.
+ * Start a deposit (AIR {@code WiredChestWrapperView.onDepositClick}): {@code int chestId}.
  *
- * <p>The button on the chest window sends nothing but the chest id; opening the window where items
- * are chosen is the server's job. It answers by opening a table -- the same one a wired contract
- * negotiation uses -- pointed at this chest, so the player picks furniture out of their inventory,
- * sees what they are about to hand over, and confirms.
+ * <p>The only way into a chest. The server answers by opening the wired trade window pointed at the
+ * chest: the player puts inventory items on the table and confirms. A coin chest takes credit furni,
+ * which become its coins; a furni chest takes furni. Allowed to anyone when the chest takes donations,
+ * else to the owner and players with rights while the lock does not stand in their way; a refusal
+ * answers fail 12 or 15.
  */
 public class ChestStartDepositEvent extends MessageHandler {
     /** Long enough to go looking through a full inventory, short enough that a table is not left held. */
@@ -31,18 +30,12 @@ public class ChestStartDepositEvent extends MessageHandler {
 
         int chestItemId = this.packet.readInt();
         HabboItem item = room.getHabboItem(chestItemId);
-        if (!(item instanceof InteractionWiredChest chest)) return;
 
-        // Only furni chests take furniture; a coin chest is filled from the currency panel.
-        if (!(chest instanceof InteractionWiredChestFurni)) return;
-        if (!chest.getContents().isAccessDonate() && !room.hasRights(habbo)) return;
-
-        // A locked chest is closed to the room in both directions, but never to its owner.
-        if (chest.isLockedFor(habbo)) return;
-
-        // Marks which chest the player is filling. The table below is how they choose what goes in,
-        // but the one-item-at-a-time path reads this session too, so both stay usable.
-        ChestDepositSession.start(habbo.getHabboInfo().getId(), chestItemId);
+        int refusal = ChestTransactionFailures.depositRefusal(item, habbo, room.hasRights(habbo));
+        if (!(item instanceof InteractionWiredChest chest) || refusal != ChestTransactionFailures.NONE) {
+            ChestTransactionFailures.send(habbo, refusal);
+            return;
+        }
 
         room.getWiredRuntime().getTradingManager().openDeposit(habbo, chest, DEPOSIT_TIMEOUT_SECONDS);
     }

@@ -77,6 +77,60 @@ public final class CameraTestAssets {
         return bytes.toByteArray();
     }
 
+    /** One file of a synthetic .hab bundle. */
+    public record HabFile(String name, String mimeType, byte[] bytes, boolean deflate, byte[] storedBytes) {
+        public HabFile(String name, String mimeType, byte[] bytes, boolean deflate) {
+            this(name, mimeType, bytes, deflate, null);
+        }
+    }
+
+    /**
+     * A .hab bundle as Habbo writes it: "HAB\0", u16 version, u16 flags, u32 compressed index length,
+     * u32 index length, u32 data length (all little endian), the zlib JSON index, then the data.
+     */
+    public static byte[] hab(String bundleName, HabFile... files) throws IOException {
+        ByteArrayOutputStream data = new ByteArrayOutputStream();
+        StringBuilder entries = new StringBuilder();
+        for (HabFile file : files) {
+            byte[] stored = file.storedBytes() != null
+                    ? file.storedBytes()
+                    : (file.deflate() ? deflate(file.bytes()) : file.bytes());
+            if (entries.length() > 0) {
+                entries.append(',');
+            }
+            entries.append("{\"name\":\"")
+                    .append(file.name())
+                    .append("\",\"mimeType\":\"")
+                    .append(file.mimeType())
+                    .append("\",\"offset\":")
+                    .append(data.size())
+                    .append(",\"storedLength\":")
+                    .append(stored.length)
+                    .append(",\"originalLength\":")
+                    .append(file.bytes().length)
+                    .append(",\"compression\":\"")
+                    .append(file.deflate() ? "deflate" : "none")
+                    .append("\"}");
+            data.write(stored);
+        }
+        byte[] index = ("{\"format\":\"hab\",\"version\":1,\"name\":\"" + bundleName + "\",\"entries\":[" + entries
+                        + "]}")
+                .getBytes(StandardCharsets.UTF_8);
+        byte[] compressedIndex = deflate(index);
+        java.nio.ByteBuffer header = java.nio.ByteBuffer.allocate(20).order(java.nio.ByteOrder.LITTLE_ENDIAN);
+        header.put(new byte[] {'H', 'A', 'B', 0});
+        header.putShort((short) 1);
+        header.putShort((short) 0);
+        header.putInt(compressedIndex.length);
+        header.putInt(index.length);
+        header.putInt(data.size());
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        out.write(header.array());
+        out.write(compressedIndex);
+        out.write(data.toByteArray());
+        return out.toByteArray();
+    }
+
     public static Path writeNitro(Path dir, String name, String json, BufferedImage sheet) throws IOException {
         Files.createDirectories(dir);
         Path file = dir.resolve(name + ".nitro");

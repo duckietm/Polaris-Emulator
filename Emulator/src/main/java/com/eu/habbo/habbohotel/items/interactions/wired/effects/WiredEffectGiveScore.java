@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.games.Game;
+import com.eu.habbo.habbohotel.games.GameState;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
@@ -52,7 +53,8 @@ public class WiredEffectGiveScore extends InteractionWiredEffect {
 
             Game game = room.getGame(habbo.getHabboInfo().getCurrentGame());
 
-            if (game == null) continue;
+            // Habbo gives no score while no game is running (also between a game's end and the next start).
+            if (game == null || game.state != GameState.RUNNING) continue;
 
             if (habbo.getHabboInfo().getGamePlayer() != null
                     && this.scored.tryCount(game, habbo.getHabboInfo().getId(), this.timesPerGame)) {

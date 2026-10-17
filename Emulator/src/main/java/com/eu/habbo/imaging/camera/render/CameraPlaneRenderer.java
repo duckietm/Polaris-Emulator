@@ -122,6 +122,62 @@ final class CameraPlaneRenderer {
         return hasTextureAssetWithPrefix(plane, "landscape_");
     }
 
+    /**
+     * A layer of a landscape (window view): AIR sends one plane per landscape layer, all with the
+     * corner points of the wall they lie on and a depth just behind it (relative depth +0.02). The
+     * textured layers name {@code landscape_*} assets; the colour layer has no texture, so it is
+     * recognised by lying on a wall, untextured, behind it.
+     */
+    boolean isLandscapeLayer(CameraPlane plane) {
+        if (plane == null || isWallPlane(plane) || isFloorPlane(plane)) {
+            return false;
+        }
+        if (isLandscapePlane(plane)) {
+            return true;
+        }
+        if ((plane.getTexCols() != null && plane.getTexCols().length > 0) || this.data.getPlanes() == null) {
+            return false;
+        }
+        for (CameraPlane wall : this.data.getPlanes()) {
+            if (wall != null && wall != plane && isWallPlane(wall) && liesBehind(plane, wall)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** The landscape layers lying behind {@code wall}, back to front (the order to draw them). */
+    List<CameraPlane> getLandscapeLayersBehind(CameraPlane wall) {
+        List<CameraPlane> layers = new ArrayList<>();
+        if (wall == null || this.data.getPlanes() == null) {
+            return layers;
+        }
+        for (CameraPlane plane : this.data.getPlanes()) {
+            if (plane != null && plane != wall && liesBehind(plane, wall) && isLandscapeLayer(plane)) {
+                layers.add(plane);
+            }
+        }
+        // Stable: layers of one landscape share a depth and keep the client's order.
+        layers.sort((left, right) -> Float.compare(right.getZ(), left.getZ()));
+        return layers;
+    }
+
+    private boolean liesBehind(CameraPlane plane, CameraPlane wall) {
+        return plane.getZ() > wall.getZ() && sameCorners(plane.getCornerPoints(), wall.getCornerPoints());
+    }
+
+    private static boolean sameCorners(CameraPositionPoint[] left, CameraPositionPoint[] right) {
+        if (left == null || right == null || left.length < 4 || right.length < 4) {
+            return false;
+        }
+        for (int i = 0; i < 4; i++) {
+            if (left[i] == null || right[i] == null || left[i].x != right[i].x || left[i].y != right[i].y) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     boolean hasPlaneMasks(CameraPlane plane) {
         return plane.getMasks() != null && plane.getMasks().length > 0;
     }
@@ -307,7 +363,8 @@ final class CameraPlaneRenderer {
         // mask.x has to be mirrored to land the door correctly â€” RoomPlane.as ~505-506).
         // Without these flips the camera shows wall textures upside-down and asymmetric
         // patterns (chevrons, half-walls) come out reversed compared to the room view.
-        if (isWallPlane(plane)) {
+        // Landscape planes lie exactly on their wall and AIR draws both types the same way.
+        if (isWallPlane(plane) || isLandscapePlane(plane)) {
             texture = flipVertical(texture);
             texture = CameraUtils.flipHorizontal(texture);
         }
@@ -331,6 +388,11 @@ final class CameraPlaneRenderer {
     }
 
     private boolean shouldPrefillTexturedPlane(CameraPlane plane) {
+        // A landscape is a stack of layers (colour, background, foreground) with transparent
+        // parts: each layer shows the ones below it.
+        if (isLandscapePlane(plane)) {
+            return false;
+        }
         if (isWallPlane(plane) && hasPlaneMasks(plane)) {
             return true;
         }
@@ -406,7 +468,7 @@ final class CameraPlaneRenderer {
         CameraPositionPoint heightPoint = getTextureHeightPoint(plane, points);
         int widthValue = Math.max(1, Math.abs(points[0].x - widthPoint.x));
         int heightValue;
-        if (isWallPlane(plane)) {
+        if (isWallPlane(plane) || isLandscapePlane(plane)) {
             heightValue = Math.max(1, Math.abs(points[0].y - heightPoint.y));
         } else {
             // For floors and floor side-faces, take the larger of the X and Y projections of

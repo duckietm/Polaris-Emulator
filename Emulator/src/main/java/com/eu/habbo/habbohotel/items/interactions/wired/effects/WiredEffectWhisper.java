@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.bots.Bot;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
@@ -178,6 +179,16 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
         return new ArrayList<>(recipients.values());
     }
 
+    /** The bot behind the first source unit, when that unit is a bot; null otherwise. */
+    static Bot sourceBot(Room room, List<RoomUnit> sourceUsers) {
+        for (RoomUnit roomUnit : sourceUsers) {
+            if (roomUnit == null) continue;
+            if (room.getHabbo(roomUnit) != null) return null;
+            return room.getBot(roomUnit);
+        }
+        return null;
+    }
+
     protected Habbo resolveMessageSourceHabbo(WiredContext ctx, List<RoomUnit> sourceUsers) {
         Room room = ctx.room();
 
@@ -267,6 +278,17 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
     public void execute(WiredContext ctx) {
         if (this.message.length() > 0) {
             List<RoomUnit> sourceUsers = resolveUsers(ctx);
+
+            // A message shown to everyone whose source is a bot is said aloud by that bot, as in Habbo.
+            // Behaviour observed in plus-emulator/PlusEMU a8523821, reimplemented.
+            if (this.visibilitySelection == VISIBILITY_ALL_ROOM_USERS && ctx.room() != null) {
+                Bot speaker = sourceBot(ctx.room(), sourceUsers);
+                if (speaker != null) {
+                    speaker.talk(buildMessage(ctx, null));
+                    return;
+                }
+            }
+
             List<Habbo> recipients = resolveRecipients(ctx, sourceUsers);
             Habbo sharedSourceHabbo = (this.visibilitySelection == VISIBILITY_ALL_ROOM_USERS)
                     ? resolveMessageSourceHabbo(ctx, sourceUsers)

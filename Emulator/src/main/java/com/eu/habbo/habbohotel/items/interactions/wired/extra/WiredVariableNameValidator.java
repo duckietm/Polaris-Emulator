@@ -100,6 +100,10 @@ final class WiredVariableNameValidator {
             return ((WiredExtraVariableEcho) extra).getVariableName();
         }
 
+        if (extra instanceof WiredExtraPointerVariable pointer) {
+            return pointer.getVariableName();
+        }
+
         return null;
     }
 }

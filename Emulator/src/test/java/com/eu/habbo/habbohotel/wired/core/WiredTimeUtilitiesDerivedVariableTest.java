@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.wired.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -25,7 +26,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
-/** A time-utilities box on a variable's tile shows up as read-only {@code name.part} variables. */
+/** A time-utilities box on a variable's tile shows up as {@code name.mode.part} variables. */
 class WiredTimeUtilitiesDerivedVariableTest {
     private static final int DEFINITION_ID = 4_321;
     private static final int INSTANT =
@@ -62,7 +63,7 @@ class WiredTimeUtilitiesDerivedVariableTest {
     }
 
     @Test
-    void selectedPartsBecomeReadOnlyDottedVariables() {
+    void selectedPartsBecomeDottedVariables() {
         WiredExtraUserVariable definition = definition(true);
         WiredExtraTimeUtilities box = timeUtilities((1 << 4) | (1 << 10) | (1 << 24), 0);
         Room room = room(definition, box);
@@ -71,11 +72,12 @@ class WiredTimeUtilitiesDerivedVariableTest {
                 room, WiredVariableLevelSystemSupport.TARGET_USER, definition, info(true));
 
         assertEquals(
-                List.of("joined.day", "joined.hour_of_day", "joined.year"),
+                List.of("joined.value.day", "joined.value.hour_of_day", "joined.value.year"),
                 derived.stream().map(WiredVariableDefinitionInfo::getName).collect(Collectors.toList()));
         for (WiredVariableDefinitionInfo entry : derived) {
             assertTrue(entry.hasValue());
-            assertTrue(entry.isReadOnly());
+            // Value-mode parts are writable (they move the parent).
+            assertFalse(entry.isReadOnly());
 
             WiredVariableLevelSystemSupport.DerivedDefinition resolved =
                     WiredVariableLevelSystemSupport.resolveDerivedDefinition(
@@ -125,17 +127,73 @@ class WiredTimeUtilitiesDerivedVariableTest {
         Room createdRoom = room(definition, timeUtilities(1 << 10, WiredExtraTimeUtilities.MODE_CREATION_TIME));
         List<WiredVariableDefinitionInfo> derived = WiredVariableLevelSystemSupport.getDerivedDefinitions(
                 createdRoom, WiredVariableLevelSystemSupport.TARGET_USER, definition, info(false));
-        assertEquals(1, derived.size());
+        assertEquals(
+                List.of("joined.creation_time", "joined.creation_time.year"),
+                derived.stream().map(WiredVariableDefinitionInfo::getName).collect(Collectors.toList()));
 
         WiredVariableLevelSystemSupport.DerivedDefinition year =
                 WiredVariableLevelSystemSupport.resolveDerivedDefinition(
                         createdRoom,
                         WiredVariableLevelSystemSupport.TARGET_USER,
-                        derived.get(0).getItemId());
+                        derived.get(1).getItemId());
         assertEquals(
                 2024,
                 WiredVariableLevelSystemSupport.getDerivedValue(
                         createdRoom, year.getLevelSystem(), year.getSubvariableType(), null, INSTANT, 0));
+    }
+
+    @Test
+    void valuePartsAreWritableUnlessTheParentIsReadOnly() {
+        WiredExtraUserVariable definition = definition(true);
+        Room room = room(definition, timeUtilities((1 << 4) | (1 << 24), WiredExtraTimeUtilities.MODE_VALUE));
+
+        List<WiredVariableDefinitionInfo> derived = WiredVariableLevelSystemSupport.getDerivedDefinitions(
+                room, WiredVariableLevelSystemSupport.TARGET_USER, definition, info(true));
+        assertEquals(2, derived.size());
+        for (WiredVariableDefinitionInfo entry : derived) {
+            assertFalse(entry.isReadOnly());
+            WiredVariableLevelSystemSupport.DerivedDefinition resolved =
+                    WiredVariableLevelSystemSupport.resolveDerivedDefinition(
+                            room, WiredVariableLevelSystemSupport.TARGET_USER, entry.getItemId());
+            assertTrue(resolved.isWritable());
+            assertFalse(WiredVariableLevelSystemSupport.getDerivedDefinitionInfo(
+                            room, WiredVariableLevelSystemSupport.TARGET_USER, entry.getItemId())
+                    .isReadOnly());
+        }
+
+        WiredVariableDefinitionInfo readOnlyParent =
+                new WiredVariableDefinitionInfo(DEFINITION_ID, "joined", true, 0, false, true);
+        assertTrue(
+                WiredVariableLevelSystemSupport.getDerivedDefinitions(
+                                room, WiredVariableLevelSystemSupport.TARGET_USER, definition, readOnlyParent)
+                        .stream()
+                        .allMatch(WiredVariableDefinitionInfo::isReadOnly));
+    }
+
+    @Test
+    void timestampModesListTheTimestampAsAReadOnlyVariable() {
+        WiredExtraUserVariable definition = definition(true);
+        Room room = room(definition, timeUtilities(1 << 10, WiredExtraTimeUtilities.MODE_LAST_UPDATE_TIME));
+
+        List<WiredVariableDefinitionInfo> derived = WiredVariableLevelSystemSupport.getDerivedDefinitions(
+                room, WiredVariableLevelSystemSupport.TARGET_USER, definition, info(true));
+        assertEquals(
+                List.of("joined.last_update_time", "joined.last_update_time.year"),
+                derived.stream().map(WiredVariableDefinitionInfo::getName).collect(Collectors.toList()));
+        assertTrue(derived.stream().allMatch(WiredVariableDefinitionInfo::isReadOnly));
+
+        WiredVariableLevelSystemSupport.DerivedDefinition stamp =
+                WiredVariableLevelSystemSupport.resolveDerivedDefinition(
+                        room,
+                        WiredVariableLevelSystemSupport.TARGET_USER,
+                        derived.get(0).getItemId());
+        assertNotNull(stamp);
+        assertFalse(stamp.isWritable());
+        assertEquals(
+                INSTANT,
+                WiredVariableLevelSystemSupport.getDerivedValue(
+                        room, stamp.getLevelSystem(), stamp.getSubvariableType(), 5, 1, INSTANT));
+        assertNull(WiredVariableLevelSystemSupport.writeDerivedValue(room, stamp, 5, 10));
     }
 
     @Test
@@ -151,7 +209,7 @@ class WiredTimeUtilitiesDerivedVariableTest {
                 .stream()
                 .map(WiredVariableDefinitionInfo::getName)
                 .collect(Collectors.toList());
-        assertTrue(names.contains("joined.year"));
+        assertTrue(names.contains("joined.value.year"));
         assertTrue(names.contains("joined.is_complete"));
     }
 }

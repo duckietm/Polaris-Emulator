@@ -22,6 +22,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
 import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
@@ -88,7 +89,10 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
             return toUserList(values);
         }
 
-        int amount = this.resolveAmount(ctx, room);
+        // A pointer filters by the variable it stands for in this stack.
+        int variableId = WiredPointerVariableSupport.resolve(ctx, room, this.variableItemId);
+        int referenceId = WiredPointerVariableSupport.resolve(ctx, room, this.referenceVariableItemId);
+        int amount = this.resolveAmount(ctx, room, variableId, referenceId);
         if (amount <= 0) return new ArrayList<>();
 
         List<SortableEntry<RoomUnit>> matches = new ArrayList<>();
@@ -96,7 +100,7 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
         for (RoomUnit roomUnit : values) {
             if (roomUnit == null) continue;
 
-            MetricSnapshot metric = this.resolveUserMetric(room, roomUnit);
+            MetricSnapshot metric = this.resolveUserMetric(room, roomUnit, variableId, referenceId);
             if (metric == null) continue;
 
             matches.add(new SortableEntry<>(roomUnit, metric));
@@ -114,7 +118,10 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
             return toItemList(values);
         }
 
-        int amount = this.resolveAmount(ctx, room);
+        // A pointer filters by the variable it stands for in this stack.
+        int variableId = WiredPointerVariableSupport.resolve(ctx, room, this.variableItemId);
+        int referenceId = WiredPointerVariableSupport.resolve(ctx, room, this.referenceVariableItemId);
+        int amount = this.resolveAmount(ctx, room, variableId, referenceId);
         if (amount <= 0) return new ArrayList<>();
 
         List<SortableEntry<HabboItem>> matches = new ArrayList<>();
@@ -122,7 +129,7 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
         for (HabboItem item : values) {
             if (item == null) continue;
 
-            MetricSnapshot metric = this.resolveFurniMetric(room, item);
+            MetricSnapshot metric = this.resolveFurniMetric(room, item, variableId, referenceId);
             if (metric == null) continue;
 
             matches.add(new SortableEntry<>(item, metric));
@@ -152,8 +159,10 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
         int[] furniSources = settings.getFurniSourceTypes();
         int nextReferenceUserSource =
                 normalizeUserSource(userSources.length > 0 ? userSources[0] : WiredSourceUtil.SOURCE_TRIGGER);
+        // The official editor names the reference picks 100; the box keeps them as its secondary picks.
+        int sentFurniSource = furniSources.length > 0 ? furniSources[0] : WiredSourceUtil.SOURCE_TRIGGER;
         int nextReferenceFurniSource = normalizeReferenceFurniSource(
-                furniSources.length > 0 ? furniSources[0] : WiredSourceUtil.SOURCE_TRIGGER);
+                sentFurniSource == WiredSourceUtil.SOURCE_SELECTED ? SOURCE_SECONDARY_SELECTED : sentFurniSource);
 
         if (!this.isValidMainVariable(room, nextVariableToken))
             throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
@@ -304,14 +313,14 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
         return true;
     }
 
-    private int resolveAmount(WiredContext ctx, Room room) {
+    private int resolveAmount(WiredContext ctx, Room room, int variableId, int referenceId) {
         if (this.amountMode != AMOUNT_VARIABLE) return normalizeAmount(this.amountConstantValue);
 
-        Integer value = this.resolveReferenceValue(ctx, room);
+        Integer value = this.resolveReferenceValue(ctx, room, variableId, referenceId);
         return value == null ? 0 : normalizeAmount(value);
     }
 
-    private Integer resolveReferenceValue(WiredContext ctx, Room room) {
+    private Integer resolveReferenceValue(WiredContext ctx, Room room, int variableId, int referenceId) {
         if (room == null) return null;
 
         if (this.referenceTargetType == TARGET_FURNI) {
@@ -321,7 +330,7 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
             if (source == WiredSourceUtil.SOURCE_SELECTED) this.refreshReferenceItems();
 
             for (HabboItem item : WiredSourceUtil.resolveItems(ctx, source, this.referenceSelectedItems)) {
-                Integer value = this.readFurniReferenceValue(room, item);
+                Integer value = this.readFurniReferenceValue(room, item, variableId, referenceId);
                 if (value != null) return value;
             }
 
@@ -329,22 +338,22 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
         }
 
         if (this.referenceTargetType == TARGET_CONTEXT) {
-            return this.readContextReferenceValue(ctx, room);
+            return this.readContextReferenceValue(ctx, room, variableId, referenceId);
         }
 
         if (this.referenceTargetType == TARGET_ROOM) {
-            return this.readRoomReferenceValue(room);
+            return this.readRoomReferenceValue(room, variableId, referenceId);
         }
 
         for (RoomUnit roomUnit : WiredSourceUtil.resolveUsers(ctx, this.referenceUserSource)) {
-            Integer value = this.readUserReferenceValue(room, roomUnit);
+            Integer value = this.readUserReferenceValue(room, roomUnit, variableId, referenceId);
             if (value != null) return value;
         }
 
         return null;
     }
 
-    private Integer readUserReferenceValue(Room room, RoomUnit roomUnit) {
+    private Integer readUserReferenceValue(Room room, RoomUnit roomUnit, int variableId, int referenceId) {
         if (room == null || roomUnit == null) return null;
 
         if (isInternalVariableToken(this.referenceVariableToken)) {
@@ -352,17 +361,14 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
             return canUseUserInternalReference(key) ? this.readUserInternalValue(room, roomUnit, key) : null;
         }
 
-        WiredVariableDefinitionInfo definition =
-                room.getUserVariableManager().getDefinitionInfo(this.referenceVariableItemId);
+        WiredVariableDefinitionInfo definition = room.getUserVariableManager().getDefinitionInfo(referenceId);
         if (definition == null || !definition.hasValue()) return null;
 
         int holder = UserVariableHolders.of(room, roomUnit);
-        return (holder != 0)
-                ? room.getUserVariableManager().getCurrentValue(holder, this.referenceVariableItemId)
-                : null;
+        return (holder != 0) ? room.getUserVariableManager().getCurrentValue(holder, referenceId) : null;
     }
 
-    private Integer readFurniReferenceValue(Room room, HabboItem item) {
+    private Integer readFurniReferenceValue(Room room, HabboItem item, int variableId, int referenceId) {
         if (room == null || item == null) return null;
 
         if (isInternalVariableToken(this.referenceVariableToken)) {
@@ -370,14 +376,13 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
             return canUseFurniInternalReference(key) ? this.readFurniInternalValue(room, item, key) : null;
         }
 
-        WiredVariableDefinitionInfo definition =
-                room.getFurniVariableManager().getDefinitionInfo(this.referenceVariableItemId);
+        WiredVariableDefinitionInfo definition = room.getFurniVariableManager().getDefinitionInfo(referenceId);
         return (definition != null && definition.hasValue())
-                ? room.getFurniVariableManager().getCurrentValue(item.getId(), this.referenceVariableItemId)
+                ? room.getFurniVariableManager().getCurrentValue(item.getId(), referenceId)
                 : null;
     }
 
-    private Integer readRoomReferenceValue(Room room) {
+    private Integer readRoomReferenceValue(Room room, int variableId, int referenceId) {
         if (room == null) return null;
 
         if (isInternalVariableToken(this.referenceVariableToken)) {
@@ -385,14 +390,13 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
             return canUseRoomInternalReference(key) ? this.readRoomInternalValue(room, key) : null;
         }
 
-        WiredVariableDefinitionInfo definition =
-                room.getRoomVariableManager().getDefinitionInfo(this.referenceVariableItemId);
+        WiredVariableDefinitionInfo definition = room.getRoomVariableManager().getDefinitionInfo(referenceId);
         return (definition != null && definition.hasValue())
-                ? room.getRoomVariableManager().getCurrentValue(this.referenceVariableItemId)
+                ? room.getRoomVariableManager().getCurrentValue(referenceId)
                 : null;
     }
 
-    private Integer readContextReferenceValue(WiredContext ctx, Room room) {
+    private Integer readContextReferenceValue(WiredContext ctx, Room room, int variableId, int referenceId) {
         if (ctx == null) return null;
 
         if (isInternalVariableToken(this.referenceVariableToken)) {
@@ -400,16 +404,14 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
             return canUseContextInternalReference(key) ? WiredInternalVariableSupport.readContextValue(ctx, key) : null;
         }
 
-        WiredVariableDefinitionInfo definition =
-                WiredContextVariableSupport.getDefinitionInfo(room, this.referenceVariableItemId);
-        if (definition == null
-                || !definition.hasValue()
-                || !WiredContextVariableSupport.hasVariable(ctx, this.referenceVariableItemId)) return null;
+        WiredVariableDefinitionInfo definition = WiredContextVariableSupport.getDefinitionInfo(room, referenceId);
+        if (definition == null || !definition.hasValue() || !WiredContextVariableSupport.hasVariable(ctx, referenceId))
+            return null;
 
-        return WiredContextVariableSupport.getCurrentValue(ctx, this.referenceVariableItemId);
+        return WiredContextVariableSupport.getCurrentValue(ctx, referenceId);
     }
 
-    private MetricSnapshot resolveUserMetric(Room room, RoomUnit roomUnit) {
+    private MetricSnapshot resolveUserMetric(Room room, RoomUnit roomUnit, int variableId, int referenceId) {
         if (room == null || roomUnit == null) return null;
 
         if (isInternalVariableToken(this.variableToken)) {
@@ -418,19 +420,20 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
             return (value != null) ? new MetricSnapshot(roomUnit.getId(), value, 0, 0) : null;
         }
 
-        WiredVariableDefinitionInfo definition = room.getUserVariableManager().getDefinitionInfo(this.variableItemId);
+        WiredVariableDefinitionInfo definition = room.getUserVariableManager().getDefinitionInfo(variableId);
         int holder = UserVariableHolders.of(room, roomUnit);
         if (definition == null || holder == 0) return null;
-        if (!room.getUserVariableManager().hasVariable(holder, this.variableItemId)) return null;
+        if (!sortable(definition.hasValue(), this.sortBy)) return null;
+        if (!room.getUserVariableManager().hasVariable(holder, variableId)) return null;
 
         return new MetricSnapshot(
                 roomUnit.getId(),
-                definition.hasValue() ? room.getUserVariableManager().getCurrentValue(holder, this.variableItemId) : 0,
-                room.getUserVariableManager().getCreatedAt(holder, this.variableItemId),
-                room.getUserVariableManager().getUpdatedAt(holder, this.variableItemId));
+                definition.hasValue() ? room.getUserVariableManager().getCurrentValue(holder, variableId) : 0,
+                room.getUserVariableManager().getCreatedAt(holder, variableId),
+                room.getUserVariableManager().getUpdatedAt(holder, variableId));
     }
 
-    private MetricSnapshot resolveFurniMetric(Room room, HabboItem item) {
+    private MetricSnapshot resolveFurniMetric(Room room, HabboItem item, int variableId, int referenceId) {
         if (room == null || item == null) return null;
 
         if (isInternalVariableToken(this.variableToken)) {
@@ -439,17 +442,23 @@ public abstract class WiredExtraVariableFilterBase extends InteractionWiredExtra
             return (value != null) ? new MetricSnapshot(item.getId(), value, 0, 0) : null;
         }
 
-        WiredVariableDefinitionInfo definition = room.getFurniVariableManager().getDefinitionInfo(this.variableItemId);
+        WiredVariableDefinitionInfo definition = room.getFurniVariableManager().getDefinitionInfo(variableId);
         if (definition == null) return null;
-        if (!room.getFurniVariableManager().hasVariable(item.getId(), this.variableItemId)) return null;
+        if (!sortable(definition.hasValue(), this.sortBy)) return null;
+        if (!room.getFurniVariableManager().hasVariable(item.getId(), variableId)) return null;
 
         return new MetricSnapshot(
                 item.getId(),
-                definition.hasValue()
-                        ? room.getFurniVariableManager().getCurrentValue(item.getId(), this.variableItemId)
-                        : 0,
-                room.getFurniVariableManager().getCreatedAt(item.getId(), this.variableItemId),
-                room.getFurniVariableManager().getUpdatedAt(item.getId(), this.variableItemId));
+                definition.hasValue() ? room.getFurniVariableManager().getCurrentValue(item.getId(), variableId) : 0,
+                room.getFurniVariableManager().getCreatedAt(item.getId(), variableId),
+                room.getFurniVariableManager().getUpdatedAt(item.getId(), variableId));
+    }
+
+    /**
+     * A sort by value over a variable that holds no value keeps nobody, as in Habbo; the time sorts still work.
+     */
+    static boolean sortable(boolean hasValue, int sortBy) {
+        return hasValue || (sortBy != SORT_VALUE_HIGHEST && sortBy != SORT_VALUE_LOWEST);
     }
 
     private Comparator<SortableEntry<?>> metricComparator() {

@@ -40,6 +40,7 @@ public final class BundleAssetSource implements CameraAssetSource {
     private static final Pattern AVATAR_EFFECT = Pattern.compile("^(?:h|sh)_[a-z]+_fx(\\d+)_.*$");
     private static final int MAX_PREFIX_TOKENS = 12;
     private static final int MAX_FILE_CHECKS = 8192;
+    private static final List<String> BUNDLE_EXTENSIONS = List.of(".nitro", ".hab");
 
     /** The folders and files this source reads; any may be null. */
     public record Roots(
@@ -202,12 +203,15 @@ public final class BundleAssetSource implements CameraAssetSource {
         return whole != null && whole.hasAsset(assetName) ? whole : null;
     }
 
+    /** {@code <name>.nitro}, or else Habbo's {@code <name>.hab} with the same json and sheet. */
     private NitroLibrary libraryFile(Path dir, String libraryName) {
-        Path file = dir.resolve(libraryName + ".nitro").normalize();
-        if (!file.startsWith(dir) || !this.exists(file)) {
-            return null;
+        for (String extension : BUNDLE_EXTENSIONS) {
+            Path file = dir.resolve(libraryName + extension).normalize();
+            if (file.startsWith(dir) && this.exists(file)) {
+                return this.library(file);
+            }
         }
-        return this.library(file);
+        return null;
     }
 
     private boolean exists(Path file) {

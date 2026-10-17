@@ -25,7 +25,9 @@ public final class WiredRoomDiagnostics {
         /** A furni is waiting on something the room has no way of producing. */
         UNREACHABLE,
         /** A line a "write to logs" box wrote, at the level the box was set to. */
-        WIRED_LOG
+        WIRED_LOG,
+        /** Place Furni could not place one or more of its copies (room full, tile taken, a gate or roller). */
+        PLACEMENT_FAILED
     }
 
     /**
@@ -494,6 +496,12 @@ public final class WiredRoomDiagnostics {
         record(Type.UNREACHABLE, now, reason, sourceLabel, sourceId);
     }
 
+    /** Place Furni could not place a copy; the users saw the placement-failed notice. */
+    public void recordPlacementFailure(long now, String reason, String sourceLabel, int sourceId) {
+        rollWindowIfNeeded(now);
+        record(Type.PLACEMENT_FAILED, now, reason, sourceLabel, sourceId);
+    }
+
     /**
      * A line a wired box asked to write. It lands in the room log at the box's own level, so the log
      * window shows it next to what the engine noted, filterable like any other entry.
@@ -775,7 +783,10 @@ public final class WiredRoomDiagnostics {
         }
 
         // Neither of these is the engine failing; they describe a setup, so they read as warnings.
-        return (type == Type.MARKED_AS_HEAVY || type == Type.NO_TARGETS || type == Type.UNREACHABLE)
+        return (type == Type.MARKED_AS_HEAVY
+                        || type == Type.NO_TARGETS
+                        || type == Type.UNREACHABLE
+                        || type == Type.PLACEMENT_FAILED)
                 ? Severity.WARNING
                 : Severity.ERROR;
     }

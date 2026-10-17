@@ -20,6 +20,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
 import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredTriggerSaveException;
@@ -233,6 +234,11 @@ public class WiredTriggerVariableChanged extends InteractionWiredTrigger {
 
         if (this.variableToken.isEmpty()) {
             throw new WiredTriggerSaveException("wiredfurni.params.variables.validation.missing_variable");
+        }
+
+        // A pointer only exists while a stack runs, so nothing can watch it change (AIR VariableUpdate filter).
+        if (room != null && WiredPointerVariableSupport.isPointer(room, this.variableItemId)) {
+            throw new WiredTriggerSaveException(WiredPointerVariableSupport.REQUIRES_EXECUTION_CONTEXT_ERROR);
         }
 
         if (room == null || !this.isValidDefinition(room)) {

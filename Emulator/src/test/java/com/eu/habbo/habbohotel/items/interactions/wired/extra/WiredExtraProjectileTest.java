@@ -171,6 +171,13 @@ class WiredExtraProjectileTest {
     }
 
     @Test
+    void aDiagonalHeadingKeepsTheFurnisRotation() {
+        // The fresh box turns with the move; a diagonal move cannot be a floor furni's heading.
+        assertEquals(2, box().resolveRotation(0, 0, 3, 3, 2));
+        assertEquals(0, box().resolveRotation(4, 4, 3, 3, 0));
+    }
+
+    @Test
     void itLeavesTheRotationAloneWhenAskedToOrWhenNothingMoves() {
         Room room = room();
         WiredExtraProjectile off = box();

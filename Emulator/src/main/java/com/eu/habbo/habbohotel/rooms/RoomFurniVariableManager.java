@@ -4,13 +4,16 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.ItemManager;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraPointerVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableEcho;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableLevelSystemSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableTextConnectorSupport;
+import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.outgoing.wired.WiredUserVariablesDataComposer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -110,6 +113,18 @@ public class RoomFurniVariableManager {
             return false;
         }
 
+        if (WiredPointerVariableSupport.isPointer(this.room, definitionItemId)) {
+            // A pointer holds nothing itself; boxes resolve it to the variable it stands for first.
+            return false;
+        }
+
+        WiredVariableLevelSystemSupport.DerivedDefinition derivedPart =
+                WiredVariableLevelSystemSupport.resolveDerivedDefinition(
+                        this.room, WiredVariableLevelSystemSupport.TARGET_FURNI, definitionItemId);
+        if (derivedPart != null) {
+            return overrideExisting && this.writeDerivedPart(furni.getId(), derivedPart, value);
+        }
+
         WiredVariableDefinitionInfo definitionInfo = this.getDefinitionInfo(definitionItemId);
         if (definitionInfo == null || definitionInfo.isReadOnly()) {
             return false;
@@ -200,6 +215,18 @@ public class RoomFurniVariableManager {
 
     public boolean updateVariableValue(int furniId, int definitionItemId, Integer value) {
         this.ensurePermanentAssignmentsLoaded();
+
+        if (WiredPointerVariableSupport.isPointer(this.room, definitionItemId)) {
+            // A pointer holds nothing itself; boxes resolve it to the variable it stands for first.
+            return false;
+        }
+
+        WiredVariableLevelSystemSupport.DerivedDefinition derivedPart =
+                WiredVariableLevelSystemSupport.resolveDerivedDefinition(
+                        this.room, WiredVariableLevelSystemSupport.TARGET_FURNI, definitionItemId);
+        if (derivedPart != null) {
+            return this.writeDerivedPart(furniId, derivedPart, value);
+        }
 
         WiredVariableDefinitionInfo definitionInfo = this.getDefinitionInfo(definitionItemId);
         if (definitionInfo == null || !definitionInfo.hasValue() || definitionInfo.isReadOnly()) {
@@ -389,8 +416,17 @@ public class RoomFurniVariableManager {
             return false;
         }
 
+        if (WiredPointerVariableSupport.isPointer(this.room, definitionItemId)) {
+            // A pointer holds nothing itself; boxes resolve it to the variable it stands for first.
+            return false;
+        }
+
         WiredVariableDefinitionInfo definitionInfo = this.getDefinitionInfo(definitionItemId);
-        if (definitionInfo == null || definitionInfo.isReadOnly()) {
+        if (definitionInfo == null
+                || definitionInfo.isReadOnly()
+                || WiredVariableLevelSystemSupport.resolveDerivedDefinition(
+                                this.room, WiredVariableLevelSystemSupport.TARGET_FURNI, definitionItemId)
+                        != null) {
             return false;
         }
 
@@ -778,6 +814,7 @@ public class RoomFurniVariableManager {
         }
 
         result.addAll(baseDefinitions);
+        result.addAll(WiredPointerVariableSupport.definitionInfos(this.room, WiredVariableTargets.OFFICIAL_FURNI));
 
         for (WiredVariableDefinitionInfo definition : baseDefinitions) {
             result.addAll(WiredVariableLevelSystemSupport.getDerivedDefinitions(
@@ -819,6 +856,11 @@ public class RoomFurniVariableManager {
         if (extra instanceof WiredExtraVariableEcho && ((WiredExtraVariableEcho) extra).isFurniEcho()) {
             WiredVariableDefinitionInfo info = ((WiredExtraVariableEcho) extra).createDefinitionInfo(this.room);
             return (info != null && hasVisibleDefinitionName(info.getName())) ? info : null;
+        }
+
+        if (extra instanceof WiredExtraPointerVariable) {
+            return WiredPointerVariableSupport.definitionInfo(
+                    this.room, definitionItemId, WiredVariableTargets.OFFICIAL_FURNI);
         }
 
         return WiredVariableLevelSystemSupport.getDerivedDefinitionInfo(
@@ -893,6 +935,19 @@ public class RoomFurniVariableManager {
         return (assignments != null) ? assignments.get(definitionItemId) : null;
     }
 
+    /** Writes a value-mode Time Utilities part (see {@link RoomUserVariableManager}). */
+    private boolean writeDerivedPart(
+            int furniId, WiredVariableLevelSystemSupport.DerivedDefinition derivedPart, Integer partValue) {
+        int baseId = derivedPart.getBaseDefinitionItemId();
+        if (partValue == null || !derivedPart.isWritable() || !this.hasVariable(furniId, baseId)) {
+            return false;
+        }
+
+        Integer baseValue = WiredVariableLevelSystemSupport.writeDerivedValue(
+                this.room, derivedPart, this.getCurrentValue(furniId, baseId), partValue);
+        return baseValue != null && this.updateVariableValue(furniId, baseId, baseValue);
+    }
+
     private Integer getDerivedValue(int furniId, WiredVariableLevelSystemSupport.DerivedDefinition derivedDefinition) {
         VariableAssignment base = this.getRawAssignment(furniId, derivedDefinition.getBaseDefinitionItemId());
         if (base == null) {
@@ -949,6 +1004,10 @@ public class RoomFurniVariableManager {
 
             int createdAt = (stamps != null) ? stamps.getCreatedAt() : 0;
             int updatedAt = (stamps != null) ? stamps.getUpdatedAt() : 0;
+            // A value change also moved the update time; a last-update-time part compares against the old one.
+            int previousUpdatedAt = (stamps != null && !Objects.equals(previousValue, currentValue))
+                    ? stamps.getPreviousUpdatedAt()
+                    : updatedAt;
             Integer derivedPreviousValue = existedBefore
                     ? WiredVariableLevelSystemSupport.getDerivedValue(
                             this.room,
@@ -956,7 +1015,7 @@ public class RoomFurniVariableManager {
                             resolvedDefinition.getSubvariableType(),
                             previousValue,
                             createdAt,
-                            updatedAt)
+                            previousUpdatedAt)
                     : null;
             Integer derivedCurrentValue = existsAfter
                     ? WiredVariableLevelSystemSupport.getDerivedValue(
@@ -1234,11 +1293,13 @@ public class RoomFurniVariableManager {
         private Integer value;
         private final int createdAt;
         private int updatedAt;
+        private int previousUpdatedAt;
 
         public VariableAssignment(Integer value, int createdAt, int updatedAt) {
             this.value = value;
             this.createdAt = createdAt;
             this.updatedAt = updatedAt;
+            this.previousUpdatedAt = updatedAt;
         }
 
         public Integer getValue() {
@@ -1247,6 +1308,7 @@ public class RoomFurniVariableManager {
 
         public void setValue(Integer value, int updatedAt) {
             this.value = value;
+            this.previousUpdatedAt = this.updatedAt;
             this.updatedAt = updatedAt;
         }
 
@@ -1256,6 +1318,11 @@ public class RoomFurniVariableManager {
 
         public int getUpdatedAt() {
             return this.updatedAt;
+        }
+
+        /** The update time before the last value change, so a last-update-time part can compare. */
+        public int getPreviousUpdatedAt() {
+            return this.previousUpdatedAt;
         }
     }
 

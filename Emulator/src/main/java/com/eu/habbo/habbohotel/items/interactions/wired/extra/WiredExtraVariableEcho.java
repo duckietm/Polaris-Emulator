@@ -23,6 +23,7 @@ import com.eu.habbo.habbohotel.users.HabboGender;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredUserMovementHelper;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableLevelSystemSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableTextConnectorSupport;
@@ -33,6 +34,7 @@ import java.sql.SQLException;
 import java.util.Locale;
 
 public class WiredExtraVariableEcho extends InteractionWiredExtra {
+    static final String ECHO_SELF_REFERENCE = "wiredfurni.error.echo.self_reference";
     public static final int CODE = 83;
     public static final int TARGET_USER = 0;
     public static final int TARGET_FURNI = 1;
@@ -80,6 +82,18 @@ public class WiredExtraVariableEcho extends InteractionWiredExtra {
 
         if (normalizedToken.isEmpty()) {
             throw new WiredSaveException("wiredfurni.params.variables.validation.missing_variable");
+        }
+
+        // AIR's echo source filter leaves out pointers: an echo is read without a running stack.
+        if (WiredPointerVariableSupport.isPointer(room, normalizedItemId)) {
+            throw new WiredSaveException(WiredPointerVariableSupport.REQUIRES_EXECUTION_CONTEXT_ERROR);
+        }
+
+        // An echo cannot echo another echo, as in Habbo (d6083d8c).
+        if (normalizedItemId > 0
+                && room.getRoomSpecialTypes() != null
+                && room.getRoomSpecialTypes().getExtra(normalizedItemId) instanceof WiredExtraVariableEcho) {
+            throw new WiredSaveException(ECHO_SELF_REFERENCE);
         }
 
         if (sourceState == null || !sourceState.hasValue()) {

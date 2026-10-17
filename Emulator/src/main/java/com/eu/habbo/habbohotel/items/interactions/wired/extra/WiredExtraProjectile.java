@@ -264,7 +264,10 @@ public class WiredExtraProjectile extends InteractionWiredExtra {
             return fallbackRotation;
         }
 
-        return WiredProjectileDirections.rotate(facing, this.params[PARAM_ROTATION_OFFSET]);
+        int rotation = WiredProjectileDirections.rotate(facing, this.params[PARAM_ROTATION_OFFSET]);
+        // Floor furni take no diagonal heading: an odd facing keeps the furni's own rotation, as in Habbo.
+        // Behaviour observed in plus-emulator/PlusEMU 6a768f8d, reimplemented.
+        return (rotation % 2 != 0) ? fallbackRotation : rotation;
     }
 
     /** The animation time of one flight; the stack's own time when the box does not scale it. */

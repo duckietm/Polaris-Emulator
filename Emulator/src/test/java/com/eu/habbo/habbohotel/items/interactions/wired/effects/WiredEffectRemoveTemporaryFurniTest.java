@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -15,6 +14,7 @@ import static org.mockito.Mockito.when;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
 import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomItemManager;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
@@ -30,11 +30,15 @@ class WiredEffectRemoveTemporaryFurniTest {
     @Test
     void itRemovesTemporaryFurniAndLeavesOwnedFurni() throws Exception {
         Room room = mock(Room.class);
-        HabboItem copy = item(2_050_000_001, true);
+        HabboItem copy = item(2_147_401_728, true);
+        HabboItem secondCopy = item(2_147_401_729, true);
         HabboItem owned = item(15, false);
         when(room.getHabboItem(anyInt())).thenReturn(null);
         when(room.getHabboItem(copy.getId())).thenReturn(copy);
         when(room.getHabboItem(owned.getId())).thenReturn(owned);
+        when(room.getHabboItem(secondCopy.getId())).thenReturn(secondCopy);
+        RoomItemManager items = mock(RoomItemManager.class);
+        when(room.getItemManager()).thenReturn(items);
         WiredContext ctx = mock(WiredContext.class);
         when(ctx.room()).thenReturn(room);
 
@@ -46,12 +50,13 @@ class WiredEffectRemoveTemporaryFurniTest {
 
         try (MockedStatic<WiredSourceUtil> sources = mockStatic(WiredSourceUtil.class)) {
             sources.when(() -> WiredSourceUtil.resolveItems(eq(ctx), eq(WiredSourceUtil.SOURCE_SELECTOR), any()))
-                    .thenReturn(List.of(copy, owned));
+                    .thenReturn(List.of(copy, owned, secondCopy));
             box.execute(ctx);
         }
 
-        verify(room).pickUpItem(eq(copy), isNull());
-        verify(room, never()).pickUpItem(eq(owned), any());
+        // One batched removal of the copies (ObjectRemoveMultiple); owned furni stays.
+        verify(items).removeTemporaryItems(List.of(copy, secondCopy));
+        verify(room, never()).pickUpItem(any(), any());
     }
 
     @Test

@@ -8,6 +8,7 @@ public class WiredVariableDefinitionInfo {
     private final boolean textConnected;
     private final boolean readOnly;
     private final boolean array;
+    private final boolean requiresExecutionContext;
 
     public WiredVariableDefinitionInfo(
             int itemId, String name, boolean hasValue, int availability, boolean textConnected, boolean readOnly) {
@@ -22,6 +23,22 @@ public class WiredVariableDefinitionInfo {
             boolean textConnected,
             boolean readOnly,
             boolean array) {
+        this(itemId, name, hasValue, availability, textConnected, readOnly, array, false);
+    }
+
+    /**
+     * With {@code requiresExecutionContext}: the variable only exists while a stack runs (a pointer),
+     * as the official {@code WiredVariable.requiresExecutionContext}.
+     */
+    public WiredVariableDefinitionInfo(
+            int itemId,
+            String name,
+            boolean hasValue,
+            int availability,
+            boolean textConnected,
+            boolean readOnly,
+            boolean array,
+            boolean requiresExecutionContext) {
         this.itemId = itemId;
         this.name = name;
         this.hasValue = hasValue;
@@ -29,6 +46,7 @@ public class WiredVariableDefinitionInfo {
         this.textConnected = textConnected;
         this.readOnly = readOnly;
         this.array = array;
+        this.requiresExecutionContext = requiresExecutionContext;
     }
 
     public int getItemId() {
@@ -57,5 +75,9 @@ public class WiredVariableDefinitionInfo {
 
     public boolean isArray() {
         return this.array;
+    }
+
+    public boolean requiresExecutionContext() {
+        return this.requiresExecutionContext;
     }
 }

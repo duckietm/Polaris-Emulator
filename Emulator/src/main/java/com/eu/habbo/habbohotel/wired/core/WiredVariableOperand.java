@@ -81,7 +81,9 @@ public final class WiredVariableOperand {
         String internalKey = token.startsWith(INTERNAL_TOKEN_PREFIX)
                 ? WiredInternalVariableSupport.normalizeKey(token.substring(INTERNAL_TOKEN_PREFIX.length()))
                 : null;
-        int itemId = customItemId(token);
+        // A pointer is read as the variable it stands for in this stack.
+        int itemId = WiredPointerVariableSupport.resolve(ctx, room, customItemId(token));
+        if (internalKey == null && itemId <= 0) return null;
 
         switch (target) {
             case TARGET_FURNI -> {

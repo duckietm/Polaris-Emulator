@@ -32,6 +32,7 @@ public class InteractionRandomState extends InteractionDefault {
         room.updateItemState(this);
 
         int randomState = Emulator.getRandom().nextInt(params.getStates()) + 1;
+        notifyStateChanged(room, client != null ? client.getHabbo().getRoomUnit() : null, this);
 
         Emulator.getThreading()
                 .run(

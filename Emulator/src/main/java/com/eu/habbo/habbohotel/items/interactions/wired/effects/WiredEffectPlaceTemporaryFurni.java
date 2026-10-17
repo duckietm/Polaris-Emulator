@@ -5,6 +5,12 @@ import com.eu.habbo.core.ConfigurationManager;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.items.interactions.InteractionEffectGate;
+import com.eu.habbo.habbohotel.items.interactions.InteractionGate;
+import com.eu.habbo.habbohotel.items.interactions.InteractionGuildGate;
+import com.eu.habbo.habbohotel.items.interactions.InteractionHabboClubGate;
+import com.eu.habbo.habbohotel.items.interactions.InteractionOneWayGate;
+import com.eu.habbo.habbohotel.items.interactions.InteractionRoller;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
@@ -72,6 +78,10 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
     static final int MAX_SNAPSHOT = 20;
 
     private static final double HEIGHT_EPSILON = 0.001;
+    /** Copies above this altitude are skipped, as in Habbo. */
+    static final double MAX_COPY_ALTITUDE = 35.0;
+
+    static final String FURNI_CAN_NOT_BE_CLONED = "wiredfurni.error.furni_can_not_be_cloned";
 
     private List<Snapshot> snapshot = new ArrayList<>();
     private boolean targetIsUser = false;
@@ -155,11 +165,13 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
         List<Snapshot> next = new ArrayList<>();
         for (int id : picks) {
             HabboItem item = room.getHabboItem(id);
-            // Wired boxes are not copied: a copy would save its settings to a row it does not have.
-            if (item == null
-                    || item instanceof InteractionWired
-                    || item.getBaseItem().getType() != FurnitureType.FLOOR) {
+            if (item == null || item.getBaseItem().getType() != FurnitureType.FLOOR) {
                 continue;
+            }
+            // A Wired box cannot be a template, as in Habbo (a copy would save its settings to a row it does not
+            // have). Behaviour observed in plus-emulator/PlusEMU 55f02174, reimplemented.
+            if (item instanceof InteractionWired) {
+                throw new WiredSaveException(FURNI_CAN_NOT_BE_CLONED);
             }
             next.add(new Snapshot(
                     item.getId(),
@@ -216,9 +228,31 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
             RoomTile tile = room.getLayout().getTile((short) (source.x + dx), (short) (source.y + dy));
             if (tile == null) continue;
 
-            HabboItem copy =
-                    WiredPlatform.gameEnvironment().getItemManager().createTemporaryItem(base, source.extradata);
-            if (copy == null) continue;
+            // No copy goes onto a gate, a one-way gate or a roller: a placement failure, as in Habbo.
+            if (blocksCopies(room.getTopItemAt(tile.x, tile.y))) {
+                failed = true;
+                continue;
+            }
+
+            // A copy that would stand above altitude 35 is skipped without a notice.
+            double expectedZ =
+                    switch (this.altitude) {
+                        case ALTITUDE_SOURCE -> source.z;
+                        case ALTITUDE_CUSTOM -> target[2];
+                        default -> room.getStackHeight(tile.x, tile.y, false);
+                    };
+            if (expectedZ + altitudeOffset > MAX_COPY_ALTITUDE) continue;
+
+            int copyId = room.getWiredRuntime().nextTemporaryItemId();
+            HabboItem copy = copyId < 0
+                    ? null
+                    : WiredPlatform.gameEnvironment()
+                            .getItemManager()
+                            .createTemporaryItem(copyId, base, source.extradata);
+            if (copy == null) {
+                failed = true;
+                continue;
+            }
 
             copy.markTemporary(this.getUserId());
 
@@ -246,7 +280,19 @@ public class WiredEffectPlaceTemporaryFurni extends InteractionWiredEffect imple
 
         if (failed) {
             notifyPlacementFailure(room);
+            WiredManager.notePlacementFailure(
+                    room.getId(), "Place Furni could not place every copy", "place_furni", this.getId());
         }
+    }
+
+    /** Gates, one-way gates and rollers take no copies on top. */
+    static boolean blocksCopies(HabboItem top) {
+        return top instanceof InteractionGate
+                || top instanceof InteractionOneWayGate
+                || top instanceof InteractionRoller
+                || top instanceof InteractionGuildGate
+                || top instanceof InteractionHabboClubGate
+                || top instanceof InteractionEffectGate;
     }
 
     /**

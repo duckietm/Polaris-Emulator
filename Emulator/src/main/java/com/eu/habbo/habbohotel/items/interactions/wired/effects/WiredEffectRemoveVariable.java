@@ -22,6 +22,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredEvent;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.core.WiredValueVariable;
 import com.eu.habbo.habbohotel.wired.protocol.WiredOfficialSources;
@@ -92,7 +93,11 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect implements
             return;
         }
 
-        WiredArrayVariableDefinition arrayDefinition = this.getArrayDefinition(room);
+        // A pointer stands for the variable whose WIRED box id its accessor holds in this stack.
+        int variableId = WiredPointerVariableSupport.resolve(ctx, room, this.variableItemId);
+        if (variableId <= 0) return;
+
+        WiredArrayVariableDefinition arrayDefinition = this.getArrayDefinition(room, variableId);
         if (arrayDefinition != null && arrayDefinition.isArray()) {
             this.removeArray(ctx, room, arrayDefinition);
             return;
@@ -100,21 +105,21 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect implements
 
         switch (this.targetType) {
             case TARGET_USER:
-                this.executeUserVariables(ctx, room);
+                this.executeUserVariables(ctx, room, variableId);
                 return;
             case TARGET_FURNI:
-                this.executeFurniVariables(ctx, room);
+                this.executeFurniVariables(ctx, room, variableId);
                 return;
             case TARGET_CONTEXT:
-                this.executeContextVariables(ctx, room);
+                this.executeContextVariables(ctx, room, variableId);
                 return;
             default:
                 return;
         }
     }
 
-    private void executeUserVariables(WiredContext ctx, Room room) {
-        WiredVariableDefinitionInfo definition = room.getUserVariableManager().getDefinitionInfo(this.variableItemId);
+    private void executeUserVariables(WiredContext ctx, Room room, int variableId) {
+        WiredVariableDefinitionInfo definition = room.getUserVariableManager().getDefinitionInfo(variableId);
 
         if (definition == null || definition.isReadOnly()) {
             return;
@@ -133,7 +138,7 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect implements
                 continue;
             }
 
-            room.getUserVariableManager().removeVariable(holder, this.variableItemId);
+            room.getUserVariableManager().removeVariable(holder, variableId);
         }
     }
 
@@ -157,18 +162,18 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect implements
         }
     }
 
-    private WiredArrayVariableDefinition getArrayDefinition(Room room) {
+    private WiredArrayVariableDefinition getArrayDefinition(Room room, int variableId) {
         int variableType =
                 switch (this.targetType) {
                     case TARGET_FURNI -> WiredArrayVariableType.FURNI.code();
                     case TARGET_CONTEXT -> WiredArrayVariableType.CONTEXT.code();
                     default -> WiredArrayVariableType.USER.code();
                 };
-        return WiredArrayDefinitionSupport.resolve(room, variableType, this.variableItemId);
+        return WiredArrayDefinitionSupport.resolve(room, variableType, variableId);
     }
 
-    private void executeFurniVariables(WiredContext ctx, Room room) {
-        WiredVariableDefinitionInfo definition = room.getFurniVariableManager().getDefinitionInfo(this.variableItemId);
+    private void executeFurniVariables(WiredContext ctx, Room room, int variableId) {
+        WiredVariableDefinitionInfo definition = room.getFurniVariableManager().getDefinitionInfo(variableId);
 
         if (definition == null || definition.isReadOnly()) {
             return;
@@ -185,25 +190,24 @@ public class WiredEffectRemoveVariable extends InteractionWiredEffect implements
                 continue;
             }
 
-            room.getFurniVariableManager().removeVariable(item.getId(), this.variableItemId);
+            room.getFurniVariableManager().removeVariable(item.getId(), variableId);
         }
     }
 
-    private void executeContextVariables(WiredContext ctx, Room room) {
-        WiredVariableDefinitionInfo definition =
-                WiredContextVariableSupport.getDefinitionInfo(room, this.variableItemId);
+    private void executeContextVariables(WiredContext ctx, Room room, int variableId) {
+        WiredVariableDefinitionInfo definition = WiredContextVariableSupport.getDefinitionInfo(room, variableId);
 
         if (definition == null || definition.isReadOnly()) {
             return;
         }
 
-        Integer previous = WiredContextVariableSupport.getCurrentValue(ctx, this.variableItemId);
+        Integer previous = WiredContextVariableSupport.getCurrentValue(ctx, variableId);
 
-        if (WiredContextVariableSupport.removeVariable(ctx, room, this.variableItemId)) {
+        if (WiredContextVariableSupport.removeVariable(ctx, room, variableId)) {
             WiredContextVariableSupport.triggerVariableChanged(
                     ctx,
                     room,
-                    this.variableItemId,
+                    variableId,
                     false,
                     true,
                     WiredEvent.VariableChangeKind.NONE,

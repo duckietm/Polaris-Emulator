@@ -21,6 +21,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredContextVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredInternalVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
+import com.eu.habbo.habbohotel.wired.core.WiredPointerVariableSupport;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.habbohotel.wired.protocol.WiredVariableTargets;
 import com.eu.habbo.messages.ServerMessage;
@@ -129,7 +130,7 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
             return false;
         }
 
-        WiredArrayVariableDefinition arrayDefinition = this.resolveArrayDefinition(room);
+        WiredArrayVariableDefinition arrayDefinition = this.resolveArrayDefinition(room, this.variableItemId);
         if (arrayDefinition != null
                 && this.arrayExistenceMode == ARRAY_ENTRY_EXISTS
                 && !WiredArrayEditorSupport.isAddressableIndex(this.arrayAddress, arrayDefinition)) return false;
@@ -166,46 +167,50 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
             return false;
         }
 
-        WiredArrayVariableDefinition arrayDefinition = this.resolveArrayDefinition(room);
+        // A pointer is checked as the variable it stands for in this stack.
+        int variableId = WiredPointerVariableSupport.resolve(ctx, room, this.variableItemId);
+        if (variableId <= 0 && isCustomVariableToken(this.variableToken)) return negative;
+
+        WiredArrayVariableDefinition arrayDefinition = this.resolveArrayDefinition(room, variableId);
         if (arrayDefinition != null) {
             boolean match = this.evaluateArray(ctx, arrayDefinition);
             return negative ? !match : match;
         }
 
         return switch (this.targetType) {
-            case TARGET_FURNI -> this.evaluateFurniTargets(ctx, room, negative);
+            case TARGET_FURNI -> this.evaluateFurniTargets(ctx, room, negative, variableId);
             case TARGET_CONTEXT -> {
-                boolean contextMatch = this.matchesContext(ctx, room);
+                boolean contextMatch = this.matchesContext(ctx, room, variableId);
                 yield negative ? !contextMatch : contextMatch;
             }
             case TARGET_ROOM -> {
-                boolean roomMatch = this.matchesRoom(room);
+                boolean roomMatch = this.matchesRoom(room, variableId);
                 yield negative ? !roomMatch : roomMatch;
             }
-            default -> this.evaluateUserTargets(ctx, room, negative);
+            default -> this.evaluateUserTargets(ctx, room, negative, variableId);
         };
     }
 
-    private boolean evaluateUserTargets(WiredContext ctx, Room room, boolean negative) {
+    private boolean evaluateUserTargets(WiredContext ctx, Room room, boolean negative, int variableId) {
         List<RoomUnit> targets = WiredSourceUtil.resolveUsers(ctx, this.userSource);
         if (targets.isEmpty()) return false;
 
         boolean match = (this.quantifier == QUANTIFIER_ANY)
-                ? this.matchesAnyUser(room, targets)
-                : this.matchesAllUsers(room, targets);
+                ? this.matchesAnyUser(room, targets, variableId)
+                : this.matchesAllUsers(room, targets, variableId);
 
         return negative ? !match : match;
     }
 
-    private boolean evaluateFurniTargets(WiredContext ctx, Room room, boolean negative) {
+    private boolean evaluateFurniTargets(WiredContext ctx, Room room, boolean negative, int variableId) {
         this.refresh();
 
         List<HabboItem> targets = WiredSourceUtil.resolveItems(ctx, this.furniSource, this.selectedItems);
         if (targets.isEmpty()) return false;
 
         boolean match = (this.quantifier == QUANTIFIER_ANY)
-                ? this.matchesAnyFurni(room, targets)
-                : this.matchesAllFurni(room, targets);
+                ? this.matchesAnyFurni(room, targets, variableId)
+                : this.matchesAllFurni(room, targets, variableId);
 
         return negative ? !match : match;
     }
@@ -320,7 +325,7 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
         return !any;
     }
 
-    private WiredArrayVariableDefinition resolveArrayDefinition(Room room) {
+    private WiredArrayVariableDefinition resolveArrayDefinition(Room room, int variableId) {
         if (!isCustomVariableToken(this.variableToken)) return null;
         WiredArrayVariableType type =
                 switch (this.targetType) {
@@ -329,14 +334,17 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
                     case TARGET_ROOM -> WiredArrayVariableType.ROOM;
                     default -> WiredArrayVariableType.USER;
                 };
-        WiredArrayVariableDefinition definition =
-                WiredArrayDefinitionSupport.resolve(room, type.code(), this.variableItemId);
+        WiredArrayVariableDefinition definition = WiredArrayDefinitionSupport.resolve(room, type.code(), variableId);
         return definition != null && definition.isArray() ? definition : null;
     }
 
     protected boolean matchesAnyUser(Room room, List<RoomUnit> targets) {
+        return this.matchesAnyUser(room, targets, this.variableItemId);
+    }
+
+    private boolean matchesAnyUser(Room room, List<RoomUnit> targets, int variableId) {
         for (RoomUnit roomUnit : targets) {
-            if (this.matchesUser(room, roomUnit)) {
+            if (this.matchesUser(room, roomUnit, variableId)) {
                 return true;
             }
         }
@@ -345,8 +353,12 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
     }
 
     protected boolean matchesAllUsers(Room room, List<RoomUnit> targets) {
+        return this.matchesAllUsers(room, targets, this.variableItemId);
+    }
+
+    private boolean matchesAllUsers(Room room, List<RoomUnit> targets, int variableId) {
         for (RoomUnit roomUnit : targets) {
-            if (!this.matchesUser(room, roomUnit)) {
+            if (!this.matchesUser(room, roomUnit, variableId)) {
                 return false;
             }
         }
@@ -355,8 +367,12 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
     }
 
     protected boolean matchesAnyFurni(Room room, List<HabboItem> targets) {
+        return this.matchesAnyFurni(room, targets, this.variableItemId);
+    }
+
+    private boolean matchesAnyFurni(Room room, List<HabboItem> targets, int variableId) {
         for (HabboItem item : targets) {
-            if (this.matchesFurni(room, item)) {
+            if (this.matchesFurni(room, item, variableId)) {
                 return true;
             }
         }
@@ -365,8 +381,12 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
     }
 
     protected boolean matchesAllFurni(Room room, List<HabboItem> targets) {
+        return this.matchesAllFurni(room, targets, this.variableItemId);
+    }
+
+    private boolean matchesAllFurni(Room room, List<HabboItem> targets, int variableId) {
         for (HabboItem item : targets) {
-            if (!this.matchesFurni(room, item)) {
+            if (!this.matchesFurni(room, item, variableId)) {
                 return false;
             }
         }
@@ -375,6 +395,10 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
     }
 
     protected boolean matchesUser(Room room, RoomUnit roomUnit) {
+        return this.matchesUser(room, roomUnit, this.variableItemId);
+    }
+
+    private boolean matchesUser(Room room, RoomUnit roomUnit, int variableId) {
         if (room == null || roomUnit == null) {
             return false;
         }
@@ -382,7 +406,7 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
         if (isCustomVariableToken(this.variableToken)) {
             int holder = UserVariableHolders.of(room, roomUnit);
 
-            return holder != 0 && room.getUserVariableManager().hasVariable(holder, this.variableItemId);
+            return holder != 0 && room.getUserVariableManager().hasVariable(holder, variableId);
         }
 
         if (isInternalVariableToken(this.variableToken)) {
@@ -393,12 +417,16 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
     }
 
     protected boolean matchesFurni(Room room, HabboItem item) {
+        return this.matchesFurni(room, item, this.variableItemId);
+    }
+
+    private boolean matchesFurni(Room room, HabboItem item, int variableId) {
         if (room == null || item == null) {
             return false;
         }
 
         if (isCustomVariableToken(this.variableToken)) {
-            return room.getFurniVariableManager().hasVariable(item.getId(), this.variableItemId);
+            return room.getFurniVariableManager().hasVariable(item.getId(), variableId);
         }
 
         if (isInternalVariableToken(this.variableToken)) {
@@ -409,12 +437,16 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
     }
 
     protected boolean matchesContext(WiredContext ctx, Room room) {
+        return this.matchesContext(ctx, room, this.variableItemId);
+    }
+
+    private boolean matchesContext(WiredContext ctx, Room room, int variableId) {
         if (ctx == null || room == null) {
             return false;
         }
 
         if (isCustomVariableToken(this.variableToken)) {
-            return WiredContextVariableSupport.hasVariable(ctx, this.variableItemId);
+            return WiredContextVariableSupport.hasVariable(ctx, variableId);
         }
 
         if (isInternalVariableToken(this.variableToken)) {
@@ -426,12 +458,16 @@ public class WiredConditionHasVariable extends InteractionWiredCondition {
     }
 
     protected boolean matchesRoom(Room room) {
+        return this.matchesRoom(room, this.variableItemId);
+    }
+
+    private boolean matchesRoom(Room room, int variableId) {
         if (room == null) {
             return false;
         }
 
         if (isCustomVariableToken(this.variableToken)) {
-            return room.getRoomVariableManager().hasVariable(this.variableItemId);
+            return room.getRoomVariableManager().hasVariable(variableId);
         }
 
         if (isInternalVariableToken(this.variableToken)) {

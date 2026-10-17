@@ -89,6 +89,16 @@ final class RoomItemPlacementService {
     }
 
     FurnitureMovementError furnitureFitsAt(RoomTile tile, HabboItem item, int rotation, boolean checkForUnits) {
+        return this.furnitureFitsAt(tile, item, rotation, checkForUnits, null);
+    }
+
+    /**
+     * Like {@link #furnitureFitsAt(RoomTile, HabboItem, int, boolean)}, but the user placing or moving the furni by
+     * hand does not block their own tile: Habbo lets the room owner put a tile or a block where they stand. Other
+     * avatars and wired moves still block. Behaviour observed in plus-emulator/PlusEMU cc7865e3, reimplemented.
+     */
+    FurnitureMovementError furnitureFitsAt(
+            RoomTile tile, HabboItem item, int rotation, boolean checkForUnits, Habbo actor) {
         RoomLayout layout = this.room.getLayout();
         if (!layout.fitsOnMap(
                 tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation)) {
@@ -109,7 +119,7 @@ final class RoomItemPlacementService {
                             && !item.isWalkable()
                             && !item.getBaseItem().allowSit()
                             && !item.getBaseItem().allowLay()) {
-                if (checkForUnits && this.room.hasHabbosAt(occupiedTile.x, occupiedTile.y)) {
+                if (checkForUnits && hasOtherHabbosAt(this.room, occupiedTile.x, occupiedTile.y, actor)) {
                     return FurnitureMovementError.TILE_HAS_HABBOS;
                 }
                 if (checkForUnits && this.room.hasBotsAt(occupiedTile.x, occupiedTile.y)) {
@@ -159,7 +169,7 @@ final class RoomItemPlacementService {
         RoomLayout layout = this.room.getLayout();
         Set<RoomTile> occupiedTiles = layout.getTilesAt(
                 tile, item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation);
-        FurnitureMovementError fits = this.furnitureFitsAt(tile, item, rotation, true);
+        FurnitureMovementError fits = this.furnitureFitsAt(tile, item, rotation, true, owner);
         if (fits != FurnitureMovementError.NONE && !pluginHelper) {
             return fits;
         }
@@ -294,5 +304,17 @@ final class RoomItemPlacementService {
                                     ? BuildersClubRoomSupport.DISPLAY_OWNER_NAME
                                     : owner.getHabboInfo().getUsername());
         }
+    }
+
+    /** Whether an avatar other than {@code actor} stands on the tile. */
+    static boolean hasOtherHabbosAt(Room room, int x, int y, Habbo actor) {
+        if (actor == null || actor.getRoomUnit() == null) {
+            return room.hasHabbosAt(x, y);
+        }
+        for (Habbo habbo : room.getHabbos()) {
+            if (habbo == null || habbo == actor || habbo.getRoomUnit() == null) continue;
+            if (habbo.getRoomUnit().getX() == x && habbo.getRoomUnit().getY() == y) return true;
+        }
+        return false;
     }
 }

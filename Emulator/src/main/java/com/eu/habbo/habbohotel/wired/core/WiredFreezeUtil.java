@@ -1,7 +1,11 @@
 package com.eu.habbo.habbohotel.wired.core;
 
+import com.eu.habbo.habbohotel.games.GamePlayer;
+import com.eu.habbo.habbohotel.games.wired.WiredGame;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.habbohotel.rooms.RoomUnitStatus;
+import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserStatusComposer;
 
 public final class WiredFreezeUtil {
@@ -24,12 +28,17 @@ public final class WiredFreezeUtil {
         roomUnit.getCacheable().put(CACHE_EFFECT_ID, effectId);
         roomUnit.getCacheable().put(CACHE_CANCEL_ON_TELEPORT, cancelOnTeleport);
 
+        // A standing user only gets the freeze effect, as in Habbo; a walking one also gets the status that shows
+        // the stop. Behaviour observed in plus-emulator/PlusEMU d948347a, reimplemented.
+        boolean wasWalking = roomUnit.isWalking() || roomUnit.hasStatus(RoomUnitStatus.MOVE);
         roomUnit.stopWalking();
         roomUnit.setCanWalk(false);
-        roomUnit.statusUpdate(true);
 
         room.giveEffect(roomUnit, effectId, Integer.MAX_VALUE);
-        room.sendComposer(new RoomUserStatusComposer(roomUnit).compose());
+        if (wasWalking) {
+            roomUnit.statusUpdate(true);
+            room.sendComposer(new RoomUserStatusComposer(roomUnit).compose());
+        }
     }
 
     public static void unfreeze(Room room, RoomUnit roomUnit) {
@@ -45,7 +54,6 @@ public final class WiredFreezeUtil {
 
         roomUnit.stopWalking();
         roomUnit.setCanWalk(true);
-        roomUnit.statusUpdate(true);
 
         // Only the freeze's own effect comes off: an effect put on after the freeze (a wired give
         // effect, an item, a costume) stays. Without a stored freeze effect, the old behaviour.
@@ -53,14 +61,25 @@ public final class WiredFreezeUtil {
                 || freezeEffectId <= 0
                 || roomUnit.getEffectId() == freezeEffectId;
 
+        // Unfreezing sends only the restored effect, no user update; a Wired team member gets the team effect back
+        // (223-226). Behaviour observed in plus-emulator/PlusEMU 60bb18e8, reimplemented.
         if (room != null) {
             if (clearsEffect) {
-                room.giveEffect(roomUnit, 0, -1);
+                room.giveEffect(roomUnit, restoredEffect(room, roomUnit), -1);
             }
-            room.sendComposer(new RoomUserStatusComposer(roomUnit).compose());
         } else if (clearsEffect) {
             roomUnit.setEffectId(0, 0);
         }
+    }
+
+    /** The effect an unfrozen user goes back to: their Wired team's effect, or none. */
+    static int restoredEffect(Room room, RoomUnit roomUnit) {
+        Habbo habbo = room.getHabbo(roomUnit);
+        if (habbo == null || habbo.getHabboInfo() == null) return 0;
+        if (habbo.getHabboInfo().getCurrentGame() != WiredGame.class) return 0;
+        GamePlayer player = habbo.getHabboInfo().getGamePlayer();
+        if (player == null || player.getTeamColor() == null) return 0;
+        return WiredGame.teamEffectId(player.getTeamColor());
     }
 
     public static void onTeleport(Room room, RoomUnit roomUnit) {

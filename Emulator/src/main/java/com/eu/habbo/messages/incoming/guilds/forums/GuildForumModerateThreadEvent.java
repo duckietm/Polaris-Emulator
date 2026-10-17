@@ -7,11 +7,11 @@ import com.eu.habbo.habbohotel.guilds.GuildRank;
 import com.eu.habbo.habbohotel.guilds.forums.ForumThread;
 import com.eu.habbo.habbohotel.guilds.forums.ForumThreadState;
 import com.eu.habbo.habbohotel.permissions.Permission;
+import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
-import com.eu.habbo.messages.outgoing.guilds.forums.GuildForumThreadMessagesComposer;
-import com.eu.habbo.messages.outgoing.guilds.forums.GuildForumThreadsComposer;
+import com.eu.habbo.messages.outgoing.guilds.forums.ThreadUpdatedMessageComposer;
 import com.eu.habbo.messages.outgoing.handshake.ConnectionErrorComposer;
 
 public class GuildForumModerateThreadEvent extends MessageHandler {
@@ -90,7 +90,11 @@ public class GuildForumModerateThreadEvent extends MessageHandler {
                 break;
         }
 
-        this.client.sendResponse(new GuildForumThreadMessagesComposer(thread));
-        this.client.sendResponse(new GuildForumThreadsComposer(guild, 0));
+        // Official: the moderator gets the one updated thread (ThreadUpdated) instead of every list again.
+        this.client.sendResponse(updatedThread(guild, thread, this.client.getHabbo()));
+    }
+
+    static ThreadUpdatedMessageComposer updatedThread(Guild guild, ForumThread thread, Habbo moderator) {
+        return new ThreadUpdatedMessageComposer(guild, thread, moderator, thread.isPinned(), thread.isLocked());
     }
 }

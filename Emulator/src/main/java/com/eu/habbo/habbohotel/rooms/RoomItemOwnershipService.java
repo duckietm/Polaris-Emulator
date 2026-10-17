@@ -142,6 +142,18 @@ final class RoomItemOwnershipService {
      * the batch and refreshes the tile object map once.
      */
     void pickUpAll(Collection<HabboItem> items, Habbo picker) {
+        this.pickUpAll(items, picker, picker != null ? picker.getHabboInfo().getId() : 0);
+    }
+
+    /**
+     * Takes Place Furni's temporary copies out of the room in one {@code ObjectRemoveMultiple} with picker -1, as
+     * Wired removal does in Habbo. Behaviour observed in plus-emulator/PlusEMU 55f02174, reimplemented.
+     */
+    void removeTemporaryItems(Collection<HabboItem> items) {
+        this.pickUpAll(items, null, -1);
+    }
+
+    private void pickUpAll(Collection<HabboItem> items, Habbo picker, int pickerId) {
         if (items == null || items.isEmpty()) {
             return;
         }
@@ -163,8 +175,6 @@ final class RoomItemOwnershipService {
                 wallItemIds.add(item.getId());
             }
         }
-
-        int pickerId = picker != null ? picker.getHabboInfo().getId() : 0;
 
         if (!floorItemIds.isEmpty()) {
             this.room.sendComposer(new RemoveFloorItemsComposer(floorItemIds, pickerId).compose());

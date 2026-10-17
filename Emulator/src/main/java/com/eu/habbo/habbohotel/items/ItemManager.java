@@ -353,6 +353,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMoveNoAn
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovePhysics;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovementCurve;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraOrEval;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraPointerVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraProjectile;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraQuest;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraQuestChain;
@@ -1199,6 +1200,8 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_trg_room_initialized", WiredTriggerRoomInitialized.class));
         // Belongs beside wf_act_change_opacity, but sits last so no registered wired interaction moves.
         this.interactionsList.add(new ItemInteraction("wf_act_set_highlight", WiredEffectSetHighlight.class));
+        // Belongs beside wf_var_echo, last for the same reason.
+        this.interactionsList.add(new ItemInteraction("wf_var_pointer", WiredExtraPointerVariable.class));
     }
 
     public void addItemInteraction(ItemInteraction itemInteraction) {
@@ -1489,25 +1492,38 @@ public class ItemManager {
         return new ArrayList<>(this.newuserGifts.values());
     }
 
-    /** Ids of temporary furni: far above any database id, and never written to the database. */
-    private static final int FIRST_TEMPORARY_ITEM_ID = 2_050_000_000;
+    /**
+     * Ids of temporary furni: the band the official client treats as temporary (owner "Temp (Wired)", never the
+     * viewer's own furni). Far above any database id, and never written to the database. Behaviour observed in
+     * plus-emulator/PlusEMU 55f02174, reimplemented.
+     */
+    public static final int FIRST_TEMPORARY_ITEM_ID = 2_147_401_728;
+
+    public static final int LAST_TEMPORARY_ITEM_ID = 2_147_418_111;
 
     private static final java.util.concurrent.atomic.AtomicInteger NEXT_TEMPORARY_ITEM_ID =
             new java.util.concurrent.atomic.AtomicInteger(FIRST_TEMPORARY_ITEM_ID);
 
+    /** Whether {@code id} is in the temporary furni band. */
+    public static boolean isTemporaryItemId(int id) {
+        return id >= FIRST_TEMPORARY_ITEM_ID && id <= LAST_TEMPORARY_ITEM_ID;
+    }
+
     /**
      * A temporary furni of {@code item}'s type (the official "place furni" wired): it lives in memory
      * only, has no owner, and is never saved, picked up into an inventory or deleted from the database.
+     * The id comes from a hotel-wide counter in the band; Place Furni takes its ids from the room instead.
      */
-    public static boolean isTemporaryItemId(int id) {
-        return id >= FIRST_TEMPORARY_ITEM_ID;
+    public HabboItem createTemporaryItem(Item item, String extraData) {
+        int id = NEXT_TEMPORARY_ITEM_ID.getAndUpdate(
+                next -> next >= LAST_TEMPORARY_ITEM_ID ? FIRST_TEMPORARY_ITEM_ID : next + 1);
+        return this.createTemporaryItem(id, item, extraData);
     }
 
-    public HabboItem createTemporaryItem(Item item, String extraData) {
-        if (item == null) return null;
+    /** A temporary furni of {@code item}'s type with the given id from the temporary band. */
+    public HabboItem createTemporaryItem(int id, Item item, String extraData) {
+        if (item == null || !isTemporaryItemId(id)) return null;
 
-        int id = NEXT_TEMPORARY_ITEM_ID.getAndUpdate(
-                next -> next >= Integer.MAX_VALUE - 1 ? FIRST_TEMPORARY_ITEM_ID : next + 1);
         String data = ItemDataGuard.normalizeExtraData(extraData);
         HabboItem created;
         Class<? extends HabboItem> itemClass = item.getInteractionType().getType();

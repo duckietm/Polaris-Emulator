@@ -363,7 +363,7 @@ public class WiredEffectSendSignal extends InteractionWiredEffect
 
         for (HabboItem receiver : newItems) {
             if (!isAntennaItem(receiver)) {
-                throw new WiredSaveException("Only antenna furni can be selected");
+                throw new WiredSaveException("wiredfurni.error.require_antenna_furni");
             }
         }
 

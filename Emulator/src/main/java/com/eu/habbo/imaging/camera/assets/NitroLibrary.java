@@ -141,15 +141,32 @@ public final class NitroLibrary {
     }
 
     private BufferedImage slice(Frame frame) {
-        if (this.sheet == null || frame.rotated() || frame.width() <= 0 || frame.height() <= 0) {
+        if (this.sheet == null || frame.width() <= 0 || frame.height() <= 0) {
             return null;
         }
         int x = Math.max(0, frame.x());
         int y = Math.max(0, frame.y());
-        int width = Math.min(frame.width(), this.sheet.getWidth() - x);
-        int height = Math.min(frame.height(), this.sheet.getHeight() - y);
-        if (width <= 0 || height <= 0) {
+        // A rotated frame (TexturePacker, read the same way by Pixi) is stored turned 90 degrees
+        // clockwise: it covers height x width pixels of the sheet, while w/h name its real size.
+        int regionWidth = frame.rotated() ? frame.height() : frame.width();
+        int regionHeight = frame.rotated() ? frame.width() : frame.height();
+        if (x + regionWidth > this.sheet.getWidth() || y + regionHeight > this.sheet.getHeight()) {
+            if (frame.rotated()) {
+                return null;
+            }
+            regionWidth = Math.min(regionWidth, this.sheet.getWidth() - x);
+            regionHeight = Math.min(regionHeight, this.sheet.getHeight() - y);
+        }
+        if (regionWidth <= 0 || regionHeight <= 0) {
             return null;
+        }
+        int[] pixels = this.sheet.getRGB(x, y, regionWidth, regionHeight, null, 0, regionWidth);
+        int width = regionWidth;
+        int height = regionHeight;
+        if (frame.rotated()) {
+            pixels = unrotate(pixels, regionWidth, regionHeight);
+            width = regionHeight;
+            height = regionWidth;
         }
 
         int outWidth = width;
@@ -164,7 +181,6 @@ public final class NitroLibrary {
         }
 
         BufferedImage out = new BufferedImage(outWidth, outHeight, BufferedImage.TYPE_INT_ARGB);
-        int[] pixels = this.sheet.getRGB(x, y, width, height, null, 0, width);
         int copyX0 = Math.max(0, -drawX);
         int copyY0 = Math.max(0, -drawY);
         int copyX1 = Math.min(width, outWidth - drawX);
@@ -185,5 +201,21 @@ public final class NitroLibrary {
             }
         }
         return out;
+    }
+
+    /**
+     * Turns a region stored 90 degrees clockwise back upright: the region is {@code regionWidth}
+     * (the image's height) by {@code regionHeight} (the image's width).
+     */
+    static int[] unrotate(int[] region, int regionWidth, int regionHeight) {
+        int width = regionHeight;
+        int height = regionWidth;
+        int[] upright = new int[region.length];
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                upright[y * width + x] = region[x * regionWidth + (regionWidth - 1 - y)];
+            }
+        }
+        return upright;
     }
 }

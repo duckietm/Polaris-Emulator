@@ -4,10 +4,9 @@ import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
-import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestNotifications;
-import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestStorage;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestAirWire;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestTransactionLog;
-import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestWithdrawals;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestCurrency;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -64,55 +63,36 @@ public class WiredEffectGiveCurrencyFromChest extends InteractionWiredEffect
         if (room == null) return;
         Integer resolved = this.reward.resolveAmount(ctx, room, 1);
         if (resolved == null || resolved <= 0) return;
-        int perUser = resolved;
+        boolean everything = this.reward.mode == WiredChestReward.MODE_EVERYTHING;
 
-        // Only an upgraded, unlocked chest is used; with none the triggering user is told why.
-        InteractionWiredChest chest = WiredChestTargets.resolve(
+        // Only upgraded, unlocked chests are used; with none the triggering user is told why.
+        List<InteractionWiredChestCurrency> chests = WiredChestTargets.resolveAll(
                 ctx, room, this.chestSource, this.chestIds, InteractionWiredChestCurrency.class);
-        if (chest == null) {
+        if (chests.isEmpty()) {
             WiredChestTargets.answerNoUsableChest(ctx, room);
             return;
         }
 
-        for (RoomUnit unit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
+        List<RoomUnit> units = WiredSourceUtil.resolveUsers(ctx, this.userSource);
+        // AIR: "everything" cannot be split between several users.
+        if (everything && units.size() > 1) return;
+
+        for (RoomUnit unit : units) {
             Habbo habbo = room.getHabbo(unit);
             if (habbo == null) continue;
 
-            ChestStorage contents = chest.getContents();
+            // Taken from the chests in order until the amount is reached or they are empty.
+            int remaining = everything ? Integer.MAX_VALUE : resolved;
             int total = 0;
-            // Take from the first currency entry that still has stock; "everything" empties them all.
-            for (ChestStorage.Entry entry : new ArrayList<>(contents.entries())) {
-                if (entry.kind != ChestStorage.KIND_CURRENCY) continue;
-
-                int given = contents.take(ChestStorage.KIND_CURRENCY, entry.type, perUser);
-                if (given > 0) {
-                    grant(habbo, entry.type, given);
-                    ChestTransactionLog.record(
-                            room.getId(),
-                            chest.getId(),
-                            ChestStorage.KIND_CURRENCY,
-                            ChestTransactionLog.TYPE_WITHDRAW,
-                            ChestTransactionLog.SOURCE_WIRED,
-                            habbo,
-                            entry.type,
-                            given,
-                            0,
-                            null);
-                    chest.persistContents(room);
-                    ChestNotifications.wired(chest, room, given);
-                    total += given;
-                }
-                if (this.reward.mode != WiredChestReward.MODE_EVERYTHING) break;
+            for (InteractionWiredChestCurrency chest : chests) {
+                if (remaining <= 0) break;
+                int taken = ChestWithdrawals.coins(
+                                habbo, chest, room, everything ? -1 : remaining, ChestTransactionLog.SOURCE_WIRED)
+                        .coins();
+                total += taken;
+                remaining -= taken;
             }
-            this.reward.showPopup(habbo, total);
-        }
-    }
-
-    private static void grant(Habbo habbo, int currencyType, int amount) {
-        if (currencyType < 0) {
-            habbo.giveCredits(amount);
-        } else {
-            habbo.givePoints(currencyType, amount);
+            if (total > 0) this.reward.announce(habbo, ChestAirWire.givenRule(total, List.of()));
         }
     }
 

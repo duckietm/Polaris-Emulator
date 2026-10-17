@@ -64,6 +64,39 @@ public class WiredEffectTeleport extends InteractionWiredEffect {
     static final long FAST_EFFECT_OFF_AFTER_BOUNDARY_MS = 1000L;
     private static final long ROOM_CYCLE_MS = 500L;
 
+    /** Until when a unit still glows from a teleport; a teleport during the glow sends no new effect. */
+    private static final java.util.Map<RoomUnit, Long> GLOW_UNTIL =
+            java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
+    /**
+     * The grid delays from {@code now}: republish, landing and effect off. Normal: republished one second after the
+     * boundary (3rd tick), lands at 1.5 s (4th), glow off at 3 s (7th). Fast: republished on the boundary (1st tick),
+     * lands at 0.5 s (2nd), glow off at 1 s (3rd). Behaviour observed in plus-emulator/PlusEMU 2aa1704e and
+     * e2fe8d15, reimplemented.
+     */
+    static long[] gridDelays(long boundary, long now, boolean fastTeleport) {
+        long republish = boundary + (fastTeleport ? 0L : REPUBLISH_AFTER_BOUNDARY_MS) - now;
+        long land = boundary + (fastTeleport ? FAST_LAND_AFTER_BOUNDARY_MS : LAND_AFTER_BOUNDARY_MS) - now;
+        long effectOff =
+                boundary + (fastTeleport ? FAST_EFFECT_OFF_AFTER_BOUNDARY_MS : EFFECT_OFF_AFTER_BOUNDARY_MS) - now;
+        return new long[] {republish, land, effectOff};
+    }
+
+    /**
+     * Starts the teleport glow unless the unit still glows from an earlier teleport: that one's end clears the glow,
+     * and no new effect is sent. Behaviour observed in plus-emulator/PlusEMU 49c17ea2, reimplemented.
+     */
+    static boolean tryStartGlow(RoomUnit unit, long now, long durationMs) {
+        synchronized (GLOW_UNTIL) {
+            Long until = GLOW_UNTIL.get(unit);
+            if (until != null && now < until) {
+                return false;
+            }
+            GLOW_UNTIL.put(unit, now + Math.max(0L, durationMs));
+            return true;
+        }
+    }
+
     /** Teleports with the classic timing (games, bots): effect 4 and a landing after the teleport delay. */
     public static void teleportUnitToTile(RoomUnit roomUnit, RoomTile tile) {
         teleportUnitToTile(roomUnit, tile, false, false);
@@ -123,23 +156,20 @@ public class WiredEffectTeleport extends InteractionWiredEffect {
         long republishDelay = -1L;
 
         if (onRoomGrid) {
-            long boundary = nextRoomBoundary(room.getCycleTimestamp(), now);
-
-            landingDelay = boundary + (fastTeleport ? FAST_LAND_AFTER_BOUNDARY_MS : LAND_AFTER_BOUNDARY_MS) - now;
-            effectDuration =
-                    boundary + (fastTeleport ? FAST_EFFECT_OFF_AFTER_BOUNDARY_MS : EFFECT_OFF_AFTER_BOUNDARY_MS) - now;
-
-            if (!fastTeleport) {
-                republishDelay = boundary + REPUBLISH_AFTER_BOUNDARY_MS - now;
-            }
+            long[] delays = gridDelays(nextRoomBoundary(room.getCycleTimestamp(), now), now, fastTeleport);
+            republishDelay = delays[0];
+            landingDelay = delays[1];
+            effectDuration = delays[2];
         } else {
             landingDelay = getTeleportDelay(fastTeleport);
             effectDuration = getTeleportEffectDuration(fastTeleport);
         }
 
         int effect = (onRoomGrid && fastTeleport) ? FAST_TELEPORT_EFFECT : TELEPORT_EFFECT;
-        room.sendComposer(new RoomUserEffectComposer(roomUnit, effect).compose());
-        schedule(new SendRoomUnitEffectComposer(room, roomUnit), effectDuration);
+        if (!onRoomGrid || tryStartGlow(roomUnit, now, effectDuration)) {
+            room.sendComposer(new RoomUserEffectComposer(roomUnit, effect).compose());
+            schedule(new SendRoomUnitEffectComposer(room, roomUnit), effectDuration);
+        }
 
         if (tile == roomUnit.getCurrentLocation()) {
             return;

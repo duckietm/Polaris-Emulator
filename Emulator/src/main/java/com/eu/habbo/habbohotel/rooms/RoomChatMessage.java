@@ -2,8 +2,11 @@ package com.eu.habbo.habbohotel.rooms;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.core.DatabaseLoggable;
+import com.eu.habbo.habbohotel.games.GamePlayer;
+import com.eu.habbo.habbohotel.games.wired.WiredGame;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
+import com.eu.habbo.habbohotel.users.HabboInfo;
 import com.eu.habbo.habbohotel.users.UserCustomizationData;
 import com.eu.habbo.messages.ISerialize;
 import com.eu.habbo.messages.ServerMessage;
@@ -56,6 +59,7 @@ public class RoomChatMessage implements Runnable, ISerialize, DatabaseLoggable {
         } else {
             this.message = message.packet.readString();
         }
+        this.message = truncateToMaximumLength(this.message);
         try {
             this.bubble = RoomChatMessageBubbles.getBubble(message.packet.readInt());
         } catch (Exception e) {
@@ -74,6 +78,7 @@ public class RoomChatMessage implements Runnable, ISerialize, DatabaseLoggable {
         }
 
         this.habbo = message.client.getHabbo();
+        this.bubble = resolveSpeakerBubble(this.bubble, this.habbo);
         this.roomUnitId = this.habbo.getRoomUnit().getId();
         this.unfilteredMessage = this.message;
         this.timestamp = Emulator.getIntUnixTimestamp();
@@ -81,6 +86,51 @@ public class RoomChatMessage implements Runnable, ISerialize, DatabaseLoggable {
         this.checkEmotion();
 
         this.filter();
+    }
+
+    /**
+     * The bubble a user's own talk, shout or whisper goes out in. A member of a Wired team speaks in the team's
+     * bubble (AIR styles 130 red, 131 blue, 132 yellow, 133 green), whatever style they picked. Banzai and Freeze
+     * teams keep the picked style. A client cannot ask for a team bubble itself.
+     */
+    static RoomChatMessageBubbles resolveSpeakerBubble(RoomChatMessageBubbles requested, Habbo speaker) {
+        RoomChatMessageBubbles bubble = requested;
+        if (bubble == null || RoomChatMessageBubbles.isWiredTeamBubble(bubble.getType())) {
+            bubble = RoomChatMessageBubbles.NORMAL;
+        }
+
+        RoomChatMessageBubbles team = wiredTeamBubble(speaker);
+        return team != null ? team : bubble;
+    }
+
+    /** The Wired team bubble of the speaker, or null when they are not in a coloured Wired team. */
+    static RoomChatMessageBubbles wiredTeamBubble(Habbo speaker) {
+        if (speaker == null || speaker.getHabboInfo() == null) {
+            return null;
+        }
+
+        HabboInfo info = speaker.getHabboInfo();
+        if (info.getCurrentGame() != WiredGame.class) {
+            return null;
+        }
+
+        GamePlayer player = info.getGamePlayer();
+        if (player == null || player.getTeamColor() == null) {
+            return null;
+        }
+
+        switch (player.getTeamColor()) {
+            case RED:
+                return RoomChatMessageBubbles.WIRED_TEAM_RED;
+            case BLUE:
+                return RoomChatMessageBubbles.WIRED_TEAM_BLUE;
+            case YELLOW:
+                return RoomChatMessageBubbles.WIRED_TEAM_YELLOW;
+            case GREEN:
+                return RoomChatMessageBubbles.WIRED_TEAM_GREEN;
+            default:
+                return null;
+        }
     }
 
     public RoomChatMessage(RoomChatMessage chatMessage) {
@@ -150,15 +200,21 @@ public class RoomChatMessage implements Runnable, ISerialize, DatabaseLoggable {
     public void run() {
         if (this.habbo == null) return;
 
-        if (this.message.length() > RoomChatMessage.MAXIMUM_LENGTH) {
-            try {
-                this.message = this.message.substring(0, RoomChatMessage.MAXIMUM_LENGTH - 1);
-            } catch (Exception e) {
-                LOGGER.error("Caught exception", e);
-            }
-        }
+        this.message = truncateToMaximumLength(this.message);
 
         Emulator.getDatabaseLogger().store(this);
+    }
+
+    /**
+     * A longer line is cut to its first {@link #MAXIMUM_LENGTH} characters (a full-length line is kept whole), as in
+     * Habbo, instead of being dropped. Behaviour observed in plus-emulator/PlusEMU 3a043f7d, reimplemented.
+     */
+    public static String truncateToMaximumLength(String message) {
+        int maximum = Math.max(1, RoomChatMessage.MAXIMUM_LENGTH);
+        if (message == null || message.length() <= maximum) {
+            return message;
+        }
+        return message.substring(0, maximum);
     }
 
     public String getMessage() {

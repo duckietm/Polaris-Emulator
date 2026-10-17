@@ -1,36 +1,62 @@
 package com.eu.habbo.messages.outgoing.rooms.items;
 
+import com.eu.habbo.habbohotel.items.FurnitureType;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestAirWire;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestFurniStoredItem;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractRequirementEvaluator.OfferedItem;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ContractWireUtil;
 import com.eu.habbo.habbohotel.items.interactions.wired.contract.InteractionWiredContract.Term;
+import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
 import java.util.List;
 
 /**
- * The state of the table, pushed after every change on either side. Wire layout:
+ * The state of the wired trade table (AIR {@code WiredTradeItems}), pushed after every change:
  *
  * <pre>
- *   int state, bool canAccept, int secondsLeft,
- *   int offeredCount, [ int itemId, bool wallItem, int spriteId ]*,
- *   int rewardFurniCount, [ int spriteId, int amount ]*,
- *   int rewardCurrencyCount, [ int currencyType, int amount ]*,
- *   int missingCount, [ &lt;node&gt; ]*
+ *   int firstUserId, int n, item[n], int firstUserNumItems, int firstUserNumCredits,
+ *   int secondUserId, int m, item[m], int secondUserNumItems, int secondUserNumCredits,
+ *   bool canAccept, int extra
  * </pre>
  *
- * <p>The reward is split into furni and currency rather than sent as one list, because the window
- * draws them differently — a pile of coins is not an inventory icon. The missing list is what the
- * requirements indicator reads: empty means the offer covers a rule, and the accept button is live.
+ * The first side is what the player offers (credits = the value of the credit furni among it), the
+ * second what the chests hand back (credits = the reward's coins); {@code extra} is how many times the
+ * requirement is met.
  */
 public class WiredTradeItemsComposer extends MessageComposer {
-    private final int state;
+    private final int userId;
+    private final List<HabboItem> offered;
+    private final List<OfferedItem> legacyOffered;
+    private final int offeredCredits;
+    private final List<ChestFurniStoredItem> rewardFurni;
+    private final int rewardCoins;
     private final boolean canAccept;
-    private final int secondsLeft;
-    private final List<OfferedItem> offered;
-    private final List<Term> reward;
-    private final List<Term> missing;
+    private final int extra;
 
+    public WiredTradeItemsComposer(
+            int userId,
+            List<HabboItem> offered,
+            int offeredCredits,
+            List<ChestFurniStoredItem> rewardFurni,
+            int rewardCoins,
+            boolean canAccept,
+            int extra) {
+        this.userId = userId;
+        this.offered = offered == null ? List.of() : offered;
+        this.legacyOffered = List.of();
+        this.offeredCredits = offeredCredits;
+        this.rewardFurni = rewardFurni == null ? List.of() : rewardFurni;
+        this.rewardCoins = rewardCoins;
+        this.canAccept = canAccept;
+        this.extra = extra;
+    }
+
+    /**
+     * Kept for callers compiled against it. Only the offered items' types are known here, so they are
+     * sent with empty furni data, and the reward's coins are the currency terms added up.
+     */
     public WiredTradeItemsComposer(
             int state,
             boolean canAccept,
@@ -38,48 +64,55 @@ public class WiredTradeItemsComposer extends MessageComposer {
             List<OfferedItem> offered,
             List<Term> reward,
             List<Term> missing) {
-        this.state = state;
+        this.userId = 0;
+        this.offered = List.of();
+        this.legacyOffered = offered == null ? List.of() : offered;
+        this.offeredCredits = 0;
+        this.rewardFurni = List.of();
+        this.rewardCoins = reward == null
+                ? 0
+                : reward.stream()
+                        .filter(Term::isCurrency)
+                        .mapToInt(term -> term.amount)
+                        .sum();
         this.canAccept = canAccept;
-        this.secondsLeft = secondsLeft;
-        this.offered = offered == null ? List.of() : offered;
-        this.reward = reward == null ? List.of() : reward;
-        this.missing = missing == null ? List.of() : missing;
+        this.extra = canAccept ? 1 : 0;
     }
 
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.WiredTradeItemsComposer);
-        this.response.appendInt(this.state);
+
+        this.response.appendInt(this.userId);
+        this.response.appendInt(this.offered.size() + this.legacyOffered.size());
+        for (HabboItem item : this.offered) ChestAirWire.appendTradeItem(this.response, item);
+        for (OfferedItem item : this.legacyOffered) appendLegacy(item);
+        this.response.appendInt(this.offered.size() + this.legacyOffered.size());
+        this.response.appendInt(this.offeredCredits);
+
+        this.response.appendInt(0);
+        this.response.appendInt(this.rewardFurni.size());
+        for (ChestFurniStoredItem row : this.rewardFurni) ChestAirWire.appendTradeItem(this.response, row);
+        this.response.appendInt(this.rewardFurni.size());
+        this.response.appendInt(this.rewardCoins);
+
         this.response.appendBoolean(this.canAccept);
-        this.response.appendInt(this.secondsLeft);
-
-        this.response.appendInt(this.offered.size());
-        for (OfferedItem item : this.offered) {
-            this.response.appendInt(item.itemId());
-            this.response.appendBoolean(item.wallItem());
-            this.response.appendInt(ContractWireUtil.spriteIdOf(item.baseItemId()));
-        }
-
-        List<Term> rewardFurni = this.reward.stream().filter(Term::isFurni).toList();
-        this.response.appendInt(rewardFurni.size());
-        for (Term term : rewardFurni) {
-            this.response.appendInt(ContractWireUtil.spriteIdOf(term.baseItemId));
-            this.response.appendInt(term.amount);
-        }
-
-        List<Term> rewardCurrency =
-                this.reward.stream().filter(Term::isCurrency).toList();
-        this.response.appendInt(rewardCurrency.size());
-        for (Term term : rewardCurrency) {
-            this.response.appendInt(term.currencyType);
-            this.response.appendInt(term.amount);
-        }
-
-        this.response.appendInt(this.missing.size());
-        for (Term term : this.missing) {
-            ContractWireUtil.appendNode(this.response, term);
-        }
-
+        this.response.appendInt(this.extra);
         return this.response;
+    }
+
+    private void appendLegacy(OfferedItem item) {
+        this.response.appendInt(item.itemId());
+        this.response.appendString(item.wallItem() ? FurnitureType.WALL.code : FurnitureType.FLOOR.code);
+        this.response.appendInt(item.itemId());
+        this.response.appendInt(ContractWireUtil.spriteIdOf(item.baseItemId()));
+        this.response.appendInt(0);
+        this.response.appendBoolean(true);
+        this.response.appendInt(0);
+        this.response.appendString("");
+        this.response.appendInt(0);
+        this.response.appendInt(0);
+        this.response.appendInt(0);
+        if (!item.wallItem()) this.response.appendInt(0);
     }
 }

@@ -43,6 +43,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredBlob;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraContextVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraPointerVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraRoomVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraUserVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraVariableEcho;
@@ -262,7 +263,9 @@ final class RoomItemRegistry {
             this.room.getFurniVariableManager().removeDefinition(item.getId());
         } else if (item instanceof WiredExtraRoomVariable) {
             this.room.getRoomVariableManager().removeDefinition(item.getId());
-        } else if (item instanceof WiredExtraContextVariable || item instanceof WiredExtraVariableTextConnector) {
+        } else if (item instanceof WiredExtraContextVariable
+                || item instanceof WiredExtraVariableTextConnector
+                || item instanceof WiredExtraPointerVariable) {
             broadcastDefinitions = true;
         } else if (item instanceof WiredExtraVariableReference reference) {
             if (reference.isRoomReference()) {

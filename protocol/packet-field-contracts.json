@@ -10553,38 +10553,6 @@
       ]
     },
     {
-      "name": "CHEST_DEPOSIT",
-      "direction": "client_to_server",
-      "header": 9313,
-      "java": {
-        "symbol": "ChestDepositEvent",
-        "className": "ChestDepositEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestDepositEvent.java"
-      },
-      "typescript": {
-        "symbol": "CHEST_DEPOSIT",
-        "className": "ChestDepositComposer",
-        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestDepositComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "itemId"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "currencyType"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "amount"
-        }
-      ]
-    },
-    {
       "name": "CHEST_WITHDRAW",
       "direction": "client_to_server",
       "header": 9314,
@@ -10595,19 +10563,14 @@
       },
       "typescript": {
         "symbol": "CHEST_WITHDRAW",
-        "className": "ChestWithdrawComposer",
-        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestWithdrawComposer.ts"
+        "className": "ChestWithdrawCoinsComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestWithdrawCoinsComposer.ts"
       },
       "fields": [
         {
           "kind": "scalar",
           "type": "int",
           "name": "itemId"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "currencyType"
         },
         {
           "kind": "scalar",
@@ -10659,7 +10622,7 @@
         {
           "kind": "scalar",
           "type": "int",
-          "name": "appearanceState"
+          "name": "stateMode"
         },
         {
           "kind": "scalar",
@@ -10670,6 +10633,11 @@
           "kind": "scalar",
           "type": "int",
           "name": "previewAmount"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "wiredEnabled"
         }
       ]
     },
@@ -10695,6 +10663,11 @@
         },
         {
           "kind": "scalar",
+          "type": "int",
+          "name": "mode"
+        },
+        {
+          "kind": "scalar",
           "type": "boolean",
           "name": "full"
         },
@@ -10717,11 +10690,6 @@
           "kind": "scalar",
           "type": "boolean",
           "name": "wired"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "mode"
         }
       ]
     },
@@ -10817,38 +10785,6 @@
       ]
     },
     {
-      "name": "CHEST_DEPOSIT_FURNI",
-      "direction": "client_to_server",
-      "header": 9321,
-      "java": {
-        "symbol": "ChestDepositFurniEvent",
-        "className": "ChestDepositFurniEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestDepositFurniEvent.java"
-      },
-      "typescript": {
-        "symbol": "CHEST_DEPOSIT_FURNI",
-        "className": "ChestDepositFurniComposer",
-        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestDepositFurniComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "itemId"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "baseItemId"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "amount"
-        }
-      ]
-    },
-    {
       "name": "CHEST_START_DEPOSIT",
       "direction": "client_to_server",
       "header": 9324,
@@ -10871,33 +10807,6 @@
       ]
     },
     {
-      "name": "CHEST_DEPOSIT_INVENTORY_ITEM",
-      "direction": "client_to_server",
-      "header": 9325,
-      "java": {
-        "symbol": "ChestDepositInventoryItemEvent",
-        "className": "ChestDepositInventoryItemEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestDepositInventoryItemEvent.java"
-      },
-      "typescript": {
-        "symbol": "CHEST_DEPOSIT_INVENTORY_ITEM",
-        "className": "ChestDepositInventoryItemComposer",
-        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestDepositInventoryItemComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "chestItemId"
-        },
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "inventoryItemId"
-        }
-      ]
-    },
-    {
       "name": "CHEST_WITHDRAW_ALL_FURNI",
       "direction": "client_to_server",
       "header": 9326,
@@ -10908,8 +10817,8 @@
       },
       "typescript": {
         "symbol": "CHEST_WITHDRAW_ALL_FURNI",
-        "className": "ChestWithdrawAllFurniComposer",
-        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestWithdrawAllFurniComposer.ts"
+        "className": "ChestWithdrawAllComposer",
+        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestWithdrawAllComposer.ts"
       },
       "fields": [
         {
@@ -11297,28 +11206,6 @@
           "kind": "scalar",
           "type": "int",
           "name": "cooldownSeconds"
-        }
-      ]
-    },
-    {
-      "name": "CHEST_ENABLE_WIRED",
-      "direction": "client_to_server",
-      "header": 9345,
-      "java": {
-        "symbol": "ChestEnableWiredEvent",
-        "className": "ChestEnableWiredEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/items/ChestEnableWiredEvent.java"
-      },
-      "typescript": {
-        "symbol": "CHEST_ENABLE_WIRED",
-        "className": "ChestEnableWiredComposer",
-        "path": "packages/communication/src/messages/outgoing/room/furniture/chest/ChestEnableWiredComposer.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "int",
-          "name": "item"
         }
       ]
     },
@@ -20609,6 +20496,109 @@
       ]
     },
     {
+      "name": "CHEST_COINS",
+      "direction": "server_to_client",
+      "header": 9337,
+      "java": {
+        "symbol": "ChestCoinsComposer",
+        "className": "ChestCoinsComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/items/ChestCoinsComposer.java"
+      },
+      "typescript": {
+        "symbol": "CHEST_COINS",
+        "className": "ChestCoinsMessageParser",
+        "path": "packages/communication/src/messages/parser/room/furniture/ChestCoinsMessageParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "CHEST_SETTINGS_UPDATED",
+      "direction": "server_to_client",
+      "header": 9338,
+      "java": {
+        "symbol": "ChestSettingsUpdatedComposer",
+        "className": "ChestSettingsUpdatedComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/items/ChestSettingsUpdatedComposer.java"
+      },
+      "typescript": {
+        "symbol": "CHEST_SETTINGS_UPDATED",
+        "className": "ChestSettingsUpdatedMessageParser",
+        "path": "packages/communication/src/messages/parser/room/furniture/ChestSettingsUpdatedMessageParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "WIRED_TRANSACTION_FAIL",
+      "direction": "server_to_client",
+      "header": 9346,
+      "java": {
+        "symbol": "WiredTransactionFailComposer",
+        "className": "WiredTransactionFailComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/items/WiredTransactionFailComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_TRANSACTION_FAIL",
+        "className": "WiredTransactionFailMessageParser",
+        "path": "packages/communication/src/messages/parser/room/furniture/WiredTransactionFailMessageParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "WIRED_TRADE_ERROR",
+      "direction": "server_to_client",
+      "header": 9347,
+      "java": {
+        "symbol": "WiredTradeErrorComposer",
+        "className": "WiredTradeErrorComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/items/WiredTradeErrorComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_TRADE_ERROR",
+        "className": "WiredTradeErrorMessageParser",
+        "path": "packages/communication/src/messages/parser/room/furniture/WiredTradeErrorMessageParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
       "name": "BUILD_HEIGHT_AVAILABLE",
       "direction": "server_to_client",
       "header": 9350,
@@ -28287,6 +28277,22 @@
         "path": "packages/communication/src/messages/parser/room/furniture/ChestDataMessageParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
+    },
+    {
+      "name": "WIRED_TRANSACTION_SUCCESS",
+      "direction": "server_to_client",
+      "header": 9339,
+      "java": {
+        "symbol": "WiredTransactionSuccessComposer",
+        "className": "WiredTransactionSuccessComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/rooms/items/WiredTransactionSuccessComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_TRANSACTION_SUCCESS",
+        "className": "WiredTransactionSuccessMessageParser",
+        "path": "packages/communication/src/messages/parser/room/furniture/WiredTransactionSuccessMessageParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside composeInternal"
     },
     {
       "name": "CHEST_LOG",

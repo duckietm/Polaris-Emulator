@@ -580,6 +580,11 @@ public class RoomItemManager {
     /**
      * Ejects all furniture belonging to a user.
      */
+    /** Removes Place Furni's temporary copies in one batched removal (picker -1). */
+    public void removeTemporaryItems(java.util.Collection<HabboItem> items) {
+        this.ownership.removeTemporaryItems(items);
+    }
+
     public void ejectUserFurni(int userId) {
         this.ownership.ejectUserFurniture(userId);
     }

@@ -692,9 +692,7 @@ public class PacketManager {
     }
 
     public void unregisterCallables(Integer header) {
-        if (this.callables.containsKey(header)) {
-            this.callables.clear();
-        }
+        this.callables.remove(header);
     }
 
     public void handlePacket(GameClient client, ClientMessage packet) {

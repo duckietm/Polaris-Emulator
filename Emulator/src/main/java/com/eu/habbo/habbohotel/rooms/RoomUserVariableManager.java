@@ -594,7 +594,9 @@ public class RoomUserVariableManager {
                 WiredVariableLevelSystemSupport.resolveDerivedDefinition(
                         this.room, WiredVariableLevelSystemSupport.TARGET_USER, definitionItemId);
         if (derivedDefinition != null) {
-            return this.getRawAssignment(userId, derivedDefinition.getBaseDefinitionItemId()) != null;
+            return this.getRawAssignment(userId, derivedDefinition.getBaseDefinitionItemId()) != null
+                    && (!WiredVariableLevelSystemSupport.isPresencePart(derivedDefinition)
+                            || this.getDerivedValue(userId, derivedDefinition) != null);
         }
 
         InteractionWiredExtra extra = this.getDefinitionExtra(definitionItemId);
@@ -1358,13 +1360,15 @@ public class RoomUserVariableManager {
                             updatedAt)
                     : null;
 
+            // A presence part (is_maxed) is created when it appears and removed when it goes, by itself.
+            boolean presence = WiredVariableLevelSystemSupport.isPresencePart(resolvedDefinition);
             this.emitVariableChangedEvent(
                     userId,
                     derivedDefinition.getItemId(),
                     true,
-                    existedBefore,
+                    presence ? derivedPreviousValue != null : existedBefore,
                     derivedPreviousValue,
-                    existsAfter,
+                    presence ? derivedCurrentValue != null : existsAfter,
                     derivedCurrentValue);
         }
     }

@@ -1,11 +1,14 @@
 package com.eu.habbo.habbohotel.rooms;
 
+import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.ItemManager;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.WiredTradingManager;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -18,6 +21,8 @@ public final class RoomWiredRuntime {
     private final WiredTradingManager trading;
     private final WiredProjectileFlights projectiles = new WiredProjectileFlights();
     private final WiredBoxFlashes boxFlashes;
+    private final WiredMessageBudget messageBudget = new WiredMessageBudget();
+    private final Set<Integer> movesFreely = ConcurrentHashMap.newKeySet();
     private final AtomicInteger nextTemporaryItemId = new AtomicInteger(ItemManager.FIRST_TEMPORARY_ITEM_ID);
 
     RoomWiredRuntime(Room room) {
@@ -26,6 +31,11 @@ public final class RoomWiredRuntime {
         this.visualization = new WiredVisualizationService(room);
         this.trading = new WiredTradingManager(room);
         this.boxFlashes = new WiredBoxFlashes(room);
+    }
+
+    /** The room's Show Message budget. */
+    public WiredMessageBudget getMessageBudget() {
+        return this.messageBudget;
     }
 
     /** The room's wired box flashes, sent in the pass that flipped them (the room cycle sends what is left). */
@@ -139,6 +149,31 @@ public final class RoomWiredRuntime {
         }
     }
 
+    /**
+     * Gives or removes the {@code @can_move_freely} flag of a floor furni. As in Habbo it is a presence flag kept
+     * for the room's lifetime only, which Has Variable sees; it does not change how wired moves the furni.
+     *
+     * @return whether the flag changed
+     */
+    public boolean setMovesFreely(HabboItem item, boolean movesFreely) {
+        if (item == null || item.getBaseItem() == null || item.getBaseItem().getType() != FurnitureType.FLOOR) {
+            return false;
+        }
+
+        return movesFreely ? this.movesFreely.add(item.getId()) : this.movesFreely.remove(item.getId());
+    }
+
+    /** Whether a floor furni holds the {@code @can_move_freely} flag. */
+    public boolean movesFreely(HabboItem item) {
+        return item != null && this.movesFreely.contains(item.getId());
+    }
+
+    void forgetMovesFreely(HabboItem item) {
+        if (item != null) {
+            this.movesFreely.remove(item.getId());
+        }
+    }
+
     /** The room's highlights and avatar transparency, applied and sent by {@link WiredVisualizationBroadcaster}. */
     WiredVisualizationService visualization() {
         return this.visualization;
@@ -162,6 +197,7 @@ public final class RoomWiredRuntime {
         this.opacity.dispose();
         this.visualization.dispose();
         this.projectiles.clear();
+        this.movesFreely.clear();
         this.nextTemporaryItemId.set(ItemManager.FIRST_TEMPORARY_ITEM_ID);
         // Every open negotiation is holding somebody's furniture out of their inventory. Letting the
         // room go without handing it back would lose it.

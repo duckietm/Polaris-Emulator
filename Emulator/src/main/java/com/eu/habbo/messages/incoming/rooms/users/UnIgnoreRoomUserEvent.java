@@ -5,22 +5,23 @@ import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserIgnoredComposer;
 
+/** Stops ignoring a user by id (AIR {@code IgnoredUsersManager.unignoreUser}, composer {@code ?_-02R?/?_-gt?}). */
 public class UnIgnoreRoomUserEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
-        Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
+        int userId = this.packet.readInt();
 
-        if (room != null) {
-            String username = this.packet.readString();
+        Habbo self = this.client.getHabbo();
 
-            Habbo habbo = room.getHabbo(username);
+        if (userId <= 0 || self == null) return;
 
-            if (habbo != null) {
-                if (habbo.getHabboStats().allowTalk()) {
-                    this.client.getHabbo().getHabboStats().unignoreUser(habbo.getHabboInfo().getId());
-                    this.client.sendResponse(new RoomUserIgnoredComposer(habbo, RoomUserIgnoredComposer.UNIGNORED));
-                }
-            }
-        }
+        Room room = this.currentRoom();
+        Habbo target = room != null ? room.getHabbo(userId) : null;
+
+        // A user muted in this room stays silent; the mute is not lifted through the ignore list.
+        if (target != null && !target.getHabboStats().allowTalk()) return;
+
+        self.getHabboStats().unignoreUser(userId);
+        this.client.sendResponse(new RoomUserIgnoredComposer(userId, RoomUserIgnoredComposer.UNIGNORED));
     }
 }

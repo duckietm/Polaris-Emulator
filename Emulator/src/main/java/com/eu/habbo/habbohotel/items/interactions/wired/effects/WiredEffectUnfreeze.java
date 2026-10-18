@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
@@ -15,6 +16,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
+import com.eu.habbo.threading.ThreadPooling;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -42,8 +44,27 @@ public class WiredEffectUnfreeze extends InteractionWiredEffect {
                 continue;
             }
 
-            WiredFreezeUtil.unfreeze(room, roomUnit);
+            unfreezeOnTheRoomTick(room, roomUnit);
         }
+    }
+
+    /** Habbo unfreezes on the room's next 500 ms tick, not the moment the box runs. */
+    static void unfreezeOnTheRoomTick(Room room, RoomUnit roomUnit) {
+        ThreadPooling threading = WiredPlatform.threading();
+        if (threading == null) {
+            WiredFreezeUtil.unfreeze(room, roomUnit);
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        long delay = Math.max(0L, WiredEffectTeleport.nextRoomBoundary(room.getCycleTimestamp(), now) - now);
+        threading.run(
+                () -> {
+                    if (WiredFreezeUtil.isFrozen(roomUnit) && roomUnit.getRoom() == room) {
+                        WiredFreezeUtil.unfreeze(room, roomUnit);
+                    }
+                },
+                delay);
     }
 
     @Deprecated

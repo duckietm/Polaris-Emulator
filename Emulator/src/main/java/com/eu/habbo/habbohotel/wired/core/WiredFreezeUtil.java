@@ -42,6 +42,10 @@ public final class WiredFreezeUtil {
     }
 
     public static void unfreeze(Room room, RoomUnit roomUnit) {
+        unfreeze(room, roomUnit, true);
+    }
+
+    private static void unfreeze(Room room, RoomUnit roomUnit, boolean sendEffect) {
         if (roomUnit == null) {
             return;
         }
@@ -63,12 +67,18 @@ public final class WiredFreezeUtil {
 
         // Unfreezing sends only the restored effect, no user update; a Wired team member gets the team effect back
         // (223-226). Behaviour observed in plus-emulator/PlusEMU 60bb18e8, reimplemented.
-        if (room != null) {
-            if (clearsEffect) {
-                room.giveEffect(roomUnit, restoredEffect(room, roomUnit), -1);
-            }
-        } else if (clearsEffect) {
+        if (!clearsEffect) {
+            return;
+        }
+
+        if (room == null) {
             roomUnit.setEffectId(0, 0);
+        } else if (sendEffect) {
+            room.giveEffect(roomUnit, restoredEffect(room, roomUnit), -1);
+        } else {
+            // The teleport's own effect is showing; its end shows the restored effect.
+            int restored = restoredEffect(room, roomUnit);
+            roomUnit.setEffectId(restored, restored > 0 ? Integer.MAX_VALUE : 0);
         }
     }
 
@@ -89,6 +99,20 @@ public final class WiredFreezeUtil {
 
         if (Boolean.TRUE.equals(roomUnit.getCacheable().get(CACHE_CANCEL_ON_TELEPORT))) {
             unfreeze(room, roomUnit);
+        }
+    }
+
+    /**
+     * A wired teleport landing: a freeze saved with "cancel on teleport" ends without an effect
+     * packet of its own, so only the teleport effect shows, as in Habbo.
+     */
+    public static void onWiredTeleport(Room room, RoomUnit roomUnit) {
+        if (!isFrozen(roomUnit)) {
+            return;
+        }
+
+        if (Boolean.TRUE.equals(roomUnit.getCacheable().get(CACHE_CANCEL_ON_TELEPORT))) {
+            unfreeze(room, roomUnit, false);
         }
     }
 

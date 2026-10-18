@@ -17,7 +17,23 @@ public class BotFollowHabbo implements Runnable {
         this.bot = bot;
         this.habbo = habbo;
         this.room = room;
-        this.hasReached = false;
+        // A bot told to follow a user it already stands next to has not reached them: Habbo raises Bot
+        // Reached Avatar only on an arrival.
+        this.hasReached = startsNextTo(bot, habbo);
+    }
+
+    static boolean startsNextTo(Bot bot, Habbo habbo) {
+        if (bot == null || habbo == null || bot.getRoomUnit() == null || habbo.getRoomUnit() == null) {
+            return false;
+        }
+
+        RoomTile botTile = bot.getRoomUnit().getCurrentLocation();
+        RoomTile habboTile = habbo.getRoomUnit().getCurrentLocation();
+        return botTile != null && habboTile != null && habboTile.distance(botTile) < 2;
+    }
+
+    boolean hasReached() {
+        return this.hasReached;
     }
 
     @Override
@@ -26,23 +42,46 @@ public class BotFollowHabbo implements Runnable {
             return;
         }
         if (this.bot != null) {
-            if (this.habbo != null && this.bot.getFollowingHabboId() == this.habbo.getHabboInfo().getId()) {
-                if (this.habbo.getHabboInfo().getCurrentRoom() != null && this.habbo.getHabboInfo().getCurrentRoom() == this.room) {
+            if (this.habbo != null
+                    && this.bot.getFollowingHabboId()
+                            == this.habbo.getHabboInfo().getId()) {
+                if (this.habbo.getHabboInfo().getCurrentRoom() != null
+                        && this.habbo.getHabboInfo().getCurrentRoom() == this.room) {
                     if (this.habbo.getRoomUnit() != null) {
                         if (this.bot.getRoomUnit() != null) {
-                            RoomTile target = this.room.getLayout().getTileInFront(this.habbo.getRoomUnit().getCurrentLocation(), Math.abs((this.habbo.getRoomUnit().getBodyRotation().getValue() + 4)) % 8);
+                            RoomTile target = this.room
+                                    .getLayout()
+                                    .getTileInFront(
+                                            this.habbo.getRoomUnit().getCurrentLocation(),
+                                            Math.abs((this.habbo
+                                                                    .getRoomUnit()
+                                                                    .getBodyRotation()
+                                                                    .getValue()
+                                                            + 4))
+                                                    % 8);
 
                             if (target != null) {
                                 if (target.x < 0 || target.y < 0)
-                                    target = this.room.getLayout().getTileInFront(this.habbo.getRoomUnit().getCurrentLocation(), this.habbo.getRoomUnit().getBodyRotation().getValue());
+                                    target = this.room
+                                            .getLayout()
+                                            .getTileInFront(
+                                                    this.habbo.getRoomUnit().getCurrentLocation(),
+                                                    this.habbo
+                                                            .getRoomUnit()
+                                                            .getBodyRotation()
+                                                            .getValue());
 
-                                if(this.habbo.getRoomUnit().getCurrentLocation().distance(this.bot.getRoomUnit().getCurrentLocation()) < 2) {
-                                    if(!hasReached) {
-                                        WiredManager.triggerBotReachedHabbo(room, bot.getRoomUnit(), habbo.getRoomUnit());
+                                if (this.habbo
+                                                .getRoomUnit()
+                                                .getCurrentLocation()
+                                                .distance(this.bot.getRoomUnit().getCurrentLocation())
+                                        < 2) {
+                                    if (!hasReached) {
+                                        WiredManager.triggerBotReachedHabbo(
+                                                room, bot.getRoomUnit(), habbo.getRoomUnit());
                                         hasReached = true;
                                     }
-                                }
-                                else {
+                                } else {
                                     hasReached = false;
                                 }
 

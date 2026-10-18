@@ -20,12 +20,15 @@ import java.sql.SQLException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
     public static final int CODE = 79;
     public static final int MAX_MAPPING_LENGTH = 1000;
     public static final int MAX_MAPPING_LINES = 30;
     private static final String PRESERVED_SPACE = "\u00A0";
+    private static final Pattern VALID_KEY = Pattern.compile("-?[0-9]+");
 
     private String mappingsText = "";
     private int fieldId;
@@ -56,6 +59,8 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
         }
         String mappingsText = normalizeMappingsText(config.mappingsText);
         validateMappingsText(mappingsText);
+        // As in Habbo, only the valid lines are kept, one per number in number order.
+        mappingsText = storedMappingsText(mappingsText);
 
         Room room = Emulator.getGameEnvironment().getRoomManager().getRoom(this.getRoomId());
         validateField(room, config.fieldId);
@@ -277,19 +282,21 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
                 continue;
             }
 
+            // As in Habbo, a line is "number=text" exactly: no spaces around the number, no other
+            // separator; anything else is dropped ("bad", "x=1", " 3 = z "). The text may be empty.
             int separatorIndex = line.indexOf('=');
-            if (separatorIndex < 0) {
-                separatorIndex = line.indexOf(',');
-            }
-
             if (separatorIndex <= 0) {
                 continue;
             }
 
-            String keyPart = line.substring(0, separatorIndex).trim();
+            String keyPart = line.substring(0, separatorIndex);
             String valuePart = line.substring(separatorIndex + 1);
+            if (!VALID_KEY.matcher(keyPart).matches()) {
+                continue;
+            }
 
             try {
+                // A repeated number keeps its last text.
                 result.put(Long.parseLong(keyPart), valuePart);
             } catch (NumberFormatException ignored) {
                 WiredCompatibilityDiagnostics.record(
@@ -298,6 +305,25 @@ public class WiredExtraVariableTextConnector extends InteractionWiredExtra {
         }
 
         return result;
+    }
+
+    /**
+     * The text a saved connector stores, as Habbo does: its valid "number=text" lines only, one per
+     * number with its last text, in ascending number order ("9=a 3=b -2=neg" reads back
+     * "-2=neg 3=b 9=a"). The "_=" fallback line is kept, last.
+     */
+    static String storedMappingsText(String value) {
+        StringBuilder stored = new StringBuilder();
+        new TreeMap<>(parseMappings(value)).forEach((key, text) -> {
+            if (!stored.isEmpty()) stored.append('\n');
+            stored.append(key).append('=').append(text);
+        });
+        String fallback = parseFallback(value == null ? "" : value);
+        if (fallback != null) {
+            if (!stored.isEmpty()) stored.append('\n');
+            stored.append("_=").append(fallback);
+        }
+        return stored.toString();
     }
 
     private static String preserveSpaces(String value) {

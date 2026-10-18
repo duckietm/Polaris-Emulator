@@ -118,7 +118,7 @@ public class WiredExtraVariableLeaderboard extends InteractionWiredExtra impleme
         int shownChoices = Math.min(candidates.size(), MAX_CONTEXT_CHOICES);
         message.appendInt(1);
         message.appendInt(CONTEXT_TYPE);
-        message.appendInt(this.stored != null ? this.getId() : 0);
+        message.appendInt(WiredLeaderboardSupport.overlayIdOf(room, this));
         message.appendInt(this.getX());
         message.appendInt(this.getY());
         message.appendInt(candidates.size());

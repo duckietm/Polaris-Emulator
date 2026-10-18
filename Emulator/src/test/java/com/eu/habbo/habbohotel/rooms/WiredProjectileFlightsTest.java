@@ -86,4 +86,32 @@ class WiredProjectileFlightsTest {
         flights.clear();
         assertEquals(0, flights.size());
     }
+
+    @Test
+    void aFlightReportsItsCountsOnlyAfterLaunchAndItsFlagWhenItLands() {
+        AtomicLong clock = new AtomicLong(1_000);
+        WiredProjectileFlights flights = new WiredProjectileFlights(clock::get);
+
+        // Four tiles in 400 ms: one tile every 100 ms.
+        flights.begin(7, flight(1_000));
+        assertTrue(flights.hasPending());
+        assertTrue(flights.claimWatcher());
+        assertFalse(flights.claimWatcher());
+
+        assertTrue(flights.poll(1_050).isEmpty());
+        java.util.List<WiredProjectileFlights.Change> crossed = flights.poll(1_250);
+        assertEquals(
+                java.util.List.of(new WiredProjectileFlights.Change(7, WiredProjectileFlight.TILES_TRAVELED, 0, 2)),
+                crossed);
+        assertFalse(flights.releaseWatcherIfIdle());
+
+        java.util.List<WiredProjectileFlights.Change> landed = flights.poll(1_400);
+        assertTrue(landed.contains(new WiredProjectileFlights.Change(7, WiredProjectileFlight.TILES_TRAVELED, 2, 4)));
+        assertTrue(landed.contains(new WiredProjectileFlights.Change(7, WiredProjectileFlight.IS_TRAVELING, 1, null)));
+        assertEquals(2, landed.size());
+        assertFalse(flights.hasPending());
+        assertTrue(flights.poll(1_500).isEmpty());
+        assertTrue(flights.releaseWatcherIfIdle());
+        assertTrue(flights.claimWatcher());
+    }
 }

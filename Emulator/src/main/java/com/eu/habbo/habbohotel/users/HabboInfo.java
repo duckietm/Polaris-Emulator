@@ -58,6 +58,8 @@ public class HabboInfo implements Runnable {
     private int roomEntryTeleportId = 0;
     private PendingRoomEntry pendingRoomEntry;
     private long lastRoomForwardAt;
+    private int roomForwardGlowRoomId;
+    private long roomForwardGlowExpiresAt;
     private int roomQueueId;
     private RideablePet riding;
     private Class<? extends Game> currentGame;
@@ -658,6 +660,22 @@ public class HabboInfo implements Runnable {
         PendingRoomEntry entry = this.pendingRoomEntry;
         this.pendingRoomEntry = null;
         return (entry != null && entry.appliesTo(roomId, now)) ? entry : null;
+    }
+
+    /** Teleport to Room sent this user to that room: they arrive there still glowing. */
+    public synchronized void setRoomForwardGlow(int roomId, long expiresAt) {
+        this.roomForwardGlowRoomId = roomId;
+        this.roomForwardGlowExpiresAt = expiresAt;
+    }
+
+    /** Whether the user enters this room glowing from Teleport to Room; read once. */
+    public synchronized boolean takeRoomForwardGlow(int roomId, long now) {
+        boolean glows = this.roomForwardGlowRoomId != 0
+                && this.roomForwardGlowRoomId == roomId
+                && now <= this.roomForwardGlowExpiresAt;
+        this.roomForwardGlowRoomId = 0;
+        this.roomForwardGlowExpiresAt = 0;
+        return glows;
     }
 
     /** Admits one furni-driven room forward per interval for this user. */

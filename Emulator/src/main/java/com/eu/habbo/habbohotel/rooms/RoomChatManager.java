@@ -31,7 +31,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -55,6 +57,10 @@ public class RoomChatManager {
 
     // Flood protection settings
     private final int muteTime;
+
+    // The speakers' chat budgets in the budget flood mode; a full one is forgotten once many pile up.
+    private static final int FLOOD_BUDGET_PRUNE_SIZE = 64;
+    private final Map<Integer, ChatFloodBudget> floodBudgets = new ConcurrentHashMap<>();
 
     // Global chat delay setting
     public static boolean HABBO_CHAT_DELAY = false;
@@ -231,6 +237,32 @@ public class RoomChatManager {
     /**
      * Applies flood mute to a Habbo.
      */
+    /**
+     * Whether a habbicon of this Habbo may go out: in the budget flood mode it spends a chat line, as
+     * in Habbo; in the mute mode habbicons are not counted.
+     */
+    public boolean allowsHabbicon(Habbo habbo) {
+        if (habbo == null || habbo.hasPermission(Permission.ACC_CHAT_NO_FLOOD) || !ChatFloodBudget.isBudgetMode()) {
+            return true;
+        }
+        return this.takeFloodBudget(habbo, ChatFloodBudget.floodWithRights());
+    }
+
+    /** Spends a line of the Habbo's flood budget; false when it is empty. Room rights exempt unless flood.with.rights. */
+    private boolean takeFloodBudget(Habbo habbo, boolean floodWithRights) {
+        if (!floodWithRights && this.room.hasRights(habbo)) {
+            return true;
+        }
+
+        long now = System.currentTimeMillis();
+        if (this.floodBudgets.size() > FLOOD_BUDGET_PRUNE_SIZE) {
+            this.floodBudgets.values().removeIf(budget -> budget.isRefilled(now));
+        }
+        return this.floodBudgets
+                .computeIfAbsent(habbo.getHabboInfo().getId(), id -> new ChatFloodBudget())
+                .tryTake(now);
+    }
+
     public void floodMuteHabbo(Habbo habbo, int timeOut) {
         habbo.getHabboStats().mutedCount++;
         timeOut += (timeOut * (int) Math.ceil(Math.pow(habbo.getHabboStats().mutedCount, 2)));
@@ -331,7 +363,12 @@ public class RoomChatManager {
         }
 
         // Flood protection
-        if (!habbo.hasPermission(Permission.ACC_CHAT_NO_FLOOD)) {
+        if (!habbo.hasPermission(Permission.ACC_CHAT_NO_FLOOD) && ChatFloodBudget.isBudgetMode()) {
+            // Budget mode: a line over the speaker's budget is dropped, without a mute.
+            if (!this.takeFloodBudget(habbo, ChatFloodBudget.floodWithRights())) {
+                return;
+            }
+        } else if (!habbo.hasPermission(Permission.ACC_CHAT_NO_FLOOD)) {
             final int chatCounter = habbo.getHabboStats().chatCounter.addAndGet(1);
 
             if (chatCounter > 3) {

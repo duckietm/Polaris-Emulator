@@ -265,6 +265,35 @@ final class RoomItemOwnershipService {
     }
 
     void ejectAll(Habbo exemptOwner) {
+        this.ejectAll(exemptOwner, Set.of());
+    }
+
+    /** The owner's pickall: everything goes back to its owners except the Builders Club furni. */
+    void ejectAllExceptBuildersClub() {
+        this.ejectAll(null, BuildersClubRoomSupport.getTrackedItemIds(this.room.getId()));
+    }
+
+    /** Takes every Builders Club furni out of the room; they return to the Builders Club, not to an inventory. */
+    void removeBuildersClubItems(Habbo picker) {
+        Set<Integer> trackedIds = BuildersClubRoomSupport.getTrackedItemIds(this.room.getId());
+        if (trackedIds.isEmpty()) {
+            return;
+        }
+
+        Set<HabboItem> items = new HashSet<>();
+        synchronized (this.index.items()) {
+            for (Integer itemId : trackedIds) {
+                HabboItem item = this.index.items().get(itemId.intValue());
+                if (item != null) {
+                    items.add(item);
+                }
+            }
+        }
+
+        this.pickUpAll(items, picker);
+    }
+
+    private void ejectAll(Habbo exemptOwner, Set<Integer> skippedItemIds) {
         Map<Integer, Set<HabboItem>> itemsByOwner = new HashMap<>();
         synchronized (this.index.items()) {
             for (HabboItem item : this.index.items().values()) {
@@ -272,7 +301,7 @@ final class RoomItemOwnershipService {
                         && item.getUserId() == exemptOwner.getHabboInfo().getId()) {
                     continue;
                 }
-                if (item instanceof InteractionPostIt) {
+                if (item instanceof InteractionPostIt || skippedItemIds.contains(item.getId())) {
                     continue;
                 }
                 itemsByOwner

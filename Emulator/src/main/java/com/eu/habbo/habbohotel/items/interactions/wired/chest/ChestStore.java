@@ -1,7 +1,9 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.chest;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Durable storage behind the wired chests, after the official AIR model.
@@ -73,4 +75,62 @@ public interface ChestStore {
      * @return true when every item was redeemed and the coins were added
      */
     boolean redeemCreditFurni(int chestId, int fromUserId, List<Integer> itemIds, int coins);
+
+    /** What {@link #releaseChest} did. */
+    enum ReleaseStatus {
+        /** The item has no chest row: nothing was stored, nothing changed. */
+        NO_CHEST,
+        /** The chest held nothing; its empty row was removed. */
+        EMPTY,
+        /** Everything went back to the owner and the chest's rows were removed. */
+        RELEASED,
+        /** Nobody to give it back to: the rows were kept as they are. */
+        OWNER_UNKNOWN,
+        /** The database refused; the rows were kept as they are. */
+        FAILED
+    }
+
+    /**
+     * The result of releasing a chest.
+     *
+     * @param furni every stored id that went back mapped to the inventory id it has now
+     * @param coins the coins paid to the owner as credits by this call (0 when an earlier call paid)
+     * @param creditsAfter the owner's credits after the refund, or -1 when no refund was made
+     */
+    record Release(
+            ReleaseStatus status, int chestId, int ownerId, Map<Integer, Integer> furni, int coins, int creditsAfter) {
+        public Release {
+            furni = furni == null ? Map.of() : Map.copyOf(furni);
+        }
+
+        public static Release of(ReleaseStatus status, int chestId, int ownerId) {
+            return new Release(status, chestId, ownerId, Map.of(), 0, -1);
+        }
+
+        public boolean rowsRemoved() {
+            return this.status == ReleaseStatus.EMPTY || this.status == ReleaseStatus.RELEASED;
+        }
+    }
+
+    /** A chest row whose item no longer exists. {@code ownerId} is the owner last recorded, or 0. */
+    record OrphanRow(int chestId, int ownerId) {}
+
+    /**
+     * Give everything a chest holds back to its owner and remove the chest's rows, before the chest
+     * item itself is deleted: every stored furni goes back into the owner's inventory as itself (same
+     * id unless taken, same state, limited number, group and expiry) and the coins are paid out as
+     * credits through the economy ledger under {@code wired-chest-release:<chestId>}, all in one
+     * transaction. Idempotent: a chest that was released already has no rows, and the ledger operation
+     * id pays at most once.
+     *
+     * @param ownerId the owner as the caller knows it, or 0 to use the chest item's row and then the
+     *     owner recorded on the chest
+     */
+    Release releaseChest(int chestId, int ownerId);
+
+    /** Which of these item ids have a chest row. */
+    Set<Integer> chestIdsAmong(Collection<Integer> itemIds);
+
+    /** Chest rows whose item is gone from {@code items}. */
+    List<OrphanRow> orphanedChests();
 }

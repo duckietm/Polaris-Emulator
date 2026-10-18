@@ -13,6 +13,7 @@ import com.eu.habbo.habbohotel.rooms.FurnitureMovementError;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import com.eu.habbo.messages.outgoing.catalog.BuildersClubPlacementWarningComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import java.util.Iterator;
@@ -24,6 +25,7 @@ public class BuildersClubPlaceWallItemEvent extends MessageHandler {
         int offerId = this.packet.readInt();
         String extraData = this.packet.readString();
         String wallPosition = this.packet.readString();
+        boolean confirmed = this.packet.readBoolean();
 
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
         int placementUserId = BuildersClubRoomSupport.getPlacementPoolUserId(this.client.getHabbo());
@@ -47,22 +49,21 @@ public class BuildersClubPlaceWallItemEvent extends MessageHandler {
             return;
         }
 
+        // Members build up to their package limit, trial users up to the trial limit.
+        if (BuildersClubRoomSupport.getTrackedFurniCount(placementUserId)
+                >= BuildersClubRoomSupport.getFurniLimit(placementUserId)) {
+            this.client.sendResponse(
+                    new BubbleAlertComposer(BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, "room.error.max_furniture"));
+            BuildersClubRoomSupport.sendPlacementStatus(this.client.getHabbo());
+            return;
+        }
+
         if (!BuildersClubRoomSupport.hasActiveMembership(
-                this.client.getHabbo().getHabboInfo().getId())) {
-            int trackedFurniCount = BuildersClubRoomSupport.getTrackedFurniCount(placementUserId);
-
-            if (trackedFurniCount >= BuildersClubRoomSupport.getFurniLimit(placementUserId)) {
-                this.client.sendResponse(new BubbleAlertComposer(
-                        BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, "room.error.max_furniture"));
-                BuildersClubRoomSupport.sendPlacementStatus(this.client.getHabbo());
-                return;
-            }
-
-            if (BuildersClubRoomSupport.hasPlacementVisitors(room, this.client.getHabbo())) {
-                this.client.sendResponse(new BubbleAlertComposer(
-                        BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, "builder.placement_widget.error.visitors"));
-                return;
-            }
+                        this.client.getHabbo().getHabboInfo().getId())
+                && BuildersClubRoomSupport.hasPlacementVisitors(room, this.client.getHabbo())) {
+            this.client.sendResponse(new BubbleAlertComposer(
+                    BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, "builder.placement_widget.error.visitors"));
+            return;
         }
 
         CatalogItem catalogItem = resolveCatalogItem(pageId, offerId);
@@ -71,6 +72,12 @@ public class BuildersClubPlaceWallItemEvent extends MessageHandler {
         if (catalogItem == null || baseItem == null || WiredWebApiOwnership.isWebApiItem(baseItem)) {
             this.client.sendResponse(new BubbleAlertComposer(
                     BubbleAlertKeys.FURNITURE_PLACEMENT_ERROR.key, FurnitureMovementError.INVALID_MOVE.errorCode));
+            return;
+        }
+
+        if (!confirmed && BuildersClubRoomSupport.placementWouldHideRoom(room)) {
+            this.client.sendResponse(
+                    BuildersClubPlacementWarningComposer.wall(pageId, offerId, extraData, wallPosition));
             return;
         }
 

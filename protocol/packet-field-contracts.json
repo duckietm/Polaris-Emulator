@@ -461,6 +461,77 @@
   },
   "contracts": [
     {
+      "name": "USER_UNIGNORE",
+      "direction": "client_to_server",
+      "header": 2061,
+      "java": {
+        "symbol": "UnIgnoreRoomUserEvent",
+        "className": "UnIgnoreRoomUserEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/users/UnIgnoreRoomUserEvent.java"
+      },
+      "typescript": {
+        "symbol": "USER_UNIGNORE",
+        "className": "UnignoreUserComposer",
+        "path": "packages/communication/src/messages/outgoing/user/data/UnignoreUserComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "userId"
+        }
+      ]
+    },
+    {
+      "name": "USER_IGNORE",
+      "direction": "client_to_server",
+      "header": 1117,
+      "java": {
+        "symbol": "IgnoreRoomUserEvent",
+        "className": "IgnoreRoomUserEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/users/IgnoreRoomUserEvent.java"
+      },
+      "typescript": {
+        "symbol": "USER_IGNORE",
+        "className": "IgnoreUserComposer",
+        "path": "packages/communication/src/messages/outgoing/user/data/IgnoreUserComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "userId"
+        }
+      ]
+    },
+    {
+      "name": "WIRED_GET_VARIABLES_FOR_OBJECT",
+      "direction": "client_to_server",
+      "header": 3661,
+      "java": {
+        "symbol": "WiredGetVariablesForObjectEvent",
+        "className": "WiredGetVariablesForObjectEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredGetVariablesForObjectEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_GET_VARIABLES_FOR_OBJECT",
+        "className": "WiredGetVariablesForObjectComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredGetVariablesForObjectComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "type"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "objectId"
+        }
+      ]
+    },
+    {
       "name": "GAME2GETACCOUNTGAMESTATUSMESSAGE",
       "direction": "client_to_server",
       "header": 11,
@@ -1496,6 +1567,11 @@
           "kind": "scalar",
           "type": "string",
           "name": "wallPosition"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "confirmed"
         }
       ]
     },
@@ -1646,7 +1722,7 @@
       ]
     },
     {
-      "name": "GET_CRAFTABLE_PRODUCTS",
+      "name": "GET_CRAFTING_RECIPE",
       "direction": "client_to_server",
       "header": 633,
       "java": {
@@ -1655,7 +1731,7 @@
         "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/crafting/CraftingAddRecipeEvent.java"
       },
       "typescript": {
-        "symbol": "GET_CRAFTABLE_PRODUCTS",
+        "symbol": "GET_CRAFTING_RECIPE",
         "className": "GetCraftingRecipeComposer",
         "path": "packages/communication/src/messages/outgoing/crafting/GetCraftingRecipeComposer.ts"
       },
@@ -2502,6 +2578,11 @@
           "kind": "scalar",
           "type": "int",
           "name": "rotation"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "confirmed"
         }
       ]
     },
@@ -2695,7 +2776,7 @@
       "fields": []
     },
     {
-      "name": "GET_CRAFTING_RECIPE",
+      "name": "GET_CRAFTABLE_PRODUCTS",
       "direction": "client_to_server",
       "header": 1173,
       "java": {
@@ -2704,7 +2785,7 @@
         "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/crafting/RequestCraftingRecipesEvent.java"
       },
       "typescript": {
-        "symbol": "GET_CRAFTING_RECIPE",
+        "symbol": "GET_CRAFTABLE_PRODUCTS",
         "className": "GetCraftableProductsComposer",
         "path": "packages/communication/src/messages/outgoing/crafting/GetCraftableProductsComposer.ts"
       },
@@ -8199,13 +8280,7 @@
         "className": "GetIgnoredUsersComposer",
         "path": "packages/communication/src/messages/outgoing/user/data/GetIgnoredUsersComposer.ts"
       },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": "requestedUsername"
-        }
-      ]
+      "fields": []
     },
     {
       "name": "WIRED_ROOM_LOGS_PAGE",
@@ -12384,6 +12459,65 @@
       ]
     },
     {
+      "name": "WIRED_SETUP_EXPORT",
+      "direction": "client_to_server",
+      "header": 10096,
+      "java": {
+        "symbol": "WiredSetupExportEvent",
+        "className": "WiredSetupExportEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredSetupExportEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_SETUP_EXPORT",
+        "className": "WiredSetupExportComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredSetupExportComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "version"
+        }
+      ]
+    },
+    {
+      "name": "WIRED_SETUP_IMPORT",
+      "direction": "client_to_server",
+      "header": 10097,
+      "java": {
+        "symbol": "WiredSetupImportEvent",
+        "className": "WiredSetupImportEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredSetupImportEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_SETUP_IMPORT",
+        "className": "WiredSetupImportComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredSetupImportComposer.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": "code"
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": "anchorMode"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "placeFromInventory"
+        },
+        {
+          "kind": "scalar",
+          "type": "boolean",
+          "name": "confirm"
+        }
+      ]
+    },
+    {
       "name": "GET_REWARD_TRACK_ADMIN_DATA",
       "direction": "client_to_server",
       "header": 10100,
@@ -12789,6 +12923,60 @@
       ]
     },
     {
+      "name": "WIRED_LINK_OPEN",
+      "direction": "server_to_client",
+      "header": 9493,
+      "java": {
+        "symbol": "WiredLinkOpenComposer",
+        "className": "WiredLinkOpenComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredLinkOpenComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_LINK_OPEN",
+        "className": "WiredLinkOpenParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredLinkOpenParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "WIRED_LINK_NETWORK_INVALIDATED",
+      "direction": "server_to_client",
+      "header": 999,
+      "java": {
+        "symbol": "WiredLinkNetworkInvalidatedComposer",
+        "className": "WiredLinkNetworkInvalidatedComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredLinkNetworkInvalidatedComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_LINK_NETWORK_INVALIDATED",
+        "className": "WiredLinkNetworkInvalidatedParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredLinkNetworkInvalidatedParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        }
+      ]
+    },
+    {
       "name": "WIRED_WEB_API_KEY_RESULT",
       "direction": "server_to_client",
       "header": 59,
@@ -12966,28 +13154,6 @@
       ]
     },
     {
-      "name": "WIRED_ERROR",
-      "direction": "server_to_client",
-      "header": 156,
-      "java": {
-        "symbol": "UpdateFailedComposer",
-        "className": "UpdateFailedComposer",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/generic/alerts/UpdateFailedComposer.java"
-      },
-      "typescript": {
-        "symbol": "WIRED_ERROR",
-        "className": "WiredValidationErrorParser",
-        "path": "packages/communication/src/messages/parser/roomevents/WiredValidationErrorParser.ts"
-      },
-      "fields": [
-        {
-          "kind": "scalar",
-          "type": "string",
-          "name": ""
-        }
-      ]
-    },
-    {
       "name": "USER_FURNITURE_REMOVE",
       "direction": "server_to_client",
       "header": 159,
@@ -13097,7 +13263,7 @@
         },
         {
           "kind": "scalar",
-          "type": "string",
+          "type": "int",
           "name": ""
         }
       ]
@@ -14108,6 +14274,11 @@
       "fields": [
         {
           "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
           "type": "string",
           "name": ""
         }
@@ -14344,7 +14515,13 @@
         "className": "YouAreSpectatorMessageParser",
         "path": "packages/communication/src/messages/parser/room/session/YouAreSpectatorMessageParser.ts"
       },
-      "fields": []
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        }
+      ]
     },
     {
       "name": "HOTEL_WILL_CLOSE_MINUTES",
@@ -19272,6 +19449,11 @@
       "fields": [
         {
           "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
           "type": "string",
           "name": ""
         }
@@ -21307,6 +21489,60 @@
       ]
     },
     {
+      "name": "WIRED_SETUP_EXPORT_RESULT",
+      "direction": "server_to_client",
+      "header": 10096,
+      "java": {
+        "symbol": "WiredSetupExportComposer",
+        "className": "WiredSetupExportComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredSetupExportComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_SETUP_EXPORT_RESULT",
+        "className": "WiredSetupExportResultParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredSetupExportResultParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "int",
+          "name": ""
+        },
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "name": "WIRED_SETUP_IMPORT_RESULT",
+      "direction": "server_to_client",
+      "header": 10097,
+      "java": {
+        "symbol": "WiredSetupImportResultComposer",
+        "className": "WiredSetupImportResultComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredSetupImportResultComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_SETUP_IMPORT_RESULT",
+        "className": "WiredSetupImportResultParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredSetupImportResultParser.ts"
+      },
+      "fields": [
+        {
+          "kind": "scalar",
+          "type": "string",
+          "name": ""
+        }
+      ]
+    },
+    {
       "name": "REWARD_TRACK_ADMIN_RESULT",
       "direction": "server_to_client",
       "header": 10105,
@@ -22279,6 +22515,54 @@
   ],
   "exemptions": [
     {
+      "name": "WIRED_VARIABLES_FOR_OBJECT",
+      "direction": "server_to_client",
+      "header": 238,
+      "java": {
+        "symbol": "WiredVariablesForObjectComposer",
+        "className": "WiredVariablesForObjectComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredVariablesForObjectComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_VARIABLES_FOR_OBJECT",
+        "className": "WiredVariablesForObjectParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredVariablesForObjectParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in IfStatement inside parse"
+    },
+    {
+      "name": "BUILDERS_CLUB_PLACEMENT_WARNING",
+      "direction": "server_to_client",
+      "header": 2075,
+      "java": {
+        "symbol": "BuildersClubPlacementWarningComposer",
+        "className": "BuildersClubPlacementWarningComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/catalog/BuildersClubPlacementWarningComposer.java"
+      },
+      "typescript": {
+        "symbol": "BUILDERS_CLUB_PLACEMENT_WARNING",
+        "className": "BuildersClubPlacementWarningMessageParser",
+        "path": "packages/communication/src/messages/parser/catalog/BuildersClubPlacementWarningMessageParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in IfStatement inside parse"
+    },
+    {
+      "name": "WIRED_ERROR",
+      "direction": "server_to_client",
+      "header": 156,
+      "java": {
+        "symbol": "UpdateFailedComposer",
+        "className": "UpdateFailedComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/generic/alerts/UpdateFailedComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_ERROR",
+        "className": "WiredValidationErrorParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredValidationErrorParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in WhileStatement inside parse"
+    },
+    {
       "name": "PICK_ISSUES",
       "direction": "client_to_server",
       "header": 15,
@@ -22467,22 +22751,6 @@
         "symbol": "ROOM_MODEL_SAVE",
         "className": "UpdateFloorPropertiesMessageComposer",
         "path": "packages/communication/src/messages/outgoing/room/layout/UpdateFloorPropertiesMessageComposer.ts"
-      },
-      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle"
-    },
-    {
-      "name": "USER_IGNORE",
-      "direction": "client_to_server",
-      "header": 1117,
-      "java": {
-        "symbol": "IgnoreRoomUserEvent",
-        "className": "IgnoreRoomUserEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/users/IgnoreRoomUserEvent.java"
-      },
-      "typescript": {
-        "symbol": "USER_IGNORE",
-        "className": "IgnoreUserComposer",
-        "path": "packages/communication/src/messages/outgoing/user/data/IgnoreUserComposer.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle"
     },
@@ -22997,22 +23265,6 @@
         "path": "packages/communication/src/messages/outgoing/group/GroupSaveBadgeComposer.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle; TypeScript analyzer: Outgoing value badge.length has no statically resolvable wire type"
-    },
-    {
-      "name": "USER_UNIGNORE",
-      "direction": "client_to_server",
-      "header": 2061,
-      "java": {
-        "symbol": "UnIgnoreRoomUserEvent",
-        "className": "UnIgnoreRoomUserEvent",
-        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/rooms/users/UnIgnoreRoomUserEvent.java"
-      },
-      "typescript": {
-        "symbol": "USER_UNIGNORE",
-        "className": "UnignoreUserComposer",
-        "path": "packages/communication/src/messages/outgoing/user/data/UnignoreUserComposer.ts"
-      },
-      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside handle"
     },
     {
       "name": "ROOM_RIGHTS_REMOVE",
@@ -27653,6 +27905,150 @@
         "path": "packages/communication/src/messages/parser/group/GroupSettingsParser.ts"
       },
       "reason": "Java analyzer: Data-dependent packet operations in WhileStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in IfStatement inside parse"
+    },
+    {
+      "name": "WIRED_LINK_REQUEST_CONFIG",
+      "direction": "client_to_server",
+      "header": 3208,
+      "java": {
+        "symbol": "WiredLinkRequestConfigEvent",
+        "className": "WiredLinkRequestConfigEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredLinkRequestConfigEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_LINK_REQUEST_CONFIG",
+        "className": "WiredLinkRequestConfigComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredLinkRequestConfigComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields read across the inherited WiredLinkMessageHandler.handle and its handleLink override; TypeScript analyzer: fixed layout"
+    },
+    {
+      "name": "WIRED_LINK_SAVE_SELECTION",
+      "direction": "client_to_server",
+      "header": 385,
+      "java": {
+        "symbol": "WiredLinkSaveSelectionEvent",
+        "className": "WiredLinkSaveSelectionEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredLinkSaveSelectionEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_LINK_SAVE_SELECTION",
+        "className": "WiredLinkSaveSelectionComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredLinkSaveSelectionComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields read across the inherited WiredLinkMessageHandler.handle and its handleLink override; TypeScript analyzer: fixed layout"
+    },
+    {
+      "name": "WIRED_LINK_CREATE_NETWORK",
+      "direction": "client_to_server",
+      "header": 2192,
+      "java": {
+        "symbol": "WiredLinkCreateNetworkEvent",
+        "className": "WiredLinkCreateNetworkEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredLinkCreateNetworkEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_LINK_CREATE_NETWORK",
+        "className": "WiredLinkCreateNetworkComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredLinkCreateNetworkComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields read across the inherited WiredLinkMessageHandler.handle and its handleLink override; TypeScript analyzer: fixed layout"
+    },
+    {
+      "name": "WIRED_LINK_RENAME_NETWORK",
+      "direction": "client_to_server",
+      "header": 2794,
+      "java": {
+        "symbol": "WiredLinkRenameNetworkEvent",
+        "className": "WiredLinkRenameNetworkEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredLinkRenameNetworkEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_LINK_RENAME_NETWORK",
+        "className": "WiredLinkRenameNetworkComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredLinkRenameNetworkComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields read across the inherited WiredLinkMessageHandler.handle and its handleLink override; TypeScript analyzer: fixed layout"
+    },
+    {
+      "name": "WIRED_LINK_DELETE_NETWORK",
+      "direction": "client_to_server",
+      "header": 2731,
+      "java": {
+        "symbol": "WiredLinkDeleteNetworkEvent",
+        "className": "WiredLinkDeleteNetworkEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredLinkDeleteNetworkEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_LINK_DELETE_NETWORK",
+        "className": "WiredLinkDeleteNetworkComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredLinkDeleteNetworkComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields read across the inherited WiredLinkMessageHandler.handle and its handleLink override; TypeScript analyzer: fixed layout"
+    },
+    {
+      "name": "WIRED_LINK_GET_CONNECTIONS",
+      "direction": "client_to_server",
+      "header": 9494,
+      "java": {
+        "symbol": "WiredLinkGetConnectionsEvent",
+        "className": "WiredLinkGetConnectionsEvent",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/incoming/wired/WiredLinkGetConnectionsEvent.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_LINK_GET_CONNECTIONS",
+        "className": "WiredLinkGetConnectionsComposer",
+        "path": "packages/communication/src/messages/outgoing/roomevents/WiredLinkGetConnectionsComposer.ts"
+      },
+      "reason": "Java analyzer: Packet fields read across the inherited WiredLinkMessageHandler.handle and its handleLink override; TypeScript analyzer: fixed layout"
+    },
+    {
+      "name": "WIRED_LINK_CONFIGURATION",
+      "direction": "server_to_client",
+      "header": 3405,
+      "java": {
+        "symbol": "WiredLinkConfigurationComposer",
+        "className": "WiredLinkConfigurationComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredLinkConfigurationComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_LINK_CONFIGURATION",
+        "className": "WiredLinkConfigurationParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredLinkConfigurationParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Packet fields delegated to external function readWiredLinkNetworks inside parse"
+    },
+    {
+      "name": "WIRED_LINK_OPERATION_RESULT",
+      "direction": "server_to_client",
+      "header": 3961,
+      "java": {
+        "symbol": "WiredLinkOperationResultComposer",
+        "className": "WiredLinkOperationResultComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredLinkOperationResultComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_LINK_OPERATION_RESULT",
+        "className": "WiredLinkOperationResultParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredLinkOperationResultParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in IfStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in IfStatement inside parse"
+    },
+    {
+      "name": "WIRED_LINK_CONNECTIONS",
+      "direction": "server_to_client",
+      "header": 3962,
+      "java": {
+        "symbol": "WiredLinkConnectionsComposer",
+        "className": "WiredLinkConnectionsComposer",
+        "path": "Emulator/src/main/java/com/eu/habbo/messages/outgoing/wired/WiredLinkConnectionsComposer.java"
+      },
+      "typescript": {
+        "symbol": "WIRED_LINK_CONNECTIONS",
+        "className": "WiredLinkConnectionsParser",
+        "path": "packages/communication/src/messages/parser/roomevents/WiredLinkConnectionsParser.ts"
+      },
+      "reason": "Java analyzer: Data-dependent packet operations in ForEachStmt inside composeInternal; TypeScript analyzer: Data-dependent packet operations in ForStatement inside parse"
     },
     {
       "name": "WIRED_LEADERBOARD_CHUNK",

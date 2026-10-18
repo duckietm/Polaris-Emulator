@@ -95,6 +95,12 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
     private static final String CUSTOM_TOKEN_PREFIX = "custom:";
     private static final String INTERNAL_TOKEN_PREFIX = "internal:";
 
+    /** What a destination pass did: wrote nothing, wrote only the values already held, or changed one. */
+    private static final int NOT_WRITTEN = 0;
+
+    private static final int WRITTEN_SAME = 1;
+    private static final int WRITTEN_CHANGED = 2;
+
     private int destinationTargetType = TARGET_USER,
             destinationVariableItemId = 0,
             operation = OP_ASSIGN,
@@ -142,17 +148,23 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
             return;
         }
 
-        boolean wrote =
+        int written =
                 switch (this.destinationTargetType) {
                     case TARGET_USER -> this.executeUsers(ctx, room, destinationId);
                     case TARGET_FURNI -> this.executeFurni(ctx, room, destinationId);
                     case TARGET_CONTEXT -> this.executeContext(ctx, room, destinationId);
                     case TARGET_ROOM -> this.executeRoom(ctx, room, destinationId);
-                    default -> false;
+                    default -> NOT_WRITTEN;
                 };
-        // A change that wrote a variable (also to the same value) flashes its definition box, as in Habbo.
-        if (wrote && !isInternalVariableToken(this.destinationVariableToken)) {
-            WiredVariableDefinitionFlash.flash(room, destinationId);
+        // A change that wrote a variable flashes its definition box, as in Habbo: in the change state, or
+        // only flipped between 0 and 1 when every value it wrote stayed as it was.
+        if (written != NOT_WRITTEN && !isInternalVariableToken(this.destinationVariableToken)) {
+            WiredVariableDefinitionFlash.flash(
+                    room,
+                    destinationId,
+                    written == WRITTEN_CHANGED
+                            ? WiredVariableDefinitionFlash.KIND_CHANGED
+                            : WiredVariableDefinitionFlash.KIND_UNCHANGED);
         }
     }
 
@@ -262,18 +274,18 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
         return WiredArrayRuntimeSupport.resolveReference(ctx, this.referenceSelectedFurni, reference, owner);
     }
 
-    private boolean executeUsers(WiredContext ctx, Room room, int destinationId) {
+    private int executeUsers(WiredContext ctx, Room room, int destinationId) {
         if (isInternalVariableToken(this.destinationVariableToken)) {
             this.executeUsersInternal(ctx, room, getInternalVariableKey(this.destinationVariableToken));
-            return false;
+            return NOT_WRITTEN;
         }
 
         WiredVariableDefinitionInfo definition = room.getUserVariableManager().getDefinitionInfo(destinationId);
-        if (definition == null || !definition.hasValue() || definition.isReadOnly()) return false;
+        if (definition == null || !definition.hasValue() || definition.isReadOnly()) return NOT_WRITTEN;
 
         ReferenceSnapshot references = this.resolveReferences(ctx, room);
         int index = 0;
-        boolean wrote = false;
+        int wrote = NOT_WRITTEN;
 
         for (RoomUnit roomUnit : WiredSourceUtil.resolveUsers(ctx, this.destinationUserSource)) {
             if (roomUnit == null) continue;
@@ -285,10 +297,9 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
             if (!this.isUnaryOperation() && referenceValue == null) continue;
 
             int currentValue = room.getUserVariableManager().getCurrentValue(holder, destinationId);
-            room.getUserVariableManager()
-                    .updateVariableValue(
-                            holder, destinationId, applyOperation(this.operation, currentValue, referenceValue));
-            wrote = true;
+            int nextValue = applyOperation(this.operation, currentValue, referenceValue);
+            room.getUserVariableManager().updateVariableValue(holder, destinationId, nextValue);
+            wrote = Math.max(wrote, nextValue != currentValue ? WRITTEN_CHANGED : WRITTEN_SAME);
         }
         return wrote;
     }
@@ -313,20 +324,20 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
         }
     }
 
-    private boolean executeFurni(WiredContext ctx, Room room, int destinationId) {
+    private int executeFurni(WiredContext ctx, Room room, int destinationId) {
         if (isInternalVariableToken(this.destinationVariableToken)) {
             this.executeFurniInternal(ctx, room, getInternalVariableKey(this.destinationVariableToken));
-            return false;
+            return NOT_WRITTEN;
         }
 
         WiredVariableDefinitionInfo definition = room.getFurniVariableManager().getDefinitionInfo(destinationId);
-        if (definition == null || !definition.hasValue() || definition.isReadOnly()) return false;
+        if (definition == null || !definition.hasValue() || definition.isReadOnly()) return NOT_WRITTEN;
         if (this.destinationFurniSource == WiredSourceUtil.SOURCE_SELECTED)
             this.validateItems(this.destinationSelectedFurni);
 
         ReferenceSnapshot references = this.resolveReferences(ctx, room);
         int index = 0;
-        boolean wrote = false;
+        int wrote = NOT_WRITTEN;
 
         for (HabboItem item :
                 WiredSourceUtil.resolveItems(ctx, this.destinationFurniSource, this.destinationSelectedFurni)) {
@@ -336,10 +347,9 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
             if (!this.isUnaryOperation() && referenceValue == null) continue;
 
             int currentValue = room.getFurniVariableManager().getCurrentValue(item.getId(), destinationId);
-            room.getFurniVariableManager()
-                    .updateVariableValue(
-                            item.getId(), destinationId, applyOperation(this.operation, currentValue, referenceValue));
-            wrote = true;
+            int nextValue = applyOperation(this.operation, currentValue, referenceValue);
+            room.getFurniVariableManager().updateVariableValue(item.getId(), destinationId, nextValue);
+            wrote = Math.max(wrote, nextValue != currentValue ? WRITTEN_CHANGED : WRITTEN_SAME);
         }
         return wrote;
     }
@@ -367,33 +377,33 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
         }
     }
 
-    private boolean executeRoom(WiredContext ctx, Room room, int destinationId) {
+    private int executeRoom(WiredContext ctx, Room room, int destinationId) {
         if (isInternalVariableToken(this.destinationVariableToken)) {
             String key = getInternalVariableKey(this.destinationVariableToken);
-            if (!WiredInternalVariableSupport.canUseRoomDestination(key)) return false;
+            if (!WiredInternalVariableSupport.canUseRoomDestination(key)) return NOT_WRITTEN;
             Integer current = WiredInternalVariableSupport.readRoomValue(room, key);
             Integer operand = this.referenceFor(this.resolveReferences(ctx, room), room.getId(), TARGET_ROOM, 0);
             if (current != null && (this.isUnaryOperation() || operand != null)) {
                 WiredInternalVariableSupport.writeRoomValue(
                         room, key, applyOperation(this.operation, current, operand));
             }
-            return false;
+            return NOT_WRITTEN;
         }
 
         WiredVariableDefinitionInfo definition = room.getRoomVariableManager().getDefinitionInfo(destinationId);
-        if (definition == null || !definition.hasValue() || definition.isReadOnly()) return false;
+        if (definition == null || !definition.hasValue() || definition.isReadOnly()) return NOT_WRITTEN;
 
         ReferenceSnapshot references = this.resolveReferences(ctx, room);
         Integer referenceValue = this.referenceFor(references, room.getId(), TARGET_ROOM, 0);
-        if (!this.isUnaryOperation() && referenceValue == null) return false;
+        if (!this.isUnaryOperation() && referenceValue == null) return NOT_WRITTEN;
 
         int currentValue = room.getRoomVariableManager().getCurrentValue(destinationId);
-        room.getRoomVariableManager()
-                .updateVariableValue(destinationId, applyOperation(this.operation, currentValue, referenceValue));
-        return true;
+        int nextValue = applyOperation(this.operation, currentValue, referenceValue);
+        room.getRoomVariableManager().updateVariableValue(destinationId, nextValue);
+        return nextValue != currentValue ? WRITTEN_CHANGED : WRITTEN_SAME;
     }
 
-    private boolean executeContext(WiredContext ctx, Room room, int destinationId) {
+    private int executeContext(WiredContext ctx, Room room, int destinationId) {
         if (isInternalVariableToken(this.destinationVariableToken)) {
             String path = getInternalVariableKey(this.destinationVariableToken);
             WiredArrayNumericOperation numericOperation = WiredArrayNumericOperation.fromCode(this.operation);
@@ -401,16 +411,16 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
             if (numericOperation != null && (numericOperation.isUnary() || operand != null)) {
                 WiredArrayRuntimeSupport.mutateCapture(ctx, path, numericOperation, operand == null ? 0L : operand);
             }
-            return false;
+            return NOT_WRITTEN;
         }
 
         WiredVariableDefinitionInfo definition = WiredContextVariableSupport.getDefinitionInfo(room, destinationId);
-        if (definition == null || !definition.hasValue() || definition.isReadOnly()) return false;
+        if (definition == null || !definition.hasValue() || definition.isReadOnly()) return NOT_WRITTEN;
 
         ReferenceSnapshot references = this.resolveReferences(ctx, room);
         Integer referenceValue = this.referenceFor(references, destinationId, TARGET_CONTEXT, 0);
-        if (!this.isUnaryOperation() && referenceValue == null) return false;
-        if (!WiredContextVariableSupport.hasVariable(ctx, destinationId)) return false;
+        if (!this.isUnaryOperation() && referenceValue == null) return NOT_WRITTEN;
+        if (!WiredContextVariableSupport.hasVariable(ctx, destinationId)) return NOT_WRITTEN;
 
         Integer currentValue = WiredContextVariableSupport.getCurrentValue(ctx, destinationId);
         int nextValue = applyOperation(this.operation, currentValue != null ? currentValue : 0, referenceValue);
@@ -427,7 +437,7 @@ public class WiredEffectChangeVariableValue extends InteractionWiredEffect {
                     currentValue == null ? 0 : currentValue,
                     nextValue);
         }
-        return true;
+        return nextValue != (currentValue == null ? 0 : currentValue) ? WRITTEN_CHANGED : WRITTEN_SAME;
     }
 
     @Deprecated

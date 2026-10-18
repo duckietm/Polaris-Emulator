@@ -45,6 +45,7 @@ public final class WiredTextPlaceholderUtil {
         }
 
         text = applyTriggerText(ctx, text);
+        text = applyLinkValues(ctx, text);
 
         Room room = ctx.room();
         HabboItem triggerItem = ctx.triggerItem();
@@ -140,10 +141,27 @@ public final class WiredTextPlaceholderUtil {
     static String applyTriggerText(WiredContext ctx, String text) {
         if (!text.contains(TRIGGER_TEXT_TOKEN)) return text;
 
-        String said = ctx.eventType() == WiredEvent.Type.USER_SAYS
+        String said = (ctx.eventType() == WiredEvent.Type.USER_SAYS
+                        || ctx.eventType() == WiredEvent.Type.LINK_MESSAGE_RECEIVED)
                 ? ctx.event().getText().orElse("")
                 : "";
         return replaceWithBudget(text, TRIGGER_TEXT_TOKEN, said);
+    }
+
+    /** The placeholders a Receive Link Dataframe trigger filled from the dataframe that started the stack. */
+    static String applyLinkValues(WiredContext ctx, String text) {
+        if (ctx.eventType() != WiredEvent.Type.LINK_DATAFRAME_RECEIVED || !text.contains("$(")) return text;
+
+        String resolved = text;
+        for (java.util.Map.Entry<String, String> value :
+                ctx.event().getLinkValues().entrySet()) {
+            String token = "$(" + value.getKey() + ")";
+            if (resolved.contains(token)) {
+                resolved = replaceWithBudget(resolved, token, value.getValue());
+            }
+            if (resolved.length() >= MAX_PLACEHOLDER_EXPANSION_LENGTH) break;
+        }
+        return resolved;
     }
 
     /** The room's global placeholders by item id, capped; a stack's own placeholders are applied first. */

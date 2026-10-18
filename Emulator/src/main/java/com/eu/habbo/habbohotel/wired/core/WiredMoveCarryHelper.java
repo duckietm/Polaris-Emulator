@@ -509,6 +509,43 @@ public final class WiredMoveCarryHelper {
                 .merge(furniId, firingId, (previous, current) -> previous.equals(current) ? previous : MANY_FIRINGS);
     }
 
+    /** How many movements the open collection holds, or -1 when no collection is open. */
+    public static int collectedMovementCount() {
+        List<WiredMovementsComposer.MovementData> collected = COLLECTED_MOVEMENTS.get();
+        return (collected == null) ? -1 : collected.size();
+    }
+
+    /**
+     * Lists the furni movements collected since {@code fromIndex} in the given furni order, in the
+     * slots they already hold; every other entry keeps its place.
+     */
+    public static void orderCollectedFurni(int fromIndex, List<Integer> furniOrder) {
+        List<WiredMovementsComposer.MovementData> collected = COLLECTED_MOVEMENTS.get();
+        if (collected == null || furniOrder == null || fromIndex < 0 || fromIndex >= collected.size()) {
+            return;
+        }
+
+        Map<Integer, Integer> rank = new HashMap<>();
+        for (Integer id : furniOrder) {
+            if (id != null) rank.putIfAbsent(id, rank.size());
+        }
+
+        List<Integer> slots = new ArrayList<>();
+        List<WiredMovementsComposer.MovementData> entries = new ArrayList<>();
+        for (int index = fromIndex; index < collected.size(); index++) {
+            WiredMovementsComposer.MovementData movement = collected.get(index);
+            if (rank.containsKey(WiredMovementsComposer.furniId(movement))) {
+                slots.add(index);
+                entries.add(movement);
+            }
+        }
+
+        entries.sort(Comparator.comparingInt(movement -> rank.get(WiredMovementsComposer.furniId(movement))));
+        for (int i = 0; i < slots.size(); i++) {
+            collected.set(slots.get(i), entries.get(i));
+        }
+    }
+
     static boolean isCollectingMovements() {
         Integer depth = MOVEMENT_COLLECTION_DEPTH.get();
         return depth != null && depth > 0;
@@ -931,6 +968,7 @@ public final class WiredMoveCarryHelper {
                             }
                             return count;
                         }));
+        WiredProjectileWatcher.ensure(room);
     }
 
     /** The jump strength of the avatars the stack moves: its movement curve's, when that is a jump. */

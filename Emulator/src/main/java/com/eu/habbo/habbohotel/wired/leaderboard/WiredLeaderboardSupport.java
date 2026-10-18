@@ -69,6 +69,13 @@ public final class WiredLeaderboardSupport {
         SERVICES.remove(room.getId());
     }
 
+    /** The panel number a published leaderboard box shows as in its room (from 1), or 0 when it is not shown. */
+    public static int overlayIdOf(Room room, WiredExtraVariableLeaderboard box) {
+        if (room == null || box == null || !box.isPublished()) return 0;
+
+        return WiredLeaderboardService.overlayIdOf(room, box);
+    }
+
     public static boolean isActive(int roomId) {
         return SERVICES.containsKey(roomId);
     }

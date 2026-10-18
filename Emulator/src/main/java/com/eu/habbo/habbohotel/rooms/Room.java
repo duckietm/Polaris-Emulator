@@ -1399,7 +1399,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
     public boolean removeFromQueue(Habbo habbo) {
         try {
-            this.sendComposer(new HideDoorbellComposer(habbo.getHabboInfo().getUsername()).compose());
+            this.sendComposer(new HideDoorbellComposer(this.id, habbo).compose());
 
             return this.unitManager.removeFromQueue(habbo.getHabboInfo().getId()) != null;
         } catch (Exception e) {

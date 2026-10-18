@@ -175,7 +175,9 @@ public class RoomVariableManager {
                 WiredVariableLevelSystemSupport.resolveDerivedDefinition(
                         this.room, WiredVariableLevelSystemSupport.TARGET_ROOM, definitionItemId);
         if (derivedDefinition != null) {
-            return this.getRawAssignment(derivedDefinition.getBaseDefinitionItemId()) != null;
+            return this.getRawAssignment(derivedDefinition.getBaseDefinitionItemId()) != null
+                    && (!WiredVariableLevelSystemSupport.isPresencePart(derivedDefinition)
+                            || this.getDerivedValue(derivedDefinition) != null);
         }
 
         InteractionWiredExtra extra = this.getDefinitionExtra(definitionItemId);

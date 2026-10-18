@@ -20,8 +20,8 @@ import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Pattern;
 
 public class WiredEffectBotTalk extends InteractionWiredEffect implements WiredOfficialSources {
     public static final WiredEffectType type = WiredEffectType.BOT_TALK;
@@ -85,14 +85,7 @@ public class WiredEffectBotTalk extends InteractionWiredEffect implements WiredO
 
         if (mode != 0 && mode != 1) throw new WiredSaveException("Mode is invalid");
 
-        String dataString = settings.getStringParam();
-
-        String splitBy = "\t";
-        if (!dataString.contains(splitBy)) throw new WiredSaveException("Malformed data string");
-
-        String[] data = dataString.split(Pattern.quote(splitBy));
-
-        if (data.length != 2) throw new WiredSaveException("Malformed data string. Invalid data length");
+        String[] data = splitTalkText(settings.getStringParam());
 
         int delay = settings.getDelay();
 
@@ -260,6 +253,27 @@ public class WiredEffectBotTalk extends InteractionWiredEffect implements WiredO
     @Override
     protected long requiredCooldown() {
         return 500;
+    }
+
+    /**
+     * The saved "bot TAB message" read as Habbo reads it: trailing empty fields are dropped, a lone
+     * field is the message with no bot, and any further tab belongs to the message. So "Robbie\t"
+     * is the message "Robbie" with no bot.
+     *
+     * @return the bot name and the message, never null
+     */
+    static String[] splitTalkText(String text) {
+        String[] fields = (text == null) ? new String[0] : text.split("\t");
+
+        if (fields.length == 0) {
+            return new String[] {"", ""};
+        }
+
+        if (fields.length == 1) {
+            return new String[] {"", fields[0]};
+        }
+
+        return new String[] {fields[0], String.join("\t", Arrays.copyOfRange(fields, 1, fields.length))};
     }
 
     static class JsonData {

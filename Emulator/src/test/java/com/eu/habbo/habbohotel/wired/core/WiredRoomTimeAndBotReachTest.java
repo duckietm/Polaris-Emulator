@@ -29,7 +29,7 @@ class WiredRoomTimeAndBotReachTest {
     }
 
     @Test
-    void theTriggeringUserOfABotReachingSomeoneIsThePersonReached() {
+    void theTriggeringUserOfABotReachingSomeoneIsTheBotAndTheReachedUserIsThePersonReached() {
         Room room = mock(Room.class);
         RoomUnit bot = mock(RoomUnit.class);
         when(bot.getRoomUnitType()).thenReturn(RoomUnitType.BOT);
@@ -43,7 +43,8 @@ class WiredRoomTimeAndBotReachTest {
                 mock(WiredServices.class),
                 new WiredState(20));
 
-        assertEquals(List.of(reached), WiredSourceUtil.resolveUsers(ctx, WiredSourceUtil.SOURCE_TRIGGER));
+        assertEquals(List.of(bot), WiredSourceUtil.resolveUsers(ctx, WiredSourceUtil.SOURCE_TRIGGER));
+        assertEquals(List.of(reached), WiredSourceUtil.resolveUsers(ctx, WiredSourceUtil.SOURCE_REACHED_USER));
     }
 
     @Test

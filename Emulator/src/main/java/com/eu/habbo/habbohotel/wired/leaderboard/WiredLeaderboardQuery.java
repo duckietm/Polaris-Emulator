@@ -116,7 +116,7 @@ public final class WiredLeaderboardQuery {
         return (long) room.getRoomVariableManager().getCurrentValue(globalItemId);
     }
 
-    private static List<WiredLeaderboardRow> rows(
+    static List<WiredLeaderboardRow> rows(
             Room room,
             WiredLeaderboardConfig config,
             WiredExtraUserVariable definition,
@@ -137,6 +137,9 @@ public final class WiredLeaderboardQuery {
                 ? WiredVariableTextConnectorSupport.mappings(room, definition.getId())
                 : Map.of();
 
+        // As in Habbo, a row carries its creation and last-update times only when the board shows that column.
+        boolean showsCreation = config.hasColumn(WiredLeaderboardCodec.COLUMN_CREATION);
+        boolean showsUpdate = config.hasColumn(WiredLeaderboardCodec.COLUMN_LAST_UPDATE);
         List<WiredLeaderboardRow> rows = new ArrayList<>(holders.size());
         for (int i = 0; i < holders.size(); i++) {
             RoomUserVariableStore.Holder holder = holders.get(i);
@@ -152,8 +155,8 @@ public final class WiredLeaderboardQuery {
                     holder.name() != null ? holder.name() : "",
                     figures.getOrDefault(holder.userId(), ""),
                     value != null ? value.toString() : "",
-                    holder.createdAt() * 1000L,
-                    holder.updatedAt() * 1000L,
+                    showsCreation ? holder.createdAt() * 1000L : 0L,
+                    showsUpdate ? holder.updatedAt() * 1000L : 0L,
                     level,
                     text));
         }

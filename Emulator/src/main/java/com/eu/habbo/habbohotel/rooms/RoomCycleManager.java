@@ -345,7 +345,7 @@ public class RoomCycleManager {
                 for (Habbo queuedHabbo : habboQueue.values()) {
                     if (queuedHabbo.isOnline()) {
                         if (queuedHabbo.getHabboInfo().getRoomQueueId() == room.getId()) {
-                            queuedHabbo.getClient().sendResponse(new RoomAccessDeniedComposer(""));
+                            queuedHabbo.getClient().sendResponse(new RoomAccessDeniedComposer(room.getId(), ""));
                         }
                     }
                 }

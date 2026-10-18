@@ -3,9 +3,19 @@ package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.mockingDetails;
 
+import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.rooms.Room;
+import com.eu.habbo.habbohotel.rooms.RoomTile;
+import com.eu.habbo.habbohotel.rooms.RoomTileState;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
+import com.eu.habbo.threading.ThreadPooling;
+import com.eu.habbo.threading.runnables.RoomUnitTeleport;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 class WiredEffectTeleportTimingTest {
 
@@ -49,5 +59,35 @@ class WiredEffectTeleportTimingTest {
         assertTrue(WiredEffectTeleport.tryStartGlow(unit, 10_000L, 3000L));
         assertFalse(WiredEffectTeleport.tryStartGlow(unit, 12_999L, 3000L));
         assertTrue(WiredEffectTeleport.tryStartGlow(unit, 13_000L, 3000L));
+    }
+
+    @Test
+    void teleportToLandsAUserWhoAlreadyStandsOnTheTargetButTheClassicTimingDoesNot() {
+        RoomTile tile = new RoomTile((short) 3, (short) 4, (short) 0, RoomTileState.OPEN, true);
+
+        assertEquals(1, landingsScheduled(tile, true));
+        assertEquals(0, landingsScheduled(tile, false));
+    }
+
+    private static int landingsScheduled(RoomTile tile, boolean onRoomGrid) {
+        Room room = mock(Room.class);
+        RoomUnit unit = new RoomUnit();
+        unit.setRoom(room);
+        unit.setLocation(tile);
+        ThreadPooling threading = mock(ThreadPooling.class);
+
+        try (MockedStatic<Emulator> emulator = mockStatic(Emulator.class)) {
+            emulator.when(Emulator::getThreading).thenReturn(threading);
+            if (onRoomGrid) {
+                WiredEffectTeleport.teleportUnitToTile(unit, tile, false);
+            } else {
+                WiredEffectTeleport.teleportUnitToTile(unit, tile);
+            }
+        }
+
+        return (int) mockingDetails(threading).getInvocations().stream()
+                .filter(invocation ->
+                        invocation.getArguments().length > 0 && invocation.getArgument(0) instanceof RoomUnitTeleport)
+                .count();
     }
 }

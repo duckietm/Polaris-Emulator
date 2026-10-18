@@ -7,15 +7,13 @@ import com.eu.habbo.habbohotel.guilds.GuildRank;
 import com.eu.habbo.habbohotel.permissions.Permission;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboInfo;
+import com.eu.habbo.habbohotel.users.HabboStats;
 import com.eu.habbo.habbohotel.users.subscriptions.Subscription;
 import com.eu.habbo.messages.outgoing.catalog.BuildersClubFurniCountComposer;
 import com.eu.habbo.messages.outgoing.catalog.BuildersClubSubscriptionStatusComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
 import com.eu.habbo.messages.outgoing.generic.alerts.SimpleAlertComposer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -24,11 +22,18 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BuildersClubRoomSupport {
     private static final Logger LOGGER = LoggerFactory.getLogger(BuildersClubRoomSupport.class);
 
     public static final int DEFAULT_TRIAL_FURNI_LIMIT = 50;
+    public static final int DEFAULT_MEMBER_FURNI_LIMIT = 500;
+    public static final int ONE_MONTH_PACKAGE_FURNI_LIMIT = 1000;
+    public static final int THREE_MONTHS_PACKAGE_FURNI_LIMIT = 1500;
+    private static final int ONE_MONTH_DAYS = 31;
+    private static final int THREE_MONTHS_DAYS = 93;
     // Runtime-only owner marker used to display Builders Club furni as virtual/non-user-owned in-room.
     // The actual DB owner for persistence/FK purposes is tracked separately on the item instance.
     public static final int VIRTUAL_OWNER_ID = 1;
@@ -40,29 +45,81 @@ public class BuildersClubRoomSupport {
         UNLOCKED
     }
 
-    private BuildersClubRoomSupport() {
-    }
+    private BuildersClubRoomSupport() {}
 
     public static int getFurniLimit(Habbo habbo) {
-        if (habbo == null) {
+        if (habbo == null || habbo.getHabboInfo() == null) {
             return DEFAULT_TRIAL_FURNI_LIMIT;
         }
 
-        return DEFAULT_TRIAL_FURNI_LIMIT + Math.max(0, habbo.getHabboStats().getBuildersClubBonusFurni());
+        return furniLimit(
+                habbo.getHabboStats(), hasActiveMembership(habbo.getHabboInfo().getId()));
     }
 
     public static int getFurniLimit(int userId) {
-        HabboInfo habboInfo = Emulator.getGameEnvironment().getHabboManager().getHabboInfo(userId);
+        HabboInfo habboInfo = habboInfo(userId);
 
         if (habboInfo == null || habboInfo.getHabboStats() == null) {
             return DEFAULT_TRIAL_FURNI_LIMIT;
         }
 
-        return DEFAULT_TRIAL_FURNI_LIMIT + Math.max(0, habboInfo.getHabboStats().getBuildersClubBonusFurni());
+        return furniLimit(
+                habboInfo.getHabboStats(), habboInfo.getHabboStats().hasSubscription(Subscription.BUILDERS_CLUB));
+    }
+
+    private static int furniLimit(HabboStats stats, boolean member) {
+        if (stats == null) {
+            return DEFAULT_TRIAL_FURNI_LIMIT;
+        }
+
+        return furniLimit(member, stats.getBuildersClubPackageFurniLimit(), stats.getBuildersClubBonusFurni());
+    }
+
+    /**
+     * A member builds up to the highest limit a bought membership package gave, never below the member
+     * default; a trial user gets the trial limit. Bought furni upgrades count on top of either.
+     */
+    static int furniLimit(boolean member, int packageFurniLimit, int bonusFurni) {
+        int base = member ? Math.max(DEFAULT_MEMBER_FURNI_LIMIT, packageFurniLimit) : DEFAULT_TRIAL_FURNI_LIMIT;
+        long limit = (long) base + Math.max(0, bonusFurni);
+
+        return (int) Math.min(Integer.MAX_VALUE, limit);
+    }
+
+    /** The furni limit a membership package of this many days gives: 1000 for a month, 1500 for three months. */
+    public static int packageFurniLimit(int days) {
+        if (days >= THREE_MONTHS_DAYS) {
+            return THREE_MONTHS_PACKAGE_FURNI_LIMIT;
+        }
+
+        return days >= ONE_MONTH_DAYS ? ONE_MONTH_PACKAGE_FURNI_LIMIT : 0;
+    }
+
+    /** Raises the user's package furni limit to the bought package's; a smaller package never lowers it. */
+    public static void raisePackageFurniLimit(Habbo habbo, int days) {
+        int packageLimit = packageFurniLimit(days);
+
+        if (habbo == null || habbo.getHabboInfo() == null || habbo.getHabboStats() == null || packageLimit <= 0) {
+            return;
+        }
+
+        if (!habbo.getHabboStats().raiseBuildersClubPackageFurniLimit(packageLimit)) {
+            return;
+        }
+
+        try (Connection connection = openConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE users_settings SET builders_club_furni_limit = GREATEST(builders_club_furni_limit, ?) WHERE user_id = ? LIMIT 1")) {
+            statement.setInt(1, packageLimit);
+            statement.setInt(2, habbo.getHabboInfo().getId());
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception saving the Builders Club package furni limit", e);
+        }
     }
 
     public static int getMembershipSecondsLeft(int userId) {
-        HabboInfo habboInfo = Emulator.getGameEnvironment().getHabboManager().getHabboInfo(userId);
+        HabboInfo habboInfo = habboInfo(userId);
 
         if (habboInfo == null || habboInfo.getHabboStats() == null) {
             return 0;
@@ -78,7 +135,7 @@ public class BuildersClubRoomSupport {
     }
 
     public static boolean hasActiveMembership(int userId) {
-        HabboInfo habboInfo = Emulator.getGameEnvironment().getHabboManager().getHabboInfo(userId);
+        HabboInfo habboInfo = habboInfo(userId);
 
         return habboInfo != null
                 && habboInfo.getHabboStats() != null
@@ -86,8 +143,9 @@ public class BuildersClubRoomSupport {
     }
 
     public static int getTrackedFurniCount(int userId) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) FROM builders_club_items WHERE user_id = ? AND room_id > 0")) {
+        try (Connection connection = openConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT COUNT(*) FROM builders_club_items WHERE user_id = ? AND room_id > 0")) {
             statement.setInt(1, userId);
 
             try (ResultSet set = statement.executeQuery()) {
@@ -103,8 +161,9 @@ public class BuildersClubRoomSupport {
     }
 
     public static boolean hasTrackedItemsInOwnedRooms(int ownerId) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT 1 FROM builders_club_items bci INNER JOIN rooms r ON r.id = bci.room_id WHERE r.owner_id = ? AND bci.room_id > 0 LIMIT 1")) {
+        try (Connection connection = openConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT 1 FROM builders_club_items bci INNER JOIN rooms r ON r.id = bci.room_id WHERE r.owner_id = ? AND bci.room_id > 0 LIMIT 1")) {
             statement.setInt(1, ownerId);
 
             try (ResultSet set = statement.executeQuery()) {
@@ -118,8 +177,9 @@ public class BuildersClubRoomSupport {
     }
 
     public static boolean roomHasTrackedItems(int roomId) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT 1 FROM builders_club_items WHERE room_id = ? LIMIT 1")) {
+        try (Connection connection = openConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT 1 FROM builders_club_items WHERE room_id = ? LIMIT 1")) {
             statement.setInt(1, roomId);
 
             try (ResultSet set = statement.executeQuery()) {
@@ -133,8 +193,9 @@ public class BuildersClubRoomSupport {
     }
 
     public static boolean isTrackedItem(int itemId) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT 1 FROM builders_club_items WHERE item_id = ? LIMIT 1")) {
+        try (Connection connection = openConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT 1 FROM builders_club_items WHERE item_id = ? LIMIT 1")) {
             statement.setInt(1, itemId);
 
             try (ResultSet set = statement.executeQuery()) {
@@ -148,8 +209,9 @@ public class BuildersClubRoomSupport {
     }
 
     public static int getTrackedUserId(int itemId) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT user_id FROM builders_club_items WHERE item_id = ? LIMIT 1")) {
+        try (Connection connection = openConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT user_id FROM builders_club_items WHERE item_id = ? LIMIT 1")) {
             statement.setInt(1, itemId);
 
             try (ResultSet set = statement.executeQuery()) {
@@ -199,7 +261,8 @@ public class BuildersClubRoomSupport {
 
         Room currentRoom = habbo.getHabboInfo().getCurrentRoom();
 
-        if (currentRoom == null || currentRoom.getOwnerId() != habbo.getHabboInfo().getId()) {
+        if (currentRoom == null
+                || currentRoom.getOwnerId() != habbo.getHabboInfo().getId()) {
             return false;
         }
 
@@ -207,7 +270,9 @@ public class BuildersClubRoomSupport {
     }
 
     public static boolean canPlaceInCurrentRoom(Habbo habbo) {
-        if (habbo == null || habbo.getHabboInfo() == null || habbo.getHabboInfo().getCurrentRoom() == null) {
+        if (habbo == null
+                || habbo.getHabboInfo() == null
+                || habbo.getHabboInfo().getCurrentRoom() == null) {
             return false;
         }
 
@@ -283,7 +348,9 @@ public class BuildersClubRoomSupport {
             return;
         }
 
-        habbo.getClient().sendResponse(new BuildersClubFurniCountComposer(getTrackedFurniCount(habbo.getHabboInfo().getId())));
+        habbo.getClient()
+                .sendResponse(new BuildersClubFurniCountComposer(
+                        getTrackedFurniCount(habbo.getHabboInfo().getId())));
         habbo.getClient().sendResponse(new BuildersClubSubscriptionStatusComposer(habbo));
     }
 
@@ -309,9 +376,11 @@ public class BuildersClubRoomSupport {
             }
         }
 
-        Habbo placementPoolHabbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(placementUserId);
+        Habbo placementPoolHabbo = onlineHabbo(placementUserId);
 
-        if (placementPoolHabbo != null && placementPoolHabbo.getHabboInfo() != null && !updatedUsers.contains(placementPoolHabbo.getHabboInfo().getId())) {
+        if (placementPoolHabbo != null
+                && placementPoolHabbo.getHabboInfo() != null
+                && !updatedUsers.contains(placementPoolHabbo.getHabboInfo().getId())) {
             sendPlacementStatus(placementPoolHabbo);
         }
     }
@@ -327,7 +396,8 @@ public class BuildersClubRoomSupport {
             return;
         }
 
-        owner.getClient().sendResponse(new com.eu.habbo.messages.outgoing.catalog.BuildersClubSubscriptionStatusComposer(owner));
+        owner.getClient()
+                .sendResponse(new com.eu.habbo.messages.outgoing.catalog.BuildersClubSubscriptionStatusComposer(owner));
     }
 
     private static boolean canUseGuildPlacementPool(Habbo habbo, Room room) {
@@ -344,9 +414,12 @@ public class BuildersClubRoomSupport {
         boolean isGuildAdmin = room.getGuildRightLevel(habbo).isEqualOrGreaterThan(RoomRightLevels.GUILD_ADMIN);
 
         if (!isGuildAdmin) {
-            GuildMember member = Emulator.getGameEnvironment().getGuildManager().getGuildMember(guild.getId(), habbo.getHabboInfo().getId());
+            GuildMember member = Emulator.getGameEnvironment()
+                    .getGuildManager()
+                    .getGuildMember(guild.getId(), habbo.getHabboInfo().getId());
 
-            isGuildAdmin = member != null && (member.getRank() == GuildRank.ADMIN || member.getRank() == GuildRank.OWNER);
+            isGuildAdmin =
+                    member != null && (member.getRank() == GuildRank.ADMIN || member.getRank() == GuildRank.OWNER);
         }
 
         if (!isGuildAdmin) {
@@ -379,8 +452,9 @@ public class BuildersClubRoomSupport {
             return room.getGuildId();
         }
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT guild_id FROM rooms WHERE id = ? LIMIT 1")) {
+        try (Connection connection = openConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT guild_id FROM rooms WHERE id = ? LIMIT 1")) {
             statement.setInt(1, room.getId());
 
             try (ResultSet set = statement.executeQuery()) {
@@ -396,8 +470,9 @@ public class BuildersClubRoomSupport {
     }
 
     public static void trackPlacedItem(int itemId, int userId, int roomId) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("INSERT INTO builders_club_items (item_id, user_id, room_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), room_id = VALUES(room_id)")) {
+        try (Connection connection = openConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO builders_club_items (item_id, user_id, room_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), room_id = VALUES(room_id)")) {
             statement.setInt(1, itemId);
             statement.setInt(2, userId);
             statement.setInt(3, roomId);
@@ -408,8 +483,9 @@ public class BuildersClubRoomSupport {
     }
 
     public static void clearTrackedItemRoom(int itemId) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("UPDATE builders_club_items SET room_id = 0 WHERE item_id = ? LIMIT 1")) {
+        try (Connection connection = openConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE builders_club_items SET room_id = 0 WHERE item_id = ? LIMIT 1")) {
             statement.setInt(1, itemId);
             statement.executeUpdate();
         } catch (SQLException e) {
@@ -418,8 +494,9 @@ public class BuildersClubRoomSupport {
     }
 
     public static void deleteTrackedItem(int itemId) {
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("DELETE FROM builders_club_items WHERE item_id = ? LIMIT 1")) {
+        try (Connection connection = openConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement("DELETE FROM builders_club_items WHERE item_id = ? LIMIT 1")) {
             statement.setInt(1, itemId);
             statement.executeUpdate();
         } catch (SQLException e) {
@@ -449,8 +526,8 @@ public class BuildersClubRoomSupport {
     public static int syncOwnedRooms(int ownerId) {
         int changed = 0;
 
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT id FROM rooms WHERE owner_id = ?")) {
+        try (Connection connection = openConnection();
+                PreparedStatement statement = connection.prepareStatement("SELECT id FROM rooms WHERE owner_id = ?")) {
             statement.setInt(1, ownerId);
 
             try (ResultSet set = statement.executeQuery()) {
@@ -478,11 +555,18 @@ public class BuildersClubRoomSupport {
     }
 
     public static void sendMembershipMadeBubble(int userId) {
-        sendBubbleNotification(userId, BubbleAlertKeys.BUILDERS_CLUB_MEMBERSHIP_MADE, null);
+        sendBubbleNotification(userId, BubbleAlertKeys.BUILDERS_CLUB_MEMBERSHIP_MADE, furniLimitKeys(userId));
     }
 
     public static void sendMembershipExtendedBubble(int userId) {
-        sendBubbleNotification(userId, BubbleAlertKeys.BUILDERS_CLUB_MEMBERSHIP_EXTENDED, null);
+        sendBubbleNotification(userId, BubbleAlertKeys.BUILDERS_CLUB_MEMBERSHIP_EXTENDED, furniLimitKeys(userId));
+    }
+
+    private static Map<String, String> furniLimitKeys(int userId) {
+        Map<String, String> keys = new HashMap<>();
+        keys.put("FURNI_LIMIT", String.valueOf(getFurniLimit(userId)));
+
+        return keys;
     }
 
     public static void sendVisitDeniedOwnerBubble(int ownerId, String username) {
@@ -505,12 +589,11 @@ public class BuildersClubRoomSupport {
                 userId,
                 hasTrackedRooms
                         ? "notification.builders_club.membership_expired.message"
-                        : "notification.builders_club.membership_expired.message_no_rooms"
-        );
+                        : "notification.builders_club.membership_expired.message_no_rooms");
     }
 
     private static void sendBubbleNotification(int userId, BubbleAlertKeys key, Map<String, String> keys) {
-        Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
+        Habbo habbo = onlineHabbo(userId);
 
         if (habbo == null || habbo.getClient() == null) {
             return;
@@ -525,7 +608,7 @@ public class BuildersClubRoomSupport {
     }
 
     private static void sendSimpleAlert(int userId, String messageKey) {
-        Habbo habbo = Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
+        Habbo habbo = onlineHabbo(userId);
 
         if (habbo == null || habbo.getClient() == null) {
             return;
@@ -572,5 +655,49 @@ public class BuildersClubRoomSupport {
         room.save();
 
         return true;
+    }
+
+    /**
+     * Whether placing Builders Club furni here would take the room out of the navigator: a trial owner's
+     * room that is not hidden already. Habbo asks before that placement and places only once confirmed.
+     */
+    public static boolean placementWouldHideRoom(Room room) {
+        return room != null
+                && !room.isBuildersClubTrialLocked()
+                && room.getState() != RoomState.INVISIBLE
+                && !hasActiveMembership(room.getOwnerId());
+    }
+
+    /** The ids of the Builders Club furni placed in this room, in one query. */
+    public static Set<Integer> getTrackedItemIds(int roomId) {
+        Set<Integer> ids = new HashSet<>();
+
+        try (Connection connection = openConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT item_id FROM builders_club_items WHERE room_id = ?")) {
+            statement.setInt(1, roomId);
+
+            try (ResultSet set = statement.executeQuery()) {
+                while (set.next()) {
+                    ids.add(set.getInt(1));
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Caught SQL exception reading Builders Club furni of room {}", roomId, e);
+        }
+
+        return ids;
+    }
+
+    private static Connection openConnection() throws SQLException {
+        return Emulator.getDatabase().getDataSource().getConnection();
+    }
+
+    private static HabboInfo habboInfo(int userId) {
+        return Emulator.getGameEnvironment().getHabboManager().getHabboInfo(userId);
+    }
+
+    private static Habbo onlineHabbo(int userId) {
+        return Emulator.getGameEnvironment().getHabboManager().getHabbo(userId);
     }
 }

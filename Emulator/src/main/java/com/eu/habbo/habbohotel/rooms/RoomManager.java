@@ -732,7 +732,7 @@ public class RoomManager {
         }
 
         habbo.getHabboInfo().setRoomQueueId(0);
-        habbo.getClient().sendResponse(new HideDoorbellComposer(""));
+        habbo.getClient().sendResponse(new HideDoorbellComposer(room.getId(), ""));
 
         if (habbo.getRoomUnit() != null) {
             RoomUnit existingRoom = habbo.getRoomUnit();
@@ -964,6 +964,8 @@ public class RoomManager {
             int effect = habbo.getInventory().getEffectsComponent().activatedEffect;
             room.giveEffect(habbo.getRoomUnit(), effect, -1);
         }
+
+        RoomForwardGlow.onEnter(room, habbo);
 
         habbo.getClient()
                 .sendResponse(new RoomUsersComposer(room.getCurrentBots().values(), true));

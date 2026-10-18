@@ -144,6 +144,8 @@ import com.eu.habbo.habbohotel.items.interactions.pets.InteractionPetTree;
 import com.eu.habbo.habbohotel.items.interactions.totems.InteractionTotemHead;
 import com.eu.habbo.habbohotel.items.interactions.totems.InteractionTotemLegs;
 import com.eu.habbo.habbohotel.items.interactions.totems.InteractionTotemPlanet;
+import com.eu.habbo.habbohotel.items.interactions.wired.InteractionWiredLink;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestRelease;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestCurrency;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestFurni;
 import com.eu.habbo.habbohotel.items.interactions.wired.conditions.WiredConditionActorDir;
@@ -319,6 +321,8 @@ import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectReset
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectResetTimers;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRollDice;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSayCommand;
+import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSendLinkDataframe;
+import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSendLinkMessage;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSendSignal;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetAltitude;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectSetHighlight;
@@ -348,6 +352,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFilterUs
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFilterUsersByVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraFurniVariable;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLabel;
+import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraLinkSpeaker;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMoveCarryUsers;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMoveNoAnimation;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraMovePhysics;
@@ -426,6 +431,8 @@ import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHab
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboWalkOffFurni;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerHabboWalkOnFurni;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerPressKeybind;
+import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerReceiveLinkDataframe;
+import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerReceiveLinkMessage;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerReceiveSignal;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerRepeater;
 import com.eu.habbo.habbohotel.items.interactions.wired.triggers.WiredTriggerRepeaterLong;
@@ -1202,6 +1209,14 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_act_set_highlight", WiredEffectSetHighlight.class));
         // Belongs beside wf_var_echo, last for the same reason.
         this.interactionsList.add(new ItemInteraction("wf_var_pointer", WiredExtraPointerVariable.class));
+        // The WIRED Link furni and its boxes, last for the same reason.
+        this.interactionsList.add(new ItemInteraction("wf_link", InteractionWiredLink.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_send_message", WiredEffectSendLinkMessage.class));
+        this.interactionsList.add(new ItemInteraction("wf_act_send_dataframe", WiredEffectSendLinkDataframe.class));
+        this.interactionsList.add(new ItemInteraction("wf_trg_receive_message", WiredTriggerReceiveLinkMessage.class));
+        this.interactionsList.add(
+                new ItemInteraction("wf_trg_receive_dataframe", WiredTriggerReceiveLinkDataframe.class));
+        this.interactionsList.add(new ItemInteraction("wf_xtra_link_speaker", WiredExtraLinkSpeaker.class));
     }
 
     public void addItemInteraction(ItemInteraction itemInteraction) {
@@ -1544,6 +1559,9 @@ public class ItemManager {
             // A temporary furni has no rows to delete.
             return;
         }
+
+        // A wired chest gives what it holds back to its owner before its row goes.
+        ChestRelease.releaseToOwner(item);
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement(

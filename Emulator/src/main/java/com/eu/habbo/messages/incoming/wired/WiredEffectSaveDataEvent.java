@@ -81,7 +81,9 @@ public class WiredEffectSaveDataEvent extends MessageHandler {
                         this.client.sendResponse(
                                 new UpdateFailedComposer("There was an error while saving that effect"));
                     }
-                } catch (WiredSaveException | WiredSaveRefusedException e) {
+                } catch (WiredSaveRefusedException refused) {
+                    this.client.sendResponse(new UpdateFailedComposer(refused.getMessage(), refused.getParameters()));
+                } catch (WiredSaveException e) {
                     this.client.sendResponse(new UpdateFailedComposer(e.getMessage()));
                 }
             }

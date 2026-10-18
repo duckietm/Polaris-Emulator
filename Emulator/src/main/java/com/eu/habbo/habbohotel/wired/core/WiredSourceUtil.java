@@ -4,14 +4,12 @@ import com.eu.habbo.WiredCompatibilityDiagnostics;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
-import com.eu.habbo.habbohotel.rooms.RoomUnitType;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.api.IWiredEffect;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 public final class WiredSourceUtil {
     public static final int SOURCE_TRIGGER = 0;
@@ -357,23 +355,11 @@ public final class WiredSourceUtil {
     }
 
     /**
-     * The triggering user. When a bot reaches a user, that is the user it reached, as in Habbo:
-     * the event's actor is the bot, and a stack about "the user the bot reached" had no source that
-     * named them.
+     * The triggering user: the event's actor. When a bot reaches a user that is the bot, as in Habbo
+     * (a Bot Talk To Avatar to the triggering user says nothing); the user it reached is the Reached
+     * User source.
      */
     private static List<RoomUnit> triggeringUsers(WiredContext ctx) {
-        // Only when a bot did the reaching: a user walking to hand someone an item raises the same
-        // event, and must not get to pick who the stack acts on.
-        if (ctx.eventType() == WiredEvent.Type.BOT_REACHED_HABBO
-                && ctx.actor()
-                        .map(actor -> actor.getRoomUnitType() == RoomUnitType.BOT)
-                        .orElse(false)) {
-            Optional<RoomUnit> reached = ctx.event().getTargetUnit();
-            if (reached.isPresent()) {
-                return Collections.singletonList(reached.get());
-            }
-        }
-
         return ctx.actor().map(Collections::singletonList).orElse(Collections.emptyList());
     }
 

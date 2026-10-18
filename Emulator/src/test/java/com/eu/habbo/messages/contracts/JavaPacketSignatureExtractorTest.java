@@ -144,7 +144,7 @@ class JavaPacketSignatureExtractorTest {
         assertIncomingSignature("incoming/rooms/RequestRoomRightsEvent.java", "int");
         assertIncomingSignature("incoming/catalog/CatalogBuyClubDiscountEvent.java", "int");
         assertIncomingSignature("incoming/rooms/RoomVoteEvent.java", "int");
-        assertIncomingSignature("incoming/users/GetIgnoredUsersEvent.java", "string");
+        assertIncomingSignature("incoming/users/GetIgnoredUsersEvent.java");
     }
 
     @Test

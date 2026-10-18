@@ -17,6 +17,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -192,10 +193,12 @@ public class WiredEffectUsersByName extends InteractionWiredEffect implements Wi
      */
     static void refuseOversizedNames(String raw, String normalized) {
         if (raw != null && raw.length() > MAX_NAMES_TEXT_LENGTH) {
-            throw new WiredSaveRefusedException("wiredfurni.error.too_much_text");
+            throw new WiredSaveRefusedException(
+                    "wiredfurni.error.too_much_text", Map.of("limit", String.valueOf(MAX_NAMES_TEXT_LENGTH)));
         }
         if (!normalized.isEmpty() && normalized.split("\n").length > MAX_NAMES) {
-            throw new WiredSaveRefusedException("wiredfurni.error.usernames_count");
+            throw new WiredSaveRefusedException(
+                    "wiredfurni.error.usernames_count", Map.of("max_usernames", String.valueOf(MAX_NAMES)));
         }
     }
 

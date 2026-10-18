@@ -19,6 +19,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionTrophy;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWired;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredHighscore;
 import com.eu.habbo.habbohotel.items.interactions.games.InteractionGameTimer;
+import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestRelease;
 import com.eu.habbo.habbohotel.items.rentable.RentableFurniture;
 import com.eu.habbo.habbohotel.items.rentable.RentableFurnitureManager;
 import com.eu.habbo.habbohotel.rooms.Room;
@@ -384,6 +385,11 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
             this.needsUpdate = false;
             this.needsDelete = false;
             return;
+        }
+
+        if (this.needsDelete) {
+            // A wired chest gives what it holds back to its owner before its row goes.
+            ChestRelease.releaseToOwner(this);
         }
 
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {

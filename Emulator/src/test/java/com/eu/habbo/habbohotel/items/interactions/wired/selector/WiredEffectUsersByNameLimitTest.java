@@ -33,11 +33,13 @@ class WiredEffectUsersByNameLimitTest {
     void twentyOneNamesAreRefused() {
         WiredSaveRefusedException refused = assertThrows(WiredSaveRefusedException.class, () -> save(names(21)));
         assertEquals("wiredfurni.error.usernames_count", refused.getMessage());
+        assertEquals(java.util.Map.of("max_usernames", "20"), refused.getParameters());
     }
 
     @Test
     void moreThanAThousandCharactersAreRefused() {
         WiredSaveRefusedException refused = assertThrows(WiredSaveRefusedException.class, () -> save("a".repeat(1001)));
         assertEquals("wiredfurni.error.too_much_text", refused.getMessage());
+        assertEquals(java.util.Map.of("limit", "1000"), refused.getParameters());
     }
 }

@@ -610,6 +610,20 @@ public class RoomItemManager {
         this.ownership.ejectAll(habbo);
     }
 
+    /**
+     * Ejects all items from the room except the Builders Club furni, which only {@code :pickallbc} removes.
+     */
+    public void ejectAllExceptBuildersClub() {
+        this.ownership.ejectAllExceptBuildersClub();
+    }
+
+    /**
+     * Removes every Builders Club furni from the room.
+     */
+    public void removeBuildersClubItems(Habbo picker) {
+        this.ownership.removeBuildersClubItems(picker);
+    }
+
     // ==================== LOCKED TILES ====================
 
     /**

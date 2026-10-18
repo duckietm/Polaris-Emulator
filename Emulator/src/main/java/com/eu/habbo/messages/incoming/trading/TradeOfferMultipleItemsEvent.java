@@ -1,47 +1,43 @@
 package com.eu.habbo.messages.incoming.trading;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.RoomTrade;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
-
 import java.util.HashSet;
 import java.util.Set;
 
 public class TradeOfferMultipleItemsEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
-        if (this.client.getHabbo().getHabboInfo().getCurrentRoom() == null)
-            return;
+        if (this.client.getHabbo().getHabboInfo().getCurrentRoom() == null) return;
 
-        RoomTrade trade = this.client.getHabbo().getHabboInfo().getCurrentRoom().getActiveTradeForHabbo(this.client.getHabbo());
+        RoomTrade trade =
+                this.client.getHabbo().getHabboInfo().getCurrentRoom().getActiveTradeForHabbo(this.client.getHabbo());
 
-        if (trade == null)
-            return;
+        if (trade == null) return;
 
         Set<HabboItem> items = new HashSet<>();
 
         int count = this.packet.readInt();
-        if (count <= 0 || count > RoomTrade.MAX_OFFERED_ITEMS)
-            return;
+        if (count <= 0 || count > RoomTrade.MAX_OFFERED_ITEMS) return;
 
         int[] itemIds = new int[count];
         for (int i = 0; i < count; i++) {
-            itemIds[i] = this.packet.readInt();
+            itemIds[i] = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
         }
 
-        if (!TradeItemIdGuard.arePositiveAndUnique(itemIds))
-            return;
+        if (!TradeItemIdGuard.arePositiveAndUnique(itemIds)) return;
 
         for (int itemId : itemIds) {
-            HabboItem item = this.client.getHabbo().getInventory().getItemsComponent().getHabboItem(itemId);
-            if (item == null || !item.getBaseItem().allowTrade())
-                return;
+            HabboItem item =
+                    this.client.getHabbo().getInventory().getItemsComponent().getHabboItem(itemId);
+            if (item == null || !item.getBaseItem().allowTrade()) return;
 
             items.add(item);
         }
 
-        if (items.size() != count)
-            return;
+        if (items.size() != count) return;
 
         trade.offerMultipleItems(this.client.getHabbo(), items);
     }

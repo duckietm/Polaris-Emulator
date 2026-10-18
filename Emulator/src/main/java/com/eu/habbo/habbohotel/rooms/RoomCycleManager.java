@@ -445,22 +445,7 @@ public class RoomCycleManager {
                 }
             } else {
                 if (!unit.hasStatus(RoomUnitStatus.LAY)) {
-                    BedProfile bedProfile = new BedProfile(topItem);
-                    double layHeight = Item.getCurrentHeight(topItem) * 1.0D + bedProfile.getLayZOffset();
-                    LOGGER.debug(
-                            "[BedProfile] item={} stackHeight={} isFlat={} isDouble={} X={} Y={} Z={}",
-                            topItem.getBaseItem().getName(),
-                            topItem.getBaseItem().getHeight(),
-                            bedProfile.isFlat(),
-                            bedProfile.isDouble(),
-                            bedProfile.getLayXOffset(),
-                            bedProfile.getLayYOffset(),
-                            bedProfile.getLayZOffset());
-                    unit.setStatus(
-                            RoomUnitStatus.LAY,
-                            layHeight + ";" + bedProfile.getLayXOffset() + ";" + bedProfile.getLayYOffset());
-                    unit.setRotation(RoomUserRotation.values()[topItem.getRotation() % 4]);
-                    unit.setLocation(bedProfile.snapToLay(this.room, topItem, unit.getX(), unit.getY()));
+                    BedProfile.lay(this.room, topItem, unit);
 
                     this.room.getUnitManager().checkBedLoveEffect(topItem);
 

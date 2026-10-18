@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.outgoing.inventory;
 
 import com.eu.habbo.habbohotel.items.FurnitureType;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -16,9 +17,9 @@ public class InventoryUpdateItemComposer extends MessageComposer {
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.InventoryItemUpdateComposer);
-        this.response.appendInt(this.habboItem.getGiftAdjustedId());
+        this.response.appendInt(BuildersClubItemIds.toWire(this.habboItem.getGiftAdjustedId()));
         this.response.appendString(this.habboItem.getBaseItem().getType().code);
-        this.response.appendInt(this.habboItem.getId());
+        this.response.appendInt(BuildersClubItemIds.toWire(this.habboItem.getId()));
         this.response.appendInt(this.habboItem.getBaseItem().getSpriteId());
 
         switch (this.habboItem.getBaseItem().getName()) {

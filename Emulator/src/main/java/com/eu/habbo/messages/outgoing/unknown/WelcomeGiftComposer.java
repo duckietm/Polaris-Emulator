@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.unknown;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
@@ -25,7 +26,7 @@ public class WelcomeGiftComposer extends MessageComposer {
         this.response.appendString(this.email);
         this.response.appendBoolean(this.unknownB1);
         this.response.appendBoolean(this.unknownB2);
-        this.response.appendInt(this.furniId);
+        this.response.appendInt(BuildersClubItemIds.toWire(this.furniId));
         this.response.appendBoolean(this.unknownB3);
         return this.response;
     }

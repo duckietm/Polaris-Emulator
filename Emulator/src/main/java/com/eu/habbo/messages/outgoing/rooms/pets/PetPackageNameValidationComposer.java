@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.rooms.pets;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
@@ -24,7 +25,7 @@ public class PetPackageNameValidationComposer extends MessageComposer {
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.PetPackageNameValidationComposer);
-        this.response.appendInt(this.itemId);
+        this.response.appendInt(BuildersClubItemIds.toWire(this.itemId));
         this.response.appendInt(this.errorCode);
         this.response.appendString(this.errorString);
         return this.response;

@@ -54,6 +54,6 @@ class MonsterplantBreedingContractTest {
                 source("com/eu/habbo/messages/outgoing/rooms/pets/breeding/MonsterplantBreedingResultComposer.java");
 
         assertTrue(composer.contains("Seed NONE = new Seed(null, 0, \"\", 0, false)"));
-        assertTrue(composer.contains("seed.item() == null ? 0 : seed.item().getId()"));
+        assertTrue(composer.contains("seed.item() == null ? 0 : BuildersClubItemIds.toWire(seed.item().getId())"));
     }
 }

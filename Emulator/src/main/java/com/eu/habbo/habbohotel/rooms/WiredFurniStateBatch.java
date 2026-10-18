@@ -58,16 +58,6 @@ public final class WiredFurniStateBatch {
     }
 
     /**
-     * Drops the batch of the calling thread without sending what it collected. A thread whose wired work is torn down
-     * (a shutdown, a pool thread being recycled) must not keep a batch open, or every furni state it writes afterwards
-     * is held back instead of sent.
-     */
-    public static void clearForCurrentThread() {
-        DEPTH.remove();
-        PENDING.remove();
-    }
-
-    /**
      * Queues the state of {@code item} when a batch is open on this thread.
      *
      * @return whether it was queued; when not, the caller sends the state itself

@@ -1,11 +1,11 @@
 package com.eu.habbo.messages.outgoing.rooms.items;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomConfInvisSupport;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
-
 import java.util.List;
 
 public class ConfInvisStateComposer extends MessageComposer {
@@ -27,7 +27,7 @@ public class ConfInvisStateComposer extends MessageComposer {
         this.response.appendInt(this.hiddenItemIds.size());
 
         for (int itemId : this.hiddenItemIds) {
-            this.response.appendInt(itemId);
+            this.response.appendInt(BuildersClubItemIds.toWire(itemId));
         }
 
         return this.response;

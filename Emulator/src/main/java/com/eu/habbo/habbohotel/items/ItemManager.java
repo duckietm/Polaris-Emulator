@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.items.interactions.InteractionBadgeDisplay;
 import com.eu.habbo.habbohotel.items.interactions.InteractionBlackHole;
 import com.eu.habbo.habbohotel.items.interactions.InteractionBuildArea;
 import com.eu.habbo.habbohotel.items.interactions.InteractionCannon;
+import com.eu.habbo.habbohotel.items.interactions.InteractionChooserDisableControl;
 import com.eu.habbo.habbohotel.items.interactions.InteractionClothing;
 import com.eu.habbo.habbohotel.items.interactions.InteractionColorPlate;
 import com.eu.habbo.habbohotel.items.interactions.InteractionColorWheel;
@@ -604,6 +605,7 @@ public class ItemManager {
         this.interactionsList.add(new ItemInteraction("wf_conf_hidewired", InteractionHideWiredControl.class));
         this.interactionsList.add(new ItemInteraction("conf_dice_disable", InteractionDiceDisableControl.class));
         this.interactionsList.add(new ItemInteraction("wf_conf_dice_disable", InteractionDiceDisableControl.class));
+        this.interactionsList.add(new ItemInteraction("conf_chooser_disable", InteractionChooserDisableControl.class));
         this.interactionsList.add(
                 new ItemInteraction("conf_doorkick_disable", InteractionDoorkickDisableControl.class));
         this.interactionsList.add(

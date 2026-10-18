@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.rooms.items;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
@@ -29,7 +30,7 @@ public class ObjectRemoveConfirmComposer extends MessageComposer {
         this.response.init(Outgoing.ObjectRemoveConfirmComposer);
 
         this.response.appendInt(this.wallItem ? 1 : 0);
-        this.response.appendInt(this.itemId);
+        this.response.appendInt(BuildersClubItemIds.toWire(this.itemId));
         this.response.appendString(this.confirmTitle);
         this.response.appendString(this.confirmBody);
 

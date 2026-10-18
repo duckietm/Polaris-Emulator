@@ -2,6 +2,7 @@ package com.eu.habbo.messages.outgoing.rooms;
 
 import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.core.ConfigurationManager;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.WiredOpacityState;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -46,7 +47,7 @@ public class WiredFurniOpacityComposer extends MessageComposer {
         this.response.appendInt(this.roomId);
         this.response.appendInt(this.updates.size());
         for (WiredOpacityState update : this.updates) {
-            this.response.appendInt(update.itemId());
+            this.response.appendInt(BuildersClubItemIds.toWire(update.itemId()));
             this.response.appendBoolean(update.wallItem());
             this.response.appendInt(update.opacity());
             this.response.appendBoolean(update.clickThrough());

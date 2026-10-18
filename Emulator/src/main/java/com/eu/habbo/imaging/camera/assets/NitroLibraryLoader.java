@@ -118,6 +118,49 @@ public final class NitroLibraryLoader {
         return build(json, fallbackName, sheet, null);
     }
 
+    /**
+     * The asset library json of a {@code .nitro} or {@code .hab} bundle alone (its {@code logic},
+     * {@code visualizations} and so on), without decoding the sheet; null when the bundle holds no
+     * json.
+     */
+    public JsonObject readAssetLibrary(byte[] bundle) throws IOException {
+        if (HabBundle.isHab(bundle)) {
+            HabBundle hab = HabBundle.read(bundle, (int) Math.min(Integer.MAX_VALUE, this.maxFileBytes));
+            for (HabBundle.Entry entry : hab.entries()) {
+                if (!entry.isImage() && entry.isJson()) {
+                    return parseJson(new String(entry.bytes(), StandardCharsets.UTF_8));
+                }
+            }
+            return null;
+        }
+        try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(bundle))) {
+            int fileCount = in.readShort();
+            if (fileCount < 0 || fileCount > 64) {
+                throw new IOException("Bundle holds an implausible file count: " + fileCount);
+            }
+            for (int i = 0; i < fileCount; i++) {
+                byte[] nameBytes = new byte[in.readUnsignedShort()];
+                in.readFully(nameBytes);
+                String fileName = new String(nameBytes, StandardCharsets.UTF_8);
+                int length = in.readInt();
+                if (length < 0 || length > in.available()) {
+                    throw new IOException("Bundle entry " + fileName + " has an invalid length " + length);
+                }
+                if (!fileName.endsWith(".json")) {
+                    in.skipNBytes(length);
+                    continue;
+                }
+                byte[] compressed = new byte[length];
+                in.readFully(compressed);
+                byte[] inflated = ZIP.inflate(compressed, (int) Math.min(Integer.MAX_VALUE, this.maxFileBytes));
+                return parseJson(new String(inflated, StandardCharsets.UTF_8));
+            }
+        } catch (EOFException e) {
+            throw new IOException("Bundle is truncated", e);
+        }
+        return null;
+    }
+
     public NitroLibrary readBundle(byte[] bundle, String fallbackName) throws IOException {
         JsonObject json = null;
         byte[] image = null;

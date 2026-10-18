@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.incoming.wired;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.wired.WiredVariableChangeOrigin;
@@ -19,7 +20,7 @@ public class WiredFurniRuntimeStateRequestEvent extends MessageHandler {
             return;
         }
 
-        int itemId = this.packet.readInt();
+        int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
         int action = this.packet.readInt();
         String key = this.packet.readString();
         if (key.length() > WiredFurniRuntimeStatePolicy.MAX_KEY_LENGTH || this.packet.bytesAvailable() < 4) {

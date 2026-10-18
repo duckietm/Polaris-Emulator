@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
 import com.eu.habbo.habbohotel.items.recolorable.RecolorableFurniService;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertComposer;
 import com.eu.habbo.messages.outgoing.generic.alerts.BubbleAlertKeys;
@@ -14,7 +15,7 @@ public class RecolorFurniEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        int furniId = this.packet.readInt();
+        int furniId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
         int scope = this.packet.readInt();
         int red = this.packet.readInt();
         int green = this.packet.readInt();

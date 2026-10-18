@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.rooms.items;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
@@ -21,7 +22,7 @@ public class ChestSettingsUpdatedComposer extends MessageComposer {
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(Outgoing.ChestSettingsUpdatedComposer);
-        this.response.appendInt(this.chestId);
+        this.response.appendInt(BuildersClubItemIds.toWire(this.chestId));
         this.response.appendBoolean(this.notificationPreferences);
         return this.response;
     }

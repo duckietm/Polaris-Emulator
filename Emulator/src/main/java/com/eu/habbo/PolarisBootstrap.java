@@ -16,6 +16,8 @@ import com.eu.habbo.database.migration.MigrationOptions;
 import com.eu.habbo.database.migration.MigrationRunner;
 import com.eu.habbo.habbohotel.GameEnvironment;
 import com.eu.habbo.habbohotel.habbicons.HabbiconService;
+import com.eu.habbo.habbohotel.items.FurnitureDirectionsRuntime;
+import com.eu.habbo.habbohotel.items.FurnitureTextProvider;
 import com.eu.habbo.imaging.camera.CameraRenderRuntime;
 import com.eu.habbo.messages.incoming.catalog.catalogadmin.studio.CatalogStudioRuntime;
 import com.eu.habbo.messages.outgoing.catalog.CatalogUpdatedComposer;
@@ -233,6 +235,10 @@ final class PolarisBootstrap {
                 stressEnabled);
         runtime.installRconServer(rconServer);
         Emulator.synchronizeLegacyFacade(runtime);
+
+        FurnitureTextProvider furnitureTexts = runtime.gameEnvironment().getFurnitureTextProvider();
+        FurnitureDirectionsRuntime.start(
+                configuration, furnitureTexts == null ? null : furnitureTexts::getDefaultDirection);
 
         gameServer.initializePipeline();
         gameServer.connect();

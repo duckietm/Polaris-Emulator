@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.rooms.items;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
 import com.eu.habbo.messages.outgoing.Outgoing;
@@ -27,7 +28,7 @@ public class RemoveFloorItemsComposer extends MessageComposer {
 
         this.response.appendInt(this.itemIds.size());
         for (Integer itemId : this.itemIds) {
-            this.response.appendInt(itemId);
+            this.response.appendInt(BuildersClubItemIds.toWire(itemId));
         }
         this.response.appendInt(this.pickerId);
 

@@ -1,5 +1,7 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
+import com.eu.habbo.habbohotel.items.FurnitureDirections;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.FurnitureMovementError;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
@@ -15,7 +17,7 @@ public class RotateMoveItemEvent extends MessageHandler {
         Room room = currentRoom();
         if (room == null) return;
 
-        int furniId = this.packet.readInt();
+        int furniId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
         if (!RoomItemInputGuard.isPositiveId(furniId)) return;
 
         HabboItem item = room.getHabboItem(furniId);
@@ -23,7 +25,8 @@ public class RotateMoveItemEvent extends MessageHandler {
 
         int x = this.packet.readInt();
         int y = this.packet.readInt();
-        int rotation = this.packet.readInt();
+        // A direction the furni's asset does not list is stored as its default one, as in Habbo.
+        int rotation = FurnitureDirections.of(item).place(this.packet.readInt());
 
         RoomTile tile = room.getLayout().getTile((short) x, (short) y);
         if (tile == null) return;

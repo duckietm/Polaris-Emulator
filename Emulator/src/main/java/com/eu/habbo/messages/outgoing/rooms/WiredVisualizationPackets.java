@@ -2,6 +2,7 @@ package com.eu.habbo.messages.outgoing.rooms;
 
 import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.core.ConfigurationManager;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.WiredHighlight;
 import com.eu.habbo.habbohotel.rooms.WiredUserTransparency;
 import com.eu.habbo.habbohotel.rooms.WiredVisualizationEntry;
@@ -49,21 +50,25 @@ final class WiredVisualizationPackets {
         message.appendInt(highlight.easing());
     }
 
-    /** {@code [n, n x (id, transparency, click through, easing), m, m x (id, highlight)]}. */
+    /**
+     * {@code [n, n x (id, transparency, click through, easing), m, m x (id, highlight)]}; the ids are furni ids
+     * (by the id the client knows them by) when {@code furni}, room indices otherwise.
+     */
     static void appendState(
             ServerMessage message,
             List<WiredVisualizationEntry<WiredUserTransparency>> transparency,
-            List<WiredVisualizationEntry<WiredHighlight>> highlights) {
+            List<WiredVisualizationEntry<WiredHighlight>> highlights,
+            boolean furni) {
         message.appendInt(transparency.size());
         for (WiredVisualizationEntry<WiredUserTransparency> entry : transparency) {
-            message.appendInt(entry.id());
+            message.appendInt(BuildersClubItemIds.toWire(entry.id(), furni));
             message.appendInt(entry.value().transparency());
             message.appendBoolean(entry.value().clickThrough());
             message.appendInt(entry.value().easing());
         }
         message.appendInt(highlights.size());
         for (WiredVisualizationEntry<WiredHighlight> entry : highlights) {
-            message.appendInt(entry.id());
+            message.appendInt(BuildersClubItemIds.toWire(entry.id(), furni));
             appendHighlight(message, entry.value());
         }
     }

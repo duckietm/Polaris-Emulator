@@ -68,6 +68,11 @@ final class RoomItemOwnershipService {
             }
         }
 
+        if (trackedBuildersClub) {
+            // From now on the client knows it by an id of the official Builders Club band.
+            this.index.buildersClubIds().assign(item.getId());
+        }
+
         if (trackedBuildersClub && item.getUserId() != BuildersClubRoomSupport.VIRTUAL_OWNER_ID) {
             item.setVirtualUserId(BuildersClubRoomSupport.VIRTUAL_OWNER_ID);
             item.needsUpdate(true);
@@ -103,6 +108,7 @@ final class RoomItemOwnershipService {
         }
 
         if (removed != null) {
+            this.index.buildersClubIds().release(removed.getId());
             this.index.untrackItem(removed);
             this.index.unregisterIncarnation(removed);
             this.removeOwnerIndex(removed);
@@ -215,6 +221,9 @@ final class RoomItemOwnershipService {
                 this.room.sendComposer(new RemoveFloorItemComposer(item).compose());
             }
             this.refreshRemovedFloorArea(item);
+            if (RoomChooserDisableSupport.isActiveController(item)) {
+                RoomHanditemBlockSupport.broadcastConfigurationItemStates(this.room);
+            }
         } else if (item.getBaseItem().getType() == FurnitureType.WALL && sendRemoveComposer) {
             this.room.sendComposer(new RemoveWallItemComposer(item).compose());
         }

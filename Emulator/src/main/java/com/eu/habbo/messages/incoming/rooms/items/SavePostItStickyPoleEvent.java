@@ -4,13 +4,13 @@ import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.commands.CommandHandler;
 import com.eu.habbo.habbohotel.items.PostItColor;
 import com.eu.habbo.habbohotel.items.interactions.InteractionPostIt;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
+import java.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.time.LocalDate;
 
 public class SavePostItStickyPoleEvent extends MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(SavePostItStickyPoleEvent.class);
@@ -22,38 +22,39 @@ public class SavePostItStickyPoleEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        int itemId = this.packet.readInt();
+        int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
 
         this.packet.readString();
         String color = this.packet.readString().toUpperCase(java.util.Locale.ROOT);
         if (itemId == -1234) {
             if (this.client.getHabbo().hasPermission("cmd_multi")) {
                 String[] commands = this.packet.readString().split("\r");
-                if (commands.length > RoomItemInputGuard.MAX_STICKY_POLE_COMMANDS)
-                    return;
+                if (commands.length > RoomItemInputGuard.MAX_STICKY_POLE_COMMANDS) return;
 
                 for (String command : commands) {
-                    command = RoomItemInputGuard.trimToMax(command.replace("<br>", "\r"), RoomItemInputGuard.MAX_STICKY_POLE_COMMAND_LENGTH);
-                    if (command.isEmpty())
-                        continue;
+                    command = RoomItemInputGuard.trimToMax(
+                            command.replace("<br>", "\r"), RoomItemInputGuard.MAX_STICKY_POLE_COMMAND_LENGTH);
+                    if (command.isEmpty()) continue;
 
                     CommandHandler.handleCommand(this.client, command);
                 }
             } else {
-                LOGGER.info("Scripter Alert! {} | {}", this.client.getHabbo().getHabboInfo().getUsername(), this.packet.readString().replace('\r', ' ').replace('\n', ' '));
+                LOGGER.info(
+                        "Scripter Alert! {} | {}",
+                        this.client.getHabbo().getHabboInfo().getUsername(),
+                        this.packet.readString().replace('\r', ' ').replace('\n', ' '));
             }
         } else {
-            String text = Emulator.getGameEnvironment().getWordFilter().filter(this.packet.readString().replace(((char) 9) + "", ""), this.client.getHabbo());
+            String text = Emulator.getGameEnvironment()
+                    .getWordFilter()
+                    .filter(this.packet.readString().replace(((char) 9) + "", ""), this.client.getHabbo());
 
-            if (text.length() > Emulator.getConfig().getInt("postit.charlimit"))
-                return;
+            if (text.length() > Emulator.getConfig().getInt("postit.charlimit")) return;
 
-            if (!RoomItemInputGuard.isPositiveId(itemId))
-                return;
+            if (!RoomItemInputGuard.isPositiveId(itemId)) return;
 
             Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
-            if (room == null)
-                return;
+            if (room == null) return;
 
             HabboItem sticky = room.getHabboItem(itemId);
 
@@ -65,7 +66,16 @@ public class SavePostItStickyPoleEvent extends MessageHandler {
                         color = PostItColor.randomColorNotYellow().hexColor;
                     }
                     if (!InteractionPostIt.STICKYPOLE_PREFIX_TEXT.isEmpty()) {
-                        text = InteractionPostIt.STICKYPOLE_PREFIX_TEXT.replace("\\r", "\r").replace("%username%", this.client.getHabbo().getHabboInfo().getUsername()).replace("%timestamp%", LocalDate.now().toString()) + text;
+                        text = InteractionPostIt.STICKYPOLE_PREFIX_TEXT
+                                        .replace("\\r", "\r")
+                                        .replace(
+                                                "%username%",
+                                                this.client
+                                                        .getHabbo()
+                                                        .getHabboInfo()
+                                                        .getUsername())
+                                        .replace("%timestamp%", LocalDate.now().toString())
+                                + text;
                     }
 
                     sticky.setUserId(room.getOwnerId());

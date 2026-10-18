@@ -25,6 +25,8 @@ public class Incoming {
     public static final int ChestSaveOptionsEvent = 9338; // Lock / auto-lock / capacity, from the chest window
     public static final int ChestCloseEvent = 9339; // The chest window was closed
     public static final int ChestEnableWiredEvent = 9345; // One-way: make this chest answer wired
+    public static final int GetWiredContractContentsEvent = 9346; // Official contract editor: fetch a contract
+    public static final int UpdateWiredContractEvent = 9347; // Official contract editor: save a contract
     public static final int ChangeNameCheckUsernameEvent = 3950;
     public static final int ConfirmChangeNameEvent = 2977;
     public static final int ActivateEffectEvent = 2959;
@@ -697,7 +699,6 @@ public class Incoming {
     public static final int RequestMentionsEvent = 4803;
     public static final int MarkMentionsReadEvent = 4804;
     public static final int DeleteMentionEvent = 4805;
-    public static final int RequestMentionsPageEvent = 4806;
     public static final int RequestMessengerConversationsEvent = 4900;
     public static final int RequestMessengerHistoryEvent = 4901;
     public static final int SendMessengerMessageEvent = 4902;

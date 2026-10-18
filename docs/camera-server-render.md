@@ -100,6 +100,9 @@ Server rendering needs at least one of these. Paths are read when the emulator s
 | `camera.render.assets.wall_colors` | Optional `.properties` file `wallpaint=0xRRGGBB` overriding wall colours. |
 | `camera.render.assets.max_bundle_mb` | Largest bundle read (default 64). |
 
+The server also reads each furni's directions from `camera.render.assets.furniture_dir`. Furni then
+turn only to the directions their bundle lists, as in the client. See [furni-directions.md](furni-directions.md).
+
 How a sprite name is matched to a bundle (the same libraries the client drew it from):
 
 1. **Room**: wall and floor textures, masks such as `door_64`, and landscapes are looked up in the room library first.

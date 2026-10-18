@@ -2,6 +2,7 @@ package com.eu.habbo.messages.incoming.inventory;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.Item;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.users.Habbo;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -21,7 +22,7 @@ public class RequestInventoryItemsDelete extends MessageHandler {
     }
 
     public void handle() {
-        int itemId = this.packet.readInt();
+        int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
         int amount = this.packet.readInt();
 
         if (amount <= 0 || amount > MAX_DELETE_AMOUNT) return;

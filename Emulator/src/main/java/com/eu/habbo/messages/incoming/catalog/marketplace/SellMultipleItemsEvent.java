@@ -3,6 +3,7 @@ package com.eu.habbo.messages.incoming.catalog.marketplace;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.catalog.marketplace.MarketPlace;
 import com.eu.habbo.habbohotel.modtool.ScripterManager;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.catalog.AlertPurchaseFailedComposer;
@@ -50,7 +51,7 @@ public class SellMultipleItemsEvent extends MessageHandler {
 
         Set<Integer> itemIds = new LinkedHashSet<>();
         for (int index = 0; index < count; index++) {
-            itemIds.add(this.packet.readInt());
+            itemIds.add(BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt()));
         }
 
         if (!MarketPlace.MARKETPLACE_ENABLED) {

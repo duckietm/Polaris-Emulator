@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.wired.arrays;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.wired.core.WiredVariableTextConnectorSupport;
 import java.util.ArrayList;
@@ -42,7 +43,8 @@ public final class WiredCreatorToolsArrayInspection {
         WiredCreatorToolsArrayInspection result = new WiredCreatorToolsArrayInspection();
         result.requestedOwnerType = requestedOwnerType == null ? "" : requestedOwnerType;
         result.requestedOwnerId = requestedOwnerId;
-        result.ownerId = ownerId;
+        // A furni owner goes out by the id the client knows it by; the lookups below keep the database id.
+        result.ownerId = BuildersClubItemIds.toWire(ownerId, "furni".equals(result.requestedOwnerType));
         if (room == null || variable == null || !variable.isArray() || ownerId <= 0) return result;
 
         result.definition = Definition.from(room, variable);

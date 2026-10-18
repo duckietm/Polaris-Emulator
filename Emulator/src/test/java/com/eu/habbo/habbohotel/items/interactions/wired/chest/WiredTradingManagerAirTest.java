@@ -313,4 +313,40 @@ class WiredTradingManagerAirTest {
         assertFalse(manager.getSession(this.habbo).accept(0L));
         assertEquals(1, trophies.getContents().furniItemCount());
     }
+
+    @Test
+    void aDonationTakesEverythingOfferedAndCountsAsAPayment() {
+        InteractionWiredChestCurrency coins =
+                wiredChest(new InteractionWiredChestCurrency(30, OWNER, chestFurni(), "", 0, 0));
+        InteractionWiredChestFurni furni =
+                wiredChest(new InteractionWiredChestFurni(40, OWNER, chestFurni(), "", 0, 0));
+        WiredTradingManager manager = new WiredTradingManager(this.room);
+        give(301, "CF_50", 1);
+        give(302, "chair", 3);
+
+        assertNotNull(manager.openDonation(this.habbo, "A thank you", "games", 60, List.of(coins, furni)));
+        assertEquals(2, manager.offer(this.habbo, List.of(301, 302), false));
+        assertTrue(this.acceptAndConfirm(manager));
+
+        assertEquals(50, coins.getContents().getCoins());
+        assertEquals(1, furni.getContents().furniItemCount());
+        assertEquals(0, this.store.inventoryCount(PLAYER));
+        assertEquals(
+                WiredTransactionSuccessComposer.TYPE_PAYMENT,
+                this.sent(WiredTransactionSuccessComposer.class).get(0).getType());
+        this.wired.verify(() -> WiredManager.dispatchEffectTriggeredEvent(any()), atLeastOnce());
+    }
+
+    @Test
+    void anEmptyDonationIsRefused() {
+        InteractionWiredChestCurrency coins =
+                wiredChest(new InteractionWiredChestCurrency(30, OWNER, chestFurni(), "", 0, 0));
+        WiredTradingManager manager = new WiredTradingManager(this.room);
+
+        manager.openDonation(this.habbo, "", "generic", 60, List.of(coins));
+
+        assertFalse(this.acceptAndConfirm(manager));
+        assertEquals(0, coins.getContents().getCoins());
+        assertEquals(1, this.sent(WiredTradeCancelledComposer.class).size());
+    }
 }

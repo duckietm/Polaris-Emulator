@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.outgoing.rooms.items;
 
 import com.eu.habbo.habbohotel.items.interactions.InteractionMoodLight;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomMoodlightData;
 import com.eu.habbo.habbohotel.users.HabboItem;
@@ -84,7 +85,7 @@ public class MoodLightDataComposer extends MessageComposer {
         }
 
         this.response.appendBoolean(this.isOn);
-        this.response.appendInt(this.itemId);
+        this.response.appendInt(BuildersClubItemIds.toWire(this.itemId));
 
         return this.response;
     }

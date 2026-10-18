@@ -1,6 +1,7 @@
 package com.eu.habbo.messages.incoming.rooms.items.rentable;
 
 import com.eu.habbo.habbohotel.items.rentable.RentableFurnitureManager;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.incoming.rooms.items.RoomItemInputGuard;
@@ -10,7 +11,7 @@ import com.eu.habbo.messages.outgoing.inventory.InventoryUpdateItemComposer;
 public class ExtendRentOrBuyoutStripItemEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
-        int stripId = this.packet.readInt();
+        int stripId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
         boolean buyout = this.packet.readBoolean();
 
         if (!RoomItemInputGuard.isPositiveId(stripId)) return;

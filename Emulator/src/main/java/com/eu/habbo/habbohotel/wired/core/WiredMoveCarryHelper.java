@@ -1,5 +1,6 @@
 package com.eu.habbo.habbohotel.wired.core;
 
+import com.eu.habbo.habbohotel.items.FurnitureDirections;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.extra.WiredExtraAnimationTime;
@@ -315,7 +316,10 @@ public final class WiredMoveCarryHelper {
 
                 if (projectile != null) {
                     launchProjectile(room, movingItem, oldLocation, oldZ, animationDuration, projectile);
-                    projectile.aimShooter(room, ctx, dx, dy);
+                    // A furni with a single direction cannot turn and leaves the shooter as is, as in Habbo.
+                    if (FurnitureDirections.of(movingItem).count() != 1) {
+                        projectile.aimShooter(room, ctx, dx, dy);
+                    }
                 }
 
                 sendAnimatedMove(
@@ -559,7 +563,6 @@ public final class WiredMoveCarryHelper {
         FURNI_FIRINGS.remove();
         ORIGINAL_ROTATIONS.remove();
         WiredMoveStyleHelper.discardCollection();
-        WiredFurniStateBatch.clearForCurrentThread();
     }
 
     public static void registerUserFollower(
@@ -915,7 +918,7 @@ public final class WiredMoveCarryHelper {
         return (projectile == null)
                 ? rotation
                 : projectile.resolveRotation(
-                        movingItem.getX(), movingItem.getY(), targetTile.x, targetTile.y, rotation);
+                        movingItem, movingItem.getX(), movingItem.getY(), targetTile.x, targetTile.y, rotation);
     }
 
     private static WiredExtraProjectile getProjectile(Room room, HabboItem stackItem, HabboItem movingItem) {

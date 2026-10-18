@@ -22,6 +22,7 @@ import com.eu.habbo.habbohotel.items.interactions.games.InteractionGameTimer;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.ChestRelease;
 import com.eu.habbo.habbohotel.items.rentable.RentableFurniture;
 import com.eu.habbo.habbohotel.items.rentable.RentableFurnitureManager;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomLayout;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
@@ -148,7 +149,7 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
 
     public void serializeFloorData(ServerMessage serverMessage) {
         try {
-            serverMessage.appendInt(this.getId());
+            serverMessage.appendInt(BuildersClubItemIds.toWire(this.getId()));
             serverMessage.appendInt(this.baseItem.getSpriteId());
             serverMessage.appendInt(this.x);
             serverMessage.appendInt(this.y);
@@ -180,7 +181,7 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
     }
 
     public void serializeWallData(ServerMessage serverMessage) {
-        serverMessage.appendString(this.getId() + "");
+        serverMessage.appendString(BuildersClubItemIds.toWire(this.getId()) + "");
         serverMessage.appendInt(this.baseItem.getSpriteId());
         serverMessage.appendString(this.wallPosition);
 
@@ -196,7 +197,7 @@ public abstract class HabboItem implements Runnable, IEventTriggers {
         serverMessage.appendInt(this.getBaseItem().allowWalk() ? 1 : 0);
         serverMessage.appendInt(this.getBaseItem().getWidth());
         serverMessage.appendInt(this.getBaseItem().getLength());
-        serverMessage.appendInt(this.getTeleportTargetId());
+        serverMessage.appendInt(BuildersClubItemIds.toWire(this.getTeleportTargetId()));
     }
 
     public int getTeleportTargetId() {

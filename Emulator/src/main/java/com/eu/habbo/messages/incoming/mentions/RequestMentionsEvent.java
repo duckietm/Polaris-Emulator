@@ -1,10 +1,12 @@
 package com.eu.habbo.messages.incoming.mentions;
 
 import com.eu.habbo.Emulator;
+import com.eu.habbo.habbohotel.mentions.HabboMention;
 import com.eu.habbo.habbohotel.mentions.MentionManager;
-import com.eu.habbo.habbohotel.mentions.MentionPage;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.mentions.MentionsListComposer;
+
+import java.util.List;
 
 public class RequestMentionsEvent extends MessageHandler {
     @Override
@@ -19,7 +21,9 @@ public class RequestMentionsEvent extends MessageHandler {
             return;
         }
 
-        MentionPage page = manager.getMentionsPage(userId, manager.pageSize(), 0);
-        this.client.sendResponse(new MentionsListComposer(page.mentions(), page.hasMore()));
+        int limit = Emulator.getConfig().getInt("mentions.store.limit", 50);
+
+        List<HabboMention> mentions = manager.getMentions(userId, limit);
+        this.client.sendResponse(new MentionsListComposer(mentions));
     }
 }

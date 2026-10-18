@@ -3,6 +3,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.WiredPlatform;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.items.FurnitureDirections;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
@@ -119,24 +120,25 @@ public class WiredEffectMatchFurni extends InteractionWiredEffect implements Int
         RoomTile oldLocation = room.getLayout().getTile(item.getX(), item.getY());
         if (oldLocation == null) return;
 
+        int targetRotation = FurnitureDirections.of(item).match(item.getRotation(), setting.rotation);
+
         // Altitude first: with direction also on, this branch restores both. Checking direction first
         // turned the furni and never gave it its height back.
         if (this.altitude && !this.position) {
-            int newRotation = this.direction ? setting.rotation : item.getRotation();
+            int newRotation = this.direction ? targetRotation : item.getRotation();
             if (BigDecimal.valueOf(item.getZ()).compareTo(BigDecimal.valueOf(setting.z)) != 0
                     || newRotation != item.getRotation()) {
                 WiredMoveCarryHelper.moveFurni(room, this, item, oldLocation, newRotation, setting.z, null, true, ctx);
             }
         } else if (this.direction && !this.position) {
-            if (item.getRotation() != setting.rotation
-                    && room.furnitureFitsAt(oldLocation, item, setting.rotation, false)
-                            == FurnitureMovementError.NONE) {
-                WiredMoveCarryHelper.moveFurni(room, this, item, oldLocation, setting.rotation, null, true, ctx);
+            if (item.getRotation() != targetRotation
+                    && room.furnitureFitsAt(oldLocation, item, targetRotation, false) == FurnitureMovementError.NONE) {
+                WiredMoveCarryHelper.moveFurni(room, this, item, oldLocation, targetRotation, null, true, ctx);
             }
         } else if (this.position) {
-            boolean slideAnimation = !this.direction || item.getRotation() == setting.rotation;
+            boolean slideAnimation = !this.direction || item.getRotation() == targetRotation;
             RoomTile newLocation = room.getLayout().getTile((short) setting.x, (short) setting.y);
-            int newRotation = this.direction ? setting.rotation : item.getRotation();
+            int newRotation = this.direction ? targetRotation : item.getRotation();
             double newZ = this.altitude ? setting.z : item.getZ();
 
             if (newLocation != null

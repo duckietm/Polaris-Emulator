@@ -7,6 +7,7 @@ import com.eu.habbo.habbohotel.items.interactions.wired.WiredInputGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredLargePayload;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSaveRefusedException;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.protocol.WiredSourceSaveRules;
@@ -19,7 +20,7 @@ public class WiredConditionSaveDataEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        int itemId = this.packet.readInt();
+        int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
 
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
 
@@ -36,8 +37,12 @@ public class WiredConditionSaveDataEvent extends MessageHandler {
                                     int maximumStringLength = condition instanceof WiredLargePayload
                                             ? WiredLargePayload.MAX_STRING_PARAM_LENGTH
                                             : WiredInputGuard.MAX_STRING_PARAM_LENGTH;
-                                    WiredSettings settings = InteractionWired.readSettings(
-                                            this.packet, InteractionWired.SaveKind.CONDITION, maximumStringLength);
+                                    WiredSettings settings = BuildersClubItemIds.fromWire(
+                                            InteractionWired.readSettings(
+                                                    this.packet,
+                                                    InteractionWired.SaveKind.CONDITION,
+                                                    maximumStringLength),
+                                            room);
                                     settings.setRoom(room);
                                     String sourceRefusal = WiredSourceSaveRules.apply(condition, settings, room);
                                     if (sourceRefusal != null) throw new WiredSaveRefusedException(sourceRefusal);

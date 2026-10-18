@@ -1,6 +1,8 @@
 package com.eu.habbo.messages.incoming.wired;
 
+import com.eu.habbo.habbohotel.items.FurnitureDirections;
 import com.eu.habbo.habbohotel.items.interactions.wired.interfaces.InteractionWiredMatchFurniSettings;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.FurnitureMovementError;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomTile;
@@ -24,7 +26,7 @@ public class WiredApplySetConditionsEvent extends MessageHandler {
 
     @Override
     public void handle() throws Exception {
-        int itemId = this.packet.readInt();
+        int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
 
         // Executing Habbo has to be in a Room
         if (!this.client.getHabbo().getRoomUnit().isInRoom()) {
@@ -80,26 +82,29 @@ public class WiredApplySetConditionsEvent extends MessageHandler {
                             RoomTile oldLocation = room.getLayout().getTile(matchItem.getX(), matchItem.getY());
                             double oldZ = matchItem.getZ();
 
-                            // Match Position & Rotation
+                            // Match Position & Rotation; a snapshot direction the furni's asset lacks
+                            // snaps as in Habbo (FurnitureDirections#match).
+                            int targetRotation =
+                                    FurnitureDirections.of(matchItem).match(matchItem.getRotation(), setting.rotation);
                             if (wired.shouldMatchRotation() && !wired.shouldMatchPosition()) {
-                                if (matchItem.getRotation() != setting.rotation
-                                        && room.furnitureFitsAt(oldLocation, matchItem, setting.rotation, false)
+                                if (matchItem.getRotation() != targetRotation
+                                        && room.furnitureFitsAt(oldLocation, matchItem, targetRotation, false)
                                                 == FurnitureMovementError.NONE) {
-                                    room.moveFurniTo(matchItem, oldLocation, setting.rotation, null, true);
+                                    room.moveFurniTo(matchItem, oldLocation, targetRotation, null, true);
                                 }
                             } else if (wired.shouldMatchAltitude() && !wired.shouldMatchPosition()) {
                                 int newRotation =
-                                        wired.shouldMatchRotation() ? setting.rotation : matchItem.getRotation();
+                                        wired.shouldMatchRotation() ? targetRotation : matchItem.getRotation();
                                 if (BigDecimal.valueOf(matchItem.getZ()).compareTo(BigDecimal.valueOf(setting.z)) != 0
                                         || newRotation != matchItem.getRotation()) {
                                     room.moveFurniTo(matchItem, oldLocation, newRotation, setting.z, null, true, false);
                                 }
                             } else if (wired.shouldMatchPosition()) {
                                 boolean slideAnimation =
-                                        !wired.shouldMatchRotation() || matchItem.getRotation() == setting.rotation;
+                                        !wired.shouldMatchRotation() || matchItem.getRotation() == targetRotation;
                                 RoomTile newLocation = room.getLayout().getTile((short) setting.x, (short) setting.y);
                                 int newRotation =
-                                        wired.shouldMatchRotation() ? setting.rotation : matchItem.getRotation();
+                                        wired.shouldMatchRotation() ? targetRotation : matchItem.getRotation();
                                 double newZ = wired.shouldMatchAltitude() ? setting.z : matchItem.getZ();
 
                                 if (newLocation != null

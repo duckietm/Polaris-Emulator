@@ -30,7 +30,7 @@ public class WiredFurniVisualizationStateComposer extends MessageComposer {
     @Override
     protected ServerMessage composeInternal() {
         this.response.init(HEADER);
-        WiredVisualizationPackets.appendState(this.response, this.transparency, this.highlights);
+        WiredVisualizationPackets.appendState(this.response, this.transparency, this.highlights, true);
         return this.response;
     }
 }

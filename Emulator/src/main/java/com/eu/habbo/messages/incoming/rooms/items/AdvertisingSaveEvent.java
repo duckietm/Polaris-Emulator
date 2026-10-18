@@ -3,10 +3,10 @@ package com.eu.habbo.messages.incoming.rooms.items;
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.items.interactions.InteractionCustomValues;
 import com.eu.habbo.habbohotel.items.interactions.InteractionRoomAds;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,19 +14,15 @@ public class AdvertisingSaveEvent extends MessageHandler {
     @Override
     public void handle() throws Exception {
         Room room = this.client.getHabbo().getHabboInfo().getCurrentRoom();
-        if (room == null)
-            return;
+        if (room == null) return;
 
-        if (!room.hasRights(this.client.getHabbo()))
-            return;
+        if (!room.hasRights(this.client.getHabbo())) return;
 
-        int itemId = this.packet.readInt();
-        if (!RoomItemInputGuard.isPositiveId(itemId))
-            return;
+        int itemId = BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt());
+        if (!RoomItemInputGuard.isPositiveId(itemId)) return;
 
         HabboItem item = room.getHabboItem(itemId);
-        if (item == null)
-            return;
+        if (item == null) return;
 
         if (item instanceof InteractionRoomAds && !this.client.getHabbo().hasPermission("acc_ads_background")) {
             this.client.getHabbo().alert(Emulator.getTexts().getValue("hotel.error.roomads.nopermission"));
@@ -35,15 +31,15 @@ public class AdvertisingSaveEvent extends MessageHandler {
         if (item instanceof InteractionCustomValues) {
             Map<String, String> oldValues = new HashMap<>(((InteractionCustomValues) item).values);
             int count = this.packet.readInt();
-            if (!RoomItemInputGuard.isValidCustomValueCount(count))
-                return;
+            if (!RoomItemInputGuard.isValidCustomValueCount(count)) return;
 
             for (int i = 0; i < count / 2; i++) {
-                String key = RoomItemInputGuard.trimToMax(this.packet.readString(), RoomItemInputGuard.MAX_CUSTOM_KEY_LENGTH);
-                String value = RoomItemInputGuard.trimToMax(this.packet.readString(), RoomItemInputGuard.MAX_CUSTOM_VALUE_LENGTH);
+                String key = RoomItemInputGuard.trimToMax(
+                        this.packet.readString(), RoomItemInputGuard.MAX_CUSTOM_KEY_LENGTH);
+                String value = RoomItemInputGuard.trimToMax(
+                        this.packet.readString(), RoomItemInputGuard.MAX_CUSTOM_VALUE_LENGTH);
 
-                if (key.isEmpty())
-                    continue;
+                if (key.isEmpty()) continue;
 
                 if (!Emulator.getConfig().getBoolean("camera.use.https")) {
                     value = value.replace("https://", "http://");

@@ -461,6 +461,18 @@ public final class Emulator {
         configuration.register("camera.render.assets.effects_dir", "", "Folder of camera effect/frame <name>.png.");
         configuration.register("camera.render.assets.sprites_dir", "", "Optional folder of loose <asset>.png.");
         configuration.register("camera.render.cache_mb", "128", "Memory for decoded camera assets.");
+        configuration.register(
+                "furni.directions.enabled",
+                "1",
+                "1: furni turn only to the directions their furniture bundle lists (as the client does).");
+        configuration.register(
+                "furni.directions.assets_dir",
+                "",
+                "Folder of furniture .nitro/.hab bundles for furni directions; empty uses "
+                        + "camera.render.assets.furniture_dir.");
+        configuration.register("furni.directions.cache_size", "8192", "Furni types whose directions stay cached.");
+        configuration.register(
+                "furni.directions.wait_ms", "50", "Longest wait for a bundle read before the default rotations apply.");
     }
 
     private static void registerStartupConfigDefaults() {

@@ -216,8 +216,6 @@
     "wired_chest_transactions": ["chest_id", "chest_kind", "currency_type", "deposited", "details", "id", "room_id", "source", "timestamp", "transaction_type", "user_id", "user_name", "withdrawn"],
     "wired_chests": ["capacity_level", "coins", "item_id", "kind", "owner_id", "settings"],
     "wired_emulator_settings": ["comment", "key", "value"],
-    "wired_link_endpoints": ["item_id", "network_id", "owner_id", "receive_local", "room_id"],
-    "wired_link_networks": ["created_at", "id", "name", "owner_id"],
     "wired_rewards_given": ["reward_id", "timestamp", "user_id", "wired_item"],
     "wordfilter": ["hide", "key", "mute", "prefix_only", "replacement", "report"],
     "youtube_playlists": ["item_id", "order", "playlist_id"]

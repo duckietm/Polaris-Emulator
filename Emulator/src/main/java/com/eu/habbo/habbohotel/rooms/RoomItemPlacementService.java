@@ -216,6 +216,9 @@ final class RoomItemPlacementService {
         if (RoomHanditemBlockSupport.isControllerItem(item)) {
             RoomHanditemBlockSupport.sendState(this.room);
         }
+        if (RoomChooserDisableSupport.isActiveController(item)) {
+            RoomHanditemBlockSupport.broadcastConfigurationItemStates(this.room);
+        }
 
         for (RoomTile occupiedTile : occupiedTiles) {
             this.room.updateHabbosAt(occupiedTile.x, occupiedTile.y);
@@ -242,10 +245,11 @@ final class RoomItemPlacementService {
 
         item.setWallPosition(wallPosition);
         this.ensureOwnerName(item, owner);
+        item.needsUpdate(true);
+        // Added before it is announced, so a Builders Club furni already has its band id.
+        this.facade.addHabboItem(item);
         this.room.sendComposer(
                 new AddWallItemComposer(item, this.facade.getFurniOwnerName(item.getUserId())).compose());
-        item.needsUpdate(true);
-        this.facade.addHabboItem(item);
         item.setRoomId(this.room.getId());
         item.onPlace(this.room);
         Emulator.getThreading().run(item);

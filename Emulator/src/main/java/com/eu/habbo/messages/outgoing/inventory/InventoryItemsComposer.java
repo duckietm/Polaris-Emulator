@@ -4,6 +4,7 @@ import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.interactions.InteractionGift;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChest;
 import com.eu.habbo.habbohotel.items.interactions.wired.chest.InteractionWiredChestCurrency;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -47,9 +48,9 @@ public class InventoryItemsComposer extends MessageComposer {
     }
 
     private void serializeItem(HabboItem habboItem) {
-        this.response.appendInt(habboItem.getGiftAdjustedId());
+        this.response.appendInt(BuildersClubItemIds.toWire(habboItem.getGiftAdjustedId()));
         this.response.appendString(habboItem.getBaseItem().getType().code);
-        this.response.appendInt(habboItem.getId());
+        this.response.appendInt(BuildersClubItemIds.toWire(habboItem.getId()));
         this.response.appendInt(habboItem.getBaseItem().getSpriteId());
 
         if (habboItem.getBaseItem().getName().equals("floor")

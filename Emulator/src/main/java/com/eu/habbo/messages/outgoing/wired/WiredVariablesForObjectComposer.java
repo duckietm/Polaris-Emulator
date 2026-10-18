@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.outgoing.wired;
 
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.WiredObjectInspection;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.outgoing.MessageComposer;
@@ -23,8 +24,10 @@ public class WiredVariablesForObjectComposer extends MessageComposer {
         this.response.init(Outgoing.WiredVariablesForObjectComposer);
         int type = this.inspection.getType();
         this.response.appendInt(type);
-        if (type == WiredObjectInspection.TYPE_FURNI || type == WiredObjectInspection.TYPE_USER) {
-            this.response.appendInt(this.inspection.getObjectId());
+        if (type == WiredObjectInspection.TYPE_FURNI) {
+            this.response.appendInt(BuildersClubItemIds.toWire(this.inspection.getObjectId()));
+        } else if (type == WiredObjectInspection.TYPE_USER) {
+            this.response.appendInt(this.inspection.getObjectId()); // the user's room index
         }
         this.response.appendInt(this.inspection.getValues().size());
         for (Map.Entry<String, Integer> value : this.inspection.getValues().entrySet()) {
@@ -34,7 +37,7 @@ public class WiredVariablesForObjectComposer extends MessageComposer {
         if (type == WiredObjectInspection.TYPE_FURNI) {
             this.response.appendInt(this.inspection.getConfiguredInWireds().size());
             for (int boxId : this.inspection.getConfiguredInWireds()) {
-                this.response.appendInt(boxId);
+                this.response.appendInt(BuildersClubItemIds.toWire(boxId));
             }
         }
         return this.response;

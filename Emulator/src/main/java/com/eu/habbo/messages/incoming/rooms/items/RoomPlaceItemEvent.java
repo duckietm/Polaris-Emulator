@@ -1,5 +1,6 @@
 package com.eu.habbo.messages.incoming.rooms.items;
 
+import com.eu.habbo.habbohotel.items.FurnitureDirections;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.interactions.InteractionBackgroundToner;
 import com.eu.habbo.habbohotel.items.interactions.InteractionBuildArea;
@@ -100,6 +101,8 @@ public class RoomPlaceItemEvent extends MessageHandler {
             Integer rotation = RoomItemInputGuard.parseInt(values[3]);
 
             if (x == null || y == null || rotation == null) return;
+            // A direction the furni's asset does not list is stored as its default one, as in Habbo.
+            rotation = FurnitureDirections.of(item).place(rotation);
 
             RoomTile tile = room.getLayout().getTile(x, y);
 

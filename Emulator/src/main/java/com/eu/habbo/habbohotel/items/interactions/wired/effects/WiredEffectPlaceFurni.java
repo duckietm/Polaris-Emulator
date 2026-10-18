@@ -2,6 +2,7 @@ package com.eu.habbo.habbohotel.items.interactions.wired.effects;
 
 import com.eu.habbo.Emulator;
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.items.FurnitureDirections;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
@@ -80,7 +81,9 @@ public class WiredEffectPlaceFurni extends InteractionWiredEffect {
                     Emulator.getGameEnvironment().getItemManager().createItem(room.getOwnerId(), baseItem, 0, 0, "");
             if (item == null) continue;
 
-            FurnitureMovementError error = room.placeFloorFurniAt(item, tile, this.rotation, owner);
+            // A configured direction the furni's asset lacks is placed as its default one, like a user's placement.
+            int rotation = FurnitureDirections.of(item).place(this.rotation);
+            FurnitureMovementError error = room.placeFloorFurniAt(item, tile, rotation, owner);
 
             if (error != FurnitureMovementError.NONE) {
                 // Placement failed (no fit / blocked) — destroy the orphan instead of leaking a roomless item.

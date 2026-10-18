@@ -1,6 +1,7 @@
 package com.eu.habbo.habbohotel.items.interactions.wired.extra;
 
 import com.eu.habbo.habbohotel.gameclients.GameClient;
+import com.eu.habbo.habbohotel.items.FurnitureDirections;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredExtra;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
@@ -251,6 +252,32 @@ public class WiredExtraProjectile extends InteractionWiredExtra {
         }
 
         return false;
+    }
+
+    /**
+     * The rotation a projectile furni lands on. With the furni's directions from its asset, a
+     * heading it has is taken as it is and one it lacks lands it on its furnidata defaultdir, else
+     * it keeps its rotation (as in Habbo); without them, {@link #resolveRotation(int, int, int, int,
+     * int)}.
+     */
+    public int resolveRotation(HabboItem movingItem, int fromX, int fromY, int toX, int toY, int fallbackRotation) {
+        FurnitureDirections directions = FurnitureDirections.of(movingItem);
+        if (!directions.isKnown()) {
+            return this.resolveRotation(fromX, fromY, toX, toY, fallbackRotation);
+        }
+        if (this.params[PARAM_ROTATE] == 0) {
+            return fallbackRotation;
+        }
+
+        int facing = WiredProjectileDirections.resolve(this.params[PARAM_DIRECTIONAL_SYSTEM], toX - fromX, toY - fromY);
+
+        if (facing < 0) {
+            return fallbackRotation;
+        }
+
+        Integer landed =
+                directions.heading(WiredProjectileDirections.rotate(facing, this.params[PARAM_ROTATION_OFFSET]));
+        return landed == null ? fallbackRotation : landed;
     }
 
     public int resolveRotation(int fromX, int fromY, int toX, int toY, int fallbackRotation) {

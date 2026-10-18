@@ -5,6 +5,7 @@ import com.eu.habbo.habbohotel.games.Game;
 import com.eu.habbo.habbohotel.games.GamePlayer;
 import com.eu.habbo.habbohotel.games.GameTeam;
 import com.eu.habbo.habbohotel.games.GameTeamColors;
+import com.eu.habbo.habbohotel.items.FurnitureDirections;
 import com.eu.habbo.habbohotel.items.FurnitureType;
 import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.pets.Pet;
@@ -480,7 +481,7 @@ public final class WiredInternalVariableSupport {
             case "@gravity" -> room.getWiredRuntime().setGravityEnabled(item, value != 0);
             case "@position_x" -> moveFurniTo(room, item, value, item.getY(), item.getRotation(), item.getZ());
             case "@position_y" -> moveFurniTo(room, item, item.getX(), value, item.getRotation(), item.getZ());
-            case "@rotation" -> moveFurniTo(room, item, item.getX(), item.getY(), value, item.getZ());
+            case "@rotation" -> writeFurniRotation(room, item, value);
             case "@altitude" -> moveFurniTo(room, item, item.getX(), item.getY(), item.getRotation(), value / 100.0);
             // Builders Club furni only, into the nearest colour of its palette.
             case "~recolorable_furni.color.rgb",
@@ -932,6 +933,20 @@ public final class WiredInternalVariableSupport {
         entry.yDirty = false;
         if (written && xChanged) emitUserChange(entry.room, entry.roomUnit, "@position_x", previousX, entry.targetX);
         if (written && yChanged) emitUserChange(entry.room, entry.roomUnit, "@position_y", previousY, entry.targetY);
+    }
+
+    /**
+     * An @rotation write: with the furni's directions from its asset, a value it lacks takes the
+     * nearest direction within 45 degrees (clockwise first) and anything further is refused, as in
+     * Habbo; without them the value is written as before.
+     */
+    private static boolean writeFurniRotation(Room room, HabboItem item, int value) {
+        FurnitureDirections directions = FurnitureDirections.of(item);
+        if (!directions.isKnown()) {
+            return moveFurniTo(room, item, item.getX(), item.getY(), value, item.getZ());
+        }
+        Integer rotation = directions.write(value);
+        return rotation != null && moveFurniTo(room, item, item.getX(), item.getY(), rotation, item.getZ());
     }
 
     private static boolean moveFurniTo(Room room, HabboItem item, int x, int y, int rotation, double z) {

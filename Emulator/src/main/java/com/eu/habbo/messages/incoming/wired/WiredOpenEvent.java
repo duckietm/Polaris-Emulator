@@ -3,6 +3,7 @@ package com.eu.habbo.messages.incoming.wired;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredCondition;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
+import com.eu.habbo.habbohotel.rooms.BuildersClubItemIds;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.messages.incoming.MessageHandler;
@@ -29,7 +30,7 @@ public class WiredOpenEvent extends MessageHandler {
 
         if (room == null || !room.canInspectWired(this.client.getHabbo())) return;
 
-        HabboItem item = room.getHabboItem(this.packet.readInt());
+        HabboItem item = room.getHabboItem(BuildersClubItemIds.fromWire(this.currentRoom(), this.packet.readInt()));
 
         if (item == null) return;
 

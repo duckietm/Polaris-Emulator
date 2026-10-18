@@ -697,6 +697,7 @@ public class Incoming {
     public static final int RequestMentionsEvent = 4803;
     public static final int MarkMentionsReadEvent = 4804;
     public static final int DeleteMentionEvent = 4805;
+    public static final int RequestMentionsPageEvent = 4806;
     public static final int RequestMessengerConversationsEvent = 4900;
     public static final int RequestMessengerHistoryEvent = 4901;
     public static final int SendMessengerMessageEvent = 4902;

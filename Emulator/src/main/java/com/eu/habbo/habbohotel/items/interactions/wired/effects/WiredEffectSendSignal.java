@@ -127,6 +127,15 @@ public class WiredEffectSendSignal extends InteractionWiredEffect
                     .collect(Collectors.toList());
         }
 
+        // A signal chain reaches each antenna once: a signal to an antenna the chain already went
+        // through (its own, or one earlier in a cycle) is dropped, as in Habbo.
+        Set<Integer> signalPath = ctx.event().getSignalPath();
+        if (!signalPath.isEmpty()) {
+            resolvedAntennas = resolvedAntennas.stream()
+                    .filter(antenna -> !signalPath.contains(antenna.getId()))
+                    .collect(Collectors.toList());
+        }
+
         if (resolvedAntennas.isEmpty()) {
             LOGGER.debug(
                     "[SendSignal] No antennas resolved, aborting. antennaSource={}, selectorModified={}",
@@ -277,6 +286,7 @@ public class WiredEffectSendSignal extends InteractionWiredEffect
                 .forwardedItems(forwarded)
                 .sourceItem(antenna)
                 .contextVariableScope(ctx.contextVariables().copy())
+                .signalPath(withAntenna(ctx.event().getSignalPath(), signalChannel))
                 .triggeredByEffect(true);
 
         if (actor != null) builder.actor(actor);
@@ -284,6 +294,12 @@ public class WiredEffectSendSignal extends InteractionWiredEffect
 
         boolean result = dispatchSignalEvent(builder.build());
         LOGGER.debug("[SendSignal] handleEvent returned: {}", result);
+    }
+
+    private static Set<Integer> withAntenna(Set<Integer> path, int antennaId) {
+        Set<Integer> next = new LinkedHashSet<>(path);
+        next.add(antennaId);
+        return next;
     }
 
     // Habbo flips an antenna on every signal it carries (it does not light up and reset).

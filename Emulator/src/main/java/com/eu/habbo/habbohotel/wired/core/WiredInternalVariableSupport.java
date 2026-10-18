@@ -144,6 +144,12 @@ public final class WiredInternalVariableSupport {
                     && room.getWiredRuntime().getProjectileFlights().holds(item, normalized);
         }
 
+        if ("@can_move_freely".equals(normalized)) {
+            return room != null
+                    && room.getWiredRuntime() != null
+                    && room.getWiredRuntime().movesFreely(item);
+        }
+
         return hasFurniValue(item, normalized);
     }
 

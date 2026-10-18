@@ -45,7 +45,8 @@ public class WiredConditionSaveDataEvent extends MessageHandler {
                                 },
                                 () -> this.packet);
                     } catch (WiredSaveRefusedException refused) {
-                        this.client.sendResponse(new UpdateFailedComposer(refused.getMessage()));
+                        this.client.sendResponse(
+                                new UpdateFailedComposer(refused.getMessage(), refused.getParameters()));
                         return;
                     } catch (IllegalArgumentException exception) {
                         this.client.sendResponse(new UpdateFailedComposer("Invalid wired condition settings"));

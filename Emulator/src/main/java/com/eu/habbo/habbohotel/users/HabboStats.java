@@ -151,6 +151,7 @@ public class HabboStats implements Runnable {
     public int lastHCPayday;
     public int hcGiftsClaimed;
     public int buildersClubBonusFurni;
+    private int buildersClubPackageFurniLimit;
     public int hcMessageLastModified = Emulator.getIntUnixTimestamp();
     public Set<Subscription> subscriptions;
 
@@ -231,6 +232,7 @@ public class HabboStats implements Runnable {
         this.lastHCPayday = set.getInt("last_hc_payday");
         this.hcGiftsClaimed = set.getInt("hc_gifts_claimed");
         this.buildersClubBonusFurni = set.getInt("builders_club_bonus_furni");
+        this.buildersClubPackageFurniLimit = set.getInt("builders_club_furni_limit");
 
         this.nuxReward = this.nux;
 
@@ -818,6 +820,21 @@ public class HabboStats implements Runnable {
         return this.buildersClubBonusFurni;
     }
 
+    /** The highest furni limit a bought Builders Club membership package gave; 0 when none was bought. */
+    public int getBuildersClubPackageFurniLimit() {
+        return this.buildersClubPackageFurniLimit;
+    }
+
+    /** Raises the package furni limit; returns false when the current one is already as high. */
+    public boolean raiseBuildersClubPackageFurniLimit(int limit) {
+        if (limit <= this.buildersClubPackageFurniLimit) {
+            return false;
+        }
+
+        this.buildersClubPackageFurniLimit = limit;
+        return true;
+    }
+
     public void addBuildersClubBonusFurni(int amount) {
         if (amount <= 0) {
             return;
@@ -1083,6 +1100,11 @@ public class HabboStats implements Runnable {
         }
 
         return true;
+    }
+
+    /** The ids of the users this user ignores, in the order they were ignored. */
+    public List<Integer> getIgnoredUsers() {
+        return List.copyOf(this.ignoredUsers);
     }
 
     public void unignoreUser(int userId) {

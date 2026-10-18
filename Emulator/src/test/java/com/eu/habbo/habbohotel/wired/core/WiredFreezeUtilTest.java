@@ -1,6 +1,11 @@
 package com.eu.habbo.habbohotel.wired.core;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -49,5 +54,30 @@ class WiredFreezeUtilTest {
 
         verify(room).giveEffect(unit, WiredGame.BLUE_EFFECT_ID, -1);
         verify(room, never()).sendComposer(any(ServerMessage.class));
+    }
+
+    @Test
+    void aWiredTeleportEndsACancellingFreezeWithoutAnEffectPacketOfItsOwn() {
+        Room room = mock(Room.class);
+        RoomUnit unit = new RoomUnit();
+        WiredFreezeUtil.freeze(room, unit, 218, true);
+        unit.setEffectId(218, 0);
+
+        WiredFreezeUtil.onWiredTeleport(room, unit);
+
+        assertFalse(WiredFreezeUtil.isFrozen(unit));
+        assertEquals(0, unit.getEffectId());
+        verify(room, never()).giveEffect(any(RoomUnit.class), anyInt(), eq(-1));
+    }
+
+    @Test
+    void aWiredTeleportKeepsAFreezeThatDoesNotCancelOnTeleport() {
+        Room room = mock(Room.class);
+        RoomUnit unit = new RoomUnit();
+        WiredFreezeUtil.freeze(room, unit, 218, false);
+
+        WiredFreezeUtil.onWiredTeleport(room, unit);
+
+        assertTrue(WiredFreezeUtil.isFrozen(unit));
     }
 }

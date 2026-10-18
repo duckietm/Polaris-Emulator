@@ -111,6 +111,10 @@ public class WiredEffectMoveFurniAsGroup extends InteractionWiredEffect {
 
         if (effectiveItems.isEmpty()) return;
 
+        // Habbo lists a group's moves in pick order, though the leading edge moves first.
+        List<Integer> pickOrder = effectiveItems.stream().map(HabboItem::getId).toList();
+        int firstMovement = WiredMoveCarryHelper.collectedMovementCount();
+
         // Move the leading edge first so members don't collide with un-moved members.
         int dx = directionDeltaX(this.direction);
         int dy = directionDeltaY(this.direction);
@@ -125,6 +129,10 @@ public class WiredEffectMoveFurniAsGroup extends InteractionWiredEffect {
             if (target == null || !target.getAllowStack()) continue;
 
             WiredMoveCarryHelper.moveFurni(room, this, item, target, item.getRotation(), null, false, ctx);
+        }
+
+        if (firstMovement >= 0) {
+            WiredMoveCarryHelper.orderCollectedFurni(firstMovement, pickOrder);
         }
     }
 

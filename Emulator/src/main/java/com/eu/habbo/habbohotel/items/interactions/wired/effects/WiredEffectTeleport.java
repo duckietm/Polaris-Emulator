@@ -171,7 +171,9 @@ public class WiredEffectTeleport extends InteractionWiredEffect {
             schedule(new SendRoomUnitEffectComposer(room, roomUnit), effectDuration);
         }
 
-        if (tile == roomUnit.getCurrentLocation()) {
+        // Habbo's Teleport To runs the whole teleport for a user already on the target: the glow,
+        // the republish and the landing. The classic timing (games, bots) still stops at the glow.
+        if (!onRoomGrid && tile == roomUnit.getCurrentLocation()) {
             return;
         }
 

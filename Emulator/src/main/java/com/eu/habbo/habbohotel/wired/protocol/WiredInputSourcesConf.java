@@ -227,6 +227,29 @@ public final class WiredInputSourcesConf {
                         new int[] {110, 0, 200},
                         new int[] {0, 200},
                         true));
+
+        // WIRED Link boxes: the endpoints are picked Links (or a selector's); the receive triggers and the
+        // speaker take picks only. Send Dataframe adds one furni and one user slot per row (AIR mergedSelections).
+        put("wf_act_send_message", furni(new int[][] {{100, 200}}, 100));
+        put(
+                furni(new int[][] {{100}}, 100),
+                "wf_trg_receive_message",
+                "wf_trg_receive_dataframe",
+                "wf_xtra_link_speaker");
+        int[][] dataframeFurni = new int[13][];
+        int[] dataframeFurniDefaults = new int[13];
+        int[][] dataframeUsers = new int[12][];
+        int[] dataframeUserDefaults = new int[12];
+        dataframeFurni[0] = new int[] {100, 200};
+        dataframeFurniDefaults[0] = 100;
+        for (int i = 0; i < 12; i++) {
+            dataframeFurni[i + 1] = new int[] {0, 101, 200, 201};
+            dataframeUsers[i] = USERS;
+        }
+        put(
+                "wf_act_send_dataframe",
+                new WiredInputSourcesConf(
+                        dataframeFurni, dataframeUsers, dataframeFurniDefaults, dataframeUserDefaults, false));
     }
 
     private final int[][] allowedFurni;

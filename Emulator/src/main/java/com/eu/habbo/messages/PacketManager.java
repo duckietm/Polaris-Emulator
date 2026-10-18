@@ -549,9 +549,16 @@ import com.eu.habbo.messages.incoming.wired.WiredEffectSaveDataEvent;
 import com.eu.habbo.messages.incoming.wired.WiredFeatureCapabilitiesEvent;
 import com.eu.habbo.messages.incoming.wired.WiredFurniRuntimeStateRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredGenerateWebApiKeyEvent;
+import com.eu.habbo.messages.incoming.wired.WiredGetVariablesForObjectEvent;
 import com.eu.habbo.messages.incoming.wired.WiredLabelSaveSettingsEvent;
 import com.eu.habbo.messages.incoming.wired.WiredLabelSaveTextEvent;
 import com.eu.habbo.messages.incoming.wired.WiredLeaderboardSubscribeEvent;
+import com.eu.habbo.messages.incoming.wired.WiredLinkCreateNetworkEvent;
+import com.eu.habbo.messages.incoming.wired.WiredLinkDeleteNetworkEvent;
+import com.eu.habbo.messages.incoming.wired.WiredLinkGetConnectionsEvent;
+import com.eu.habbo.messages.incoming.wired.WiredLinkRenameNetworkEvent;
+import com.eu.habbo.messages.incoming.wired.WiredLinkRequestConfigEvent;
+import com.eu.habbo.messages.incoming.wired.WiredLinkSaveSelectionEvent;
 import com.eu.habbo.messages.incoming.wired.WiredMenuPermissionsSaveEvent;
 import com.eu.habbo.messages.incoming.wired.WiredMonitorRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredOpenEvent;
@@ -560,6 +567,8 @@ import com.eu.habbo.messages.incoming.wired.WiredRoomSettingsRequestEvent;
 import com.eu.habbo.messages.incoming.wired.WiredRoomSettingsSaveEvent;
 import com.eu.habbo.messages.incoming.wired.WiredRoomStateActionEvent;
 import com.eu.habbo.messages.incoming.wired.WiredSelectorSaveDataEvent;
+import com.eu.habbo.messages.incoming.wired.WiredSetupExportEvent;
+import com.eu.habbo.messages.incoming.wired.WiredSetupImportEvent;
 import com.eu.habbo.messages.incoming.wired.WiredTriggerSaveDataEvent;
 import com.eu.habbo.messages.incoming.wired.WiredUserInspectMoveEvent;
 import com.eu.habbo.messages.incoming.wired.WiredUserSelectedEvent;
@@ -1344,6 +1353,8 @@ public class PacketManager {
         this.registerHandler(Incoming.WiredFeatureCapabilitiesEvent, WiredFeatureCapabilitiesEvent.class);
         this.registerHandler(Incoming.WiredArrayInspectionRequestEvent, WiredArrayInspectionRequestEvent.class);
         this.registerHandler(Incoming.WiredArrayInspectionUpdateEvent, WiredArrayInspectionUpdateEvent.class);
+        this.registerHandler(Incoming.WiredSetupExportEvent, WiredSetupExportEvent.class);
+        this.registerHandler(Incoming.WiredSetupImportEvent, WiredSetupImportEvent.class);
         this.registerHandler(Incoming.WiredOpenEvent, WiredOpenEvent.class);
         this.registerHandler(Incoming.WiredUserSelectedEvent, WiredUserSelectedEvent.class);
         this.registerHandler(Incoming.WiredMenuPermissionsSaveEvent, WiredMenuPermissionsSaveEvent.class);
@@ -1351,11 +1362,18 @@ public class PacketManager {
         this.registerHandler(Incoming.WiredRoomLogsPageEvent, WiredRoomLogsPageEvent.class);
         this.registerHandler(Incoming.WiredVariableHoldersPageEvent, WiredVariableHoldersPageEvent.class);
         this.registerHandler(Incoming.WiredLeaderboardSubscribeEvent, WiredLeaderboardSubscribeEvent.class);
+        this.registerHandler(Incoming.WiredLinkRequestConfigEvent, WiredLinkRequestConfigEvent.class);
+        this.registerHandler(Incoming.WiredLinkSaveSelectionEvent, WiredLinkSaveSelectionEvent.class);
+        this.registerHandler(Incoming.WiredLinkCreateNetworkEvent, WiredLinkCreateNetworkEvent.class);
+        this.registerHandler(Incoming.WiredLinkRenameNetworkEvent, WiredLinkRenameNetworkEvent.class);
+        this.registerHandler(Incoming.WiredLinkDeleteNetworkEvent, WiredLinkDeleteNetworkEvent.class);
+        this.registerHandler(Incoming.WiredLinkGetConnectionsEvent, WiredLinkGetConnectionsEvent.class);
         this.registerHandler(Incoming.WiredLabelSaveTextEvent, WiredLabelSaveTextEvent.class);
         this.registerHandler(Incoming.WiredLabelSaveSettingsEvent, WiredLabelSaveSettingsEvent.class);
         this.registerHandler(Incoming.WiredVariableHoldersRequestEvent, WiredVariableHoldersRequestEvent.class);
         this.registerHandler(Incoming.WiredVariableHashesEvent, WiredVariableHashesEvent.class);
         this.registerHandler(Incoming.WiredAllVariablesRequestEvent, WiredAllVariablesRequestEvent.class);
+        this.registerHandler(Incoming.WiredGetVariablesForObjectEvent, WiredGetVariablesForObjectEvent.class);
     }
 
     void registerTranslation() throws Exception {

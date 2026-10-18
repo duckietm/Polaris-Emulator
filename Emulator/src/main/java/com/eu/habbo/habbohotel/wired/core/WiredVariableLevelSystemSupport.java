@@ -143,7 +143,8 @@ public final class WiredVariableLevelSystemSupport {
                         createSyntheticItemId(targetType, baseDefinition.getItemId(), subvariableType),
                         baseDefinition,
                         boxSubvariableKey(box, subvariableType),
-                        true));
+                        !isWritableLevelPart(box, subvariableType, baseDefinition),
+                        !isPresencePart(box, subvariableType)));
             }
         }
 
@@ -156,7 +157,8 @@ public final class WiredVariableLevelSystemSupport {
                         createTimeItemId(targetType, baseDefinition.getItemId(), subvariableType),
                         baseDefinition,
                         timeUtilities.subvariableKey(subvariableType),
-                        !isWritableTimePart(timeUtilities, subvariableType, baseDefinition)));
+                        !isWritableTimePart(timeUtilities, subvariableType, baseDefinition),
+                        true));
             }
         }
 
@@ -166,14 +168,41 @@ public final class WiredVariableLevelSystemSupport {
     }
 
     private static WiredVariableDefinitionInfo createDerivedInfo(
-            int syntheticItemId, WiredVariableDefinitionInfo baseDefinition, String key, boolean readOnly) {
+            int syntheticItemId,
+            WiredVariableDefinitionInfo baseDefinition,
+            String key,
+            boolean readOnly,
+            boolean hasValue) {
         return new WiredVariableDefinitionInfo(
                 syntheticItemId,
                 baseDefinition.getName() + "." + key,
-                true,
+                hasValue,
                 baseDefinition.getAvailability(),
                 false,
                 readOnly);
+    }
+
+    /**
+     * Whether a part only exists or not, without a value: the level-up {@code is_maxed}, which Habbo shows only at
+     * the last level.
+     */
+    public static boolean isPresencePart(InteractionWiredExtra box, int subvariableType) {
+        return box instanceof WiredExtraVariableLevelUpSystem
+                && subvariableType == WiredExtraVariableLevelUpSystem.SUB_IS_AT_MAX;
+    }
+
+    /** As {@link #isPresencePart(InteractionWiredExtra, int)}, for a resolved part. */
+    public static boolean isPresencePart(DerivedDefinition derived) {
+        return derived != null && isPresencePart(derived.levelSystem, derived.subvariableType);
+    }
+
+    /** The level-up {@code current_xp} of a writable variable can be written, as in Habbo; it writes the variable. */
+    private static boolean isWritableLevelPart(
+            InteractionWiredExtra box, int subvariableType, WiredVariableDefinitionInfo baseDefinition) {
+        return box instanceof WiredExtraVariableLevelUpSystem
+                && subvariableType == WiredExtraVariableLevelUpSystem.SUB_CURRENT_XP
+                && baseDefinition.hasValue()
+                && !baseDefinition.isReadOnly();
     }
 
     private static boolean isWritableTimePart(
@@ -186,10 +215,19 @@ public final class WiredVariableLevelSystemSupport {
      * Time Utilities part), or null when the part cannot be written or the result does not fit.
      */
     public static Integer writeDerivedValue(Room room, DerivedDefinition derived, Integer baseValue, int partValue) {
-        if (derived == null
-                || baseValue == null
-                || !derived.isWritable()
-                || !(derived.levelSystem instanceof WiredExtraTimeUtilities timeUtilities)) {
+        if (derived == null || baseValue == null || !derived.isWritable()) {
+            return null;
+        }
+
+        // current_xp writes the variable itself, at most the last level's XP (Habbo: 250 on a 0/100/200 system wrote
+        // 200).
+        if (derived.levelSystem instanceof WiredExtraVariableLevelUpSystem levelSystem) {
+            List<LevelEntry> entries = buildThresholdEntries(levelSystem);
+            int lastThreshold = entries.isEmpty() ? 0 : entries.get(entries.size() - 1).requiredXp;
+            return Math.max(0, Math.min(partValue, lastThreshold));
+        }
+
+        if (!(derived.levelSystem instanceof WiredExtraTimeUtilities timeUtilities)) {
             return null;
         }
 
@@ -206,7 +244,7 @@ public final class WiredVariableLevelSystemSupport {
         return new WiredVariableDefinitionInfo(
                 derived.syntheticItemId,
                 derived.variableName,
-                true,
+                !isPresencePart(derived),
                 derived.baseDefinition.getAvailability(),
                 false,
                 !derived.isWritable());
@@ -327,7 +365,8 @@ public final class WiredVariableLevelSystemSupport {
             case WiredExtraVariableLevelUpSystem.SUB_LEVEL_PROGRESS_PERCENT -> progress.progressPercent;
             case WiredExtraVariableLevelUpSystem.SUB_TOTAL_XP_REQUIRED -> progress.totalXpRequired;
             case WiredExtraVariableLevelUpSystem.SUB_XP_REMAINING -> progress.xpRemaining;
-            case WiredExtraVariableLevelUpSystem.SUB_IS_AT_MAX -> progress.isAtMax ? 1 : 0;
+            // A presence part: it exists (as 1) only at the last level.
+            case WiredExtraVariableLevelUpSystem.SUB_IS_AT_MAX -> progress.isAtMax ? 1 : null;
             case WiredExtraVariableLevelUpSystem.SUB_MAX_LEVEL -> progress.maxLevel;
             default -> null;
         };
@@ -535,22 +574,21 @@ public final class WiredVariableLevelSystemSupport {
             nextThreshold = currentThreshold;
         }
 
-        int progressXp = Math.max(0, currentXp - currentThreshold);
-        int progressPercent;
-
+        // As in Habbo, a variable at the last level reads that level's XP as current_xp, and 0 for progress,
+        // progress %, XP required and XP remaining (linear 100 over three levels: 1200 XP reads 200, 0, 0, 0, 0).
         if (isAtMax) {
-            progressPercent = 100;
-        } else {
-            int delta = Math.max(0, nextThreshold - currentThreshold);
-            progressPercent =
-                    (delta <= 0) ? 100 : Math.max(0, Math.min(100, (int) Math.floor((progressXp * 100D) / delta)));
+            return new LevelProgress(currentLevel, currentThreshold, 0, 0, 0, 0, true, maxLevel);
         }
 
-        int totalXpRequired = isAtMax ? currentThreshold : nextThreshold;
+        int progressXp = Math.max(0, currentXp - currentThreshold);
+        int delta = Math.max(0, nextThreshold - currentThreshold);
+        int progressPercent =
+                (delta <= 0) ? 100 : Math.max(0, Math.min(100, (int) Math.floor((progressXp * 100D) / delta)));
+        int totalXpRequired = nextThreshold;
         int xpRemaining = Math.max(0, totalXpRequired - currentXp);
 
         return new LevelProgress(
-                currentLevel, currentXp, progressXp, progressPercent, totalXpRequired, xpRemaining, isAtMax, maxLevel);
+                currentLevel, currentXp, progressXp, progressPercent, totalXpRequired, xpRemaining, false, maxLevel);
     }
 
     private static List<LevelEntry> buildThresholdEntries(WiredExtraVariableLevelUpSystem levelSystem) {
@@ -741,8 +779,14 @@ public final class WiredVariableLevelSystemSupport {
             return this.levelSystem;
         }
 
-        /** Whether the part can be written (value-mode Time Utilities parts of a writable variable). */
+        /**
+         * Whether the part can be written: value-mode Time Utilities parts and the level-up {@code current_xp} of a
+         * writable variable.
+         */
         public boolean isWritable() {
+            if (isWritableLevelPart(this.levelSystem, this.subvariableType, this.baseDefinition)) {
+                return true;
+            }
             return this.levelSystem instanceof WiredExtraTimeUtilities timeUtilities
                     && isWritableTimePart(timeUtilities, this.subvariableType, this.baseDefinition);
         }

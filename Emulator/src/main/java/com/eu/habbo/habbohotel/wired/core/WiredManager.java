@@ -649,6 +649,18 @@ public final class WiredManager {
                 WiredEvent.builder(WiredEvent.Type.ROOM_INITIALIZED, room).build());
     }
 
+    /**
+     * A WIRED Link received a message or dataframe: runs the stack of the one receive trigger it is for,
+     * with the event that trigger built (its placeholders and captured variables differ per trigger).
+     */
+    public static boolean triggerLinkReceived(Room room, HabboItem trigger, WiredEvent event) {
+        if (!isEnabled() || room == null || trigger == null || event == null || event.getRoom() != room) {
+            return false;
+        }
+
+        return handleEventForSourceItem(event, trigger);
+    }
+
     public static boolean triggerUserEntersRoom(Room room, RoomUnit user) {
         if (!isEnabled() || room == null || user == null) {
             return false;

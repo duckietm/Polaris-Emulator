@@ -1,6 +1,9 @@
 package com.eu.habbo.habbohotel.wired.core;
 
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectChangeVariableValue;
+import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectControlClock;
+import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveScore;
+import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectGiveScoreToTeam;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectMatchFurni;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectRelativeMove;
 import com.eu.habbo.habbohotel.items.interactions.wired.effects.WiredEffectToggleFurni;
@@ -15,8 +18,9 @@ import java.util.function.Predicate;
 /**
  * The order Habbo runs a firing's actions in without Execute in Order, where it differs from the
  * stack's height order: Match to Snapshot runs after Toggle State and Relative Move, and Show
- * Message after Change Variable and Toggle State, whichever is placed higher. Only actions with the
- * same delay are compared. Everything else keeps the stack order.
+ * Message after Change Variable and Toggle State, and Give Score (To Team) after Control Clock, so a
+ * score lands in the game the clock starts, whichever is placed higher. Only actions with the same
+ * delay are compared. Everything else keeps the stack order.
  */
 final class WiredObservedEffectOrder {
 
@@ -48,6 +52,7 @@ final class WiredObservedEffectOrder {
 
             moveBehind(group, WiredEffectMatchFurni.class::isInstance, WiredObservedEffectOrder::changesFurni);
             moveBehind(group, WiredEffectWhisper.class::isInstance, WiredObservedEffectOrder::changesWhatAMessageShows);
+            moveBehind(group, WiredObservedEffectOrder::givesScore, WiredEffectControlClock.class::isInstance);
 
             for (int position = 0; position < slots.size(); position++) {
                 ordered.set(slots.get(position), group.get(position));
@@ -55,6 +60,10 @@ final class WiredObservedEffectOrder {
         }
 
         return ordered;
+    }
+
+    private static boolean givesScore(IWiredEffect effect) {
+        return effect instanceof WiredEffectGiveScore || effect instanceof WiredEffectGiveScoreToTeam;
     }
 
     private static boolean changesFurni(IWiredEffect effect) {

@@ -279,9 +279,15 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
         if (this.message.length() > 0) {
             List<RoomUnit> sourceUsers = resolveUsers(ctx);
 
+            // A message shown to the whole room is one message of the room's budget.
+            boolean shownToRoom = this.visibilitySelection == VISIBILITY_ALL_ROOM_USERS;
+            if (shownToRoom && !admitMessage(ctx.room())) {
+                return;
+            }
+
             // A message shown to everyone whose source is a bot is said aloud by that bot, as in Habbo.
             // Behaviour observed in plus-emulator/PlusEMU a8523821, reimplemented.
-            if (this.visibilitySelection == VISIBILITY_ALL_ROOM_USERS && ctx.room() != null) {
+            if (shownToRoom && ctx.room() != null) {
                 Bot speaker = sourceBot(ctx.room(), sourceUsers);
                 if (speaker != null) {
                     speaker.talk(buildMessage(ctx, null));
@@ -290,9 +296,7 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
             }
 
             List<Habbo> recipients = resolveRecipients(ctx, sourceUsers);
-            Habbo sharedSourceHabbo = (this.visibilitySelection == VISIBILITY_ALL_ROOM_USERS)
-                    ? resolveMessageSourceHabbo(ctx, sourceUsers)
-                    : null;
+            Habbo sharedSourceHabbo = shownToRoom ? resolveMessageSourceHabbo(ctx, sourceUsers) : null;
 
             for (Habbo habbo : recipients) {
                 // The user turned wired whispers off in their settings.
@@ -304,6 +308,10 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
                     continue;
                 }
 
+                if (!shownToRoom && !admitMessage(ctx.room())) {
+                    continue;
+                }
+
                 String msg = buildMessage(ctx, (sharedSourceHabbo != null) ? sharedSourceHabbo : habbo);
                 habbo.getClient().sendResponse(new RoomUserWhisperComposer(this.chatMessage(msg, habbo.getRoomUnit())));
 
@@ -312,6 +320,15 @@ public class WiredEffectWhisper extends InteractionWiredEffect {
                 }
             }
         }
+    }
+
+    /** Habbo shows at most ten wired messages in any five seconds per room and drops the rest. */
+    private static boolean admitMessage(Room room) {
+        if (room == null || room.getWiredRuntime() == null) {
+            return true;
+        }
+
+        return room.getWiredRuntime().getMessageBudget().tryAdmit(System.currentTimeMillis());
     }
 
     @Deprecated

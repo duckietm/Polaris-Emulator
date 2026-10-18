@@ -396,7 +396,9 @@ public class RoomFurniVariableManager {
                 WiredVariableLevelSystemSupport.resolveDerivedDefinition(
                         this.room, WiredVariableLevelSystemSupport.TARGET_FURNI, definitionItemId);
         if (derivedDefinition != null) {
-            return this.getRawAssignment(furniId, derivedDefinition.getBaseDefinitionItemId()) != null;
+            return this.getRawAssignment(furniId, derivedDefinition.getBaseDefinitionItemId()) != null
+                    && (!WiredVariableLevelSystemSupport.isPresencePart(derivedDefinition)
+                            || this.getDerivedValue(furniId, derivedDefinition) != null);
         }
 
         InteractionWiredExtra extra = this.getDefinitionExtra(definitionItemId);
@@ -1027,13 +1029,15 @@ public class RoomFurniVariableManager {
                             updatedAt)
                     : null;
 
+            // A presence part (is_maxed) is created when it appears and removed when it goes, by itself.
+            boolean presence = WiredVariableLevelSystemSupport.isPresencePart(resolvedDefinition);
             this.emitVariableChangedEvent(
                     furniId,
                     derivedDefinition.getItemId(),
                     true,
-                    existedBefore,
+                    presence ? derivedPreviousValue != null : existedBefore,
                     derivedPreviousValue,
-                    existsAfter,
+                    presence ? derivedCurrentValue != null : existsAfter,
                     derivedCurrentValue);
         }
     }

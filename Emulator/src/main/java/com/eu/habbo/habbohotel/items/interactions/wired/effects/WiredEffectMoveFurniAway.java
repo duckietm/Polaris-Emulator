@@ -17,6 +17,7 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredMoveCarryHelper;
 import com.eu.habbo.habbohotel.wired.core.WiredSimulation;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
+import com.eu.habbo.habbohotel.wired.migrate.WiredEvents;
 import com.eu.habbo.messages.ServerMessage;
 import com.eu.habbo.messages.incoming.wired.WiredSaveException;
 import java.sql.ResultSet;
@@ -74,13 +75,9 @@ public class WiredEffectMoveFurniAway extends InteractionWiredEffect {
 
             // Someone right next to the furni still counts as bumping into it, and it still
             // flees: before, it stood still and let itself be caught.
+            // As in Habbo, the collision runs in the pass of this flee.
             if (target.getCurrentLocation().distance(t) <= 1) {
-                Emulator.getThreading()
-                        .run(
-                                () -> {
-                                    WiredManager.triggerBotCollision(room, target, item);
-                                },
-                                500);
+                WiredManager.dispatchEffectTriggeredEvent(WiredEvents.botCollision(room, target, item));
             }
 
             RoomTile oldLocation = room.getLayout().getTile(item.getX(), item.getY());

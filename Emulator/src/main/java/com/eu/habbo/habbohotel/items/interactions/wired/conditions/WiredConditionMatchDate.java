@@ -83,7 +83,9 @@ public class WiredConditionMatchDate extends InteractionWiredCondition {
         this.yearFrom = (params.length > 6)
                 ? this.normalizeYear(params[6])
                 : HotelDateTimeUtil.localDateNow().getYear();
-        this.yearTo = (params.length > 7) ? this.normalizeYear(params[7]) : this.yearFrom;
+        // Habbo stores an inverted year range with its end raised to its start (9999..0 reads back
+        // 9999..9999); an inverted day range keeps its order.
+        this.yearTo = Math.max(this.yearFrom, (params.length > 7) ? this.normalizeYear(params[7]) : this.yearFrom);
         this.dayMode = WiredConditionMatchTime.mode(params.length > 0 && params[0] == 1, this.dayFrom, this.dayTo);
         this.yearMode = WiredConditionMatchTime.mode(params.length > 1 && params[1] == 1, this.yearFrom, this.yearTo);
 

@@ -34,6 +34,7 @@ public class TriggerHabbiconEvent extends MessageHandler {
 
         HabbiconService habbicons = habbo.getHabbiconService();
         if (!habbo.getHabboStats().allowTalk()
+                || (room.getChatManager() != null && !room.getChatManager().allowsHabbicon(habbo))
                 || !habbicons.use(habbo.getHabboInfo().getId(), habbiconId)) {
             return;
         }

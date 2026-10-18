@@ -136,7 +136,7 @@ final class RoomEntryService {
         }
 
         if (!rightsFound) {
-            habbo.getClient().sendResponse(new RoomAccessDeniedComposer(""));
+            habbo.getClient().sendResponse(new RoomAccessDeniedComposer(room.getId(), ""));
             this.returnToHotel(habbo);
             return;
         }

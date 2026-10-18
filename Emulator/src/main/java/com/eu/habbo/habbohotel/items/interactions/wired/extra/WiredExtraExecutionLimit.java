@@ -168,9 +168,17 @@ public class WiredExtraExecutionLimit extends InteractionWiredExtra {
         }
     }
 
+    /**
+     * Habbo counts the window in whole wired pulses (500 ms), not in milliseconds: an execution
+     * leaves the window once the current pulse is the window's length of pulses after its own.
+     */
     private void pruneExpiredTimestamps(long timestamp) {
+        long currentPulse = Math.floorDiv(timestamp, (long) TIME_WINDOW_STEP_MS);
+        long windowPulses = Math.max(1, this.timeWindowMs / TIME_WINDOW_STEP_MS);
+
         while (!this.recentExecutionTimestamps.isEmpty()
-                && (timestamp - this.recentExecutionTimestamps.peekFirst()) >= this.timeWindowMs) {
+                && currentPulse - Math.floorDiv(this.recentExecutionTimestamps.peekFirst(), (long) TIME_WINDOW_STEP_MS)
+                        >= windowPulses) {
             this.recentExecutionTimestamps.removeFirst();
         }
     }

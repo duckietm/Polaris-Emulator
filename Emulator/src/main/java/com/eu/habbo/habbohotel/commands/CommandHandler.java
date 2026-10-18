@@ -354,6 +354,7 @@ public class CommandHandler {
         addCommand(new MutePetsCommand());
         addCommand(new PetInfoCommand());
         addCommand(new PickallCommand());
+        addCommand(new PickallBuildersClubCommand());
         addCommand(new PingCommand());
         addCommand(new PixelCommand());
         addCommand(new PluginsCommand());

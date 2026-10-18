@@ -215,6 +215,7 @@ final class RoomItemRegistry {
         RoomWiredRuntime wiredRuntime = this.room.getWiredRuntime();
         if (wiredRuntime != null) {
             wiredRuntime.forgetProjectile(item);
+            wiredRuntime.forgetMovesFreely(item);
         }
         this.room.onFurnitureTopologyChanged(item, true);
     }

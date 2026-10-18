@@ -119,6 +119,16 @@ public abstract class InteractionWiredChest extends InteractionWiredExtra {
         this.loaded = true;
     }
 
+    /**
+     * The chest's contents went back to its owner because the item is being deleted ({@link
+     * ChestRelease}): it holds nothing any more and must not create its row again.
+     */
+    synchronized void markReleased() {
+        this.contents = ChestStorage.fromStore(null, 0, 0, List.of(), this.chestKind(), this.isStarterChest());
+        this.loaded = true;
+        this.viewers.clear();
+    }
+
     private static Item baseItem(int baseItemId) {
         GameEnvironment environment = WiredPlatform.gameEnvironment();
         if (environment == null || environment.getItemManager() == null) return null;

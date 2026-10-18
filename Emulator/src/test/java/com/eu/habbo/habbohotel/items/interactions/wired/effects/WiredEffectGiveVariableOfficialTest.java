@@ -156,8 +156,20 @@ class WiredEffectGiveVariableOfficialTest {
                 .thenReturn(true);
         WiredEffectGiveVariable box = saved(new int[] {WiredValueVariable.TARGET_FURNI, 0, 5, 0, 0, -10, 0}, "40");
 
+        com.eu.habbo.habbohotel.rooms.RoomWiredRuntime runtime =
+                mock(com.eu.habbo.habbohotel.rooms.RoomWiredRuntime.class);
+        com.eu.habbo.habbohotel.rooms.WiredBoxFlashes flashes =
+                mock(com.eu.habbo.habbohotel.rooms.WiredBoxFlashes.class);
+        when(room.getWiredRuntime()).thenReturn(runtime);
+        when(runtime.getBoxFlashes()).thenReturn(flashes);
+
         fire(box);
-        verify(definition).flashBox(room);
+        // The definition shows the give state (6); the add-on on its tile flashes.
+        @SuppressWarnings("unchecked")
+        org.mockito.ArgumentCaptor<java.util.function.UnaryOperator<String>> next =
+                org.mockito.ArgumentCaptor.forClass(java.util.function.UnaryOperator.class);
+        verify(flashes).flip(eq(definition), next.capture());
+        assertEquals("6", next.getValue().apply("0"));
         verify(timeUtilities).flashBox(room);
     }
 
@@ -171,5 +183,18 @@ class WiredEffectGiveVariableOfficialTest {
 
         fire(box);
         verify(definition, never()).flashBox(any());
+    }
+
+    @Test
+    void canMoveFreelyIsGivenToTheFurni() throws Exception {
+        com.eu.habbo.habbohotel.rooms.RoomWiredRuntime runtime =
+                mock(com.eu.habbo.habbohotel.rooms.RoomWiredRuntime.class);
+        when(room.getWiredRuntime()).thenReturn(runtime);
+        WiredEffectGiveVariable box =
+                saved(new int[] {WiredValueVariable.TARGET_FURNI, 0, 0, 0, 0, -10, 0}, "internal:@can_move_freely");
+
+        fire(box);
+        verify(runtime).setMovesFreely(this.first, true);
+        verify(runtime).setMovesFreely(this.second, true);
     }
 }

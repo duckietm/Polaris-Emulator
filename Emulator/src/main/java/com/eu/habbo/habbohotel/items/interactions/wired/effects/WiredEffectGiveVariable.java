@@ -60,6 +60,9 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
     static final int TARGET_GLOBAL = 3;
 
     private int variableItemId = 0;
+    /** A presence flag Habbo lets this box give to and remove from floor furni, for the room's lifetime. */
+    private static final String FREE_MOVE_KEY = "@can_move_freely";
+
     private String internalVariableKey = "";
     private int targetType = TARGET_USER;
     private boolean overrideExisting = false;
@@ -109,6 +112,15 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
             if (shared == null) return;
         }
 
+        if (FREE_MOVE_KEY.equals(this.internalVariableKey)) {
+            if (this.targetType == TARGET_FURNI && room.getWiredRuntime() != null) {
+                for (HabboItem item : WiredSourceUtil.resolveItems(ctx, this.furniSource, this.selectedFurni)) {
+                    room.getWiredRuntime().setMovesFreely(item, true);
+                }
+            }
+            return;
+        }
+
         if (!this.internalVariableKey.isEmpty()) {
             if (this.targetType != TARGET_USER) return;
             for (RoomUnit unit : WiredSourceUtil.resolveUsers(ctx, this.userSource)) {
@@ -154,7 +166,7 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
                 };
         // A give that gave something also flashes the variable's definition box; one that gave nothing does not.
         if (given) {
-            WiredVariableDefinitionFlash.flash(room, variableId);
+            WiredVariableDefinitionFlash.flash(room, variableId, WiredVariableDefinitionFlash.KIND_GIVEN);
         }
     }
 
@@ -414,7 +426,7 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
         int nextVariableItemId = parseVariableItemId(variableText);
         String nextInternalKey = normalizeInternalKey(variableText);
         boolean internal = variableText.trim().startsWith("internal:");
-        if (internal && (nextInternalKey.isEmpty() || nextTargetType != TARGET_USER)) {
+        if (internal && (nextInternalKey.isEmpty() || nextTargetType != internalTargetOf(nextInternalKey))) {
             throw new WiredSaveException("wiredfurni.params.variables.validation.invalid_variable");
         }
 
@@ -541,9 +553,8 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
             if (data != null) {
                 this.variableItemId = Math.max(0, data.variableItemId);
                 this.targetType = normalizeTargetType(data.targetType);
-                this.internalVariableKey = this.targetType == TARGET_USER
-                        ? normalizeInternalKey("internal:" + data.internalVariableKey)
-                        : "";
+                String loadedKey = normalizeInternalKey("internal:" + data.internalVariableKey);
+                this.internalVariableKey = this.targetType == internalTargetOf(loadedKey) ? loadedKey : "";
                 if (!this.internalVariableKey.isEmpty()) this.variableItemId = 0;
                 this.overrideExisting = data.overrideExisting;
                 this.initialValue = data.initialValue;
@@ -679,7 +690,15 @@ public class WiredEffectGiveVariable extends InteractionWiredEffect implements W
     private static String normalizeInternalKey(String token) {
         if (token == null || !token.trim().startsWith("internal:")) return "";
         String key = WiredInternalVariableSupport.normalizeKey(token.trim().substring("internal:".length()));
-        return Set.of("@handitem_id", "@effect_id", "@has_rights").contains(key) ? key : "";
+        return Set.of("@handitem_id", "@effect_id", "@has_rights", FREE_MOVE_KEY)
+                        .contains(key)
+                ? key
+                : "";
+    }
+
+    /** The holder an internal variable of this box lives on: {@code @can_move_freely} on floor furni, the rest on users. */
+    private static int internalTargetOf(String key) {
+        return FREE_MOVE_KEY.equals(key) ? TARGET_FURNI : TARGET_USER;
     }
 
     private static int parseVariableItemId(String value) {

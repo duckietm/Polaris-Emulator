@@ -53,6 +53,12 @@ public final class WiredFurniStateBatch {
         WiredBoxFlashes.flushDirty();
     }
 
+    /** Drops this thread's open batches and their queued states, unsent (wired shutdown and cleanup). */
+    public static void clearForCurrentThread() {
+        DEPTH.remove();
+        PENDING.remove();
+    }
+
     public static boolean isOpen() {
         return !DEPTH.get().isEmpty();
     }

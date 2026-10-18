@@ -5,7 +5,6 @@ import com.eu.habbo.habbohotel.mentions.HabboMention;
 import com.eu.habbo.habbohotel.mentions.MentionManager;
 import com.eu.habbo.messages.incoming.MessageHandler;
 import com.eu.habbo.messages.outgoing.mentions.MentionsListComposer;
-
 import java.util.List;
 
 public class RequestMentionsEvent extends MessageHandler {

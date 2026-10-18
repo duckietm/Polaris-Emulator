@@ -117,6 +117,12 @@ public final class WiredBoxFlashes {
         flushDirty();
     }
 
+    /** Drops this thread's open passes and its unsent flashes (wired shutdown and cleanup). */
+    public static void clearForCurrentThread() {
+        PASS_DEPTH.remove();
+        DIRTY.remove();
+    }
+
     static boolean isPassOpen() {
         return !PASS_DEPTH.get().isEmpty();
     }
